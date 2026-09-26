@@ -1,0 +1,15 @@
+# Repo-root ignores. The harness keeps its own .gitignore for data/, because those paths
+# are relative to it and it is meant to be liftable into another project unchanged.
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Each example provisions its own interpreter (uv: pyproject + uv.lock + .python-version),
+# so an example cannot bleed into a sibling. The environments themselves are not artifacts.
+examples/*/.venv/
+examples/*/__pycache__/
+
+# Third-party corpora are referenced by download recipe, never redistributed. Each example
+# fetches its own; see examples/*/fetch.py.
+examples/*/data/
