@@ -101,9 +101,16 @@ Cross-facet ranking and per-million costs: journal entry 41. Power analysis: ent
 
 ## Known gaps
 
-- No local/classical-ML arm. `pyproject.toml` describes the example as "ML vs LLM".
-  Constraint recorded earlier: x86_64 macOS caps torch at 2.2.2 and `transformers` ≥4.56
-  refuses `torch.load` below torch 2.6, so a pickle-only checkpoint cannot load here.
+- ~~No local/classical-ML arm.~~ **CLOSED** on branch `ml-arms-bart-lead3`: `bart_l`
+  (facebook/bart-large-cnn) and `lead3` (first three sentences) have run at n=20 and
+  n=200. See [`HANDOVER_ML_ARMS.md`](HANDOVER_ML_ARMS.md). Three further arms are written
+  and blocked on hardware.
+  **The constraint recorded here was wrong in one detail and it matters**: the `torch.load`
+  restriction is not new in `transformers` 4.56, it is present in 4.55.4 (tested against
+  `sshleifer/distilbart-cnn-6-6`). Pinning below 4.56 unblocks nothing. Since torch ≥2.6
+  has no Intel-Mac wheel, the rule on x86_64 macOS is simply: a checkpoint without
+  safetensors cannot load, at any transformers version carrying the guard.
+  `facebook/bart-large-cnn` ships safetensors, which is why one BART arm ran here.
 - No classification example.
 - No judge wired into this example. Existing judge machinery is in
   `podcast-scraper-eval-data` (journal entry 43); harness `runner.py` / `make judge`
