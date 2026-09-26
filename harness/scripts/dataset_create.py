@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import DATASETS, ROOT, SOURCES, die, now, sha256, write_json  # noqa: E402
+from _common import DATASETS, ROOT, SOURCES, die, now, read_json, sha256, write_json  # noqa: E402
 
 
 def _relative_source_dir(source_dir: Path) -> str:
@@ -42,6 +42,19 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True, help="lowercase_with_underscores")
     ap.add_argument("--source-dir", type=Path, default=SOURCES)
     ap.add_argument("--glob", default="*", help="which files under --source-dir are items")
+    ap.add_argument(
+        "--recursive",
+        action="store_true",
+        help=(
+            "descend into subdirectories of --source-dir. OFF by default, and that default "
+            "is the fix for a silent merge: this used to always recurse, so once an example "
+            "had fetched its corpus into data/sources/<corpus>/, `make demo` — which takes "
+            "the default source dir — swallowed that corpus into the synthetic smoke "
+            "dataset. Ten items where five were expected, no error, and the failure "
+            "surfaced three steps later as a missing materialized file. Real corpora are "
+            "always created with an explicit --source-dir, so they never needed this."
+        ),
+    )
     ap.add_argument("--limit", type=int, help="take only the first N (sorted) — a smoke cut")
     ap.add_argument("--tag", action="append", default=[], help="tag every item (repeatable)")
     ap.add_argument("--description", default="")
@@ -74,7 +87,8 @@ def main() -> int:
             return False
         return args.include_docs or p.name.lower() not in {"readme.md", "readme.txt", "readme"}
 
-    files = sorted(p for p in args.source_dir.rglob(args.glob) if is_item(p))
+    walk = args.source_dir.rglob if args.recursive else args.source_dir.glob
+    files = sorted(p for p in walk(args.glob) if is_item(p))
     if args.limit:
         files = files[: args.limit]
     if not files:
@@ -94,13 +108,27 @@ def main() -> int:
         for p in files
     ]
 
+    # A re-create that selects the SAME items keeps its original created_at. Without this
+    # the documented first command, `make demo`, rewrites a tracked file on every run and
+    # leaves a new clone with a dirty tree — a timestamp presented as a change when nothing
+    # about the selection changed. What freezes a dataset is the item hashes; created_at is
+    # a label, and it should move when the selection does, not when the clock does.
+    previous = {}
+    if out.exists():
+        try:
+            previous = read_json(out)
+        except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
+            previous = {}
+    unchanged = previous.get("items") == items and previous.get("dataset_id") == args.dataset_id
+    created_at = previous.get("created_at") if unchanged and previous.get("created_at") else now()
+
     write_json(
         out,
         {
             "dataset_id": args.dataset_id,
             "version": "1.0",
             "description": args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
-            "created_at": now(),
+            "created_at": created_at,
             # Relative to the harness root when it sits inside it. `as_posix()` on the
             # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
             # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran

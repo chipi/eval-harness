@@ -83,7 +83,12 @@ def main() -> int:
     print(f"  EVAL_MAX_COST_USD      " + (f"${cap:.2f} — mid-run abort" if cap
                                           else "NONE — a sweep can bill without limit"))
     print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', 3)}")
-    print(f"  EVAL_CONCURRENCY       {env_int('EVAL_CONCURRENCY', 1)}")
+    print(f"  EVAL_RETRY_MAX_DELAY   {env_int('EVAL_RETRY_MAX_DELAY', 60)}s — backoff cap")
+    # EVAL_CONCURRENCY was reported here and read by NOTHING: a knob that printed a value
+    # and changed no behaviour. The sweep is sequential. This project has already lost two
+    # arms to the same shape — EVAL_MAX_RETRIES was documented and honoured only by the
+    # bundled adapter, so raising it on the real example was a no-op and an arm was thrown
+    # away as "the model cannot do the task". Do not advertise a setting until it is wired.
 
     if cap is None and any_key:
         # Only a failure when it can actually cost something. A fresh drop-in
