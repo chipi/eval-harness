@@ -45,13 +45,26 @@ local = [
     #                     prints "PyTorch was not found. Models won't be available" -- then
     #                     fails at model load, not at install. A silent backend downgrade
     #                     is worse than a resolver error.
-    #   transformers 4.56 refuses `torch.load` below torch 2.6 over a pickle CVE. That
-    #                     blocks every checkpoint published WITHOUT safetensors --
-    #                     distilbart-cnn-12-6, -6-6, bart-large-xsum and both pegasus
-    #                     checkpoints are all .bin-only, so the cap is what makes those
-    #                     arms runnable here at all. bart-large-cnn ships safetensors and
-    #                     does not need it.
     "transformers>=4.40,<4.56",
+    #
+    # A NOTE ON WHAT THIS CAP DOES NOT BUY, because an earlier version of this comment
+    # claimed it did. `research/HANDOVER.md` records the pickle restriction as arriving in
+    # transformers 4.56; it is present in 4.55.4, and pinning below 4.56 does NOT unblock
+    # .bin-only checkpoints:
+    #
+    #   ValueError: Due to a serious vulnerability issue in `torch.load`, even with
+    #   `weights_only=True`, we now require users to upgrade torch to at least v2.6 ...
+    #   This version restriction does not apply when loading files with safetensors.
+    #   CVE-2025-32434
+    #
+    # torch >= 2.6 has no x86_64 macOS wheel, so on THIS machine the rule reduces to: a
+    # checkpoint without safetensors cannot be loaded, full stop. bart-large-cnn ships
+    # safetensors and runs. distilbart-cnn-12-6, distilbart-cnn-6-6, bart-large-xsum,
+    # pegasus-cnn_dailymail and pegasus-xsum are all .bin-only and do not.
+    #
+    # Getting them requires either a machine that can take torch >= 2.6, or deliberately
+    # stepping around a CVE guard to execute third-party pickles. That is a decision to
+    # take in the open, not a dependency pin to make quietly, so nothing here takes it.
     # Third ceiling, same root cause. torch 2.2.2 was built against the NumPy 1.x C API;
     # with NumPy 2 installed it imports, warns "Failed to initialize NumPy: _ARRAY_API not
     # found", and every tensor->array conversion raises "Numpy is not available". Scoped to
