@@ -1,0 +1,41 @@
+# distilbart-cnn-6-6: the smallest rung of the ML tier. Half the encoder as well.
+#
+# 6 encoder layers and 6 decoder layers against bart_m's 12 and 6 and bart_l's 12 and 12
+# (all from config.json). With bart_l and bart_m it gives the local side a three-point
+# size axis, which is what lets "does a smaller model cost you quality, and how much?" be
+# asked of ML the way the s/m/l price tiers asked it of the hosted arms.
+#
+# AN OPEN QUESTION FOR WHOEVER RUNS IT: the checkpoint is 460MB, against bart_m's 1.22GB.
+# The layer counts do not explain that gap on their own — removing 6 encoder layers from
+# bart_m should not halve the file twice over — which suggests this checkpoint is stored at
+# half precision while the other two are not. I could not confirm it: the Hub reports no
+# parameter count for this repo and it ships no safetensors header to read. The run settles
+# it without anyone guessing, because the fingerprint records `weight_files` with each
+# file's size, and `precision` below is the RUNTIME dtype (transformers upcasts to float32
+# unless told otherwise), not a claim about what is on disk.
+#
+# If it is a half-precision checkpoint, that is a genuine comparability caveat against the
+# other two arms and belongs in the write-up — not a reason to drop the arm.
+#
+# CANNOT RUN ON x86_64 macOS: pytorch_model.bin with no safetensors. See
+# RUNNING_THE_ML_ARMS.md.
+#
+# DECODE SETTINGS are this checkpoint's own, from config.json's
+# `task_specific_params.summarization` — identical to bart_m's and bart_l's, inherited
+# through the distillation rather than imposed by us.
+config_id: cnn_bart_s_n200_v1
+dataset_id: cnn_dailymail_200
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: sshleifer/distilbart-cnn-6-6
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  max_length: 142
+  min_length: 56
+  num_beams: 4
+  length_penalty: 2.0
+  no_repeat_ngram_size: 3
+  early_stopping: true

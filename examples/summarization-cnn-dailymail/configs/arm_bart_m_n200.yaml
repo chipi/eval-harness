@@ -1,0 +1,44 @@
+# distilbart-cnn-12-6: the same task, a smaller model. The compute tier of the ML side.
+#
+# WHY: the hosted arms come in s/m/l price tiers and the question "what does paying more
+# buy?" got a clean answer. The local side had one point and could not be asked. Three
+# BART-family arms give it a tier axis of its own — and the axis is not price, because all
+# three cost the same nothing. It is parameters and wall-clock.
+#
+# 12 encoder layers and 6 decoder layers against bart-large-cnn's 12 and 12 (config.json),
+# a 1.22GB checkpoint against 1.63GB. Distilled FROM bart-large-cnn, so a delta against
+# `cnn_bart_l_n200_v1` is close to a clean read on what the distillation cost — same
+# architecture, same training data, same task, half the decoder.
+#
+# CANNOT RUN ON x86_64 macOS. This checkpoint ships pytorch_model.bin and no safetensors,
+# and transformers refuses `torch.load` below torch 2.6 (CVE-2025-32434) while torch has no
+# Intel-Mac wheel above 2.2.2. See pyproject.toml's `local` extra for the full rule and
+# RUNNING_THE_ML_ARMS.md for the machine this is meant to run on. bart_l is unaffected
+# and already has its 200 items — it ships safetensors.
+#
+# DECODE SETTINGS are this checkpoint's own published values, declared rather than
+# inherited for the same reason as bart_l: a param in the config lands in
+# fingerprint.arm.params, a checkpoint default lands nowhere.
+#
+# They are NOT copied from bart_l. This checkpoint predates generation_config.json and
+# carries them in config.json under `task_specific_params.summarization`, where they are
+# byte-identical to bart-large-cnn's: max_length 142, min_length 56, num_beams 4,
+# length_penalty 2.0, no_repeat_ngram_size 3, early_stopping true. Identical by the
+# distillation's inheritance, not by us forcing the parent's settings onto the child —
+# which would have made this a decode experiment wearing a model comparison's name.
+config_id: cnn_bart_m_n200_v1
+dataset_id: cnn_dailymail_200
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: sshleifer/distilbart-cnn-12-6
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  max_length: 142
+  min_length: 56
+  num_beams: 4
+  length_penalty: 2.0
+  no_repeat_ngram_size: 3
+  early_stopping: true

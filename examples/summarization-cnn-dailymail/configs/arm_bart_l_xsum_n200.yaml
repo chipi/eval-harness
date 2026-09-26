@@ -1,0 +1,51 @@
+# bart-large-xsum: the same architecture as bart_l, fine-tuned on the WRONG dataset.
+#
+# WHY THIS IS THE MOST IMPORTANT OF THE THREE. bart_l finished first on coverage at n=200,
+# tied with the best of 24 hosted models. The obvious objection to that result is that
+# bart_l was fine-tuned on cnn_dailymail and the LLMs were not, so it is being scored on
+# how well it reproduces a distribution it was trained on. This arm is the control for
+# exactly that objection: identical architecture, identical parameter count, identical
+# pre-training, fine-tuned on XSum instead.
+#
+#   if bart_l_xsum also beats the hosted field  ->  BART architecture is doing the work
+#   if bart_l_xsum falls to the bottom          ->  the cnn_dailymail fine-tune was doing
+#                                                   the work, and bart_l's win does not
+#                                                   transfer to anybody's own corpus
+#
+# The second is the expectation. Writing it here before the run so it can be wrong.
+#
+# WHAT THIS ARM CANNOT SEPARATE, AND IT IS A BIG ONE. XSum's task is a ONE-SENTENCE
+# summary, and this checkpoint's published decode settings say so: max_length 62,
+# min_length 11, num_beams 6 — against 142/56/4 for the CNN/DailyMail models. So it will
+# write roughly a third as much, and `coverage` is recall against a ~35-word reference. A
+# low score here is "it wrote one sentence" at least as much as "it learned the wrong
+# distribution", and the two cannot be told apart from this arm alone. `length_vs_reference`
+# and `summary_words` are the columns that show it.
+#
+# The settings are its OWN nonetheless, not forced to match the others. Forcing min_length
+# 56 on a model trained to stop at 11 does not measure the model as anyone would deploy it;
+# it measures a model being made to ramble. The clean separation needs a SECOND arm with
+# CNN/DailyMail decode lengths, run beside this one, and that arm is worth adding — but it
+# is a different question and should not be smuggled into this config.
+#
+# CANNOT RUN ON x86_64 macOS: pytorch_model.bin with no safetensors, despite bart-large-cnn
+# in the same org shipping them. See RUNNING_THE_ML_ARMS.md.
+config_id: cnn_bart_l_xsum_n200_v1
+dataset_id: cnn_dailymail_200
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: facebook/bart-large-xsum
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  # From this checkpoint's generation_config.json, verbatim. Note the absence of
+  # length_penalty: bart-large-xsum does not publish one, so none is declared. Copying
+  # bart_l's 2.0 in "for consistency" would be inventing a setting and recording it as the
+  # model's own.
+  max_length: 62
+  min_length: 11
+  num_beams: 6
+  no_repeat_ngram_size: 3
+  early_stopping: true
