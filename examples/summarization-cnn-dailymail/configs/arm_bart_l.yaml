@@ -1,0 +1,26 @@
+# facebook/bart-large-cnn on the original 20-article slice.
+#
+# The rationale, the three comparability caveats and the reason every decode setting is
+# declared rather than inherited are all in `arm_bart_l_n200.yaml`, which is the arm this
+# one was derived from. ONLY config_id and dataset_id differ, so a delta between the two
+# is attributable to n and nothing else.
+#
+# Its own truncation figure: 4 of these 20 articles exceed BART's 1024-token encoder
+# window (20%, measured), against 46 of 200 (23%) on the larger slice. Comparable rates,
+# so the n=20 and n=200 BART rows carry the same caveat to roughly the same degree.
+config_id: cnn_bart_l_v1
+dataset_id: cnn_dailymail_20
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: facebook/bart-large-cnn
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  max_length: 142
+  min_length: 56
+  num_beams: 4
+  length_penalty: 2.0
+  no_repeat_ngram_size: 3
+  early_stopping: true

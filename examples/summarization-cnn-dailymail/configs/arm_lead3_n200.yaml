@@ -1,0 +1,36 @@
+# LEAD-3: the first three sentences of the article, copied. Not a model.
+#
+# WHY AN ARM THAT DOES NO WORK IS THE MOST USEFUL ROW IN THE TABLE
+#
+# A ladder of 25 learned systems with no floor cannot answer the question a reader
+# actually has. "deepseek_m leads on coverage" is a statement about 24 other API calls;
+# "deepseek_m leads on coverage, and beats copying the first three sentences by X" is a
+# statement about whether any of it was worth doing. On CNN/DailyMail that second number
+# has historically been embarrassing — news is written inverted-pyramid, so the lead IS a
+# summary, and LEAD-3 has been competitive with fine-tuned abstractive models since the
+# dataset was introduced. If it lands mid-ladder here, that is the finding.
+#
+# It also pins the ends of two scales the other arms are read against:
+#   grounding   1.0 by construction — every bigram is copied. The ceiling.
+#   cost        0.00, with no weights to load and no window to overflow. Unlike the BART
+#               arm it reads the WHOLE article, so it carries none of that arm's
+#               truncation caveat and is directly comparable to the hosted arms on all 200.
+#
+# WHAT IT IS NOT: a baseline in the sense of "what we shipped before". Nothing was shipped.
+# It is a floor, and floors belong in the same table as the ceiling, scored by the same
+# scorer, or the comparison is rhetorical.
+#
+# COST: zero, and honestly zero — no tokens, no network, no model. `_lead_k` is ~4 lines.
+# Latency is still measured and recorded like every other arm's, and is the only number in
+# this row that is not either 0 or definitional.
+config_id: cnn_lead3_n200_v1
+dataset_id: cnn_dailymail_200
+adapter: ../adapter.py
+params:
+  provider: lead_k
+  # Three, because that is the number the CNN/DailyMail literature reports as LEAD-3, and
+  # a floor whose parameter we tuned is not a floor. It is not chosen to flatter or to
+  # embarrass the other arms; it is chosen because it is the published convention.
+  sentences: 3
+  family: lead
+  price_tier: free

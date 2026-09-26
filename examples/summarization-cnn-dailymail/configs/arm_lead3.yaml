@@ -1,0 +1,15 @@
+# LEAD-3 on the original 20-article slice.
+#
+# Why a floor belongs in the same table as the ceiling, and why `sentences: 3` is not a
+# tuned parameter, are in `arm_lead3_n200.yaml`. ONLY config_id and dataset_id differ.
+#
+# Unlike the BART arm this one reads the whole article whatever its length, so it carries
+# no truncation caveat and is directly comparable to all 24 hosted arms on every item.
+config_id: cnn_lead3_v1
+dataset_id: cnn_dailymail_20
+adapter: ../adapter.py
+params:
+  provider: lead_k
+  sentences: 3
+  family: lead
+  price_tier: free

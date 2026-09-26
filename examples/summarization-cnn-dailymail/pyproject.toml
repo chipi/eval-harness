@@ -31,8 +31,32 @@ dependencies = [
 # Kept optional because "you must download 2GB of torch to evaluate an API model" is
 # exactly the coupling the adapter's lazy imports exist to avoid.
 local = [
-    "torch>=2.2",
-    "transformers>=4.40",
+    # PyTorch stopped publishing Intel-Mac wheels after 2.2.2. An unconstrained resolve
+    # picks the newest release and fails at INSTALL time with "doesn't have a source
+    # distribution or wheel for the current platform" — so the ceiling is declared here,
+    # as a marker, rather than discovered by whoever next runs `uv sync --extra local`.
+    # Every other platform keeps a current torch; the cap is this machine's, not the
+    # example's.
+    "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    # Two separate ceilings, both caused by the torch 2.2.2 cap above:
+    #
+    #   transformers 5.x  does not recognise torch 2.2 at all. It installs, imports, and
+    #                     prints "PyTorch was not found. Models won't be available" -- then
+    #                     fails at model load, not at install. A silent backend downgrade
+    #                     is worse than a resolver error.
+    #   transformers 4.56 refuses `torch.load` below torch 2.6 over a pickle CVE. That
+    #                     blocks every checkpoint published WITHOUT safetensors --
+    #                     distilbart-cnn-12-6, -6-6, bart-large-xsum and both pegasus
+    #                     checkpoints are all .bin-only, so the cap is what makes those
+    #                     arms runnable here at all. bart-large-cnn ships safetensors and
+    #                     does not need it.
+    "transformers>=4.40,<4.56",
+    # Third ceiling, same root cause. torch 2.2.2 was built against the NumPy 1.x C API;
+    # with NumPy 2 installed it imports, warns "Failed to initialize NumPy: _ARRAY_API not
+    # found", and every tensor->array conversion raises "Numpy is not available". Scoped to
+    # the same platform as the torch cap so no other machine inherits a two-year-old NumPy.
+    "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [tool.uv]

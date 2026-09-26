@@ -113,23 +113,108 @@ def _local_pipeline(params: Dict[str, Any]) -> Any:
     if params.get("device"):
         kwargs["device"] = params["device"]
     _PIPE = pipeline("summarization", **kwargs)
+    # TEACH THE TOKENIZER ITS OWN LIMIT. `truncation=True` truncates to the TOKENIZER's
+    # model_max_length, and bart-large-cnn's tokenizer_config.json does not set one -- so
+    # it reports HuggingFace's VERY_LARGE_INTEGER sentinel (~1e30) and "truncate" becomes a
+    # no-op. A 1460-token article then reaches a 1024-position encoder and raises
+    # IndexError on item 1. The real ceiling lives on the model config; copy it across once,
+    # here, so every later call truncates to something true.
+    window = _encoder_window(_PIPE)
+    if window:
+        _PIPE.tokenizer.model_max_length = window
     _PIPE_KEY = key
     return _PIPE
 
 
+def _encoder_window(pipe: Any) -> int:
+    """The arm's real input ceiling in tokens, from the MODEL rather than the tokenizer.
+
+    Returns 0 when it cannot be determined, which is recorded as unknown rather than
+    guessed -- an arm whose window we cannot state must not report a truncation rate.
+    """
+    cfg = getattr(getattr(pipe, "model", None), "config", None)
+    for attr in ("max_position_embeddings", "max_source_positions", "n_positions"):
+        value = getattr(cfg, attr, None)
+        # The sentinel is ~1e30; any real encoder window is far below this bound.
+        if isinstance(value, int) and 0 < value < 1_000_000:
+            return value
+    value = getattr(getattr(pipe, "tokenizer", None), "model_max_length", 0)
+    return value if isinstance(value, int) and 0 < value < 1_000_000 else 0
+
+
+#: Decode settings an arm may declare. Anything absent falls through to the CHECKPOINT's
+#: own generation_config.json -- bart-large-cnn ships num_beams=4, length_penalty=2.0,
+#: max_length=142, min_length=56 -- which is a defensible default and an invisible one.
+#: Whatever is declared lands in `fingerprint.arm.params`; whatever is resolved is recorded
+#: in `meta.generation_config` beside it, so a reader can tell the two apart.
+#:
+#: There are deliberately no defaults here. The previous max_length=128 / min_length=32
+#: lived in this file, appeared in no config and in no run record, and silently overrode
+#: the published decode settings the CNN/DailyMail numbers were produced with.
+_DECODE_KEYS = (
+    "max_length",
+    "min_length",
+    "num_beams",
+    "length_penalty",
+    "no_repeat_ngram_size",
+    "early_stopping",
+)
+
+
+def _decode_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: params[k] for k in _DECODE_KEYS if params.get(k) is not None}
+
+
 def _hf_local(text: str, params: Dict[str, Any]) -> Result:
     pipe = _local_pipeline(params)
-    # Truncation is the honest option and it is recorded: a 530-word article exceeds
-    # BART's 1024-token window, and silently dropping the tail while reporting a ROUGE
-    # score would be measuring the first half of the article.
-    out = pipe(
-        text,
-        max_length=int(params.get("max_length", 128)),
-        min_length=int(params.get("min_length", 32)),
-        do_sample=False,
-        truncation=True,
+    tokenizer = pipe.tokenizer
+    # DID THE ARTICLE FIT? BART's encoder window is 1024 tokens and 46 of this corpus's 200
+    # articles exceed it (23%, measured). `truncation=True` is the honest option -- the
+    # alternative is a crash -- but a summary of the first ~two thirds of an article,
+    # scored against a reference written from all of it, is a measurement of a DIFFERENT
+    # TASK than the one the hosted arms performed. Averaging the two together silently is
+    # the failure mode.
+    #
+    # So the overflow is counted per item and reported as a metric. It is the one number
+    # that makes a local arm's quality column readable beside an arm with a 128k window.
+    window = _encoder_window(pipe)
+    tokens_in = len(tokenizer(text, truncation=False)["input_ids"])
+    generation = _decode_params(params)
+    out = pipe(text, do_sample=False, truncation=True, **generation)
+    summary = out[0]["summary_text"].strip()
+    return Result(
+        output=summary,
+        tokens_in=tokens_in,
+        tokens_out=len(tokenizer(summary, truncation=False)["input_ids"]),
+        # A measured zero, not a missing value: no money changes hands. The wall-clock it
+        # costs instead is in latency_ms, which `call_system` fills for every provider.
+        cost_usd=0.0,
+        extra={"input_truncated": 1.0 if window and tokens_in > window else 0.0},
+        meta={
+            "encoder_window": window or None,
+            "generation_requested": generation,
+            "generation_config": _as_dict(getattr(pipe.model, "generation_config", None)),
+        },
     )
-    return Result(output=out[0]["summary_text"].strip(), cost_usd=0.0)
+
+
+def _lead_k(text: str, params: Dict[str, Any]) -> Result:
+    """LEAD-3 and friends: the first k sentences of the article, verbatim.
+
+    Not a model, and that is the point. It is the CNN/DailyMail literature's standard
+    floor, and a ladder of learned systems with no floor cannot answer the question a
+    reader actually has -- what did any of this buy? News is written inverted-pyramid, so
+    the lead is a strong summary BY CONSTRUCTION: on this dataset LEAD-3 is competitive
+    with fine-tuned abstractive models, which is the uncomfortable fact this arm exists to
+    keep in view rather than out of it.
+
+    No weights, no network, no torch, no tokens. Grounding is 1.0 by definition -- every
+    bigram is copied -- so it also pins the top of that scale for the other arms to be
+    read against.
+    """
+    k = int(params.get("sentences", 3))
+    sentences = [s for s in _SENT.split(text.strip()) if s.strip()]
+    return Result(output=" ".join(sentences[:k]).strip(), cost_usd=0.0)
 
 
 def _litellm(text: str, params: Dict[str, Any]) -> Result:
@@ -285,7 +370,7 @@ def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> O
     return round(tin / 1e6 * float(pin) + tout / 1e6 * float(pout), 8)
 
 
-PROVIDERS = {"hf_local": _hf_local, "litellm": _litellm}
+PROVIDERS = {"hf_local": _hf_local, "lead_k": _lead_k, "litellm": _litellm}
 
 
 
@@ -317,8 +402,11 @@ def warmup(params: Dict[str, Any]) -> None:
     provider = params.get("provider", "litellm")
     if provider == "hf_local":
         _local_pipeline(params)
-    else:
+    elif provider == "litellm":
         _litellm("Warm up.", {**params, "max_tokens": 1})
+    # `lead_k` deliberately falls through with nothing to do: no weights to load, no
+    # endpoint to prove. An `else` here would have sent a PAID warm-up request on behalf of
+    # an arm whose whole claim is that it cannot cost anything.
     # Prove the SCORER runs before the loop spends anything. The provider working and the
     # metrics working are different failures, and the second one used to surface on item 1
     # -- after that item had been called and billed.
@@ -645,6 +733,11 @@ METRIC_KINDS = {
     # Not quality and not cost: a diagnostic. Any arm with truncated > 0 has scores that
     # describe the token ceiling rather than the model, and its row should not be read.
     "truncated": "descriptive",
+    # The local-arm counterpart, and it is read the same way: an arm with
+    # input_truncated > 0 summarised only as much of the article as fitted in its encoder
+    # window, while the hosted arms read all of it. Those items are a different task, so
+    # the quality column is an average over two populations until they are separated.
+    "input_truncated": "descriptive",
     # Same category, same reason: an arm billing reasoning tokens was not held to the
     # reasoning-off condition the other arms were, so it is not comparable to them --
     # whatever its quality column says.

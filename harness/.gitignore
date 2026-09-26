@@ -42,3 +42,9 @@ data/references/silver/cnn_dailymail_*/
 # Rescored runs are derived: regenerate with `make rescore`. Same reasoning as
 # data/runs/ -- the originals are the record, these are a recomputation of them.
 data/runs-rescored*/
+
+# Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
+# same reason, plus one the last sweep learned the hard way -- an untracked directory under
+# the harness makes the tree DIRTY, and every run launched beside it records
+# `harness.dirty: true` and cannot be reproduced from its own fingerprint.
+data/runs-smoke*/

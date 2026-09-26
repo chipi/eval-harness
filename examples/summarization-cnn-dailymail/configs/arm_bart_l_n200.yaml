@@ -1,0 +1,51 @@
+# facebook/bart-large-cnn on the 200-article slice. The ML half of "ML vs LLM".
+#
+# WHY THIS ARM: the example's pyproject has described this comparison since it was written
+# and never ran it. 24 hosted models were measured against each other and against nothing
+# else — so the ladder could say which LLM was ahead and could not say what an LLM bought.
+#
+# WHAT MAKES IT COMPARABLE: same dataset_id, same items_sha256, same gold references, same
+# scorers, same leaderboard. Nothing about the 24 hosted runs is recomputed.
+#
+# WHAT MAKES IT NOT COMPARABLE, STATED BEFORE THE RESULT:
+#
+#   1. THE WINDOW. BART's encoder takes 1024 tokens. 52 of these 200 articles exceed that
+#      (26%, measured), so on a quarter of the corpus this arm summarises the first ~two
+#      thirds of an article and is scored against a reference written from all of it. That
+#      is a different task, not a worse model. `input_truncated` is recorded per item and
+#      the headline comparison must be read on the 148 that fitted, with the full-corpus
+#      number reported beside it — never instead of it.
+#
+#   2. THE INSTRUCTION. The hosted arms are TOLD "2-3 short sentences, news wire style"
+#      (prompt.txt, sha in every fingerprint). BART is not told anything — it was
+#      fine-tuned on exactly this dataset's highlights, and its length is controlled by
+#      min_length/max_length below. Both land near the reference length, which is luck
+#      worth stating rather than a control worth claiming. There is no prompt_sha256 in
+#      this arm's fingerprint because there is no prompt.
+#
+#   3. TRAINING CONTAMINATION, THE OTHER DIRECTION. This checkpoint was fine-tuned ON
+#      cnn_dailymail. The hosted models were not (as far as anyone outside them knows).
+#      An advantage here is partly the advantage of having seen the training distribution,
+#      and it does not transfer to your corpus.
+#
+# DECODE SETTINGS ARE THE PUBLISHED ONES, DECLARED RATHER THAN INHERITED. These five are
+# byte-for-byte the checkpoint's own generation_config.json. Leaving them out would run the
+# identical numbers while recording none of them: params land in `fingerprint.arm.params`,
+# a checkpoint default lands nowhere. Declared, they are also the thing to vary if we ever
+# want a greedy arm — decode config moves ROUGE about as much as model choice does.
+config_id: cnn_bart_l_n200_v1
+dataset_id: cnn_dailymail_200
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: facebook/bart-large-cnn
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  max_length: 142
+  min_length: 56
+  num_beams: 4
+  length_penalty: 2.0
+  no_repeat_ngram_size: 3
+  early_stopping: true
