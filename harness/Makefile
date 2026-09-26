@@ -60,6 +60,8 @@ help:
 	@echo ""
 	@echo "ASK ONE QUESTION  (free — no API calls)"
 	@echo "  make pair-test DATASET_ID=my_v1 A=<arm> B=<arm> [FAMILY=n]"
+	@echo "  make family-test DATASET_ID=my_v1 A=<arm> AGAINST=<substring> [ITEMS=f]"
+	@echo "      one arm vs a family named in advance; real Holm step-down"
 	@echo "      one pair you named BEFORE reading the table, sign-flip permutation"
 	@echo "  make rank-stability DATASET_ID=my_200"
 	@echo "      how many items before the ordering stops moving? measured, not assumed"
@@ -173,12 +175,25 @@ rank-stability:
 
 # ONE pair, named before the table was read. The leaderboard's Nemenyi line prices in all
 # k(k-1)/2 comparisons; a decision you came in with is one comparison and should not pay
-# for the 275 nobody made. FAMILY=n applies Holm when you tested n pairs together.
+# for the 275 nobody made. FAMILY=n applies BONFERRONI (alpha/n) -- one pair cannot do
+# Holm, which needs the whole family's p-values at once. Use family-test for that.
+# ITEMS=<file> restricts the test to one stratum, one item_id per line.
 pair-test:
 	@test -n "$(A)" -a -n "$(B)" || { echo 'A=<config_id> B=<config_id> are required'; exit 1; }
 	$(PYTHON) scripts/pair_test.py --dataset-id $(DATASET_ID) --a $(A) --b $(B) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
-	  $(if $(FAMILY),--family $(FAMILY),) $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),)
+	  $(if $(FAMILY),--family $(FAMILY),) $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) \
+	  $(if $(ITEMS),--items $(ITEMS),)
+
+# ONE arm against a DECLARED family of opponents, with the real Holm step-down rather than
+# Bonferroni -- this has every p-value at once, so it can afford the looser later steps and
+# rejects at least everything Bonferroni would. AGAINST=<substring> names the family, and
+# naming it before reading the p-values is the honesty condition the correction assumes.
+family-test:
+	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
+	$(PYTHON) scripts/family_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
+	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
+	  $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) $(if $(ITEMS),--items $(ITEMS),)
 
 run-compare:
 	@test -n "$(BASE)" || { echo "BASE=<run_id> is required (see: make runs-list)"; exit 1; }

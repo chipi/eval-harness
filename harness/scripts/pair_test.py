@@ -66,6 +66,11 @@ def main() -> int:
     ap.add_argument("--metric", default="coverage")
     ap.add_argument("--runs-dir", default=None, help="default: data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
+    ap.add_argument(
+        "--items",
+        type=Path,
+        help="file of item_ids (one per line); restrict the test to exactly these",
+    )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument("--family", type=int, default=1,
                     help="how many pairs were tested together (Bonferroni: alpha/family)")
@@ -79,6 +84,17 @@ def main() -> int:
     if args.exclude_dataset:
         prior = {p.stem for p in (SOURCES / args.exclude_dataset).glob("*.txt")}
         items = [i for i in items if i not in prior]
+    # AN EXPLICIT ITEM SET, because some strata are not datasets. The one this was added
+    # for: the 154 articles that fitted inside BART's 1024-token encoder. On the other 46
+    # the local arm summarised two thirds of an article and was scored against a reference
+    # written from all of it, so "bart vs an LLM over all 200" averages two different
+    # tasks. The stratum is a property of a RUN, not of a dataset, so --exclude-dataset
+    # cannot express it. Passing the ids in a file rather than recomputing them inside each
+    # script means the leaderboard, the pair tests and the report all use provably the same
+    # set -- and a reader can diff it.
+    if args.items:
+        keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}
+        items = [i for i in items if i in keep]
     if len(items) < 3:
         print(f"  only {len(items)} shared item(s) — nothing to test")
         return 1
