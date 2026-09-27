@@ -1,0 +1,41 @@
+# textattack/bert-base-uncased-ag-news — bert-base fine-tuned on AG News.
+#
+# WHY: ag_bert_mini (44MB) already beats all 24 hosted arms at 0.9450. This is the same
+# task with 10x the parameters, and the question it answers is whether the 44MB result was
+# a floor or a ceiling — does a full bert-base buy anything over a distilled one, on a task
+# both were trained for?
+#
+# CANNOT RUN ON x86_64 macOS: pytorch_model.bin, no safetensors. transformers refuses
+# torch.load below torch 2.6 (CVE-2025-32434), and torch has no Intel-Mac wheel above
+# 2.2.2. See ../../summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md.
+#
+# ── LABEL ORDER IS AN ASSUMPTION HERE, AND A DANGEROUS ONE ───────────────────
+# config.json carries id2label = LABEL_0..LABEL_3, the training default. The checkpoint
+# does NOT say which class each position means. `label_order` below assumes the HF
+# `ag_news` class_label order (World, Sports, Business, Sci/Tech), which is what the model
+# was almost certainly trained against — but assumption is the right word.
+#
+# A WRONG ORDER FAILS SILENTLY. Every prediction is still one of the four valid labels, so
+# nothing errors, nothing looks malformed, and the arm simply reports a bad score. The
+# model would be blamed for the config's mistake.
+#
+# VERIFY IT, DO NOT TRUST IT. The model card publishes its own eval accuracy: 0.9514. So:
+#
+#   ~0.95  -> the order is right
+#   ~0.25  -> the order is permuted; accuracy collapses to chance on a balanced set
+#   between -> read the confusion matrix. A consistent off-diagonal band IS a permutation:
+#             `classification_report.py --dataset-id ag_news_200 --arm ag_bert_base_ta_n200_v1`
+#
+# That published figure is also an instrument check on us, the same role bert_mini's 0.945
+# played against the literature.
+config_id: ag_bert_base_ta_v1
+dataset_id: ag_news_20
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: textattack/bert-base-uncased-ag-news
+  family: bert
+  price_tier: free
+  device: cpu
+  precision: fp32
+  label_order: [World, Sports, Business, "Sci/Tech"]
