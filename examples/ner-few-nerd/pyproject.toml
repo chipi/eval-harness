@@ -1,0 +1,63 @@
+# This example's OWN dependency chain and its OWN interpreter, for the same reason the
+# summarisation example has one: an example that shares a environment with its sibling
+# cannot be run on its own, and cannot pin what it actually needs.
+#
+# Lighter than the summarisation example in one respect and heavier in another. Lighter:
+# no rouge-score, because classification is scored by exact label match and a confusion
+# matrix, not by n-gram overlap. Heavier: the local arms here are sequence CLASSIFIERS,
+# so `transformers` earns its place even for the arms that ship safetensors.
+[project]
+name = "eval-example-ner-few-nerd"
+version = "0.1.0"
+description = "ML vs LLM named-entity recognition on Few-NERD, through the eval harness"
+requires-python = ">=3.11"
+dependencies = [
+    # The harness core's own needs, because the harness scripts run in THIS environment.
+    "pyyaml>=6.0",
+    "openai>=1.0",
+]
+
+[project.optional-dependencies]
+# The LOCAL arms only:
+#     uv sync                 -> LLM arms and the two zero-dependency baselines
+#     uv sync --extra local   -> adds the fine-tuned and zero-shot ML arms
+#
+# The three platform ceilings below are copied from the summarisation example, where each
+# was found by an actual failure rather than read off a compatibility table. They are
+# scoped by marker to darwin+x86_64 so no other machine inherits them. See that example's
+# pyproject for the full account; the short version:
+#
+#   torch        no Intel-Mac wheel above 2.2.2; an open resolve picks a newer one and
+#                fails at install time
+#   transformers 5.x installs, imports, prints "PyTorch was not found", and then fails at
+#                model load -- a silent backend downgrade, which is worse than an error
+#   numpy        torch 2.2.2 is built against the 1.x C API; with NumPy 2 every
+#                tensor->array conversion raises "Numpy is not available"
+#
+# And the consequence that shapes which arms run where: below torch 2.6 `transformers`
+# refuses to torch.load a pickle (CVE-2025-32434), so on x86_64 macOS a checkpoint without
+# safetensors cannot load at all. The arm configs say which ones that hits.
+local = [
+    "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "transformers>=4.40,<4.56",
+    # GLiNER: zero-shot NER where the CALLER supplies the label set, so it can be
+    # handed Few-NERD's eight types directly with no label mapping. Its own package
+    # rather than a transformers pipeline, and it ships safetensors.
+    "gliner>=0.2.13",
+    # SpanMarker: the fine-tuned-ON-Few-NERD arm. Its own package too, because the
+    # SpanMarker architecture is not a plain transformers token-classification head.
+    "span-marker>=1.5",
+    # Declared because NOTHING ELSE DECLARES THEM. GLiNER's checkpoint uses a
+    # DeBERTa-v3 tokenizer, which is sentencepiece-based and needs protobuf to convert
+    # its vocabulary — and neither gliner nor transformers lists either as a dependency.
+    # The failure is an ImportError at model load, i.e. after `uv sync` reports success,
+    # which is exactly the kind of thing a lock file should prevent.
+    "protobuf>=4.0",
+    "sentencepiece>=0.1.99",
+    "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]
+
+[tool.uv]
+# No build backend needed: this is a set of scripts, not a distributable package.
+package = false

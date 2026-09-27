@@ -1,0 +1,28 @@
+# GLiNER medium v2.1 — zero-shot NER where the CALLER supplies the label set.
+#
+# WHY THIS ARM MATTERS MORE THAN THE EQUIVALENT IN THE OTHER EXAMPLES. The DBpedia example
+# could not run a fine-tuned ML arm at all, so its ML-vs-LLM question went unanswered. Here
+# both ML arms load: this one zero-shot, `span_marker` fine-tuned on this very dataset. The
+# pair separates "a small model is enough" from "a small model TRAINED ON THIS is enough",
+# which is the question the summarisation and AG News results kept running into.
+#
+# Most off-the-shelf NER models predict their own training taxonomy — CoNLL's four types,
+# OntoNotes' eighteen — and putting one here would need a lossy mapping onto Few-NERD's
+# eight. GLiNER is handed the eight directly, so the comparison is clean AND the model has
+# never seen this dataset. That is why it is here and spaCy is not.
+#
+# THE THRESHOLD IS THIS ARM'S DECISION BOUNDARY. Move it and precision trades against
+# recall; it is as much part of the system as a prompt, and it is in the fingerprint. 0.5
+# is the library default, chosen for that reason and not tuned — tuning it on the dev
+# slice would be legitimate, but it would then be a tuned arm and has to say so.
+config_id: fn_gliner_v1
+dataset_id: few_nerd_56
+adapter: ../adapter.py
+params:
+  provider: gliner
+  model: urchade/gliner_medium-v2.1
+  threshold: 0.5
+  family: gliner
+  price_tier: free
+  device: cpu
+  precision: fp32

@@ -1,0 +1,18 @@
+# Maximal runs of capitalised tokens, all guessed as the majority type.
+#
+# The NER analogue of LEAD-3: the rule anybody would write in ten minutes, included so
+# the ladder has a floor that is not zero. Expect decent recall on person and location,
+# bad precision on sentence-initial words, and type accuracy no better than the corpus's
+# majority class.
+#
+# The stop-list was written from English orthography, NOT from reading the slice — the
+# same discipline as the classification keyword arms, and equally uncheckable after the
+# fact, so it is recorded before the number exists.
+config_id: fn_capitalized_v1
+dataset_id: few_nerd_56
+adapter: ../adapter.py
+params:
+  provider: capitalized
+  label: location
+  family: baseline
+  price_tier: free

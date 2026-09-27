@@ -1,0 +1,5 @@
+Extract every named entity from the sentence below.
+
+Use exactly these eight types: art, building, event, location, organization, other, person, product.
+
+Output only a JSON array of objects with keys "text" and "type", and nothing else. Copy each entity's text exactly as it appears in the sentence. If the sentence contains no named entities, output an empty array [].
