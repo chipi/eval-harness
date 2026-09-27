@@ -1,0 +1,109 @@
+{
+  "created_at": "2026-09-27T08:02:32Z",
+  "dataset_id": "ag_news_20",
+  "description": "20 item(s) from ag_news_20/",
+  "items": [
+    {
+      "item_id": "013ffb81b47fe45a66245a9c43144b83918bd594",
+      "source_path": "013ffb81b47fe45a66245a9c43144b83918bd594.txt",
+      "source_sha256": "013ffb81b47fe45a66245a9c43144b83918bd5944b5300bd4c40b087e954ab8d"
+    },
+    {
+      "item_id": "0c47eb9eeb6c6b560fea2627fb2be4d9576384c8",
+      "source_path": "0c47eb9eeb6c6b560fea2627fb2be4d9576384c8.txt",
+      "source_sha256": "0c47eb9eeb6c6b560fea2627fb2be4d9576384c883a11914c552cd6fb518da2a"
+    },
+    {
+      "item_id": "0e7de46882b2d57260c38d6e3a9cfbc8f3db34e5",
+      "source_path": "0e7de46882b2d57260c38d6e3a9cfbc8f3db34e5.txt",
+      "source_sha256": "0e7de46882b2d57260c38d6e3a9cfbc8f3db34e552eaa9ba957d63104a886b00"
+    },
+    {
+      "item_id": "108a71f66723dc5db12a630544765268952485f6",
+      "source_path": "108a71f66723dc5db12a630544765268952485f6.txt",
+      "source_sha256": "108a71f66723dc5db12a630544765268952485f6598ce810f21471e601096b96"
+    },
+    {
+      "item_id": "2510d175de8d09447896796f971e615a5dadbda8",
+      "source_path": "2510d175de8d09447896796f971e615a5dadbda8.txt",
+      "source_sha256": "2510d175de8d09447896796f971e615a5dadbda8bab2492637a3517f1a5d31da"
+    },
+    {
+      "item_id": "416fc273495b1a666fab41899ed00cdadec0e981",
+      "source_path": "416fc273495b1a666fab41899ed00cdadec0e981.txt",
+      "source_sha256": "416fc273495b1a666fab41899ed00cdadec0e9810b73809a3786e4ede4e551d8"
+    },
+    {
+      "item_id": "655d89d95924f3e071c2b4d0d1dbf628f70e9fc3",
+      "source_path": "655d89d95924f3e071c2b4d0d1dbf628f70e9fc3.txt",
+      "source_sha256": "655d89d95924f3e071c2b4d0d1dbf628f70e9fc347a4b92b27d38809540aeb8e"
+    },
+    {
+      "item_id": "7e2d0886edefdb4c879eabfa49f6902b69e7f28f",
+      "source_path": "7e2d0886edefdb4c879eabfa49f6902b69e7f28f.txt",
+      "source_sha256": "7e2d0886edefdb4c879eabfa49f6902b69e7f28f5961d93e217d8c067d28e091"
+    },
+    {
+      "item_id": "8df82604abfc6880c9ad9a0a9952aec73e55789e",
+      "source_path": "8df82604abfc6880c9ad9a0a9952aec73e55789e.txt",
+      "source_sha256": "8df82604abfc6880c9ad9a0a9952aec73e55789eaa0b57037fb13d2435224bf2"
+    },
+    {
+      "item_id": "a1164f3023b019b6d29d1bb4511e8f218c9c49d0",
+      "source_path": "a1164f3023b019b6d29d1bb4511e8f218c9c49d0.txt",
+      "source_sha256": "a1164f3023b019b6d29d1bb4511e8f218c9c49d02fbd5f0324920add03f5f743"
+    },
+    {
+      "item_id": "a787b831978f9afcc5e3d608ea8c0b53b974c9a9",
+      "source_path": "a787b831978f9afcc5e3d608ea8c0b53b974c9a9.txt",
+      "source_sha256": "a787b831978f9afcc5e3d608ea8c0b53b974c9a9d8724bce133a42c53c485a55"
+    },
+    {
+      "item_id": "afbd779348f07bb357865de366c640bab429ef33",
+      "source_path": "afbd779348f07bb357865de366c640bab429ef33.txt",
+      "source_sha256": "afbd779348f07bb357865de366c640bab429ef33b7f7c9e1add63374cfe4c0ad"
+    },
+    {
+      "item_id": "bee7c037baed722fed36b3bb9cb286c6f0d789eb",
+      "source_path": "bee7c037baed722fed36b3bb9cb286c6f0d789eb.txt",
+      "source_sha256": "bee7c037baed722fed36b3bb9cb286c6f0d789eb148d3600e71f880bffd38498"
+    },
+    {
+      "item_id": "c2d5dcb0c4694b0e8a0622a3905055fd6a255d80",
+      "source_path": "c2d5dcb0c4694b0e8a0622a3905055fd6a255d80.txt",
+      "source_sha256": "c2d5dcb0c4694b0e8a0622a3905055fd6a255d80810ecfcd95f59e71cc62fcc8"
+    },
+    {
+      "item_id": "cbdcc8db3003bc44ee8cf30ac08f1637b7d3307e",
+      "source_path": "cbdcc8db3003bc44ee8cf30ac08f1637b7d3307e.txt",
+      "source_sha256": "cbdcc8db3003bc44ee8cf30ac08f1637b7d3307e2c8d5f4d17298f98bee3090a"
+    },
+    {
+      "item_id": "d2ddffdd6e90ebb323c5784a07778573629d5a87",
+      "source_path": "d2ddffdd6e90ebb323c5784a07778573629d5a87.txt",
+      "source_sha256": "d2ddffdd6e90ebb323c5784a07778573629d5a87cd136e8eb8fb2160afbc3b12"
+    },
+    {
+      "item_id": "d8817a3ea9e175345ed7555fd97388f5158ffd88",
+      "source_path": "d8817a3ea9e175345ed7555fd97388f5158ffd88.txt",
+      "source_sha256": "d8817a3ea9e175345ed7555fd97388f5158ffd888632d5bcd42071a55e0badb6"
+    },
+    {
+      "item_id": "e1d8311be5d9402c5219a651a210a522970b1636",
+      "source_path": "e1d8311be5d9402c5219a651a210a522970b1636.txt",
+      "source_sha256": "e1d8311be5d9402c5219a651a210a522970b163629af2184762662c2ef87e02b"
+    },
+    {
+      "item_id": "e35f3ecb1e02de9d43312d38f8a4fe1558647878",
+      "source_path": "e35f3ecb1e02de9d43312d38f8a4fe1558647878.txt",
+      "source_sha256": "e35f3ecb1e02de9d43312d38f8a4fe15586478786b5e484b70dbb1451f1153f3"
+    },
+    {
+      "item_id": "eced564834dbc8ce1126e4d6e25d1c243c01fd7a",
+      "source_path": "eced564834dbc8ce1126e4d6e25d1c243c01fd7a.txt",
+      "source_sha256": "eced564834dbc8ce1126e4d6e25d1c243c01fd7aa31a804de451ea7743399d2f"
+    }
+  ],
+  "source_dir": "data/sources/ag_news_20",
+  "version": "1.0"
+}

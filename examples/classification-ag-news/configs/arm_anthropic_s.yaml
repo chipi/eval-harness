@@ -1,0 +1,25 @@
+# claude-haiku-4.5 on the 20-article smoke slice.
+#
+# Same proxy, same aliases, same keys as the summarisation example — reusing the
+# infrastructure is the point of a second example rather than a second repo.
+#
+# max_tokens 200 for a task whose answer is one word, because of a lesson that cost the
+# summarisation study a fake finding: reasoning models spend thinking tokens INSIDE the
+# output budget, so a tight cap does not produce a terse answer, it produces a truncated
+# one that scores like a bad model. `truncated` is recorded per item; if it is non-zero
+# here the cap is the thing being measured.
+config_id: ag_anthropic_s_v1
+dataset_id: ag_news_20
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-claude-haiku
+  family: anthropic
+  price_tier: small
+  temperature: 0.0
+  prompt_file: prompt.txt
+  reasoning:
+    enabled: false
+  max_tokens: 200
+  usd_per_mtok_in: 1.0
+  usd_per_mtok_out: 5.0

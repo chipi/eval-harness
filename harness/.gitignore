@@ -39,6 +39,16 @@ data/sources/cnn_dailymail_*/
 data/references/gold/cnn_dailymail_*/
 data/references/silver/cnn_dailymail_*/
 
+# AG News, same rule and a weaker licence than CNN/DailyMail's: the dataset card says
+# `unknown` and the corpus's own description says non-commercial research use. We
+# redistribute nothing -- examples/classification-ag-news/fetch.py downloads a slice to
+# whoever runs it. These lines go in BEFORE the first fetch, not after: the window between
+# downloading a third-party corpus and remembering to ignore it is the window in which it
+# gets committed to a public repo.
+data/sources/ag_news_*/
+data/references/gold/ag_news_*/
+data/references/silver/ag_news_*/
+
 # Rescored runs are derived: regenerate with `make rescore`. Same reasoning as
 # data/runs/ -- the originals are the record, these are a recomputation of them.
 data/runs-rescored*/
