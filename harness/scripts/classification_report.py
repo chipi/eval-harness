@@ -35,13 +35,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import REFERENCES, RUNS, die, read_json  # noqa: E402
+from _common import REFERENCES, RUNS, SOURCES, die, read_json  # noqa: E402
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding
@@ -96,12 +96,60 @@ def per_class(pairs: list, labels: list) -> dict:
     return stats
 
 
+def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold: float) -> None:
+    """Items that nearly every arm got wrong. Usually the LABEL, not the models.
+
+    WHY THIS IS IN THE REPORT AND NOT IN A NOTEBOOK. On DBpedia-14 fourteen arms reported
+    byte-identical accuracy, macro-F1 AND worst class. The reason was one item: "Dukart's
+    Canal", gold `NaturalPlace`, which 20 of 24 arms called `MeanOfTransportation` and 4
+    called `Building`. It is a man-made waterway built to move coal — the models are
+    right and the ontology's label is the odd one out.
+
+    One such item put a ceiling under every arm and made a 14-way tie look like agreement
+    between models when it was agreement about a bad label. Finding it took a bespoke
+    script, which is exactly the kind of thing that does not get written when it matters.
+
+    Baseline arms are excluded: `constant` gets 13 of 14 classes wrong by construction and
+    would drown the signal.
+    """
+    learned = [r for r in rows if not r["arm"].endswith(("constant_v1", "constant_n200_v1"))
+               and "keyword" not in r["arm"]]
+    if len(learned) < 3:
+        return
+    missed: dict = defaultdict(list)
+    for r in learned:
+        for item, (g, p) in zip(r["items"], r["pairs"]):
+            if g != p:
+                missed[item].append(p)
+    n = len(learned)
+    consensus = sorted(((len(v), i, v) for i, v in missed.items() if len(v) >= threshold * n),
+                       reverse=True)
+    if not consensus:
+        print(f"\n    No item was missed by >= {threshold:.0%} of the {n} learned arms.")
+        return
+    print(f"\n  ITEMS THE FIELD MISSED — >= {threshold:.0%} of {n} learned arms wrong")
+    print("    A near-universal miss is evidence about the LABEL or the item, not about")
+    print("    the models. Read these before reading the ranking.")
+    src = SOURCES / dataset_id
+    for count, item, preds in consensus[:10]:
+        tally = ", ".join(f"{lab} x{c}" for lab, c in
+                          sorted(Counter(preds).items(), key=lambda kv: -kv[1]))
+        print(f"\n    {item}  missed by {count}/{n}")
+        print(f"      gold {gold[item]}   predicted {tally}")
+        f = src / f"{item}.txt"
+        if f.is_file():
+            snippet = " ".join(f.read_text(encoding="utf-8").split())[:150]
+            print(f"      {snippet}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only config_ids containing this substring")
     ap.add_argument("--arm", help="print this arm's full confusion matrix")
     ap.add_argument("--sort", default="macro_f1", choices=("macro_f1", "accuracy"))
+    ap.add_argument("--miss-threshold", type=float, default=0.8,
+                    help="flag items missed by at least this share of learned arms")
     args = ap.parse_args()
 
     gold = gold_labels(args.dataset_id)
@@ -130,6 +178,7 @@ def main() -> int:
             "worst_class": min(stats.items(), key=lambda kv: kv[1]["f1"])[0],
             "stats": stats,
             "pairs": pairs,
+            "items": [i for i in by_item if i in gold],
         })
     rows.sort(key=lambda r: -r[args.sort])
 
@@ -146,6 +195,8 @@ def main() -> int:
     print(f"\n    Largest accuracy - macro_f1 gap: {worst_gap:+.4f} ({worst_arm}).")
     print("    A gap means the errors are concentrated in some classes rather than spread;")
     print("    accuracy alone would call that arm uniformly good.")
+
+    _report_consensus_misses(rows, gold, args.dataset_id, args.miss_threshold)
 
     if args.arm:
         row = next((r for r in rows if r["arm"] == args.arm), None)

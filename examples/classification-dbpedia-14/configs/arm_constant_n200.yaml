@@ -1,0 +1,14 @@
+# Always answer "Company". The floor, and with 14 balanced classes an exactly known one.
+#
+# fetch.py draws 20 items per class, so this scores 0.0714 (1/14) on the nose. Any other
+# value means the slice is unbalanced or the scorer is wrong, and no other row in the
+# table can be trusted until this one reads right. It is a calibration check on the
+# harness before it is a baseline on the task.
+config_id: db_constant_n200_v1
+dataset_id: dbpedia_280
+adapter: ../adapter.py
+params:
+  provider: constant
+  label: Company
+  family: baseline
+  price_tier: free

@@ -1,0 +1,29 @@
+# glm large — eval-glm-5. DBpedia-14 ontology classification.
+#
+# Alias, price and reasoning settings are identical to the same arm in the AG News and
+# summarisation examples, so a difference between the three is the TASK and not the
+# configuration. Shared rationale is in ../README.md.
+#
+# max_tokens 200 for a one-word answer, for the reason the summarisation study learned the
+# hard way: reasoning models spend thinking tokens INSIDE the output budget, so a tight cap
+# buys a truncated answer that scores like a bad model. `truncated` is recorded per item.
+#
+# The measurement slice, 20 per class. ONLY config_id and dataset_id differ from
+# arm_glm_l.yaml. Every hosted arm runs here -- none is selected on its dev score,
+# because selecting on the small set and reporting on the large one is the bias this repo
+# exists to catch, and at roughly $0.03 an arm the selection would save nothing.
+config_id: db_glm_l_n200_v1
+dataset_id: dbpedia_280
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-glm-5
+  family: glm
+  price_tier: large
+  temperature: 0.0
+  prompt_file: prompt.txt
+  reasoning:
+    enabled: false
+  max_tokens: 200
+  usd_per_mtok_in: 0.35
+  usd_per_mtok_out: 1.4

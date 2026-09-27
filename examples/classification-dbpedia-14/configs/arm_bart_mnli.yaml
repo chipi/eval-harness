@@ -1,0 +1,32 @@
+# bart-large-mnli, zero-shot over 14 candidate labels. The only ML arm that runs on
+# x86_64 macOS for this corpus.
+#
+# WHY THAT SENTENCE MATTERS. On AG News the fine-tuned arm (bert_mini, 44MB) shipped
+# safetensors and ran here, and it beat all 24 hosted models. DBpedia has no such arm:
+# every credible DBpedia-14 fine-tune on the Hub — fabriceyhc, Danni, kundank,
+# TheChickenAgent — ships pytorch_model.bin and nothing else, because they were uploaded
+# in 2021-2023, before safetensors became the default. So the in-distribution specialist
+# is on the blocked branch, and what runs here is the zero-shot control alone.
+#
+# THE HYPOTHESIS TEMPLATE IS THIS ARM'S PROMPT, and this corpus makes it awkward in a way
+# AG News did not. The candidate labels are CamelCase ontology identifiers, so the model
+# is being asked whether the text entails "This text is about EducationalInstitution."
+# — which is not English. A natural-phrasing variant ("an educational institution") would
+# very likely score better.
+#
+# It is NOT done here, deliberately. Mapping labels to nicer phrasings is a tuning
+# decision that belongs in a second arm where it can be measured, not folded into the
+# baseline where it would quietly become part of "what zero-shot NLI scores". The
+# handicap is real, it is stated before the number exists, and `hypothesis_template` is
+# in the fingerprint so the two arms would be distinguishable.
+config_id: db_bart_mnli_v1
+dataset_id: dbpedia_56
+adapter: ../adapter.py
+params:
+  provider: hf_zeroshot
+  model: facebook/bart-large-mnli
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  hypothesis_template: "This text is about {}."

@@ -1,0 +1,30 @@
+# deepseek large — eval-deepseek-pro. DBpedia-14 ontology classification.
+#
+# Alias, price and reasoning settings are identical to the same arm in the AG News and
+# summarisation examples, so a difference between the three is the TASK and not the
+# configuration. Shared rationale is in ../README.md.
+#
+# max_tokens 200 for a one-word answer, for the reason the summarisation study learned the
+# hard way: reasoning models spend thinking tokens INSIDE the output budget, so a tight cap
+# buys a truncated answer that scores like a bad model. `truncated` is recorded per item.
+#
+# n=56 is the DEV slice: 4 per class, a seeded-RANDOM subset of the 280 rather than a
+# first-k prefix. That is the fix for what AG News found -- its first-k dev slice was
+# nested but unrepresentative, and one arm read 0.35 there against 0.67 on the full set.
+# Prompt and parser may be tuned here; the claim is made on the 224 items the dev slice
+# does not contain: `make holdout DATASET_ID=dbpedia_280 EXCLUDE=dbpedia_56`.
+config_id: db_deepseek_l_v1
+dataset_id: dbpedia_56
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-deepseek-pro
+  family: deepseek
+  price_tier: large
+  temperature: 0.0
+  prompt_file: prompt.txt
+  reasoning:
+    enabled: false
+  max_tokens: 200
+  usd_per_mtok_in: 0.28
+  usd_per_mtok_out: 1.1

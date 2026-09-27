@@ -1,0 +1,18 @@
+# Hand-written regex rules over 14 classes, ordered most-specific-first, default Company.
+#
+# Harder than the AG News version and in a more interesting way: DBpedia's classes are
+# ontology siblings with heavily overlapping vocabulary — a film article mentions people,
+# an athlete article mentions clubs, a village article mentions rivers — and none of them
+# means "other", so the default is arbitrary rather than natural.
+#
+# The rules were written from the fourteen label names and general knowledge of what a
+# Wikipedia abstract for each looks like, NOT by reading the slice. Same discipline as the
+# AG News arm, and it is not checkable after the fact, so it is recorded before the number
+# exists.
+config_id: db_keyword_n200_v1
+dataset_id: dbpedia_280
+adapter: ../adapter.py
+params:
+  provider: keyword
+  family: baseline
+  price_tier: free
