@@ -49,6 +49,53 @@ So the defensible claim is: **a 44MB classifier is statistically indistinguishab
 the best frontier models and clearly better than the other 18, at zero marginal cost and
 270x lower latency.** Not "it beats them all" — the top six are a group, not a ranking.
 
+> **CORRECTION, added 2026-09-27 after the DBpedia example.** The ranking above stands.
+> Its INTERPRETATION does not, and the original version of this document did not say so.
+> AG News's gold labels contain systematic errors, and an unknown share of every arm's
+> residual error is therefore irreducible. See "Label noise" below before quoting 0.945
+> as a model's error rate — and read the in-distribution caveat again afterwards, because
+> label noise makes it worse rather than better.
+
+## Label noise — read this before the ranking
+
+`classification_report.py` prints the items that at least 80% of the learned arms got
+wrong. A near-universal miss is evidence about the LABEL, not about the models. On this
+corpus:
+
+```
+"Rivals Try to Turn Tables on Charles Schwab ... discount stock broker"
+    gold Sci/Tech    26 of 26 arms said Business
+"Card fraud unit nets 36,000 cards ... UK's dedicated card fraud unit"
+    gold Sci/Tech    26 of 26 arms said Business
+"Google Lowers Its IPO Price Range ... initial public offering"
+    gold World       25 of 26 arms said Business
+"Stocks Climb on Drop in Consumer Prices"
+    gold World       25 of 26 arms said Business
+"Live: Olympics day four ... going for gold for Great Britain in Athens"
+    gold World       25 of 26 arms said Sports
+"Dell Exits Low-End China Consumer PC Market"
+    gold Sci/Tech    24 of 26 arms said Business
+```
+
+The models are right in every one of these. A story about stock prices is not `World`;
+the Olympics are not `World`; an IPO is not `World`.
+
+**Two consequences.**
+
+1. **0.945 is not 5.5% model error.** There is a ceiling below 1.0 that no arm can cross,
+   set by the corpus rather than by any model. How far below is not measured here — doing
+   it properly means adjudicating the disputed items against a fresh human judgement,
+   which nobody has done.
+
+2. **It sharpens the in-distribution caveat rather than softening it.** `bert_mini` was
+   fine-tuned on these labels, including the wrong ones. Part of its lead over zero-shot
+   LLMs may be that it learned AG News's idiosyncratic view that an IPO story is `World`.
+   That is not classifying news, and it does not transfer to anyone else's corpus — which
+   is exactly the thing a reader porting this result to their own product needs told.
+
+The zero-shot and hosted arms pay this penalty and the fine-tuned arm partly escapes it,
+so the measured gap between them is an over-estimate of the real one by an unknown amount.
+
 ## Five findings
 
 **1. The parser is worth 7.5 accuracy points on one arm.**
@@ -109,6 +156,11 @@ Two independent checks, both passed:
   on AG News. Somebody else's baseline confirming ours, which is the reason a standard
   dataset was used.
 
+  This check SURVIVES the label-noise finding, and is arguably strengthened by it: the
+  published figure was measured against the same imperfect gold, so agreeing with it says
+  our instrument matches theirs. What neither number can claim is that 0.945 measures how
+  often the model is right about the world.
+
 ## What the harness gained
 
 - `scripts/classification_report.py` (+ registered in `self_test`'s CLI list) — confusion
@@ -147,6 +199,20 @@ LLM call at 0.91. The fine-tuned classifier wins on accuracy, cost AND latency a
 none, so nothing here says what the production rules actually score. Getting that number
 means hand-labelling a few hundred insights. The `references/gold` vs `silver` distinction
 exists to stop that step being skipped.
+
+**And when you do label them, expect to be the AG News annotator.** The label-noise
+section above is not a curiosity about someone else's corpus — it is what your own
+labelling will look like from the outside unless the taxonomy is pinned down first. The
+disputed items here are all boundary cases the label set never resolved: is an IPO story
+World or Business, is a fraud-prevention story Sci/Tech or Business. `insight_type` has
+the same seams — a recommendation phrased as an observation, a claim phrased as a
+question — and the time to settle them is while writing the annotation guide, not while
+reading a confusion matrix six months later.
+
+A concrete suggestion, cheap and worth it: label a few hundred insights TWICE, by two
+people or two sittings, and measure the agreement. That number is the ceiling on anything
+the eval can report, and it is the one figure AG News cannot give us because nobody
+published it.
 
 ## Blocked
 
