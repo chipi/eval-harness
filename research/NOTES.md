@@ -1593,3 +1593,191 @@ PER-RUN cap and knows nothing about the proxy key's budget; the dry-run prints t
 and reads as reassurance. `env_check` could query `/key/info` and print spend against
 budget. Also: the enforced figure (27.80) was exactly 2x what `/key/info` reported as spend
 (13.90), so raising the ceiling by the apparent headroom would have under-shot.
+
+---
+
+### 2026-09-27 · 47 — A second task type. The harness had three defects and classification found them all.
+
+The summarisation example had one task shape, so nothing in the harness had ever been
+asked a question of a different shape. AG News topic classification — 24 hosted arms plus
+a fine-tuned 44MB model, a zero-shot NLI model, ~20 regex rules and a constant — broke
+three things on contact.
+
+**1. The parser is part of the system under test, and was not fingerprinted.** A model
+answering `Sports`, `Sports.`, `**Sports**` or `This article is about sports` is right or
+wrong depending entirely on `_parse_label`. It is now hashed into every arm's fingerprint
+as `parser_sha256`, on local arms too — the question those hashes answer is "would this
+number change if the parser changed?", and an identical hash across both kinds is what
+makes "no" checkable.
+
+I wrote in the first commit that `parser_sha256` was "machinery that is unexercised, not
+machinery that is proven". Three of 24 arms had been tried at that point. `glm_l` is the
+exercise: **7.5 accuracy points**, 15 of 200 items correct only because the parser was
+lenient. Wider than the gap separating most of the field.
+
+**2. Macro-F1 cannot be a per-item metric, and is not faked as one.** Accuracy can be
+scored per item and averaged; F1 needs a confusion matrix, which is not a property of any
+item. The tempting workaround — a per-item pseudo-F1 that averages to something F1-shaped
+— does not equal macro-F1, has no interpretation, and would sit in the leaderboard looking
+exactly as authoritative. So accuracy stays the per-item metric and
+`classification_report.py` owns everything else.
+
+**3. V5 was wrong for discrete metrics.** Its premise — "independent arms do not agree to
+full float precision" — holds for ROUGE and fails for accuracy, where 200 binary items
+give a mean with 201 possible values. It fired four times on one sweep, every one a
+genuine tie. Now it compares per-item results as well as means, with both directions
+asserted in `make ci`.
+
+**The result.** `bert_mini` (44MB, fine-tuned) 0.9450, ahead of all 24 hosted arms;
+`anthropic_m` best hosted at 0.9100. Holm over m=27 declared in advance: ahead of 27 of
+27, separated from 18. Not separated from the top six — a group, not a podium.
+
+Global p=0.0002, CD 3.01, 34 of 378 pairs. Total spend ~$0.45.
+
+**The dev slice saturated and I did not select on it, which mattered more than I knew.**
+Seven arms tied at exactly 1.0000 on n=20 and every one fell at n=200 (`anthropic_l`
+1.00 -> 0.90, `gemma_s` 1.00 -> 0.875).
+
+---
+
+### 2026-09-28 · 48 — Both corpora have systematic label noise. It revised a finding I had already published.
+
+DBpedia's dev sweep produced fourteen arms with byte-identical accuracy, macro-F1 AND
+worst class. Finding out why took a bespoke script, which is the kind of thing that does
+not get written when it matters — so it is now a section of
+`classification_report.py`: **ITEMS THE FIELD MISSED**, the items at least
+`--miss-threshold` (default 80%) of the LEARNED arms got wrong.
+
+```
+DBpedia    Dukart's Canal            gold NaturalPlace  25/25 said MeanOfTransportation
+           Bent County High School   gold Building      24/25 said EducationalInstitution
+           Bharhut                   gold Building      23/25 said NaturalPlace / Village
+
+AG News    "Rivals Try to Turn Tables on Charles Schwab"  gold Sci/Tech  26/26 Business
+           "Google Lowers Its IPO Price Range"            gold World     25/26 Business
+           "Stocks Climb on Drop in Consumer Prices"      gold World     25/26 Business
+           "Live: Olympics day four ... gold for GB"      gold World     25/26 Sports
+```
+
+The models are right in every case. A canal built to move coal is not a natural place; a
+"historic school" is an educational institution; a story about stock prices is not World.
+
+**This is a correction to entry 47 and to `HANDOVER_CLASSIFICATION_AG_NEWS.md`, which was
+already on main.** The ranking stands. The interpretation does not:
+
+- 0.945 is **not** 5.5% model error. There is a ceiling below 1.0 set by the corpus, and
+  how far below is NOT measured here — doing it properly means adjudicating the disputed
+  items against fresh human judgement, which nobody has done.
+- It makes the in-distribution caveat **worse**. `bert_mini` was fine-tuned on these
+  labels including the wrong ones, so part of its lead may be having learned that AG News
+  thinks an IPO story is `World`. That is not classifying news and does not transfer. The
+  zero-shot and hosted arms pay that penalty and the fine-tuned arm partly escapes it, so
+  the measured gap over-states the real one by an unknown amount.
+
+On DBpedia it is worse still: the top ten arms are separated by **four items in 280** and
+three items are disputed by the whole field. **The noise floor and the signal are the same
+size.**
+
+The diagnostic cost about fifteen lines and revised a study I had called finished. That is
+the argument for putting it in the tool rather than in a notebook.
+
+---
+
+### 2026-09-28 · 49 — DBpedia-14: the opposite regime, and why one example proves nothing.
+
+Second classification corpus, chosen to differ on three axes: 14 classes instead of 4, a
+clean licence (CC-BY-SA 3.0 + GFDL against AG News's `unknown`/non-commercial), and
+ontology text instead of news.
+
+```
+                  AG News          DBpedia-14
+field             0.835-0.910      0.939-0.993
+fine-tuned ML     beat all 24      cannot be run at all
+zero-shot NLI     0.70 (2.8x)      0.63 (8.8x chance)
+rule baseline     0.67 (2.7x)      0.71 (9.9x chance)
+pairs separated   34 of 378        74 of 351
+outcome           a winner         a group of ten
+```
+
+`qwen_m` leads at 0.9929 for **$0.0089**; `anthropic_l` is one item behind at 0.9893 for
+**$0.378**. Holm over m=26: ahead of 26 of 26, separated from **8**. Against `anthropic_l`
+the delta is +0.0036 at p=1.0000. **A 126x price difference buys nothing this data can
+detect.**
+
+Same harness, same arms, same prompt discipline, same statistics. **A single example would
+have supported whichever conclusion it happened to produce** — which is the whole reason
+for running two.
+
+**The seeded-random dev draw is demonstrated, not asserted.** AG News drew the FIRST k per
+class: nested but unrepresentative, and its `keyword` arm read 0.35 on dev against 0.67 on
+measurement (~3 SD). DBpedia draws a seeded-random prefix of a per-class permutation, and
+the same arm reads 0.625 and 0.707 — 1.3 SE at n=56. One design change.
+
+**Not answerable here:** no credible DBpedia-14 fine-tune loads on x86_64 macOS. fabriceyhc,
+Danni, kundank, TheChickenAgent are all `pytorch_model.bin` only — 2021-2023 uploads
+predating safetensors. Not one unlucky checkpoint, the whole cohort. On its own branch.
+
+**`glm_l` narrated on all three corpora now** — summarisation, AG News, DBpedia — worth
+7.5, 8.6 and 8.6 accuracy points from the parser. A model property reproduced across three
+independent tasks, which no single example could claim.
+
+---
+
+### 2026-09-28 · 50 — Three tools, and two of them exist because a cross-check failed.
+
+**`examples/_shared/classification.py`.** Abstracted on the SECOND use, deliberately: a
+shared module with one caller is a guess about the future. AG News's adapter went 500 ->
+120 lines. Proved behaviour-identical by recomputing all 5,600 stored item-scores — max
+abs delta `0.000e+00`.
+
+**`bootstrap_test.py`, and the cross-check that says not to trust it too far.**
+`family_test.py` cannot test macro-F1: the sign-flip permutation needs a per-item value.
+So: paired bootstrap over items, one resample scoring both arms. Accuracy can be tested
+BOTH ways, so it was —
+
+```
+family_test.py     sign-flip permutation, exact null    separated from  8 of 26
+bootstrap_test.py  paired percentile bootstrap          separated from 11 of 26
+```
+
+Consistently smaller p from the bootstrap (against `anthropic_l`: 1.0000 vs 0.7353). That
+is the known failure of a percentile bootstrap with few items and a metric near its
+ceiling. So the docstring says what was measured: **a SEPARATED verdict there is an upper
+bound**, the permutation wins wherever it applies, and the interval — not the p-value — is
+the honest output.
+
+**`rank_stability` was measuring the alphabet.** On DBpedia its curve ran backwards:
+P(same winner) 0.94 at n=10 falling to 0.28 at n=100. Cause: `sorted` is stable and `arms`
+is alphabetical, so tied arms are ordered by NAME, and at n=10 nearly all 27 arms score
+10/10. Added an `arms tied 1st` column, verified as a measurement rather than a blanket
+alarm:
+
+```
+n/half        10      20      50     100
+DBpedia     19.8    16.9    10.0     5.1    saturated throughout
+AG News      9.5     4.4     1.6     1.1    clears by n=50
+CNN/DM       1.0     1.0     1.0     1.0    continuous metric, never ties
+```
+
+It also revises AG News's own row, read at face value in entry 47: n=10 had 9.5 arms tied,
+so only n=50 and n=100 were ever trustworthy there.
+
+**NOT FIXED.** `spearman()` uses the plain rank-difference formula with no tie correction,
+so in the flagged rows it correlates alphabetical positions and rho is WRONG, not merely
+inflated. The fix is average-ranking ties before correlating, and it would change numbers
+already published in `REPORT.md` §3.6 — raised, not done.
+
+**Calibration, measured at last.**
+
+```
+ag_bert_mini    conf 0.957  acc 0.945   ECE 0.025   well calibrated
+ag_bart_mnli    conf 0.572  acc 0.700   ECE 0.128   underconfident
+db_bart_mnli    conf 0.317  acc 0.629   ECE 0.311   badly underconfident
+```
+
+On DBpedia the zero-shot arm's 0.4-0.6 confidence bucket was **96.8% correct** and its
+0.6-0.8 bucket **100%**. Zero-shot NLI normalises entailment across candidate labels, so
+with 14 candidates the mass spreads thin regardless of certainty — the raw score is a good
+RANKING signal and not a probability. `bert_mini`'s calibration is what makes a cheap
+classifier deployable: a reliable "I am not sure" you can route on. Hosted arms have no
+confidence at all; logprobs were never requested.

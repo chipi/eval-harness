@@ -137,12 +137,36 @@ where it can be measured.
   per-item value, so the paired sign-flip test does not apply. That is a property of the
   statistic, not a missing feature. The right tool is a bootstrap over items — resample,
   recompute macro-F1 for both arms, read the distribution of the difference. NOT BUILT.
-- **Calibration recorded and unanalysed.** `bart_mnli` reports 0.317 mean confidence at
-  0.629 accuracy, which looks badly calibrated and has not been tested. Hosted arms have
-  no `confidence` at all — logprobs were never requested.
+- ~~Calibration recorded and unanalysed.~~ **MEASURED** — see below. Still open: hosted
+  arms have no `confidence` at all, because logprobs were never requested.
 - No `rank_stability` at k=27. No README for the example. `research/REPORT.md` and
   `NOTES.md` carry none of this.
 - Runs live on one machine and are gitignored. Nothing is backed up.
+
+## Calibration
+
+Measured across the three local arms that report a confidence:
+
+```
+ag_bert_mini    conf 0.957   acc 0.945   ECE 0.025    well calibrated
+ag_bart_mnli    conf 0.572   acc 0.700   ECE 0.128    underconfident
+db_bart_mnli    conf 0.317   acc 0.629   ECE 0.311    badly underconfident
+```
+
+The fine-tuned classifier is honest: overconfident by 1.2 points, and its 186 items above
+0.8 were 96.2% correct while its 6 items below 0.6 were coin flips. **That is what makes a
+cheap classifier deployable** — a reliable "I am not sure" you can route to something
+dearer.
+
+The zero-shot arm is systematically UNDER-confident, and worse as the label count grows
+(ECE 0.128 at 4 classes, 0.311 at 14). On DBpedia its 0.4–0.6 bucket was **96.8% correct**
+and its 0.6–0.8 bucket **100%**. Zero-shot NLI normalises entailment scores across the
+candidate labels, so with 14 candidates the probability mass spreads thin however certain
+the model is. The raw score is an excellent RANKING signal and is not a probability;
+reading it as one would throw away most of the arm's usable accuracy.
+
+Not turned into a script: choosing a confidence threshold and a routing policy is a
+product decision, not a harness one.
 
 ## Reproducing
 
