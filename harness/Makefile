@@ -185,6 +185,15 @@ pair-test:
 	  $(if $(FAMILY),--family $(FAMILY),) $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) \
 	  $(if $(ITEMS),--items $(ITEMS),)
 
+# MACRO-F1 and friends: metrics with no per-item value, so the sign-flip test cannot
+# take them. Paired bootstrap over items instead. ANTI-CONSERVATIVE relative to the exact
+# test (11 vs 8 separations on the same data) -- read the interval, not the p-value.
+bootstrap-test:
+	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
+	$(PYTHON) scripts/bootstrap_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
+	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
+	  $(if $(ITEMS),--items $(ITEMS),) $(if $(DRAWS),--draws $(DRAWS),)
+
 # ONE arm against a DECLARED family of opponents, with the real Holm step-down rather than
 # Bonferroni -- this has every p-value at once, so it can afford the looser later steps and
 # rejects at least everything Bonferroni would. AGAINST=<substring> names the family, and
