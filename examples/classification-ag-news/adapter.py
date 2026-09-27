@@ -227,6 +227,25 @@ def _local_pipeline(params: Dict[str, Any], task: str) -> Any:
     return _PIPE
 
 
+def _encoder_window(params: Dict[str, Any]) -> Optional[int]:
+    """The loaded model's input ceiling in tokens, or None if nothing is loaded yet.
+
+    Read from the MODEL config, not the tokenizer: the summarisation example lost an
+    afternoon to `tokenizer.model_max_length` being HuggingFace's ~1e30 sentinel on a
+    checkpoint whose tokenizer_config never set it, which made both the truncation check
+    and `truncation=True` itself silently no-ops.
+
+    Returns None rather than loading weights as a side effect of asking a question --
+    fingerprinting must not be the thing that downloads 1.6GB.
+    """
+    cfg = getattr(getattr(_PIPE, "model", None), "config", None)
+    for attr in ("max_position_embeddings", "n_positions", "max_source_positions"):
+        value = getattr(cfg, attr, None)
+        if isinstance(value, int) and 0 < value < 1_000_000:
+            return value
+    return None
+
+
 def _hf_local(text: str, params: Dict[str, Any]) -> Result:
     """A model fine-tuned ON AG News. The in-distribution specialist.
 
@@ -463,7 +482,17 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     which the identical hash across both makes checkable rather than assumed.
     """
     provider = params.get("provider", "litellm")
-    common = {"parser_sha256": _parser_sha256(), "provider": provider}
+    common = {
+        "parser_sha256": _parser_sha256(),
+        "provider": provider,
+        # THE LABEL SET IS THE TASK. Add a fifth class, rename "Sci/Tech" to "Technology",
+        # or reorder the list, and every arm in the tree is answering a different question
+        # -- the prompt changes, the zero-shot hypotheses change, the parser's alias table
+        # changes, and a fine-tuned head's positional mapping changes. One hash on every
+        # arm makes "these two runs were asked the same question" checkable.
+        "labels_sha256": hashlib.sha256(repr(LABELS).encode()).hexdigest(),
+        "labels": list(LABELS),
+    }
 
     if provider in ("hf_local", "hf_zeroshot"):
         import sys  # noqa: PLC0415
@@ -481,19 +510,37 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         # model is being asked a different question -- so it is fingerprinted like one.
         if provider == "hf_zeroshot":
             out["hypothesis_template"] = params.get("hypothesis_template")
+        if provider == "hf_local":
+            # THE CLASS MAPPING. A fine-tuned head emits positions, and many checkpoints
+            # never set id2label beyond "LABEL_0". `label_order` is what turns position 2
+            # into "Business", so getting it wrong permutes the classes and reports a
+            # working model as a broken one -- silently, because every prediction is still
+            # a valid label. It belongs in the fingerprint for the same reason the prompt
+            # does: it decides what the answer MEANS.
+            out["label_order"] = list(params.get("label_order") or LABELS)
+            # The input ceiling, recorded even though AG News texts top out at 136 words
+            # and will never reach it. A window that is never hit and a window that is
+            # unknown look identical in a results table, and only one of them is safe to
+            # reuse on a longer corpus.
+            out["encoder_window"] = _encoder_window(params)
         out.update(common)
         return out
 
-    if provider in ("keyword", "constant"):
+    if provider == "keyword":
         # No weights and no endpoint, so the RULES are the system under test. Hashing the
         # rule table means editing one regex produces a different arm, which is exactly
         # what it is.
         return {
-            "id": provider,
+            "id": "keyword",
             "rules_sha256": hashlib.sha256(repr(_RULES).encode()).hexdigest(),
-            "label": params.get("label"),
             **common,
         }
+
+    if provider == "constant":
+        # Deliberately NOT carrying rules_sha256: this arm runs no rules, and a hash of
+        # something it does not use would imply an edit to those rules could change its
+        # answer. It cannot. The declared label is the entire system.
+        return {"id": f"constant:{params.get('label')}", "label": params.get("label"), **common}
 
     alias = params.get("model")
     upstream = _resolve_upstream(alias)
