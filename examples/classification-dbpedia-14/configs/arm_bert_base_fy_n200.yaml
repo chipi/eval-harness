@@ -1,0 +1,51 @@
+# fabriceyhc/bert-base-uncased-dbpedia_14 — the fine-tuned specialist this example lacks.
+#
+# WHY IT MATTERS MORE HERE THAN ON AG NEWS. AG News could run its fine-tuned arm:
+# bert_mini (44MB, safetensors) scored 0.9450 and beat all 24 hosted models. DBpedia
+# cannot run ANY of them. Every credible DBpedia-14 fine-tune on the Hub — fabriceyhc,
+# Danni/distilbert, kundank/roberta, TheChickenAgent — ships pytorch_model.bin and no
+# safetensors, because they were uploaded in 2021-2023 before safetensors became default.
+#
+# So the headline question of the classification pair — does a small task-specific model
+# beat frontier LLMs? — has an answer on AG News (yes, decisively) and NO ANSWER on
+# DBpedia. This arm is that gap.
+#
+# CANNOT RUN ON x86_64 macOS: transformers refuses torch.load below torch 2.6
+# (CVE-2025-32434) and torch has no Intel-Mac wheel above 2.2.2. Procedure:
+# ../../summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md.
+#
+# ── LABEL ORDER IS AN ASSUMPTION, AND WITH 14 CLASSES A WORSE ONE ────────────
+# config.json carries id2label = LABEL_0..LABEL_13, the training default. The checkpoint
+# does not say which class each position means. `label_order` below assumes the HF
+# dbpedia_14 class_label order, which is almost certainly what it was trained against.
+#
+# A WRONG ORDER FAILS SILENTLY: every prediction is still one of fourteen valid labels,
+# nothing errors, and the arm simply reports a bad score with the model taking the blame.
+# With 4 classes a permutation is somewhat likely to be caught by eye; with 14 the
+# confusion matrix is the only thing that will show it.
+#
+# VERIFY, DO NOT TRUST. The card publishes no accuracy, so the checks are:
+#
+#   ~0.98-0.99  right. That is the published range for fine-tuned transformers on
+#               DBpedia-14, and it would also confirm our instrument.
+#   ~0.07       permuted — accuracy collapses to 1/14 chance on a balanced set.
+#   between     read the confusion matrix. A consistent off-diagonal band IS a
+#               permutation; rotate label_order until the diagonal lands and RECORD which
+#               rotation was needed. That is a fact about the checkpoint, not a config
+#               tweak to bury.
+#
+#     $PY scripts/classification_report.py --dataset-id dbpedia_280 \
+#         --arm db_bert_base_fy_n200_v1
+config_id: db_bert_base_fy_n200_v1
+dataset_id: dbpedia_280
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: fabriceyhc/bert-base-uncased-dbpedia_14
+  family: bert
+  price_tier: free
+  device: cpu
+  precision: fp32
+  label_order: [Company, EducationalInstitution, Artist, Athlete, OfficeHolder,
+                MeanOfTransportation, Building, NaturalPlace, Village, Animal,
+                Plant, Album, Film, WrittenWork]
