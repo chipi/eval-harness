@@ -1,0 +1,18 @@
+# ~20 hand-written regex rules, first match wins, default World.
+#
+# WHY A RULE BASELINE IS THE MOST IMPORTANT ROW HERE. A rule-based classifier of exactly
+# this shape is already running in production in a sibling project — deterministic,
+# sub-millisecond, no model file — and nobody knows whether it is good enough, because it
+# has never been measured against anything. This arm is that question made answerable.
+#
+# The rules were written from the four label names and general knowledge of news desks,
+# NOT by reading this slice and patching what it got wrong. That distinction is the whole
+# difference between a baseline and a model fitted on the eval set, and it is not
+# checkable after the fact — so it is recorded here, before the number exists.
+config_id: ag_keyword_n200_v1
+dataset_id: ag_news_200
+adapter: ../adapter.py
+params:
+  provider: keyword
+  family: baseline
+  price_tier: free

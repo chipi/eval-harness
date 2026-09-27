@@ -1,0 +1,18 @@
+# Always answer "World". The floor, and an exactly known one.
+#
+# fetch.py draws 50 items per class, so this scores 0.25 on the nose. Not "about a
+# quarter" — exactly, by construction. That makes it a calibration check on the harness as
+# much as a baseline on the task: if this arm reports anything other than 0.2500, the
+# dataset is not balanced or the scorer is wrong, and either way no other row in the table
+# can be trusted yet.
+#
+# "World" and not the largest class, because there is no largest class. Any of the four
+# gives 0.25; World is first in the corpus's own label order.
+config_id: ag_constant_n200_v1
+dataset_id: ag_news_200
+adapter: ../adapter.py
+params:
+  provider: constant
+  label: World
+  family: baseline
+  price_tier: free

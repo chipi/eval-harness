@@ -1,0 +1,29 @@
+# bert-mini fine-tuned ON AG News. The in-distribution specialist, at 44MB.
+#
+# WHY THIS IS THE ARM THAT MATTERS. The summarisation study ended with BART tied for first
+# against 24 hosted models, and the objection was that it had been fine-tuned on exactly
+# that corpus while the LLMs were zero-shot. This is the same objection in a new setting,
+# with the size cranked down hard: 4 layers, hidden size 256, a 44MB checkpoint. If a
+# model that small, trained on this task, matches frontier LLMs, the finding is not about
+# BART -- it is about what task-specific training buys on a task the training covers.
+#
+# LABEL ORDER IS DECLARED EVEN THOUGH THE CHECKPOINT GETS IT RIGHT. config.json carries a
+# real id2label (World/Sports/Business/Sci-Tech, the corpus's own order), so the adapter's
+# LABEL_n fallback never fires here. Declaring it anyway puts the mapping in the
+# fingerprint: a future checkpoint with id2label left at the training default would
+# otherwise silently permute the classes, and every prediction would still be a valid
+# label, so nothing would look wrong.
+#
+# Ships model.safetensors, so it runs on x86_64 macOS. See RUNNING_THE_ML_ARMS.md in the
+# summarisation example for why that sentence is load-bearing.
+config_id: ag_bert_mini_v1
+dataset_id: ag_news_20
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: mrm8488/bert-mini-finetuned-age_news-classification
+  family: bert
+  price_tier: free
+  device: cpu
+  precision: fp32
+  label_order: [World, Sports, Business, "Sci/Tech"]

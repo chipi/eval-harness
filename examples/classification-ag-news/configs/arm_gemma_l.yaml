@@ -1,4 +1,4 @@
-# anthropic small — eval-claude-haiku. AG News topic classification.
+# gemma large — eval-gemma-31b. AG News topic classification.
 #
 # Alias, price and reasoning settings are taken from the summarisation example's arm of
 # the same name, so a difference between the two examples is the TASK and not the
@@ -13,18 +13,18 @@
 # the 180 items of ag_news_200 that it does not contain — `make holdout DATASET_ID=
 # ag_news_200 EXCLUDE=ag_news_20`. Tuning on the set you then report is the winner's curse,
 # and the summarisation study watched a 0.0737 lead become 0.00008 that way.
-config_id: ag_anthropic_s_v1
+config_id: ag_gemma_l_v1
 dataset_id: ag_news_20
 adapter: ../adapter.py
 params:
   provider: litellm
-  model: eval-claude-haiku
-  family: anthropic
-  price_tier: small
+  model: eval-gemma-31b
+  family: gemma
+  price_tier: large
   temperature: 0.0
   prompt_file: prompt.txt
   reasoning:
     enabled: false
   max_tokens: 200
-  usd_per_mtok_in: 1.0
-  usd_per_mtok_out: 5.0
+  usd_per_mtok_in: 0.1
+  usd_per_mtok_out: 0.2

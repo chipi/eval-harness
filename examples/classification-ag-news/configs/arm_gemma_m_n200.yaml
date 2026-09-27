@@ -1,4 +1,4 @@
-# anthropic small — eval-claude-haiku. AG News topic classification.
+# gemma mid — eval-gemma-26b. AG News topic classification.
 #
 # Alias, price and reasoning settings are taken from the summarisation example's arm of
 # the same name, so a difference between the two examples is the TASK and not the
@@ -9,22 +9,23 @@
 # thinking tokens INSIDE the output budget, so a tight cap does not buy terseness, it buys
 # a truncated answer that scores like a bad model. `truncated` is recorded per item.
 #
-# n=20 is the DEV slice. Prompt and parser may be tuned against it; the claim is made on
-# the 180 items of ag_news_200 that it does not contain — `make holdout DATASET_ID=
-# ag_news_200 EXCLUDE=ag_news_20`. Tuning on the set you then report is the winner's curse,
-# and the summarisation study watched a 0.0737 lead become 0.00008 that way.
-config_id: ag_anthropic_s_v1
-dataset_id: ag_news_20
+# The measurement slice. ONLY config_id and dataset_id differ from arm_gemma_m.yaml, so a
+# delta against the dev run is attributable to n and nothing else. Every one of the 24
+# hosted arms is run here — none is selected on its dev score, because selecting on n=20
+# and reporting on n=200 is exactly the bias this repo exists to catch, and at roughly
+# $0.02 an arm the selection would save nothing.
+config_id: ag_gemma_m_n200_v1
+dataset_id: ag_news_200
 adapter: ../adapter.py
 params:
   provider: litellm
-  model: eval-claude-haiku
-  family: anthropic
-  price_tier: small
+  model: eval-gemma-26b
+  family: gemma
+  price_tier: mid
   temperature: 0.0
   prompt_file: prompt.txt
   reasoning:
     enabled: false
   max_tokens: 200
-  usd_per_mtok_in: 1.0
-  usd_per_mtok_out: 5.0
+  usd_per_mtok_in: 0.07
+  usd_per_mtok_out: 0.15

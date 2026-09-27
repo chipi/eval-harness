@@ -1,13 +1,18 @@
-# deepseek-v4.1-flash — the summarisation study's coverage winner on the 20-article smoke slice.
+# deepseek mid — eval-deepseek-41flash. AG News topic classification.
 #
-# Same proxy, same aliases, same keys as the summarisation example — reusing the
-# infrastructure is the point of a second example rather than a second repo.
+# Alias, price and reasoning settings are taken from the summarisation example's arm of
+# the same name, so a difference between the two examples is the TASK and not the
+# configuration. Why 24 arms, why temperature 0, and why max_tokens 200 for a one-word
+# answer are all in ../README.md.
 #
-# max_tokens 200 for a task whose answer is one word, because of a lesson that cost the
-# summarisation study a fake finding: reasoning models spend thinking tokens INSIDE the
-# output budget, so a tight cap does not produce a terse answer, it produces a truncated
-# one that scores like a bad model. `truncated` is recorded per item; if it is non-zero
-# here the cap is the thing being measured.
+# max_tokens 200 is not a typo for a task whose answer is one word. Reasoning models spend
+# thinking tokens INSIDE the output budget, so a tight cap does not buy terseness, it buys
+# a truncated answer that scores like a bad model. `truncated` is recorded per item.
+#
+# n=20 is the DEV slice. Prompt and parser may be tuned against it; the claim is made on
+# the 180 items of ag_news_200 that it does not contain — `make holdout DATASET_ID=
+# ag_news_200 EXCLUDE=ag_news_20`. Tuning on the set you then report is the winner's curse,
+# and the summarisation study watched a 0.0737 lead become 0.00008 that way.
 config_id: ag_deepseek_m_v1
 dataset_id: ag_news_20
 adapter: ../adapter.py

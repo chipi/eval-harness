@@ -1,0 +1,31 @@
+# bart-large-mnli, zero-shot. The control the summarisation study could not run.
+#
+# Same architecture family that won the summarisation example, with NO exposure to AG
+# News: an NLI model asked "does this article entail 'This news article is about
+# sports'?" for each candidate label. So it separates the two explanations that study left
+# tangled —
+#
+#   bart_l won because BART is good            -> this arm should do well here too
+#   bart_l won because it was trained on the   -> this arm should fall well behind
+#   test distribution                             ag_bert_mini, which was
+#
+# Written down before the run. I expect the second.
+#
+# THE HYPOTHESIS TEMPLATE IS THIS ARM'S PROMPT. "This news article is about {}." versus
+# "This text is about {}." are different questions and produce different accuracy, so it
+# is fingerprinted exactly as prompt_sha256 is for a hosted arm. It is also the obvious
+# thing to tune — and tuning it on the 20-item dev slice while claiming the result on the
+# held-out 180 is the discipline, not an optional extra.
+#
+# Ships model.safetensors (1.63GB), so it runs on x86_64 macOS.
+config_id: ag_bart_mnli_v1
+dataset_id: ag_news_20
+adapter: ../adapter.py
+params:
+  provider: hf_zeroshot
+  model: facebook/bart-large-mnli
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  hypothesis_template: "This news article is about {}."
