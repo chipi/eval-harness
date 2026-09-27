@@ -1,0 +1,1 @@
+Classify this Wikipedia abstract into exactly one of these fourteen categories: Company, EducationalInstitution, Artist, Athlete, OfficeHolder, MeanOfTransportation, Building, NaturalPlace, Village, Animal, Plant, Album, Film, WrittenWork. Output only the category name, with no explanation.
