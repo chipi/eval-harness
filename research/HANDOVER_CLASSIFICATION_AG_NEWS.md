@@ -119,6 +119,19 @@ Two independent checks, both passed:
 - Fingerprint additions for classification: `parser_sha256`, `labels_sha256` + `labels` on
   every arm; `label_order` and `encoder_window` on `hf_local`; `hypothesis_template` on
   `hf_zeroshot`. `constant` deliberately does NOT carry `rules_sha256` — it runs no rules.
+- **V5 was wrong for discrete metrics, and this sweep found it.** The check's premise was
+  "independent arms do not agree to full float precision; one of them is not its own
+  measurement". True for ROUGE, false for accuracy: 200 binary items give a mean with 201
+  possible values, so two genuinely different models both getting 172 right report
+  byte-identical 0.86. It fired four times on this sweep, every one a false positive —
+  `openai_s`/`mistral_m`/`glm_m` at 0.86, `qwen_l`/`deepseek_l`/`gemma_l` at 0.87, and so on.
+
+  Fixed at the cause rather than muted: V5 now flags only when the means agree **and** the
+  per-item results agree. Two arms tying on the mean while disagreeing about which items
+  they got right are two measurements; two arms agreeing item by item are the case the
+  check exists for, and a low-cardinality metric cannot hide that. Verified in both
+  directions by `test_v5_tells_a_tie_from_a_copy` — a tie passes, a copied run with
+  different params still fails.
 
 ## For the sibling podcast project
 

@@ -373,6 +373,56 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
           base["hash"] != other["hash"])
 
 
+def test_v5_tells_a_tie_from_a_copy() -> None:
+    """Agreeing MEANS are not suspicious on a discrete metric; agreeing per ITEM is.
+
+    V5's original premise -- "independent arms do not agree to full float precision" --
+    holds for a continuous metric and fails for a binary one. A classification run scores
+    each item 1 or 0, so its mean over 200 items takes one of 201 values, and two
+    genuinely different models both getting 172 right report byte-identical 0.86 with
+    nothing wrong. The AG News sweep tripped V5 four times that way in a single run.
+
+    Both directions are asserted here, because widening a check until it stops complaining
+    is the failure mode this test exists to prevent: a tie must pass, and a real copy must
+    still fail.
+    """
+    import os
+    import shutil
+
+    scores = {"correct": 0.86, "parsed": 1.0}
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+
+        def make(name: str, model: str, correct_items: list) -> None:
+            d = root / name
+            d.mkdir()
+            (d / "metrics.json").write_text(json.dumps({
+                "config_id": name, "dataset_id": "ds_v1", "scores": scores,
+                "params": {"model": model}, "build": {"ref": "test"},
+            }))
+            (d / "predictions.jsonl").write_text("\n".join(
+                json.dumps({"item_id": f"i{i}", "correct": float(c)})
+                for i, c in enumerate(correct_items)))
+
+        # Same mean (2 of 4), DIFFERENT items right. Two measurements.
+        make("arm_a", "model-a", [1, 1, 0, 0])
+        make("arm_b", "model-b", [0, 0, 1, 1])
+        env = {**os.environ, "EVAL_RUNS_DIR": str(root)}
+        r = subprocess.run([PY, "scripts/validate_tree.py"], cwd=ROOT, env=env,
+                           capture_output=True, text=True)
+        check("V5: same mean, different items -> not flagged",
+              "V5 no two configs" not in r.stdout or "FAIL V5" not in r.stdout,
+              r.stdout[-200:])
+
+        # A real copy: same mean AND the same items right, under different params.
+        shutil.rmtree(root / "arm_b")
+        make("arm_b", "model-b", [1, 1, 0, 0])
+        r = subprocess.run([PY, "scripts/validate_tree.py"], cwd=ROOT, env=env,
+                           capture_output=True, text=True)
+        check("V5: same mean, same items, different params -> flagged",
+              "FAIL V5" in r.stdout, r.stdout[-200:])
+
+
 def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
@@ -391,6 +441,7 @@ def main() -> int:
         test_a_broken_fingerprint_hook_does_not_kill_the_run,
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
+        test_v5_tells_a_tie_from_a_copy,
     ):
         fn()
     if failures:

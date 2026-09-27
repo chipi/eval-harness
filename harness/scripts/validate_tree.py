@@ -9,9 +9,9 @@ Each check exists because its absence let a real defect through somewhere:
   V3  provenance     a run with no build ref — the number cannot be attributed
                      to any code
   V4  materialized   a dataset whose materialized copy drifted from its hashes
-  V5  duplicates     two runs reporting byte-identical scores on the same
-                     dataset. Independent arms do not agree to full float
-                     precision; one of them is not its own measurement
+  V5  duplicates     two runs reporting byte-identical scores AND identical
+                     per-item results on the same dataset. Agreeing MEANS are not
+                     suspicious on a discrete metric; agreeing per item is
   V6  baselines      a baseline pointing at a run that no longer exists
 
 Exit 1 on any failure, so it can gate.
@@ -21,6 +21,7 @@ Exit 1 on any failure, so it can gate.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from collections import defaultdict
@@ -135,6 +136,31 @@ _V5_RUN_PROPERTIES = ("latency_ms", "cost_usd", "total_cost_usd", "tokens_in", "
                       "total_tokens_in", "total_tokens_out")
 
 
+def _per_item_signature(run_name: str) -> str:
+    """A stable digest of one run's per-item scores, for telling ties from copies.
+
+    Run-level properties are excluded for the same reason they are excluded from the key
+    above: a fabricated result differs in latency like any other. A run with no readable
+    predictions returns its own name, so it can never match another run -- an unreadable
+    file is a reason to say nothing, not a reason to accuse.
+    """
+    path = RUNS / run_name / "predictions.jsonl"
+    if not path.is_file():
+        return f"<no-predictions:{run_name}>"
+    rows = []
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            scored = {k: v for k, v in row.items()
+                      if k not in _V5_RUN_PROPERTIES and k != "_meta"}
+            rows.append(json.dumps(scored, sort_keys=True))
+    except (OSError, ValueError):
+        return f"<unreadable:{run_name}>"
+    return hashlib.sha256("\n".join(sorted(rows)).encode()).hexdigest()
+
+
 def v5_duplicate_scores() -> None:
     by_key = defaultdict(list)
     for run in (RUNS.iterdir() if RUNS.is_dir() else []):
@@ -162,9 +188,23 @@ def v5_duplicate_scores() -> None:
     for group in by_key.values():
         known = [(n, c, p) for n, c, p in group if p is not None]
         if len({c for _, c, _ in known}) > 1 and len({p for _, _, p in known}) > 1:
+            # AGREEING MEANS IS NOT AGREEING MEASUREMENT. The check's premise -- "independent
+            # arms do not agree to full float precision" -- holds for a continuous metric and
+            # FAILS for a discrete one. A classification run scores each item 1 or 0, so its
+            # mean over 200 items takes one of 201 values; two genuinely different models
+            # both getting 172 right produce byte-identical 0.86 with nothing wrong at all.
+            # The AG News sweep tripped this four times in one run, on arms whose per-item
+            # answers were nothing alike.
+            #
+            # So before flagging, compare what the runs actually DID: the per-item scores.
+            # Two arms that agree on the mean but disagree on which items they got right are
+            # two measurements. Two arms agreeing item by item are the case this check
+            # exists for, and a low-cardinality metric cannot hide that.
+            if len({_per_item_signature(n) for n, _, _ in known}) > 1:
+                continue
             dupes.append(known)
     for group in dupes:
-        print(f"       identical scores from different params: "
+        print(f"       identical scores AND identical per-item results: "
               f"{', '.join(n for n, _, _ in group)}")
     check(
         not dupes,
