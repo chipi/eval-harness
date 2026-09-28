@@ -78,6 +78,9 @@ data/runs-tune*/
 # other EVAL_RUNS_DIR" and only `runs-smoke*` was actually listed.
 data/runs-[a-z]*/
 !data/runs/
+# The superseded-runs README is the CONVENTION, not an artifact: runs whose
+# instrument changed are moved there rather than deleted. The runs stay ignored.
+!data/runs-superseded/README.md
 
 # BEIR SciFact. CC BY-SA 4.0, and still not ours to redistribute. Same rule, same timing:
 # in before the first fetch.

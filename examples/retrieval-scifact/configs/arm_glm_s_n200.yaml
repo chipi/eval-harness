@@ -9,9 +9,14 @@
 # Anything else would be measuring retrieval and reranking at once and attributing the
 # sum to the model.
 #
-# max_tokens 400: the answer is a permutation of 20 short ids, not prose. The NER example
-# is where a 600-token budget still was not enough for one arm, and `truncated` and
-# `parsed` are both recorded per item here for the same reason.
+# max_tokens 700, raised from 400 ON THE DEV SLICE, which is where a budget may be tuned.
+# A 20-id permutation costs ~215 output tokens (gemma_m) and 400 looked like ample
+# headroom -- but qwen_s hit the ceiling on 40 of 40 dev queries, emitted nothing
+# parseable, and the pipeline fell back to BM25 on every one, landing on EXACTLY BM25's
+# nDCG@10. That is a budget artifact masquerading as 'reranking does not help', and the
+# NER example is where the same thing cost a real arm 0.02 f1 because the budget was
+# left alone. `truncated`, `parsed` and `llm_parsed` are all still recorded per item:
+# raising the ceiling is not the same as proving nobody hits it.
 #
 # The measurement slice. ONLY config_id and dataset_id differ from arm_glm_s.yaml.
 config_id: sf_glm_s_n200_v1
@@ -28,6 +33,6 @@ params:
   top_k: 100
   rerank_k: 20
   snippet_chars: 900
-  max_tokens: 400
+  max_tokens: 700
   usd_per_mtok_in: 0.06
   usd_per_mtok_out: 0.22
