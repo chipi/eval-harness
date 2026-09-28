@@ -27,6 +27,24 @@ WHAT THE CORPUS LOOKS LIKE (measured, first 300 test rows)
   person 164, other 62, event 38, building 34, product 34, art 29 in that sample.
   Rebalancing would make the slice unrepresentative of the task.
 
+DEGENERATE ITEMS ARE FILTERED, AND WHY THAT IS NOT CHERRY-PICKING
+  `--min-tokens` (default 3) drops sentences too short to pose the task. The dev slice
+  contained one whose entire text was the single character "p".
+
+  It is a real row in Few-NERD's test split, and keeping it would have been defensible on
+  faithfulness grounds -- except for what it actually measures. Three of 24 hosted arms
+  failed it, and the two that failed WORST were right: llama_l and llama_s replied "You
+  didn't provide the sentence." deepseek_s tagged the letter p as an entity and scored
+  better for it. An arm that blindly answers `[]` scores 1.0.
+
+  So the item rewards not looking and punishes noticing. That is backwards, and it is a
+  different thing from the label noise the classification examples kept -- a mislabelled
+  item still poses the task and every arm meets the same question. A one-character
+  sentence poses no task at all.
+
+  The filter is declared, its threshold is a flag, and what it removed is printed at the
+  end of every fetch. A silent drop would be the cherry-pick.
+
 TWO CAVEATS IN THE DATA ITSELF, BOTH VISIBLE IN THE FIRST THREE SENTENCES
   IO TAGGING. Few-NERD tags with IO rather than BIO, so two adjacent entities of the same
   type merge into one span. Some gold boundaries are therefore wrong by construction, and
@@ -148,6 +166,9 @@ def main() -> int:
                     help="draw seed; same --n and --seed reproduce the same items")
     ap.add_argument("--delay", type=float, default=DEFAULT_DELAY,
                     help=f"seconds between requests (default: {DEFAULT_DELAY})")
+    ap.add_argument("--min-tokens", type=int, default=3,
+                    help="skip sentences shorter than this (default: 3); see DEGENERATE "
+                         "ITEMS in the module docstring")
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -163,17 +184,35 @@ def main() -> int:
     rng = random.Random(args.seed)
     permutation = list(range(SPLIT_ROWS))
     rng.shuffle(permutation)
-    chosen = sorted(permutation[:args.n])
-
-    rows = []
-    for k, off in enumerate(chosen, 1):
+    # Walk the permutation until n KEPT items, rather than taking the first n and
+    # filtering after: that would silently return fewer than --n asked for, and the two
+    # slices would stop being nested.
+    rows, skipped, cursor = [], [], 0
+    while len(rows) < args.n and cursor < len(permutation):
+        off = permutation[cursor]
+        cursor += 1
         got = _get(off, 1, args.delay)
         if not got:
             sys.exit(f"no row at offset {off} — the split is smaller than {SPLIT_ROWS}")
-        rows.append(got[0])
-        if k % 50 == 0:
-            print(f"  {k}/{len(chosen)}", flush=True)
+        row = got[0]
+        if len(row["tokens"]) < args.min_tokens:
+            skipped.append(" ".join(row["tokens"]))
+            continue
+        rows.append(row)
+        if len(rows) % 50 == 0:
+            print(f"  {len(rows)}/{args.n}", flush=True)
+    if len(rows) < args.n:
+        sys.exit(f"exhausted the split at {len(rows)} of {args.n} items")
 
+    # CLEAR BEFORE WRITING. --force used to overwrite files and leave orphans, so a
+    # refetch that dropped an item left the old copy on disk and dataset-create picked it
+    # straight back up: the first filtered run produced 57 items from a 56-item draw, and
+    # the one item it re-admitted was exactly the one --min-tokens had just removed.
+    # Silent, and it would have poisoned the frozen dataset.
+    for directory in (sources, golds):
+        if directory.exists():
+            for stale in directory.glob("*.txt"):
+                stale.unlink()
     sources.mkdir(parents=True, exist_ok=True)
     golds.mkdir(parents=True, exist_ok=True)
     counts: collections.Counter = collections.Counter()
@@ -197,6 +236,9 @@ def main() -> int:
     print(f"  entities   {n_ents} total, {n_ents / len(rows):.2f} per sentence")
     print(f"  types      {dict(counts.most_common())}")
     print(f"  no-entity  {empty} of {len(rows)} sentences ({empty / len(rows):.1%})")
+    if skipped:
+        print(f"  skipped    {len(skipped)} sentence(s) under --min-tokens "
+              f"{args.min_tokens}: {skipped[:5]}")
     print(f"\n  An arm that predicts NOTHING scores exactly {empty / len(rows):.4f} —"
           f" that is the floor,")
     print("  and a calibration check on the scorer before it is a baseline on the task.")

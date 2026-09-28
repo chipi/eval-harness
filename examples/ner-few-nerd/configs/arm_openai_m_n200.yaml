@@ -1,0 +1,27 @@
+# openai mid — eval-gpt-55. Few-NERD named-entity recognition.
+#
+# Same alias, price and reasoning settings as this arm in the other three examples, so a
+# difference between them is the TASK and not the configuration.
+#
+# max_tokens 600, not the 200 the classification examples use: the answer is a JSON array
+# of ~2.7 objects, not one word. An arm cut off mid-array produces unparseable output and
+# scores 0 for that ITEM — which would read as a model that cannot do NER rather than a
+# budget that was too small. `truncated` and `parsed` are both recorded per item.
+#
+# The measurement slice. ONLY config_id and dataset_id differ from arm_openai_m.yaml. Every
+# hosted arm runs here; none is selected on its dev score.
+config_id: fn_openai_m_n200_v1
+dataset_id: few_nerd_280
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-gpt-55
+  family: openai
+  price_tier: mid
+  temperature: 0.0
+  prompt_file: prompt.txt
+  reasoning:
+    enabled: false
+  max_tokens: 600
+  usd_per_mtok_in: 1.25
+  usd_per_mtok_out: 10.0

@@ -103,6 +103,9 @@ def _prompt_sha256(params: Dict[str, Any]) -> str:
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.S)
 _ARRAY = re.compile(r"\[.*\]", re.S)
 _TRAILING_COMMA = re.compile(r",\s*([\]}])")
+#: An unquoted object key, as emitted by llama_m. Anchored on the preceding brace or
+#: comma so it cannot touch text INSIDE a quoted string value.
+_BARE_KEY = re.compile(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:")
 
 
 def _parse_entities(text: str) -> Optional[List[dict]]:
@@ -125,14 +128,37 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
         body = fenced.group(1).strip()
     if not body.lstrip().startswith("["):
         found = _ARRAY.search(body)
-        if not found:
+        if found:
+            body = found.group(0)
+        elif body.lstrip().startswith("{"):
+            # A bare object with no enclosing array. Handled below as a one-element set;
+            # falling through to the array search would discard it.
+            pass
+        else:
             return None
-        body = found.group(0)
-    for candidate in (body, _TRAILING_COMMA.sub(r"\1", body)):
+    # Repairs are tried in order, each strictly more forgiving than the last, and every
+    # one of them fixes a failure OBSERVED on the dev slice rather than an imagined one:
+    #
+    #   trailing comma   `[{...},]`  -- common, harmless
+    #   unquoted key     llama_m emitted `{"text": "Palm Beach County",type: "location"}`.
+    #                    Invalid JSON and completely unambiguous. Refusing it scores a
+    #                    correct answer as zero and measures JSON etiquette.
+    #
+    # What is NOT repaired: prose. glm_l writes 2,300-token essays reasoning aloud and
+    # never emits an array at all. There is nothing there to parse, and a "repair" that
+    # dug entities out of an explanation would be inventing answers the model never gave.
+    for candidate in (body,
+                      _TRAILING_COMMA.sub(r"\1", body),
+                      _BARE_KEY.sub(r'\1"\2":', _TRAILING_COMMA.sub(r"\1", body))):
         try:
             parsed = json.loads(candidate)
         except ValueError:
             continue
+        # A BARE OBJECT IS A ONE-ELEMENT SET. deepseek_s answered
+        # `{"text": "p", "type": "other"}` with no enclosing array -- a well-formed,
+        # readable answer that the old code threw away because it required a list.
+        if isinstance(parsed, dict):
+            parsed = [parsed]
         if not isinstance(parsed, list):
             return None
         out = []

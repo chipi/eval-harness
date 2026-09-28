@@ -374,6 +374,30 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
           base["hash"] != other["hash"])
 
 
+def test_example_scorer_suites_pass() -> None:
+    """RUN the example scorer suites, do not just --help them.
+
+    They were briefly in the CLI --help list, which proved nothing: neither uses argparse,
+    so both exited 0 by ignoring the flag. A test that passes for a reason unrelated to
+    what it checks is worse than no test, because it reports green.
+
+    Skipped rather than failed when the example venv is absent -- these import torch-free
+    scorer modules, but the runner has to be a Python that can see them, and the harness's
+    own interpreter may not be.
+    """
+    for script, subject in (("test_extraction_scorer.py", "set scorer"),
+                            ("test_ner_parser.py", "NER JSON parser")):
+        path = HERE / script
+        if not path.is_file():
+            continue
+        r = run(f"scripts/{script}")
+        if r.returncode != 0 and "ModuleNotFoundError" in (r.stderr or ""):
+            print(f"  --   {subject}: skipped (example deps not on this interpreter)")
+            continue
+        check(f"{subject}: all assertions pass", r.returncode == 0,
+              (r.stdout or r.stderr or "").strip()[-160:])
+
+
 def test_v5_tells_a_tie_from_a_copy() -> None:
     """Agreeing MEANS are not suspicious on a discrete metric; agreeing per ITEM is.
 
@@ -442,6 +466,7 @@ def main() -> int:
         test_a_broken_fingerprint_hook_does_not_kill_the_run,
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
+        test_example_scorer_suites_pass,
         test_v5_tells_a_tie_from_a_copy,
     ):
         fn()

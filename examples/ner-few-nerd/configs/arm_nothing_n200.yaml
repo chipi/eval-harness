@@ -1,0 +1,14 @@
+# Predicts no entities, ever. The floor, and an exactly known one.
+#
+# 14.3% of dev-slice sentences have no gold entities, so this arm scores exactly 0.1429
+# by the scorer's empty-set convention (gold empty + prediction empty -> F1 1.0). Any
+# other value means those conventions are wrong, and no other row in the table can be
+# trusted until this one reads right. A calibration check on the scorer before it is a
+# baseline on the task — the role `constant` played for classification.
+config_id: fn_nothing_n200_v1
+dataset_id: few_nerd_280
+adapter: ../adapter.py
+params:
+  provider: nothing
+  family: baseline
+  price_tier: free

@@ -1,0 +1,23 @@
+# SpanMarker fine-tuned ON Few-NERD. The in-distribution specialist.
+#
+# Predicts the FINE taxonomy (66 types) and is mapped down to the coarse eight, which is
+# deterministic because Few-NERD's fine labels are literally `coarse-detail`:
+# `person-actor` -> `person`. Declared via `coarsen` and recorded in the fingerprint —
+# getting it wrong would silently retype every prediction while every prediction stayed a
+# valid label, the same silent failure `label_order` guards against in the classification
+# examples.
+#
+# It has seen this dataset's training split. That is the point and also the caveat: any
+# lead it has over GLiNER is the value of task-specific training, and any lead over the
+# hosted arms is partly that plus whatever the corpus's own annotation quirks are worth.
+config_id: fn_span_marker_n200_v1
+dataset_id: few_nerd_280
+adapter: ../adapter.py
+params:
+  provider: span_marker
+  model: guishe/span-marker-generic-ner-v1-fewnerd-fine-super
+  coarsen: true
+  family: span_marker
+  price_tier: free
+  device: cpu
+  precision: fp32
