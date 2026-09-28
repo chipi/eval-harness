@@ -344,12 +344,31 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
     key = os.environ.get(params.get("api_key_env", "LITELLM_API_KEY"), "")
     client = OpenAI(api_key=key, base_url=f"{base}/v1")
 
+    # REASONING IS PASSED THROUGH, AND THE OTHER THREE EXAMPLES ALREADY DID THIS.
+    # I dropped it when writing this adapter, so these arms ran at the provider's default
+    # while summarisation, classification and NER all ran with `reasoning.enabled: false`.
+    # That is not a tuning difference, it breaks the one claim the four examples exist to
+    # support -- that only the TASK differs between them.
+    #
+    # It also explains a result I had already half-diagnosed: qwen_s consumed its entire
+    # output budget (400, then 700 after I raised it) and returned message.content == ""
+    # with finish_reason "length". The tokens went to hidden reasoning, so no budget would
+    # ever have been enough. Same signature as glm_l in the NER example, different cause.
+    extra_body: Dict[str, Any] = {}
+    for passthrough in ("reasoning", "reasoning_effort"):
+        if params.get(passthrough) is not None:
+            extra_body[passthrough] = params[passthrough]
+    if params.get("provider_routing") is not None:
+        extra_body["provider"] = params["provider_routing"]
+
     kwargs: Dict[str, Any] = {
         "model": params["model"],
         "messages": [{"role": "user", "content": user}],
         "temperature": float(params.get("temperature", 0.0)),
         "max_tokens": int(params.get("max_tokens", 400)),
     }
+    if extra_body:
+        kwargs["extra_body"] = extra_body
     resp = client.chat.completions.create(**kwargs)
     choice = resp.choices[0]
     text = (choice.message.content or "").strip()
@@ -359,13 +378,30 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
     cost = (tin * float(params.get("usd_per_mtok_in", 0.0))
             + tout * float(params.get("usd_per_mtok_out", 0.0))) / 1_000_000
     extra = {"truncated": 1.0 if choice.finish_reason == "length" else 0.0}
-    det = getattr(usage, "completion_tokens_details", None)
-    extra["reasoning_tokens"] = float(getattr(det, "reasoning_tokens", 0) or 0)
+    extra["reasoning_tokens"] = float(_reasoning_tokens(usage) or 0)
     return Result(output=text, cost_usd=cost, tokens_in=tin, tokens_out=tout,
                   meta={"finish_reason": choice.finish_reason,
                         "response_model": getattr(resp, "model", None),
                         "usage": usage.model_dump() if usage else None},
                   extra=extra)
+
+
+def _reasoning_tokens(usage: Any) -> Optional[int]:
+    """Reasoning tokens, however this provider spells them. Copied from the NER adapter.
+
+    A single `getattr(details, "reasoning_tokens")` misses the pydantic/dict split and
+    the two alternative spellings, and reports 0 for a model that spent its whole budget
+    thinking -- which is the one case the column exists for.
+    """
+    d = usage if isinstance(usage, dict) else (
+        usage.model_dump() if hasattr(usage, "model_dump") else {})
+    details = d.get("completion_tokens_details") or d.get("output_tokens_details") or {}
+    if not isinstance(details, dict):
+        details = details.model_dump() if hasattr(details, "model_dump") else {}
+    for k in ("reasoning_tokens", "reasoning", "thinking_tokens"):
+        if isinstance(details.get(k), int):
+            return details[k]
+    return None
 
 
 PROVIDERS = {"bm25": _bm25, "dense": _dense, "rerank": _rerank,
@@ -506,6 +542,7 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             "endpoint": os.environ.get("LITELLM_BASE_URL"),
             "max_tokens": int(params.get("max_tokens", 400)),
             "temperature": float(params.get("temperature", 0.0)),
+            "reasoning": params.get("reasoning"),
             "prompt_sha256": hashlib.sha256(_prompt(params).encode()).hexdigest(),
         })
     if provider == "random":

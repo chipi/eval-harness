@@ -27,6 +27,8 @@ params:
   price_tier: mid
   corpus_id: scifact
   temperature: 0.0
+  reasoning:
+    enabled: false
   prompt_file: prompt.txt
   top_k: 100
   rerank_k: 20
