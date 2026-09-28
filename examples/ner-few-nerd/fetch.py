@@ -239,9 +239,15 @@ def main() -> int:
     if skipped:
         print(f"  skipped    {len(skipped)} sentence(s) under --min-tokens "
               f"{args.min_tokens}: {skipped[:5]}")
-    print(f"\n  An arm that predicts NOTHING scores exactly {empty / len(rows):.4f} —"
-          f" that is the floor,")
+    print(f"\n  An arm that predicts NOTHING scores about {empty / len(rows):.4f} — that is"
+          f" the floor,")
     print("  and a calibration check on the scorer before it is a baseline on the task.")
+    print("  ABOUT, not exactly: the scorer's normaliser strips punctuation, so a gold")
+    print("  entity that is only punctuation normalises to nothing and its item behaves")
+    print("  as empty-gold too. few_nerd_280 has one — Few-NERD tags the bare symbol '£'")
+    print("  as an entity, twice, in the same sentence — which moves the floor from")
+    print("  0.1214 to 0.1250. `extraction_report.py` prints these; this fetcher is")
+    print("  stdlib-only and cannot import the normaliser to count them here.")
     print("\nNext:")
     print(f"  make dataset-create DATASET_ID={dataset_id} ARGS='--source-dir data/sources/{dataset_id}'")
     print(f"  make dataset-materialize DATASET_ID={dataset_id}")

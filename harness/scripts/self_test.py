@@ -86,7 +86,7 @@ def test_cli_help_works() -> None:
                    "promote_baseline", "validate_tree", "list_runs", "reference_create",
                    "leaderboard", "sweep", "env_check", "holdout_significance",
                    "pair_test", "family_test", "classification_report", "bootstrap_test",
-                   "rank_stability"):
+                   "rank_stability", "extraction_report", "rescore"):
         r = run(f"scripts/{script}.py", "--help")
         check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
 
