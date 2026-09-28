@@ -1,0 +1,33 @@
+# llama mid as a RERANKER over BM25's top 20. Same alias, price and temperature as this
+# arm in the other three examples, so a difference between them is the TASK, not the
+# configuration.
+#
+# WHAT IS BEING MEASURED, AND WHAT IS NOT. The LLM never retrieves. BM25 returns 100
+# documents, the LLM is shown the top 20 and reorders them, and BM25's remaining 80 are
+# appended BELOW unchanged. So this arm's recall@100 is BM25's recall@100 BY
+# CONSTRUCTION, and every difference in nDCG@10 is attributable to the reordering alone.
+# Anything else would be measuring retrieval and reranking at once and attributing the
+# sum to the model.
+#
+# max_tokens 400: the answer is a permutation of 20 short ids, not prose. The NER example
+# is where a 600-token budget still was not enough for one arm, and `truncated` and
+# `parsed` are both recorded per item here for the same reason.
+#
+# The measurement slice. ONLY config_id and dataset_id differ from arm_llama_m.yaml.
+config_id: sf_llama_m_n200_v1
+dataset_id: scifact_200
+adapter: ../adapter.py
+params:
+  provider: rerank
+  model: eval-llama-70b
+  family: llama
+  price_tier: mid
+  corpus_id: scifact
+  temperature: 0.0
+  prompt_file: prompt.txt
+  top_k: 100
+  rerank_k: 20
+  snippet_chars: 900
+  max_tokens: 400
+  usd_per_mtok_in: 0.12
+  usd_per_mtok_out: 0.3

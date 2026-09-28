@@ -1,0 +1,18 @@
+# e5-base-v2 — 110M parameters, retrieval-trained, and asymmetric on BOTH sides: "query: "
+# on queries and "passage: " on documents. The document prefix means this arm needs its
+# OWN corpus embedding, which is why the index cache is keyed on the prefix.
+config_id: sf_e5_base_n200_v1
+dataset_id: scifact_200
+adapter: ../adapter.py
+params:
+  provider: dense
+  model: intfloat/e5-base-v2
+  corpus_id: scifact
+  family: e5
+  price_tier: free
+  device: cpu
+  precision: fp32
+  encode_batch: 32
+  top_k: 100
+  query_prefix: "query: "
+  doc_prefix: "passage: "

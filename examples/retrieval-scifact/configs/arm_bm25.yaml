@@ -1,0 +1,9 @@
+config_id: sf_bm25_v1
+dataset_id: scifact_40
+adapter: ../adapter.py
+params:
+  provider: bm25
+  corpus_id: scifact
+  family: bm25
+  price_tier: free
+  top_k: 100

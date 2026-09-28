@@ -1,0 +1,209 @@
+{
+  "created_at": "2026-09-28T14:59:25Z",
+  "dataset_id": "scifact_40",
+  "description": "40 item(s) from scifact_40/",
+  "items": [
+    {
+      "item_id": "1024",
+      "source_path": "1024.txt",
+      "source_sha256": "132009378ca61e6b8f57892b3e76da4880f0ce0170be7e4f687da29cc42856bf"
+    },
+    {
+      "item_id": "1041",
+      "source_path": "1041.txt",
+      "source_sha256": "1ca870b2636f7d14e5a82551c35df4f0b6b05262945599cbed3bd5ecce3fdbfc"
+    },
+    {
+      "item_id": "1121",
+      "source_path": "1121.txt",
+      "source_sha256": "ef02e5e6b619f95e35e4cb08a3a18a3c6cca9e4fea6af7fd442007899bbdc88e"
+    },
+    {
+      "item_id": "1130",
+      "source_path": "1130.txt",
+      "source_sha256": "8d0b9d31ee487ea7a39a2dfa0e8c24a51db2bddeb943674f0f1d3f75528c71b1"
+    },
+    {
+      "item_id": "1144",
+      "source_path": "1144.txt",
+      "source_sha256": "a612d156ae7518d1358ca696352252a5e031bd88c572c234009e91e3266f5dcd"
+    },
+    {
+      "item_id": "1175",
+      "source_path": "1175.txt",
+      "source_sha256": "ba58f9b4867234765aed2630997a27b03a174a31fb3dd70fc1d61aaac19a7b06"
+    },
+    {
+      "item_id": "118",
+      "source_path": "118.txt",
+      "source_sha256": "717d90fed7d3ee67f42b2115fd99152012680636d89be7aac769b12b7f3af23d"
+    },
+    {
+      "item_id": "1191",
+      "source_path": "1191.txt",
+      "source_sha256": "9ce4dcac753d964f230c51ba9c7784adf843c6b194cd511391205614e58a5fe8"
+    },
+    {
+      "item_id": "1196",
+      "source_path": "1196.txt",
+      "source_sha256": "51226580d8d1a06194471b51a4bec1c5b4cb12f8d44a7f645b760afd9d75f8ec"
+    },
+    {
+      "item_id": "1199",
+      "source_path": "1199.txt",
+      "source_sha256": "1e5246ce7bc6d3f75868da0cbc43b768072e5360c838de95640751b14eb8c31f"
+    },
+    {
+      "item_id": "127",
+      "source_path": "127.txt",
+      "source_sha256": "1fbc93b2c87a6c0c96a00b599f8dac1af692ddc814a44e8bb09b8fab7771dc9d"
+    },
+    {
+      "item_id": "1270",
+      "source_path": "1270.txt",
+      "source_sha256": "3449d724533d32b9c7580393b39bde2b519d4a68fadc2f382ddfaf4a7bb93e14"
+    },
+    {
+      "item_id": "1273",
+      "source_path": "1273.txt",
+      "source_sha256": "cb0c4abb5f201437e9cedc531ef0d78d50752054d2b7bd98c897ad20d7be62de"
+    },
+    {
+      "item_id": "1274",
+      "source_path": "1274.txt",
+      "source_sha256": "4d994cbd9dcabb9301821a78067a44d12c3a47621ef23b0fef53979fd956f234"
+    },
+    {
+      "item_id": "1278",
+      "source_path": "1278.txt",
+      "source_sha256": "07c2346857b353b659db0a010c1e99a9909d0e5cf20faa3364c7ea33ad1b1e1e"
+    },
+    {
+      "item_id": "133",
+      "source_path": "133.txt",
+      "source_sha256": "b23a4d971446ae76c5fe1ffb3fc9e619aa7b59ac5264efc18f7c0967f5b8d1e0"
+    },
+    {
+      "item_id": "1389",
+      "source_path": "1389.txt",
+      "source_sha256": "ba472dbf3c478dcead941fa2a4678ac9674ba2b0789af2bba9809a1b4b0288fe"
+    },
+    {
+      "item_id": "180",
+      "source_path": "180.txt",
+      "source_sha256": "27c13780449392f60175316a8280fc9d078f58b03fcee5a8c2e5783ccad57af9"
+    },
+    {
+      "item_id": "218",
+      "source_path": "218.txt",
+      "source_sha256": "4dfe7fcaa3554095d6a39168e6d37872a0471372288ad6f93696a26de8ec8794"
+    },
+    {
+      "item_id": "239",
+      "source_path": "239.txt",
+      "source_sha256": "bc61ebb206c6cb707533ccf5305d6387853dc4a92703789bf61cd555d4d6f954"
+    },
+    {
+      "item_id": "294",
+      "source_path": "294.txt",
+      "source_sha256": "d0bed8d7ba848b0e7c1e93a559c1bdcb195b6f0ae2cb4a7d3c93530e09d74e29"
+    },
+    {
+      "item_id": "295",
+      "source_path": "295.txt",
+      "source_sha256": "bd6aff3daf41ca1ca39210f5a9616e0807c16cbde26ceae974aa693e7897951a"
+    },
+    {
+      "item_id": "303",
+      "source_path": "303.txt",
+      "source_sha256": "f834a8b1fb6b415c7a16e55d168ffbdcda028431503dab4355460684ee43125d"
+    },
+    {
+      "item_id": "362",
+      "source_path": "362.txt",
+      "source_sha256": "39892db3dc4129d821173c9cf3e652f8ac8388135849eb63fdb5c6f6a4615fd5"
+    },
+    {
+      "item_id": "399",
+      "source_path": "399.txt",
+      "source_sha256": "f038df3fc330e53b7d7770c09ff4a5df888628cd24931f13d15fa01da987ed6a"
+    },
+    {
+      "item_id": "415",
+      "source_path": "415.txt",
+      "source_sha256": "9799ab77109c073140e989370568861862cfb0a1e95ad39718be617556e0f7a5"
+    },
+    {
+      "item_id": "439",
+      "source_path": "439.txt",
+      "source_sha256": "72dfe82829db9d3ff316b810ac996ef127ade7ef9786ae537341d42f85790f4c"
+    },
+    {
+      "item_id": "501",
+      "source_path": "501.txt",
+      "source_sha256": "2b4313f5b4ffbd62ea3630aeae3fd968b66ab63023ec3d94f132c88e00ba2ea1"
+    },
+    {
+      "item_id": "507",
+      "source_path": "507.txt",
+      "source_sha256": "ec6e984ab05bf302291585d670ca79d1a9578dfd53505bb347b79e55ffad70f9"
+    },
+    {
+      "item_id": "533",
+      "source_path": "533.txt",
+      "source_sha256": "40ee59d129190707c39bbdf5c26d1eb122c3e82f07d5c8dac32d06616f05506a"
+    },
+    {
+      "item_id": "619",
+      "source_path": "619.txt",
+      "source_sha256": "20b24b5c414157ab7ec23e9e2a651b36e144cf7d653e88fc77d538f4fbf55af5"
+    },
+    {
+      "item_id": "659",
+      "source_path": "659.txt",
+      "source_sha256": "8141725203ba1257f273706eb2ff9255d80d5014e63e00932baa3470af50813c"
+    },
+    {
+      "item_id": "783",
+      "source_path": "783.txt",
+      "source_sha256": "7c5e879fbe1e0c88c84e784c17869bd96f0c8541600c8afb92373dfea1fee56d"
+    },
+    {
+      "item_id": "785",
+      "source_path": "785.txt",
+      "source_sha256": "8b9262274d97127215b3e504acfddbebf56ad90bdd98312305f0388015d5dee9"
+    },
+    {
+      "item_id": "800",
+      "source_path": "800.txt",
+      "source_sha256": "4594d2062b65b316da856c068dfde9ab8f23225f188d4e088afe64f190dc641f"
+    },
+    {
+      "item_id": "832",
+      "source_path": "832.txt",
+      "source_sha256": "d69443cb3e8b268e4d9f8f384f07960ed7e4b7a52ce4e2f85839d9ed07736923"
+    },
+    {
+      "item_id": "834",
+      "source_path": "834.txt",
+      "source_sha256": "901d301c71ad256a5c24a2c9d00e4bae9a4d11830e2782aa93356db25b28fcdb"
+    },
+    {
+      "item_id": "847",
+      "source_path": "847.txt",
+      "source_sha256": "bb672a4f554f0245d17da2538ab2fcd2e42351db01489d56a63654df3fac4990"
+    },
+    {
+      "item_id": "882",
+      "source_path": "882.txt",
+      "source_sha256": "621181ac70182efee9180f93bd0f5d66cdeae4201928843ce43b98f15f31b8c8"
+    },
+    {
+      "item_id": "914",
+      "source_path": "914.txt",
+      "source_sha256": "1fa671e24b93592bd9738fd8901dbe68cc3263d393b6aa2cc63c0f96a37c8b92"
+    }
+  ],
+  "source_dir": "data/sources/scifact_40",
+  "version": "1.0"
+}

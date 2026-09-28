@@ -386,7 +386,8 @@ def test_example_scorer_suites_pass() -> None:
     own interpreter may not be.
     """
     for script, subject in (("test_extraction_scorer.py", "set scorer"),
-                            ("test_ner_parser.py", "NER JSON parser")):
+                            ("test_ner_parser.py", "NER JSON parser"),
+                            ("test_retrieval_scorer.py", "ranked-list scorer")):
         path = HERE / script
         if not path.is_file():
             continue

@@ -1,0 +1,16 @@
+# all-mpnet-base-v2 — the larger general-purpose sentence-transformers encoder. 110M
+# parameters, 420MB. Same symmetric, no-prefix design as MiniLM, so the pair isolates
+# SIZE within one training recipe.
+config_id: sf_mpnet_n200_v1
+dataset_id: scifact_200
+adapter: ../adapter.py
+params:
+  provider: dense
+  model: sentence-transformers/all-mpnet-base-v2
+  corpus_id: scifact
+  family: mpnet
+  price_tier: free
+  device: cpu
+  precision: fp32
+  encode_batch: 32
+  top_k: 100

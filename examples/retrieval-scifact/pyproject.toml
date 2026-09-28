@@ -1,0 +1,53 @@
+# This example's OWN dependency chain and its OWN interpreter, same reasoning as its three
+# siblings: an example that shares an environment cannot be run on its own and cannot pin
+# what it actually needs.
+#
+# What is different here: the local arms are BI-ENCODERS, not classifiers or taggers. They
+# embed 5,183 documents once in `warmup()` and then do cosine similarity per query, so the
+# heavy dependency is `sentence-transformers` rather than a task-specific package, and the
+# per-query cost is arithmetic rather than a forward pass.
+[project]
+name = "eval-example-retrieval-scifact"
+version = "0.1.0"
+description = "BM25, dense retrievers and LLM rerankers on BEIR SciFact, through the eval harness"
+requires-python = ">=3.11"
+dependencies = [
+    # The harness core's own needs, because the harness scripts run in THIS environment.
+    "pyyaml>=6.0",
+    "openai>=1.0",
+    # BM25 is in the BASE dependencies, not the `local` extra, and that is deliberate.
+    # It is the first stage the LLM reranking arms are built on, so a `uv sync` without
+    # --extra local must still be able to run them. It is a ~200-line pure-Python package
+    # with no native code and no model weights; treating it as heavyweight would have made
+    # every hosted arm depend on torch for no reason.
+    "rank-bm25>=0.2.2",
+    # rank_bm25 is numpy-based. Pinned below 2 on Intel macOS only, to stay compatible
+    # with the torch 2.2.2 ceiling the `local` extra inherits on that platform -- so the
+    # base and local installs do not disagree about numpy.
+    "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "numpy; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+]
+
+[project.optional-dependencies]
+# The DENSE arms only:
+#     uv sync                 -> BM25, the LLM rerankers, and the two floors
+#     uv sync --extra local   -> adds the sentence-transformers bi-encoders
+#
+# The platform ceilings are copied from the summarisation example, where each was found by
+# an actual failure rather than read off a compatibility table, and are scoped by marker so
+# no other machine inherits them. The short version: no Intel-Mac torch wheel above 2.2.2;
+# transformers 5.x silently downgrades its backend and fails at model load; torch 2.2.2 is
+# built against the NumPy 1.x C API.
+local = [
+    "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "transformers>=4.40,<4.56",
+    # The bi-encoders. `sentence-transformers` rather than raw transformers because the
+    # pooling strategy is part of the model -- mean-pooling a checkpoint that was trained
+    # with CLS pooling silently produces worse embeddings and no error, which is exactly
+    # the class of silent misconfiguration this repo fingerprints against.
+    "sentence-transformers>=2.7,<4",
+]
+
+[tool.uv]
+package = false

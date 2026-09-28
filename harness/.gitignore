@@ -71,3 +71,30 @@ data/runs-rescored*/
 # the harness makes the tree DIRTY, and every run launched beside it records
 # `harness.dirty: true` and cannot be reproduced from its own fingerprint.
 data/runs-smoke*/
+data/runs-tune*/
+# GLOBBED, not enumerated, for the reason the corpus rules above are: a rule that needs
+# someone to remember a new line is one forgotten line away from committing 240 run
+# artifacts. `data/runs-tune/` was exactly that -- the comment above already said "any
+# other EVAL_RUNS_DIR" and only `runs-smoke*` was actually listed.
+data/runs-[a-z]*/
+!data/runs/
+
+# BEIR SciFact. CC BY-SA 4.0, and still not ours to redistribute. Same rule, same timing:
+# in before the first fetch.
+data/sources/scifact_*/
+data/references/gold/scifact_*/
+data/references/silver/scifact_*/
+
+# ── the CORPUS, which is a new kind of thing in this tree ────────────────────
+# Retrieval is the first task here whose answer is not computable from the item alone. An
+# item is a QUERY; the documents it must find are a separate 5,183-abstract corpus that
+# every arm indexes and no arm is scored on. It is not `sources/` (not one file per item),
+# not `references/` (not ground truth), and not `materialized/` (not derived from our
+# inputs) — so it gets its own directory, and the same never-redistribute rule.
+#
+# A corpus that is not fingerprinted is the worst silent failure available to this repo:
+# two runs over the SAME queries against DIFFERENT corpora would otherwise look identical
+# in every recorded field. `corpus_sha256` is in the arm fingerprint for that reason, and
+# the manifest that carries it is the one tracked file here.
+data/corpora/*
+!data/corpora/README.md

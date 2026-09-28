@@ -1,0 +1,14 @@
+You are reranking search results for a scientific claim.
+
+CLAIM:
+{{QUERY}}
+
+CANDIDATE ABSTRACTS, each prefixed with its document id in square brackets:
+
+{{DOCUMENTS}}
+
+Reorder ALL of the candidate document ids from most to least relevant to the claim. A
+document is relevant if it provides evidence that supports or refutes the claim.
+
+Reply with a JSON array of the document ids in your chosen order and nothing else. Use
+only ids that appear above, include every one of them exactly once, and do not explain.

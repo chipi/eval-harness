@@ -1,0 +1,20 @@
+# all-MiniLM-L6-v2 — the default sentence-transformers encoder, and the one most people
+# reach for first. 22M parameters, 90MB. Trained on a general sentence-similarity mixture,
+# NOT specifically for retrieval, and no query/document prefix: symmetric by design.
+#
+# It is here as the "obvious dense baseline" rather than a strong one, and BEIR's own
+# result is that on SciFact it loses to BM25. If that reproduces here it is the cheapest
+# available demonstration that "add embeddings" is not automatically an upgrade.
+config_id: sf_minilm_n200_v1
+dataset_id: scifact_200
+adapter: ../adapter.py
+params:
+  provider: dense
+  model: sentence-transformers/all-MiniLM-L6-v2
+  corpus_id: scifact
+  family: minilm
+  price_tier: free
+  device: cpu
+  precision: fp32
+  encode_batch: 64
+  top_k: 100

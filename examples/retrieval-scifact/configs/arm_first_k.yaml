@@ -1,0 +1,9 @@
+config_id: sf_first_k_v1
+dataset_id: scifact_40
+adapter: ../adapter.py
+params:
+  provider: first_k
+  corpus_id: scifact
+  family: first_k
+  price_tier: free
+  top_k: 100
