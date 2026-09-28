@@ -1781,3 +1781,120 @@ with 14 candidates the mass spreads thin regardless of certainty — the raw sco
 RANKING signal and not a probability. `bert_mini`'s calibration is what makes a cheap
 classifier deployable: a reliable "I am not sure" you can route on. Hosted arms have no
 confidence at all; logprobs were never requested.
+
+---
+
+### 2026-09-28 · 51 — A set is a different instrument, and it paid non-answers full marks
+
+Third task type, third metric shape. Summarisation: one text vs one text, continuous.
+Classification: one label vs one label, 0 or 1. Extraction: **a set vs a set**, and every
+decision that matters is in how you match the members.
+
+The shape immediately gave back something the other two could not. `_shared/classification.py`
+could not offer a macro-F1 metric at all, because macro-F1 needs a confusion matrix over the
+whole run and there is no per-item number whose mean is macro-F1. An extraction item has its
+own gold set, so its precision, recall and F1 are all well defined **on that item** — the
+means are honest per-item metrics, `family_test.py`'s sign-flip permutation works directly,
+and the bootstrap I wrote for AG News (and documented as anti-conservative) is not needed.
+
+**THE BUG.** `score_sets` took only the parsed set, so the caller had no way to say "there
+was no set here at all". An arm that answered `[]` and an arm whose output could not be read
+both arrived as an empty list, and on the 12% of sentences with no gold entities the
+empty-empty convention paid a non-answer the full **1.0**.
+
+`glm_l` found it. On item `0e88aabc` — *"Epsilon Centauri is a relatively young star, with
+an age of around 16 million years"* — it spent its entire 600-token budget reasoning aloud
+about which benchmark it was being evaluated on (*"It matches FIGER? No, FIGER has 112
+types"*), ran out, emitted nothing, and scored 1.0. Six free 1.0s, **+0.0214 f1**.
+
+**And no fingerprint could have caught it.** `normalizer_sha256` covered `normalize` and
+nothing else, on the reasoning that a normaliser has the most room to move a score. The
+reasoning was right and the scope was wrong: the bug was in `prf`, which no hash covered.
+The scorer could change between two runs and neither fingerprint would say so. Worse,
+`rescore.py` re-records the *adapter file's* sha256 and the scoring rule lives in a shared
+module — an extraction.py-only change, which is exactly what the fix is, leaves the adapter
+hash identical. `scorer_sha256` and `scorer_id()` close both.
+
+**What made this cheap was a decision made two examples ago.** `rescore.py` exists because
+a scorer bug once survived two sweeps — checking would have cost another one. Here it cost
+nothing: 14 finished arms rescored from stored outputs and compared **per item** against
+the originals. 13 differ on **zero** items, max |Δf1| = 0. `glm_l` differs on exactly 6,
+each by 1.0. No re-generation, and the claim that the fix was surgical is checked rather
+than asserted.
+
+**A calibration check that did not reconcile, and I nearly explained it away.** `nothing`
+scored 0.1250; the empty-gold rate is 34/280 = 0.1214. One item. Item `a68981540c14` is
+*"Its revenue quickly increased, from £ 4,424 in 1901 to £ 274,989 in 1910"* and Few-NERD
+tags the bare symbol **£** as an entity of type `other`, twice. The normaliser strips
+punctuation, both members vanish, the item behaves as empty-gold. Neither half is wrong
+enough to change for one item — but the 1/280 is the tell, and the instinct to round it off
+is the failure mode. `extraction_report.py` prints these now.
+
+---
+
+### 2026-09-28 · 52 — The winner is real, and 57% of its margin is one word
+
+Few-NERD produced the **first unambiguous winner** in this repo. `span_marker` — 476MB,
+fine-tuned on this corpus, CPU, $0, 0.76 s/item — scored 0.7674 and separated from **26 of
+26** opponents under Holm. AG News gave a leader tied with five others; DBpedia gave a group
+of ten. This one gave a podium.
+
+Then the per-type breakdown took most of it back.
+
+```
+type          span_mk  openai_m   gliner        Δ   support   share of gap
+person         0.8882    0.8949   0.7701  -0.0067       166          -1.6%
+other          0.7709    0.3017   0.0000  +0.4693        86         +57.2%
+```
+
+**`other` is 57.2% of the entire support-weighted margin, and on `person` the frontier LLM
+wins.** `other` is Few-NERD's catch-all coarse type — languages, diseases, chemicals,
+awards, currencies. You cannot infer membership from the word "other", so performance on it
+is close to a pure measure of corpus exposure, and the three arms line up exactly by
+exposure: trained on the split 0.77, general world knowledge 0.30, handed the bare label
+with no exposure **0.0000 — zero of 86**.
+
+`gliner` is the control the previous two examples never had. DBpedia could not load a
+fine-tuned ML arm at all, so its ML-vs-LLM question went unanswered. Here both arms load and
+differ in one variable: **task-specific training is worth +0.3134 F1**.
+
+**And then the annotation.** 34 of 768 gold entities (4.4%) carry a coarse type that ≥80% of
+the 25 learned arms unanimously reject. Georgia Dome as `location`. Nazis as `person`. A
+football league as an `event`. A diuretic as `other`. A restaurant chain as a `building`.
+Independent models do not agree on a hallucination; twenty-five of them agreeing against the
+annotation is evidence about the annotation.
+
+Resolving all 34 the arms' way — an **upper bound**, not an estimate, because resolving in
+the arms' favour is what raises the number — moves every hosted arm +0.024 to +0.039 and
+`span_marker` **+0.0060**. It was trained on the convention and was never losing those
+points. Its lead over the best hosted arm falls 0.0810 → **0.0503**: **38% of the margin is
+agreeing with the annotator rather than being right.** `capitalized` moves *negative*, which
+is the sanity check that the calculation is not simply additive.
+
+So the defensible claim is narrower than the leaderboard: *if your labels are a fixed
+in-house taxonomy and you can label training data, a 476MB model on CPU beats every frontier
+LLM at $0.* That is the podcast-product case exactly. The claim it does **not** support is
+that the small model is better at NER in general.
+
+**Two structural results that replicated.** The hosted top group is eight arms spanning
+**$0.0057 to $0.6897 — 121×** — with no resolvable difference; DBpedia gave 126× on an
+unrelated task. And the `arms tied 1st` column added after DBpedia earned itself: it reads
+**1.0 at every size** here, ρ rises monotonically 0.545 → 0.899, P(same winner) 0.31 → 1.00.
+Per-item set F1 essentially never ties, so ρ measures the data. On saturated binary accuracy
+it measured the alphabet. **The metric's shape decides whether that diagnostic can be read
+at all**, and this is the case that shows what it looks like when nothing is wrong.
+
+**No winner's curse**, and the same machinery that found one in the summarisation study says
+so: on the 224 items the dev slice never contained, `span_marker` is first with P(1st) =
+**1.00**. BART's 0.0737 lead at n=20 collapsed to 0.00008 at n=200. A lead can be an
+artifact of a small slice; this one is not.
+
+**NOT DONE.** `fn_mistral_l_n200_v1` was never measured — `mistral-large-2512` is
+rate-limited upstream on OpenRouter's shared pool, 3 items in 7 minutes, ~11 hours for the
+arm. Every "of 26" above is a family of 26, not 27.
+[`HANDOVER_NER_BLOCKED_ARM.md`](HANDOVER_NER_BLOCKED_ARM.md) has the resume command and the
+full list of what must be recomputed when it lands. Also not done: boundary errors are not
+separated from detection errors anywhere, and Few-NERD's IO tagging guarantees some gold
+boundaries are unrecoverable by construction. `gliner`'s 0.5 threshold is the library
+default and untuned, so the +0.3134 in this entry is an upper bound on the training effect
+too.
