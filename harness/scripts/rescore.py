@@ -182,6 +182,14 @@ def main() -> int:
             "adapter": adapter_id,
             "sha256": _sha(adapter_path),
         }
+        # The adapter FILE's hash does not cover a scorer that lives in a shared module.
+        # An adapter may expose `scorer_id()` -- no params, no network -- naming the
+        # hashes that identify its scoring rule; without it, an extraction.py-only change
+        # is invisible here and a rescored run cannot say what measured it.
+        sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None),
+                      "scorer_id", None)
+        if callable(sid):
+            new["rescored_with"]["scorer"] = sid()
         # The fingerprint is copied from the source run, and its `instrument.adapter`
         # identifies the scorer that produced the ORIGINAL numbers -- not these. Left
         # alone, a rescored run asserts the old scorer in the one field meant to identify

@@ -33,6 +33,24 @@ THE EMPTY CASES, DECIDED UP FRONT
   the item. Dropping it would delete exactly the items on which a hallucinating arm should
   be punished.
 
+AN UNREADABLE ANSWER IS NOT AN EMPTY ONE, AND THE FIRST VERSION OF THIS FILE CONFLATED THEM
+  `score_sets` used to take only the parsed set, so the caller had no way to say "there
+  was no set here at all" -- both an arm that answered `[]` and an arm whose output could
+  not be read arrived as `[]`. On the 15% of items whose gold is also empty, that paid a
+  non-answer the full 1.0.
+
+  It is not a theoretical hole. On few_nerd_280, glm_l spent its entire 600-token budget
+  on item 0e88aabc reasoning aloud about which benchmark it was being evaluated on --
+  "It matches FIGER? No, FIGER has 112 types" -- ran out of tokens, emitted no array,
+  and scored 1.0, because the sentence ("Epsilon Centauri is a relatively young star")
+  has no entities. Six of its 46 unreadable items were free 1.0s, worth +0.0214 f1.
+
+  So `parsed` is a required part of the call now. An unreadable answer scores zero on
+  every quality metric whatever the gold is, and is counted as missing every gold member.
+  It is NOT counted as a false positive: it predicted nothing, it merely failed. That
+  asymmetry means a CORPUS micro-F1 pooled from tp/fp/fn still forgives an unparsed
+  empty-gold item; the per-item mean, which is the primary metric, does not.
+
 MATCHING IS ONE-TO-ONE
   A prediction may satisfy at most one gold member and vice versa. Without that, one
   prediction overlapping three gold entities counts as three true positives and precision
@@ -88,6 +106,26 @@ def normalizer_sha256() -> str:
     return hashlib.sha256(body.encode()).hexdigest()
 
 
+def scorer_sha256() -> str:
+    """Hash of the WHOLE scoring rule, not just the string normaliser.
+
+    `normalizer_sha256` covers `normalize`, and that was the only scoring function
+    fingerprinted when this file was written -- on the reasoning that a normaliser has the
+    most room to move a score. That reasoning was right and the scope was wrong: the
+    matcher and the empty-case conventions have at least as much room, and the bug in the
+    module docstring lived in `prf`, which no hash covered. The scorer could be changed
+    between two runs and nothing in either fingerprint would say so.
+
+    So this covers every function whose output is a number: the normaliser, the member
+    coercion, the matcher, the per-item rule and the metric block. Changing any of them
+    changes every arm's fingerprint, which is the point -- two runs that disagree here are
+    not comparable, however similar their config looks.
+    """
+    body = "".join(inspect.getsource(f) for f in
+                   (normalize, as_members, match_one_to_one, prf, score_sets))
+    return hashlib.sha256((body + repr(_ARTICLES)).encode()).hexdigest()
+
+
 Member = Tuple[str, Optional[str]]
 
 
@@ -125,12 +163,19 @@ def match_one_to_one(pred: Sequence[Member], gold: Sequence[Member]) -> int:
     return tp
 
 
-def prf(pred: Sequence[Member], gold: Sequence[Member]) -> Dict[str, float]:
+def prf(pred: Sequence[Member], gold: Sequence[Member], parsed: bool = True) -> Dict[str, float]:
     """Precision, recall, F1 and the raw counts, for ONE item.
 
     The empty conventions are in the module docstring and are load-bearing on a corpus
     where 15% of items have no gold members.
+
+    `parsed=False` says the arm produced nothing readable. That is a zero on every
+    quality metric -- see the module docstring for the run where treating it as an empty
+    set paid a non-answer 1.0.
     """
+    if not parsed:
+        return {"precision": 0.0, "recall": 0.0, "f1": 0.0,
+                "tp": 0.0, "fp": 0.0, "fn": float(len(gold))}
     if not gold and not pred:
         return {"precision": 1.0, "recall": 1.0, "f1": 1.0, "tp": 0.0, "fp": 0.0, "fn": 0.0}
     tp = float(match_one_to_one(pred, gold))
@@ -141,7 +186,8 @@ def prf(pred: Sequence[Member], gold: Sequence[Member]) -> Dict[str, float]:
     return {"precision": p, "recall": r, "f1": f1, "tp": tp, "fp": float(fp), "fn": float(fn)}
 
 
-def score_sets(predicted: Iterable[Any], gold_json: Optional[str]) -> Dict[str, float]:
+def score_sets(predicted: Iterable[Any], gold_json: Optional[str],
+               parsed: bool = True) -> Dict[str, float]:
     """The metric block for one item, in both match modes.
 
     TYPED vs UNTYPED is the pair that disagrees, and it is the reason both are here.
@@ -155,8 +201,8 @@ def score_sets(predicted: Iterable[Any], gold_json: Optional[str]) -> Dict[str, 
     except (TypeError, ValueError):
         gold_raw = []
 
-    typed = prf(as_members(predicted, True), as_members(gold_raw, True))
-    untyped = prf(as_members(predicted, False), as_members(gold_raw, False))
+    typed = prf(as_members(predicted, True), as_members(gold_raw, True), parsed)
+    untyped = prf(as_members(predicted, False), as_members(gold_raw, False), parsed)
     out = {
         "f1": round(typed["f1"], 10),
         "precision": round(typed["precision"], 10),

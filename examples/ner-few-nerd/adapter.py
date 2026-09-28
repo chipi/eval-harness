@@ -49,9 +49,10 @@ from extraction import (  # noqa: E402
     PRIMARY_METRIC,
     normalizer_sha256,
     score_sets,
+    scorer_sha256,
 )
 
-__all__ = ["call_system", "score", "warmup", "fingerprint",
+__all__ = ["call_system", "score", "warmup", "fingerprint", "scorer_id",
            "PRIMARY_METRIC", "METRIC_KINDS", "TRANSIENT_MARKERS"]
 
 TRANSIENT_MARKERS = ("model is warming up", "no instances available", "upstream")
@@ -405,9 +406,30 @@ def score(output: str, reference: Optional[str], source: Optional[str] = None) -
     property the summarisation example relies on.
     """
     predicted = _parse_entities(output)
+    # `parsed` is passed THROUGH to the scorer, not just reported beside it. An output
+    # that could not be read is not an empty set: see AN UNREADABLE ANSWER in
+    # `_shared/extraction.py`, where letting the two look alike paid glm_l a free 1.0 on
+    # every unreadable item whose gold happened to be empty.
     out: Dict[str, float] = {"parsed": 0.0 if predicted is None else 1.0}
-    out.update(score_sets(predicted or [], reference))
+    out.update(score_sets(predicted or [], reference, parsed=predicted is not None))
     return out
+
+
+def scorer_id() -> Dict[str, str]:
+    """The hashes that identify the SCORING RULE, with no params and no network.
+
+    `fingerprint()` already carries these, but it needs an arm's params and can reach the
+    HuggingFace Hub, so `rescore.py` cannot call it. Without this, a rescored run's only
+    statement about its scorer is the adapter FILE's sha256 -- and the scoring rule lives
+    in `_shared/extraction.py`, which that hash does not cover. The bug this fix exists
+    for was exactly an extraction.py-only change: the adapter file would have looked
+    untouched across it.
+    """
+    return {
+        "scorer_sha256": scorer_sha256(),
+        "normalizer_sha256": normalizer_sha256(),
+        "parser_sha256": _parser_sha256(),
+    }
 
 
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -424,6 +446,9 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         "provider": provider,
         "labels": list(LABELS),
         "normalizer_sha256": normalizer_sha256(),
+        # The whole scoring rule, not just the string normaliser. `normalizer_sha256` is
+        # kept beside it for continuity with the runs that carry only that one.
+        "scorer_sha256": scorer_sha256(),
         "parser_sha256": _parser_sha256(),
     }
 

@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-28T05:20:52Z",
+  "created_at": "2026-09-28T05:58:19Z",
   "dataset_id": "few_nerd_56",
-  "description": "57 item(s) from few_nerd_56/",
+  "description": "56 item(s) from few_nerd_56/",
   "items": [
     {
       "item_id": "009e011601e770f9d190b7b26a6aa242e378c53e",
@@ -27,11 +27,6 @@
       "item_id": "114599c4db489b0f873832a21b7df8f8d944e8af",
       "source_path": "114599c4db489b0f873832a21b7df8f8d944e8af.txt",
       "source_sha256": "114599c4db489b0f873832a21b7df8f8d944e8af9ffb8b1971b421ab1e594bf9"
-    },
-    {
-      "item_id": "148de9c5a7a44d19e56cd9ae1a554bf67847afb0",
-      "source_path": "148de9c5a7a44d19e56cd9ae1a554bf67847afb0.txt",
-      "source_sha256": "148de9c5a7a44d19e56cd9ae1a554bf67847afb0c58f6e12fa29ac7ddfca9940"
     },
     {
       "item_id": "154350ae6e7f90df6f0edf536ca8b83b41e57a60",
