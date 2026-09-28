@@ -282,7 +282,21 @@ def _rerank(query: str, params: Dict[str, Any]) -> Result:
     by_id = {d["doc_id"]: d for d in docs}
     k = int(params.get("rerank_k", DEFAULT_RERANK_K))
 
-    first = _bm25(query, {**params, "top_k": int(params.get("top_k", DEFAULT_TOP_K))})
+    # THE FIRST STAGE IS A PARAMETER, defaulting to bm25 so every arm measured before
+    # this change means exactly what it meant. It is configurable because the ceiling
+    # analysis produced a prediction that only a swap can test: every BM25-based
+    # reranker shares one oracle ceiling (0.8163 on scifact_200) and the best has taken
+    # 91% of it, while e5_base's own candidates have a ceiling of 0.8747.
+    stage = params.get("first_stage", "bm25")
+    if stage == "bm25":
+        first = _bm25(query, {**params, "top_k": int(params.get("top_k", DEFAULT_TOP_K))})
+    elif stage == "dense":
+        first = _dense(query, {**params, "model": params["first_stage_model"],
+                               "query_prefix": params.get("first_stage_query_prefix", ""),
+                               "doc_prefix": params.get("first_stage_doc_prefix", ""),
+                               "top_k": int(params.get("top_k", DEFAULT_TOP_K))})
+    else:
+        raise SystemExit(f"unknown first_stage {stage!r} — 'bm25' or 'dense'")
     candidates = first.meta["ranking"]
     head, tail = candidates[:k], candidates[k:]
 
@@ -434,8 +448,14 @@ def warmup(params: Dict[str, Any]) -> None:
     provider = params.get("provider", "bm25")
     corpus_id = params.get("corpus_id", "scifact")
     _corpus(corpus_id)
-    if provider in ("bm25", "rerank"):
+    if provider == "bm25" or (provider == "rerank"
+                              and params.get("first_stage", "bm25") == "bm25"):
         _bm25_index(corpus_id)
+    if provider == "rerank" and params.get("first_stage") == "dense":
+        _dense_index(corpus_id, params["first_stage_model"],
+                     str(params.get("device", "cpu")),
+                     int(params.get("encode_batch", 64)),
+                     str(params.get("first_stage_doc_prefix", "")))
     if provider == "dense":
         _dense_index(corpus_id, params["model"], str(params.get("device", "cpu")),
                      int(params.get("encode_batch", 64)),
@@ -535,7 +555,10 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         common.update({
             "rerank_k": int(params.get("rerank_k", DEFAULT_RERANK_K)),
             "snippet_chars": int(params.get("snippet_chars", 900)),
-            "first_stage": "bm25",
+            "first_stage": params.get("first_stage", "bm25"),
+            "first_stage_model": params.get("first_stage_model"),
+            "first_stage_query_prefix": params.get("first_stage_query_prefix", ""),
+            "first_stage_doc_prefix": params.get("first_stage_doc_prefix", ""),
             "alias": params.get("model"),
             "id": params.get("model"),
             "identity_declared": True,

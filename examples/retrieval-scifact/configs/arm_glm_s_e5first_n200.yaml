@@ -1,0 +1,44 @@
+# glm small as a RERANKER over BM25's top 20. Same alias, price and temperature as this
+# arm in the other three examples, so a difference between them is the TASK, not the
+# configuration.
+#
+# WHAT IS BEING MEASURED, AND WHAT IS NOT. The LLM never retrieves. BM25 returns 100
+# documents, the LLM is shown the top 20 and reorders them, and BM25's remaining 80 are
+# appended BELOW unchanged. So this arm's recall@100 is BM25's recall@100 BY
+# CONSTRUCTION, and every difference in nDCG@10 is attributable to the reordering alone.
+# Anything else would be measuring retrieval and reranking at once and attributing the
+# sum to the model.
+#
+# max_tokens 700, raised from 400 ON THE DEV SLICE, which is where a budget may be tuned.
+# A 20-id permutation costs ~215 output tokens (gemma_m) and 400 looked like ample
+# headroom -- but qwen_s hit the ceiling on 40 of 40 dev queries, emitted nothing
+# parseable, and the pipeline fell back to BM25 on every one, landing on EXACTLY BM25's
+# nDCG@10. That is a budget artifact masquerading as 'reranking does not help', and the
+# NER example is where the same thing cost a real arm 0.02 f1 because the budget was
+# left alone. `truncated`, `parsed` and `llm_parsed` are all still recorded per item:
+# raising the ceiling is not the same as proving nobody hits it.
+#
+# The measurement slice. ONLY config_id and dataset_id differ from arm_glm_s.yaml.
+config_id: sf_glm_s_e5first_n200_v1
+dataset_id: scifact_200
+adapter: ../adapter.py
+params:
+  provider: rerank
+  model: eval-glm-45-air
+  family: glm
+  price_tier: small
+  corpus_id: scifact
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  prompt_file: prompt.txt
+  top_k: 100
+  rerank_k: 20
+  snippet_chars: 900
+  max_tokens: 700
+  usd_per_mtok_in: 0.06
+  usd_per_mtok_out: 0.22
+  first_stage: dense
+  first_stage_model: intfloat/e5-base-v2
+  first_stage_query_prefix: "query: "
+  first_stage_doc_prefix: "passage: "
