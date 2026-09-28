@@ -1898,3 +1898,119 @@ separated from detection errors anywhere, and Few-NERD's IO tagging guarantees s
 boundaries are unrecoverable by construction. `gliner`'s 0.5 threshold is the library
 default and untuned, so the +0.3134 in this entry is an upper bound on the training effect
 too.
+
+---
+
+### 2026-09-29 · 53 — The corpus is not the items, and that breaks three things
+
+Fourth task type, fourth metric shape, and the first where POSITION carries meaning. An
+extraction arm that finds the right entities in a different order is correct; a retrieval
+arm that finds the right document at rank 50 instead of rank 1 is not, and no set-valued
+metric can say so.
+
+But the shape was the easy part. What this example actually broke is that **every other
+adapter here answers a question about the item it was handed**, and this one cannot: an
+item is a QUERY, and the answer lives in a 5,183-document corpus no item mentions and no
+arm is scored on.
+
+1. **`warmup()` stopped being a smoke test and became the build.** It indexes the corpus,
+   once. The harness already timed warmup separately and excluded it from per-item latency
+   — a decision made for MODEL LOADING in the first example — and that turned out to be
+   exactly the right shape for an index build. bm25 0.8 s, minilm 194 s, e5_base 1825 s.
+   The column was already there; the task just gave it something to say.
+
+2. **`corpus_sha256` or the record is a lie.** Two runs over the same queries against
+   different corpora agree on dataset_id, items_sha256, reference_id, adapter hash and
+   every parameter. Nothing else distinguishes them. The corpus got its own directory
+   because it is not sources/ (no one-file-per-item), not references/ (it is the haystack)
+   and not materialized/ (not derived from anything here).
+
+3. **The arm became a PIPELINE with a ceiling it did not choose.** BM25 top-100, the LLM
+   reorders the top 20, BM25's remaining 80 are appended below unchanged — so recall@100
+   is BM25's by construction and every nDCG movement is the reordering alone. Verified,
+   not assumed: all twelve rerankers report recall_100 = 0.8586 to four decimals.
+
+**The scorer was tested before the first arm ran**, which is the opposite of last time.
+31 assertions, three of which encode rewards-for-bad-behaviour the tidy implementation
+would have paid out: an unreadable answer is not an empty ranking; a hallucinated id KEEPS
+its slot (dropping it slides real documents up and makes invention a strategy); a
+duplicate is collapsed. The suite earned itself immediately by catching a real parser bug
+before any arm ran — a preamble before the JSON array made it return the literal string
+`["a","b"]` as a document id.
+
+---
+
+### 2026-09-29 · 54 — A prediction registered before the arm existed, and it landed
+
+`retrieval_report.py` computes an oracle ceiling: sort an arm's own top-20 candidates so
+every relevant document precedes every irrelevant one, and score that. It is the only
+honest denominator for "how much better could this get WITHOUT a better retriever".
+
+```
+arm        nDCG@10  ceiling    used
+glm_s       0.7437   0.8163   91.1%
+qwen_s      0.7338   0.8163   89.9%
+e5_base     0.7191   0.8747   82.2%
+bm25        0.6451   0.8163   79.0%
+```
+
+Every BM25-based arm shares one ceiling because they share one first stage, and the best
+had already taken 91% of it. e5_base has a HIGHER ceiling and exploits less of it.
+
+So I wrote the prediction down — in a scratch file, then in a commit message — **before
+`first_stage` was configurable and before any e5-based arm existed**, together with what
+would falsify it: if the headroom share transfers, a reranker on e5_base's candidates
+reaches 0.899 x 0.8747 = 0.786 to 0.911 x 0.8747 = 0.797.
+
+    glm_s   over BM25 0.7422 -> over e5_base 0.7891   headroom 90.9% -> 90.2%
+    qwen_s  over BM25 0.7224 -> over e5_base 0.7799   headroom 88.5% -> 89.2%
+
+glm_s landed inside the range. qwen_s landed 0.006 under its own. And the MECHANISM
+transferred, not just the number: the share of available headroom each reranker takes
+moved by under one percentage point when the candidate set changed entirely.
+
+That is the first pre-registered quantitative prediction in this repo, and the reason it
+was possible is that the ceiling is computable from runs already on disk, for $0.
+
+**THE RESULT THAT MATTERS FOR THE PRODUCT.** The best arm, glm_s at 0.7437, separates from
+only 6 of 18 under Holm. The twelve it cannot separate from include **e5_base (0.7191) and
+bge_small (0.7097), which are free, local and CPU**. A 110M-parameter encoder on a laptop
+is not distinguishable from twelve hosted LLM rerankers.
+
+And the ordering of the three available moves is the opposite of the intuitive one:
+
+    BM25 -> best reranker on BM25          +0.0986
+    BM25 -> e5_base, no LLM at all         +0.0740
+    worst reranker -> best reranker        +0.0420  (across 3.6x price)
+
+Replacing the RETRIEVER is the large move. Choosing between rerankers is the small one.
+Adding a reranker to a weak first stage buys almost nothing, because eleven of twelve are
+already within four points of a cap they cannot move.
+
+**The tie is now the result in all four examples.** Summarisation: dearest arm 15th of 24.
+AG News: a leader tied with five. DBpedia: ten across 126x. NER: eight across 121x. Here:
+twelve, two of them free. Four unrelated tasks, one shape.
+
+**WINNER'S CURSE, found again.** rho(dev-40, measurement-200) = 0.756, and the dev leader
+`llama_s` finished TENTH of 19. Choosing on 40 queries would have shipped the tenth-best
+arm. Same machinery that found one in summarisation and none in NER.
+
+**NOT DONE.** Five of the 24 standard arms — the whole frontier tier — were never run.
+They cost $31.40 against this sweep's $2.45, because a reranking prompt carries 20 full
+abstracts (3,926 input tokens/query against NER's 125) and they are priced 6-100x above
+what was run. The cut was "everything under $0.60/Mtok input", declared before any result.
+So the twelve-way tie is a tie among CHEAP models and the report cannot say whether a
+frontier model reranks better. `HANDOVER_RETRIEVAL_FRONTIER_ARMS.md` has the rest.
+
+**AND A DEFECT THAT TOUCHES ALL FOUR REPORTS.** Measured today with a before/after spend
+delta: the provider reports 1.14-1.55x this repo's price table, and the proxy ENFORCES
+2.41x. Every `$` figure published in REPORT.md, REPORT_CLASSIFICATION.md and REPORT_NER.md
+understates the bill by roughly that factor. Not yet corrected anywhere.
+
+**MY ERRORS THIS EXAMPLE.** This adapter never passed `reasoning: {enabled: false}`, which
+the other three all do — so qwen_s spent its whole output budget on hidden reasoning,
+returned the empty string, fell back to BM25 on 40 of 40 dev queries, and scored EXACTLY
+BM25's nDCG. I diagnosed it as a budget problem first and raised max_tokens, which was the
+right diagnostic and the wrong fix. I also twice read the stored outputs as the model's
+reply when my own adapter had overwritten them with the pipeline's ranking. And the tree
+went dirty mid-sweep again, for one arm.

@@ -64,7 +64,7 @@ research/    reports, handovers, and an append-only journal of how each example 
 
 ## The worked examples
 
-Four tasks, three metric shapes, one harness. Each ships a download recipe rather than a
+Five tasks, four metric shapes, one harness. Each ships a download recipe rather than a
 corpus, and each exists because it breaks something the previous one did not.
 
 | Example | Task | Shape of the answer | Report |
@@ -73,6 +73,7 @@ corpus, and each exists because it breaks something the previous one did not.
 | `classification-ag-news` | 4-way topic label | one label, scored 0 or 1 | [`REPORT_CLASSIFICATION.md`](research/REPORT_CLASSIFICATION.md) |
 | `classification-dbpedia-14` | 14-way ontology label | same, but saturated | same report |
 | `ner-few-nerd` | named entities + types | **a set**, matched one-to-one | [`REPORT_NER.md`](research/REPORT_NER.md) |
+| `retrieval-scifact` | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | [`REPORT_RETRIEVAL.md`](research/REPORT_RETRIEVAL.md) |
 
 They exist to show the harness doing something real, and because the results make the point
 better than documentation can:
@@ -86,6 +87,9 @@ better than documentation can:
 - **Extraction.** A 476MB span tagger separated from **all 26** opponents — but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
+- **Retrieval.** Twelve LLM rerankers tie with each other *and with two free local
+  encoders*. A prediction registered before the arm existed — that swapping only the
+  first stage would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**.
 
 `research/NOTES.md` is the append-only journal, corrections included — findings have been
 retracted along the way, several caused by bugs in this harness's own scorer. The
