@@ -50,7 +50,7 @@ your own machines is either first or statistically tied with first.
 **And hardware buys almost nothing.** Of the 14 open-weight arms, several are cluster-scale —
 cluster models, not workstation ones. But capping the budget costs almost no quality:
 **four of five ≤128 GB answers equal the unlimited-hardware answer, and four of five
-≤64 GB answers equal the ≤128 GB one.** Going from a 765 GB model to a 35 GB one costs
+≤64 GB answers equal the ≤128 GB one.** Going from a 510 GB model to a 35 GB one costs
 **0.0078 on one task and nothing on the other four.**
 
 The counter-argument is measured too: one hosted model covers all five tasks at the 70th
@@ -224,7 +224,7 @@ machine it demands. They are not close in size.
 |---|---|---|---|---|---|---|---|
 | Classification · AG News | `bert_mini` | **44 MB** | **0.9450** | Llama-3.3-70B | ~141 GB | 0.8800 | ML ahead by 0.0650 at 1/3,205 the size — **not separated under Holm** (p = 0.0136 against a 0.0083 threshold) |
 | Extraction · Few-NERD | `span_marker` | **476 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
-| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, ~765 GB checkpoint | 0.3460 | **tie** |
+| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, 510 GB checkpoint | 0.3460 | **tie** |
 | Retrieval · SciFact | `e5_base` | **438 MB** | 0.7191 | GLM-4.5-Air | ~221 GB | **0.7437** | LLM wins by 0.0246, **not separated** |
 | Classification · DBpedia | *blocked* | — | — | GLM-4.6 | ~714 GB | **0.9857** | **LLM by default** — the ML arm would not load |
 
@@ -237,12 +237,25 @@ margin is not statistically separated, and the *best* configuration uses **both*
 Two practical consequences a DGX owner should weigh:
 
 - **Several of these "self-hostable" LLMs are cluster-scale, and the published
-  parameter counts understate them.** DeepSeek-V4.1-Flash is advertised as 552B backbone
-  parameters; its checkpoint totals ~765 GB, because a 196B Engram memory ships with it
-  and the headline count excludes it. GLM-4.6 is ~714 GB. Whether either fits a given
-  node depends on what must stay GPU-resident — a question about serving strategy that
-  a parameter count cannot answer and **this report does not attempt to.** The small ML
-  models fit in RAM on a laptop, which needs no such caveat.
+  parameter counts understate them — but not as badly as this report first said.**
+  DeepSeek-V4.1-Flash is advertised as 552B backbone parameters; its checkpoint is
+  **510 GB**, because a 196B Engram memory ships with it and the headline count excludes
+  it. GLM-4.6 is 714 GB. Whether either fits a given node depends on what must stay
+  GPU-resident — a question about serving strategy that a parameter count cannot answer
+  and **this report does not attempt to.** The small ML models fit in RAM on a laptop,
+  which needs no such caveat.
+
+  *This report said ~765 GB until 2026-09-29, and that number was never measured.* It
+  came from multiplying HuggingFace's per-dtype **element** counts by one byte for the
+  763B elements tagged `I8`. Those tensors are packed at roughly four bits: 763.2B
+  parameters occupy 510.3 GB across 48 safetensors shards, which is **0.67 bytes per
+  parameter**. The same mistake inflated DeepSeek-V4-Pro (1,602 → 865 GB) and
+  DeepSeek-V4-Flash (292 → 160 GB); the other 20 models in the capture are unaffected,
+  their derived and measured sizes agreeing to within 3%. The conclusion does not move —
+  510 GB is still far beyond one 128 GB box — but the figure was wrong by half again,
+  and it was wrong because it was computed rather than read. Found by external review;
+  the evidence capture now records measured bytes and `check_model_facts.py` reads the
+  claim out of this file rather than out of its own source.
 - **Concurrency is where the size gap really lands.** A 44 MB classifier at 7 ms/item
   saturates a CPU core and scales by forking; a 70B model occupies most of a GPU and
   scales by buying more of them. The scores above are per-item quality, and they say
@@ -275,7 +288,7 @@ here only if its weights fit in **85% of nominal memory**.
 | Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B**, native 52 GB | **0.9857** | **same**, native 52 GB | **0.9857** |
 | Extraction · Few-NERD | Gemma-4-26B | 52 GB | 0.6733 | **same**, native | **0.6733** | **same**, native | **0.6733** |
 | Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **same**, int4 55 GB | **0.7437** | Gemma-4-26B, native 52 GB | 0.7363 |
-| Summarisation · CNN/DM | DeepSeek-V4.1 | 765 GB | 0.3460 | Llama-3.3-70B, int8 70 GB | 0.3382 | **same**, int4 35 GB | 0.3382 |
+| Summarisation · CNN/DM | DeepSeek-V4.1 | 510 GB | 0.3460 | Llama-3.3-70B, int8 70 GB | 0.3382 | **same**, int4 35 GB | 0.3382 |
 
 **Hardware buys almost nothing here.** Four of five 128 GB answers equal the
 unlimited-hardware answer, and **four of five 64 GB answers equal the 128 GB one.** Only
@@ -283,7 +296,7 @@ SciFact loses anything by halving the budget — 0.0074, which its own separatio
 cannot resolve. Only summarisation loses anything by capping the budget at all — 0.0078,
 about a tenth of the spread between the best and worst hosted arm on that task.
 
-Going from a 765 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
+Going from a 510 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
 the other four**.
 
 **But the 64 GB column leans on int4 twice**, and that is where the caveat below bites
