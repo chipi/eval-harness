@@ -232,7 +232,7 @@ the same CVE-2025-32434 wall as the summarisation example's distilbart arms:
   been tested.
 - The hosted arms have no `confidence` — logprobs were not requested. That is the obvious
   next fingerprint/metric addition.
-- `research/REPORT.md` and `NOTES.md` carry none of this.
+- `research/REPORT_SUMMARIZATION.md` and `NOTES.md` carry none of this.
 - Runs are on one machine and gitignored.
 
 ## Reproducing

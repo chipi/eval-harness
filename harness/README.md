@@ -246,8 +246,12 @@ and call one function.
 
 ## See also
 
-- [`docs/cloud-ai-workflow.md`](../../docs/cloud-ai-workflow.md) — the cost-gate
-  doctrine this composes with.
-- [`examples/claude-api-with-caching/`](../claude-api-with-caching/) — the
-  simpler companion. If your eval is "run a prompt once and look at the
-  output", use that; this is overkill.
+- [`../examples/`](../examples) — five worked examples, what each one found, and
+  what each one broke in this harness.
+- [`../research/`](../research) — the reports, the append-only journal, and a
+  handover per example for the work that was not finished.
+
+Two links used to sit here, to `docs/cloud-ai-workflow.md` and
+`examples/claude-api-with-caching/`. Both pointed outside this repository and
+survived the extraction of the harness from the project it was carved out of;
+nothing here can satisfy them, so they are removed rather than left dangling.

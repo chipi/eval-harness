@@ -3,10 +3,10 @@
 One task — summarise a news article in 2–3 sentences — measured across 24 hosted models
 from 8 vendors, on three axes at once: **quality, cost and wall-clock speed**.
 
-It is a worked example for [`../eval-harness`](../eval-harness), and it is also a record
+It is a worked example for [`../eval-harness`](../../harness), and it is also a record
 of what a small eval can and cannot tell you. Most of what is interesting here was found
 by *disbelieving the first answer*: several headline findings in
-[`../EVAL_NOTES.md`](../EVAL_NOTES.md) were retracted after the numbers were checked
+[`../EVAL_NOTES.md`](../../research/NOTES.md) were retracted after the numbers were checked
 properly, including one caused by a one-line bug in this example's own scorer.
 
 ---

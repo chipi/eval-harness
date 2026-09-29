@@ -3,7 +3,7 @@
 State as of 2026-09-26. Facts, numbers and locations. This covers the session that added
 the first non-LLM arms to the summarisation example; the 24-arm LLM study it extends is in
 [`HANDOVER.md`](HANDOVER.md), with reasoning in [`NOTES.md`](NOTES.md) and results in
-[`REPORT.md`](REPORT.md).
+[`REPORT_SUMMARIZATION.md`](REPORT_SUMMARIZATION.md).
 
 ## Repo state
 
@@ -191,7 +191,7 @@ Resolved: torch 2.2.2, transformers 4.55.4, numpy 1.26.4.
   generation, which truncates correctly. Harmless, and reads as if a 1024 encoder were
   being fed 1163 tokens.
 - `rank_stability` not re-run at k=26. No family test on `grounding` (the gap is large and
-  untested). `research/REPORT.md` and `NOTES.md` carry none of this yet.
+  untested). `research/REPORT_SUMMARIZATION.md` and `NOTES.md` carry none of this yet.
 - The runs are on one machine and gitignored. Nothing is backed up.
 
 ## Reproducing the numbers above

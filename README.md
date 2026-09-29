@@ -64,12 +64,14 @@ research/    reports, handovers, and an append-only journal of how each example 
 
 ## The worked examples
 
+Full index, with what each one found and what it broke: **[`examples/README.md`](examples/README.md)**.
+
 Five tasks, four metric shapes, one harness. Each ships a download recipe rather than a
 corpus, and each exists because it breaks something the previous one did not.
 
 | Example | Task | Shape of the answer | Report |
 |---|---|---|---|
-| `summarization-cnn-dailymail` | summarise a news article | one text, scored continuously | [`REPORT.md`](research/REPORT.md) |
+| `summarization-cnn-dailymail` | summarise a news article | one text, scored continuously | [`REPORT_SUMMARIZATION.md`](research/REPORT_SUMMARIZATION.md) |
 | `classification-ag-news` | 4-way topic label | one label, scored 0 or 1 | [`REPORT_CLASSIFICATION.md`](research/REPORT_CLASSIFICATION.md) |
 | `classification-dbpedia-14` | 14-way ontology label | same, but saturated | same report |
 | `ner-few-nerd` | named entities + types | **a set**, matched one-to-one | [`REPORT_NER.md`](research/REPORT_NER.md) |

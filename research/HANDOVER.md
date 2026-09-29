@@ -1,8 +1,8 @@
 # Handover — eval harness and the summarization example
 
 State as of 2026-09-26. Facts and locations only; reasoning is in
-[`EVAL_NOTES.md`](EVAL_NOTES.md), results in [`EVAL_REPORT.md`](EVAL_REPORT.md), forward
-plan in [`EVAL_PLAN.md`](EVAL_PLAN.md).
+[`NOTES.md`](NOTES.md), results in [`REPORT_SUMMARIZATION.md`](REPORT_SUMMARIZATION.md), forward
+plan in [`PLAN.md`](PLAN.md).
 
 ## Repo state
 

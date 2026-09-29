@@ -284,7 +284,7 @@ wrong by a constant.
 agree to ±0.000 at every n on `cnn_dailymail_200`, and to ≤0.002 on `few_nerd_280` — both
 continuous metrics where ties essentially never occur, which is the check that the fix is
 sound rather than merely different. An earlier version of this paragraph claimed fixing
-this *would* change [`REPORT.md`](REPORT.md) §3.6. It does not.
+this *would* change [`REPORT_SUMMARIZATION.md`](REPORT_SUMMARIZATION.md) §3.6. It does not.
 
 ---
 

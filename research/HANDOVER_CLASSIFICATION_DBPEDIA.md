@@ -139,7 +139,7 @@ where it can be measured.
   recompute macro-F1 for both arms, read the distribution of the difference. NOT BUILT.
 - ~~Calibration recorded and unanalysed.~~ **MEASURED** — see below. Still open: hosted
   arms have no `confidence` at all, because logprobs were never requested.
-- No `rank_stability` at k=27. No README for the example. `research/REPORT.md` and
+- No `rank_stability` at k=27. No README for the example. `research/REPORT_SUMMARIZATION.md` and
   `NOTES.md` carry none of this.
 - Runs live on one machine and are gitignored. Nothing is backed up.
 

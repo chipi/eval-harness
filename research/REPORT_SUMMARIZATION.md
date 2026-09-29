@@ -3,7 +3,7 @@
 **Dataset** `cnn_dailymail_200` · 200 articles · human-written gold references
 **Arms** 24 hosted models, 8 vendors, 3 price tiers each
 **Design** 1 pass per arm · 4,800 calls · **$5.74 billed** ($4.93 by the price table — see Correction) · identical prompt, temperature 0, reasoning off
-**Date** 2026-09-26 · **Harness** `examples/eval-harness` · **Journal** [`EVAL_NOTES.md`](EVAL_NOTES.md)
+**Date** 2026-09-26 · **Harness** `examples/eval-harness` · **Journal** [`NOTES.md`](NOTES.md)
 
 > **This report was re-measured at n=200 on 2026-09-26.** It previously covered
 > `cnn_dailymail_20` — 20 articles, 3 repeats, $1.45 — and several of its headline claims
@@ -324,19 +324,46 @@ those below ρ 0.3 average +9.4.
 ### 3.6 How much data does a ranking need?
 
 Measured from these runs at no extra cost: draw two **disjoint** subsets of *n* articles,
-rank all 24 arms independently in each, and correlate the two orderings. Neither half is
+rank the arms independently in each, and correlate the two orderings. Neither half is
 treated as truth.
+
+**Re-measured 2026-09-29 over the 26-arm field.** The table first published here described
+24 arms, before the ML work added `bart_l` and `lead3`; the numbers below supersede it, and
+the difference is almost entirely one arm — see the note after the table.
 
 | items per half | ρ(half A, half B) | 5th pct | P(both crown the same arm) | median rank move |
 |---|---|---|---|---|
-| 10 | 0.224 | −0.135 | 0.11 | 4.68 |
-| 20 | **0.346** | 0.057 | **0.15** | 3.75 |
-| 50 | 0.579 | 0.362 | 0.27 | 2.55 |
-| 100 | **0.753** | 0.624 | **0.58** | 1.56 |
+| 10 | 0.278 | −0.028 | 0.12 | 4.63 |
+| 20 | **0.416** | 0.155 | **0.14** | 3.69 |
+| 50 | 0.643 | 0.463 | 0.17 | 2.42 |
+| 100 | **0.799** | 0.690 | **0.01** | 1.45 |
 
 At 20 articles — the size of the original experiment — two independent evals of these arms
-agree at ρ = 0.35 and pick the same winner 15% of the time, against 4% from chance among
-24. At 100 they still disagree at ρ = 0.75.
+agree at ρ = 0.42. At 100 they still disagree at ρ = 0.80.
+
+### P(same winner) went from 0.58 to 0.01, and that is a result rather than a regression
+
+It is not the tie-correction fix: re-measured on identical data, the old and new statistics
+agree to **0.0075 vs 0.0075** here, because `coverage` is continuous and never ties. It is
+the arm set.
+
+```
+cnn_bart_l      0.346121   wins half A in 179 of 400 draws
+cnn_deepseek_m  0.346039   wins half A in 178 of 400 draws
+```
+
+**Two arms separated by 0.00008 over 200 articles.** Adding `bart_l` gave the field a
+co-leader indistinguishable from the previous one, so the two halves crown the same arm
+essentially never — a coin flip between two arms that no quantity of this data separates.
+
+The statistic is reporting exactly the right thing, and it happens to be the same finding
+the ML arms produced from the other direction: BART's apparent lead at n=20 was 0.0737 and
+at n=200 it is 0.00008. "P(both halves crown the same arm)" is near zero **because there is
+no winner to crown**, not because the evaluation got noisier.
+
+Note also that `arms tied 1st` is 1.0 at every size: these two arms are not *tied*, they
+are 0.00008 apart, which a continuous metric resolves into a strict order that means
+nothing. A tie count cannot catch that; only the separation test in §3.2 can.
 
 This is the most transferable result in the report: it is about evaluation rather than
 about 24 models, and it does not go stale when the models change.
