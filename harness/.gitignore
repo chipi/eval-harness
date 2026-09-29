@@ -55,10 +55,17 @@ data/runs/*/*
 # the file. No MEASUREMENT run is affected; every number in the reports comes from the
 # n=200/280 runs, which are committed. Regenerate these with
 #   make experiment-run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
-data/runs/cnn_*_v1_2026092[56]T*_r[0-9]/metrics.json
-data/runs/cnn_*_v1_2026092[56]T*_r[0-9]/predictions.jsonl
-data/runs/cnn_*_v2_2026092[56]T*_r[0-9]/metrics.json
-data/runs/cnn_*_v2_2026092[56]T*_r[0-9]/predictions.jsonl
+#
+# THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
+# dev runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
+# their outputs behind that exclusion -- so 144 of these directories were committed as
+# outputs ONLY: 2,880 files of CNN/DailyMail paraphrases with no metrics.json to say what
+# they are, which no tool in this repo can read. All of the copyright exposure of the
+# summarisation outputs and none of the reproducibility benefit, which is the worst of
+# both trades. Found by external review; the exclusion is now written per DIRECTORY so a
+# future force-include cannot slip underneath it again.
+data/runs/cnn_*_v[12]_2026092[56]T*_r[0-9]/
+data/runs/cnn_*_v[12]_2026092[56]T*_r[0-9]/**
 # The ONE worked example that ships, so a fresh checkout sees a walked loop instead of an
 # empty directory: sources -> dataset -> reference -> run -> baseline. It is also what keeps
 # the tree self-consistent — data/baselines/ is committed and V6 requires each baseline's

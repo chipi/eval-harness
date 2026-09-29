@@ -1,9 +1,0 @@
-The user wants a terse news wire summary of this article in 2-3 short sentences. Let me extract the key facts:
-
-- 19-year-old Yahya Rashid, UK national from northwest London
-- Charged Wednesday with terror offenses
-- Arrested at Luton airport Tuesday on flight from Istanbul
-- Charged with preparing acts of terrorism and assisting others to commit terrorism
-- Due in Westminster Magistrates' Court Wednesday
-
-News wire style is very terse, factual, front-loaded. Let me write 2-3 shortA 19-year-old British man has been charged with terrorism offenses after being arrested at Luton airport on his return from Istanbul. Yahya Rashid, from northwest London, is accused of preparing acts of terrorism and assisting others to commit attacks. He is due to appear at Westminster Magistrates' Court on Wednesday.
