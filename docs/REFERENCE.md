@@ -276,8 +276,31 @@ run fingerprints, not the ones a lockfile would prefer.
 
 ### Models
 
-Model cards carry the authoritative licence; the ones used here are variously MIT,
-Apache-2.0 and CC-BY-NC-4.0. Follow each link before reusing any of them commercially.
+Licences below were read from the HuggingFace API on 2026-09-29, not assumed. **Two state
+no licence at all**, which is a reuse blocker rather than a permission — follow each link
+and check before reusing any of them commercially.
+
+| model | licence |
+|---|---|
+| [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | MIT |
+| [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) | MIT |
+| [`facebook/bart-large-xsum`](https://huggingface.co/facebook/bart-large-xsum) | MIT |
+| [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) | MIT |
+| [`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2) | MIT |
+| [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | Apache-2.0 |
+| [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) | Apache-2.0 |
+| [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | Apache-2.0 |
+| [`sshleifer/distilbart-cnn-12-6`](https://huggingface.co/sshleifer/distilbart-cnn-12-6) | Apache-2.0 |
+| [`sshleifer/distilbart-cnn-6-6`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | Apache-2.0 |
+| [`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | Apache-2.0 |
+| [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14) | Apache-2.0 |
+| [`guishe/span-marker-generic-ner-v1-fewnerd-fine-super`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | **CC-BY-SA-4.0** |
+| [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | **none stated** |
+| [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | **none stated** |
+
+An earlier version of this line claimed the set was "variously MIT, Apache-2.0 and
+CC-BY-NC-4.0". No model here is CC-BY-NC-4.0; one is CC-BY-SA-4.0 and two state nothing.
+That was asserted rather than checked, and it is the same error the paper citations had.
 
 [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) ·
 [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) ·
