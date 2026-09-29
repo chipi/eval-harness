@@ -30,6 +30,7 @@
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
 | **What does fine-tuning buy?** | **+0.3134 F1**, isolated by a matched pair at price zero on both sides (`span_marker` vs `gliner`). |
 | **Is a pilot enough?** | Here yes — ρ = 0.895, right winner. It was wrong in 3 of the other 4 experiments. |
+| **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 from exposure alone**, at $0 on both sides. |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*

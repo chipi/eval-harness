@@ -29,6 +29,7 @@
 | **Arms tied at the top?** | 9 of 26 | **18 of 25** — the ranking is mostly noise |
 | **What limits the score?** | model quality | **the annotation.** Top ten separated by 4 items, 3 disputed by the whole field |
 | **Is a pilot enough?** | No — ρ = 0.852 and it picked `anthropic_l`, truly 3rd | No — ρ = 0.728, picked `anthropic_l`, truly 2nd |
+| **Fine-tune or pay?** | **Fine-tune** — `bert_mini` is 1st of 26 at $0 | **Unknown here.** The fine-tuned arm could not be loaded; the only free arm is zero-shot and finishes **last**. See [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](HANDOVER_DBPEDIA_BLOCKED_ARM.md) |
 
 **Read the two together or not at all.** They were chosen before any result was seen to
 sit in opposite regimes; either alone supports whichever conclusion it happens to produce.

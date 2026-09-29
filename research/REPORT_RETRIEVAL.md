@@ -31,6 +31,7 @@
 | **Arms tied at the top?** | **12 of 18** — and two of them (`e5_base`, `bge_small`) are **free and local**. |
 | **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
 | **Is a pilot enough?** | **Emphatically no.** ρ = 0.756 and the dev slice's leader finished **10th of 19**. |
+| **Fine-tune or pay?** | **The one genuinely marginal case.** No arm here was fine-tuned *on SciFact*; `e5_base` is retrieval-trained but not on this corpus, and lands mid-field — beaten by 0.0246 that the test cannot resolve. Partially-trained looks like a tie, not a win. |
 
 **A prediction registered before the arm existed** — that swapping only the first stage
 would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**, and the

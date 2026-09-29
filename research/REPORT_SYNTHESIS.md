@@ -29,6 +29,14 @@ four of five leaderboard tops are statistical ties, a small model trained on you
 beat every frontier LLM for $0 wherever one could run, and a 10× cost increase bought
 between −0.4% and +5.9% of quality.**
 
+**The production question — should you fine-tune a small model instead of paying an
+LLM?** Yes, for a task you can define and label: every model fine-tuned on its dataset
+ranked **first** (3 of 3), and every zero-shot model ranked **last** (3 of 3). The
+predictor is training exposure, not model size. The counter-argument is also measured: one
+hosted model covers all five tasks at the 70th percentile with a prompt change, where each
+local model does exactly one. Full reasoning and four ways it could be wrong:
+[§0](#0-the-production-question-should-you-fine-tune-a-small-model-instead-of-paying-an-llm).
+
 ### The seven findings
 
 | # | finding | evidence |
@@ -88,6 +96,88 @@ it is that **price stops predicting quality long before it stops rising.**
 *The rest of this report unpacks each finding with its full evidence, and
 [§8](#8-the-economics-what-money-actually-buys) has the complete economics. Each finding links to the experiment report it comes from; those
 reports carry the per-task detail, the corrections, and what each one could not measure.*
+
+---
+
+## 0. The production question: should you fine-tune a small model instead of paying an LLM?
+
+**Yes — for a task you can define and label. The evidence is 3 for 3, and it is not close
+on cost or latency. But the answer depends entirely on one variable, and it is not model
+size.**
+
+### What actually predicts whether a free local model wins
+
+Sorting all ten local arms by how much task-specific training they had produces a
+**monotonic** relationship — and the boundary is sharp:
+
+| training exposure | arms | rank among all arms | vs the best **paid** arm |
+|---|---|---|---|
+| **Fine-tuned on this dataset** | `span_marker`, `bert_mini`, `bart_l` | **1st, 1st, 1st** | **+0.0810, +0.0350, +0.0001** |
+| Trained for the task *type* | `e5_base`, `bge_small` | 9th, 11th of 17 | −0.0246, −0.0340 — **not separated** |
+| General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 17 | −0.0794, −0.0904 |
+| **Zero-shot** | `bart_mnli` ×2, `gliner` | **25th, 25th, 26th — last** | **−0.2100, −0.2324, −0.3643** |
+
+**Every model fine-tuned on its dataset ranked first. Every zero-shot model ranked last or
+second-to-last.** No exceptions in either direction, across five tasks and four metric
+shapes.
+
+The cleanest proof is a matched pair with price held at zero on both sides:
+`span_marker` and `gliner` are the same model class on the same task, differing only in
+whether they saw Few-NERD's training split. The difference is **+0.3134 F1** — larger than
+the entire spread of the 23 hosted arms on that task.
+
+### What that is worth in production
+
+| | fine-tuned local | best paid alternative |
+|---|---|---|
+| Few-NERD | **0.7674**, $0, 0.76 s | 0.6864, **$2,324/mo**, 1.60 s |
+| AG News | **0.9450**, $0, **7 ms** | 0.9100, **$351/mo**, 1.92 s |
+| summarisation | **0.3461**, $0, 11.0 s | 0.3460, **$191/mo**, 1.60 s |
+
+Better quality, zero inference cost, and **44×–766× lower latency** on the two
+classification-shaped tasks. On summarisation the quality is a tie and the local model is
+*slower*, because generation on a CPU is genuinely expensive — so the win there is cost
+only.
+
+### The strongest argument on the other side, also measured
+
+**One hosted model does all five tasks with nothing but a prompt change.** Twelve of the
+24 hosted arms ran every experiment unmodified; the best of them, `glm_m`, sits at the
+**70th percentile across all five**. The three fine-tuned local models sit at the 100th
+percentile on **one task each** and cannot perform the other four at all.
+
+That is ten local models to cover what twelve hosted arms covered with one configuration.
+If you have five tasks, a moving target, or no labelled data, the generalist is not a
+compromise — it is the only thing that works.
+
+### So the honest rule
+
+> **If the task is stable, you own the labels, and you will run it more than a few
+> thousand times a month — fine-tune a small model. It will be better, free, and faster.**
+>
+> **If the task is fluid, unlabelled, or one of many — pay for the LLM.** Then use §8 to
+> avoid overpaying for it, because the dearest arm was never the best one.
+
+### What this conclusion does NOT rest on, and the four ways it could be wrong
+
+1. **Every fine-tuned arm was tested on the same distribution it was trained on.** That is
+   precisely what "you govern the dataset" means, and it is also the best case. Nothing
+   here measures **distribution drift**, which is the main way a fine-tuned model decays
+   in production and the main reason teams reach for a generalist.
+2. **Part of the win is learning the annotator's conventions, not the task.** Few-NERD
+   quantifies it: **38% of `span_marker`'s lead** survives only because it agrees with
+   annotation that the rest of the field rejects, and **57% of its margin is one entity
+   type** whose meaning exists only inside that corpus. In production, *your* conventions
+   are what you want — but the measured win does not transfer to a different labelling
+   standard.
+3. **"Free" means zero inference cost and nothing else.** No labelling, no training
+   compute, no hosting, no monitoring, no retraining when the data moves. A model that
+   takes an engineer a fortnight to ship is not free at any volume. The crossover point
+   against $191/month is a spreadsheet this report does not contain.
+4. **All five tasks are classic NLP with mature small-model architectures** —
+   summarisation, classification, NER, retrieval. Nothing open-ended, multi-step,
+   reasoning-heavy, or instruction-following. Those are exactly the tasks where a
+   generalist is structurally advantaged, and **none of them were tested here.**
 
 ---
 
