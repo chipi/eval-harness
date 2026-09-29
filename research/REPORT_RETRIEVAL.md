@@ -371,8 +371,9 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
 ## 7. NOT covered, NOT measured, NOT verified
 
 - **Five of the 24 standard arms were never run.** `anthropic_s`, `openai_m`, `openai_l`,
-  `anthropic_m`, `anthropic_l` — the frontier tier. They cost **$31.40 of the $39.81** a
-  full 24-arm sweep would have cost, against this sweep's $2.45. The cut was
+  `anthropic_m`, `anthropic_l` — the frontier tier. They would cost **about $12**,
+  against this sweep's **$2.21 as billed** — not the $31.40 stated here until
+  2026-09-29, which rested on a multiplier that does not survive checking. The cut was
   "everything under $0.60/Mtok input", price-ordered and declared before any result was
   read. **So this report says nothing about whether a frontier model is a better
   reranker**, and the 12-way tie is a tie among cheap models plus two free ones. See

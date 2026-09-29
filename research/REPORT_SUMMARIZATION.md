@@ -62,8 +62,8 @@ answer it.
 | pre-registered pair | all 200 | 180 held out |
 |---|---|---|
 | `deepseek_m` > `anthropic_l` (52× dearer) | +0.0306, p=0.0000 | +0.0308, p=0.0000 |
-| `deepseek_m` > `anthropic_m` (38×) | +0.0224, p=0.0006 | +0.0224, p=0.0010 |
-| `deepseek_m` > `openai_l` (18×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
+| `deepseek_m` > `anthropic_m` (19.6×) | +0.0224, p=0.0006 | +0.0224, p=0.0010 |
+| `deepseek_m` > `openai_l` (11.4×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
 | `deepseek_s` > `qwen_m` (control) | +0.0255, p=0.0000 | +0.0208, p=0.0003 |
 
 All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place;
@@ -78,6 +78,12 @@ frontier. That is the most directly actionable output here.
 180). The critical difference fell from 8.13 rank positions to 2.57. A leaderboard
 printing a smooth 1-to-24 ordering is still asserting hundreds of comparisons it cannot
 support.
+
+*Both figures are over the **24 hosted arms** this section was computed on. The field
+is now 26 — `bart_l` and `lead3` were added later — and at k=26 `leaderboard.py`
+refuses to give a critical difference at all, because its studentised-range table stops
+at k=25. These numbers are reproducible only by restricting to the original 24, which
+is what the command in §2 does. Nothing here is recomputed over 26.*
 
 **The n=20 ranking largely did not survive.** Spearman between the two orderings of the
 same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthropic_m` fell
@@ -296,8 +302,8 @@ a family of four:
 |---|---|---|---|
 | `deepseek_m` vs `anthropic_l` — is 52× the price worth it? | coverage | +0.0306, 114/200, **p=0.0000** | +0.0308, 102/180, **p=0.0000** |
 | | rougeLsum | +0.0310, 139/200, **p=0.0000** | +0.0331, 127/180, **p=0.0000** |
-| `deepseek_m` vs `anthropic_m` — 38× | coverage | +0.0224, 112/200, **p=0.0006** | +0.0224, 104/180, **p=0.0010** |
-| `deepseek_m` vs `openai_l` — 18× | coverage | +0.0193, 96/200, **p=0.0032** | +0.0171, 85/180, **p=0.0153** |
+| `deepseek_m` vs `anthropic_m` — 19.6× | coverage | +0.0224, 112/200, **p=0.0006** | +0.0224, 104/180, **p=0.0010** |
+| `deepseek_m` vs `openai_l` — 11.4× | coverage | +0.0193, 96/200, **p=0.0032** | +0.0171, 85/180, **p=0.0153** |
 | | rougeLsum | +0.0037, 107/200, p=0.47 | +0.0038, 97/180, p=0.47 |
 | `deepseek_s` vs `qwen_m` — the control | coverage | +0.0255, 107/200, **p=0.0000** | +0.0208, 93/180, **p=0.0003** |
 
@@ -494,7 +500,7 @@ size itself, and only the re-measurement at n=200 exposed them.
 | "no arm emitted preamble or bullets" | 77 of 1440 outputs trip a format flag | read 5 outputs, generalised to 1440 |
 | "Anthropic arms bill hidden reasoning tokens" | provider reports 0 on all 1440 calls | inferred from a token/word ratio |
 | "`deepseek_m` vs `anthropic_l` is not separated" (p=0.52) | separated at p=0.0000, both cuts, both metrics | 20 articles could not resolve a real 0.031 gap |
-| "10 of 24 arms are on the Pareto frontier" | 7 of 24 | three arms' quality estimates moved with more data |
+| "10 of 24 arms are on the Pareto frontier" | **8 of 24** | three arms' quality estimates moved with more data, and the cost axis now uses the bill rather than the price table (7 of 24 under the old cost figures) |
 | "CI stops baking a 990 MB model" (commit c7f47e4c) | it kept shipping, restored from cache | manifest drives the preload, not the artifact |
 
 Two were caused by defects in this harness's own scorer, and three by trusting 20 articles.

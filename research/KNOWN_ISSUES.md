@@ -15,7 +15,7 @@ noted below).
 | gap | consequence | why |
 |---|---|---|
 | **`fn_mistral_l_n200_v1`** never ran | every "of 26" in REPORT_NER is a family of 26, not 27 | `mistral-large-2512` is rate-limited upstream on OpenRouter's shared pool; 3 items in 7 minutes. [Handover](HANDOVER_NER_BLOCKED_ARM.md) |
-| **5 frontier SciFact rerankers** never ran | the 12-way tie is a tie among *cheap* models; the report cannot say whether a frontier model reranks better | $31.40 against that sweep's $2.45. [Handover](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md) |
+| **5 frontier SciFact rerankers** never ran | the 12-way tie is a tie among *cheap* models; the report cannot say whether a frontier model reranks better | ≈$12 (price-table; $8–$45 once the 0.67×–3.76× billing spread is allowed for) against that sweep's $2.21 billed. Was stated as $31.40 until 2026-09-29, on a multiplier that did not survive checking. [Handover](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md) |
 | **6 local ML checkpoints** never ran | DBpedia has no fine-tuned local arm at all, so it cannot answer the fine-tune-vs-pay question its twin answers | pickle checkpoints need torch ≥ 2.6; no Intel-Mac wheel above 2.2.2. [Run them](RUN_THE_BLOCKED_ML_ARMS.md) |
 | **No quantised arm was measured** | §0's ≤64 GB column assumes int8/int4 preserve quality. int8 usually does, int4 often does not | would need a local serving stack |
 | **No throughput measured anywhere** | every latency figure is per-item at concurrency 1. A 44 MB model and a 70B model scale completely differently and nothing here says how | out of scope as built |
