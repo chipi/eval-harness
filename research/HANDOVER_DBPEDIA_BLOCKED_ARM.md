@@ -145,4 +145,5 @@ in-distribution caveat the AG News handover was corrected to state.
   cannot take it; the right tool is a bootstrap over items and it is not built.
 - Calibration recorded and unanalysed; hosted arms have no `confidence` at all.
 - No `rank_stability` at k=27.
-- Runs live on one machine and are gitignored.
+- The 143 measurement runs are committed as of 2026-09-29; anything you add here is
+  untracked until you commit it, and is on one machine until then.

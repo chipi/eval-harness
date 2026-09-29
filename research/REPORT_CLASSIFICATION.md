@@ -395,8 +395,11 @@ $PY scripts/bootstrap_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --a
 $PY scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct
 ```
 
-Runs are gitignored and live on one machine. The datasets are frozen by `items_sha256`,
-and `make dataset-materialize` verifies a refetch against them.
+The `ag_news_200` and `dbpedia_280` runs are committed (metrics, predictions and
+outputs, since 2026-09-29), so these commands run against the same bytes the report was
+written from. The corpora are not committed — rebuild them with each example's seeded
+`fetch.py` first, or `rescore.py` refuses. The datasets are frozen by `items_sha256`, and
+`make dataset-materialize` verifies a refetch against them.
 
 ---
 

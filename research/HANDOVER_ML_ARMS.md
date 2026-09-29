@@ -19,8 +19,9 @@ fb7366a  The ML half of "ML vs LLM", and the three things that were wrong with t
 
 ## What ran, and where the runs are
 
-Four runs in `harness/data/runs/` (gitignored — they exist only on the machine that made
-them, an Intel i7 macOS box):
+Four runs in `harness/data/runs/` (uncommitted — they exist only on the machine that
+made them, an Intel i7 macOS box; untracked rather than ignored since 2026-09-29, so
+`git add` will take them):
 
 | run | dataset | coverage | grounding | latency/item |
 |---|---|---|---|---|
@@ -192,7 +193,8 @@ Resolved: torch 2.2.2, transformers 4.55.4, numpy 1.26.4.
   being fed 1163 tokens.
 - `rank_stability` not re-run at k=26. No family test on `grounding` (the gap is large and
   untested). `research/REPORT_SUMMARIZATION.md` and `NOTES.md` carry none of this yet.
-- The runs are on one machine and gitignored. Nothing is backed up.
+- These four ML runs are NOT among the 143 committed on 2026-09-29 — they are on one
+  machine and uncommitted. They are untracked rather than ignored, so `git add` works.
 
 ## Reproducing the numbers above
 
@@ -208,4 +210,4 @@ $PY scripts/family_test.py --dataset-id cnn_dailymail_200 \
 ```
 
 The 154-item stratum is regenerated from the BART run's `input_truncated` column; there is
-no committed copy, because it is derived from a run that is itself gitignored.
+no committed copy, because it is derived from a run that is itself uncommitted.

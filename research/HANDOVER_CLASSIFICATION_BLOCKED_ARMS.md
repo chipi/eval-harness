@@ -111,7 +111,14 @@ each) dominate.
 
 ## Bringing them back
 
-`data/runs/*` is gitignored, so copy rather than commit:
+Since 2026-09-29 `metrics.json`, `predictions.jsonl` and `outputs/` are force-included
+for every run directory, so **a run you produce is untracked, not ignored** — `git add`
+it and commit. Verified: a fresh `data/runs/<id>/` shows as `?? data/runs/<id>/`, and
+`git check-ignore -v` names the un-ignore rule. `make ci` runs `validate_tree`, which is
+what caught an absolute username path the first time runs were committed, so let it run
+before pushing.
+
+Tarring still works if the machine has no push access:
 
 ```bash
 cd harness/data/runs
@@ -145,4 +152,5 @@ span faster than Nemenyi's critical difference grew. Do not assume the direction
   take it. A real gap.
 - Calibration recorded (`confidence`) and unanalysed. Hosted arms have no `confidence` at
   all — logprobs were never requested.
-- Runs live on one machine and are gitignored. Nothing is backed up.
+- The 143 measurement runs are committed as of 2026-09-29; anything you add here is
+  untracked until you commit it, and is on one machine until then.
