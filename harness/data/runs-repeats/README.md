@@ -24,7 +24,7 @@ distinction is pinned by `test_two_runs_sharing_a_config_id_are_refused`.
 
 | arm | 2026-09-28 | 2026-09-29 | like-for-like Δ |
 |---|---|---|---|
-| `sf_llama_l_n200_v1` | 0.7281 | 0.6386 | see below |
+| `sf_llama_l_n200_v1` | 0.7281 | 0.6386 | **0.0126** |
 | `sf_llama_s_n200_v1` | 0.7172 | 0.7132 | −0.0003 / +0.0047 |
 | `sf_qwen_s_n200_v1` | 0.7338 | 0.7187 | −0.0004 |
 
