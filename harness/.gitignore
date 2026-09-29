@@ -149,6 +149,21 @@ data/runs-*/
 
 # --- re-allowed, and only these ---------------------------------------------------
 
+# data/runs-repeats/ — second runs of an arm already measured. They live apart from
+# data/runs because two runs sharing a config_id make every loader pick one by
+# filesystem order: `check_report_claims` answered 29/29 on APFS and 28/29 on ext4 off
+# exactly that, and `leaderboard` silently printed the MEAN of the two as though it
+# were a measurement. Kept, because they are the only evidence this repo has about
+# between-run variance. Found by external review.
+!data/runs-repeats/
+data/runs-repeats/*/*
+!data/runs-repeats/*/metrics.json
+!data/runs-repeats/*/predictions.jsonl
+!data/runs-repeats/*/outputs
+!data/runs-repeats/*/outputs/**
+!data/runs-repeats/README.md
+
+
 # data/runs-reparsed/ — the SciFact rankings rebuilt from each run's stored LLM reply
 # with the corrected parser. `rescore` cannot produce these: this adapter parses at
 # CALL time and writes the resulting ranking as its output, so the parser bug is baked

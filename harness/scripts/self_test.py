@@ -944,6 +944,70 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_two_runs_sharing_a_config_id_are_refused() -> None:
+    """A second run of the same arm must stop the tools, not be picked by luck.
+
+    Three SciFact arms were re-run, so three config_ids existed twice in data/runs.
+    `check_report_claims.py` globbed for a run in five places -- three took the last
+    hit, two the first, and one had a different exclusion rule -- so its answer depended
+    on the order the filesystem returned directories in. 29/29 on APFS, 28/29 on ext4,
+    and the failure was real: two cost cells genuinely still held price-table figures.
+    `make ci` was called green for a week on the only machine anyone ran it on.
+
+    The re-runs now live in `data/runs-repeats/`. This asserts the tools refuse rather
+    than guess if that ever happens again.
+
+    `--repeat N` writes `<id>_r1.._rN`, which IS one arm measured N times and must keep
+    working; the second half of this test pins that, or the fix would forbid the
+    feature it was meant to protect.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    sys.path.insert(0, str(HERE))
+    from _common import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
+
+    src = next((d for d in sorted((HERE.parent / "data" / "runs").glob("sf_*"))
+                if (d / "metrics.json").is_file()), None)
+    if src is None:
+        print("  --   duplicate runs: skipped (no SciFact run on disk)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-dupe"
+    shutil.rmtree(runs, ignore_errors=True)
+    for name in (src.name, src.name.replace("2026", "2027", 1)):
+        d = runs / name
+        d.mkdir(parents=True)
+        for f in ("metrics.json", "predictions.jsonl"):
+            if (src / f).is_file():
+                shutil.copy2(src / f, d / f)
+
+    ds = _json.loads((src / "metrics.json").read_text())["dataset_id"]
+    raised = False
+    try:
+        runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
+    except AmbiguousRuns as exc:
+        raised = "claim config_id" in str(exc)
+    check("duplicate runs: two runs sharing a config_id are refused, not picked",
+          raised, "runs_by_arm returned a winner instead of raising")
+
+    # The control: a --repeat set shares a config_id BY DESIGN and must still load.
+    shutil.rmtree(runs, ignore_errors=True)
+    for i in (1, 2, 3):
+        d = runs / f"{src.name}_r{i}"
+        d.mkdir(parents=True)
+        for f in ("metrics.json", "predictions.jsonl"):
+            if (src / f).is_file():
+                shutil.copy2(src / f, d / f)
+    try:
+        got = runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
+        ok = sum(len(v) for v in got.values()) == 3
+    except AmbiguousRuns as exc:
+        ok, got = False, str(exc)
+    check("duplicate runs: but a --repeat set still loads as one arm", ok, str(got)[:150])
+    shutil.rmtree(runs, ignore_errors=True)
+
+
 def test_the_reports_separation_counts_are_real() -> None:
     """A "separated from N of M" in a report must match what `family_test.py` says.
 
@@ -1250,6 +1314,7 @@ def main() -> int:
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
+        test_two_runs_sharing_a_config_id_are_refused,
         test_the_reports_separation_counts_are_real,
         test_the_checks_can_actually_fail,
         test_promote_reads_its_reason_from_the_env,

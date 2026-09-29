@@ -151,19 +151,19 @@ no single example could claim.
 
 ```
 arm                accuracy  macro_f1    $/200     arm              accuracy   $/200
-bert_mini            0.9450    0.9453   0.0000     mistral_s          0.8600   0.0099
-anthropic_m          0.9100    0.9106   0.1054     glm_l              0.8600   0.0092
+bert_mini            0.9450    0.9453   0.0000     mistral_s          0.8600   0.0019
+anthropic_m          0.9100    0.9106   0.0703     glm_l              0.8600   0.0186
 anthropic_l          0.9000    0.8998   0.1750     mistral_m          0.8600   0.0096
-openai_m             0.8950    0.8952   0.0345     glm_m              0.8600   0.0032
-openai_l             0.8900    0.8900   0.0636     openai_s           0.8600   0.0069
-qwen_m               0.8850    0.8855   0.0043     gemma_m            0.8550   0.0015
-llama_m              0.8800    0.8791   0.0026     glm_s              0.8500   0.0013
-mistral_l            0.8750    0.8751   0.0124     deepseek_m         0.8450   0.0030
-gemma_s              0.8750    0.8748   0.0015     deepseek_s         0.8400   0.0021
-qwen_s               0.8750    0.8747   0.0012     anthropic_s        0.8400   0.0254
-qwen_l               0.8700    0.8698   0.0083     llama_l            0.8400   0.0038
-gemma_l              0.8700    0.8696   0.0022     llama_s            0.8350   0.0017
-deepseek_l           0.8700    0.8681   0.0057     ──────────────────────────────────
+openai_m             0.8950    0.8952   0.1272     glm_m              0.8600   0.0107
+openai_l             0.8900    0.8900   0.0487     openai_s           0.8600   0.0190
+qwen_m               0.8850    0.8855   0.0070     gemma_m            0.8550   0.0016
+llama_m              0.8800    0.8791   0.0040     glm_s              0.8500   0.0027
+mistral_l            0.8750    0.8751   0.0103     deepseek_m         0.8450   0.0043
+gemma_s              0.8750    0.8748   0.0021     deepseek_s         0.8400   0.0014
+qwen_s               0.8750    0.8747   0.0036     anthropic_s        0.8400   0.0254
+qwen_l               0.8700    0.8698   0.0164     llama_l            0.8400   0.0043
+gemma_l              0.8700    0.8696   0.0028     llama_s            0.8350   0.0025
+deepseek_l           0.8700    0.8681   0.0114     ──────────────────────────────────
                                                    bart_mnli          0.7000   0
                                                    keyword            0.6700   0
                                                    constant           0.2500   0

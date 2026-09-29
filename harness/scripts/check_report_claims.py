@@ -18,6 +18,9 @@ import glob
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import AmbiguousRuns, runs_by_arm  # noqa: E402
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 DATA = HERE.parent / "data" / "runs"
@@ -167,11 +170,10 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
             elif abs(_v - _rec) < 0.0002:
                 _stale_cost.append(f"{_rep}: {_arm} shows ${_v:.4f} (price table); "
                                    f"billed ${_bil:.4f}")
-check("report cost cells quote the BILL, not the price table", not _stale_cost,
-      "; ".join(_stale_cost[:4]) + (f" (+{len(_stale_cost)-4} more)"
-                                    if len(_stale_cost) > 4 else ""))
-check("and cost cells were actually found to check", _checked_cost >= 20,
-      f"only {_checked_cost} matched a billed figure")
+# The cost verdict is asserted AFTER the code-block scan below, which also appends to
+# `_stale_cost`. Asserting here ran before that scan had found anything, so 20 stale
+# classification cells passed while the list was still empty -- a check evaluated
+# before its inputs exist is a check that cannot fail.
 
 # ---- EVERY ARM ROW IN EVERY REPORT, against the run it names ---------------------
 #
@@ -192,8 +194,11 @@ check("and cost cells were actually found to check", _checked_cost >= 20,
 PRIMARY_BY_DATASET = {
     "few_nerd_280": ("fn_", "f1", RESCORED),
     "scifact_200": ("sf_", "ndcg_10", HERE.parent / "data" / "runs-reparsed"),
-    "ag_news_200": ("ag_", "accuracy", DATA),
-    "dbpedia_280": ("db_", "accuracy", DATA),
+    # "accuracy" was wrong: the runs record `correct`. `_vals` came back empty and
+    # 0 classification rows were checked for a week, while the aggregate floor of 40
+    # was cleared by the other three reports. Found by external review.
+    "ag_news_200": ("ag_", "correct", DATA),
+    "dbpedia_280": ("db_", "correct", DATA),
     "cnn_dailymail_200": ("cnn_", "coverage", DATA),
 }
 REPORT_DATASETS = {
@@ -201,8 +206,38 @@ REPORT_DATASETS = {
     "REPORT_RETRIEVAL.md": ["scifact_200"],
     "REPORT_CLASSIFICATION.md": ["ag_news_200", "dbpedia_280"],
     "REPORT_SUMMARIZATION.md": ["cnn_dailymail_200"],
+    # SYNTHESIS tables are keyed by EXPERIMENT, not by arm, so this check cannot
+    # reach them and the per-report floor below deliberately excludes it.
     "REPORT_SYNTHESIS.md": list(PRIMARY_BY_DATASET),
 }
+def _runs_for(base, dataset_id, prefix):
+    """One deterministic answer per arm, or a hard failure. See _common.runs_by_arm.
+
+    Every lookup in this file used to be its own glob -- three took the last hit, two
+    the first, one had a different exclusion rule -- so with two runs sharing a
+    config_id the answer depended on filesystem order. Green on APFS, red on ext4, and
+    `make ci` was called green for a week on the only machine anyone ran it on.
+    """
+    try:
+        return runs_by_arm(base, dataset_id, prefix=prefix, strip="_n200_v1")
+    except AmbiguousRuns as exc:
+        print(f"FAIL  {exc}")
+        sys.exit(1)
+
+
+def _billed_of(run_dir):
+    """What the provider charged for this run, summed from _meta.usage.cost."""
+    pj = run_dir / "predictions.jsonl"
+    if not pj.is_file():
+        return 0.0
+    total = 0.0
+    for line in pj.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            r = json.loads(line)
+            total += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
+    return total
+
+
 #: Column headers that mean "this cell is the arm's primary metric on this dataset".
 #: The check is COLUMN-AWARE for a reason: a row's first number is not always its score.
 #: Matching on position flagged nine legitimate cells -- the "as first measured" column
@@ -212,11 +247,12 @@ REPORT_DATASETS = {
 METRIC_HEADERS = {
     "f1": {"f1"},
     "ndcg_10": {"ndcg@10", "ndcg_10"},
-    "accuracy": {"accuracy", "acc"},
+    "correct": {"accuracy", "acc", "correct"},
     "coverage": {"coverage"},
 }
 _stale_rows = []
 _rows_checked = 0
+_rows_per_report: dict = {}
 for _rep, _dss in REPORT_DATASETS.items():
     _lines = (ROOT / "research" / _rep).read_text().splitlines()
     for _ds in _dss:
@@ -252,14 +288,116 @@ for _rep, _dss in REPORT_DATASETS.items():
             if not _mm:
                 continue
             _rows_checked += 1
+            _rows_per_report[_rep] = _rows_per_report.get(_rep, 0) + 1
             if abs(float(_mm.group(1)) - _vals[_arm]) > 0.0002:
                 _stale_rows.append(f"{_rep}:{_i+1}: {_arm} shows {_mm.group(1)}, "
                                    f"the run says {_vals[_arm]:.4f}")
+# ---- AND THE SAME THING INSIDE CODE BLOCKS ---------------------------------------
+#
+# Both checks above read only lines starting with "|". The classification report's
+# leaderboards are fenced code blocks, so 0 of its rows were ever checked -- and its
+# cost cells were still price-table figures, summing to $0.49 in a section whose own
+# header says "$0.58 billed". Found by external review.
+#
+# NARROW ON PURPOSE, because a loose version of this was worse than nothing. My first
+# attempt took "the first number after an arm name" in any code block, and produced 58
+# failures of which nearly all were wrong: it read the Δ column of a family-test block
+# as an f1, and matched `qwen_m` in the DBpedia block against the AG News run, because
+# both datasets appear in one report. A check that cries wolf gets muted.
+#
+# So a block is scanned only when BOTH hold:
+#   - the section heading above it names this dataset, and
+#   - the block's own header line names this dataset's primary metric column.
+# Within such a block a record runs from one arm name to the next (these blocks put two
+# tables side by side), its FIRST number is the metric and its LAST is the cost.
+_num = re.compile(r"^\$?([0-9]+\.[0-9]{3,4})$")
+_DATASET_IN_HEADING = {
+    "ag_news_200": ("ag news",),
+    "dbpedia_280": ("dbpedia",),
+    "few_nerd_280": ("few-nerd", "few nerd", "ner"),
+    "scifact_200": ("scifact",),
+    "cnn_dailymail_200": ("cnn", "dailymail", "summaris"),
+}
+_METRIC_COLUMN = {"correct": "accuracy", "f1": "f1",
+                  "ndcg_10": "ndcg", "coverage": "coverage"}
+
+for _rep, _dss in REPORT_DATASETS.items():
+    _lines = (ROOT / "research" / _rep).read_text().splitlines()
+    _single = len(_dss) == 1          # a one-dataset report needs no heading match
+    for _ds in _dss:
+        _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
+        _vals, _bills = {}, {}
+        for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
+            _m = json.load(open(_dirs[0] / "metrics.json"))
+            _v = (_m.get("scores") or {}).get(_metric)
+            if _v is not None:
+                _vals[_arm] = _v
+            _bills[_arm] = _billed_of(_dirs[0])
+        _heading_ok = _single
+        _in_block = _scan = _has_cost = False
+        for _i, _line in enumerate(_lines):
+            if _line.startswith("#") and not _in_block:
+                _low = _line.lower()
+                _heading_ok = _single or any(
+                    t in _low for t in _DATASET_IN_HEADING.get(_ds, ()))
+                continue
+            if _line.startswith("```"):
+                if _in_block:
+                    _in_block = _scan = False
+                else:
+                    _in_block = True
+                    _scan = False
+                continue
+            if not _in_block:
+                continue
+            _toks = _line.split()
+            if not _toks:
+                continue
+            if _toks[0] in ("arm", "config"):      # the block's header row
+                _low = _line.lower()
+                _scan = _heading_ok and _METRIC_COLUMN[_metric] in _low
+                _has_cost = "$/200" in _line or "cost" in _low
+                continue
+            if not _scan:
+                continue
+            _idx = [j for j, t in enumerate(_toks) if t in _vals]
+            for _k, _j in enumerate(_idx):
+                _arm = _toks[_j]
+                _stop = _idx[_k + 1] if _k + 1 < len(_idx) else len(_toks)
+                _rec = [t for t in _toks[_j + 1:_stop] if _num.fullmatch(t)]
+                if not _rec:
+                    continue
+                _got = float(_num.fullmatch(_rec[0]).group(1))
+                if abs(_got - _vals[_arm]) <= 0.5:
+                    _rows_checked += 1
+                    _rows_per_report[_rep] = _rows_per_report.get(_rep, 0) + 1
+                    if abs(_got - _vals[_arm]) > 0.0002:
+                        _stale_rows.append(f"{_rep}:{_i+1}: {_arm} shows {_got:.4f}, "
+                                           f"the run says {_vals[_arm]:.4f}")
+                if _has_cost and len(_rec) > 1 and _bills.get(_arm):
+                    _c = float(_num.fullmatch(_rec[-1]).group(1))
+                    if _c > 0 and abs(_c - _bills[_arm]) > 0.0002:
+                        _stale_cost.append(f"{_rep}:{_i+1}: {_arm} costs ${_c:.4f}, "
+                                           f"billed ${_bills[_arm]:.4f}")
+                    elif _c > 0:
+                        _checked_cost += 1
+
+check("report cost cells quote the BILL, not the price table", not _stale_cost,
+      "; ".join(_stale_cost[:4]) + (f" (+{len(_stale_cost)-4} more)"
+                                    if len(_stale_cost) > 4 else ""))
+check("and cost cells were actually found to check", _checked_cost >= 20,
+      f"only {_checked_cost} matched a billed figure")
 check("every arm row states the run's primary metric", not _stale_rows,
       "; ".join(_stale_rows[:5]) + (f" (+{len(_stale_rows)-5} more)"
                                     if len(_stale_rows) > 5 else ""))
 check("and arm rows were actually found to check", _rows_checked >= 40,
       f"only {_rows_checked} rows matched an arm")
+# PER REPORT, not in aggregate. The aggregate floor is what let classification sit at
+# zero rows while NER, retrieval and summarisation carried the total past 40.
+for _rep in [r for r in REPORT_DATASETS if r != "REPORT_SYNTHESIS.md"]:
+    _n = _rows_per_report.get(_rep, 0)
+    check(f"...including {_rep} ({_n} rows)", _n > 0,
+          "no arm row in this report was checked against a run")
 
 # ---- RATIOS AND COUNTS, the other two classes nothing checked -------------------
 #

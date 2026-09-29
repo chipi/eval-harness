@@ -222,12 +222,12 @@ Every other example in this repo produced a *group* at the top. This one produce
 separated from 19 of 26; ahead on the point estimate against 25 of 26
 
   NOT separated:
-    gemma_l      +0.0383  p = 0.0084   ($0.0080)
-    qwen_m       +0.0316  p = 0.0218   ($0.0248)
-    qwen_s       +0.0214  p = 0.1484   ($0.0061)
-    anthropic_m  +0.0204  p = 0.1668   ($0.4269)
-    openai_l     +0.0148  p = 0.2495   ($0.2411)
-    gemma_m      +0.0131  p = 0.4310   ($0.0057)
+    gemma_l      +0.0383  p = 0.0084   ($0.0134)
+    qwen_m       +0.0316  p = 0.0218   ($0.0396)
+    qwen_s       +0.0214  p = 0.1484   ($0.0157)
+    anthropic_m  +0.0204  p = 0.1668   ($0.2846)
+    openai_l     +0.0148  p = 0.2495   ($0.1715)
+    gemma_m      +0.0131  p = 0.4310   ($0.0088)
     anthropic_l  +0.0066  p = 0.6664   ($0.6897)
 ```
 
@@ -425,7 +425,7 @@ That is a real and useful claim — it is the podcast-product case. The claim it
 support is that the small model is better at named-entity recognition in general.
 
 **The hosted field is a commodity at the top.** Eight arms, 78× price spread, no
-resolvable difference. `gemma_m` at $0.0057 is inside the top group; `anthropic_l` at
+resolvable difference. `gemma_m` at $0.0088 is inside the top group; `anthropic_l` at
 $0.6897 is too. Buying the expensive one bought 3.05 s/item of latency and nothing else
 measurable.
 

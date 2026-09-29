@@ -164,20 +164,26 @@ BM25's, to four decimals.
 | gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 0.8 s | $0.1701 |
 | **e5_base** | **0.7191** | **0.8305** | **0.9540** | 0.6889 | 1825 s | **$0** |
 | qwen_s ⟳ | 0.7183 | 0.7947 | 0.8586 | 0.7062 | 0.8 s | $0.1559 |
-| llama_s ⟳ | 0.7129 | 0.7805 | 0.8586 | 0.7024 | 0.8 s | $0.0715 |
+| llama_s ⟳ | 0.7129 | 0.7805 | 0.8586 | 0.7024 | 0.8 s | $0.1458 |
 | **bge_small** | **0.7097** | 0.8298 | 0.9325 | 0.6812 | 874 s | **$0** |
 | llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 0.8 s | $0.1434 |
 | mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 0.8 s | $0.0852 |
 | gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 0.8 s | $0.0962 |
-| llama_l ⟳ | 0.6864 | 0.7455 | 0.8586 | 0.6842 | 0.8 s | $0.1540 |
+| llama_l ⟳ | 0.6864 | 0.7455 | 0.8586 | 0.6842 | 0.8 s | $0.1731 |
 | mpnet | 0.6643 | 0.7707 | 0.9350 | 0.6355 | 1825 s | $0 |
 | minilm | 0.6533 | 0.7705 | 0.9125 | 0.6212 | 194 s | $0 |
 | bm25 | 0.6451 | 0.7635 | 0.8586 | 0.6152 | **0.8 s** | $0 |
 | random | 0.0005 | 0.0010 | 0.0020 | 0.0006 | — | $0 |
 | first_k | 0.0000 | 0.0000 | 0.0350 | 0.0000 | — | $0 |
 
-⟳ = BM25 + that LLM reranking the top 20. Costs are this repo's price table — see §7, they
-understate the bill by roughly 2.4×.
+⟳ = BM25 + that LLM reranking the top 20. **Costs are what the provider billed**
+(`_meta.usage.cost`), not this repo's price table.
+
+*This footnote said the opposite until 2026-09-30 — "costs are this repo's price table,
+they understate the bill by roughly 2.4×" — while the cells above it had already been
+converted to the bill, and while §1 and the retraction in §7 both said the bill was
+being used. Three statements, two of them right. The 2.4× was also a multiplier this
+repo retracted. Found by external review.*
 
 ### 3.2 A twelve-way tie, and two of the twelve are free
 
