@@ -34,8 +34,13 @@ def check(label: str, ok: bool, detail: str = "") -> None:
         failures.append(label)
 
 
-def run(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True)
+def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
+    """Run a harness script. `env` adds to the inherited environment, it does not
+    replace it -- a test that needs EVAL_RUNS_DIR still needs PATH and HOME."""
+    import os  # noqa: PLC0415
+
+    e = {**os.environ, **(env or {})}
+    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True, env=e)
 
 
 def test_dotenv_does_not_override_exported() -> None:
@@ -388,7 +393,8 @@ def test_example_scorer_suites_pass() -> None:
     """
     for script, subject in (("test_extraction_scorer.py", "set scorer"),
                             ("test_ner_parser.py", "NER JSON parser"),
-                            ("test_retrieval_scorer.py", "ranked-list scorer")):
+                            ("test_retrieval_scorer.py", "ranked-list scorer"),
+                            ("test_code_hashes.py", "scoring-code hashes")):
         path = HERE / script
         if not path.is_file():
             continue
@@ -398,6 +404,77 @@ def test_example_scorer_suites_pass() -> None:
             continue
         check(f"{subject}: all assertions pass", r.returncode == 0,
               (r.stdout or r.stderr or "").strip()[-160:])
+
+
+def test_fingerprint_covers_reference_bytes() -> None:
+    """Editing a reference must change the fingerprint. It did not, for five examples.
+
+    `reference_id` is a NAME. The data block hashed the source items but identified the
+    references only by name, so a changed gold file produced different scores under an
+    identical hash -- and `compare_runs` reported "reference identical" while comparing
+    two different measurements.
+    """
+    import shutil, tempfile  # noqa: PLC0415
+    sys.path.insert(0, str(HERE))
+    from _fingerprint import build_fingerprint  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        refs = root / "data" / "references" / "gold" / "t1"
+        refs.mkdir(parents=True)
+        (refs / "i1.txt").write_text("alpha", encoding="utf-8")
+        ds = {"dataset_id": "t1", "items": [{"item_id": "i1", "source_sha256": "aa"}]}
+        kw = dict(root=root, dataset=ds, reference_id="gold/t1", reference_tier="gold",
+                  config_id="c", params={}, adapter_id="a", adapter_path=None)
+        before = build_fingerprint(**kw)
+        (refs / "i1.txt").write_text("beta", encoding="utf-8")
+        after = build_fingerprint(**kw)
+        check("fingerprint: editing a reference changes the hash",
+              before["hash"] != after["hash"])
+        check("fingerprint: references_sha256 is what moved",
+              before["data"]["references_sha256"] != after["data"]["references_sha256"])
+        check("fingerprint: no references -> None, not a hash of nothing",
+              build_fingerprint(**{**kw, "reference_id": None})
+              ["data"]["references_sha256"] is None)
+
+
+def test_resume_scores_and_persists() -> None:
+    """A resumed run must SCORE its replayed items, and a crash must leave outputs.
+
+    Both directions of a bug that cost paid data. `--resume` used to `continue` past
+    scoring, so a fully-resumed run wrote zero prediction rows and empty scores while
+    reporting success -- and outputs were only written after the whole pass returned, so
+    a crash at item k discarded all k paid outputs AND left the resume path nothing to
+    read. The recovery command the cost cap prints was the broken one.
+    """
+    import shutil  # noqa: PLC0415
+
+    runs = HERE.parent / "data" / "runs-selftest-resume"
+    shutil.rmtree(runs, ignore_errors=True)
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    r = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    if r.returncode != 0:
+        print("  --   resume: skipped (demo arm did not run)")
+        shutil.rmtree(runs, ignore_errors=True)
+        return
+    src = sorted(p.name for p in runs.iterdir() if p.is_dir())[0]
+    outs = sorted((runs / src / "outputs").glob("*.txt"))
+    check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
+
+    # Simulate a crash: drop all but one output, as if the pass died at item 2.
+    for f in outs[1:]:
+        f.unlink()
+    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml",
+             "--resume", src, env=env)
+    check("resume: the resumed pass exits 0", r2.returncode == 0,
+          (r2.stderr or "")[-160:])
+    newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
+    rows = [l for l in (newest / "predictions.jsonl").read_text().splitlines() if l.strip()]
+    check("resume: every item is SCORED, not skipped", len(rows) == len(outs),
+          f"{len(rows)} rows for {len(outs)} items")
+    check("resume: replayed items are flagged",
+          any('"resumed": 1' in l or '"resumed":1' in l for l in rows))
+    shutil.rmtree(runs, ignore_errors=True)
 
 
 def test_spearman_is_tie_correct() -> None:
@@ -508,6 +585,8 @@ def main() -> int:
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
         test_example_scorer_suites_pass,
+        test_fingerprint_covers_reference_bytes,
+        test_resume_scores_and_persists,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
     ):

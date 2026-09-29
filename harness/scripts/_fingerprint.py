@@ -186,7 +186,10 @@ def build_fingerprint(
     have — and the fields say which part drifted.
     """
     fp: Dict[str, Any] = {
-        "version": 1,
+        # v2 adds data.references_sha256. A v1 fingerprint cannot be compared to a v2
+        # one on the hash alone, because v2 hashes strictly more -- the version says so
+        # rather than leaving a reader to discover it from a mismatch.
+        "version": 2,
         "instrument": {
             "harness": _harness_identity(root),
             "adapter": _adapter_identity(adapter_path, adapter_id),
@@ -203,12 +206,39 @@ def build_fingerprint(
             "n_items": len(dataset.get("items") or []),
             "reference_id": reference_id,
             "reference_tier": reference_tier,
+            # THE REFERENCE BYTES, not just its name. Without this you can edit a gold
+            # file, get different scores, and the fingerprint stays identical --
+            # `compare_runs` then reports "reference identical" while comparing two
+            # different measurements. That is the exact failure this whole structure
+            # exists to prevent, and it applied to references for as long as the
+            # comment two fields above has been telling you a name is not an identity.
+            "references_sha256": _references_digest(root, reference_id),
         },
         "host": _host_identity(),
         "arm": {"config_id": config_id, "params": dict(params or {})},
     }
     fp["hash"] = _hash_of(fp)
     return fp
+
+
+def _references_digest(root: Path, reference_id: Optional[str]) -> Optional[str]:
+    """One hash over every reference file's bytes, by filename order.
+
+    None when the run has no references -- distinguishable from a hash, so "not scored
+    against anything" and "scored against these bytes" never look alike.
+    """
+    if not reference_id:
+        return None
+    ref_dir = root / "data" / "references" / reference_id
+    if not ref_dir.is_dir():
+        return None
+    h = hashlib.sha256()
+    for f in sorted(ref_dir.glob("*.txt")):
+        h.update(f.name.encode())
+        h.update(b"\x00")
+        h.update(f.read_bytes())
+        h.update(b"\x1e")
+    return h.hexdigest()
 
 
 def _items_digest(dataset: Dict[str, Any]) -> Optional[str]:

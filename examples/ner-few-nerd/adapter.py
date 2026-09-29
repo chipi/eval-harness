@@ -178,10 +178,17 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
 
 
 def _parser_sha256() -> str:
-    import hashlib  # noqa: PLC0415
-    import inspect  # noqa: PLC0415
+    """The parser AND the four regexes it repairs with.
 
-    return hashlib.sha256(inspect.getsource(_parse_entities).encode()).hexdigest()
+    `getsource` returns only the `def` block, so editing `_BARE_KEY` -- which is what
+    decides whether llama_m's unquoted-key output parses at all -- changed every score
+    and left this hash identical. Found by review, not by us.
+    """
+    from codehash import code_digest  # noqa: PLC0415
+
+    return code_digest(_parse_entities, consts={
+        "_FENCE": _FENCE, "_ARRAY": _ARRAY,
+        "_TRAILING_COMMA": _TRAILING_COMMA, "_BARE_KEY": _BARE_KEY})
 
 
 # ── providers ────────────────────────────────────────────────────────────────

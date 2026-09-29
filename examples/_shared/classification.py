@@ -163,8 +163,14 @@ class ClassificationTask:
         The table is included because it is the parser as much as the code is -- adding
         one alias changes what every hosted arm scores.
         """
-        body = inspect.getsource(ClassificationTask.parse_label) + repr(self._aliases)
-        return hashlib.sha256(body.encode()).hexdigest()
+        from codehash import code_digest  # noqa: PLC0415
+
+        # `_MARKDOWN` and `_LEADIN` decide whether "**Category:** Sports" parses as a
+        # label at all. `getsource` covers only the def block, so editing either moved
+        # every score under an identical hash until a review caught it.
+        return code_digest(ClassificationTask.parse_label,
+                           consts={"aliases": self._aliases,
+                                   "_MARKDOWN": _MARKDOWN, "_LEADIN": _LEADIN})
 
     def labels_sha256(self) -> str:
         """The label set is the task. Change it and every arm answers a new question."""

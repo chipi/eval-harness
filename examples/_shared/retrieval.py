@@ -56,6 +56,8 @@ import json
 import math
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
 
+from codehash import code_digest
+
 #: Cut-offs reported on every run. 10 is the ranking cut-off people quote; 100 is the one a
 #: two-stage pipeline actually depends on, because a reranker cannot retrieve what the
 #: first stage never returned.
@@ -81,11 +83,15 @@ def scorer_sha256() -> str:
     a normaliser has the most room to move a score. The bug that cost this repo a sweep
     lived in the per-item rule, which no hash covered. This file is fingerprinted whole
     from the start.
+
+    AND `parse_ranking` IS IN IT, which it was not. An external review found the
+    retrieval parser covered by no hash anywhere -- the one piece of code that decides
+    whether a model's answer is a ranking at all. It is the scorer's first step, so it
+    belongs in the scorer's hash.
     """
-    body = "".join(inspect.getsource(f) for f in
-                   (normalize_id, dedupe, dcg, score_ranking))
-    return hashlib.sha256(
-        (body + repr((NDCG_AT, RECALL_AT, MRR_AT))).encode()).hexdigest()
+    return code_digest(normalize_id, dedupe, dcg, score_ranking, parse_ranking,
+                       consts={"NDCG_AT": NDCG_AT, "RECALL_AT": RECALL_AT,
+                               "MRR_AT": MRR_AT})
 
 
 def dedupe(ranking: Sequence[str]) -> tuple[List[str], int]:
