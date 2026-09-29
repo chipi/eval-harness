@@ -82,7 +82,8 @@ resolve.
 
 6. **One arm looked broken and was misconfigured by me.** `qwen_s` scored *exactly* BM25's
    nDCG because it never answered. The cause was a `reasoning` passthrough this adapter
-   never had and the other three examples all do. Fixed, and it then scored 0.7338. See §6.
+   never had and the other three examples all do. Fixed, and it then scored 0.7338 —
+   later corrected to **0.7183** by the parser fix below. See §6.
 
 ---
 
@@ -183,10 +184,10 @@ understate the bill by roughly 2.4×.
 `glm_s` vs a family of 18 declared before any p-value was read, Holm step-down at α = 0.05:
 
 ```
-separated from 6 of 18; ahead on the point estimate against 18 of 18
+separated from 7 of 18; ahead on the point estimate against 18 of 18
 
   SEPARATED:      bm25 (+0.0986)  first_k  random  minilm (+0.0904)
-                  mpnet (+0.0794)  llama_m (+0.0349)
+                  mpnet (+0.0794)  llama_l (+0.0573)  llama_m (+0.0349)
 
   NOT separated:  gemma_s  mistral_s  llama_s  bge_small  llama_l  e5_base
                   qwen_s  gemma_m  gemma_l  deepseek_s  deepseek_m  glm_m
@@ -218,7 +219,7 @@ precedes every irrelevant one, and score that.
 ```
 arm             nDCG@10  ceiling     gap    used
 glm_s            0.7437   0.8163  0.0726  91.1%
-qwen_s           0.7338   0.8163  0.0826  89.9%
+qwen_s           0.7183   0.8163  0.0980  88.0%
 e5_base          0.7191   0.8747  0.1556  82.2%
 bm25             0.6451   0.8163  0.1712  79.0%
 ```

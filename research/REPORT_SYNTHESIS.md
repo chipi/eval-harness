@@ -199,7 +199,7 @@ self-hostable; it does not mean unconditionally reusable.
 | experiment | best open-weight | best proprietary | delta | separated? |
 |---|---|---|---|---|
 | Summarisation · CNN/DM | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | **yes — open wins** |
-| Retrieval · SciFact | `glm_s` 0.7437 | `qwen_s` 0.7338 | **+0.0100** | no |
+| Retrieval · SciFact | `glm_s` 0.7437 | `glm_m` 0.7419 | **+0.0018** | no |
 | Classification · DBpedia | `glm_m` 0.9857 | `qwen_m` 0.9929 | −0.0071 | no |
 | Extraction · Few-NERD | `gemma_m` 0.6733 | `openai_m` 0.6864 | −0.0131 | no |
 | Classification · AG News | `llama_m` 0.8800 | `anthropic_m` 0.9100 | −0.0300 | no |
@@ -439,7 +439,7 @@ it actually *separates* from, under Holm step-down at α = 0.05:
 | Extraction · Few-NERD | `span_marker` | 26 of 26 | **26 of 26** (100%) | a real podium |
 | Classification · AG News | `bert_mini` | 27 of 27 | 18 of 27 (67%) | a group of 9 |
 | Summarisation · CNN/DM | `bart_l` | 25 of 25 | 12 of 25 (48%) | a group of 13 |
-| Retrieval · SciFact | `glm_s` | 18 of 18 | 6 of 18 (33%) | a group of 12 |
+| Retrieval · SciFact | `glm_s` | 18 of 18 | 7 of 18 (39%) | a group of 11 |
 | Classification · DBpedia | `qwen_m` | 26 of 26 | 8 of 26 (31%) | a group of 18 |
 
 **Four of five leaderboards have a top group the data cannot order.** Reading rank 1 as
@@ -794,7 +794,7 @@ something other than the leaderboard.
   config scored 0.6691 and 0.6617, because OpenRouter routes across providers.
 - **24 hosted arms, one snapshot in time, no verifiable identity.** A provider can change
   weights behind an alias; runs record `identity_declared: true`, not proof.
-- **Five of the 24 arms never ran on SciFact** (the frontier tier, $31.40 against that
+- **Five of the 24 arms never ran on SciFact** (the frontier tier, ≈$12 against that
   sweep's $2.45), so §1 and §2 are weaker there than elsewhere. One NER arm and several
   local ML arms are also unrun — see the handovers in this directory.
 - **Nothing here measures factual accuracy, safety, or instruction-following.** ROUGE is

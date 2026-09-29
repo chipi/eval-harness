@@ -173,6 +173,94 @@ check("report cost cells quote the BILL, not the price table", not _stale_cost,
 check("and cost cells were actually found to check", _checked_cost >= 20,
       f"only {_checked_cost} matched a billed figure")
 
+# ---- EVERY ARM ROW IN EVERY REPORT, against the run it names ---------------------
+#
+# Three times in one review a correction was applied where it was found and not where
+# it was repeated: the retrieval parser fix reached a new prose section but not §3.1;
+# then not the §0 headline; then not the synthesis table, the headroom table or the
+# pasted Holm block. Each was caught by a human reading, which does not scale and did
+# not catch the first two.
+#
+# So: any markdown table row whose first cell names an arm, and whose first numeric
+# cell is that arm's PRIMARY metric, must agree with the committed run. That is the
+# shape of every table that went stale.
+#
+# Deliberately narrow. Only the first numeric cell, only rows starting with an arm
+# name, and only where the value is within 0.5 of the run's primary metric -- a row
+# whose leading number is something else entirely (a count, a price) is skipped rather
+# than guessed at. It catches a stale score, which is the failure that happened.
+PRIMARY_BY_DATASET = {
+    "few_nerd_280": ("fn_", "f1", RESCORED),
+    "scifact_200": ("sf_", "ndcg_10", HERE.parent / "data" / "runs-reparsed"),
+    "ag_news_200": ("ag_", "accuracy", DATA),
+    "dbpedia_280": ("db_", "accuracy", DATA),
+    "cnn_dailymail_200": ("cnn_", "coverage", DATA),
+}
+REPORT_DATASETS = {
+    "REPORT_NER.md": ["few_nerd_280"],
+    "REPORT_RETRIEVAL.md": ["scifact_200"],
+    "REPORT_CLASSIFICATION.md": ["ag_news_200", "dbpedia_280"],
+    "REPORT_SUMMARIZATION.md": ["cnn_dailymail_200"],
+    "REPORT_SYNTHESIS.md": list(PRIMARY_BY_DATASET),
+}
+#: Column headers that mean "this cell is the arm's primary metric on this dataset".
+#: The check is COLUMN-AWARE for a reason: a row's first number is not always its score.
+#: Matching on position flagged nine legitimate cells -- the "as first measured" column
+#: of a before/after correction table, and a paired-run table whose columns are "over
+#: BM25" and "over e5_base" for entirely different runs. A check that cries wolf on
+#: honest history teaches you to ignore it.
+METRIC_HEADERS = {
+    "f1": {"f1"},
+    "ndcg_10": {"ndcg@10", "ndcg_10"},
+    "accuracy": {"accuracy", "acc"},
+    "coverage": {"coverage"},
+}
+_stale_rows = []
+_rows_checked = 0
+for _rep, _dss in REPORT_DATASETS.items():
+    _lines = (ROOT / "research" / _rep).read_text().splitlines()
+    for _ds in _dss:
+        _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
+        _vals = {}
+        for f in _glob.glob(str(_base / f"{_pref}*" / "metrics.json")):
+            if "20260929" in Path(f).parent.name:
+                continue
+            _m = json.load(open(f))
+            if _m.get("dataset_id") != _ds:
+                continue
+            _v = (_m.get("scores") or {}).get(_metric)
+            if _v is not None:
+                _vals[_m["config_id"].replace(_pref, "").replace("_n200_v1", "")] = _v
+        _col = None
+        for _i, _line in enumerate(_lines):
+            if not _line.startswith("|"):
+                _col = None
+                continue
+            _cells = [c.strip() for c in _line.strip("|").split("|")]
+            # A header row: remember which column holds the primary metric, if any.
+            _low = [c.lower().replace("*", "").strip() for c in _cells]
+            if any(h in METRIC_HEADERS[_metric] for h in _low):
+                _col = next(j for j, h in enumerate(_low)
+                            if h in METRIC_HEADERS[_metric])
+                continue
+            if _col is None or _col >= len(_cells):
+                continue
+            _arm = re.sub(r"[`*\u27f3 ]", "", _cells[0])
+            if _arm not in _vals:
+                continue
+            _mm = re.fullmatch(r"\*{0,2}(0\.[0-9]{3,4})\*{0,2}", _cells[_col])
+            if not _mm:
+                continue
+            _rows_checked += 1
+            if abs(float(_mm.group(1)) - _vals[_arm]) > 0.0002:
+                _stale_rows.append(f"{_rep}:{_i+1}: {_arm} shows {_mm.group(1)}, "
+                                   f"the run says {_vals[_arm]:.4f}")
+check("every arm row states the run's primary metric", not _stale_rows,
+      "; ".join(_stale_rows[:5]) + (f" (+{len(_stale_rows)-5} more)"
+                                    if len(_stale_rows) > 5 else ""))
+check("and arm rows were actually found to check", _rows_checked >= 40,
+      f"only {_rows_checked} rows matched an arm")
+
 # ---- RATIOS AND COUNTS, the other two classes nothing checked -------------------
 #
 # Round 2: "it also checks only single-run primary metrics, so it wouldn't have caught
