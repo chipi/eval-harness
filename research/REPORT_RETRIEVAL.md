@@ -26,7 +26,8 @@
 | the choice | what the data says |
 |---|---|
 | **Self-host · small ML** | **`e5_base`** — e5-base-v2, MIT, **438 MB**, 0.06 s/item. **0.7191** alone, and **not separable from any paid arm**. |
-| **Self-host · open-weight LLM** | **`glm_s`** — GLM-4.5-Air, MIT, **110B params / ~221 GB**. **0.7437** reranking BM25 — **+0.0246 over the encoder alone, but not separated** from it. **Both together** (glm_s reranking e5_base) give **0.7891**, the highest score here — and the only configuration where the LLM earns its 505× size. |
+| **Self-host · open-weight LLM, absolute** | **`glm_s`** — GLM-4.5-Air, MIT, **110B / ~221 GB**. **0.7437** reranking BM25 — **+0.0246 over the encoder alone, not separated**. Paired with `e5_base` it reaches **0.7891**, the highest score here. |
+| **Self-host · open-weight LLM, on a 128 GB box** | **The same model, quantised: GLM-4.5-Air at int8 is ~110 GB and fits.** No quality is given up on paper. At native precision instead: `gemma_m` (26B, 52 GB) at 0.7363, costing 0.0074. |
 | **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
 | **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |

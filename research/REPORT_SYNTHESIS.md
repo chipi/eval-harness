@@ -231,6 +231,49 @@ where no fine-tuned model exists or the task is generative, and a rented API onl
 neither can run.** DBpedia is the honest exception, and only because its ML arm is
 blocked rather than beaten.
 
+
+### What you would actually install on a 128 GB machine
+
+"Open-weight" and "runnable" are not the same thing. Of the 13 open-weight arms here,
+**four exceed 700 GB** at native precision and one is 3.2 TB — those are cluster models,
+not something you put on a workstation. So the practical question is: *what is the best
+open-weight model that fits the box I have?*
+
+Sizes are native on-disk (dtype-aware, read from each HuggingFace safetensors index), and
+the budget is **128 GB of unified or GPU memory** — an Apple M-series box, a dual-GPU
+workstation, or a single node with room for weights plus KV cache.
+
+| experiment | **absolute** open-weight winner | size | score | **practical** winner ≤128 GB | how | score | cost |
+|---|---|---|---|---|---|---|---|
+| Classification · AG News | Llama-3.3-70B | 141 GB | 0.8800 | **the same model** | int8, 70 GB | **0.8800** | **none** |
+| Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B-A4B** | native, 52 GB | **0.9857** | **none — identical at 1/14 the size** |
+| Extraction · Few-NERD | Gemma-4-26B-A4B | 52 GB | 0.6733 | **the same model** | native | **0.6733** | **none** |
+| Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **the same model** | int8, 110 GB | **0.7437** | **none** |
+| Summarisation · CNN/DM | DeepSeek-V4.1-Flash | 765 GB | 0.3460 | Llama-3.3-70B | int8, 70 GB | 0.3382 | **−0.0078** |
+
+**In four of five, the 128 GB answer is as good as the unlimited-hardware answer.** Three
+times it is literally the same model quantised or already small enough; once (DBpedia) a
+26B model matches a 357B one exactly. Only summarisation pays anything, and it pays
+0.0078 — about a tenth of the gap between the best and worst hosted arm on that task.
+
+> **The caveat, and it is a real one: quantised quality was never measured here.** Every
+> score in this table comes from the full-precision model as served by a provider. int8 is
+> usually close to lossless and int4 usually is not, but "usually" is not a measurement —
+> and this repo's whole argument is that the difference matters. **Before deploying a
+> quantised arm, re-run it locally through this harness and compare.** `rescore.py` makes
+> the comparison cost nothing once the outputs exist.
+
+**Practical shortlist for a 128 GB machine, by task:**
+
+| if your task is | install |
+|---|---|
+| classification | **`bert_mini`-style fine-tune** (44 MB) if you can label; else **Gemma-4-26B** (52 GB) |
+| entity extraction | **SpanMarker fine-tune** (476 MB). No open-weight LLM here came close |
+| summarisation | **BART-large-CNN** (1.6 GB) if the domain is stable; else **Llama-3.3-70B int8** (70 GB) |
+| retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int8** (110 GB) only if you need the last 0.07 |
+
+Three of those four are under 2 GB and need no GPU at all.
+
 ### Every experiment has a $0 answer, if you own hardware
 
 Combining the tiers with the separation tests: in **all five** experiments there is a
