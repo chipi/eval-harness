@@ -194,7 +194,7 @@ reported; the mean is the ranking metric.
 | llama_s | 0.5686 | 0.6812 | 0.993 | 2.64 s | $0.0103 |
 | glm_s | 0.5529 | 0.6863 | 1.000 | 2.11 s | $0.0194 |
 | gemma_s | 0.5500 | 0.6758 | 1.000 | 5.94 s | $0.0093 |
-| glm_l | 0.5269 | 0.6065 | **0.836** | 3.01 s | $0.1023 |
+| glm_l | 0.5662 | 0.6493 | **0.886** | 3.01 s | $0.1023 |
 | mistral_s | 0.5243 | 0.6446 | 1.000 | 2.06 s | $0.0076 |
 | gliner | 0.4540 | 0.5522 | 1.000 | **0.17 s** | **$0** |
 | capitalized | 0.1913 | 0.6191 | 1.000 | ~0 | $0 |
@@ -345,7 +345,7 @@ it spent the entire budget reasoning aloud about which benchmark it was being ev
 > No, FIGER has 112 types. Hmm, it could be from BBN? No."*
 
 ...and never answered. Its mean output is 136 tokens against `glm_m`'s 59, and **`glm_m`
-outscores `glm_l` 0.5939 to 0.5269** — the larger model in the same family loses to the
+outscores `glm_l` 0.5939 to 0.5662** — the larger model in the same family loses to the
 smaller one by talking itself out of an answer.
 
 The budget was not tuned after seeing this, because that would be tuning on the measurement
@@ -434,8 +434,8 @@ and untyped orderings is **0.955** over 27 arms, same leader, so it is not an al
 leaderboard. What it does is split each arm's error into detection and labelling.
 `anthropic_s` is typed 0.5843 / untyped 0.7279 (`type_penalty` 0.1436) and rises six places
 on the untyped view — a labelling problem. `openai_s` is 0.5948 / 0.6855 and *falls* seven
-places — it is typing well what little it finds. `glm_l` is 0.5269 / 0.6065 (penalty
-0.0796): not a labelling problem at all, a *not answering* problem.
+places — it is typing well what little it finds. `glm_l` is 0.5662 / 0.6493 (penalty
+0.0831): not a labelling problem at all, a *not answering* problem.
 
 ---
 
@@ -466,7 +466,48 @@ list. On the 12% of items whose gold is also empty, the empty-empty convention p
 non-answer the **full 1.0**.
 
 `glm_l` collected six of them. It was worth **+0.0214 f1** — 0.5484 as first measured,
-**0.5269** corrected. It reordered nothing, but it is the number in this report.
+**0.5269** after that correction. It reordered nothing.
+
+### And then the parser was refusing answers that were there
+
+A second external review found the JSON parser's array matcher was `\[.*\]` with
+DOTALL — **greedy**, so it spanned from the first `[` in a reply to the last `]`
+anywhere in it. Two real answers died that way:
+
+- `[{...}] See [1]` became one span covering both brackets and the prose between them.
+  Not JSON, so a correct answer scored zero.
+- `llama_l` emitted a malformed array, wrote *"Here is the correct output:"*, then a
+  valid one. The greedy match swallowed both and parsed neither.
+
+Balanced spans are now scanned left to right and the first that reads as entities wins.
+**20 of the 68 items this experiment had scored unreadable were readable all along.**
+
+| arm | f1 before | f1 after | unreadable before | after |
+|---|---|---|---|---|
+| `glm_l` | 0.5269 | **0.5662** | 46 | **32** |
+| `llama_l` | 0.5911 | **0.5990** | 4 | **1** |
+| `llama_m` | 0.5704 | **0.5740** | 16 | **13** |
+| `deepseek_m` | 0.6122 | **0.6148** | 0 | 0 |
+
+`deepseek_m` moved without any item changing readability: it had answered `[[{...}]]`,
+doubly wrapped, and the old code dropped the inner list as a non-object and returned an
+**empty set** — scoring six found entities as *"correctly found nothing."*
+
+**My first version of the fix broke two answers to fix the others**, and only a
+before/after comparison of every arm caught it. Requiring *every* element of an array to
+be entity-shaped rejected `llama_s`'s otherwise-valid list that carried one stray bare
+string, and refused `deepseek_m`'s double wrap outright. The rule is now *at least one*
+entity-shaped element — enough to reject `[1]` from "See [1]", which is the case the
+shape test exists for, without demanding tidiness from an answer that has entities in it.
+
+**What is still refused, and should be:** prose, and arrays cut off mid-object. `glm_l`
+runs out of tokens on `[{"text": "Corfu International` with no closing bracket. There is
+no answer there, and mining one out of an explanation would be inventing it. 32 of its
+280 items are still unreadable and that is the model's behaviour, not the parser's.
+
+**The earlier claim that "both parser fixes change zero recorded numbers" was about the
+ROUND-1 fixes and remains true of them.** This is a different bug, found later, and it
+moves four arms.
 
 **No fingerprint could have caught it.** `normalizer_sha256` covered `normalize` and nothing
 else, on the reasoning that a normaliser has the most room to move a score. The reasoning

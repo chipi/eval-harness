@@ -119,10 +119,25 @@ hardcoded an absolute path and read zero files while reporting green.
 | `test_retrieval_scorer.py`, `test_ner_parser.py`, `test_extraction_scorer.py` | the per-item scoring conventions, in both directions |
 | `self_test.py` | resume durability, fingerprint reference coverage, metric-kind verdicts, tie-correct Spearman, rescore refusing an absent reference set |
 
-**Both round-1 parser fixes change zero recorded numbers, and that is measured, not
-assumed** — so a second round need not re-derive it. The reviewer's hypothesis was that
-the NER JSON parser explained part of `glm_l`'s 46 unreadable items. Re-parsing every
-stored output with the fixed parser leaves it at **46 → 46**, and **0 of 760** retrieval
-outputs parse differently under the fixed `parse_ranking`. The fixes are still right —
-they close real input shapes — but no figure in any report moves because of them, and
-`glm_l`'s 46 unreadable items are the model's behaviour, not the parser's.
+**The round-1 parser fixes changed zero recorded numbers. The round-2 ones changed
+four arms in each of two experiments, and the round-1 result is exactly why that is
+worth stating carefully.** After round 1 I measured that re-parsing every stored output
+left `glm_l` at 46 → 46 unreadable and 0 of 760 retrieval outputs parsing differently,
+and reported that the parsers were settled. They were not; the round-1 fixes were.
+
+Round 2 found the deeper bug in both parsers — the array matcher, not the wrappers:
+
+| | before | after |
+|---|---|---|
+| NER `glm_l` f1 | 0.5269 | **0.5662** (46 unreadable → 32) |
+| NER `llama_l` f1 | 0.5911 | **0.5990** |
+| NER `llama_m` f1 | 0.5704 | **0.5740** |
+| NER `deepseek_m` f1 | 0.6122 | **0.6148** |
+| SciFact `llama_l` nDCG@10 | 0.7281 | **0.6864** |
+| SciFact `qwen_s` nDCG@10 | 0.7338 | **0.7183** |
+| SciFact `llama_s` nDCG@10 | 0.7172 | **0.7129** |
+
+The lesson I take from the pair: "I re-ran the fixed parser over the stored outputs and
+nothing moved" proves the fix I just made was inert. It says nothing about whether the
+parser is correct, because it only exercises the inputs the fix was aimed at. The round-2
+findings came from reading what the rejected outputs actually contained.

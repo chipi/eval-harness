@@ -31,7 +31,7 @@ CLAIMS = [
     ("NER capitalized typed",     RESCORED, "fn_capitalized_n200_v1", "f1",        0.1913),
     ("NER capitalized untyped",   RESCORED, "fn_capitalized_n200_v1", "untyped_f1",0.6191),
     ("NER nothing = the floor",   RESCORED, "fn_nothing_n200_v1",     "f1",        0.1250),
-    ("NER glm_l parsed",          RESCORED, "fn_glm_l_n200_v1",       "parsed",    0.8357),
+    ("NER glm_l parsed",          RESCORED, "fn_glm_l_n200_v1",       "parsed",    0.8857),
     ("SciFact glm_s ndcg@10",     DATA,     "sf_glm_s_n200_v1",       "ndcg_10",   0.7437),
     ("SciFact e5_base ndcg@10",   DATA,     "sf_e5_base_n200_v1",     "ndcg_10",   0.7191),
     ("SciFact bm25 ndcg@10",      DATA,     "sf_bm25_n200_v1",        "ndcg_10",   0.6451),
