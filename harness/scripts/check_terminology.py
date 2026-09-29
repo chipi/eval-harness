@@ -28,21 +28,44 @@ if not files:
     print(f"FAIL  no markdown found under {root} — this check is not looking at the repo")
     sys.exit(1)
 
+# WHAT THIS CHECK ACTUALLY COVERS, counted rather than implied. It used to report
+# "every experiment-column cell in 40 file(s)", which is how many markdown files it
+# READ. It only asserts on tables whose header row is `| experiment |`, and exactly 2
+# files have one -- so the message overstated coverage twentyfold, on a check whose
+# whole history is having reported green for reading nothing. Reading is not checking.
 bad = []
+with_table = []
+cells = 0
 for f in files:
-    lines = f.read_text().split("\n"); in_exp = False
+    lines = f.read_text().split("\n"); in_exp = False; seen_here = False
     for i, line in enumerate(lines, 1):
-        if re.match(r"^\| *experiment *\|", line, re.I): in_exp = True; continue
+        if re.match(r"^\| *experiment *\|", line, re.I): in_exp = True; seen_here = True; continue
         if in_exp:
             if not line.startswith("|"): in_exp = False; continue
             if re.match(r"^\|[-: |]+\|$", line): continue
             cell = re.match(r"^\| *\*{0,2}([^|*]+?)\*{0,2} *\|", line)
             if cell:
                 v = cell.group(1).strip()
-                ok = v.startswith(("Summarisation ·","Classification ·","Extraction ·","Retrieval ·"))
-                if not ok and v not in ("all","","—"):
+                if v in ("all", "", "—"):
+                    continue
+                cells += 1
+                if not v.startswith(("Summarisation ·","Classification ·",
+                                     "Extraction ·","Retrieval ·")):
                     bad.append("%s:%d  %s" % (f.relative_to(root), i, v))
-print("\n".join(bad) if bad else
-      f"every experiment-column cell in {len(files)} file(s) uses the canonical "
-      f"Task · Dataset label")
-sys.exit(1 if bad else 0)
+    if seen_here:
+        with_table.append(f.relative_to(root))
+
+if bad:
+    print("FAIL  %d non-canonical experiment label(s):" % len(bad))
+    print("\n".join("  " + b for b in bad))
+    sys.exit(1)
+if not cells:
+    # Same hole as the hardcoded path, one level in: reading 40 files and asserting on
+    # none of them is not a pass.
+    print("FAIL  %d markdown file(s) read, but NOT ONE experiment-column cell was "
+          "checked — this check is asserting nothing" % len(files))
+    sys.exit(1)
+print("%d experiment-column cell(s) in %d of %d markdown file(s) use the canonical "
+      "Task · Dataset label" % (cells, len(with_table), len(files)))
+print("  files with an experiment column: " + ", ".join(str(x) for x in with_table))
+sys.exit(0)

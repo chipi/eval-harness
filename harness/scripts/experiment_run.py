@@ -557,6 +557,8 @@ def main() -> int:
         die(f"cannot resume: no outputs under {resume_dir}")
 
     made: List[Path] = []
+
+    capped = False
     per_repeat: List[Dict[str, float]] = []
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
@@ -622,6 +624,7 @@ def main() -> int:
         per_repeat.append(result["scores"])
         print(f"  {run_id}  " + "  ".join(f"{k}={v}" for k, v in result["scores"].items()))
         if result["capped_at"]:
+            capped = True
             print(
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
                 f"spent ${result['spent_usd']:.4f} of EVAL_MAX_COST_USD.\n"
@@ -640,6 +643,31 @@ def main() -> int:
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
 
     print(f"\n{len(made)} run(s) under {RUNS}")
+
+    # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
+    #
+    # This returned 0 whatever happened. `EVAL_MAX_COST_USD=0` wrote a run directory
+    # holding `"scores": {}` and zero prediction rows, printed the cost-cap notice, and
+    # exited 0 -- so a sweep script or CI job saw success and moved on, leaving a run
+    # that measured nothing sitting in data/runs/ looking like the others. Found by
+    # external review.
+    #
+    # Partial results are still KEPT on disk and the resume hint still prints: that part
+    # of the design was deliberate and is not changed. What changes is that the caller is
+    # told, because "the cap stopped me after 3 of 200 items" and "I measured 200 items"
+    # must not both be exit 0.
+    empty = [d for d in made if not (read_json(d / "metrics.json").get("scores") or {})]
+    if empty:
+        print(f"\n  FAILED: {len(empty)} run(s) scored NO items and carry empty scores:")
+        for d in empty:
+            print(f"    {d.name}")
+        print("  Nothing was measured. Raise EVAL_MAX_COST_USD, or check the adapter.")
+        return 1
+    if capped:
+        # Distinct from 1 (nothing measured) so a caller can tell "stopped early with
+        # usable partial results" from "produced nothing".
+        print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
+        return 2
     return 0
 
 

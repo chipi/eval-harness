@@ -552,6 +552,44 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_a_run_that_measured_nothing_is_not_a_success() -> None:
+    """`EVAL_MAX_COST_USD=0` wrote an empty run and exited 0.
+
+    The directory looked like every other run -- metrics.json, predictions.jsonl,
+    outputs/ -- and held `"scores": {}` with zero prediction rows. A sweep script or CI
+    job saw exit 0 and moved on. Nothing was measured and nothing said so.
+
+    Partial results are still kept and the resume hint still prints; that was
+    deliberate. What changed is the exit code, because "the cap stopped me after 3 of
+    200 items" and "I measured 200 items" must not both be success. 1 = nothing
+    measured, 2 = stopped early with usable partial results, 0 = complete.
+    """
+    import shutil  # noqa: PLC0415
+
+    runs = HERE.parent / "data" / "runs-selftest-cap"
+    shutil.rmtree(runs, ignore_errors=True)
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+
+    r = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml",
+            env={**env, "EVAL_MAX_COST_USD": "0"})
+    if r.returncode == 0 and not runs.exists():
+        print("  --   cost cap: skipped (demo arm did not run)")
+        return
+    out = (r.stdout or "") + (r.stderr or "")
+    check("cost cap: a run that scored NO items exits non-zero",
+          r.returncode != 0, f"exit {r.returncode}")
+    check("cost cap: and says nothing was measured",
+          "scored NO items" in out or "Nothing was measured" in out, out[-160:])
+
+    # The control. Without a cap the same arm must still succeed, or the check above is
+    # just asserting that this config never works.
+    shutil.rmtree(runs, ignore_errors=True)
+    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    check("cost cap: an uncapped run of the same arm still exits 0",
+          r2.returncode == 0, f"exit {r2.returncode}: {(r2.stdout or '')[-160:]}")
+    shutil.rmtree(runs, ignore_errors=True)
+
+
 def test_adapter_declaration_beats_a_stale_run() -> None:
     """A metric kind fixed in the adapter must take effect on runs measured before it.
 
@@ -860,6 +898,7 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
         test_the_checks_can_actually_fail,
         test_promote_reads_its_reason_from_the_env,
