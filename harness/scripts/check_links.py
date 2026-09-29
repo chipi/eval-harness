@@ -41,5 +41,12 @@ for md in root.rglob("*.md"):
 if not list(root.rglob("*.md")):
     print("FAIL  no markdown found — this check is not looking at the repo")
     raise SystemExit(1)
-print("\n".join(bad) if bad else
-      f"all relative links and anchors resolve")
+# EXIT NON-ZERO WHEN SOMETHING IS BROKEN. This printed the bad links and exited 0,
+# so `make ci` stayed green through every broken link it found. A checker that cannot
+# fail is not a check -- the same hole `check_terminology.py` had in round 1, which was
+# fixed there and nowhere else. The lesson was the instance; the bug was the class.
+if bad:
+    print(f"FAIL  {len(bad)} broken link(s) or anchor(s):")
+    print("\n".join(f"  {b}" for b in bad))
+    raise SystemExit(1)
+print("all relative links and anchors resolve")

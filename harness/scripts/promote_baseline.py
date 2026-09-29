@@ -17,6 +17,7 @@ Two things are refused, because both produce a baseline nobody can act on:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 

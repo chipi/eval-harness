@@ -552,6 +552,85 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_the_checks_can_actually_fail() -> None:
+    """Every `make ci` checker must EXIT NON-ZERO on the thing it exists to catch.
+
+    Round 1 found `check_terminology.py` reporting green while reading zero files. I
+    fixed that one file and never asked whether its siblings had the same hole. Round 2
+    found two more, and they had been green through real breakage the whole time:
+
+      check_links.py            printed the broken link and exited 0
+      check_report_claims.py    printed "0/0 claims verified" and exited 0 with no runs
+
+    So the round-1 lesson was learned as an instance when it was a class. This test is
+    the class: each checker is pointed at a tree that must make it fail, and the
+    assertion is on the EXIT CODE, because that is the only part `make` reads.
+
+    Each checker resolves its own root from `__file__`, so copying `scripts/` into a
+    throwaway tree is enough to aim it somewhere harmless.
+    """
+    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        fake = tmp / "repo" / "harness"
+        (fake / "data" / "runs").mkdir(parents=True)
+        (fake / "data" / "runs-rescored").mkdir(parents=True)
+        shutil.copytree(HERE, fake / "scripts")
+
+        def run_there(script: str) -> subprocess.CompletedProcess:
+            return subprocess.run([PY, str(fake / "scripts" / script)],
+                                  cwd=fake, capture_output=True, text=True)
+
+        # check_report_claims: no runs at all. Every claim skips.
+        r = run_there("check_report_claims.py")
+        check("checks can fail: check_report_claims with no runs exits non-zero",
+              r.returncode != 0, f"exit {r.returncode}: {(r.stdout or '')[-120:]}")
+
+        # check_links: one markdown file with a link to nothing.
+        (tmp / "repo" / "BROKEN.md").write_text("[x](./does_not_exist_xyz.md)\n")
+        r = run_there("check_links.py")
+        check("checks can fail: check_links with a broken link exits non-zero",
+              r.returncode != 0, f"exit {r.returncode}: {(r.stdout or '')[-120:]}")
+
+        # check_terminology: the round-1 hole, re-asserted here so it cannot regress.
+        (tmp / "repo" / "BROKEN.md").unlink()
+        r = run_there("check_terminology.py")
+        check("checks can fail: check_terminology with no markdown exits non-zero",
+              r.returncode != 0, f"exit {r.returncode}: {(r.stdout or '')[-120:]}")
+
+
+def test_promote_reads_its_reason_from_the_env() -> None:
+    """`--reason-from-env` must run. It raised NameError on every invocation.
+
+    Added in round 1 to close a backtick injection in `make run-promote`, and shipped
+    broken: `promote_baseline.py` called `os.environ.get` without importing `os`, so
+    the documented command in RUNBOOK:170 died with
+    `NameError: name 'os' is not defined` before doing anything at all.
+
+    It survived because the only test of this script was `--help`, which never reaches
+    the flag. A `--help` test proves a file parses; it proves nothing about the path a
+    user takes. Both assertions here reach line 48 and neither writes a baseline.
+    """
+    r = run("scripts/promote_baseline.py", "--reason-from-env", "--run", "nope",
+            env={"EVAL_PROMOTE_REASON": ""})
+    out = (r.stderr or "") + (r.stdout or "")
+    check("promote: an empty EVAL_PROMOTE_REASON is refused, not crashed",
+          r.returncode != 0 and "NameError" not in out, out[-160:])
+    # NOT just `"reason" in out`: the NameError traceback echoes the offending source
+    # line, which contains the word "reason", so that assertion passed against the
+    # broken code. It has to be the ERROR MESSAGE, and no traceback.
+    check("promote: and it says a reason is required",
+          "a reason is required" in out and "Traceback" not in out, out[-160:])
+
+    r = run("scripts/promote_baseline.py", "--reason-from-env", "--run",
+            "_no_such_run_selftest_", env={"EVAL_PROMOTE_REASON": "a reason"})
+    out = (r.stderr or "") + (r.stdout or "")
+    check("promote: with the env reason set it gets PAST the env read to the run lookup",
+          "NameError" not in out and "no run" in out.lower(), out[-160:])
+
+
 def test_rescore_refuses_a_missing_reference_set() -> None:
     """Rescoring with no references must DIE, not score against an empty gold set.
 
@@ -725,6 +804,8 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_the_checks_can_actually_fail,
+        test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,

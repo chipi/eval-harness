@@ -87,4 +87,18 @@ for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
 
 print(f"\n{sum(ok)}/{len(ok)} claims verified against the committed runs"
       + (f", {missing} skipped (runs absent)" if missing else ""))
+
+# A SKIPPED CLAIM IS A FAILED CHECK, NOT A PASSED ONE. With no runs on disk every claim
+# skipped, `ok` stayed empty, `all([])` was True, and this printed "0/0 claims verified"
+# and exited 0 -- the check reporting success for having checked nothing. The runs are
+# committed, so a missing one means the tree is broken or the claim names a run that
+# does not exist; neither is a pass.
+if missing:
+    print(f"FAIL  {missing} claim(s) could not be checked because their run is absent.")
+    print("      Every claimed run is committed, so this means the claim names a run")
+    print("      that does not exist, or data/runs{,-rescored} is incomplete.")
+    sys.exit(1)
+if not ok:
+    print("FAIL  no claims were checked at all — this check is not looking at the repo")
+    sys.exit(1)
 sys.exit(0 if all(ok) else 1)
