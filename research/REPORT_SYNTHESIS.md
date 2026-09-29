@@ -243,18 +243,30 @@ Sizes are native on-disk (dtype-aware, read from each HuggingFace safetensors in
 the budget is **128 GB of unified or GPU memory** — an Apple M-series box, a dual-GPU
 workstation, or a single node with room for weights plus KV cache.
 
-| experiment | **absolute** open-weight winner | size | score | **practical** winner ≤128 GB | how | score | cost |
-|---|---|---|---|---|---|---|---|
-| Classification · AG News | Llama-3.3-70B | 141 GB | 0.8800 | **the same model** | int8, 70 GB | **0.8800** | **none** |
-| Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B-A4B** | native, 52 GB | **0.9857** | **none — identical at 1/14 the size** |
-| Extraction · Few-NERD | Gemma-4-26B-A4B | 52 GB | 0.6733 | **the same model** | native | **0.6733** | **none** |
-| Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **the same model** | int8, 110 GB | **0.7437** | **none** |
-| Summarisation · CNN/DM | DeepSeek-V4.1-Flash | 765 GB | 0.3460 | Llama-3.3-70B | int8, 70 GB | 0.3382 | **−0.0078** |
+A model needs room for KV cache and activations as well as weights, so an arm qualifies
+here only if its weights fit in **85% of nominal memory**.
 
-**In four of five, the 128 GB answer is as good as the unlimited-hardware answer.** Three
-times it is literally the same model quantised or already small enough; once (DBpedia) a
-26B model matches a 357B one exactly. Only summarisation pays anything, and it pays
-0.0078 — about a tenth of the gap between the best and worst hosted arm on that task.
+| experiment | **absolute** winner | size | score | **≤128 GB** | score | **≤64 GB** | score |
+|---|---|---|---|---|---|---|---|
+| Classification · AG News | Llama-3.3-70B | 141 GB | 0.8800 | **same**, int8 70 GB | **0.8800** | **same**, int4 35 GB | **0.8800** |
+| Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B**, native 52 GB | **0.9857** | **same**, native 52 GB | **0.9857** |
+| Extraction · Few-NERD | Gemma-4-26B | 52 GB | 0.6733 | **same**, native | **0.6733** | **same**, native | **0.6733** |
+| Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **same**, int4 55 GB | **0.7437** | Gemma-4-26B, native 52 GB | 0.7363 |
+| Summarisation · CNN/DM | DeepSeek-V4.1 | 765 GB | 0.3460 | Llama-3.3-70B, int8 70 GB | 0.3382 | **same**, int4 35 GB | 0.3382 |
+
+**Hardware buys almost nothing here.** Four of five 128 GB answers equal the
+unlimited-hardware answer, and **four of five 64 GB answers equal the 128 GB one.** Only
+SciFact loses anything by halving the budget — 0.0074, which its own separation test
+cannot resolve. Only summarisation loses anything by capping the budget at all — 0.0078,
+about a tenth of the spread between the best and worst hosted arm on that task.
+
+Going from a 765 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
+the other four**.
+
+**But the 64 GB column leans on int4 twice**, and that is where the caveat below bites
+hardest: int8 is usually close to lossless, int4 frequently is not. If your box is 64 GB,
+the native-precision options (Gemma-4-26B at 52 GB, Mistral-Small-24B at 48 GB) are the
+ones whose numbers here you can trust without re-measuring.
 
 > **The caveat, and it is a real one: quantised quality was never measured here.** Every
 > score in this table comes from the full-precision model as served by a provider. int8 is
@@ -270,7 +282,7 @@ times it is literally the same model quantised or already small enough; once (DB
 | classification | **`bert_mini`-style fine-tune** (44 MB) if you can label; else **Gemma-4-26B** (52 GB) |
 | entity extraction | **SpanMarker fine-tune** (476 MB). No open-weight LLM here came close |
 | summarisation | **BART-large-CNN** (1.6 GB) if the domain is stable; else **Llama-3.3-70B int8** (70 GB) |
-| retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int8** (110 GB) only if you need the last 0.07 |
+| retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int4** (55 GB) only if you need the last 0.07 |
 
 Three of those four are under 2 GB and need no GPU at all.
 

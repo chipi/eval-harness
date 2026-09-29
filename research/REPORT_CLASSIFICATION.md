@@ -25,7 +25,8 @@
 |---|---|---|
 | **Self-host · small ML** | **`bert_mini`** — BERT-mini fine-tuned on AG News, **44 MB**, 7 ms/item. **0.9450 — wins outright.** | **Blocked.** The fine-tuned DBpedia checkpoint will not load here; the only small model that ran is *zero-shot* `bart_mnli` at **0.6286 — last of 25**. |
 | **Self-host · open-weight LLM, absolute** | **`llama_m`** — Llama-3.3-70B, **70.6B / ~141 GB**. **0.8800** — **0.0650 worse** than a model **3,205× smaller**. | **`glm_m`** — GLM-4.6, MIT, **357B / ~714 GB**. **0.9857**, **not separated** from the overall winner. Needs a multi-node cluster. |
-| **Self-host · open-weight LLM, on a 128 GB box** | **The same model at int8: ~70 GB, fits.** 0.8800. At native precision instead: `gemma_s` (27B, 55 GB) at 0.8750. | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB, fits natively**. **0.9857 — identical to GLM-4.6 at 1/14 the size.** This is the practical DBpedia answer. |
+| **Self-host · open-weight LLM, ≤128 GB** | **The same model at int8, ~70 GB.** 0.8800 — no loss on paper. Native alternative: `gemma_s` (27B, 55 GB) at 0.8750. | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**. **0.9857 — identical to GLM-4.6 at 1/14 the size.** |
+| **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB.** 0.8800 on paper. Native alternative: `gemma_s` at 55 GB, 0.8750 — and still **0.0700 below a 44 MB fine-tune.** | **Still `gemma_m`**, 52 GB native. Halving the budget costs nothing here. |
 | **Deploy — rented API** | **`anthropic_m`** at **$351/month per 1M items**, 0.9100 — **3.7% worse than free**. | **`qwen_m`** at **$51/month**, **0.9929** — the best score here, and **proprietary: no self-host option at any price**. |
 | **What should I not deploy?** | `anthropic_l` at $875/mo: **−4.8%** vs free | `anthropic_l` at **$1,351/mo**: **−0.4%** vs $51/mo |
 | **Does paying more help?** | Marginally: **+2.3%** per 10× cost | **Barely: +0.9%** per 10× cost |

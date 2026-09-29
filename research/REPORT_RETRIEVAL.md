@@ -27,7 +27,8 @@
 |---|---|
 | **Self-host · small ML** | **`e5_base`** — e5-base-v2, MIT, **438 MB**, 0.06 s/item. **0.7191** alone, and **not separable from any paid arm**. |
 | **Self-host · open-weight LLM, absolute** | **`glm_s`** — GLM-4.5-Air, MIT, **110B / ~221 GB**. **0.7437** reranking BM25 — **+0.0246 over the encoder alone, not separated**. Paired with `e5_base` it reaches **0.7891**, the highest score here. |
-| **Self-host · open-weight LLM, on a 128 GB box** | **The same model, quantised: GLM-4.5-Air at int8 is ~110 GB and fits.** No quality is given up on paper. At native precision instead: `gemma_m` (26B, 52 GB) at 0.7363, costing 0.0074. |
+| **Self-host · open-weight LLM, ≤128 GB** | **The same model, quantised.** GLM-4.5-Air is ~110 GB at int8 — 86% of a 128 GB box, tight once KV cache is counted — or **~55 GB at int4**, comfortable. No quality is given up *on paper*; quantised quality was not measured. |
+| **Self-host · open-weight LLM, ≤64 GB** | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**, **0.7363**. Costs **0.0074** against GLM-4.5-Air, which its own separation test cannot resolve. The only experiment where halving the memory budget costs anything at all. |
 | **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
 | **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |
