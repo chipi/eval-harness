@@ -1,0 +1,168 @@
+{
+  "adapter": "examples/retrieval-scifact/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "44cbf5015af21ca42c77b0699d7c67f97715d235",
+    "source": "git"
+  },
+  "config_id": "sf_glm_s_bm25first_n200_v1",
+  "created_at": "2026-09-28T22:23:08Z",
+  "dataset_id": "scifact_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "sf_glm_s_bm25first_n200_v1",
+      "params": {
+        "corpus_id": "scifact",
+        "family": "glm",
+        "max_tokens": 700,
+        "model": "eval-glm-45-air",
+        "price_tier": "small",
+        "prompt_file": "prompt.txt",
+        "provider": "rerank",
+        "reasoning": {
+          "enabled": false
+        },
+        "rerank_k": 20,
+        "snippet_chars": 900,
+        "temperature": 0.0,
+        "top_k": 100,
+        "usd_per_mtok_in": 0.06,
+        "usd_per_mtok_out": 0.22
+      }
+    },
+    "data": {
+      "dataset_id": "scifact_200",
+      "items_sha256": "b97dfe735a78eb4978cde41e2ca9a0bff424de9e6a0a2bdada5d167e3423004d",
+      "n_items": 200,
+      "reference_id": "gold/scifact_200",
+      "reference_tier": "gold"
+    },
+    "hash": "403d0e656b1478757538b484048734c431912e602aeef0e1fc79b71ca8776a43",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/retrieval-scifact/adapter.py",
+        "sha256": "068ef8c23695b3ac371eed4651694c6f7af5e8a6b9b8d2307ec7829b9b15efb8"
+      },
+      "harness": {
+        "commit": "44cbf5015af2",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "sentence-transformers": "3.4.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-glm-45-air",
+        "bm25": {
+          "b": 0.75,
+          "epsilon": 0.25,
+          "impl": "rank_bm25.BM25Okapi",
+          "k1": 1.5
+        },
+        "corpus_id": "scifact",
+        "corpus_n_docs": 5183,
+        "corpus_sha256": "297643e2d005109d9fc25d460c080faa45b0cc3ad881ea002941c67b6e41984e",
+        "endpoint": "http://127.0.0.1:4001",
+        "first_stage": "bm25",
+        "first_stage_doc_prefix": "",
+        "first_stage_model": null,
+        "first_stage_query_prefix": "",
+        "id": "eval-glm-45-air",
+        "identity_declared": true,
+        "max_tokens": 700,
+        "prompt_sha256": "a81ef5d8b150e4c31bfbaee6bfd9f98b1d56dd27dfbdcc15511154f79066abbe",
+        "provider": "rerank",
+        "reasoning": {
+          "enabled": false
+        },
+        "rerank_k": 20,
+        "revision": null,
+        "revision_source": "unavailable",
+        "scorer_sha256": "51d9e8bd57bc2e75ceccce80b7d60157c42f9959cadf3d7e9cf738f73fd10d04",
+        "snippet_chars": 900,
+        "temperature": 0.0,
+        "tokenizer_sha256": "67a185c8c30efefa133188f15ba429328086f837a642a17e347a5a2ee437b79d",
+        "top_k": 100
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "duplicate_ids": "descriptive",
+    "found_any": "descriptive",
+    "mrr_10": "quality",
+    "n_relevant": "descriptive",
+    "n_returned": "descriptive",
+    "ndcg_10": "quality",
+    "parsed": "quality",
+    "rank_of_first": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "recall_10": "quality",
+    "recall_100": "quality",
+    "truncated": "descriptive",
+    "unknown_ids": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "corpus_id": "scifact",
+    "family": "glm",
+    "max_tokens": 700,
+    "model": "eval-glm-45-air",
+    "price_tier": "small",
+    "prompt_file": "prompt.txt",
+    "provider": "rerank",
+    "reasoning": {
+      "enabled": false
+    },
+    "rerank_k": 20,
+    "snippet_chars": 900,
+    "temperature": 0.0,
+    "top_k": 100,
+    "usd_per_mtok_in": 0.06,
+    "usd_per_mtok_out": 0.22
+  },
+  "primary_metric": "ndcg_10",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "sf_glm_s_bm25first_n200_v1_20260928T221300Z",
+  "scores": {
+    "cost_usd": 0.000274,
+    "duplicate_ids": 0.0,
+    "found_any": 0.865,
+    "latency_ms": 3023.89413,
+    "llm_named_unknown": 0.0,
+    "llm_parsed": 1.0,
+    "mrr_10": 0.733554,
+    "n_relevant": 1.135,
+    "n_returned": 100.0,
+    "ndcg_10": 0.74225,
+    "parsed": 1.0,
+    "rank_of_first": 2.51,
+    "reasoning_tokens": 0.0,
+    "recall_10": 0.81175,
+    "recall_100": 0.858583,
+    "tokens_in": 4036.955,
+    "tokens_out": 145.345,
+    "total_cost_usd": 0.05483864,
+    "total_tokens_in": 807391.0,
+    "total_tokens_out": 29069.0,
+    "truncated": 0.0,
+    "unknown_ids": 0.0
+  },
+  "warmup_ms": 2687.72
+}

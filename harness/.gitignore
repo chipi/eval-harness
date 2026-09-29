@@ -133,12 +133,23 @@ data/runs-rescored/*/*
 !data/runs-rescored/*/predictions.jsonl
 
 # Every OTHER runs directory stays out: smoke passes, tuning sweeps, the superseded
-# runs, the first-stage pair. They are working artifacts, not the record.
+# runs. They are working artifacts, not the record.
 data/runs-smoke*/
 data/runs-tune*/
-data/runs-pair/
 data/runs-superseded/
 !data/runs-superseded/README.md
+
+# EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
+# behind the pre-registered prediction -- the single most-advertised result in this
+# repo, that swapping only the first stage would move the pipeline from 0.74 to
+# 0.786-0.797, which came back at 0.7891. I filed it under "the first-stage pair" as
+# scratch and ignored the whole directory, so the one number a reader is most likely to
+# want to check was the one number with no committed evidence. Found by external review.
+data/runs-pair/*/*
+!data/runs-pair/*/metrics.json
+!data/runs-pair/*/predictions.jsonl
+!data/runs-pair/*/outputs
+!data/runs-pair/*/outputs/**
 
 # Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
 # same reason, plus one the last sweep learned the hard way -- an untracked directory under

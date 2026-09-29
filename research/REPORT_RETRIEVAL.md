@@ -232,6 +232,18 @@ reaches 0.899 × 0.8747 = 0.786 to 0.911 × 0.8747 = 0.797.
 
 **Measured:**
 
+*Evidence: `harness/data/runs-pair/`, committed since 2026-09-29. These four runs sat
+in an ignored directory until an external review pointed out that the most-advertised
+number in this repo was the one number with no committed run behind it.
+`check_report_claims.py` now verifies 0.7891 against the registered **range**, 0.786–0.797,
+rather than against itself.*
+
+*The `glm_s` row is unaffected by the round-2 retrieval parser fix — **0 of 200 items
+reorder** under the corrected parser. The `qwen_s` row IS affected and is being
+re-measured; under the corrected parser its stored replies give 0.7138 over BM25 and
+0.7713 over e5_base, so the +0.0575 becomes about +0.0575 again but from a lower base.
+The figures in that row are the pre-fix measurement until the re-run lands.*
+
 | reranker | over BM25 | over e5_base | Δ | headroom used |
 |---|---|---|---|---|
 | glm_s | 0.7422 | **0.7891** | +0.0469 | 90.9% → 90.2% |

@@ -20,6 +20,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data" / "runs"
 RESCORED = HERE.parent / "data" / "runs-rescored"
+#: The pre-registered first-stage prediction. Its four runs lived in an ignored
+#: directory until round 2, so the most-advertised number in the repo -- 0.7891 -- was
+#: the one number no reader could check.
+PAIR = HERE.parent / "data" / "runs-pair"
 
 #: (label, runs-dir, config_id, metric, claimed). NER reads the rescored directory,
 #: because that is the instrument its report states -- the un-rescored copies carry the
@@ -42,11 +46,21 @@ CLAIMS = [
 ]
 
 #: (label, claimed, a - b) — the DIFFERENCES the reports lead with.
+#: The registered prediction, checked as a RANGE rather than a point, because that is
+#: what was registered: 0.786-0.797 before the arm existed.
+PREDICTIONS = [
+    ("SciFact prediction: glm_s on e5_base lands in 0.786-0.797",
+     PAIR, "sf_glm_s_e5first_n200_v1", "ndcg_10", 0.786, 0.797),
+]
+
 DELTAS = [
     ("NER fine-tuning is worth +0.3134", 0.3134,
      (RESCORED, "fn_span_marker_n200_v1", "f1"), (RESCORED, "fn_gliner_n200_v1", "f1")),
     ("SciFact BM25 -> e5_base = +0.0740", 0.0740,
      (DATA, "sf_e5_base_n200_v1", "ndcg_10"), (DATA, "sf_bm25_n200_v1", "ndcg_10")),
+    ("SciFact prediction: glm_s gains +0.0469 from the first stage alone", 0.0469,
+     (PAIR, "sf_glm_s_e5first_n200_v1", "ndcg_10"),
+     (PAIR, "sf_glm_s_bm25first_n200_v1", "ndcg_10")),
     ("SciFact worst -> best reranker = +0.0420", 0.0420,
      (DATA, "sf_glm_s_n200_v1", "ndcg_10"), (DATA, "sf_gemma_s_n200_v1", "ndcg_10")),
 ]
@@ -84,6 +98,14 @@ for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
         print(f"  --   {label}: a run is missing — skipped")
         continue
     check(label, abs((a - b) - claimed) <= TOL, f"claimed {claimed}, run says {a - b:.6f}")
+
+for label, base, cid, metric, lo, hi in PREDICTIONS:
+    got = score(base, cid, metric)
+    if got is None:
+        missing += 1
+        print(f"  --   {label}: run not present ({cid}) — skipped")
+        continue
+    check(label, lo <= got <= hi, f"registered {lo}-{hi}, run says {got:.6f}")
 
 print(f"\n{sum(ok)}/{len(ok)} claims verified against the committed runs"
       + (f", {missing} skipped (runs absent)" if missing else ""))
