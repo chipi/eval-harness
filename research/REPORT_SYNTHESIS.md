@@ -41,6 +41,11 @@ experiments**, and open weights won outright on one. At 1M items/month that tier
 $14,255 rented and **$0 self-hosted**; the 11 genuinely proprietary arms have no floor
 below $40,422.
 
+**Combining the two: every experiment has a $0 answer.** In four of five the
+self-hostable option *is* the winner; in the fifth it trails by 0.0071, which the data
+cannot resolve. Across five unrelated tasks, the best configuration runnable entirely on
+your own machines is either first or statistically tied with first.
+
 The counter-argument is measured too: one hosted model covers all five tasks at the 70th
 percentile with a prompt change, where each local model does exactly one. Full reasoning,
 the three-tier breakdown, and four ways it could be wrong:
@@ -188,6 +193,31 @@ by 0.007–0.030 without separation on the other three.
 more items, and the honest reading is that **proprietary may hold a small real edge on
 some tasks that this much data cannot demonstrate.** What the data does rule out is a
 large one.
+
+
+### Every experiment has a $0 answer, if you own hardware
+
+Combining the tiers with the separation tests: in **all five** experiments there is a
+configuration requiring no proprietary model and no per-item bill.
+
+| experiment | the $0 answer | tier | quality | cost of choosing it |
+|---|---|---|---|---|
+| Summarisation · CNN/DM | `bart_l` | local ML | **0.3461** | none — it wins outright |
+| Classification · AG News | `bert_mini` | local ML | **0.9450** | none — it wins outright |
+| Extraction · Few-NERD | `span_marker` | local ML | **0.7674** | none — it wins outright |
+| Retrieval · SciFact | `glm_s` (+`e5_base`) | **open-weight, MIT** | **0.7437** | none — **the winner itself is self-hostable** |
+| Classification · DBpedia | `glm_m` | **open-weight, MIT** | 0.9857 | **−0.0071, not separated** |
+
+Four of five cost nothing at all. The fifth costs 0.0071 accuracy — a difference the data
+cannot resolve — to avoid the only winner in the set that has **no self-host option at any
+price** (`qwen_m`, one vendor, no published weights).
+
+**This is the finding a hardware owner should read first.** Not "free models are
+competitive" but: *across five unrelated tasks, the best configuration you can run
+entirely on your own machines is either the outright winner or statistically tied with it.*
+
+The bill you avoid is **$14,255/month** at 1M items for the open-weight tier, and the
+proprietary tier's **$40,422/month** floor becomes irrelevant rather than merely expensive.
 
 ### What that means if you own the hardware
 

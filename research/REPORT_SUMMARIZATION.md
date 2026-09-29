@@ -30,6 +30,7 @@
 | **How many arms are really tied at the top?** | **13 of 25.** The cheapest of them is 143× cheaper than the dearest. |
 | **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
 | **Fine-tune or pay?** | **Cost only.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free — but it is *slower* (11.0 s vs 1.6 s), because generation on a CPU is expensive. |
+| **Can I self-host the answer?** | **Yes — it is already local.** `bart_l` is MIT-licensed weights on HuggingFace. The best paid alternative, `deepseek_m`, is *also* open-weight (MIT), so **neither answer requires a proprietary model.** |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*

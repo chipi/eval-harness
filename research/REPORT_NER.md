@@ -31,6 +31,7 @@
 | **What does fine-tuning buy?** | **+0.3134 F1**, isolated by a matched pair at price zero on both sides (`span_marker` vs `gliner`). |
 | **Is a pilot enough?** | Here yes — ρ = 0.895, right winner. It was wrong in 3 of the other 4 experiments. |
 | **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 from exposure alone**, at $0 on both sides. |
+| **Can I self-host the answer?** | **Yes — it is already local.** `span_marker` is CC-BY-SA-4.0 weights on HuggingFace, 476 MB, CPU. No proprietary model appears anywhere in the recommendation. |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
