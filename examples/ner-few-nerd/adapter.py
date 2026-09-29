@@ -127,16 +127,21 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
     fenced = _FENCE.search(body)
     if fenced:
         body = fenced.group(1).strip()
-    if not body.lstrip().startswith("["):
-        found = _ARRAY.search(body)
-        if found:
-            body = found.group(0)
-        elif body.lstrip().startswith("{"):
-            # A bare object with no enclosing array. Handled below as a one-element set;
-            # falling through to the array search would discard it.
-            pass
-        else:
-            return None
+    # EXTRACT THE ARRAY WHEREVER IT IS, including when the text STARTS with one.
+    #
+    # This used to run only when the body did not start with "[", so a valid list
+    # followed by any prose -- `[{...}]\n\nI hope this helps!` -- was handed to
+    # json.loads whole and failed. A correct answer with a courtesy sentence after it
+    # scored zero, and that may be part of what the NER report counted as "unreadable".
+    # Found by review.
+    found = _ARRAY.search(body)
+    if found:
+        body = found.group(0)
+    elif not body.lstrip().startswith("{"):
+        # Not an array anywhere and not a bare object either: there is nothing here to
+        # read as a set. A bare object falls through and is handled below as a
+        # one-element set.
+        return None
     # Repairs are tried in order, each strictly more forgiving than the last, and every
     # one of them fixes a failure OBSERVED on the dev slice rather than an imagined one:
     #

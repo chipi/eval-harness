@@ -223,7 +223,8 @@ def is_descriptive(metric: str) -> bool:
     return metric in DESCRIPTIVE_KEYS
 
 
-def verdict_for(metric: str, delta: float) -> str:
+def verdict_for(metric: str, delta: float,
+                kinds: Optional[Dict[str, str]] = None) -> str:
     """"better" / "worse" / "changed" / "identical" for ``delta`` on ``metric``.
 
     The one place that decides what a movement MEANS. Descriptive metrics get
@@ -232,7 +233,11 @@ def verdict_for(metric: str, delta: float) -> str:
     """
     if delta == 0:
         return "identical"
-    if is_descriptive(metric):
+    # An adapter's own declaration wins over the built-in table, which only knows the
+    # metrics the bundled adapter emits. Callers pass the `metric_kinds` recorded in the
+    # run; without it every example metric was judged by the sign of the delta alone.
+    declared = (kinds or {}).get(metric)
+    if declared == "descriptive" or (declared is None and is_descriptive(metric)):
         return "changed"
     improved = delta < 0 if lower_is_better(metric) else delta > 0
     return "better" if improved else "worse"

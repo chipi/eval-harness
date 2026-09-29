@@ -87,6 +87,15 @@ check("prose is unreadable, not an empty ranking",
 check("empty text -> None", parse_ranking("") is None)
 check("order is preserved through parsing", parse_ranking('["c","a","b"]') == ["c", "a", "b"])
 
+# NUMERIC IDS SURVIVE THE BULLET STRIPPER. SciFact document ids are numbers, and the
+# line parser used to `.lstrip("-*0123456789. )")` -- a character class, which deleted
+# the id itself. Every non-JSON answer then parsed as nothing and the pipeline silently
+# scored as its first stage. Found by external review.
+check("numeric ids, bare per line", parse_ranking("4983923\n13734012") == ["4983923", "13734012"])
+check("numeric ids, numbered list", parse_ranking("1. 4983923\n2. 13734012") == ["4983923", "13734012"])
+check("numeric ids, bulleted", parse_ranking("- 4983923\n* 13734012") == ["4983923", "13734012"])
+check("a bare number is not mistaken for numbering", parse_ranking("42") == ["42"])
+
 # ── the machinery itself ─────────────────────────────────────────────────────
 check("dcg discounts by log2(rank+1)", abs(dcg([1.0, 1.0]) - (1 + 1/math.log2(3))) < 1e-12)
 check("dedupe keeps first occurrence", dedupe(["b", "a", "b"]) == (["b", "a"], 1))

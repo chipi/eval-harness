@@ -109,6 +109,12 @@ def main() -> int:
     keys = sorted(set(a["scores"]) | set(b["scores"]))
     w = max([len(k) for k in keys] + [6])
     print(f"\n  {'metric':{w}} {'baseline':>12} {'candidate':>12} {'delta':>12}   verdict")
+    # THE KINDS THE RUNS THEMSELVES RECORDED. `verdict_for` otherwise consults only the
+    # built-in table, which knows the bundled adapter's metrics and nothing else -- so
+    # every example's own metrics were judged "better"/"worse" by sign alone. An arm
+    # that hallucinated more document ids was reported as improved.
+    kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
+
     worth = 0
     for k in keys:
         if k not in a["scores"] or k not in b["scores"]:
@@ -125,7 +131,7 @@ def main() -> int:
             # Direction comes from _common, the same place leaderboard.py gets it.
             # This used to be `"better" if d > 0 else "worse"` for every metric, so a
             # run that got FASTER or CHEAPER was reported as worse.
-            verdict = verdict_for(k, d)
+            verdict = verdict_for(k, d, kinds=kinds)
             # Only a real regression or improvement counts toward "moved beyond the
             # noise floor". A descriptive metric moving is not a verdict, and counting
             # it inflated the number a reader uses to decide whether to care.

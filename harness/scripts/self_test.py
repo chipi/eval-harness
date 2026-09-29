@@ -406,6 +406,28 @@ def test_example_scorer_suites_pass() -> None:
               (r.stdout or r.stderr or "").strip()[-160:])
 
 
+def test_verdict_honours_declared_kinds() -> None:
+    """An adapter's own metric must not be judged better/worse by the sign of a delta.
+
+    `verdict_for` consulted only the built-in table, which knows the bundled adapter's
+    metrics and nothing else -- so every EXAMPLE metric got a better/worse verdict from
+    its sign. `llm_named_unknown` counts hallucinated document ids, and more of them
+    was reported as an improvement.
+    """
+    sys.path.insert(0, str(HERE))
+    from _common import verdict_for  # noqa: PLC0415
+
+    check("verdict: unknown metric, no kinds -> judged by sign (the old behaviour)",
+          verdict_for("llm_named_unknown", +1.0) == "better")
+    check("verdict: declared descriptive -> 'changed', not 'better'",
+          verdict_for("llm_named_unknown", +1.0,
+                      kinds={"llm_named_unknown": "descriptive"}) == "changed")
+    check("verdict: declared quality still gets a direction",
+          verdict_for("ndcg_10", +1.0, kinds={"ndcg_10": "quality"}) == "better")
+    check("verdict: a declaration cannot flip cost's direction",
+          verdict_for("cost_usd", +1.0, kinds={"cost_usd": "cost"}) == "worse")
+
+
 def test_fingerprint_covers_reference_bytes() -> None:
     """Editing a reference must change the fingerprint. It did not, for five examples.
 
@@ -585,6 +607,7 @@ def main() -> int:
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
         test_example_scorer_suites_pass,
+        test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
         test_spearman_is_tie_correct,

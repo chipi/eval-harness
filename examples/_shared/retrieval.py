@@ -54,6 +54,7 @@ import hashlib
 import inspect
 import json
 import math
+import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
 
 from codehash import code_digest
@@ -61,6 +62,11 @@ from codehash import code_digest
 #: Cut-offs reported on every run. 10 is the ranking cut-off people quote; 100 is the one a
 #: two-stage pipeline actually depends on, because a reranker cannot retrieve what the
 #: first stage never returned.
+#: A list-numbering or bullet prefix: "1. ", "2) ", "- ", "* ". Deliberately requires
+#: the delimiter AND trailing space, so a bare numeric id is never mistaken for
+#: numbering -- see parse_ranking.
+_LIST_PREFIX = re.compile(r"^(?:\d{1,3}[.)]\s+|[-*\u2022]\s+)")
+
 NDCG_AT = 10
 RECALL_AT = (10, 100)
 MRR_AT = 10
@@ -91,7 +97,7 @@ def scorer_sha256() -> str:
     """
     return code_digest(normalize_id, dedupe, dcg, score_ranking, parse_ranking,
                        consts={"NDCG_AT": NDCG_AT, "RECALL_AT": RECALL_AT,
-                               "MRR_AT": MRR_AT})
+                               "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX})
 
 
 def dedupe(ranking: Sequence[str]) -> tuple[List[str], int]:
@@ -213,10 +219,22 @@ def parse_ranking(text: str) -> Optional[List[str]]:
                 val = None
             if isinstance(val, list):
                 return [normalize_id(v) for v in val if normalize_id(v)]
-    # One id per line: what a model produces when told "just list them". Lines with
-    # anything but an id-shaped token are dropped, not guessed at.
-    lines = [ln.strip().lstrip("-*0123456789. )").strip() for ln in body.splitlines()]
-    ids = [ln for ln in lines if ln and " " not in ln and len(ln) <= 64]
+    # One id per line: what a model produces when told "just list them".
+    #
+    # THE BULLET STRIPPER MUST NOT EAT THE ID. This used to be
+    # `.lstrip("-*0123456789. )")`, a character class -- which on SciFact, whose
+    # document ids ARE numbers, deleted the id itself. "4983923" became "" and every
+    # non-JSON answer parsed as nothing, so the pipeline silently fell back to the
+    # first stage's ranking and the arm was scored as BM25. Found by review.
+    #
+    # A numbering prefix is now matched as a PREFIX -- digits followed by a delimiter
+    # and whitespace, or a bullet followed by whitespace -- so "1. 4983923" loses the
+    # "1. " and a bare "4983923" loses nothing.
+    ids = []
+    for raw in body.splitlines():
+        ln = _LIST_PREFIX.sub("", raw.strip(), count=1).strip()
+        if ln and " " not in ln and len(ln) <= 64:
+            ids.append(ln)
     return ids or None
 
 
@@ -239,4 +257,12 @@ METRIC_KINDS = {
     "truncated": "descriptive",
     "reasoning_tokens": "descriptive",
     "confidence": "descriptive",
+    # Emitted by the reranking provider, and DESCRIPTIVE on purpose. `llm_named_unknown`
+    # counts document ids the model invented; undeclared, it fell into the leaderboard's
+    # quality columns where higher reads as better -- so an arm that hallucinated more
+    # looked like it had improved. `llm_parsed` is the share of queries whose LLM reply
+    # was a usable ordering: a diagnostic for WHY a pipeline scored what it did, not a
+    # quality claim about the pipeline, whose quality is ndcg_10.
+    "llm_named_unknown": "descriptive",
+    "llm_parsed": "descriptive",
 }
