@@ -944,6 +944,55 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_the_reports_separation_counts_are_real() -> None:
+    """A "separated from N of M" in a report must match what `family_test.py` says.
+
+    The third class round 2 named that nothing checked: "it also checks only single-run
+    primary metrics, so it wouldn't have caught any of the round-1 cost, ratio or
+    tie-count errors." Cost and ratios are now in `check_report_claims.py`. This is the
+    tie count, and it lives here rather than there because the permutation test takes
+    ~17s and that belongs in the test suite, not in a claims scan.
+
+    It was worth adding: REPORT_RETRIEVAL said "only 6 of 18 opponents ... the twelve it
+    cannot separate from", and the tool says 7 and 11 — on the corrected runs AND on
+    the originals. The number had been stale since before the parser bug, for unrelated
+    reasons, and nothing noticed.
+    """
+    import re as _re  # noqa: PLC0415
+
+    reparsed = HERE.parent / "data" / "runs-reparsed"
+    if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
+        print("  --   separation counts: skipped (no reparsed SciFact runs on disk)")
+        return
+
+    # Only the 2026-09-28 sweep: the re-runs duplicate arms and would double the family.
+    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        scope = pathlib.Path(td) / "runs"
+        scope.mkdir()
+        for d in reparsed.glob("sf_*_n200_v1_20260928*"):
+            shutil.copytree(d, scope / d.name)
+        r = run("scripts/family_test.py", "--dataset-id", "scifact_200",
+                "--a", "sf_glm_s_n200_v1", "--against", "_n200_v1",
+                "--metric", "ndcg_10", env={"EVAL_RUNS_DIR": str(scope)})
+
+    m = _re.search(r"separated from (\d+) of (\d+) opponents", r.stdout or "")
+    if not m:
+        check("separation counts: family_test produced a verdict", False,
+              ((r.stderr or "") + (r.stdout or ""))[-160:])
+        return
+    sep, fam = int(m.group(1)), int(m.group(2))
+    report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text()
+    check(f"REPORT_RETRIEVAL states the {sep} of {fam} that family_test computes",
+          f"**{sep} of {fam}**" in report,
+          f"the tool says {sep} of {fam}; the report does not state that")
+    check(f"...and the tie group it implies, {fam - sep} of {fam}",
+          f"**{fam - sep} of {fam}**" in report,
+          f"tie group should read {fam - sep} of {fam}")
+
+
 def test_the_checks_can_actually_fail() -> None:
     """Every `make ci` checker must EXIT NON-ZERO on the thing it exists to catch.
 
@@ -1201,6 +1250,7 @@ def main() -> int:
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
+        test_the_reports_separation_counts_are_real,
         test_the_checks_can_actually_fail,
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,

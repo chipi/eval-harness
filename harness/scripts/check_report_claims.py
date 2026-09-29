@@ -173,6 +173,132 @@ check("report cost cells quote the BILL, not the price table", not _stale_cost,
 check("and cost cells were actually found to check", _checked_cost >= 20,
       f"only {_checked_cost} matched a billed figure")
 
+# ---- RATIOS AND COUNTS, the other two classes nothing checked -------------------
+#
+# Round 2: "it also checks only single-run primary metrics, so it wouldn't have caught
+# any of the round-1 cost, ratio or tie-count errors." Cost was added above. These are
+# the other two, and they are where round 2 actually found wrong numbers: 38x was 19.6x,
+# 18x was 11.4x, the Pareto frontier was 8 of 24 and not 7.
+#
+# Each is RECOMPUTED from the committed runs and compared to what the report states.
+
+
+def _arm_costs(prefix, dataset_id):
+    """Billed cost per arm, excluding the 2026-09-29 re-runs (which duplicate arms)."""
+    out = {}
+    for f in _glob.glob(str(DATA / f"{prefix}*" / "metrics.json")):
+        if "20260929" in Path(f).parent.name:
+            continue
+        m = json.load(open(f))
+        if m.get("dataset_id") != dataset_id:
+            continue
+        pj = Path(f).parent / "predictions.jsonl"
+        if not pj.is_file():
+            continue
+        bil = rec = 0.0
+        for line in pj.read_text().splitlines():
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            rec += float(r.get("cost_usd") or 0)
+            bil += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
+        out[m["config_id"].replace(prefix, "").replace("_n200_v1", "")] = bil or rec
+    return out
+
+
+#: (label, prefix, dataset, cheap arm, claimed ratio against the DEAREST paid arm)
+#: (label, prefix, dataset, cheapest tied arm, the synthesis table row that states it)
+CHEAPNESS = [
+    ("Summarisation cheapest-tied vs dearest", "cnn_", "cnn_dailymail_200",
+     "deepseek_s", "| Summarisation · CNN/DM | 13 arms |"),
+    ("DBpedia cheapest-tied vs dearest", "db_", "dbpedia_280",
+     "gemma_m", "| Classification · DBpedia | 18 arms |"),
+    ("AG News cheapest-tied vs dearest", "ag_", "ag_news_200",
+     "gemma_s", "| Classification · AG News | 9 arms |"),
+]
+# THE CLAIMED RATIO IS READ OUT OF THE REPORT, NOT OUT OF THIS FILE.
+#
+# My first version of this block compared the recomputed ratio to a literal written
+# here -- which is precisely the bug round 2 found in `check_model_facts.py`, that a
+# checker comparing its own constants to the data verifies the checker. I fixed it
+# there and reintroduced it here within the hour, and only caught it by reverting a
+# report number and watching this pass 28/28.
+SYNTH = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
+SUMM = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+
+
+def _claimed_ratio(text, row_key, pattern=r"\*\*([0-9,.]+)× cheaper\*\*"):
+    """The 'N× cheaper' the named table row states, or None."""
+    for line in text.splitlines():
+        if row_key in line:
+            m = re.search(pattern, line)
+            if m:
+                return float(m.group(1).replace(",", ""))
+    return None
+
+
+for label, pref, ds, cheap, row_key in CHEAPNESS:
+    claimed = _claimed_ratio(SYNTH, row_key)
+    if claimed is None:
+        missing += 1
+        print(f"  --   {label}: no '× cheaper' claim found for {row_key!r} — skipped")
+        continue
+    c = _arm_costs(pref, ds)
+    paid = {k: v for k, v in c.items() if v > 0}
+    if cheap not in paid:
+        missing += 1
+        print(f"  --   {label}: {cheap} not present — skipped")
+        continue
+    got = max(paid.values()) / paid[cheap]
+    check(f"{label} (report says {claimed:g}×)", abs(got - claimed) / claimed <= 0.08,
+          f"the report says {claimed:g}×, the bill gives {got:.1f}×")
+
+#: Pairwise cost ratios the summarisation report states in its separation tables.
+CNN = _arm_costs("cnn_", "cnn_dailymail_200")
+for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
+    m = re.search(r"`deepseek_m` vs `" + dear + r"` — ([0-9.]+)×", SUMM)
+    if not m:
+        missing += 1
+        print(f"  --   Summarisation {cheap} vs {dear}: no ratio stated — skipped")
+        continue
+    claimed = float(m.group(1))
+    if CNN.get(dear) and CNN.get(cheap):
+        got = CNN[dear] / CNN[cheap]
+        check(f"Summarisation {dear} is {claimed}× {cheap} (as the report states)",
+              abs(got - claimed) / claimed <= 0.05,
+              f"the report says {claimed}×, the bill gives {got:.1f}×")
+
+# Pareto frontier over the 24 HOSTED summarisation arms: quality, cost, latency.
+_cnn_q = {}
+for f in _glob.glob(str(DATA / "cnn_*" / "metrics.json")):
+    if "20260929" in Path(f).parent.name:
+        continue
+    m = json.load(open(f))
+    if m.get("dataset_id") != "cnn_dailymail_200":
+        continue
+    arm = m["config_id"].replace("cnn_", "").replace("_n200_v1", "")
+    sc = m.get("scores") or {}
+    _cnn_q[arm] = (sc.get("coverage", 0), CNN.get(arm, 0), sc.get("latency_ms", 0))
+_hosted = {k: v for k, v in _cnn_q.items() if k not in ("bart_l", "lead3")}
+_front = [a for a in _hosted if not any(
+    b != a and _hosted[b][0] >= _hosted[a][0] and _hosted[b][1] <= _hosted[a][1]
+    and _hosted[b][2] <= _hosted[a][2]
+    and (_hosted[b][0] > _hosted[a][0] or _hosted[b][1] < _hosted[a][1]
+         or _hosted[b][2] < _hosted[a][2])
+    for b in _hosted)]
+if len(_hosted) == 24:
+    m = re.search(r"\*\*(\d+) of 24\*\* \| three arms", SUMM)
+    if m:
+        check(f"Summarisation Pareto frontier is the {m.group(1)} of 24 the report states",
+              len(_front) == int(m.group(1)),
+              f"the report says {m.group(1)} of 24, recomputed {len(_front)}")
+    else:
+        missing += 1
+        print("  --   Pareto frontier: the report states no 'N of 24' — skipped")
+else:
+    missing += 1
+    print(f"  --   Pareto frontier: {len(_hosted)} hosted arms, not 24 — skipped")
+
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)
     if got is None:
