@@ -12,6 +12,7 @@ are tested rather than asserted in a README.
 from __future__ import annotations
 
 import json
+import pathlib
 import subprocess
 import sys
 import tempfile
@@ -197,16 +198,29 @@ def test_no_absolute_home_path_in_committed_data() -> None:
 def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     """The rule that decides what ships.
 
-    sources, datasets, configs, references and baselines are COMMITTED. materialized and
-    runs are IGNORED, because a command regenerates them. The one place those two sets
-    touched was a baseline's `promoted_from`, which named a run — so a committed artifact
-    depended on an ignored one, and V6 ("every baseline's source run still exists") could
-    not hold on a fresh clone OR after `make clean`, which deletes runs while explicitly
-    keeping baselines.
+    datasets, configs and baselines are COMMITTED, and so are runs now (metrics,
+    predictions and outputs). materialized is IGNORED because a command regenerates it.
+    The one place the two sets touched was a baseline's `promoted_from`, which named a
+    run — so a committed artifact depended on an ignored one, and V6 ("every baseline's
+    source run still exists") could not hold on a fresh clone OR after `make clean`,
+    which deletes runs while explicitly keeping baselines.
 
     Resolved by shipping ONE worked example run, force-included in .gitignore, so a fresh
     checkout sees a walked loop and the committed baseline resolves. This asserts the
     dependency stays inside the committed set.
+
+    THIS DOCSTRING USED TO SAY "sources ... and references are COMMITTED", AND THAT WENT
+    QUIETLY FALSE. It was true when the only corpus was the synthetic demo. Every real
+    corpus since added its own exclusion lines -- data/sources/<id>/ and
+    data/references/{gold,silver}/<id>/ -- because none of the four is ours to
+    redistribute. 7 reference files are tracked against 1,382 on disk.
+
+    So the committed runs DO depend on ignored references, deliberately and permanently,
+    and this test cannot forbid that. What it does instead is count the dependency so it
+    is visible, and the guarantee that makes it safe lives in
+    test_rescore_refuses_a_missing_reference_set: scoring without the references refuses
+    rather than reporting a plausible wrong number. That refusal did not exist until a
+    clone of this repo scored an arm at f1 0.1071 whose recorded f1 is 0.6798.
     """
     import subprocess
 
@@ -227,6 +241,23 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
             f"{promoted_from} is not tracked — a committed baseline citing an ignored run "
             f"breaks V6 on any clean checkout",
         )
+
+    # The runs -> references direction, counted rather than forbidden. A reader needs to
+    # know that `make rescore` on a fresh clone needs a fetch first, and how much of the
+    # tree that applies to.
+    tracked_refs = subprocess.run(
+        ["git", "ls-files", "data/references"], cwd=ROOT, capture_output=True, text=True,
+    ).stdout.split()
+    tracked_ref_ids = {pathlib.Path(f).parent.name for f in tracked_refs}
+    needs_fetch = set()
+    for mj in sorted((ROOT / "data" / "runs").glob("*/metrics.json")):
+        rid = ((json.loads(mj.read_text()).get("fingerprint") or {}).get("data")
+               or {}).get("reference_id")
+        if rid and pathlib.Path(rid).name not in tracked_ref_ids:
+            needs_fetch.add(pathlib.Path(rid).name)
+    print(f"  --   consistency: {len(needs_fetch)} reference set(s) are ignored by "
+          f"design and must be re-fetched before rescore: "
+          f"{', '.join(sorted(needs_fetch)) or 'none'}")
 
 
 def test_fingerprint_core_imports_no_ml_framework() -> None:
@@ -521,6 +552,67 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_rescore_refuses_a_missing_reference_set() -> None:
+    """Rescoring with no references must DIE, not score against an empty gold set.
+
+    Found by cloning this repo and running rescore in the clone, which is the thing
+    committing outputs/ was supposed to make possible. It ran, it exited 0, and it
+    reported f1 = 0.1071 for an arm whose recorded f1 is 0.6798.
+
+    The cause was an asymmetry two lines apart in rescore.py: a missing OUTPUT called
+    die(), a missing REFERENCE fell through as None. So the guarded artifact was the
+    expensive one and the unguarded one was the corpus -- which is gitignored, and
+    therefore exactly what every fresh clone is missing. Every prediction became a false
+    positive against an empty gold set, which does not look like a failure. It looks like
+    a weak model.
+
+    A partial reference set still only warns: a tier may legitimately not cover every
+    item. Zero found against a declared reference_id cannot be legitimate.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("*")):
+        mj = d / "metrics.json"
+        if not (mj.is_file() and (d / "outputs").is_dir()):
+            continue
+        m = _json.loads(mj.read_text())
+        if ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
+            src = d
+            break
+    if src is None:
+        print("  --   rescore/missing-refs: skipped (no committed run declares a reference_id)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-rescore"
+    shutil.rmtree(runs, ignore_errors=True)
+    dst = runs / src.name
+    dst.mkdir(parents=True)
+    for name in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / name, dst / name)
+    shutil.copytree(src / "outputs", dst / "outputs")
+
+    # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
+    # where the real one is absent because the corpus is gitignored -- and it does not
+    # touch the real references, so a crash here cannot damage them.
+    m = _json.loads((dst / "metrics.json").read_text())
+    m["fingerprint"]["data"]["reference_id"] = "gold/_selftest_absent_reference"
+    (dst / "metrics.json").write_text(_json.dumps(m))
+
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    r = run("scripts/rescore.py", "--dataset-id", str(m.get("dataset_id")),
+            "--out", str(runs / "out"), env=env)
+    check("rescore: a declared-but-absent reference set is refused, not scored",
+          r.returncode != 0, f"exit {r.returncode}")
+    check("rescore: and it says the references are what is missing",
+          "reference" in ((r.stderr or "") + (r.stdout or "")).lower(),
+          ((r.stderr or "") + (r.stdout or ""))[-160:])
+    check("rescore: it writes no partial rescored run",
+          not (runs / "out" / src.name / "metrics.json").is_file())
+    shutil.rmtree(runs, ignore_errors=True)
+
+
 def test_spearman_is_tie_correct() -> None:
     """rho must equal the textbook shortcut WITHOUT ties, and differ WITH them.
 
@@ -633,6 +725,7 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
     ):

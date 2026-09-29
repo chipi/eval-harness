@@ -38,17 +38,48 @@ noted below).
   those experiments have no critical-difference line. The Holm tests in `family_test.py`
   are unaffected and carry every separation claim in the reports.
 
-## Reproducibility, and its one hole
+## Reproducibility, and what a clone still needs
 
-Committed: `metrics.json` and `predictions.jsonl` for every measurement run, plus the
-rescored NER set that REPORT_NER's figures actually come from. `make ci` runs
-`check_report_claims.py`, which verifies 17 headline numbers against them.
+Committed: `metrics.json`, `predictions.jsonl` **and `outputs/`** for every measurement
+run, plus the rescored NER set that REPORT_NER's figures actually come from. `make ci`
+runs `check_report_claims.py`, which verifies 17 headline numbers against them.
 
-**Not committed: `outputs/`** — the models' generated text, which for CNN/DailyMail is
-derived from copyrighted articles. The consequence is real: **`rescore.py` cannot be run
-from a clone**, so a reviewer can check the numbers but cannot re-derive them under a
-changed scorer. That is the deliberate trade between reproducibility and redistribution,
-and it is the largest remaining gap.
+`outputs/` was excluded until 2026-09-29 on an estimate of mine that was wrong — "128 MB
+of copyrighted derivatives". Measured, it is 8.3 MB of content, and four of the five
+examples are single class words, document ids, or CC BY-SA 4.0 entity spans. Only the
+1.7 MB of summarisation output raises a copyright question at all, and those are
+~60-word model paraphrases rather than corpus text. Committed; the one-line reversal is
+in `harness/.gitignore`.
+
+**What a clone still needs before it can rescore: the corpora.** This is the part
+committing outputs did not solve. `data/sources/<id>/` and
+`data/references/{gold,silver}/<id>/` are gitignored for all four corpora — none is ours
+to redistribute — so a fresh clone has 7 reference files against the 1,382 these runs
+were scored on. Six reference sets must be rebuilt before `rescore.py` will run:
+`ag_news_200`, `cnn_dailymail_20`, `cnn_dailymail_200`, `dbpedia_280`, `few_nerd_280`,
+`scifact_200`. Each example's `fetch.py` is seeded and rebuilds its slice byte-for-byte,
+free, from the public dataset.
+
+**This was worse than a missing file until 2026-09-29, and finding it is the reason to
+say so plainly.** Cloning this repo and running `rescore.py` without the corpora did not
+fail. It exited 0 and reported `f1 = 0.1071` for an arm whose recorded `f1` is `0.6798`
+— every prediction counted as a false positive against an empty gold set. A missing
+*output* called `die()`; a missing *reference* fell through as `None`, two lines apart.
+So the guarded artifact was the expensive one and the unguarded one was the corpus, which
+is precisely what a clone lacks. `rescore.py` now refuses a declared-but-absent reference
+set and names the fetcher; a partial set warns. Regression test:
+`test_rescore_refuses_a_missing_reference_set`.
+
+Verified end-to-end: with the `few_nerd_280` references restored, rescoring
+`fn_anthropic_l_n200_v1` in a fresh `git clone` reproduces **all 23 of its numeric
+metrics** at the stored six-decimal precision.
+
+**Cost of committing outputs, both readings.** 8.3 MB as content; 128 MB as disk, because
+32,710 files of a few hundred bytes each sit in 4 KB blocks. A whole clone is 30 MB
+downloaded and 228 MB on disk. One `outputs.jsonl` per run would cut that to ~47 MB and
+143 files, and it is the better layout — not done, because it rewrites the writer, the
+resume reader, `rescore`, two report scripts and a self-test, which is the crash-safety
+path reviewed in round 1. Open, and cheap to do later.
 
 **Also not committed: 72 summarisation dev runs** (`cnn_dailymail_20`, 3 repeats). They
 predate `_portable_id` and record an absolute path containing a username. Excluded rather
@@ -86,4 +117,12 @@ hardcoded an absolute path and read zero files while reporting green.
 | `check_terminology.py` | canonical `Task · Dataset` labels |
 | `test_code_hashes.py` | every scoring hash moves when its code or constants move |
 | `test_retrieval_scorer.py`, `test_ner_parser.py`, `test_extraction_scorer.py` | the per-item scoring conventions, in both directions |
-| `self_test.py` | resume durability, fingerprint reference coverage, metric-kind verdicts, tie-correct Spearman |
+| `self_test.py` | resume durability, fingerprint reference coverage, metric-kind verdicts, tie-correct Spearman, rescore refusing an absent reference set |
+
+**Both round-1 parser fixes change zero recorded numbers, and that is measured, not
+assumed** — so a second round need not re-derive it. The reviewer's hypothesis was that
+the NER JSON parser explained part of `glm_l`'s 46 unreadable items. Re-parsing every
+stored output with the fixed parser leaves it at **46 → 46**, and **0 of 760** retrieval
+outputs parse differently under the fixed `parse_ranking`. The fixes are still right —
+they close real input shapes — but no figure in any report moves because of them, and
+`glm_l`'s 46 unreadable items are the model's behaviour, not the parser's.

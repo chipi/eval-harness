@@ -107,6 +107,7 @@ def main() -> int:
             if (m.get("fingerprint", {}).get("data", {}) or {}).get("reference_id") else None
 
         rows: List[Dict[str, Any]] = []
+        refs_found = 0
         # Keys the ADAPTER attached at call time (Result.extra) rather than at score time:
         # `truncated`, `reasoning_tokens`. Unrecoverable afterwards, so they ride along.
         extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
@@ -126,6 +127,7 @@ def main() -> int:
                 rf = ref_dir / f"{item_id}.txt"
                 if rf.is_file():
                     reference = rf.read_text(encoding="utf-8", errors="replace")
+                    refs_found += 1
             source_text = None
             # `source_path` is the dataset's own name for the file; it only happens to
             # equal "<item_id>.txt" here. Ignoring it means source_text is silently None
@@ -153,6 +155,36 @@ def main() -> int:
                 else:
                     dropped.add(k)
             rows.append(row)
+
+        # A MISSING REFERENCE SET MUST NOT SCORE. Two lines above, a missing OUTPUT calls
+        # die(); a missing REFERENCE used to fall through as None and the run scored
+        # anyway. That asymmetry guarded the expensive artifact and left the free one
+        # unchecked -- and the free one is exactly what a fresh clone lacks, because the
+        # corpora are gitignored and rebuilt by each example's fetch.py.
+        #
+        # What that cost: rescoring fn_anthropic_l in a clone with no references produced
+        # f1 = 0.1071 against the recorded 0.6798. Not an error, not a zero -- a
+        # plausible number, arrived at because every prediction became a false positive
+        # against an empty gold set. A reader could have published it.
+        #
+        # Zero found is always wrong when a reference_id is declared, so it dies. A
+        # PARTIAL set is not necessarily wrong -- a reference tier may legitimately not
+        # cover every item -- so it warns and says how many, rather than refusing.
+        if ref_dir and rows:
+            if refs_found == 0:
+                die(f"{d.name}: reference_id {m['fingerprint']['data']['reference_id']!r} "
+                    f"is declared but NOT ONE of its {len(rows)} reference files exists "
+                    f"under {ref_dir}.\n"
+                    f"  Scoring would silently treat every gold set as empty and report a "
+                    f"plausible wrong number.\n"
+                    f"  The corpora are gitignored, not committed: rebuild them with the "
+                    f"example's fetcher, e.g.\n"
+                    f"    python examples/<example>/fetch.py\n"
+                    f"    make dataset-create DATASET_ID={m.get('dataset_id')}")
+            if refs_found < len(rows):
+                print(f"    WARNING: only {refs_found} of {len(rows)} items have a "
+                      f"reference under {ref_dir}; the rest scored against None",
+                      flush=True)
 
         import statistics
         keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
