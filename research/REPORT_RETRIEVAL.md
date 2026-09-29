@@ -12,6 +12,11 @@
 > **list** to a set: an arm that finds the right document at rank 50 instead of rank 1 is
 > not correct, and no set-valued metric can say so.
 
+
+> **This is one of five experiments.** What all five agree on — and the four
+> places they disagree with the conventional reading of a leaderboard — is in
+> [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
+
 ---
 
 ## Executive summary

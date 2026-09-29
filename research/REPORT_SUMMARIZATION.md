@@ -11,6 +11,11 @@
 > replaced; §6 carries the full list. The 20 articles are a subset of these 200, so every
 > result below is also reported on the **180 that took no part** in the earlier run.
 
+
+> **This is one of five experiments.** What all five agree on — and the four
+> places they disagree with the conventional reading of a leaderboard — is in
+> [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
+
 ---
 
 ## Executive summary

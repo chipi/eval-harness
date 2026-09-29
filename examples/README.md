@@ -35,6 +35,15 @@ Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extrac
 
 ---
 
+## What all five agree on
+
+**[`../research/REPORT_SYNTHESIS.md`](../research/REPORT_SYNTHESIS.md)** — the
+cross-cutting report. Seven findings that hold across every experiment, each
+computed from the stored runs rather than quoted: the dearest arm is never first
+(5/5), four of five leaderboard tops are statistical ties, a pilot with ρ ≈ 0.8
+picked the wrong winner three times in five, and the scoring code moved single arms
+further than most model swaps did.
+
 ## What each one actually found
 
 ### Summarisation — price does not predict quality

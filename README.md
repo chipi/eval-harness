@@ -64,6 +64,9 @@ research/    reports, handovers, and an append-only journal of how each example 
 
 ## The worked examples
 
+**[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)** — what all five
+experiments agree on, and where that contradicts how leaderboards are usually read.
+
 Full index, with what each one found and what it broke: **[`examples/README.md`](examples/README.md)**.
 Every metric, model, dataset and statistical test explained and linked to source: **[`docs/REFERENCE.md`](docs/REFERENCE.md)**.
 
