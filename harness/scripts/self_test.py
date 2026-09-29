@@ -552,6 +552,99 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_rescore_takes_source_path_from_the_dataset() -> None:
+    """`source_path` lives in the dataset. rescore was reading it off the prediction row.
+
+    No prediction row has ever carried one -- 0 of 20,001 across every committed run.
+    `dataset_create.py` writes it into the DATASET, and experiment_run, materialize,
+    reference_create and validate_tree all read it from there. rescore was the single
+    place looking in the wrong object, so its fallback to `<item_id>.txt` fired every
+    time and, on a dataset whose files are named anything else, the source text arrived
+    as None -- silently, because a scorer that wanted the source then measured nothing
+    instead of failing.
+
+    Round 1 reported this fixed. That commit added the lookup without checking the field
+    existed where it was being read from.
+
+    LATENT TODAY: all 12 datasets here name their files `<item_id>.txt`, so no recorded
+    number is affected. This test therefore MAKES a dataset where they differ -- pointing
+    two items at each other's source file -- and asserts the scores move. Against the old
+    code they do not move at all, because the dataset's `source_path` was never consulted.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    ds_file = HERE.parent / "data" / "datasets" / "cnn_dailymail_200.json"
+    mat = HERE.parent / "data" / "materialized" / "cnn_dailymail_200"
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("cnn_*_n200_v1_*")):
+        if (d / "metrics.json").is_file() and (d / "outputs").is_dir():
+            src = d
+            break
+    if src is None or not ds_file.is_file() or not mat.is_dir():
+        print("  --   rescore/source_path: skipped (corpus not fetched on this machine)")
+        return
+
+    tmp = HERE.parent / "data" / "runs-selftest-srcpath"
+    shutil.rmtree(tmp, ignore_errors=True)
+    dst = tmp / src.name
+    dst.mkdir(parents=True)
+    for n in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / n, dst / n)
+    shutil.copytree(src / "outputs", dst / "outputs")
+
+    env = {"EVAL_RUNS_DIR": str(tmp.relative_to(HERE.parent))}
+    base = run("scripts/rescore.py", "--dataset-id", "cnn_dailymail_200",
+               "--out", str((tmp / "out-base").relative_to(HERE.parent)), env=env)
+    if base.returncode != 0:
+        err = (base.stderr or "") + (base.stdout or "")
+        # A MISSING DEPENDENCY IS A SKIP; ANYTHING ELSE IS THE BUG. The summarisation
+        # scorer needs rouge_score, which lives in that example's venv, so running the
+        # suite on the harness venv legitimately cannot do this one.
+        #
+        # Every other failure is a real one, and this is where the worst of them
+        # surfaced: 24 committed cnn_dailymail_200 runs recorded their adapter as
+        # "summarization-cnn-dailymail/adapter.py" -- relative to the examples root,
+        # which rescore did not try -- so the entire summarisation sweep could not be
+        # rescored. It skipped here as "baseline rescore failed" and said nothing.
+        if "ModuleNotFoundError" in err or "No module named" in err:
+            print("  --   rescore/source_path: skipped (needs the example's venv)")
+        else:
+            lines = [l for l in err.splitlines() if l.strip()]
+            detail = next((l for l in lines if l.startswith(("ERROR", "Traceback"))
+                           or "Error" in l), lines[-1] if lines else "no output")
+            check("rescore: a committed run can be rescored at all", False, detail[:200])
+        shutil.rmtree(tmp, ignore_errors=True)
+        return
+
+    # Swap two items' source_path. The files still exist; each item now points at the
+    # other's text, so any scorer that reads the source must produce different numbers.
+    ds = _json.loads(ds_file.read_text())
+    items = [i for i in ds.get("items", []) if i.get("source_path")]
+    original = ds_file.read_text()
+    try:
+        items[0]["source_path"], items[1]["source_path"] = (
+            items[1]["source_path"], items[0]["source_path"])
+        ds_file.write_text(_json.dumps(ds))
+        swapped = run("scripts/rescore.py", "--dataset-id", "cnn_dailymail_200",
+                      "--out", str((tmp / "out-swap").relative_to(HERE.parent)), env=env)
+    finally:
+        ds_file.write_text(original)
+
+    def scores(where):
+        f = where / src.name / "metrics.json"
+        return _json.loads(f.read_text())["scores"] if f.is_file() else None
+
+    a, b = scores(tmp / "out-base"), scores(tmp / "out-swap")
+    if a is None or b is None:
+        print("  --   rescore/source_path: skipped (rescore produced no metrics)")
+    else:
+        check("rescore: the dataset's source_path is what selects the source text",
+              a != b, "swapping two items' source_path changed nothing — the dataset's "
+                      "source_path is being ignored")
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     """`EVAL_MAX_COST_USD=0` wrote an empty run and exited 0.
 
@@ -898,6 +991,7 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
         test_the_checks_can_actually_fail,

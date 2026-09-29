@@ -76,6 +76,26 @@ def main() -> int:
         die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
 
     mat = MATERIALIZED / args.dataset_id
+
+    # THE DATASET KNOWS EACH ITEM'S FILENAME. PREDICTION ROWS DO NOT.
+    #
+    # Below, `source_path` was read off the stored prediction row -- and no prediction
+    # row has ever carried one. Measured: 0 of 20,001 rows across every committed run.
+    # `dataset_create.py` writes `source_path` into the DATASET; `experiment_run`,
+    # `materialize`, `reference_create` and `validate_tree` all read it from there, and
+    # rescore was the one place that looked in the wrong object. So the fallback
+    # `<item_id>.txt` fired every single time, and on any dataset whose files are not
+    # named that way the source text arrived as None -- silently, because a scorer that
+    # wanted the source then measured nothing rather than failing.
+    #
+    # Round 1 reported this fixed. The commit that claimed it added the `source_path`
+    # lookup without checking that the field existed where it was being read from.
+    item_source: Dict[str, str] = {}
+    ds_file = ROOT / "data" / "datasets" / f"{args.dataset_id}.json"
+    if ds_file.is_file():
+        for it in (read_json(ds_file).get("items") or []):
+            if it.get("item_id") and it.get("source_path"):
+                item_source[it["item_id"]] = it["source_path"]
     print(f"rescoring {len(todo)} run(s) -> {args.out}")
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -88,17 +108,29 @@ def main() -> int:
             continue
         if spec not in adapters:
             # Adapter ids are relative to the HARNESS root for its own bundled adapter
-            # ("scripts/adapter.py") and to the examples root for an example's
-            # ("summarization-cnn-dailymail/adapter.py"). Assuming one broke the other:
-            # `make rescore DATASET_ID=smoke_v1` died looking for examples/scripts/adapter.py.
-            for base in (ROOT, ROOT.parent):
+            # ("scripts/adapter.py"), to the REPO root for most examples
+            # ("examples/ner-few-nerd/adapter.py"), and to the EXAMPLES root for the
+            # oldest sweep ("summarization-cnn-dailymail/adapter.py").
+            #
+            # The examples root was named in this comment and not in the list below, so
+            # the case it describes was the case that failed. 24 committed
+            # cnn_dailymail_200 runs -- the whole summarisation measurement sweep, and
+            # the experiment this repo leads with -- could not be rescored at all:
+            #
+            #   ERROR: adapter not found ... 'summarization-cnn-dailymail/adapter.py'
+            #   is under neither .../harness nor .../eval-harness
+            #
+            # Found while testing a different fix. Resolving the id is the right repair;
+            # rewriting `adapter` inside 24 finished runs is not, because their
+            # fingerprint hashes were computed over the bytes that are there.
+            for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
                 cand = Path(spec) if Path(spec).is_absolute() else base / spec
                 if cand.is_file():
                     adapters[spec] = load_adapter(str(cand), None)
                     break
             else:
-                die(f"adapter not found for {d.name}: {spec!r} is under neither "
-                    f"{ROOT} nor {ROOT.parent}")
+                die(f"adapter not found for {d.name}: {spec!r} is under none of "
+                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
         wants_source = _score_wants_source(score)
 
@@ -133,7 +165,8 @@ def main() -> int:
             # equal "<item_id>.txt" here. Ignoring it means source_text is silently None
             # on any dataset that names files differently -- and a scorer that wanted the
             # source then measures nothing, quietly.
-            rel = (old.get("source_path") or f"{item_id}.txt")
+            rel = (item_source.get(item_id) or old.get("source_path")
+                   or f"{item_id}.txt")
             for cand in (mat / rel, mat / f"{item_id}.txt", mat / item_id):
                 if cand.is_file():
                     source_text = cand.read_text(encoding="utf-8", errors="replace")
