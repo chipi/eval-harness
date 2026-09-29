@@ -74,14 +74,36 @@ class _Resumed:
     __slots__ = ("output", "cost_usd", "latency_ms", "tokens_in", "tokens_out",
                  "extra", "meta")
 
-    def __init__(self, output: str) -> None:
+    def __init__(self, output: str, prior: Optional[Dict[str, Any]] = None) -> None:
+        """`prior` is the item's row from the run being resumed, when one was found.
+
+        WHAT CHANGED AND WHY. Every field here used to be None, on the reasoning in the
+        docstring above -- a replayed item spent no time and no money IN THIS PASS. That
+        is true of this pass and false of the results, and the results are what the run
+        reports. The consequences were concrete:
+
+          - the money vanished. A resumed run reported $0.03 for $0.05 of actual spend,
+            because the items paid for in the first pass reported nothing.
+          - `_meta` vanished with it. For retrieval that is `llm_raw`, `first_stage` and
+            `ranking`; without them a resumed retrieval or NER run cannot be reported at
+            all, and the diagnostics this repo added specifically to explain an arm's
+            behaviour are gone for exactly the items that were hardest to get.
+
+        Carrying the ORIGINAL numbers is not the same as reporting zeros, which is what
+        the old docstring was arguing against. They were measured, on the same machine,
+        against the same item, by the pass that produced the output being replayed. A
+        resumed run should look like the run that would have happened without the crash,
+        and `resumed` flags every replayed row so a reader can separate them.
+        """
+        prior = prior or {}
         self.output = output
-        self.cost_usd = None
-        self.latency_ms = None
-        self.tokens_in = None
-        self.tokens_out = None
+        self.cost_usd = prior.get("cost_usd")
+        self.latency_ms = prior.get("latency_ms")
+        self.tokens_in = prior.get("tokens_in")
+        self.tokens_out = prior.get("tokens_out")
         self.extra: Dict[str, float] = {}
-        self.meta: Dict[str, Any] = {"resumed_from_disk": True}
+        self.meta: Dict[str, Any] = dict(prior.get("_meta") or {})
+        self.meta["resumed_from_disk"] = True
 
 
 def _adapter_metric_kinds(adapter_id: str, adapter_path: Optional[Path]) -> Dict[str, str]:
@@ -270,6 +292,7 @@ def one_pass(
     cfg: Dict[str, Any],
     idx: int,
     resume_dir: Optional[Path] = None,
+    prior_rows: Optional[Dict[str, Dict[str, Any]]] = None,
     live_dir: Optional[Path] = None,
     *,
     call_system: Any,
@@ -329,7 +352,8 @@ def one_pass(
         source_text = src.read_text(encoding="utf-8", errors="replace")
 
         if resumed:
-            res = _Resumed(done.read_text(encoding="utf-8"))
+            res = _Resumed(done.read_text(encoding="utf-8"),
+                           (prior_rows or {}).get(item["item_id"]))
         else:
             # EVERY adapter gets retries, whether or not its author wrote any. This used
             # to be the adapter's business, and one adapter simply had none -- so a
@@ -556,6 +580,48 @@ def main() -> int:
     if args.resume and not resume_dir.is_dir():
         die(f"cannot resume: no outputs under {resume_dir}")
 
+    # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
+    #
+    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
+    # run's arm to the one being launched, so
+    #   make experiment-run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
+    # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
+    # a fabricated result with a valid fingerprint. One mistyped run id in a recovery
+    # command, which is exactly when the operator is rushed. Found by external review.
+    #
+    # The dataset must match too: replaying answers produced against different items is
+    # the same failure wearing different clothes.
+    prior_rows: Dict[str, Dict[str, Any]] = {}
+    if args.resume:
+        src_metrics = RUNS / args.resume / "metrics.json"
+        if src_metrics.is_file():
+            sm = read_json(src_metrics)
+            if sm.get("config_id") and sm["config_id"] != cfg.get("config_id"):
+                die(f"cannot resume: {args.resume} is arm {sm['config_id']!r}, "
+                    f"this config is {cfg.get('config_id')!r}.\n"
+                    f"  Resuming would replay another arm's answers and record them "
+                    f"under this one.")
+            if sm.get("dataset_id") and sm["dataset_id"] != cfg.get("dataset_id"):
+                die(f"cannot resume: {args.resume} ran on dataset "
+                    f"{sm['dataset_id']!r}, this config is on "
+                    f"{cfg.get('dataset_id')!r}.")
+        else:
+            print(f"  WARNING: {args.resume} has no metrics.json, so its arm and "
+                  f"dataset cannot be checked against this config.")
+
+        # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
+        # that were measured for it. See `_Resumed`.
+        src_preds = RUNS / args.resume / "predictions.jsonl"
+        if src_preds.is_file():
+            for line in src_preds.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    r = json.loads(line)
+                    if r.get("item_id"):
+                        prior_rows[r["item_id"]] = r
+        else:
+            print(f"  WARNING: {args.resume} has no predictions.jsonl — replayed items "
+                  f"will report no cost, tokens or _meta.")
+
     made: List[Path] = []
 
     capped = False
@@ -566,7 +632,8 @@ def main() -> int:
         # The output directory exists BEFORE the pass starts, so each item lands on disk
         # as it is produced and a crash leaves something to resume from.
         result = one_pass(
-            ds, cfg, i, resume_dir=resume_dir, live_dir=run_dir / "outputs",
+            ds, cfg, i, resume_dir=resume_dir, prior_rows=prior_rows,
+            live_dir=run_dir / "outputs",
             call_system=call_system, score=score,
             extra_transient=_adapter_transient(adapter_path),
         )

@@ -514,7 +514,14 @@ def test_fingerprint_covers_reference_bytes() -> None:
 
 
 def test_resume_scores_and_persists() -> None:
-    """A resumed run must SCORE its replayed items, and a crash must leave outputs.
+    """A resumed run must SCORE its replayed items, keep their measurements, refuse
+    another arm's, and leave outputs behind when it dies.
+
+    THE CRASH HERE IS SIMULATED -- files are deleted and the pass is resumed -- which
+    exercises the resume path but not the durability it depends on. The mtime assertion
+    below covers that separately: a version that gathered every output and wrote them
+    after the last item would satisfy the delete-and-resume test and still lose a whole
+    pass of paid work to a real crash.
 
     Both directions of a bug that cost paid data. `--resume` used to `continue` past
     scoring, so a fully-resumed run wrote zero prediction rows and empty scores while
@@ -536,6 +543,22 @@ def test_resume_scores_and_persists() -> None:
     outs = sorted((runs / src / "outputs").glob("*.txt"))
     check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
 
+    # THE PROPERTY A CRASH ACTUALLY DEPENDS ON: outputs are written AS THEY ARE
+    # PRODUCED, not gathered up at the end. The simulated crash below (deleting files
+    # and resuming) exercises the resume path but would pass just as happily against a
+    # version that wrote everything in one go after the last item -- which is the
+    # version that lost a whole pass of paid outputs.
+    #
+    # Checked by mtime, which is the observable this leaves behind: every output must
+    # predate metrics.json, and the first must predate the last, because they were
+    # written one at a time while the pass ran.
+    mj = runs / src / "metrics.json"
+    if len(outs) > 1 and mj.is_file():
+        t_out = sorted(f.stat().st_mtime for f in outs)
+        check("resume: outputs are written DURING the pass, not after it",
+              t_out[-1] <= mj.stat().st_mtime and t_out[0] <= t_out[-1],
+              f"last output {t_out[-1]:.3f}, metrics {mj.stat().st_mtime:.3f}")
+
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
     for f in outs[1:]:
         f.unlink()
@@ -549,6 +572,47 @@ def test_resume_scores_and_persists() -> None:
           f"{len(rows)} rows for {len(outs)} items")
     check("resume: replayed items are flagged",
           any('"resumed": 1' in l or '"resumed":1' in l for l in rows))
+
+    # A REPLAYED ITEM MUST KEEP WHAT WAS MEASURED FOR IT. Every field used to be None:
+    # a resumed run reported $0.03 for $0.05 of spend, and `_meta` -- llm_raw,
+    # first_stage, ranking for retrieval -- disappeared for exactly the items that were
+    # hardest to obtain, so a resumed retrieval or NER run could not be reported at all.
+    import json as _json  # noqa: PLC0415
+
+    src_rows = {}
+    for line in (runs / src / "predictions.jsonl").read_text().splitlines():
+        if line.strip():
+            r = _json.loads(line)
+            src_rows[r["item_id"]] = r
+    replayed = [_json.loads(l) for l in rows
+                if _json.loads(l).get("resumed") == 1.0]
+    check("resume: at least one item was actually replayed", bool(replayed),
+          f"{len(replayed)} replayed of {len(rows)}")
+    if replayed:
+        r = replayed[0]
+        o = src_rows.get(r["item_id"], {})
+        # Only assert on fields the original row actually had; the demo arm is free and
+        # local, so cost and tokens may legitimately be absent from BOTH.
+        carried = [k for k in ("cost_usd", "latency_ms", "tokens_in", "tokens_out")
+                   if o.get(k) is not None]
+        check("resume: a replayed item keeps the measurements from its original pass",
+              all(r.get(k) == o.get(k) for k in carried) if carried else True,
+              f"carried={carried} orig={[o.get(k) for k in carried]} "
+              f"now={[r.get(k) for k in carried]}")
+        if o.get("_meta"):
+            check("resume: and keeps its _meta",
+                  isinstance(r.get("_meta"), dict)
+                  and all(r["_meta"].get(k) == v for k, v in o["_meta"].items()),
+                  f"orig keys {sorted(o['_meta'])} now {sorted((r.get('_meta') or {}))}")
+
+    # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
+    # outputs; nothing compared the arms, so one mistyped id replayed a different
+    # model's answers and recorded them under this one, with a valid fingerprint.
+    other = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml",
+                "--resume", src, env=env)
+    msg = (other.stderr or "") + (other.stdout or "")
+    check("resume: another arm's outputs are refused",
+          other.returncode != 0 and "another arm" in msg.lower(), msg[-200:])
     shutil.rmtree(runs, ignore_errors=True)
 
 
