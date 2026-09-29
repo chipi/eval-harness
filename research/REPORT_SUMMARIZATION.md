@@ -20,6 +20,22 @@
 
 ## Executive summary
 
+### The decision, in one table
+
+| question | answer |
+|---|---|
+| **What should I deploy?** | `bart_l` (free, local, 1.6 GB) — or `deepseek_m` at **$191/month per 1M items** if you need generation off-box. They differ by **0.0001**. |
+| **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **16th of 25** and is 8.9% below free. |
+| **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
+| **How many arms are really tied at the top?** | **13 of 25.** The cheapest of them is 143× cheaper than the dearest. |
+| **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
+
+*Cross-cutting context for all five experiments:
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
+
+### What this experiment specifically found
+
+
 **Two hundred articles separate a top group and a price verdict, and still cannot rank 24
 models.** Those are different questions, and conflating them is the easiest way to misread
 this report in either direction.

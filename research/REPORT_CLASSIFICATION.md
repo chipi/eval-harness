@@ -19,6 +19,26 @@
 
 ## Executive summary
 
+### The decision, in one table
+
+| question | AG News (headroom) | DBpedia-14 (saturated) |
+|---|---|---|
+| **What should I deploy?** | `bert_mini` — 44 MB, fine-tuned, **$0**, **7 ms/item**, **0.9450** | `qwen_m` at **$51/month per 1M items**, 0.9929 |
+| **What should I not deploy?** | `anthropic_l` at $875/mo: **−4.8%** vs free | `anthropic_l` at **$1,351/mo**: **−0.4%** vs $51/mo |
+| **Does paying more help?** | Marginally: **+2.3%** per 10× cost | **Barely: +0.9%** per 10× cost |
+| **Arms tied at the top?** | 9 of 26 | **18 of 25** — the ranking is mostly noise |
+| **What limits the score?** | model quality | **the annotation.** Top ten separated by 4 items, 3 disputed by the whole field |
+| **Is a pilot enough?** | No — ρ = 0.852 and it picked `anthropic_l`, truly 3rd | No — ρ = 0.728, picked `anthropic_l`, truly 2nd |
+
+**Read the two together or not at all.** They were chosen before any result was seen to
+sit in opposite regimes; either alone supports whichever conclusion it happens to produce.
+
+*Cross-cutting context for all five experiments:
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
+
+### What these experiments specifically found
+
+
 **On a task with headroom, a 44MB model beat 24 frontier LLMs. On a saturated task, a 115×
 price difference bought nothing measurable. Same harness, same arms, same statistics.**
 

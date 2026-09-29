@@ -20,6 +20,23 @@
 
 ## Executive summary
 
+### The decision, in one table
+
+| question | answer |
+|---|---|
+| **What should I deploy?** | `span_marker` — 476 MB, fine-tuned on this corpus, **$0**, 0.76 s/item, **0.7674**. The only unambiguous winner in this repo: **separated from 26 of 26**. |
+| **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
+| **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
+| **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
+| **What does fine-tuning buy?** | **+0.3134 F1**, isolated by a matched pair at price zero on both sides (`span_marker` vs `gliner`). |
+| **Is a pilot enough?** | Here yes — ρ = 0.895, right winner. It was wrong in 3 of the other 4 experiments. |
+
+*Cross-cutting context for all five experiments:
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
+
+### What this experiment specifically found
+
+
 **A free 476MB span tagger beat all 24 hosted LLMs and separated from every one of them —
 the first unambiguous winner in this repo. But 57% of its lead comes from a single entity
 type whose meaning is a corpus convention rather than a fact about the world, and on the

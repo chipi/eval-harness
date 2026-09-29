@@ -21,6 +21,27 @@
 
 ## Executive summary
 
+### The decision, in one table
+
+| question | answer |
+|---|---|
+| **What should I deploy?** | Depends on budget. **`e5_base` alone: free, 0.06 s/item, 0.7191** and not statistically separable from any paid arm. **`glm_s` reranking e5_base: 0.7891** for **$732/month** per 1M items (measured on that arm, not extrapolated from the BM25 one). |
+| **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
+| **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |
+| **Arms tied at the top?** | **12 of 18** — and two of them (`e5_base`, `bge_small`) are **free and local**. |
+| **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
+| **Is a pilot enough?** | **Emphatically no.** ρ = 0.756 and the dev slice's leader finished **10th of 19**. |
+
+**A prediction registered before the arm existed** — that swapping only the first stage
+would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**, and the
+mechanism transferred too (headroom-used 90.9% → 90.2%).
+
+*Cross-cutting context for all five experiments:
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
+
+### What this experiment specifically found
+
+
 **Two free local models are statistically indistinguishable from every paid LLM reranker.
 And a prediction registered before the arm existed — that swapping only the first stage
 would move the pipeline from 0.74 to 0.786–0.797 — came back at 0.7891.**

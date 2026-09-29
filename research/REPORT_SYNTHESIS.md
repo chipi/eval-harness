@@ -22,7 +22,76 @@ Reproduction commands are in §8.
 
 ---
 
-## The seven findings
+## Executive summary
+
+**Across five tasks and 127 measured arms: the most expensive model was never the best,
+four of five leaderboard tops are statistical ties, a small model trained on your task
+beat every frontier LLM for $0 wherever one could run, and a 10× cost increase bought
+between −0.4% and +5.9% of quality.**
+
+### The seven findings
+
+| # | finding | evidence |
+|---|---|---|
+| **1** | **The dearest arm is never first** | 5 of 5. It ranked 16th, 3rd, 2nd, 3rd, 2nd. But the dearest still beats the *cheapest* in 4 of 5 — price separates bad from mediocre, then stops. The best paid arm was **mid-tier** in four of five; the large tier never won anything. |
+| **2** | **The top is a group, not a podium** | Every winner leads on the point estimate against **100%** of its declared family, and separates from only **31–100%**. Only Few-NERD produced a real podium (26 of 26); DBpedia's winner separates from 8 of 26. |
+| **3** | **The axis is trained-on-your-task, not free-vs-paid** | Free wins outright in 3 of 5, ties in a 4th, and loses only where no *fine-tuned* free arm could run. Matched pair at price zero on both sides: `span_marker` 0.7674 vs `gliner` 0.4540 — **+0.3134 from exposure alone**. |
+| **4** | **A pilot correlates beautifully and picks the wrong winner** | ρ(dev, full) = **0.72–0.90** in every experiment, and the pilot chose wrong in **3 of 5**. On SciFact it chose the **tenth-best of nineteen**. |
+| **5** | **The gold is wrong, in every corpus that was checked** | 3 for 3 where anyone looked; 2 were never checked. Few-NERD: **34 of 768** gold types unanimously rejected by all 25 learned arms. DBpedia's top ten are separated by four items, three of which the whole field disputes. |
+| **6** | **The instrument broke before the models got interesting** | Every time. 8 defects tabulated; **3 moved a single arm further than the gap separating most of the field** — the label parser (8.6 accuracy points), the unparsed-as-empty rule (+0.0214 f1), the reasoning flag (0.6124 → 0.6991). |
+| **7** | **The metric's shape decides which diagnostics can be read** | Not which model wins — which *tools* work. On DBpedia at n=10, **19.8 of 27 arms tied** and the rank statistic was correlating arm names; 400 of 400 resampling draws are undecided at every size. |
+
+### The economics
+
+**A 10× cost increase buys −0.4% to +5.9% of the best arm's quality** (r = −0.07 to 0.63).
+On summarisation the slope is *negative* across 24 arms and a 143× price range.
+
+At **1,000,000 items/month**, billed:
+
+| experiment | the expensive option | what it buys |
+|---|---|---|
+| summarisation | **$9,826/mo** | **−8.9%** vs free, and −0.0% vs $191/mo |
+| Few-NERD | **$2,463/mo** | **−11.4%** vs a free CPU model |
+| SciFact | $2,288/mo | −0.2% vs $711/mo |
+| DBpedia | **$1,351/mo** | **−0.4%** vs $51/mo |
+| AG News | $875/mo | −4.8% vs free |
+
+Three more numbers that travel:
+
+- **The cheapest arm you cannot statistically separate from the best is 8×–143× cheaper
+  than the dearest**, in four of five experiments.
+- **Cost does not buy speed.** log(cost) vs latency correlates at **r = −0.30 to +0.20** —
+  uncorrelated, negative twice. Free local models run 44×–766× faster on classification
+  and embedding, and *slower* on generation.
+- **The task shape sets the bill, not the model.** 104 input tokens per item for
+  classification against **3,926 for retrieval reranking** — a 38× difference that no
+  model substitution recovers.
+
+### What to do with this
+
+1. **Check the architecture before the model.** The largest cost lever here was structural.
+2. **If you can label a few thousand examples, fine-tune a small model** — $0 against up to
+   $9,826/month, and far lower latency.
+3. **Never buy the most expensive arm.** In three experiments it was *worse* than free.
+4. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
+   separation test, not a leaderboard.
+5. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
+
+**When paying more is right:** you cannot label data; the task is unlike anything a small
+model has seen; a wrong answer is expensive; your volume is low enough that the whole
+spread is rounding error (at 1,000 items/month the entire DBpedia range is $1.35); or
+engineering time costs more than the API. The claim is not that expensive models are bad —
+it is that **price stops predicting quality long before it stops rising.**
+
+---
+
+*The rest of this report unpacks each finding with its full evidence, and
+[§8](#8-the-economics-what-money-actually-buys) has the complete economics. Each finding links to the experiment report it comes from; those
+reports carry the per-task detail, the corrections, and what each one could not measure.*
+
+---
+
+## The seven findings, unpacked
 
 ### 1. The dearest arm is never first. Five times out of five.
 
@@ -62,6 +131,8 @@ and "distinguishable from a third of it" is the single most repeated result here
 
 ### 3. A free local model wins or ties, whenever one can run at all
 
+*Sources:* [NER](REPORT_NER.md) · [classification](REPORT_CLASSIFICATION.md) · [summarisation](REPORT_SUMMARIZATION.md) · [retrieval](REPORT_RETRIEVAL.md)
+
 | experiment | best free arm | rank | margin over the best **paid** arm |
 |---|---|---|---|
 | Few-NERD | `span_marker`, 476 MB | **1 of 25** | +0.0810 over `openai_m` |
@@ -99,6 +170,8 @@ as being right.
 
 ### 4. A pilot correlates beautifully and picks the wrong winner
 
+*Sources:* [retrieval §3.5](REPORT_RETRIEVAL.md) · [summarisation §3.6](REPORT_SUMMARIZATION.md) · [NER §3.8](REPORT_NER.md)
+
 Every experiment ran a small dev slice before the full one. Comparing the two:
 
 | experiment | ρ(dev, full) | dev leader | true leader | dev leader's real rank |
@@ -123,6 +196,8 @@ and **0.00008 at n=200** — a 900× shrink. Same arms, same metric, more data.
 
 ### 5. The gold is wrong, in every corpus that was checked
 
+*Sources:* [NER §3.6](REPORT_NER.md) · [classification §3.4](REPORT_CLASSIFICATION.md)
+
 | corpus | gold errors found | method |
 |---|---|---|
 | Few-NERD | **34 of 768** gold types (4.4%) unanimously rejected by all 25 learned arms | consensus pass |
@@ -142,6 +217,8 @@ The diagnostic is cheap and general: items nearly every *learned* arm gets wrong
 whose gold is probably wrong. Independent models do not agree on a mistake.
 
 ### 6. The instrument was broken before the models got interesting — every time
+
+*Sources: the Corrections section of each report, and [`NOTES.md`](NOTES.md), 56 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -169,6 +246,8 @@ checking a scorer is never the expensive option.
 
 ### 7. The metric's shape decides which diagnostics can be read at all
 
+*Sources:* [classification §3.6](REPORT_CLASSIFICATION.md) · [NER §3.9](REPORT_NER.md) · [retrieval](REPORT_RETRIEVAL.md)
+
 Not which model wins — which *tools* work.
 
 | shape | ties? | consequence |
@@ -190,7 +269,7 @@ readable. **The tool was never wrong in general; it was wrong for a metric shape
 
 ---
 
-## The economics: what money actually buys
+## 8. The economics: what money actually buys
 
 The four reports each measure quality and record cost. Put together, they answer the
 question a production decision actually asks — **how much quality does a dollar buy, and
@@ -289,7 +368,7 @@ retrieval-*trained* but not on SciFact specifically, and it lands mid-field — 
 task" looks like: not a win, not a rout, and cheap enough that $711/month for +3.4% is a
 real decision rather than an obvious one.
 
-**And free is not only cheaper, it is faster.** `bert_mini` answers in 0.01 s against
+**And free is not only cheaper, it is faster.** `bert_mini` answers in 7 ms against
 1.92 s for the best paid arm on the same task — 192× — and `e5_base` in 0.06 s against
 3.12 s. The exception is `bart_l` at 11.01 s — 23rd slowest of 25, though not last: two hosted
 arms (`mistral_l` 11.04 s and `qwen_s` 25.04 s) are slower still. It is a 1.6 GB seq2seq
@@ -321,12 +400,12 @@ paid arm is indistinguishable from the free one.
 | summarisation | r = −0.18 | 1.28 – 25.04 s | `bart_l` 11.01 s |
 | DBpedia | r = +0.02 | 0.44 – 12.35 s | `bart_mnli` 5.72 s |
 | SciFact | r = +0.03 | 1.14 – 17.48 s | `bge_small` 0.03 s |
-| AG News | r = +0.20 | 0.44 – 7.66 s | `bert_mini` **0.01 s** |
+| AG News | r = +0.20 | 0.44 – 7.66 s | `bert_mini` **0.007 s** |
 
 Essentially uncorrelated, and negative twice. **Price is not a proxy for latency**, and
 the spread *within* the hosted field (up to 20×) dwarfs anything cost predicts.
 
-Local models are a different regime entirely: `bert_mini` answers in **0.01 s** against
+Local models are a different regime entirely: `bert_mini` answers in **7 ms** against
 0.44–7.66 s for hosted arms on the same task — 44× to 766× faster, with no network in the
 path. What they cost instead is **setup**: e5-base takes 1,825 s to embed the SciFact
 corpus once, BM25 takes 0.8 s for the same job. That is a real cost, it is reported as
