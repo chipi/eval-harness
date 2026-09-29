@@ -127,7 +127,7 @@ def score_ranking(ranking: Sequence[str], qrels: Dict[str, int],
                 never removed -- see the module docstring)
     `parsed`    False when the arm's output could not be read at all
     """
-    n_rel = len(qrels)
+    n_rel = sum(1 for g in qrels.values() if g > 0)
     zero = {
         "ndcg_10": 0.0, "recall_10": 0.0, "recall_100": 0.0, "mrr_10": 0.0,
         "rank_of_first": 0.0, "found_any": 0.0,
@@ -140,8 +140,16 @@ def score_ranking(ranking: Sequence[str], qrels: Dict[str, int],
     if not clean:
         return {**zero, "duplicate_ids": float(dupes)}
 
-    gains = [float(2 ** qrels[d] - 1) if d in qrels else 0.0 for d in clean]
-    ideal = sorted((float(2 ** g - 1) for g in qrels.values()), reverse=True)
+    # RELEVANT MEANS GRADE > 0, not "appears in the qrels".
+    #
+    # TREC-style judgments include grade-0 entries meaning "a human looked at this and
+    # it is NOT relevant" -- genuinely useful information, and the opposite of a hit.
+    # Membership-based tests counted them as relevant for recall and MRR (nDCG was
+    # already correct, since 2^0-1 = 0). SciFact happens to be all grade-1 so nothing
+    # published here moved, but the next corpus will not be. Found by review.
+    rel = {d: g for d, g in qrels.items() if g > 0}
+    gains = [float(2 ** rel[d] - 1) if d in rel else 0.0 for d in clean]
+    ideal = sorted((float(2 ** g - 1) for g in rel.values()), reverse=True)
 
     idcg = dcg(ideal[:NDCG_AT])
     ndcg = (dcg(gains[:NDCG_AT]) / idcg) if idcg else 0.0
@@ -157,14 +165,14 @@ def score_ranking(ranking: Sequence[str], qrels: Dict[str, int],
         "duplicate_ids": float(dupes),
     }
     for k in RECALL_AT:
-        hit = sum(1 for d in clean[:k] if d in qrels)
+        hit = sum(1 for d in clean[:k] if d in rel)
         out[f"recall_{k}"] = round(hit / n_rel, 10) if n_rel else 0.0
 
     # RECIPROCAL RANK of the first relevant document, 0 if none inside the cut-off.
     rr = 0.0
     first = 0
     for i, d in enumerate(clean, start=1):
-        if d in qrels:
+        if d in rel:
             first = i
             if i <= MRR_AT:
                 rr = 1.0 / i

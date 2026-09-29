@@ -73,40 +73,27 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
     provider = params.get("provider", "echo")
     fn: Callable[[str, Dict[str, Any]], Result] = PROVIDERS.get(provider, _echo)
     started = time.perf_counter()
-    result = _with_retries(fn, text, params)
+    # No retry wrapper here: the core retries every adapter. See the note below.
+    result = fn(text, params)
     if result.latency_ms is None:
         result.latency_ms = round((time.perf_counter() - started) * 1000, 3)
     return result
 
 
-def _with_retries(fn, text: str, params: Dict[str, Any]) -> "Result":
-    """Retry transient provider failures with exponential backoff and jitter.
-
-    A sweep of a few hundred calls WILL hit a 429 or a 5xx. Without this the
-    whole run dies at item 15 and you pay for the first 14 twice.
-
-    Only transient classes are retried — a bad key or a malformed request is
-    raised immediately, because retrying those just spends time and money
-    failing. Tune with EVAL_MAX_RETRIES.
-    """
-    attempts = max(1, env_int("EVAL_MAX_RETRIES", 8))
-    transient = ("429", "500", "502", "503", "504", "overloaded", "timeout",
-                 "rate limit", "connection", "temporarily")
-    last: Optional[Exception] = None
-    for attempt in range(1, attempts + 1):
-        try:
-            return fn(text, params)
-        except SystemExit:
-            raise                      # our own "key not set" — not retryable
-        except Exception as exc:       # noqa: BLE001 — provider SDKs vary widely
-            msg = f"{type(exc).__name__}: {exc}".lower()
-            if not any(t in msg for t in transient) or attempt == attempts:
-                raise
-            last = exc
-            delay = min(30.0, 2 ** (attempt - 1)) + random.uniform(0, 0.5)
-            print(f"      transient ({type(exc).__name__}), retry {attempt}/{attempts - 1} in {delay:.1f}s")
-            time.sleep(delay)
-    raise last if last else RuntimeError("unreachable")
+# RETRIES LIVE IN THE CORE, NOT HERE.
+#
+# This adapter used to carry its own `_with_retries` loop, and `experiment_run` wraps
+# every `call_system` in `call_with_retries` as well. Both read EVAL_MAX_RETRIES, both
+# default to 8 -- so a genuinely failing item was attempted 8 x 8 = 64 times, with both
+# backoffs compounding. On a paid provider that multiplies the bill for the one item
+# least likely to ever succeed.
+#
+# The core's loop is the one to keep: it applies to EVERY adapter whether or not its
+# author wrote retries, which was the reason it was added. An adapter that wants extra
+# retryable signatures declares `TRANSIENT_MARKERS` and the core honours them -- that is
+# the supported way to extend this, and it cannot multiply attempts.
+#
+# Found by external review.
 
 
 # ── 2. HOW GOOD WAS IT ───────────────────────────────────────────────────────

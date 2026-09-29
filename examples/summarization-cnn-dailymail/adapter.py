@@ -489,7 +489,28 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     caller can honestly claim — the provider does not expose a weight revision, so
     `revision_source` says "api-model-string" and does not pretend otherwise.
     """
-    if params.get("provider") == "hf_local":
+    provider = params.get("provider", "litellm")
+    if provider == "lead_k":
+        # A NON-MODEL ARM MUST NOT CLAIM A MODEL. `lead3` takes the first k sentences in
+        # pure Python and contacts nothing -- yet it fell through to the hosted branch
+        # below and recorded `endpoint: http://127.0.0.1:4001`,
+        # `revision_source: api-model-string` and `identity_declared: true`. The
+        # fingerprint asserted it was an API model, which is precisely the kind of false
+        # provenance the fingerprint exists to prevent. Found by external review.
+        import hashlib  # noqa: PLC0415
+        import inspect  # noqa: PLC0415
+
+        return {
+            "provider": "lead_k",
+            "id": f"lead_{int(params.get('k', 3))}",
+            "kind": "deterministic baseline, no model and no network",
+            "k": int(params.get("k", 3)),
+            "identity_declared": False,
+            "revision_source": "not-a-model",
+            # The code IS the system under test for this arm, so it is what gets hashed.
+            "code_sha256": hashlib.sha256(inspect.getsource(_lead_k).encode()).hexdigest(),
+        }
+    if provider == "hf_local":
         from hf_identity import hf_model_fingerprint  # noqa: PLC0415
 
         return hf_model_fingerprint(

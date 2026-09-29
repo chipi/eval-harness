@@ -101,5 +101,17 @@ check("dcg discounts by log2(rank+1)", abs(dcg([1.0, 1.0]) - (1 + 1/math.log2(3)
 check("dedupe keeps first occurrence", dedupe(["b", "a", "b"]) == (["b", "a"], 1))
 check("scorer_sha256 is stable", scorer_sha256() == scorer_sha256())
 
+# GRADE 0 MEANS JUDGED-AND-NOT-RELEVANT, which is the opposite of a hit. Membership in
+# the qrels used to be the test, so a grade-0 entry counted for recall and MRR (nDCG was
+# already right, 2^0-1 = 0). Found by external review.
+G0 = {"d1": 1, "d0": 0}
+r0 = score_ranking(["d0"], G0)
+check("grade 0 is not a hit for recall", r0["recall_10"] == 0.0)
+check("grade 0 is not a hit for mrr", r0["mrr_10"] == 0.0)
+check("grade 0 does not count toward n_relevant", r0["n_relevant"] == 1.0)
+check("grade 0 is not found_any", r0["found_any"] == 0.0)
+r1 = score_ranking(["d1"], G0)
+check("the grade-1 doc still scores 1.0", r1["ndcg_10"] == 1.0 and r1["recall_10"] == 1.0)
+
 print(f"\n{sum(1 for _, c in ok if c)}/{len(ok)} passed")
 sys.exit(0 if all(c for _, c in ok) else 1)
