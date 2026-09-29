@@ -1,0 +1,40 @@
+```json
+[
+  {
+    "text": "McMaster",
+    "type": "person"
+  },
+  {
+    "text": "Icons of Soul",
+    "type": "product"
+  },
+  {
+    "text": "Rock & Roll Hall Of Fame",
+    "type": "organization"
+  },
+  {
+    "text": "Songwriter Hall of Fame",
+    "type": "organization"
+  },
+  {
+    "text": "Felix Cavaliere",
+    "type": "person"
+  },
+  {
+    "text": "The Rascals",
+    "type": "organization"
+  },
+  {
+    "text": "Motown",
+    "type": "organization"
+  },
+  {
+    "text": "Lamont Dozier",
+    "type": "person"
+  },
+  {
+    "text": "Holland-Dozier-Holland",
+    "type": "organization"
+  }
+]
+```

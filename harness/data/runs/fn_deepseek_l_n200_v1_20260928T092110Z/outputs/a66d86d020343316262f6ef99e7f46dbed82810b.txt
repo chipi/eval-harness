@@ -1,0 +1,26 @@
+[
+  {
+    "text": "The Round Table India",
+    "type": "organization"
+  },
+  {
+    "text": "Faria",
+    "type": "person"
+  },
+  {
+    "text": "Pride of Karnataka Award",
+    "type": "event"
+  },
+  {
+    "text": "6 May 2011",
+    "type": "event"
+  },
+  {
+    "text": "India",
+    "type": "location"
+  },
+  {
+    "text": "Miss Earth 2010",
+    "type": "event"
+  }
+]

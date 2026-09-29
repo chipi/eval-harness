@@ -1,0 +1,10 @@
+[
+  {
+    "text": "iPhone",
+    "type": "product"
+  },
+  {
+    "text": "NanoStudio",
+    "type": "product"
+  }
+]

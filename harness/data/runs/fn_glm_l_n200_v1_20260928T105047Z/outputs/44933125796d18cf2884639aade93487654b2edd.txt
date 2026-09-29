@@ -1,0 +1,20 @@
+Let me analyze this sentence for named entities.
+
+The sentence: "is a 1955 British musical comedy film by the British director-writer team of Michael Powell and Emeric Pressburger ."
+
+Named entities:
+- "Michael Powell" - person (a British film director)
+- "Emeric Pressburger" - person (a British film director/writer)
+
+What about "British"? That's a nationality adjective, not typically a named entity in this context. It's a demonym/gentilic, usually not tagged as a named entity in NER tasks (like CoNLL excludes nationalities... actually CoNLL includes "NORP" sometimes but here the types are limited to art, building, event, location, organization, other, person, product).
+
+"British" as an adjective - it's not a location per se. Typically in these tasks, adjectival forms of countries aren't tagged. The sentence seems to be from a Wikipedia article about a film (likely "Oh... Rosalinda!!" or "The Man Who Loved Redheads" or similar 1955 Powell and Pressburger film). The film title is missing (the sentence starts with "is a 1955...").
+
+So the entities are:
+- Michael Powell - person
+- Emeric Pressburger - person
+
+Should "British" be tagged? In many NER schemes, "British" would be a NORP (nationality) but with the given types, it could be "other" or "location". However, typically in these extraction tasks, adjectival demonyms are not extracted as entities. The instruction says "named entity" - "British" as an adjective modifying "musical comedy film" and "director-writer team" is not a standalone named entity. I'll exclude it.
+
+Output:
+[{"text": "Michael Powell", "type": "person"}, {"text": "Emeric Pressburger", "type": "person"}][{"text": "Michael Powell", "type": "person"}, {"text": "Emeric Pressburger", "type": "person"}]

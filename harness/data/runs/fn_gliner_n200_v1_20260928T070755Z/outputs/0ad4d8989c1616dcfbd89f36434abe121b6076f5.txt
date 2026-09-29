@@ -1,0 +1,1 @@
+[{"text": "settlement", "type": "event"}, {"text": "island", "type": "location"}, {"text": "sugarcane", "type": "product"}, {"text": "island", "type": "location"}, {"text": "France", "type": "organization"}]

@@ -1,0 +1,34 @@
+[
+  {
+    "text": "Klaus Friedrich Roth",
+    "type": "person"
+  },
+  {
+    "text": "October",
+    "type": "other"
+  },
+  {
+    "text": "November",
+    "type": "other"
+  },
+  {
+    "text": "Fields Medal",
+    "type": "other"
+  },
+  {
+    "text": "Roth's theorem",
+    "type": "other"
+  },
+  {
+    "text": "Diophantine approximation",
+    "type": "other"
+  },
+  {
+    "text": "German",
+    "type": "location"
+  },
+  {
+    "text": "British",
+    "type": "location"
+  }
+]

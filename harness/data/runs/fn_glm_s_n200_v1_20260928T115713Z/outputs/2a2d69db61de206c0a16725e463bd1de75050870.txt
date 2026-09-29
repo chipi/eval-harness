@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Ernest Smith",
+    "type": "person"
+  },
+  {
+    "text": "Ward",
+    "type": "other"
+  },
+  {
+    "text": "Thekwini Council",
+    "type": "organization"
+  },
+  {
+    "text": "Parks , Recreation and Culture committee",
+    "type": "organization"
+  }
+]
+```

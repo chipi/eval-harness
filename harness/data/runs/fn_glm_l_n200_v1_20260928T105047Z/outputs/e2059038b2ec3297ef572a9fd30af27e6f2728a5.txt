@@ -1,0 +1,20 @@
+```json
+[
+  {"text": "ATF -2", "type": "protein"},
+  {"text": "Chop", "type": "protein"},
+  {"text": "c-Jun", "type": "protein"},
+  {"text": "c-Myc", "type": "protein"},
+  {"text": "DPC4", "type": "protein"},
+  {"text": "Elk-1", "type": "protein"},
+  {"text": "Ets1", "type": "protein"},
+  {"text": "Max", "type": "protein"},
+  {"text": "MEF2C", "type": "protein"},
+  {"text": "NFAT4", "type": "protein"},
+  {"text": "Sap1a", "type": "protein"},
+  {"text": "STATs", "type": "protein"},
+  {"text": "Tal", "type": "protein"},
+  {"text": "p53", "type": "protein"},
+  {"text": "CREB", "type": "protein"},
+  {"text": "Myc", "type": "protein"}
+]
+```

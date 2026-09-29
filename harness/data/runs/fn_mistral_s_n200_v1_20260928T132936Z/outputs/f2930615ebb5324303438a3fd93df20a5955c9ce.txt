@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "United Methodist",
+    "type": "organization"
+  },
+  {
+    "text": "seminary libraries",
+    "type": "building"
+  }
+]
+```

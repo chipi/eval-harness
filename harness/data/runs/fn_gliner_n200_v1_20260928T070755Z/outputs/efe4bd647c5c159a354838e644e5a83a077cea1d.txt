@@ -1,0 +1,1 @@
+[{"text": "Klaus Friedrich Roth", "type": "person"}, {"text": "British", "type": "location"}, {"text": "Fields Medal", "type": "event"}]

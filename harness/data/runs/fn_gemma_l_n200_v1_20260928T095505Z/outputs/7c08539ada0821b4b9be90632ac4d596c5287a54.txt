@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Cartoon Planet",
+    "type": "product"
+  }
+]
+```

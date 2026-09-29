@@ -1,0 +1,7 @@
+[
+  {"text": "Maxine Leeds Craig", "type": "person"},
+  {"text": "Sociology Department", "type": "organization"},
+  {"text": "University of California", "type": "organization"},
+  {"text": "Davis", "type": "location"},
+  {"text": "USA", "type": "location"}
+]

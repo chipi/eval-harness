@@ -1,0 +1,1 @@
+[{"text":"RAF Horsham St Faith","type":"organization"},{"text":"December 1947","type":"event"},{"text":"RAF Coltishall","type":"organization"},{"text":"January 1948","type":"event"},{"text":"Officer of the Legion of Merit","type":"other"},{"text":"President of the United States","type":"person"},{"text":"9 March 1948","type":"event"}]

@@ -1,0 +1,1 @@
+[{"text": "Ward", "type": "location"}, {"text": "Ernest Smith", "type": "location"}, {"text": "Thekwini Council", "type": "location"}, {"text": "Parks", "type": "location"}, {"text": "Recreation", "type": "location"}, {"text": "Culture", "type": "location"}]

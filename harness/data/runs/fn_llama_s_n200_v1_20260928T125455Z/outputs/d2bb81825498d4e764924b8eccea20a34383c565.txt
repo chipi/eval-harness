@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Intravenous",
+    "type": "other"
+  },
+  {
+    "text": "iron infusion",
+    "type": "product"
+  },
+  {
+    "text": "iron deficiency",
+    "type": "other"
+  },
+  {
+    "text": "iron-deficiency anaemia",
+    "type": "other"
+  },
+  {
+    "text": "chronic kidney disease",
+    "type": "other"
+  }
+]
+```

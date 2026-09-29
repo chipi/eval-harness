@@ -64,6 +64,10 @@ research/    reports, handovers, and an append-only journal of how each example 
 
 ## The worked examples
 
+**[`research/KNOWN_ISSUES.md`](research/KNOWN_ISSUES.md)** — what is open, what was
+never measured, and which calls are judgement rather than oversight. Read this first if
+you are reviewing.
+
 **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)** — what all five
 experiments agree on, and where that contradicts how leaderboards are usually read:
 the dearest arm was never the best, four of five leaderboard tops are ties, and **every
@@ -86,11 +90,11 @@ corpus, and each exists because it breaks something the previous one did not.
 They exist to show the harness doing something real, and because the results make the point
 better than documentation can:
 
-- **Summarisation.** The dearest arm, at **66× the price** of the cheapest, ranks **15th of
-  24**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.753**
-  — at 20 articles, **ρ = 0.346**.
+- **Summarisation.** The dearest arm, at **52× the price** of the cheapest, ranks **16th of
+  25**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.80**
+  — at 20 articles, **ρ = 0.42**.
 - **Classification.** A 44MB fine-tuned model beat 24 frontier LLMs on AG News. On DBpedia
-  a **126× price difference** bought nothing measurable, and the top ten arms are separated
+  a **115× price difference** bought nothing measurable, and the top ten arms are separated
   by four items — three of which the entire field disputes because the gold label is wrong.
 - **Extraction.** A 476MB span tagger separated from **all 26** opponents — but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**

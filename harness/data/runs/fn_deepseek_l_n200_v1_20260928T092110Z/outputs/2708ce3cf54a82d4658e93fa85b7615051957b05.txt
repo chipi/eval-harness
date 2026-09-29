@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "C-119",
+    "type": "product"
+  },
+  {
+    "text": "908th Troop Carrier Group",
+    "type": "organization"
+  },
+  {
+    "text": "Bates Field",
+    "type": "location"
+  },
+  {
+    "text": "Alabama",
+    "type": "location"
+  }
+]
+```

@@ -1,0 +1,7 @@
+[
+  {"text": "Super Snipe", "type": "product"},
+  {"text": "Humber Pullman", "type": "product"},
+  {"text": "1936", "type": "event"},
+  {"text": "Super Snipes", "type": "product"},
+  {"text": "1952", "type": "event"}
+]

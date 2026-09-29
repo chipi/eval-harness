@@ -1,0 +1,1 @@
+[{"text": "Amiga", "type": "location"}, {"text": "Amiga CD32", "type": "location"}, {"text": "Super NES", "type": "location"}, {"text": "Game Gear", "type": "location"}]

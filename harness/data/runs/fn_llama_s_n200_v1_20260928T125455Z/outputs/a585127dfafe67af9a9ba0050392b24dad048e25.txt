@@ -1,0 +1,16 @@
+```
+[
+  {
+    "text": "Amazing Stories",
+    "type": "product"
+  },
+  {
+    "text": "March 1963",
+    "type": "event"
+  },
+  {
+    "text": "Michael Joseph",
+    "type": "person"
+  }
+]
+```

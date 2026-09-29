@@ -1,0 +1,7 @@
+[
+  {"text": "Fan Nedd", "type": "location"},
+  {"text": "Fan Dringarth", "type": "location"},
+  {"text": "Fforest Fawr", "type": "location"},
+  {"text": "Afon Dringarth", "type": "location"},
+  {"text": "Afon Mellte", "type": "location"}
+]

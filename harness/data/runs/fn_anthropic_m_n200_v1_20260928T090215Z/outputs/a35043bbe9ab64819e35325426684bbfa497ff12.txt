@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "2024 Summer Olympics", "type": "event"},
+  {"text": "Games of the XXXIII Olympiad", "type": "event"}
+]
+```

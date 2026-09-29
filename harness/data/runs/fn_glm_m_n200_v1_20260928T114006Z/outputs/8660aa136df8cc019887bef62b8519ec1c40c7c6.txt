@@ -1,0 +1,36 @@
+```json
+[
+  {
+    "text": "Sky Travel",
+    "type": "product"
+  },
+  {
+    "text": "Sky Real Lives",
+    "type": "product"
+  },
+  {
+    "text": "Sky Travel +1",
+    "type": "product"
+  },
+  {
+    "text": "Sky Real Lives +1",
+    "type": "product"
+  },
+  {
+    "text": "Sky Travel Extra",
+    "type": "product"
+  },
+  {
+    "text": "Sky Real Lives 2",
+    "type": "product"
+  },
+  {
+    "text": "Sky Travel Shop",
+    "type": "product"
+  },
+  {
+    "text": "Sky Travel",
+    "type": "product"
+  }
+]
+```

@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "The Plain Dealer",
+    "type": "organization"
+  },
+  {
+    "text": "Democratic",
+    "type": "other"
+  },
+  {
+    "text": "Brown",
+    "type": "person"
+  },
+  {
+    "text": "Republicans",
+    "type": "organization"
+  }
+]
+```

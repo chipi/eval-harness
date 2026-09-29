@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Haugh",
+    "type": "building"
+  },
+  {
+    "text": "A. Brownlie",
+    "type": "organization"
+  },
+  {
+    "text": "Timber Merchants",
+    "type": "organization"
+  }
+]
+```

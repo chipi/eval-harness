@@ -1,0 +1,1 @@
+[{"text": "In October", "type": "location"}, {"text": "March", "type": "location"}, {"text": "Howard", "type": "location"}, {"text": "Middletown", "type": "location"}, {"text": "Ohio", "type": "location"}]

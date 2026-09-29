@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "RAF Horsham St Faith", "type": "building"},
+  {"text": "December 1947", "type": "event"},
+  {"text": "RAF Coltishall", "type": "building"},
+  {"text": "January 1948", "type": "event"},
+  {"text": "Legion of Merit", "type": "other"},
+  {"text": "President of the United States", "type": "person"},
+  {"text": "9 March 1948", "type": "event"}
+]
+```

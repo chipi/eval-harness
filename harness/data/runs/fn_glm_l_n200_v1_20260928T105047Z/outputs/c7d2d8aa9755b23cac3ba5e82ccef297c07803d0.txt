@@ -1,0 +1,14 @@
+The task is to extract named entities from the sentence:
+
+"Professor Immerman is an editor of the `` SIAM Journal on Computing `` and of `` Logical Methods in Computer Science `` ."
+
+Entity types: art, building, event, location, organization, other, person, product.
+
+Let me identify entities:
+1. "Immerman" - a person (Professor Immerman). Should I include "Professor Immerman" or just "Immerman"? Typically the name is "Immerman" with title "Professor". Named entity extraction usually includes the person name; titles can be included or not. The instruction says copy each entity's text exactly as it appears. I'll use "Immerman" as the person name. Actually, some conventions include the title. Hmm. In CoNLL-style, titles are usually excluded. I'll go with "Immerman".
+
+2. "SIAM Journal on Computing" - this is a journal. Journal names... In some taxonomies, journals/products of creative work fall under "art" (works of art like books, songs, journals?). The eight types include "art" which typically covers creative works like books, movies, songs, journals. "SIAM" itself is an organization (Society for Industrial and Applied Mathematics), but "SIAM Journal on Computing" is a journal name — a creative work / product. In many NER schemes with these types (like the one used in some datasets, e.g., the "few-shot NER" types), "art" includes names of creative works like books, songs, journals. Actually, this looks like it could be from the CoNLL 2003 extended or the OntoNotes-like... The types art, building, event, location, organization, other, person, product — this is the entity type set from the "Few-NERD"? No. Actually these eight types match the CoNLL-2003 style extended set used in some cross-domain NER datasets: art (artwork, book, journal), building, event, location, organization, other, person, product. This resembles the entity types in the "CoNLL 2003" plus... Actually it matches the types used in the dataset from "Cross-domain NER" or the "WikiANN"? Hmm.
+
+Actually, these eight types (art, building, event, location, organization, other, person, product) are the entity types from the dataset used in "Few-NERD"? No, Few-NERD has more types. These eight types match the NER types in the "CoNLL-2003 shared task" extended? CoNLL-2003 has PER, LOC, ORG, MISC. The eight types here match the entity categories in the dataset from "OntoNotes"? No.
+
+These eight types match the entity types in the dataset used in the paper "Entity Recognition..."? They match the types

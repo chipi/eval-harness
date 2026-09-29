@@ -1,0 +1,1 @@
+[{"text": "The Haitian refugee community", "type": "organization"}, {"text": "ouster", "type": "event"}, {"text": "Aristide", "type": "person"}, {"text": "military regime", "type": "organization"}]

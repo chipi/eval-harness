@@ -1,0 +1,1 @@
+[{"text": "In September", "type": "location"}, {"text": "Berry Plastics", "type": "location"}, {"text": "Rexam SBC", "type": "location"}]

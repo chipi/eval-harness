@@ -167,7 +167,7 @@ It refuses outright if the two runs used different `dataset_id`s.
 ## 8. Promote — a decision, not a copy
 
 ```bash
-make promote RUN=<run_id> REASON="beat prev baseline by 6% on my_v1 n=40, spread 0.004"
+make run-promote RUN=<run_id> REASON="beat prev baseline by 6% on my_v1 n=40, spread 0.004"
 ```
 
 Refused if the run came from a dirty tree, if its build is unknown, or if the
@@ -234,7 +234,7 @@ EVAL_BUILD_REF=$(git -C ../ rev-parse HEAD)   make experiment-run ...  # the par
 **Pin it.** An eval against a moving target measures the target's movement, and
 you will spend a day attributing that to your change.
 
-`make validate` fails on any run whose build is `unknown`, and `make promote`
+`make validate` fails on any run whose build is `unknown`, and `make run-promote`
 refuses one — a baseline that names no system cannot be acted on.
 
 ---

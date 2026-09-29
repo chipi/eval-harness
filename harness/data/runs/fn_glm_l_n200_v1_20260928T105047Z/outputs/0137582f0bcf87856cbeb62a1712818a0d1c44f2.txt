@@ -1,0 +1,24 @@
+The task is to extract named entities from the sentence:
+
+"The two began repairing planes in a workshop within the complex of an old sugar factory in Prague ."
+
+Named entity types: art, building, event, location, organization, other, person, product.
+
+Let me analyze:
+- "The two" - refers to two people but not named, so not a named entity.
+- "planes" - generic, not a named product.
+- "workshop" - generic building, not named.
+- "sugar factory" - generic, "old sugar factory" - not a specific named entity. Hmm, but could "sugar factory" be considered a building? It's not named specifically. Typically in NER, "sugar factory" without a proper name wouldn't be a named entity. However, some annotation schemes (like the one this seems based on — possibly a CoNLL-style or a specific dataset with these 8 types) might tag it. The types art, building, event, location, organization, other, person, product — this looks like it could be from a specific dataset. Let me think.
+
+This sentence appears to be from a Wikipedia article, possibly about aviation pioneers. "The two began repairing planes in a workshop within the complex of an old sugar factory in Prague." This could be about Czech aviation, e.g., the founding of Avia or Aero company? Actually, this might be about the Czechoslovak airline or aircraft manufacturer.
+
+Named entities:
+- "Prague" - location.
+
+Is "sugar factory" a named entity? It's descriptive, not a proper name. In strict NER, no. But in some datasets, buildings like "sugar factory" might be tagged as building. Hmm. The instruction says "Extract every named entity" — a named entity typically requires a proper name. "an old sugar factory" is not named. So I'd say only "Prague".
+
+So output: [{"text": "Prague", "type": "location"}]
+
+Should I include "Prague" with the trailing space? The sentence has "Prague ." with a space before the period (tokenized). Copy exactly as it appears: "Prague".
+
+Output only JSON[{"text": "Prague", "type": "location"}]

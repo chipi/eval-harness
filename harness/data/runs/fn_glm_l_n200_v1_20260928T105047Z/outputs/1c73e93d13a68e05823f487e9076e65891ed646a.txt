@@ -1,0 +1,14 @@
+Let me extract named entities from this sentence:
+
+"Privately, however, the CIA and President Dwight D. Eisenhower were aware of progress being made by the Soviets on Sputnik from secret spy plane imagery."
+
+Named entities:
+1. CIA - organization
+2. Dwight D. Eisenhower - person (with title "President" - typically the title is not included, but sometimes it is. The instruction says copy each entity's text exactly as it appears. Standard NER conventions usually exclude titles like "President" from the person entity. So "Dwight D. Eisenhower" is the person.)
+3. Soviets - this could be considered an organization (nationality/government reference) or "other". In many NER schemes, "Soviets" referring to the Soviet government/people would be an organization or nationality. Given the eight types: art, building, event, location, organization, other, person, product. "Soviets" here refers to the Soviet Union's people/government - could be classified as organization or other. Hmm. In CoNLL-style NER, nationalities like "Soviets" would be NORP (nationalities or religious/political groups). With the given types, "other" might fit, or "organization" if referring to the Soviet government. I'll go with "other" since it's a nationality/group reference... Actually, many similar tasks classify "the Soviets" as an organization when referring to the government. But here "progress being made by the Soviets" - refers to the Soviet nation/people. I think "other" is safer for a nationality. Hmm, but let me think. The types given: art, building, event, location, organization, other, person, product. This looks like a broad entity typing scheme. "Soviets" as a group of people - could be "other". I'll classify as "other".
+
+Actually, let me reconsider. In many datasets like this (e.g., the "fewNER" or similar), nationalities are often "other" or "organization". The phrase "the Soviets" in context of making progress on Sputnik refers to the Soviet Union as a nation/state entity. I'll go with "other" since it's ambiguous, but "organization" could also work. Hmm.
+
+Actually, in the OntoNotes scheme, NORP is a distinct type. When mapping to a limited set, NORP often maps to... it depends. "Soviets" could map to "other" (group of people). I'll use "other".
+
+4. Sputnik - this is a satellite, which is a product (or could be "other" as an artificial object). Sputnik was a product/satellite. I'll classify as "product". Actually, Sputnik could also be considered "other" (artificial object). But "product" seems reasonable for a satellite. Hmm, in some schemes, satellites are

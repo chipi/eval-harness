@@ -1,0 +1,1 @@
+[{"text": "Corning", "type": "person"}, {"text": "Dunn Memorial Bridg", "type": "building"}, {"text": "Menands Bridge", "type": "building"}]

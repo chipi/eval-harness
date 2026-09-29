@@ -1,0 +1,1 @@
+[{"text": "The Pueblo Revolt", "type": "event"}, {"text": "province", "type": "location"}]

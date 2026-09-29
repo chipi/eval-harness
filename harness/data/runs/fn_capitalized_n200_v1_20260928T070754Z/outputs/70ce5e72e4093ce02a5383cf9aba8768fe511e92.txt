@@ -1,0 +1,1 @@
+[{"text": "Sport Club Kiryat Yam", "type": "location"}, {"text": "Israel Football Association", "type": "location"}, {"text": "Liga Gimel", "type": "location"}, {"text": "Sport Football Club Hapoel Kiryat Yam", "type": "location"}]

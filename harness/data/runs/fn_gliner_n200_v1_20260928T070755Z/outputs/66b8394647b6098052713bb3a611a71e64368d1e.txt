@@ -1,0 +1,1 @@
+[{"text": "Aram", "type": "organization"}, {"text": "Assyria", "type": "organization"}, {"text": "Ahaz", "type": "person"}, {"text": "Rezin of Syria", "type": "person"}, {"text": "Judah", "type": "location"}]

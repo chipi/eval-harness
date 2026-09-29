@@ -1,0 +1,1 @@
+[{"text": "Klaus Friedrich Roth", "type": "location"}, {"text": "October", "type": "location"}, {"text": "November", "type": "location"}, {"text": "German-born British", "type": "location"}, {"text": "Fields Medal", "type": "location"}, {"text": "Roth", "type": "location"}, {"text": "Diophantine", "type": "location"}]

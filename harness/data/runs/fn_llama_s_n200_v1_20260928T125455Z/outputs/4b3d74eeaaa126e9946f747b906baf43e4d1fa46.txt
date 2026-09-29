@@ -1,0 +1,28 @@
+```
+[
+  {
+    "text": "20 August",
+    "type": "event"
+  },
+  {
+    "text": "Toulon",
+    "type": "location"
+  },
+  {
+    "text": "UNIFIL",
+    "type": "organization"
+  },
+  {
+    "text": "2nd",
+    "type": "other"
+  },
+  {
+    "text": "13th",
+    "type": "other"
+  },
+  {
+    "text": "Regiments of Engineering",
+    "type": "organization"
+  }
+]
+```

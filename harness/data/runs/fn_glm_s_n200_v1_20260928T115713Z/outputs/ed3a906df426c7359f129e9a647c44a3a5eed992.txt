@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Gesta Adalberonis",
+    "type": "art"
+  },
+  {
+    "text": "Otto of Freising",
+    "type": "person"
+  },
+  {
+    "text": "Guido the Pisan",
+    "type": "person"
+  },
+  {
+    "text": "Roman part of the Church",
+    "type": "organization"
+  },
+  {
+    "text": "Roman court",
+    "type": "building"
+  }
+]
+```

@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "1921", "type": "other"},
+  {"text": "Haugh", "type": "location"},
+  {"text": "Lowland Scots", "type": "other"},
+  {"text": "A. Brownlie", "type": "person"},
+  {"text": "Timber Merchants", "type": "organization"}
+]
+```

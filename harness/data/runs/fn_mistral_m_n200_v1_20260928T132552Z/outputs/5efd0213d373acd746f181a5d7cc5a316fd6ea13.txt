@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Ordinary", "type": "art"},
+  {"text": "Train", "type": "organization"},
+  {"text": "U.S.", "type": "location"},
+  {"text": "adult top 40 singles charts", "type": "event"}
+]
+```

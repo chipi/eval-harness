@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "1893",
+    "type": "other"
+  },
+  {
+    "text": "Mortimer Durand",
+    "type": "person"
+  },
+  {
+    "text": "Kabul",
+    "type": "location"
+  },
+  {
+    "text": "British India",
+    "type": "organization"
+  },
+  {
+    "text": "Afghanistan",
+    "type": "location"
+  },
+  {
+    "text": "Russian",
+    "type": "other"
+  },
+  {
+    "text": "Amir Abdur Rahman Khan",
+    "type": "person"
+  }
+]
+```

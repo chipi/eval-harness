@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Basi",
+    "type": "event"
+  },
+  {
+    "text": "1807 Basi Revolt",
+    "type": "event"
+  },
+  {
+    "text": "Spanish",
+    "type": "organization"
+  }
+]
+```

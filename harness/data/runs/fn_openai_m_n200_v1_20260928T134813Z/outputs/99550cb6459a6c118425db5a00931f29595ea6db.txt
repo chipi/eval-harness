@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Anyway",
+    "type": "art"
+  },
+  {
+    "text": "Ministry of Sound",
+    "type": "organization"
+  }
+]

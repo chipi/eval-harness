@@ -1,0 +1,12 @@
+```
+[
+  {
+    "text": "Debian",
+    "type": "organization"
+  },
+  {
+    "text": "Debian project",
+    "type": "organization"
+  }
+]
+```

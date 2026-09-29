@@ -1,0 +1,4 @@
+[
+    {"text": "Rho Aquilae", "type": "other"},
+    {"text": "Bayer designation", "type": "other"}
+]

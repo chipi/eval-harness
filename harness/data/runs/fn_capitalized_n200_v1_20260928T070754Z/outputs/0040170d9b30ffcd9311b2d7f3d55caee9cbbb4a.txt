@@ -1,0 +1,1 @@
+[{"text": "General Mohamed Farrah Aidid", "type": "location"}, {"text": "President", "type": "location"}, {"text": "Ali Mahdi Muhammad", "type": "location"}]

@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Pope Innocent XII",
+    "type": "person"
+  },
+  {
+    "text": "Bishop of Tinos",
+    "type": "other"
+  }
+]
+```

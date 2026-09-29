@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Delacôte",
+    "type": "person"
+  },
+  {
+    "text": "Cambridge Science Centre",
+    "type": "organization"
+  },
+  {
+    "text": "chairman",
+    "type": "other"
+  },
+  {
+    "text": "science centre",
+    "type": "other"
+  },
+  {
+    "text": "Cambridge",
+    "type": "location"
+  }
+]
+```

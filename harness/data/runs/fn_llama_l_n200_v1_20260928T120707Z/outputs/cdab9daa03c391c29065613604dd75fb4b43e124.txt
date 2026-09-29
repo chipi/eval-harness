@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Thursday",
+    "type": "other"
+  },
+  {
+    "text": "Corsica",
+    "type": "location"
+  },
+  {
+    "text": "Shakedown",
+    "type": "event"
+  }
+]

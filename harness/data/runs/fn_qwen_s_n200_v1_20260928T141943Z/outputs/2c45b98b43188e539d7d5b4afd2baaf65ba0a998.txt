@@ -1,0 +1,22 @@
+[
+  {
+    "text": "2019 season",
+    "type": "event"
+  },
+  {
+    "text": "University of Wisconsin-Parkside baseball team",
+    "type": "organization"
+  },
+  {
+    "text": "Oberbrunner Field",
+    "type": "location"
+  },
+  {
+    "text": "UW-Parkside campus",
+    "type": "location"
+  },
+  {
+    "text": "Simmons Field",
+    "type": "location"
+  }
+]

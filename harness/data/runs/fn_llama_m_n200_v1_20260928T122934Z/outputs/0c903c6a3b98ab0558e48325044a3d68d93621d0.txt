@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Tennessee Performing Arts Center",
+    "type": "building"
+  },
+  {
+    "text": "Nashville",
+    "type": "location"
+  },
+  {
+    "text": "the musical",
+    "type": "art"
+  }
+]

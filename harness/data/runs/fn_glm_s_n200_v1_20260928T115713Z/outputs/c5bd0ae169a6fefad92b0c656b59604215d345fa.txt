@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Helena Mary Molony",
+    "type": "person"
+  },
+  {
+    "text": "Irish republican",
+    "type": "other"
+  },
+  {
+    "text": "feminist",
+    "type": "other"
+  },
+  {
+    "text": "labour activist",
+    "type": "other"
+  }
+]
+```

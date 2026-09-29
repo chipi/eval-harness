@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Azores high",
+    "type": "other"
+  }
+]
+```

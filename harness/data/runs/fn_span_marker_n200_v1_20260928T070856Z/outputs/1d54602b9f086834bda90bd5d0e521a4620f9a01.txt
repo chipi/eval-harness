@@ -1,0 +1,1 @@
+[{"text": "Wang", "type": "person"}, {"text": "University of Hawai \u2018 i", "type": "organization"}, {"text": "International Pacific Research Center", "type": "organization"}]

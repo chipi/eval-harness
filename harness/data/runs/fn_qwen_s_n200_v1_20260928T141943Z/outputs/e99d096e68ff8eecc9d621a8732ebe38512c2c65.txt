@@ -1,0 +1,1 @@
+[{"text": "Sanitarium", "type": "organization"}]

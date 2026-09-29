@@ -1,0 +1,9 @@
+```
+[
+  { "text": "inauguration ceremony", "type": "event" },
+  { "text": "Germany", "type": "location" },
+  { "text": "Gerhard Schröder", "type": "person" },
+  { "text": "Chancellor", "type": "other" },
+  { "text": "Hitler", "type": "person" }
+]
+```

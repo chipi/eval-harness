@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Super Snipe",
+    "type": "product"
+  },
+  {
+    "text": "4086cc side-valve engine",
+    "type": "product"
+  },
+  {
+    "text": "Humber Pullman",
+    "type": "product"
+  },
+  {
+    "text": "Super Snipes",
+    "type": "product"
+  }
+]
+```

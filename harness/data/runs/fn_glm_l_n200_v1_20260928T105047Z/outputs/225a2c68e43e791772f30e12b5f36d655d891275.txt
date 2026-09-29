@@ -1,0 +1,1 @@
+[{"text": "1971", "type": "event"}, {"text": "Islam", "type": "other"}]

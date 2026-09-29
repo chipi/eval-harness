@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "Territory of Hawai ` i", "type": "location"},
+  {"text": "Delegate to Congress", "type": "other"}
+]
+```

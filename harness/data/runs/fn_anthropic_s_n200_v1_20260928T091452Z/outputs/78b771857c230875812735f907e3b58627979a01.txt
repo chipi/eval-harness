@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Olympic",
+    "type": "event"
+  },
+  {
+    "text": "1996",
+    "type": "other"
+  },
+  {
+    "text": "Hungary",
+    "type": "location"
+  },
+  {
+    "text": "Manuel Estiarte",
+    "type": "person"
+  },
+  {
+    "text": "Spanish",
+    "type": "location"
+  }
+]
+```

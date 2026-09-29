@@ -1,0 +1,11 @@
+[
+  {"text": "Real Live Roadrunning", "type": "product"},
+  {"text": "British", "type": "location"},
+  {"text": "Mark Knopfler", "type": "person"},
+  {"text": "American", "type": "location"},
+  {"text": "Emmylou Harris", "type": "person"},
+  {"text": "Mercury Records", "type": "organization"},
+  {"text": "Universal Music", "type": "organization"},
+  {"text": "Warner Bros. Records", "type": "organization"},
+  {"text": "United States", "type": "location"}
+]

@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Nef ' i",
+    "type": "person"
+  },
+  {
+    "text": "sultan",
+    "type": "other"
+  },
+  {
+    "text": "Ahmet I",
+    "type": "person"
+  },
+  {
+    "text": "Osman II",
+    "type": "person"
+  }
+]
+```

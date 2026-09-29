@@ -1,0 +1,1 @@
+[{"text": "Summer Olympics", "type": "location"}, {"text": "Games", "type": "location"}, {"text": "XXXIII Olympiad", "type": "location"}, {"text": "July", "type": "location"}, {"text": "August", "type": "location"}]

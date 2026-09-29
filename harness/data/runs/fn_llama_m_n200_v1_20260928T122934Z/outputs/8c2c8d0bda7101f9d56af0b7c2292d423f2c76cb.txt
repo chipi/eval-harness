@@ -1,0 +1,26 @@
+[
+  {
+    "text": "M-28",
+    "type": "product"
+  },
+  {
+    "text": "June",
+    "type": "other"
+  },
+  {
+    "text": "City of Ishpeming",
+    "type": "organization"
+  },
+  {
+    "text": "MDOT",
+    "type": "organization"
+  },
+  {
+    "text": "Lakeshore Drive",
+    "type": "location"
+  },
+  {
+    "text": "US 41/M-28",
+    "type": "product"
+  }
+]

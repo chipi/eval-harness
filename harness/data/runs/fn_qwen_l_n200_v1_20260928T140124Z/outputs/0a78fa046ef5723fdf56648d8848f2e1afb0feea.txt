@@ -1,0 +1,1 @@
+[{"text":"Aleš Hemský","type":"person"},{"text":"most valuable player","type":"other"},{"text":"play-offs","type":"event"}]

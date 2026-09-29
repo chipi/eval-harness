@@ -1,0 +1,5 @@
+[
+  {"text": "Quo Vadis", "type": "art"},
+  {"text": "Hollywood", "type": "organization"},
+  {"text": "Academy", "type": "organization"}
+]

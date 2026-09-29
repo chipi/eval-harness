@@ -1,0 +1,44 @@
+```json
+[
+  {
+    "text": "2006",
+    "type": "other"
+  },
+  {
+    "text": "USA Track and Field",
+    "type": "organization"
+  },
+  {
+    "text": "Arthur Ravenel, Jr. Bridge",
+    "type": "building"
+  },
+  {
+    "text": "Ansonborough Fields",
+    "type": "location"
+  },
+  {
+    "text": "Alexander Street",
+    "type": "location"
+  },
+  {
+    "text": "2000",
+    "type": "other"
+  },
+  {
+    "text": "George Street",
+    "type": "location"
+  },
+  {
+    "text": "Meeting Street",
+    "type": "location"
+  },
+  {
+    "text": "Carolina First Arena",
+    "type": "building"
+  },
+  {
+    "text": "Charleston",
+    "type": "location"
+  }
+]
+```

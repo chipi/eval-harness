@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Sealey", "type": "person"},
+  {"text": "Coventry City", "type": "organization"},
+  {"text": "1976", "type": "other"},
+  {"text": "1977", "type": "other"},
+  {"text": "11 April 1977", "type": "other"},
+  {"text": "Queens Park Rangers", "type": "organization"}
+]
+```

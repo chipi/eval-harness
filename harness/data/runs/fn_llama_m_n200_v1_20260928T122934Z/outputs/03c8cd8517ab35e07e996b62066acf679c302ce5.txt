@@ -1,0 +1,10 @@
+[
+  {
+    "text": "November",
+    "type": "other"
+  },
+  {
+    "text": "Twitter",
+    "type": "organization"
+  }
+]

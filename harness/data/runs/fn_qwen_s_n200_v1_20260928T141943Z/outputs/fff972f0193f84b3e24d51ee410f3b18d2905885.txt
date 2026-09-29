@@ -1,0 +1,14 @@
+[
+  {
+    "text": "1960 French Grand Prix",
+    "type": "event"
+  },
+  {
+    "text": "Formula One",
+    "type": "organization"
+  },
+  {
+    "text": "Reims-Gueux",
+    "type": "location"
+  }
+]

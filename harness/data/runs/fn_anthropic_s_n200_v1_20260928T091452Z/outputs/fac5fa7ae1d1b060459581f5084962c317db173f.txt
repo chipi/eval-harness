@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Ceylon",
+    "type": "location"
+  },
+  {
+    "text": "1932",
+    "type": "other"
+  },
+  {
+    "text": "Irrigation Department",
+    "type": "organization"
+  }
+]
+```

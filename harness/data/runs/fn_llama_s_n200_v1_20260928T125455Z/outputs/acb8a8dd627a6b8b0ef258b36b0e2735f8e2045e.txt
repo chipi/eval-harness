@@ -1,0 +1,18 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  {
+    "text": "tachycardia",
+    "type": "other"
+  },
+  {
+    "text": "euphoria",
+    "type": "other"
+  },
+  {
+    "text": "synesthesia",
+    "type": "other"
+  }
+]
+```

@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Rowlatt Act",
+    "type": "other"
+  },
+  {
+    "text": "1919",
+    "type": "other"
+  }
+]

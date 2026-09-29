@@ -2128,3 +2128,72 @@ falsified in one command.
 REPORT.md §3.6 is stale for a DIFFERENT reason worth separating: it was computed over 24
 arms and the field is now 26, since the ML work added `bart_l` and `lead3`. That is arm-set
 drift, not this bug, and it is not corrected here.
+
+---
+
+### 2026-09-29 · 57 — The clone scored 0.107 and did not complain
+
+Committing `outputs/` was supposed to close the last reproducibility hole. I cloned the
+repo to check it had, ran `rescore.py` on `fn_anthropic_l`, and got **f1 = 0.1071** for
+an arm whose recorded f1 is **0.6798**.
+
+It exited 0. No warning, no zero, no crash — a plausible number, the kind that reads as
+"this model is weak" rather than "this measurement is broken." I would have had no reason
+to doubt it if I had not happened to be comparing against the recorded value.
+
+**The cause was two lines apart in `rescore.py`.** A missing OUTPUT called `die()`. A
+missing REFERENCE fell through as `None` and scoring carried on. So the artifact that was
+guarded was the expensive one, and the unguarded one was the corpus — which is gitignored
+for all four datasets, because none of them is ours to redistribute, and which is
+therefore precisely what every fresh clone is missing. A clone has 7 reference files
+against the 1,382 these runs were scored on. Every prediction became a false positive
+against an empty gold set.
+
+The asymmetry is the interesting part. I protected the artifact that cost money and left
+the free one unchecked, and the free one was the one that goes missing. Cheap to replace
+is not the same as reliably present, and I had conflated them.
+
+**What I had claimed, and what was true.** The commit message I wrote an hour earlier
+said "rescore.py reads this directory and nothing else." It reads the references too.
+Committing outputs fixed *half* of rescore-from-a-clone — the irreplaceable half, since
+corpora are a free deterministic re-fetch and model outputs were paid for once — and I
+had written it up as the whole. Amended before pushing.
+
+**Two numbers of mine that were wrong, in the same area, days apart.** The reason
+`outputs/` was excluded at all was my estimate of "128 MB of copyrighted derivatives."
+Measured: 8.3 MB, and four of the five examples are single class words, document ids or
+CC BY-SA 4.0 entity spans. A `du` that counted directory blocks and swept in the excluded
+dev runs, never re-checked, load-bearing for a redistribution decision for a week.
+
+And the corrected figure has its own flattering reading. 8.3 MB is the content; on disk it
+is 128 MB, because 32,710 files of a few hundred bytes each sit in 4 KB blocks. A clone is
+30 MB downloaded and **228 MB on disk**. Both belong in the record — I nearly shipped only
+the first, having just finished criticising myself for the same habit.
+
+**A stale docstring was why no test caught it.**
+`test_no_committed_artifact_depends_on_an_ignored_one` said "sources … and references are
+COMMITTED." True when the only corpus was the synthetic demo; false from the first real
+fetcher onward, and nobody edits a docstring when adding a `.gitignore` line. Working from
+that premise, the test guarded baselines → runs and never looked at runs → references —
+the edge that actually broke. **The test was fine; its model of the repo had rotted.** It
+now counts and names the six reference sets a clone must re-fetch.
+
+**Then I did it again, in the fix.** Writing the corrected `data/runs/README.md` I typed
+"your own runs stay ignored unless you add them." I checked: a fresh `data/runs/<id>/`
+shows as `?? data/runs/<id>/`, because the force-include rules apply to every run
+directory. Wrong within ten minutes of writing an entry about being wrong the same way.
+The difference is only that this time I ran the command before pushing it.
+
+**What it cost to find: one `git clone` and one comparison.** Everything in this entry
+came from doing the thing the previous commit claimed to enable, in the state a reader
+would be in, instead of reasoning about whether it would work. Both parser fixes from
+round 1 were verified the same way and change zero recorded numbers — glm_l 46 → 46,
+0 of 760 retrieval outputs — which is worth stating because a reviewer would otherwise
+re-derive it.
+
+Fixed: `rescore.py` refuses a declared-but-absent reference set and names the fetcher; a
+partial set warns, since a tier may legitimately not cover every item, and refusing that
+would be suppressing a case rather than fixing one. Regression test fails 3/3 against the
+old code — checked by reverting, not assumed. Verified the other direction too: with the
+references restored, rescoring in a fresh clone reproduces **all 23 numeric metrics** at
+the stored six-decimal precision.

@@ -10,8 +10,9 @@ Branch `classification-ag-news`, branched from `ml-arms-bart-lead3` (so `family_
 and `--items` are available). Working tree clean. `make ci` green. `gitleaks`: no leaks.
 
 28 runs in `harness/data/runs/` on `ag_news_200` and 28 in `data/runs-smoke/` on
-`ag_news_20`. Both directories are gitignored — **the runs exist on one machine and are
-not backed up.**
+`ag_news_20`. **The 28 `ag_news_200` runs were committed on 2026-09-29** (metrics,
+predictions and outputs). `data/runs-smoke/` stays excluded by name — smoke runs are not
+evidence.
 
 ## Headline
 
@@ -233,7 +234,7 @@ the same CVE-2025-32434 wall as the summarisation example's distilbart arms:
 - The hosted arms have no `confidence` — logprobs were not requested. That is the obvious
   next fingerprint/metric addition.
 - `research/REPORT_SUMMARIZATION.md` and `NOTES.md` carry none of this.
-- Runs are on one machine and gitignored.
+- The `ag_news_200` runs are committed as of 2026-09-29; the smoke runs are not.
 
 ## Reproducing
 

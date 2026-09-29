@@ -1,0 +1,1 @@
+[{"text": "M-28", "type": "location"}, {"text": "Ishpeming", "type": "location"}, {"text": "MDOT", "type": "organization"}, {"text": "Lakeshore Drive", "type": "location"}, {"text": "US 41/M-28", "type": "location"}]

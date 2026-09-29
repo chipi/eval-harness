@@ -1,0 +1,1 @@
+[{"text": "Skardu", "type": "location"}, {"text": "Skardu", "type": "location"}, {"text": "Indus and Shigar Rivers", "type": "location"}]

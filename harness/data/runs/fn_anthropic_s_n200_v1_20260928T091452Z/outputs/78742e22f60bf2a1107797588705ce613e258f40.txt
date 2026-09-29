@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Clube da Esquina",
+    "type": "art"
+  }
+]
+```

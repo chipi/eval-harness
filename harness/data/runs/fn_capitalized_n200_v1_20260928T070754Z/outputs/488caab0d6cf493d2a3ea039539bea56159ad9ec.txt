@@ -1,0 +1,1 @@
+[{"text": "PSIS Semarang", "type": "location"}, {"text": "PSIS Semarang", "type": "location"}]

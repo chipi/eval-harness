@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "October 2018",
+    "type": "other"
+  },
+  {
+    "text": "March 2019",
+    "type": "other"
+  },
+  {
+    "text": "Howard",
+    "type": "person"
+  },
+  {
+    "text": "Middletown",
+    "type": "location"
+  },
+  {
+    "text": "Ohio",
+    "type": "location"
+  }
+]
+```

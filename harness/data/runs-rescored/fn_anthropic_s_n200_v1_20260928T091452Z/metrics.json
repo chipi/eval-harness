@@ -1,0 +1,173 @@
+{
+  "adapter": "examples/ner-few-nerd/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "b3cc5d861cf2807c51172aa0b09fe3d2d97f739d",
+    "source": "git"
+  },
+  "config_id": "fn_anthropic_s_n200_v1",
+  "created_at": "2026-09-28T09:21:09Z",
+  "dataset_id": "few_nerd_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "fn_anthropic_s_n200_v1",
+      "params": {
+        "family": "anthropic",
+        "max_tokens": 600,
+        "model": "eval-claude-haiku",
+        "price_tier": "small",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 1.0,
+        "usd_per_mtok_out": 5.0
+      }
+    },
+    "data": {
+      "dataset_id": "few_nerd_280",
+      "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
+      "n_items": 280,
+      "reference_id": "gold/few_nerd_280",
+      "reference_tier": "gold"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see rescored_with",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-claude-haiku",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "eval-claude-haiku",
+        "id_source": "alias-unresolved",
+        "identity_declared": true,
+        "labels": [
+          "art",
+          "building",
+          "event",
+          "location",
+          "organization",
+          "other",
+          "person",
+          "product"
+        ],
+        "max_tokens": 600,
+        "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
+        "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "unavailable",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "family": "anthropic",
+    "max_tokens": 600,
+    "model": "eval-claude-haiku",
+    "price_tier": "small",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 1.0,
+    "usd_per_mtok_out": 5.0
+  },
+  "primary_metric": "f1",
+  "providers_seen": {
+    "Amazon Bedrock": 280
+  },
+  "reference_tier": "gold",
+  "rescored_at": "2026-09-28T14:34:00Z",
+  "rescored_from": "fn_anthropic_s_n200_v1_20260928T091452Z",
+  "rescored_with": {
+    "adapter": "examples/ner-few-nerd/adapter.py",
+    "scorer": {
+      "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
+      "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
+      "scorer_sha256": "fa44fe291ad128ab1633f2e07aa84d2dcb06d2226a58b697b621992ef98c2d78"
+    },
+    "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+  },
+  "run_id": "fn_anthropic_s_n200_v1_20260928T091452Z",
+  "scores": {
+    "cost_usd": 0.0005541143,
+    "f1": 0.5842900822,
+    "fn": 1.0071428571,
+    "fp": 1.3714285714,
+    "latency_ms": 1337.5396678571,
+    "n_gold": 2.7357142857,
+    "n_predicted": 3.1,
+    "parsed": 1.0,
+    "precision": 0.5643988551,
+    "reasoning_tokens": 0.0,
+    "recall": 0.6301615646,
+    "tokens_in": 123.9892857143,
+    "tokens_out": 86.025,
+    "total_cost_usd": 0.155152,
+    "total_tokens_in": 34717.0,
+    "total_tokens_out": 24087.0,
+    "tp": 1.7285714286,
+    "truncated": 0.0,
+    "type_penalty": 0.1435876552,
+    "untyped_f1": 0.7278777374,
+    "untyped_fn": 0.5142857143,
+    "untyped_fp": 0.8785714286,
+    "untyped_tp": 2.2214285714
+  },
+  "warmup_ms": 1807.005
+}

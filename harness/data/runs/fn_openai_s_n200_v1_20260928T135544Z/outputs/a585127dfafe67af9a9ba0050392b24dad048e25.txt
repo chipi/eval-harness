@@ -1,0 +1,1 @@
+[{"text":"March 1963","type":"other"},{"text":"Amazing Stories","type":"organization"},{"text":"1968","type":"other"},{"text":"Michael Joseph","type":"person"}]

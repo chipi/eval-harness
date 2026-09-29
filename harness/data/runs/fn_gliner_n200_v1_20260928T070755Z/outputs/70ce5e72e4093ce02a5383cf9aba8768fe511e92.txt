@@ -1,0 +1,1 @@
+[{"text": "summer of 2014", "type": "event"}, {"text": "Israel Football Association", "type": "organization"}, {"text": "2014\u201315 season", "type": "event"}, {"text": "Liga Gimel", "type": "organization"}]

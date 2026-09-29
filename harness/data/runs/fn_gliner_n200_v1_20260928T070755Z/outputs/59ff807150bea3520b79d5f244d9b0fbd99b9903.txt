@@ -1,0 +1,1 @@
+[{"text": "inauguration ceremony", "type": "event"}, {"text": "Germany 's government", "type": "organization"}, {"text": "Gerhard Schr\u00f6der", "type": "person"}, {"text": "memorial field", "type": "location"}, {"text": "Hitler", "type": "person"}, {"text": "underground bunker", "type": "building"}]

@@ -38,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, SOURCES, read_json  # noqa: E402
+from _common import DATA, RUNS, SOURCES, read_json  # noqa: E402
 
 
 def per_item(runs_dir: Path, dataset_id: str, config_id: str, metric: str) -> dict[str, float]:
@@ -77,7 +77,12 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20260926)
     args = ap.parse_args()
 
-    runs_dir = Path(args.runs_dir) if args.runs_dir else DATA / "runs"
+    # EVAL_RUNS_DIR, same as every other script. Without this, running these two
+    # under a non-default runs directory silently read data/runs instead -- so a
+    # rescored or smoke sweep was compared against the ORIGINAL runs and the output
+    # looked perfectly normal. `_common.RUNS` already resolves the variable; these two
+    # were the only scripts that rebuilt the path by hand.
+    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
     A = per_item(runs_dir, args.dataset_id, args.a, args.metric)
     B = per_item(runs_dir, args.dataset_id, args.b, args.metric)
     items = sorted(set(A) & set(B))

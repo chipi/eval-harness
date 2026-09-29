@@ -1,0 +1,1 @@
+[{"text": "Magazines", "type": "location"}]

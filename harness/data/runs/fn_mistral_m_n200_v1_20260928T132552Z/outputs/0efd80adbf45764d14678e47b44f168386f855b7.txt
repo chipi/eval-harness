@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "Gianandrea Noseda", "type": "person"},
+  {"text": "principal guest conductor", "type": "other"}
+]
+```

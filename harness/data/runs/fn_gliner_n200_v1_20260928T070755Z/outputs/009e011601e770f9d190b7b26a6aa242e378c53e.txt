@@ -1,0 +1,1 @@
+[{"text": "Nef ' i", "type": "person"}, {"text": "sultan", "type": "person"}, {"text": "poetry", "type": "art"}, {"text": "Ahmet I", "type": "person"}, {"text": "Osman II", "type": "person"}, {"text": "reigned 1618\u20131622", "type": "event"}]

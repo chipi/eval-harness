@@ -1,0 +1,9 @@
+[
+  {"text": "Kosovo", "type": "location"},
+  {"text": "Vetëvendosje", "type": "organization"},
+  {"text": "LVV", "type": "organization"},
+  {"text": "Democratic League of Kosovo", "type": "organization"},
+  {"text": "LDK", "type": "organization"},
+  {"text": "Democratic Party of Kosovo", "type": "organization"},
+  {"text": "PDK", "type": "organization"}
+]

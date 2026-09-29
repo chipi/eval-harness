@@ -1,0 +1,26 @@
+[
+  {
+    "text": "Mars",
+    "type": "location"
+  },
+  {
+    "text": "Jupiter",
+    "type": "location"
+  },
+  {
+    "text": "Pallas",
+    "type": "location"
+  },
+  {
+    "text": "Juno",
+    "type": "location"
+  },
+  {
+    "text": "4 Vesta",
+    "type": "location"
+  },
+  {
+    "text": "5 Astraea",
+    "type": "location"
+  }
+]

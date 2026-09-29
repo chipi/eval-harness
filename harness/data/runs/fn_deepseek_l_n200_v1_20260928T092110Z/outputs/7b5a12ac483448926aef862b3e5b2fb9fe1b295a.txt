@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Spanish",
+    "type": "location"
+  },
+  {
+    "text": "Margarita",
+    "type": "person"
+  }
+]

@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "George Clinton", "type": "person"},
+  {"text": "Bootsy Collins", "type": "person"},
+  {"text": "Bernie Worrell", "type": "person"},
+  {"text": "P Funk", "type": "organization"},
+  {"text": "P Funk All Stars", "type": "organization"},
+  {"text": "The Awesome Power of a Fully Operational Mothership", "type": "art"},
+  {"text": "Mothership Reconnection Tour", "type": "event"}
+]
+```

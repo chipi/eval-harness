@@ -1,0 +1,1 @@
+[{"text":"Amiga","type":"product"},{"text":"Amiga CD32","type":"product"},{"text":"Super NES","type":"product"},{"text":"Game Gear","type":"product"}]

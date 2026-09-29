@@ -1,0 +1,3 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "The Grange School Northwich" - an independent school near Northwich, Cheshire, England. It's clearly a school, which falls under EducationalInstitution.
+
+The answer should be just the category name.EducationalInstitution

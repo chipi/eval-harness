@@ -1,0 +1,1 @@
+[{"text": "Southern Sami", "type": "person"}, {"text": "melted snow", "type": "event"}, {"text": "thaw", "type": "event"}]

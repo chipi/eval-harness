@@ -54,11 +54,19 @@ import hashlib
 import inspect
 import json
 import math
+import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
+
+from codehash import code_digest
 
 #: Cut-offs reported on every run. 10 is the ranking cut-off people quote; 100 is the one a
 #: two-stage pipeline actually depends on, because a reranker cannot retrieve what the
 #: first stage never returned.
+#: A list-numbering or bullet prefix: "1. ", "2) ", "- ", "* ". Deliberately requires
+#: the delimiter AND trailing space, so a bare numeric id is never mistaken for
+#: numbering -- see parse_ranking.
+_LIST_PREFIX = re.compile(r"^(?:\d{1,3}[.)]\s+|[-*\u2022]\s+)")
+
 NDCG_AT = 10
 RECALL_AT = (10, 100)
 MRR_AT = 10
@@ -81,11 +89,15 @@ def scorer_sha256() -> str:
     a normaliser has the most room to move a score. The bug that cost this repo a sweep
     lived in the per-item rule, which no hash covered. This file is fingerprinted whole
     from the start.
+
+    AND `parse_ranking` IS IN IT, which it was not. An external review found the
+    retrieval parser covered by no hash anywhere -- the one piece of code that decides
+    whether a model's answer is a ranking at all. It is the scorer's first step, so it
+    belongs in the scorer's hash.
     """
-    body = "".join(inspect.getsource(f) for f in
-                   (normalize_id, dedupe, dcg, score_ranking))
-    return hashlib.sha256(
-        (body + repr((NDCG_AT, RECALL_AT, MRR_AT))).encode()).hexdigest()
+    return code_digest(normalize_id, dedupe, dcg, score_ranking, parse_ranking,
+                       consts={"NDCG_AT": NDCG_AT, "RECALL_AT": RECALL_AT,
+                               "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX})
 
 
 def dedupe(ranking: Sequence[str]) -> tuple[List[str], int]:
@@ -115,7 +127,7 @@ def score_ranking(ranking: Sequence[str], qrels: Dict[str, int],
                 never removed -- see the module docstring)
     `parsed`    False when the arm's output could not be read at all
     """
-    n_rel = len(qrels)
+    n_rel = sum(1 for g in qrels.values() if g > 0)
     zero = {
         "ndcg_10": 0.0, "recall_10": 0.0, "recall_100": 0.0, "mrr_10": 0.0,
         "rank_of_first": 0.0, "found_any": 0.0,
@@ -128,8 +140,16 @@ def score_ranking(ranking: Sequence[str], qrels: Dict[str, int],
     if not clean:
         return {**zero, "duplicate_ids": float(dupes)}
 
-    gains = [float(2 ** qrels[d] - 1) if d in qrels else 0.0 for d in clean]
-    ideal = sorted((float(2 ** g - 1) for g in qrels.values()), reverse=True)
+    # RELEVANT MEANS GRADE > 0, not "appears in the qrels".
+    #
+    # TREC-style judgments include grade-0 entries meaning "a human looked at this and
+    # it is NOT relevant" -- genuinely useful information, and the opposite of a hit.
+    # Membership-based tests counted them as relevant for recall and MRR (nDCG was
+    # already correct, since 2^0-1 = 0). SciFact happens to be all grade-1 so nothing
+    # published here moved, but the next corpus will not be. Found by review.
+    rel = {d: g for d, g in qrels.items() if g > 0}
+    gains = [float(2 ** rel[d] - 1) if d in rel else 0.0 for d in clean]
+    ideal = sorted((float(2 ** g - 1) for g in rel.values()), reverse=True)
 
     idcg = dcg(ideal[:NDCG_AT])
     ndcg = (dcg(gains[:NDCG_AT]) / idcg) if idcg else 0.0
@@ -145,14 +165,14 @@ def score_ranking(ranking: Sequence[str], qrels: Dict[str, int],
         "duplicate_ids": float(dupes),
     }
     for k in RECALL_AT:
-        hit = sum(1 for d in clean[:k] if d in qrels)
+        hit = sum(1 for d in clean[:k] if d in rel)
         out[f"recall_{k}"] = round(hit / n_rel, 10) if n_rel else 0.0
 
     # RECIPROCAL RANK of the first relevant document, 0 if none inside the cut-off.
     rr = 0.0
     first = 0
     for i, d in enumerate(clean, start=1):
-        if d in qrels:
+        if d in rel:
             first = i
             if i <= MRR_AT:
                 rr = 1.0 / i
@@ -207,10 +227,22 @@ def parse_ranking(text: str) -> Optional[List[str]]:
                 val = None
             if isinstance(val, list):
                 return [normalize_id(v) for v in val if normalize_id(v)]
-    # One id per line: what a model produces when told "just list them". Lines with
-    # anything but an id-shaped token are dropped, not guessed at.
-    lines = [ln.strip().lstrip("-*0123456789. )").strip() for ln in body.splitlines()]
-    ids = [ln for ln in lines if ln and " " not in ln and len(ln) <= 64]
+    # One id per line: what a model produces when told "just list them".
+    #
+    # THE BULLET STRIPPER MUST NOT EAT THE ID. This used to be
+    # `.lstrip("-*0123456789. )")`, a character class -- which on SciFact, whose
+    # document ids ARE numbers, deleted the id itself. "4983923" became "" and every
+    # non-JSON answer parsed as nothing, so the pipeline silently fell back to the
+    # first stage's ranking and the arm was scored as BM25. Found by review.
+    #
+    # A numbering prefix is now matched as a PREFIX -- digits followed by a delimiter
+    # and whitespace, or a bullet followed by whitespace -- so "1. 4983923" loses the
+    # "1. " and a bare "4983923" loses nothing.
+    ids = []
+    for raw in body.splitlines():
+        ln = _LIST_PREFIX.sub("", raw.strip(), count=1).strip()
+        if ln and " " not in ln and len(ln) <= 64:
+            ids.append(ln)
     return ids or None
 
 
@@ -233,4 +265,12 @@ METRIC_KINDS = {
     "truncated": "descriptive",
     "reasoning_tokens": "descriptive",
     "confidence": "descriptive",
+    # Emitted by the reranking provider, and DESCRIPTIVE on purpose. `llm_named_unknown`
+    # counts document ids the model invented; undeclared, it fell into the leaderboard's
+    # quality columns where higher reads as better -- so an arm that hallucinated more
+    # looked like it had improved. `llm_parsed` is the share of queries whose LLM reply
+    # was a usable ordering: a diagnostic for WHY a pipeline scored what it did, not a
+    # quality claim about the pipeline, whose quality is ndcg_10.
+    "llm_named_unknown": "descriptive",
+    "llm_parsed": "descriptive",
 }

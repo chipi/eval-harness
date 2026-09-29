@@ -1,0 +1,1 @@
+[{"text": "Homo", "type": "location"}, {"text": "Homo", "type": "location"}, {"text": "Swedish", "type": "location"}, {"text": "Swedish Catholic", "type": "location"}, {"text": "Katolska", "type": "location"}]

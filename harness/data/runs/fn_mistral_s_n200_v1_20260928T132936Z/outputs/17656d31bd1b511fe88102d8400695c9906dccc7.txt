@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Howard", "type": "person"},
+  {"text": "Middletown", "type": "location"},
+  {"text": "Ohio", "type": "location"},
+  {"text": "filming locations", "type": "other"}
+]
+```

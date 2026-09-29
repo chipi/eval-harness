@@ -1,0 +1,8 @@
+[
+  {"text": "Cleo Lemon", "type": "person"},
+  {"text": "September 6", "type": "event"},
+  {"text": "2011", "type": "other"},
+  {"text": "Jyles", "type": "person"},
+  {"text": "BC Lions", "type": "organization"},
+  {"text": "September 10", "type": "event"}
+]

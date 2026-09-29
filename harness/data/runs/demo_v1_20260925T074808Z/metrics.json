@@ -1,0 +1,71 @@
+{
+  "adapter": "scripts/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "eval-harness-scenario",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "demo_v1",
+  "created_at": "2026-09-25T07:48:08Z",
+  "dataset_id": "smoke_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "demo_v1",
+      "params": {
+        "provider": "echo",
+        "sentences": 3
+      }
+    },
+    "data": {
+      "dataset_id": "smoke_v1",
+      "items_sha256": "d56cca0b6c3cea45f104e938e41b7ebdffa753e99e219bf15e1028f23a98a8e9",
+      "n_items": 5,
+      "reference_id": "silver/smoke_v1",
+      "reference_tier": "silver"
+    },
+    "hash": "f291680ebd5d418673e24e47b79e802100361bfd173ed5449738dcfad8faa9a9",
+    "host": {
+      "cpu_count": 12,
+      "label": "m4pro-pretend",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.9.6",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "scripts/adapter.py",
+        "sha256": "e50ef05b19d8ba52aec7cee4b3b43ede3c0b9dc74ccfd3f299b958d029d60888"
+      },
+      "harness": {
+        "commit": "d2586ffd4297",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "0.125.0",
+        "openai": "2.48.0"
+      },
+      "model": {
+        "declared": false
+      }
+    },
+    "version": 1
+  },
+  "n_items": 5,
+  "params": {
+    "provider": "echo",
+    "sentences": 3
+  },
+  "reference_tier": "silver",
+  "run_id": "demo_v1_20260925T074808Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 0.0256,
+    "output_words": 34.8,
+    "overlap_f1": 0.415895,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": null
+}

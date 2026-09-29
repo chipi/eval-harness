@@ -1,0 +1,1 @@
+[{"text": "the United States", "type": "location"}]

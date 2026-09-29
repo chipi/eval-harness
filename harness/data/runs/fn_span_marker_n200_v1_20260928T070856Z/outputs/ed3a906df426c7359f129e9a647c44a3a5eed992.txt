@@ -1,0 +1,1 @@
+[{"text": "Gesta Adalberonis", "type": "art"}, {"text": "Otto", "type": "person"}, {"text": "Roman", "type": "location"}, {"text": "Guido the Pisan", "type": "person"}, {"text": "Roman", "type": "location"}]

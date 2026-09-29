@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories.
+
+The abstract is about "Mary Bell to Utaō! Let's Sing with Mary Bell!" which is described as "the soundtrack to Japanese anime Floral Magician Mary Bell released on July 17 1992."
+
+A soundtrack is a type of album. So this would be classified as Album.Album

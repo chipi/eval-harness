@@ -141,7 +141,8 @@ where it can be measured.
   arms have no `confidence` at all, because logprobs were never requested.
 - No `rank_stability` at k=27. No README for the example. `research/REPORT_SUMMARIZATION.md` and
   `NOTES.md` carry none of this.
-- Runs live on one machine and are gitignored. Nothing is backed up.
+- The 143 measurement runs are committed as of 2026-09-29; anything you add here is
+  untracked until you commit it, and is on one machine until then.
 
 ## Calibration
 

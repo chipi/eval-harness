@@ -1,0 +1,1 @@
+[{"text": "Super Bowl XXVIII", "type": "location"}, {"text": "Dallas Cowboys", "type": "location"}, {"text": "Buffalo Bills", "type": "location"}, {"text": "Georgia Dome", "type": "location"}]

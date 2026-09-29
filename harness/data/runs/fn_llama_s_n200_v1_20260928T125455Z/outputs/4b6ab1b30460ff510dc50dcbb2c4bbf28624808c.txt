@@ -1,0 +1,24 @@
+```
+[
+  {
+    "text": "Assumption College",
+    "type": "organization"
+  },
+  {
+    "text": "Essendon Grammar School",
+    "type": "organization"
+  },
+  {
+    "text": "Mentone Grammar School",
+    "type": "organization"
+  },
+  {
+    "text": "AGSV",
+    "type": "organization"
+  },
+  {
+    "text": "1958",
+    "type": "event"
+  }
+]
+```

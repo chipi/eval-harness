@@ -1,0 +1,1 @@
+[{"text": "Delac\u00f4te", "type": "person"}, {"text": "Cambridge", "type": "location"}, {"text": "Cambridge", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text": "Mursili II", "type": "location"}, {"text": "Mursilis II", "type": "location"}, {"text": "Hittite Empire", "type": "location"}, {"text": "New", "type": "location"}, {"text": "BC", "type": "location"}]

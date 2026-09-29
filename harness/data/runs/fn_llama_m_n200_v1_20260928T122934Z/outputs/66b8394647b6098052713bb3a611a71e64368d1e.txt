@@ -1,0 +1,33 @@
+[
+  {
+    "text": "Israel",
+    "type": "location"
+  },
+  {
+    "text": "Aram",type: "location"
+  },
+  {
+    "text": "Assyria",
+    "type": "location"
+  },
+  {
+    "text": "Ahaz",
+    "type": "person"
+  },
+  {
+    "text": "Isaiah",
+    "type": "person"
+  },
+  {
+    "text": "Rezin",
+    "type": "person"
+  },
+  {
+ text: "Syria",
+    "type": "location"
+  },
+  {
+    "text": "Judah",
+    "type": "location"
+  }
+]

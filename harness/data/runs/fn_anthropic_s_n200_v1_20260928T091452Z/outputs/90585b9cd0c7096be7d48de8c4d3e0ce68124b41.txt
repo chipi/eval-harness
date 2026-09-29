@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Olivares",
+    "type": "person"
+  },
+  {
+    "text": "University of Lima",
+    "type": "organization"
+  },
+  {
+    "text": "School of Law",
+    "type": "building"
+  },
+  {
+    "text": "Bachelor of Law",
+    "type": "other"
+  }
+]
+```

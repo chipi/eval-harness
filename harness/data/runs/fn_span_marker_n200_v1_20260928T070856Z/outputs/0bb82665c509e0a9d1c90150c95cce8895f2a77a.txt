@@ -1,0 +1,1 @@
+[{"text": "Bahraini dinar", "type": "other"}, {"text": "Gulf rupee", "type": "other"}, {"text": "rupees", "type": "other"}, {"text": "dinar", "type": "other"}]

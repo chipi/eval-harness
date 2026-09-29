@@ -116,7 +116,14 @@ Budget an evening, check after the first arm.
 
 ## Bringing them back
 
-Run directories are gitignored (`data/runs/*`), so copy them rather than committing:
+Since 2026-09-29 `metrics.json`, `predictions.jsonl` and `outputs/` are force-included
+for every run directory, so **a run you produce is untracked, not ignored** — `git add`
+it and commit. Verified: a fresh `data/runs/<id>/` shows as `?? data/runs/<id>/`, and
+`git check-ignore -v` names the un-ignore rule. `make ci` runs `validate_tree`, which is
+what caught an absolute username path the first time runs were committed, so let it run
+before pushing.
+
+Tarring still works if the machine has no push access:
 
 ```bash
 cd harness/data/runs

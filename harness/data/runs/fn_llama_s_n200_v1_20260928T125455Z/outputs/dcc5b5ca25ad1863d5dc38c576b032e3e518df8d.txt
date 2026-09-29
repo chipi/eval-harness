@@ -1,0 +1,8 @@
+```
+[
+  {
+    "text": "Palm Beach County",
+    "type": "location"
+  }
+]
+```

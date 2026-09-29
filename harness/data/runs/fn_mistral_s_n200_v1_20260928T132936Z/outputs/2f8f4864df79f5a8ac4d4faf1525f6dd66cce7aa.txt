@@ -1,0 +1,12 @@
+```json
+[
+  {"text": "The Black Mesa and Lake Powell Railroad", "type": "organization"},
+  {"text": "BM & amp ; LP", "type": "other"},
+  {"text": "Black Mesa Mine", "type": "location"},
+  {"text": "Kayenta", "type": "location"},
+  {"text": "Arizona", "type": "location"},
+  {"text": "Navajo Generating Station", "type": "building"},
+  {"text": "Page", "type": "location"},
+  {"text": "Arizona", "type": "location"}
+]
+```

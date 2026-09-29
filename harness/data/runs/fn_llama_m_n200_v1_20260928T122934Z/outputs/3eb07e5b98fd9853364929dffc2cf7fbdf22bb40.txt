@@ -1,0 +1,42 @@
+[
+  {
+    "text": "March",
+    "type": "other"
+  },
+  {
+    "text": "Mola",
+    "type": "person"
+  },
+  {
+    "text": "Navarrese",
+    "type": "other"
+  },
+  {
+    "text": "Biscay Campaign",
+    "type": "event"
+  },
+  {
+    "text": "Battle of Brunete",
+    "type": "event"
+  },
+  {
+    "text": "Battle of Santander",
+    "type": "event"
+  },
+  {
+    "text": "Aragon Offensive",
+    "type": "event"
+  },
+  {
+    "text": "Vinaròs",
+    "type": "location"
+  },
+  {
+    "text": "Castellón",
+    "type": "location"
+  },
+  {
+    "text": "April",
+    "type": "other"
+  }
+]

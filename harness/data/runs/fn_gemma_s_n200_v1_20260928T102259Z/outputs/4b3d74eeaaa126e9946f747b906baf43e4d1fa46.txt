@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "20 August", "type": "event"},
+  {"text": "Toulon", "type": "location"},
+  {"text": "UNIFIL", "type": "organization"},
+  {"text": "2nd", "type": "organization"},
+  {"text": "13th", "type": "organization"},
+  {"text": "Regiments of Engineering", "type": "organization"}
+]
+```

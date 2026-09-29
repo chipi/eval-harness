@@ -1,0 +1,28 @@
+```json
+[
+  {
+    "text": "George Clinton",
+    "type": "person"
+  },
+  {
+    "text": "Bootsy Collins",
+    "type": "person"
+  },
+  {
+    "text": "Bernie Worrell",
+    "type": "person"
+  },
+  {
+    "text": "P Funk",
+    "type": "product"
+  },
+  {
+    "text": "P Funk All Stars",
+    "type": "organization"
+  },
+  {
+    "text": "Mothership Reconnection Tour",
+    "type": "event"
+  }
+]
+```

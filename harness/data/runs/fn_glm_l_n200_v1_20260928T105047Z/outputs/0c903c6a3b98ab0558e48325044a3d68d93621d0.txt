@@ -1,0 +1,24 @@
+The task is to extract named entities from the sentence:
+
+"The musical was performed at the Tennessee Performing Arts Center in Nashville to some very positive reviews ."
+
+Entity types: art, building, event, location, organization, other, person, product.
+
+Let me identify named entities:
+1. "Tennessee Performing Arts Center" - this is a building (a venue/performing arts center). It could be considered a building or an organization. Typically in NER tasks like this (this looks like CoNLL-style or similar), a performing arts center would be a building/facility. The type "building" seems appropriate since it's a physical venue where the musical was performed.
+2. "Nashville" - this is a location (city).
+
+"The musical" - not a named entity (no specific name given).
+
+So the entities are:
+- "Tennessee Performing Arts Center" - building
+- "Nashville" - location
+
+Output as JSON array:
+[
+  {"text": "Tennessee Performing Arts Center", "type": "building"},
+  {"text": "Nashville", "type": "location"}
+][
+  {"text": "Tennessee Performing Arts Center", "type": "building"},
+  {"text": "Nashville", "type": "location"}
+]

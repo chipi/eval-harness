@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "September 2011",
+    "type": "event"
+  },
+  {
+    "text": "Berry Plastics",
+    "type": "organization"
+  },
+  {
+    "text": "Rexam SBC",
+    "type": "organization"
+  }
+]
+```

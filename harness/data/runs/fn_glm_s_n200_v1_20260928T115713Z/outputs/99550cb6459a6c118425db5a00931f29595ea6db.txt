@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Anyway",
+    "type": "product"
+  },
+  {
+    "text": "Ministry of Sound",
+    "type": "organization"
+  }
+]
+```

@@ -1,0 +1,139 @@
+{
+  "adapter": "examples/classification-ag-news/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "1e80be6531e2f71118762f498b4493e946f0c944",
+    "source": "git"
+  },
+  "config_id": "ag_openai_l_n200_v1",
+  "created_at": "2026-09-27T10:30:15Z",
+  "dataset_id": "ag_news_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "ag_openai_l_n200_v1",
+      "params": {
+        "family": "openai",
+        "max_tokens": 200,
+        "model": "eval-gpt-6sol",
+        "price_tier": "large",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 2.5,
+        "usd_per_mtok_out": 15.0
+      }
+    },
+    "data": {
+      "dataset_id": "ag_news_200",
+      "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
+      "n_items": 200,
+      "reference_id": "gold/ag_news_200",
+      "reference_tier": "gold"
+    },
+    "hash": "b8bc05d0e6b0774de7761bdbf0c61ca322f8ebc5966e36823dcfec808aae391d",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "668097eb04f061c04d590ec034aca96b3dc4420872f29451068c7d8b9c4dea17"
+      },
+      "harness": {
+        "commit": "1e80be6531e2",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-gpt-6sol",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/openai/gpt-6-sol",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "provider": "litellm",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "openai",
+    "max_tokens": 200,
+    "model": "eval-gpt-6sol",
+    "price_tier": "large",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 2.5,
+    "usd_per_mtok_out": 15.0
+  },
+  "primary_metric": "correct",
+  "providers_seen": {
+    "OpenAI": 200
+  },
+  "reference_tier": "gold",
+  "run_id": "ag_openai_l_n200_v1_20260927T102611Z",
+  "scores": {
+    "answer_words": 1.0,
+    "correct": 0.89,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.000318,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 1207.287355,
+    "parsed": 1.0,
+    "reasoning_tokens": 0.0,
+    "tokens_in": 94.755,
+    "tokens_out": 5.4,
+    "total_cost_usd": 0.0635775,
+    "total_tokens_in": 18951.0,
+    "total_tokens_out": 1080.0,
+    "truncated": 0.0
+  },
+  "warmup_ms": 1789.971
+}

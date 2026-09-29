@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Angry Birds Space", "type": "product"},
+  {"text": "Angry Birds Space books", "type": "product"},
+  {"text": "numbers", "type": "other"},
+  {"text": "alphabets", "type": "other"},
+  {"text": "stickers", "type": "other"}
+]
+```

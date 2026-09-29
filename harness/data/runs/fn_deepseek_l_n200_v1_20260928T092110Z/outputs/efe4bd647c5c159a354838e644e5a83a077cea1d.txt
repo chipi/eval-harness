@@ -1,0 +1,9 @@
+[
+  {"text": "Klaus Friedrich Roth", "type": "person"},
+  {"text": "29 October 1925", "type": "event"},
+  {"text": "10 November 2015", "type": "event"},
+  {"text": "German", "type": "location"},
+  {"text": "British", "type": "location"},
+  {"text": "Fields Medal", "type": "event"},
+  {"text": "Roth 's theorem", "type": "other"}
+]

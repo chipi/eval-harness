@@ -1,0 +1,12 @@
+```
+[
+  {
+    "text": "Sanitarium",
+    "type": "organization"
+  },
+  {
+    "text": "1933",
+    "type": "other"
+  }
+]
+```

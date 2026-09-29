@@ -111,7 +111,8 @@ def _per_item(runs: List[dict], run_dirs: Dict[int, Path], metric: str) -> Dict[
     return {k: statistics.fmean(v) for k, v in acc.items() if v}
 
 
-def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 20260925) -> None:
+def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 20260925,
+                  asc: bool = False) -> None:
     """Print the global test, the critical difference, and per-arm rank intervals."""
     arms = sorted(matrix)
     items = sorted(set.intersection(*(set(matrix[a]) for a in arms))) if arms else []
@@ -127,7 +128,11 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     # for everyone", and an unpaired comparison leaves all of it in the noise.
     ranks: Dict[str, List[float]] = {a: [] for a in arms}
     for j in range(N):
-        col = sorted(((V[a][j], a) for a in arms), reverse=True)
+        # `asc` means lower is better for this metric (cost, latency). Without it the
+        # within-item ranks were always "highest value = rank 1", so `--asc` produced a
+        # correctly sorted TABLE above a significance block that had the field exactly
+        # backwards -- the worst arm ranked first.
+        col = sorted(((V[a][j], a) for a in arms), reverse=not asc)
         i = 0
         while i < len(col):
             grp = [i]
@@ -174,15 +179,32 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
             hits += 1
     p = (hits + 1) / (B + 1)
 
-    cd = _NEMENYI_Q05.get(k, 3.658) * math.sqrt(k * (k + 1) / (6.0 * N))
+    # ABOVE THE TABLE, SAY SO. This used to default to the k=25 value for any larger
+    # k, which is too SMALL -- so the critical difference was too small and more pairs
+    # were called distinguishable than the test supports. Four of this repo's five
+    # experiments have 26-28 arms, so four of five published "pairs distinguishable"
+    # counts were mildly anti-conservative. Guessing a critical value is worse than
+    # declining to print one.
+    q = _NEMENYI_Q05.get(k)
+    cd = q * math.sqrt(k * (k + 1) / (6.0 * N)) if q else None
     span = max(avg_rank.values()) - min(avg_rank.values())
-    pairs = [(a, b) for a in arms for b in arms if avg_rank[b] - avg_rank[a] > cd]
+    pairs = ([(a, b) for a in arms for b in arms if avg_rank[b] - avg_rank[a] > cd]
+             if cd is not None else [])
 
     print(f"\n  IS THE ORDERING REAL?   metric={metric}  k={k} arms  N={N} items")
     print(f"    global test (permutation on within-item ranks): p = {p:.4f}"
           f"  ->  {'an arm effect exists' if p < 0.05 else 'NO detectable arm effect'}")
-    print(f"    Nemenyi critical difference = {cd:.2f} rank positions; observed span = {span:.2f}")
-    print(f"    pairs distinguishable: {len(pairs)} of {k * (k - 1) // 2}")
+    if cd is None:
+        print(f"    Nemenyi critical difference: NOT AVAILABLE for k={k} arms — the\n"
+              f"    tabulated studentised range in this file stops at k={max(_NEMENYI_Q05)}.\n"
+              f"    No pairwise verdict is printed rather than reusing a smaller k's value,\n"
+              f"    which would understate the critical difference and overstate how many\n"
+              f"    pairs differ. Narrow the field with --match, or extend the table from a\n"
+              f"    source you trust.   observed rank span = {span:.2f}")
+    else:
+        print(f"    Nemenyi critical difference = {cd:.2f} rank positions;"
+              f" observed span = {span:.2f}")
+        print(f"    pairs distinguishable: {len(pairs)} of {k * (k - 1) // 2}")
     if p >= 0.05:
         print("    The table above is sorted, but these runs do not show the arms differ.\n"
               "    Do not report an ordering from it.")
@@ -208,8 +230,23 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     for _ in range(R):
         idx = [rng.randrange(N) for _ in range(N)]
         mu = {a: statistics.fmean(V[a][j] for j in idx) for a in arms}
-        for pos, a in enumerate(sorted(arms, key=lambda x: -mu[x]), 1):
-            tally[a].append(pos)
+        # MIDRANKS. `sorted` is stable and `arms` is alphabetical, so tied arms used to
+        # take positions in NAME order -- on a saturated metric where many arms tie,
+        # P(1st) was largely reporting which arm sorts first alphabetically. The same
+        # bug was fixed in rank_stability.py and not looked for here.
+        # ...and honour `asc` here too. The within-item ranks above were fixed for
+        # `--asc` while this bootstrap still sorted descending, so the table said an
+        # arm was rank 1 and P(1st) said 0.00 for the same arm in the same output.
+        order = sorted(arms, key=lambda x: mu[x] if asc else -mu[x])
+        i = 0
+        while i < len(order):
+            j2 = i
+            while j2 + 1 < len(order) and mu[order[j2 + 1]] == mu[order[i]]:
+                j2 += 1
+            shared = (i + j2) / 2 + 1
+            for x in range(i, j2 + 1):
+                tally[order[x]].append(shared)
+            i = j2 + 1
     width = max(len(a) for a in arms) + 2
     print(f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8} "
           f"{f'P(top {top_n})':>10} {f'P(bot {top_n})':>10}")
@@ -222,10 +259,15 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     print(f"    Probabilities over resampled items: how often this arm lands 1st, in the\n"
           f"    top {top_n}, in the bottom {top_n}. NOT a pairwise claim -- the\n"
           f"    critical-difference line above is the only pairwise verdict here.")
+    print("    P(1st) means UNIQUELY first: tied arms share a midrank, so a draw counts\n"
+          "    for nobody and the column can sum to less than 1. Ties used to be broken\n"
+          "    by arm NAME, which on a saturated metric made this a measure of the\n"
+          "    alphabet.")
 
 
 
-def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str]) -> None:
+def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str],
+              asc: bool = False) -> None:
     """Which arms are on the menu at all, across quality, cost and speed together.
 
     An arm is DOMINATED when some other arm is at least as good on quality AND costs no
@@ -251,12 +293,14 @@ def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str]) -> None:
     def dominated(a: str) -> bool:
         qa, ca, la = pts[a]
         return any(
-            qb >= qa and cb <= ca and lb <= la and (qb, -cb, -lb) != (qa, -ca, -la)
+            (qb <= qa if asc else qb >= qa) and cb <= ca and lb <= la
+            and (qb, -cb, -lb) != (qa, -ca, -la)
             for b, (qb, cb, lb) in pts.items()
             if b != a
         )
 
-    front = sorted((a for a in pts if not dominated(a)), key=lambda a: -pts[a][0])
+    front = sorted((a for a in pts if not dominated(a)),
+                   key=lambda a: pts[a][0] if asc else -pts[a][0])
     beaten = sorted(a for a in pts if dominated(a))
     w = max(len(a) for a in pts) + 2
     print(f"\n  FRONTIER on {quality} / {cost} / {speed} — {len(front)} of {len(pts)} arms")
@@ -402,8 +446,8 @@ def main() -> int:
     }
     matrix = {c: v for c, v in matrix.items() if v}
     if matrix:
-        _significance(matrix, sort_key)
-    _frontier(rows, sort_key, kinds)
+        _significance(matrix, sort_key, asc=args.asc)
+    _frontier(rows, sort_key, kinds, asc=args.asc)
     if any("silver" in r["tiers"] for r in rows):
         print(
             "\n  Scored against SILVER references (model-generated). Good for ranking\n"

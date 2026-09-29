@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "1921",
+    "type": "other"
+  },
+  {
+    "text": "South Liverpool",
+    "type": "organization"
+  }
+]
+```

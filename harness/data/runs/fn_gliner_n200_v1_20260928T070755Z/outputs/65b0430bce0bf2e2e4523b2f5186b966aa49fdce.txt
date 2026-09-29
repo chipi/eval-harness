@@ -1,0 +1,1 @@
+[{"text": "The West gate", "type": "location"}, {"text": "ALC", "type": "organization"}, {"text": "dock", "type": "location"}, {"text": "1982", "type": "event"}]

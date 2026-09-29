@@ -1,0 +1,5 @@
+```json
+[
+  {"text": "Wii Shop Channel", "type": "product"}
+]
+```

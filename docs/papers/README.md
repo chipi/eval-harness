@@ -1,12 +1,17 @@
-# Papers — what may be mirrored here, what may not, and why nothing is
+# Papers — what may be mirrored here, what may not, and which twelve are
 
 Every work cited in [`../REFERENCE.md`](../REFERENCE.md) and the per-experiment
 `METHOD.md` files, with the redistribution licence **read from the publisher's own page**
 on 2026-09-29 rather than assumed.
 
 [`fetch_papers.py`](fetch_papers.py) downloads the redistributable ones into this
-directory for offline reading. **Its output is gitignored.** See
-[Why nothing is committed](#why-nothing-is-committed).
+directory for offline reading. **Twelve of the twenty-four are committed here**; the
+other twelve are gitignored by name so `--all` cannot commit them by accident. See
+[What is committed here](#what-is-committed-here).
+
+(This paragraph and the heading above used to say nothing was mirrored, which was true
+only before the mirroring was done. The body of this file was right and the header was
+stale — corrected 2026-09-29.)
 
 ```bash
 python docs/papers/fetch_papers.py          # the 12 that permit redistribution

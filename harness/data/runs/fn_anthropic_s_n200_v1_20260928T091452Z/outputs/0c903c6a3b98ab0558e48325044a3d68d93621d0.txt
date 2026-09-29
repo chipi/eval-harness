@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Tennessee Performing Arts Center",
+    "type": "building"
+  },
+  {
+    "text": "Nashville",
+    "type": "location"
+  }
+]
+```

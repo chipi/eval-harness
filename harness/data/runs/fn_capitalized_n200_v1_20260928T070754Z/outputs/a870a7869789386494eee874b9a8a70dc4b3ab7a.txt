@@ -1,0 +1,1 @@
+[{"text": "Territory", "type": "location"}, {"text": "Hawai", "type": "location"}, {"text": "Delegate", "type": "location"}, {"text": "Congress", "type": "location"}]

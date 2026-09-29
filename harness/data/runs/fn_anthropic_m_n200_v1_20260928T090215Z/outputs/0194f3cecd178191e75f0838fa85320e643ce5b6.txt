@@ -1,0 +1,5 @@
+```json
+[
+  {"text": "Microsoft", "type": "organization"}
+]
+```

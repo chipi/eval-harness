@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "air-to air combat", "type": "other"},
+  {"text": "these aircraft", "type": "product"},
+  {"text": "heavy bombers", "type": "product"}
+]
+```

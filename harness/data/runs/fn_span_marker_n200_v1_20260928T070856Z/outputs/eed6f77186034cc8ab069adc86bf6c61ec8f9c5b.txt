@@ -1,0 +1,1 @@
+[{"text": "Plewa", "type": "person"}, {"text": "New York", "type": "organization"}, {"text": "Swope Park Rangers", "type": "organization"}, {"text": "USL Cup Final", "type": "event"}]

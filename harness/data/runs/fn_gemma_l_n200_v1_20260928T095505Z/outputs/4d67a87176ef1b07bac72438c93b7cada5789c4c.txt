@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "February 4 , 2011",
+    "type": "other"
+  },
+  {
+    "text": "Washington Post",
+    "type": "organization"
+  },
+  {
+    "text": "Obama",
+    "type": "person"
+  },
+  {
+    "text": "Decathlon",
+    "type": "art"
+  },
+  {
+    "text": "Mall",
+    "type": "location"
+  }
+]
+```

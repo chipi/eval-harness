@@ -1,0 +1,1 @@
+[{"text": "Maxine Leeds Craig", "type": "person"}, {"text": "University of California", "type": "organization"}, {"text": "Davis", "type": "location"}, {"text": "USA", "type": "location"}]

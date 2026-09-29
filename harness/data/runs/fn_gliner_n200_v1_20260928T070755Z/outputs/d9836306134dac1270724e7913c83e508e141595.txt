@@ -1,0 +1,1 @@
+[{"text": "November 10 , 2020", "type": "event"}, {"text": "Apple", "type": "organization"}, {"text": "Mac Mini", "type": "product"}, {"text": "Apple-designed", "type": "organization"}, {"text": "MacBook Air", "type": "product"}, {"text": "13-inch MacBook Pro", "type": "product"}, {"text": "Apple", "type": "organization"}, {"text": "Apple", "type": "organization"}]

@@ -1,0 +1,7 @@
+[
+  {"text": "February", "type": "other"},
+  {"text": "2012", "type": "other"},
+  {"text": "North Korea", "type": "location"},
+  {"text": "Yongbyon Nuclear Scientific Research Center", "type": "building"},
+  {"text": "United States", "type": "location"}
+]

@@ -1,0 +1,1 @@
+The abstract describes HMS Kempthorne (K483), a Captain-class frigate of the Royal Navy. A frigate is a ship, which is a means of transportation. The category "MeanOfTransportation" fits ships in the DBpedia classification scheme.MeanOfTransportation

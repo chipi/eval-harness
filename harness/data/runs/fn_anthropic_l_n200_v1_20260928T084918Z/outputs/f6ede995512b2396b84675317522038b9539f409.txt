@@ -1,0 +1,1 @@
+[{"text": "Kazin", "type": "person"}, {"text": "Sarah", "type": "person"}, {"text": "Bowie", "type": "person"}, {"text": "Zeon", "type": "person"}, {"text": "Parn", "type": "person"}, {"text": "Salah", "type": "person"}, {"text": "Puck", "type": "person"}, {"text": "Zhaion", "type": "person"}, {"text": "Parmecia", "type": "location"}, {"text": "Palacia", "type": "location"}]

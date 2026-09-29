@@ -1,0 +1,4 @@
+[
+  {"text": "Jonathan Davis", "type": "person"},
+  {"text": "Fred Durst", "type": "person"}
+]

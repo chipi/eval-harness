@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Knights of the New Revelation",
+    "type": "organization"
+  },
+  {
+    "text": "religious order",
+    "type": "organization"
+  },
+  {
+    "text": "his lost love",
+    "type": "person"
+  },
+  {
+    "text": "her daughter",
+    "type": "person"
+  }
+]
+```

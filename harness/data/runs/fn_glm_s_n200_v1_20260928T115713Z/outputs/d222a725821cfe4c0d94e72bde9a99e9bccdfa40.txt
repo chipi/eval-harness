@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Saddle River Tours / Ameribus",
+    "type": "organization"
+  },
+  {
+    "text": "George Washington Bridge Bus Station",
+    "type": "building"
+  },
+  {
+    "text": "route 11C",
+    "type": "other"
+  }
+]
+```

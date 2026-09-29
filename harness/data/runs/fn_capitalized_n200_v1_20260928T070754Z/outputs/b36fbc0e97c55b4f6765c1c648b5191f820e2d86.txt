@@ -1,0 +1,1 @@
+[{"text": "Despite", "type": "location"}, {"text": "Ichimaru", "type": "location"}]

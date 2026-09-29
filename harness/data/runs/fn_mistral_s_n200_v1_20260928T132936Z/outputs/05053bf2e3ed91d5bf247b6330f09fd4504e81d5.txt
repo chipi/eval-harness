@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "GDR",
+    "type": "organization"
+  },
+  {
+    "text": "West Germany",
+    "type": "location"
+  },
+  {
+    "text": "West",
+    "type": "location"
+  },
+  {
+    "text": "GDR budget",
+    "type": "other"
+  },
+  {
+    "text": "social security system",
+    "type": "other"
+  }
+]
+```

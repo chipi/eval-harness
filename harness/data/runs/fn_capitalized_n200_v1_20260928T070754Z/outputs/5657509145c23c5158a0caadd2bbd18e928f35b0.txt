@@ -1,0 +1,1 @@
+[{"text": "Although", "type": "location"}, {"text": "Progressive-era", "type": "location"}, {"text": "Seventeenth Amendment", "type": "location"}, {"text": "United States Constitution", "type": "location"}]

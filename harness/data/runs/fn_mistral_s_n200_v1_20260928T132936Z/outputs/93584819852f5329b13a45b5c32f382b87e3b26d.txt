@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Milard", "type": "person"},
+  {"text": "Burmese", "type": "location"},
+  {"text": "Hsinbyushin", "type": "person"},
+  {"text": "succession dispute", "type": "event"}
+]
+```

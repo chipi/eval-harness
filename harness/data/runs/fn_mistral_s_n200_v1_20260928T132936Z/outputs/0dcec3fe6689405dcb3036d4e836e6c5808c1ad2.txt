@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Federal Correctional Institution", "type": "building"},
+  {"text": "Lompoc", "type": "location"},
+  {"text": "FCI Lompoc", "type": "building"},
+  {"text": "United States", "type": "location"},
+  {"text": "California", "type": "location"}
+]
+```

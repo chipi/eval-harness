@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Claymore",
+    "type": "other"
+  },
+  {
+    "text": "French Navy",
+    "type": "organization"
+  }
+]

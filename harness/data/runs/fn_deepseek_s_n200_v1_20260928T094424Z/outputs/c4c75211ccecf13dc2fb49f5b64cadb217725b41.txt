@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Chlorine dioxide",
+    "type": "product"
+  },
+  {
+    "text": "chlorophenols",
+    "type": "other"
+  }
+]

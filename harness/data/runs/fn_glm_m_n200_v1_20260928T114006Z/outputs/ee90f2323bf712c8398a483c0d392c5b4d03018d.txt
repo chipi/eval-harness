@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "June 2003",
+    "type": "other"
+  },
+  {
+    "text": "Rockpalast",
+    "type": "event"
+  },
+  {
+    "text": "Rock am Ring",
+    "type": "event"
+  }
+]
+```

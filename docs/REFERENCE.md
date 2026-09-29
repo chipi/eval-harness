@@ -149,7 +149,7 @@ between examples is the **task** and not the configuration. Reached through a
 | `llama_l` | `eval-llama-maverick` | [meta-llama/llama-4-maverick](https://openrouter.ai/meta-llama/llama-4-maverick) | **open** · Llama, gated |
 | `llama_m` | `eval-llama-70b` | [meta-llama/llama-3.3-70b-instruct](https://openrouter.ai/meta-llama/llama-3.3-70b-instruct) | **open** · Llama 3.3, gated |
 | `llama_s` | `eval-llama-scout` | [meta-llama/llama-4-scout](https://openrouter.ai/meta-llama/llama-4-scout) | **open** · Llama, gated |
-| `mistral_l` | `eval-mistral-large` | [mistralai/mistral-large-2512](https://openrouter.ai/mistralai/mistral-large-2512) | proprietary |
+| `mistral_l` | `eval-mistral-large` | [mistralai/mistral-large-2512](https://openrouter.ai/mistralai/mistral-large-2512) | **open** · Apache-2.0 |
 | `mistral_m` | `eval-mistral-medium` | [mistralai/mistral-medium-3.1](https://openrouter.ai/mistralai/mistral-medium-3.1) | proprietary |
 | `mistral_s` | `eval-mistral-small` | [mistralai/mistral-small-3.2-24b-instruct](https://openrouter.ai/mistralai/mistral-small-3.2-24b-instruct) | **open** · Apache-2.0 |
 | `qwen_l` | `eval-qwen-3max` | [qwen/qwen3-max](https://openrouter.ai/qwen/qwen3-max) | proprietary |
@@ -159,11 +159,12 @@ between examples is the **task** and not the configuration. Reached through a
 | `glm_m` | `eval-glm-46` | [z-ai/glm-4.6](https://openrouter.ai/z-ai/glm-4.6) | **open** · MIT |
 | `glm_s` | `eval-glm-45-air` | [z-ai/glm-4.5-air](https://openrouter.ai/z-ai/glm-4.5-air) | **open** · MIT |
 
-> **13 of these 24 have downloadable weights and could be self-hosted.** Verified on
-> 2026-09-29 against the HuggingFace API and OpenRouter's per-model endpoint list: a model
-> served by many independent providers necessarily has distributable weights, one served
-> only by its vendor does not. Nine are unrestricted (MIT / Apache-2.0); four are gated
-> behind licence acceptance and carry use conditions. What that is worth is measured in
+> **14 of these 24 have downloadable weights and could be self-hosted.** Verified on
+> 2026-09-29 against the HuggingFace API. Ten are unrestricted (MIT / Apache-2.0); four
+> are gated behind licence acceptance and carry use conditions. An earlier version said
+> 13 and inferred openness from OpenRouter's endpoint count — *one provider implies
+> closed* — which is **not a valid test**: `mistral_l` is served only by Mistral and its
+> weights are on HuggingFace under Apache-2.0. What that is worth is measured in
 > [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **no proprietary model
 > separated from the best open-weight model in any of the five experiments.**
 

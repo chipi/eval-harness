@@ -119,7 +119,18 @@ def main() -> int:
     spec = arms_side[arms[0]]["adapter"]
     if not spec:
         die("runs record no adapter — cannot score")
-    _call, score, _aid, adapter_path, _w, _fp = load_adapter(str(ROOT.parent / spec), None)
+    # Adapter ids are relative to the HARNESS root for the bundled adapter
+    # ("scripts/adapter.py") and to the EXAMPLES root for an example's
+    # ("ner-few-nerd/adapter.py"). Assuming one broke the other: this script joined
+    # ROOT.parent unconditionally and so could never find the bundled adapter. The same
+    # bug, and the same two-base fix, are documented in rescore.py.
+    for base in (ROOT, ROOT.parent):
+        cand = Path(spec) if Path(spec).is_absolute() else base / spec
+        if cand.is_file():
+            break
+    else:
+        die(f"adapter not found: {spec!r} is under neither {ROOT} nor {ROOT.parent}")
+    _call, score, _aid, adapter_path, _w, _fp = load_adapter(str(cand), None)
     wants_source = _score_wants_source(score)
     metric = args.metric
     if not metric:

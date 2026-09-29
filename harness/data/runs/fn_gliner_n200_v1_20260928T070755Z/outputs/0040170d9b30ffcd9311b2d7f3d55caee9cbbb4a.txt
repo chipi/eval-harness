@@ -1,0 +1,1 @@
+[{"text": "ceasefire", "type": "event"}, {"text": "General Mohamed Farrah Aidid", "type": "person"}, {"text": "President", "type": "person"}, {"text": "Ali Mahdi Muhammad", "type": "person"}, {"text": "warlords", "type": "organization"}]

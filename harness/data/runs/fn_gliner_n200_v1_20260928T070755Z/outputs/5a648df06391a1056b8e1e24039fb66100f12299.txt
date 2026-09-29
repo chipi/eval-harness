@@ -1,0 +1,1 @@
+[{"text": "were disassembled", "type": "event"}, {"text": "their engines", "type": "product"}, {"text": "sold", "type": "event"}]

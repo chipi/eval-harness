@@ -1,0 +1,6 @@
+[
+  {"text": "David Wenham", "type": "person"},
+  {"text": "Bryan Brown", "type": "person"},
+  {"text": "Claudia Karvan", "type": "person"},
+  {"text": "Remy Hii", "type": "person"}
+]

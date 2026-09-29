@@ -1,0 +1,4 @@
+[
+  {"text": "French", "type": "person"},
+  {"text": "France", "type": "location"}
+]

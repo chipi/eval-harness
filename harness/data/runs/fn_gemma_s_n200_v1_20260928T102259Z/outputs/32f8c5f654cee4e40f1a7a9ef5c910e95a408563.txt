@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Skardu",
+    "type": "location"
+  },
+  {
+    "text": "Skardu Valley",
+    "type": "location"
+  },
+  {
+    "text": "Indus",
+    "type": "location"
+  },
+  {
+    "text": "Shigar",
+    "type": "location"
+  },
+  {
+    "text": "Rivers",
+    "type": "location"
+  }
+]
+```

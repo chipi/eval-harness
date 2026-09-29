@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Sport Club Kiryat Yam",
+    "type": "organization"
+  },
+  {
+    "text": "Israel Football Association",
+    "type": "organization"
+  },
+  {
+    "text": "Liga Gimel",
+    "type": "event"
+  },
+  {
+    "text": "Sport Football Club Hapoel Kiryat Yam",
+    "type": "organization"
+  }
+]
+```

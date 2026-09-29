@@ -1,0 +1,1 @@
+[{"text":"June 2003","type":"other"},{"text":"Rockpalast","type":"other"},{"text":"Rock am Ring","type":"event"}]

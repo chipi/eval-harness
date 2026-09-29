@@ -1,0 +1,12 @@
+The task is to extract named entities from the sentence, using types: art, building, event, location, organization, other, person, product.
+
+Sentence: "The Black Mesa and Lake Powell Railroad ( BM & amp ; LP ) was a new railroad built to transport coal from the Black Mesa Mine near Kayenta , Arizona to the Navajo Generating Station power plant at Page , Arizona ."
+
+Let me identify entities:
+
+1. "Black Mesa and Lake Powell Railroad" - this is an organization (a railroad company). Type: organization.
+2. "BM & amp ; LP" - this is the abbreviation of the railroad name. Hmm, the text appears as "BM & amp ; LP" which is HTML-escaped "BM & LP". Should I include it? It's a mention of the same organization. The instruction says extract every named entity. Typically in NER tasks like this (this looks like CoNLL-style with types art, building, event, location, organization, other, person, product — this is the CoNLL 2003-ish or actually the "OntoNotes"? No — these eight types: art, building, event, location, organization, other, person, product — this is from the CoNLL-2003 English? No, CoNLL-2003 uses LOC, MISC, ORG, PER. The eight types art, building, event, location, organization, other, person, product are from the "WikiANN"? No... Actually these are the entity types from the CoNLL 2002? No. These eight types are from the "CoNLL-2003 shared task"? No. They're from the "GermEval"? No. Actually, these eight types (art, building, event, location, organization, other, person, product) are the NER types used in the "CoNLL-2003"? Hmm, no. They are the types used in the "OntoNotes 5.0" coarse types? OntoNotes has PERSON, ORG, GPE, LOC, FAC, PRODUCT, EVENT, WORK_OF_ART, LAW, NORP, PERCENT, etc. Not quite.
+
+Actually, these eight types are from the "CoNLL-2003 NER" extended? Let me think: art, building, event, location, organization, other, person, product — these are the entity types in the "WikiFied" dataset? These are the types from the "DBpedia ontology"? Hmm. Actually, these are the NER types used in the "CoNLL 2003" no...
+
+These eight types are used in the "Universal Dependencies"? No. They're used in the "CoNLL-2003"... Let me just recall: The dataset "CoNLL-2003" has 4 types. The dataset with 8 types art, building, event, location, organization, other, person

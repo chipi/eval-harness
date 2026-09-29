@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "April 13", "type": "event"},
+  {"text": "2012", "type": "other"},
+  {"text": "Cartoon Planet", "type": "product"},
+  {"text": "2013", "type": "other"}
+]
+```

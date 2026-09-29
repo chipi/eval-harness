@@ -1,0 +1,10 @@
+[
+  {
+    "text": "September",
+    "type": "other"
+  },
+  {
+    "text": "Winnemem Wintu",
+    "type": "organization"
+  }
+]

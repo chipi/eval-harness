@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "Olympic", "type": "event"},
+  {"text": "1996", "type": "other"},
+  {"text": "Hungary", "type": "location"},
+  {"text": "semifinals", "type": "event"},
+  {"text": "Manuel Estiarte", "type": "person"},
+  {"text": "Spanish", "type": "location"},
+  {"text": "squad", "type": "other"}
+]
+```

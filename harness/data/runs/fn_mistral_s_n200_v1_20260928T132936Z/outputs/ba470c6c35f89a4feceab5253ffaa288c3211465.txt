@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "group", "type": "other"},
+  {"text": "16,000", "type": "other"},
+  {"text": "rebels", "type": "other"},
+  {"text": "Norwich", "type": "location"},
+  {"text": "29 July 1549", "type": "event"},
+  {"text": "city", "type": "other"}
+]
+```

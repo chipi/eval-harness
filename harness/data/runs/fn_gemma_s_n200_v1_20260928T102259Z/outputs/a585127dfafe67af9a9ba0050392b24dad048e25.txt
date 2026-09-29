@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Amazing Stories",
+    "type": "organization"
+  },
+  {
+    "text": "March 1963",
+    "type": "event"
+  },
+  {
+    "text": "Michael Joseph",
+    "type": "person"
+  },
+  {
+    "text": "1968",
+    "type": "other"
+  }
+]
+```

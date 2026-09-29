@@ -210,10 +210,16 @@ run-compare:
 	$(PYTHON) scripts/compare_runs.py --baseline $(BASE) --candidate $(CAND) \
 	  $(if $(NOISE),--noise $(NOISE),) $(ARGS)
 
+# REASON reaches the script through the ENVIRONMENT, not the command line. Interpolated
+# into the recipe it was re-parsed by the shell, so backticks in a reason EXECUTED and an
+# embedded double quote silently mangled the text -- and a baseline's reason is a
+# permanent record of why a number was promoted. A target-specific `export` hands the
+# value over verbatim, with no shell in between.
+run-promote: export EVAL_PROMOTE_REASON = $(REASON)
 run-promote:
 	@test -n "$(RUN)" || { echo "RUN=<run_id> is required (see: make runs-list)"; exit 1; }
-	@test -n "$(REASON)" || { echo 'REASON="why this run earned it" is required'; exit 1; }
-	$(PYTHON) scripts/promote_baseline.py --run $(RUN) --reason "$(REASON)" $(ARGS)
+	@test -n "$$EVAL_PROMOTE_REASON" || { echo 'REASON="why this run earned it" is required'; exit 1; }
+	$(PYTHON) scripts/promote_baseline.py --run $(RUN) --reason-from-env $(ARGS)
 
 # ── gates ───────────────────────────────────────────────────────────────────
 validate:

@@ -1,0 +1,1 @@
+[{"text": "The Plain Dealer", "type": "organization"}, {"text": "Democratic", "type": "organization"}, {"text": "Brown", "type": "person"}, {"text": "Republicans", "type": "organization"}]

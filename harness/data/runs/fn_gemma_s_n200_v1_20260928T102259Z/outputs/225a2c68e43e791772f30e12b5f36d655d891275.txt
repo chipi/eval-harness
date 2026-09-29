@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Islam",
+    "type": "other"
+  }
+]
+```

@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "Mummadi Krishnaraja Wodeyar", "type": "person"},
+  {"text": "Mysore", "type": "location"}
+]
+```

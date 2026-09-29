@@ -1,0 +1,1 @@
+[{"text": "During", "type": "location"}, {"text": "Meyer", "type": "location"}, {"text": "January", "type": "location"}, {"text": "Shilling", "type": "location"}, {"text": "Palatine", "type": "location"}, {"text": "Illinois", "type": "location"}, {"text": "Brown", "type": "location"}, {"text": "Chicken", "type": "location"}]

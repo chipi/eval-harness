@@ -1,0 +1,1 @@
+[{"text": "Olympic", "type": "event"}, {"text": "Hungary", "type": "organization"}, {"text": "Manuel Estiarte", "type": "person"}, {"text": "Spanish", "type": "organization"}]

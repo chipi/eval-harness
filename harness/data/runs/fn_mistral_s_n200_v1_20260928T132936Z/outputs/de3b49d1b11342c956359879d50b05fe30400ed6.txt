@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Silver compounds",
+    "type": "product"
+  },
+  {
+    "text": "Silver ions",
+    "type": "product"
+  },
+  {
+    "text": "water treatment",
+    "type": "other"
+  }
+]
+```

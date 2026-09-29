@@ -1,0 +1,4 @@
+[
+  {"text": "Silver", "type": "product"},
+  {"text": "Silver", "type": "product"}
+]

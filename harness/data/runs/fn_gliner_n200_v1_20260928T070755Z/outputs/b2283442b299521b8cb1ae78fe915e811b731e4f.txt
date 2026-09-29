@@ -1,0 +1,1 @@
+[{"text": "McLean", "type": "person"}, {"text": "Jimmy Stewart", "type": "person"}, {"text": "Mr. Krueger", "type": "person"}]

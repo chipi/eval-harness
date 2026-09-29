@@ -1,0 +1,42 @@
+[
+  {
+    "text": "Real Live Roadrunning",
+    "type": "product"
+  },
+  {
+    "text": "British",
+    "type": "other"
+  },
+  {
+    "text": "Mark Knopfler",
+    "type": "person"
+  },
+  {
+    "text": "American",
+    "type": "other"
+  },
+  {
+    "text": "Emmylou Harris",
+    "type": "person"
+  },
+  {
+    "text": "14 November 2006",
+    "type": "other"
+  },
+  {
+    "text": "Mercury Records",
+    "type": "organization"
+  },
+  {
+    "text": "Universal Music",
+    "type": "organization"
+  },
+  {
+    "text": "Warner Bros. Records",
+    "type": "organization"
+  },
+  {
+    "text": "United States",
+    "type": "location"
+  }
+]

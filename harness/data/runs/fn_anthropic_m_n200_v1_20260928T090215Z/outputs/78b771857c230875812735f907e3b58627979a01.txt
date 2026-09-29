@@ -1,0 +1,1 @@
+[{"text": "1996", "type": "other"}, {"text": "Hungary", "type": "organization"}, {"text": "Manuel Estiarte", "type": "person"}, {"text": "Spanish", "type": "organization"}]

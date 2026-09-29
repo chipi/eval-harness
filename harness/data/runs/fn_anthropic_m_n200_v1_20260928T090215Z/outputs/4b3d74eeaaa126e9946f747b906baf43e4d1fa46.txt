@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Toulon", "type": "location"},
+  {"text": "2nd and 13th Regiments of Engineering", "type": "organization"},
+  {"text": "UNIFIL", "type": "organization"}
+]
+```

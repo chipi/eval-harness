@@ -1,0 +1,1 @@
+[{"text": "Sonic R", "type": "location"}, {"text": "Mario Kart", "type": "location"}]

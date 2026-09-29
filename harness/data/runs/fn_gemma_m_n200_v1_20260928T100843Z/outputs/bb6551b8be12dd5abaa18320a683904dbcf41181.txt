@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Columbus",
+    "type": "person"
+  },
+  {
+    "text": "Betsy",
+    "type": "person"
+  },
+  {
+    "text": "Dash",
+    "type": "person"
+  },
+  {
+    "text": "Nazis",
+    "type": "organization"
+  },
+  {
+    "text": "Monkey King",
+    "type": "person"
+  }
+]
+```

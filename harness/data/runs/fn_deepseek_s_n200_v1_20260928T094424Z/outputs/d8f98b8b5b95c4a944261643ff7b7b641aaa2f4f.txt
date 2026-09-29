@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "1993", "type": "other"},
+  {"text": "2000", "type": "other"}
+]
+```

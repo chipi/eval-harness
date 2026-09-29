@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Olympic",
+    "type": "event"
+  },
+  {
+    "text": "Hungary",
+    "type": "location"
+  },
+  {
+    "text": "Manuel Estiarte",
+    "type": "person"
+  },
+  {
+    "text": "Spanish",
+    "type": "location"
+  }
+]

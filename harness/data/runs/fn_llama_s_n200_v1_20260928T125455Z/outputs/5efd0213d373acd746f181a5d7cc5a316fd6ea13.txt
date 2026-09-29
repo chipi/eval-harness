@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "U.S.",
+    "type": "location"
+  },
+  {
+    "text": "Ordinary `` by Train",
+    "type": "product"
+  }
+]
+```

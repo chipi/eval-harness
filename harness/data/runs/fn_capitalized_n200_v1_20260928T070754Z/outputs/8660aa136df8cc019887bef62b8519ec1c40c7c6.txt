@@ -1,0 +1,1 @@
+[{"text": "Sky Travel", "type": "location"}, {"text": "Sky Real Lives", "type": "location"}, {"text": "Sky Travel", "type": "location"}, {"text": "Sky Real Lives", "type": "location"}, {"text": "Sky Travel Extra", "type": "location"}, {"text": "Sky Real Lives", "type": "location"}, {"text": "Sky Travel Shop", "type": "location"}, {"text": "Sky Travel", "type": "location"}]

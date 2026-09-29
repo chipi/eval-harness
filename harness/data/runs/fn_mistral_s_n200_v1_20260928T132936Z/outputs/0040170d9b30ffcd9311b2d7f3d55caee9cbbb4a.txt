@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "General Mohamed Farrah Aidid", "type": "person"},
+  {"text": "President Ali Mahdi Muhammad", "type": "person"},
+  {"text": "warlords", "type": "other"},
+  {"text": "peacekeepers", "type": "other"},
+  {"text": "supplies", "type": "other"}
+]
+```

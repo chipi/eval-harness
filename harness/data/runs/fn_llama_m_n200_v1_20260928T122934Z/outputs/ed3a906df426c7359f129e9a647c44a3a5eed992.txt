@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Gesta Adalberonis",
+    "type": "art"
+  },
+  {
+    "text": "Otto of Freising",
+    "type": "person"
+  },
+  {
+    "text": "Guido the Pisan",
+    "type": "person"
+  },
+  {
+    "text": "Roman",
+    "type": "location"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Library",
+    "type": "organization"
+  },
+  {
+    "text": "Glendale",
+    "type": "location"
+  }
+]

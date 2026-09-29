@@ -1,0 +1,16 @@
+The task: extract named entities from the sentence, using types: art, building, event, location, organization, other, person, product.
+
+Sentence: "A group of back-to-back houses on Hurst Street were restored by the National Trust ."
+
+Named entities:
+- "Hurst Street" — a street, which is a location.
+- "National Trust" — an organization.
+
+"back-to-back houses" — generic, not a named entity.
+
+Output JSON array:
+[{"text": "Hurst Street", "type": "location"}, {"text": "National Trust", "type": "organization"}]
+
+Note the sentence has a space before the period: "National Trust ." — but the entity text is "National Trust" without the period. Copy exactly as it appears — "National Trust" appears as such.
+
+Output only the[{"text": "Hurst Street", "type": "location"}, {"text": "National Trust", "type": "organization"}]

@@ -1,0 +1,1 @@
+[{"text": "The SS Divisions", "type": "location"}, {"text": "Germany", "type": "location"}, {"text": "Operation Spring Awakening", "type": "location"}, {"text": "Fr\u00fchlingserwachsen", "type": "location"}]

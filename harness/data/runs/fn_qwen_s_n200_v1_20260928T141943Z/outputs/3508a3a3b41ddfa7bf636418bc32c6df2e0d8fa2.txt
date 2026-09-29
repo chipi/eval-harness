@@ -1,0 +1,18 @@
+[
+  {
+    "text": "1921",
+    "type": "event"
+  },
+  {
+    "text": "the Haugh",
+    "type": "location"
+  },
+  {
+    "text": "Lowland Scots",
+    "type": "other"
+  },
+  {
+    "text": "A. Brownlie , Timber Merchants",
+    "type": "organization"
+  }
+]

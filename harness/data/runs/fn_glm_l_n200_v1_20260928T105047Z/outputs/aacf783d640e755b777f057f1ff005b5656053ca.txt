@@ -1,0 +1,4 @@
+[
+  {"text": "Dunn Memorial Bridge", "type": "building"},
+  {"text": "Menands Bridge", "type": "building"}
+]

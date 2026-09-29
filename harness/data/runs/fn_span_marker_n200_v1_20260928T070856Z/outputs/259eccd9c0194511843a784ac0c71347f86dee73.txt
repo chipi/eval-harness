@@ -1,0 +1,1 @@
+[{"text": "Cameron Mitchell Restaurants", "type": "building"}, {"text": "Bob Evans Restaurants", "type": "building"}, {"text": "Damon 's Grill", "type": "building"}, {"text": "Donatos Pizza", "type": "building"}]

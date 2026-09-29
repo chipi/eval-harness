@@ -1,0 +1,1 @@
+[{"text":"2003","type":"other"},{"text":"Congress","type":"organization"},{"text":"Ley de Punto Final","type":"other"}]

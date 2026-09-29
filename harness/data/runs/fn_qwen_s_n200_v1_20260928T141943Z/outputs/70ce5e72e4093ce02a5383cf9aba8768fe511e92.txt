@@ -1,0 +1,26 @@
+[
+  {
+    "text": "summer of 2014",
+    "type": "event"
+  },
+  {
+    "text": "Sport Club Kiryat Yam",
+    "type": "organization"
+  },
+  {
+    "text": "Israel Football Association",
+    "type": "organization"
+  },
+  {
+    "text": "2014–15 season",
+    "type": "event"
+  },
+  {
+    "text": "Liga Gimel",
+    "type": "other"
+  },
+  {
+    "text": "Sport Football Club Hapoel Kiryat Yam",
+    "type": "organization"
+  }
+]

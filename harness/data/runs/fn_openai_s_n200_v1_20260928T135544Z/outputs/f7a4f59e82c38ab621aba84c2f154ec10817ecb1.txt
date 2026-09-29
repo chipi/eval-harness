@@ -1,0 +1,1 @@
+[{"text":"Renwick","type":"person"},{"text":"Wrigley Cup midget hockey tournament","type":"event"},{"text":"CAHA","type":"organization"}]

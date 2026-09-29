@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Immerman",
+    "type": "person"
+  },
+  {
+    "text": "SIAM Journal on Computing",
+    "type": "art"
+  },
+  {
+    "text": "Logical Methods in Computer Science",
+    "type": "art"
+  }
+]
+```

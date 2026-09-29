@@ -1,0 +1,1 @@
+[{"text": "Aparna Sen", "type": "person"}, {"text": "Rituporno Ghosh", "type": "person"}, {"text": "Kolkata International Film Festival", "type": "event"}]

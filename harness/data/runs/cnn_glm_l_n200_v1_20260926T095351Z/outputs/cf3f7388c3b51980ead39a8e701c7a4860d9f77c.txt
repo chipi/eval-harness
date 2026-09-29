@@ -1,0 +1,10 @@
+The user wants a 2-3 sentence news wire summary of this article about Game of Thrones season 5 premiere. Terse style, output only the summary.
+
+Key facts:
+- Game of Thrones season 5 premieres Sunday on HBO
+- First time airing simultaneously in 170 countries
+- Show will move ahead of George R.R. Martin's books in some storylines
+- Major story arcs converging; show set to end after seven seasons
+- Characters to watch: Arya, Sansa, Cersei
+
+Write 2-3 terse sentences."Game of Thrones" returns for its fifth season Sunday, airing simultaneously in 170 countries for the first time. The new season will see major story arcs converge and, for the first time, move beyond George R.R. Martin's published books. HBO has said the series is building toward a crescendo, with the show set to end after seven seasons.

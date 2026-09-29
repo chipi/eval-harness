@@ -1,0 +1,1 @@
+[{"text": "Meyer", "type": "organization"}, {"text": "Shilling", "type": "person"}, {"text": "Palatine , Illinois", "type": "location"}, {"text": "Brown 's Chicken massacre", "type": "event"}]

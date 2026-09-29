@@ -1,0 +1,1 @@
+[{"text": "Federal Correctional Institution", "type": "organization"}, {"text": "Lompoc", "type": "location"}, {"text": "Lompoc", "type": "location"}, {"text": "male inmates", "type": "person"}, {"text": "California", "type": "location"}]

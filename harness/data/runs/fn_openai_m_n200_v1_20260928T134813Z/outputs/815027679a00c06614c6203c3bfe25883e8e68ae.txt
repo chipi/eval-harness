@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Victory",
+    "type": "product"
+  },
+  {
+    "text": "Liberty",
+    "type": "product"
+  }
+]

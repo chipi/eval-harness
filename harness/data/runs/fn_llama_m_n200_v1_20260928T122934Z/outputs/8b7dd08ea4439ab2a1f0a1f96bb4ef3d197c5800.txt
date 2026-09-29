@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Robert Emmett Keane",
+    "type": "person"
+  },
+  {
+    "text": "June",
+    "type": "other"
+  }
+]

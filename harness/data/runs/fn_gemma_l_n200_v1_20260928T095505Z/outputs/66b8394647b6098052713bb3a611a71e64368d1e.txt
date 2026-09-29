@@ -1,0 +1,36 @@
+```json
+[
+  {
+    "text": "Israel",
+    "type": "location"
+  },
+  {
+    "text": "Aram",
+    "type": "location"
+  },
+  {
+    "text": "Assyria",
+    "type": "location"
+  },
+  {
+    "text": "Ahaz",
+    "type": "person"
+  },
+  {
+    "text": "Isaiah 7",
+    "type": "art"
+  },
+  {
+    "text": "Rezin",
+    "type": "person"
+  },
+  {
+    "text": "Syria",
+    "type": "location"
+  },
+  {
+    "text": "Judah",
+    "type": "location"
+  }
+]
+```

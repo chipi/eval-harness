@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "G2",
+    "type": "organization"
+  },
+  {
+    "text": "Ireland",
+    "type": "location"
+  },
+  {
+    "text": "Dublin",
+    "type": "location"
+  },
+  {
+    "text": "western allies",
+    "type": "other"
+  }
+]
+```

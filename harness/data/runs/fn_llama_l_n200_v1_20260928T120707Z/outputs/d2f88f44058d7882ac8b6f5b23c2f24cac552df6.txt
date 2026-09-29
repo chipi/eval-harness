@@ -1,0 +1,11 @@
+[
+  {
+    "text": "Borazon",
+    "type": "product"
+  },
+  "cubic boron nitride" is a material, so it is classified as "other".
+  {
+    "text": "cubic boron nitride",
+    "type": "other"
+  }
+]

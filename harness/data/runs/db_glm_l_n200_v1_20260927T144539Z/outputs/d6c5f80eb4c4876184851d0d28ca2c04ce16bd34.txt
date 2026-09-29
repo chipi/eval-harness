@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "Dali", which is Ali Project's third studio album released on February 16, 1994.
+
+This is clearly an Album. The abstract explicitly states it's a studio album by Ali Project.
+
+Output only the categoryAlbum

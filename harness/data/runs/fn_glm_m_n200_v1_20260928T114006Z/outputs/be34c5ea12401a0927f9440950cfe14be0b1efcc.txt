@@ -1,0 +1,4 @@
+[
+  {"text": "Glendale", "type": "location"},
+  {"text": "1906", "type": "other"}
+]

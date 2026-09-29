@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "German U-boats", "type": "product"},
+  {"text": "World War II", "type": "event"},
+  {"text": "Battle of the Atlantic", "type": "event"},
+  {"text": "8 May 1941", "type": "other"},
+  {"text": "20 June 1941", "type": "other"}
+]
+```

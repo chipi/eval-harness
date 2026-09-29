@@ -1,0 +1,1 @@
+[{"text": "Haugh", "type": "location"}, {"text": "Lowland Scots", "type": "other"}, {"text": "A. Brownlie , Timber Merchants", "type": "organization"}]

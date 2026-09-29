@@ -1,0 +1,6 @@
+[
+  {"text": "The Manish Boys", "type": "organization"},
+  {"text": "David Jones", "type": "person"},
+  {"text": "David Bowie", "type": "person"},
+  {"text": "Flux", "type": "person"}
+]

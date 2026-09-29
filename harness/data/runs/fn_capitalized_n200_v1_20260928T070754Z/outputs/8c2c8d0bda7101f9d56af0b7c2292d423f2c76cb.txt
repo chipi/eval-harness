@@ -1,0 +1,1 @@
+[{"text": "M-28", "type": "location"}, {"text": "June", "type": "location"}, {"text": "City", "type": "location"}, {"text": "Ishpeming", "type": "location"}, {"text": "MDOT", "type": "location"}, {"text": "Lakeshore Drive", "type": "location"}, {"text": "US", "type": "location"}, {"text": "M-28", "type": "location"}]

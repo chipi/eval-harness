@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "G2",
+    "type": "organization"
+  },
+  {
+    "text": "communists",
+    "type": "other"
+  },
+  {
+    "text": "communist governments",
+    "type": "organization"
+  },
+  {
+    "text": "Ireland",
+    "type": "location"
+  },
+  {
+    "text": "embassies",
+    "type": "building"
+  },
+  {
+    "text": "Dublin",
+    "type": "location"
+  },
+  {
+    "text": "western allies",
+    "type": "organization"
+  }
+]
+```

@@ -1,0 +1,1 @@
+[{"text": "public gathering", "type": "event"}, {"text": "Subhas Chandra Bose", "type": "person"}]

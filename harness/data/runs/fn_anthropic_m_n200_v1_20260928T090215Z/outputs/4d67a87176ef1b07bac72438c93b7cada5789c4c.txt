@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Washington Post", "type": "other"},
+  {"text": "Obama", "type": "person"},
+  {"text": "Decathlon", "type": "other"},
+  {"text": "Mall", "type": "location"}
+]
+```

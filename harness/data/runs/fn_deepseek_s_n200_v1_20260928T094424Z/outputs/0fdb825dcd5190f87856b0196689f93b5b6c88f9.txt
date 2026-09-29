@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Grebler", "type": "person"},
+  {"text": "the tower", "type": "building"},
+  {"text": "1985", "type": "other"},
+  {"text": "Jenga", "type": "product"},
+  {"text": "Leslie Scott", "type": "person"},
+  {"text": "1980s", "type": "other"}
+]
+```

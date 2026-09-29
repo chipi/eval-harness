@@ -1,0 +1,7 @@
+The task is to classify a news article into one of four categories: World, Sports, Business, Sci/Tech.
+
+The article is about Kobe Bryant's sexual assault case. Kobe Bryant is an NBA star (basketball player). The article discusses legal proceedings related to him.
+
+This is a classic AG News classification example. The article mentions NBA star Kobe Bryant, which relates to basketball/sports. Even though it's about a legal case, the subject is a sports figure and the case relates to his career. In the AG News dataset, this type of article is typically classified as Sports because it involves an NBA player.
+
+The answer should be SportsSports

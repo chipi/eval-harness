@@ -1,0 +1,1 @@
+[{"text": "commander in chief", "type": "person"}, {"text": "Ichimaru", "type": "location"}]

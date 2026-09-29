@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "PSIS Semarang", "type": "organization"},
+  {"text": "2006", "type": "event"},
+  {"text": "PSIS Semarang", "type": "organization"},
+  {"text": "2006 season", "type": "event"}
+]
+```

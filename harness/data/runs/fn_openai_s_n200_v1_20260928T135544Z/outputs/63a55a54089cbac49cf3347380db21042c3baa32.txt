@@ -1,0 +1,1 @@
+[{"text":"Mars","type":"other"},{"text":"Jupiter","type":"other"},{"text":"Pallas","type":"other"},{"text":"Juno","type":"other"},{"text":"4 Vesta","type":"other"},{"text":"Astraea","type":"other"}]

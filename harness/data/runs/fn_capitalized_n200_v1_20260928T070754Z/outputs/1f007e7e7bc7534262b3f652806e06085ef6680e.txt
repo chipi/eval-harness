@@ -1,0 +1,1 @@
+[{"text": "As", "type": "location"}, {"text": "Neil Diamond", "type": "location"}, {"text": "Never Gon", "type": "location"}, {"text": "Give You Up", "type": "location"}]

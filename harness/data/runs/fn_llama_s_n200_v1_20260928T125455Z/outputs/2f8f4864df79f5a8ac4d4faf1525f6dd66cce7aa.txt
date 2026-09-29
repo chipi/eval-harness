@@ -1,0 +1,36 @@
+```
+[
+  {
+    "text": "Black Mesa",
+    "type": "location"
+  },
+  {
+    "text": "Lake Powell Railroad",
+    "type": "building"
+  },
+  {
+    "text": "BM & LP",
+    "type": "organization"
+  },
+  {
+    "text": "Black Mesa Mine",
+    "type": "location"
+  },
+  {
+    "text": "Kayenta",
+    "type": "location"
+  },
+  {
+    "text": "Arizona",
+    "type": "location"
+  },
+  {
+    "text": "Navajo Generating Station",
+    "type": "building"
+  },
+  {
+    "text": "Page",
+    "type": "location"
+  }
+]
+```

@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Grebler",
+    "type": "person"
+  },
+  {
+    "text": "Jenga",
+    "type": "product"
+  },
+  {
+    "text": "Leslie Scott",
+    "type": "person"
+  },
+  {
+    "text": "tower",
+    "type": "building"
+  }
+]
+```

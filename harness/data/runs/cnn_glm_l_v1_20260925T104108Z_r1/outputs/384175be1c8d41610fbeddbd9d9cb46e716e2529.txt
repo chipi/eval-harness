@@ -1,0 +1,11 @@
+The user wants a 2-3 sentence news wire style summary of this article about Paul Walker and Furious 7. Key points:
+- Paul Walker died in November 2013 at age 40 in a car crash
+- Furious 7 releases Friday, finishing his scenes with script rewrites, special effects, and his brothers as body doubles
+- His character Brian O'Connor was retired rather than killed off
+- Tributes at premiere, Vin Diesel named daughter after him
+
+News wire style is terse. Let me draft:
+
+"Paul Walker's final film, 'Furious 7,' opens Friday, 16 months after the actor's death in a car crash at age 40. Producers rewrote the script and used Walker's brothers as body doubles to complete his scenes, retiring his character rather than killing him off. Co-star Vin Diesel and fans paid emotional tributes at the Hollywood premiere, with Diesel naming his newborn daughter after Walker."
+
+That's three sentences, terse, wire-style. GoodPaul Walker's final film, "Furious 7," opens Friday, 16 months after the actor died in a car crash at age 40. Producers rewrote the script and used Walker's brothers as body doubles to complete his scenes, retiring his character rather than killing him off. Co-star Vin Diesel gave a tearful tribute at the Hollywood premiere and has named his newborn daughter after Walker.

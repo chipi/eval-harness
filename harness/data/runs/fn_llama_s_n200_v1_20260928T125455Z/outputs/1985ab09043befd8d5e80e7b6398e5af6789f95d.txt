@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Haitian",
+    "type": "other"
+  },
+  {
+    "text": "Aristide",
+    "type": "person"
+  },
+  {
+    "text": "Haitian refugee community",
+    "type": "other"
+  },
+  {
+    "text": "military regime",
+    "type": "organization"
+  }
+]
+```

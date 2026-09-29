@@ -1,0 +1,5 @@
+[
+  {"text": "West", "type": "location"},
+  {"text": "Maureen Articulated Loading Column", "type": "product"},
+  {"text": "ALC", "type": "product"}
+]

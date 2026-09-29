@@ -1,0 +1,1 @@
+[{"text": "Basi Revolt", "type": "event"}, {"text": "Spanish", "type": "location"}]

@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Knowles",
+    "type": "person"
+  },
+  {
+    "text": "Harvard",
+    "type": "organization"
+  },
+  {
+    "text": "U.S. Army Air Service",
+    "type": "organization"
+  },
+  {
+    "text": "April",
+    "type": "event"
+  }
+]
+```

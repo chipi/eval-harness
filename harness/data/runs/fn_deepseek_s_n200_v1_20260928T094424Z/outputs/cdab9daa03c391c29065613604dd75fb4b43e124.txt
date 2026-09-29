@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Thursday", "type": "event"},
+  {"text": "Corsica", "type": "location"},
+  {"text": "Shakedown", "type": "event"}
+]
+```

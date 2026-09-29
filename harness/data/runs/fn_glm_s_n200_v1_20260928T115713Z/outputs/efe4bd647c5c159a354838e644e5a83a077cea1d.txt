@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Klaus Friedrich Roth",
+    "type": "person"
+  },
+  {
+    "text": "German-born British",
+    "type": "other"
+  },
+  {
+    "text": "Fields Medal",
+    "type": "product"
+  },
+  {
+    "text": "Roth 's theorem",
+    "type": "other"
+  },
+  {
+    "text": "Diophantine approximation",
+    "type": "other"
+  }
+]
+```

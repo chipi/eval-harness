@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Intravenous", "type": "product"},
+  {"text": "IV", "type": "product"},
+  {"text": "iron", "type": "product"},
+  {"text": "iron", "type": "product"},
+  {"text": "iron-deficiency anaemia", "type": "other"}
+]
+```

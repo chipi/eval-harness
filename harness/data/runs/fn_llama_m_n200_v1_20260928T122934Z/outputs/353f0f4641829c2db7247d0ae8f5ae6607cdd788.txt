@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Golan Heights Winery",
+    "type": "organization"
+  },
+  {
+    "text": "1990s",
+    "type": "other"
+  }
+]

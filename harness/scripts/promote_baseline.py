@@ -27,7 +27,14 @@ from _common import BASELINES, RUNS, die, now, read_json, write_json  # noqa: E4
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True)
-    ap.add_argument("--reason", required=True, help="why this run earned promotion")
+    ap.add_argument("--reason", help="why this run earned promotion")
+    # Reading the reason from the environment keeps it away from the shell entirely.
+    # As a command-line argument interpolated by make, a backtick in the reason
+    # executed and a double quote mangled it -- and this text is written into a
+    # baseline, where it is the permanent record of why a number was promoted.
+    ap.add_argument("--reason-from-env", action="store_true",
+                    help="take the reason from $EVAL_PROMOTE_REASON (what `make "
+                         "run-promote` does, so the shell never re-parses it)")
     ap.add_argument("--baseline-id", help="default: <dataset_id>_baseline")
     ap.add_argument("--allow-dirty", action="store_true", help="promote from a dirty tree anyway")
     ap.add_argument(
@@ -37,6 +44,11 @@ def main() -> int:
         "problem than a dirty tree, so it takes its own flag",
     )
     args = ap.parse_args()
+    if args.reason_from_env:
+        args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
+    if not (args.reason or "").strip():
+        die("a reason is required: --reason \"...\" or --reason-from-env with "
+            "EVAL_PROMOTE_REASON set")
 
     src = RUNS / args.run / "metrics.json"
     if not src.is_file():

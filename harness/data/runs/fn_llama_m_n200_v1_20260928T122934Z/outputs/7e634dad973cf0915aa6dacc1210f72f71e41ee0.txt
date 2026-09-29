@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Cleo Lemon",
+    "type": "person"
+  },
+  {
+    "text": "September",
+    "type": "other"
+  },
+  {
+    "text": "BC Lions",
+    "type": "organization"
+  },
+  {
+    "text": "Jyles",
+    "type": "person"
+  }
+]

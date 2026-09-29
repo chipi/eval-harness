@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Gorgon City",
+    "type": "organization"
+  },
+  {
+    "text": "2014",
+    "type": "other"
+  },
+  {
+    "text": "Sirens",
+    "type": "product"
+  },
+  {
+    "text": "Erik Hassle",
+    "type": "person"
+  },
+  {
+    "text": "FTPA",
+    "type": "product"
+  }
+]
+```

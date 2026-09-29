@@ -1,0 +1,5 @@
+:
+[
+  {"text": "aircraft", "type": "product"},
+  {"text": "bombers", "type": "product"}
+]

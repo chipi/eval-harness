@@ -1,0 +1,1 @@
+[{"text": "Appiah", "type": "person"}, {"text": "A-League", "type": "organization"}, {"text": "Asian Champions League", "type": "event"}, {"text": "VISY Wanderers", "type": "organization"}, {"text": "Asian Champions League", "type": "event"}]

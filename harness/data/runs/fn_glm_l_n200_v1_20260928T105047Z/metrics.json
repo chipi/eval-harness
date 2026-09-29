@@ -1,0 +1,168 @@
+{
+  "adapter": "examples/ner-few-nerd/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "b3cc5d861cf2807c51172aa0b09fe3d2d97f739d",
+    "source": "git"
+  },
+  "config_id": "fn_glm_l_n200_v1",
+  "created_at": "2026-09-28T11:04:54Z",
+  "dataset_id": "few_nerd_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "fn_glm_l_n200_v1",
+      "params": {
+        "family": "glm",
+        "max_tokens": 600,
+        "model": "eval-glm-5",
+        "price_tier": "large",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.35,
+        "usd_per_mtok_out": 1.4
+      }
+    },
+    "data": {
+      "dataset_id": "few_nerd_280",
+      "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
+      "n_items": 280,
+      "reference_id": "gold/few_nerd_280",
+      "reference_tier": "gold"
+    },
+    "hash": "98d4f280de9de5af36ff53d744f5463c0bcf47217956a0e97b13d4adab8e0d9f",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "afb00ca70aa2d97dc5fee041d9846518846890eac16eb33b91b998cfa0e4fe44"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-glm-5",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "eval-glm-5",
+        "id_source": "alias-unresolved",
+        "identity_declared": true,
+        "labels": [
+          "art",
+          "building",
+          "event",
+          "location",
+          "organization",
+          "other",
+          "person",
+          "product"
+        ],
+        "max_tokens": 600,
+        "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
+        "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "unavailable",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "family": "glm",
+    "max_tokens": 600,
+    "model": "eval-glm-5",
+    "price_tier": "large",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.35,
+    "usd_per_mtok_out": 1.4
+  },
+  "primary_metric": "f1",
+  "providers_seen": {
+    "Amazon Bedrock": 24,
+    "Baidu": 39,
+    "GMICloud": 51,
+    "Novita": 19,
+    "SiliconFlow": 26,
+    "StreamLake": 71,
+    "Venice": 24,
+    "Z.AI": 26
+  },
+  "reference_tier": "gold",
+  "run_id": "fn_glm_l_n200_v1_20260928T105047Z",
+  "scores": {
+    "cost_usd": 0.000231,
+    "f1": 0.548353,
+    "fn": 1.167857,
+    "fp": 1.128571,
+    "latency_ms": 3013.668164,
+    "n_gold": 2.735714,
+    "n_predicted": 2.696429,
+    "parsed": 0.835714,
+    "precision": 0.527588,
+    "reasoning_tokens": 0.0,
+    "recall": 0.594208,
+    "tokens_in": 116.417857,
+    "tokens_out": 136.025,
+    "total_cost_usd": 0.06473075,
+    "total_tokens_in": 32597.0,
+    "total_tokens_out": 38087.0,
+    "tp": 1.567857,
+    "truncated": 0.114286,
+    "type_penalty": 0.079581,
+    "untyped_f1": 0.627935,
+    "untyped_fn": 0.85,
+    "untyped_fp": 0.810714,
+    "untyped_tp": 1.885714
+  },
+  "warmup_ms": 1845.73
+}

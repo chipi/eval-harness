@@ -534,10 +534,10 @@ def score(output: str, reference: Optional[str]) -> Dict[str, float]:
 
 
 def _tokenizer_sha256() -> str:
-    import inspect  # noqa: PLC0415
+    """The tokeniser AND the pattern it splits on -- BM25's score moves with both."""
+    from codehash import code_digest  # noqa: PLC0415
 
-    return hashlib.sha256(
-        (inspect.getsource(_tokenize) + inspect.getsource(_doc_text)).encode()).hexdigest()
+    return code_digest(_tokenize, _doc_text, consts={"_TOKEN": _TOKEN})
 
 
 def scorer_id() -> Dict[str, str]:

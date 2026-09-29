@@ -1,0 +1,11 @@
+[
+  {"text": "G2", "type": "organization"},
+  {"text": "Ireland", "type": "location"},
+  {"text": "Dublin", "type": "location"},
+  {"text": "G2", "type": "organization"}
+] is incorrect because "G2" appears only once. The correct output is:
+[
+  {"text": "G2", "type": "organization"},
+  {"text": "Ireland", "type": "location"},
+  {"text": "Dublin", "type": "location"}
+]

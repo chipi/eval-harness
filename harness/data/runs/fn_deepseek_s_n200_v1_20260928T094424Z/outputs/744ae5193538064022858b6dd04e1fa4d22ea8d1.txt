@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Homo conditus", "type": "other"},
+  {"text": "1984", "type": "other"},
+  {"text": "Homo conditus", "type": "other"},
+  {"text": "Swedish", "type": "other"},
+  {"text": "Katolska bokförlaget", "type": "organization"},
+  {"text": "1986", "type": "other"}
+]
+```

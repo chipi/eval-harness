@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "14thcentury",
+    "type": "other"
+  },
+  {
+    "text": "stone effigies",
+    "type": "art"
+  },
+  {
+    "text": "a knight",
+    "type": "person"
+  },
+  {
+    "text": "his wife",
+    "type": "person"
+  },
+  {
+    "text": "such sculptures",
+    "type": "art"
+  }
+]
+```

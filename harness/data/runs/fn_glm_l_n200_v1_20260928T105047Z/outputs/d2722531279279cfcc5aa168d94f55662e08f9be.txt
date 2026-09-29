@@ -1,0 +1,27 @@
+The task is to extract named entities from the sentence:
+
+"In round one Faut won two 2–1 decisions against the Fort Wayne Daisies ."
+
+Let me identify named entities:
+
+1. "Faut" - this is a person (a pitcher, likely from the All-American Girls Professional Baseball League - Jean Faut). Type: person.
+
+2. "Fort Wayne Daisies" - this is a team name. Teams are typically classified as organizations. "Fort Wayne" is a location, but "Fort Wayne Daisies" as a whole is a team/organization. Type: organization.
+
+Wait, should I also extract "Fort Wayne" as a location? The instruction says extract every named entity. "Fort Wayne Daisies" is the team name. Typically in NER tasks, the full team name is one entity (organization). Extracting "Fort Wayne" separately would be overlapping entities, which is usually not done. So I'll keep "Fort Wayne Daisies" as one organization entity.
+
+"round one" - not a named entity, it's a common noun phrase.
+
+"2–1 decisions" - not named entities.
+
+So the output should be:
+
+[
+  {"text": "Faut", "type": "person"},
+  {"text": "Fort Wayne Daisies", "type": "organization"}
+]
+
+The sentence ends with " ." with a space before the period, but that doesn't affect entity extraction. Copy entity text exactly as it appears: "Faut" and "Fort Wayne[
+  {"text": "Faut", "type": "person"},
+  {"text": "Fort Wayne Daisies", "type": "organization"}
+]

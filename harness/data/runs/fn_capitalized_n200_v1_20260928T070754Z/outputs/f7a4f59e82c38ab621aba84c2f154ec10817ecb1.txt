@@ -1,0 +1,1 @@
+[{"text": "Renwick", "type": "location"}, {"text": "Wrigley Cup", "type": "location"}, {"text": "CAHA", "type": "location"}]

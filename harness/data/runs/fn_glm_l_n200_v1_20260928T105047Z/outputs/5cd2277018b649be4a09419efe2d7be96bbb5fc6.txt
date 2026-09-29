@@ -1,0 +1,22 @@
+Let me analyze the sentence: "The game was also released for the Amiga and Amiga CD32 platforms , the Super NES and the Game Gear ."
+
+Named entities here:
+- Amiga - this is a computer platform/product
+- Amiga CD32 - this is a game console/product
+- Super NES - this is a game console/product
+- Game Gear - this is a handheld game console/product
+
+All of these are products (gaming/computing platforms).
+
+So the output should be:
+[
+  {"text": "Amiga", "type": "product"},
+  {"text": "Amiga CD32", "type": "product"},
+  {"text": "Super NES", "type": "product"},
+  {"text": "Game Gear", "type": "product"}
+][
+  {"text": "Amiga", "type": "product"},
+  {"text": "Amiga CD32", "type": "product"},
+  {"text": "Super NES", "type": "product"},
+  {"text": "Game Gear", "type": "product"}
+]

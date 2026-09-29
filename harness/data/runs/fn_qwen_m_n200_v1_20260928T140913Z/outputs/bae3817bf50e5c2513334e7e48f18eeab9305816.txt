@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Congress",
+    "type": "organization"
+  },
+  {
+    "text": "Ley de Punto Final",
+    "type": "other"
+  }
+]

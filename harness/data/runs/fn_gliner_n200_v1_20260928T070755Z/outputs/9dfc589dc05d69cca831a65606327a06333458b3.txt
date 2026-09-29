@@ -1,0 +1,1 @@
+[{"text": "Upon its release", "type": "event"}, {"text": "Jonathan Davis", "type": "person"}, {"text": "Fred Durst", "type": "person"}, {"text": "band", "type": "organization"}]

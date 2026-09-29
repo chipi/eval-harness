@@ -1,0 +1,18 @@
+[
+  {
+    "text": "June 1967",
+    "type": "other"
+  },
+  {
+    "text": "Avianca",
+    "type": "organization"
+  },
+  {
+    "text": "Pan Am",
+    "type": "organization"
+  },
+  {
+    "text": "1977",
+    "type": "other"
+  }
+]

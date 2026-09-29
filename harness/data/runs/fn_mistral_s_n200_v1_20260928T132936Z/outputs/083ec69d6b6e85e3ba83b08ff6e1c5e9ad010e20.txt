@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Luft Hansa", "type": "organization"},
+  {"text": "Berlin", "type": "location"},
+  {"text": "the Azores", "type": "location"},
+  {"text": "New York City", "type": "location"}
+]
+```

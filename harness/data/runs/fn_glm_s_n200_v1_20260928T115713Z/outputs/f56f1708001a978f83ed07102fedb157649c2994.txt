@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Moscow",
+    "type": "location"
+  },
+  {
+    "text": "Motherland",
+    "type": "other"
+  }
+]
+```

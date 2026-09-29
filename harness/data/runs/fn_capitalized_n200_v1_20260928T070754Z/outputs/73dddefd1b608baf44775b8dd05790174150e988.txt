@@ -1,0 +1,1 @@
+[{"text": "Lusignans", "type": "location"}, {"text": "Amalric", "type": "location"}, {"text": "Prince", "type": "location"}, {"text": "Tyre", "type": "location"}, {"text": "Mongols", "type": "location"}, {"text": "Ghazan", "type": "location"}, {"text": "Holy Land", "type": "location"}]

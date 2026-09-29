@@ -1,0 +1,7 @@
+```
+[
+  { "text": "10 May 1700", "type": "event" },
+  { "text": "Pope Innocent XII", "type": "person" },
+  { "text": "Bishop of Tinos", "type": "other" }
+]
+```

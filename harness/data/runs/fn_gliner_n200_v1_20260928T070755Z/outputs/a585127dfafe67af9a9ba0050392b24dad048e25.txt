@@ -1,0 +1,1 @@
+[{"text": "novelette", "type": "art"}, {"text": "March 1963", "type": "event"}, {"text": "Amazing Stories", "type": "organization"}, {"text": "Michael Joseph", "type": "person"}]

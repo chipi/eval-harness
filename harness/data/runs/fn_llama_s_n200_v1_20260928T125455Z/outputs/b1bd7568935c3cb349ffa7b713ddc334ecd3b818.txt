@@ -1,0 +1,16 @@
+```
+[
+  {
+    "text": "English Language",
+    "type": "other"
+  },
+  {
+    "text": "1923",
+    "type": "other"
+  },
+  {
+    "text": "Calcutta University",
+    "type": "organization"
+  }
+]
+```

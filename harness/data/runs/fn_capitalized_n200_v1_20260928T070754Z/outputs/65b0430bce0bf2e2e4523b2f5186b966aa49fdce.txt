@@ -1,0 +1,1 @@
+[{"text": "The West", "type": "location"}, {"text": "Maureen Articulated Loading Column", "type": "location"}, {"text": "ALC", "type": "location"}]

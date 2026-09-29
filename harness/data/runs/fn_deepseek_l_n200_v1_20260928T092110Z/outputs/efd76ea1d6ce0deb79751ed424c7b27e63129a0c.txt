@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Chelsea",
+    "type": "organization"
+  }
+]

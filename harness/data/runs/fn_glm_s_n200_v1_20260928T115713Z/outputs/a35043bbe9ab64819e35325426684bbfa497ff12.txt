@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "2024 Summer Olympics",
+    "type": "event"
+  },
+  {
+    "text": "XXXIII Olympiad",
+    "type": "event"
+  }
+]
+```

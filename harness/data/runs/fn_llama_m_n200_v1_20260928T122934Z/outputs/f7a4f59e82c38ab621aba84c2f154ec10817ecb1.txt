@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Renwick",
+    "type": "person"
+  },
+  {
+    "text": "Wrigley Cup",
+    "type": "event"
+  },
+  {
+    "text": "CAHA",
+    "type": "organization"
+  }
+]

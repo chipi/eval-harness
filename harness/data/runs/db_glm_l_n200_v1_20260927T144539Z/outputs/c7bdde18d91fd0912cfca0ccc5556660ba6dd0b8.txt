@@ -1,0 +1,1 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "Dalbergia setifera" which is described as "a low growing shrub in the Fabaceae family." A shrub is a plant. So the category is PlantPlant

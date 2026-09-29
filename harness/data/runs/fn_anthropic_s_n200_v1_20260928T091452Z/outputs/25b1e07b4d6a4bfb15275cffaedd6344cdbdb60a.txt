@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "A hierro muere",
+    "type": "art"
+  },
+  {
+    "text": "Alberto de Mendoza",
+    "type": "person"
+  },
+  {
+    "text": "Olga Zubarry",
+    "type": "person"
+  },
+  {
+    "text": "Accidente 703",
+    "type": "art"
+  },
+  {
+    "text": "Spain",
+    "type": "location"
+  },
+  {
+    "text": "Argentine",
+    "type": "location"
+  },
+  {
+    "text": "Spanish",
+    "type": "location"
+  }
+]
+```

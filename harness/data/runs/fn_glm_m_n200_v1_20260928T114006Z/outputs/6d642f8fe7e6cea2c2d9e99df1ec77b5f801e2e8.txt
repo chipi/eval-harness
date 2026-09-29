@@ -1,0 +1,9 @@
+[
+  {"text": "fall 1941", "type": "event"},
+  {"text": "Ustaše", "type": "organization"},
+  {"text": "Independent State of Croatia", "type": "location"},
+  {"text": "Serb Orthodox Christians", "type": "other"},
+  {"text": "Palanjek Pokupski", "type": "location"},
+  {"text": "Cerje", "type": "location"},
+  {"text": "Vrh Letovanski", "type": "location"}
+]

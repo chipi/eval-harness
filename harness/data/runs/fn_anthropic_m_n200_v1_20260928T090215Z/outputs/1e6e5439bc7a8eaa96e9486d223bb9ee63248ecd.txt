@@ -1,0 +1,12 @@
+```json
+[
+  {"text": "Sha Tin to Central Link", "type": "other"},
+  {"text": "Kowloon Tong Station", "type": "building"},
+  {"text": "Exhibition Station", "type": "building"},
+  {"text": "Admiralty Station", "type": "building"},
+  {"text": "Wan Chai", "type": "location"},
+  {"text": "Admiralty", "type": "location"},
+  {"text": "Central", "type": "location"},
+  {"text": "Hong Kong Island", "type": "location"}
+]
+```

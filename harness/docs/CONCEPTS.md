@@ -102,7 +102,7 @@ one from last quarter without saying so.
 
 ## A baseline is a decision
 
-`make promote` refuses three things:
+`make run-promote` refuses three things:
 
 - a run from a **dirty tree** — its `build.ref` does not describe what ran
 - a run whose **build is unknown** — a different and worse problem, so it takes

@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Mexico",
+    "type": "location"
+  },
+  {
+    "text": "NdeM",
+    "type": "organization"
+  }
+]

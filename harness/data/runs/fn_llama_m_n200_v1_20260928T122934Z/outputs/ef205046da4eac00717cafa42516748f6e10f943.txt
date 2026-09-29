@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Marie-Anne",
+    "type": "person"
+  },
+  {
+    "text": "Emmanuelle",
+    "type": "person"
+  },
+  {
+    "text": "Bee",
+    "type": "person"
+  },
+  {
+    "text": "American Embassy",
+    "type": "location"
+  }
+]

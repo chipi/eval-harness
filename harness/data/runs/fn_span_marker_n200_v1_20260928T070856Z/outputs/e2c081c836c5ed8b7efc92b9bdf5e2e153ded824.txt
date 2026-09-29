@@ -1,0 +1,1 @@
+[{"text": "Roman", "type": "location"}, {"text": "Islamic", "type": "location"}]

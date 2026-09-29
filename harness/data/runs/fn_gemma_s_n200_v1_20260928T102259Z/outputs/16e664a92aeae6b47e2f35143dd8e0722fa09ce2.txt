@@ -1,0 +1,6 @@
+[
+  {
+    "text": "dam",
+    "type": "building"
+  }
+]

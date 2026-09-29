@@ -1,0 +1,5 @@
+{"cost_usd": 0.0, "item_id": "item_01", "latency_ms": 0.063, "output_words": 3.0, "overlap_f1": 0.051282}
+{"cost_usd": 0.0, "item_id": "item_02", "latency_ms": 0.015, "output_words": 3.0, "overlap_f1": 0.125}
+{"cost_usd": 0.0, "item_id": "item_03", "latency_ms": 0.017, "output_words": 3.0, "overlap_f1": 0.133333}
+{"cost_usd": 0.0, "item_id": "item_04", "latency_ms": 0.013, "output_words": 3.0, "overlap_f1": 0.1}
+{"cost_usd": 0.0, "item_id": "item_05", "latency_ms": 0.012, "output_words": 6.0, "overlap_f1": 0.266667}

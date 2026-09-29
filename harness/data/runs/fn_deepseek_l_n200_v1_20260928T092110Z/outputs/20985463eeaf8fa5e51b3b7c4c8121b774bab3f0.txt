@@ -1,0 +1,6 @@
+[
+  {
+    "text": "The composite multivisceral transplant procedure",
+    "type": "event"
+  }
+]

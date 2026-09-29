@@ -1,0 +1,1 @@
+[{"text": "McLean", "type": "location"}, {"text": "Jimmy Stewart", "type": "location"}, {"text": "TV", "type": "location"}, {"text": "Mr. Krueger", "type": "location"}, {"text": "Christmas", "type": "location"}]

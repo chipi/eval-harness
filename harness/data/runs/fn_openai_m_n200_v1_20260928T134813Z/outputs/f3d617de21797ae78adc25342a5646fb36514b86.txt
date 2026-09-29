@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Rupert Giles",
+    "type": "person"
+  },
+  {
+    "text": "Buffy the Vampire Slayer",
+    "type": "art"
+  },
+  {
+    "text": "Head",
+    "type": "person"
+  },
+  {
+    "text": "Adam Klaus",
+    "type": "person"
+  },
+  {
+    "text": "Stuart Milligan",
+    "type": "person"
+  }
+]

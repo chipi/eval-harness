@@ -1,0 +1,1 @@
+[{"text": "Kashmiri Pandits", "type": "other"}, {"text": "Kashmiri Brahmins", "type": "other"}, {"text": "Kashmiri Hindus", "type": "other"}, {"text": "Shaivite Saraswat Brahmin community", "type": "other"}]

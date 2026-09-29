@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "September 12 to 16 , 2004", "type": "event"},
+  {"text": "Winnemem Wintu", "type": "organization"},
+  {"text": "war dance", "type": "event"}
+]
+```

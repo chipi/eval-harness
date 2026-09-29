@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Royal Philharmonic Orchestra",
+    "type": "organization"
+  },
+  {
+    "text": "Liverpool Philharmonic Orchestra",
+    "type": "organization"
+  },
+  {
+    "text": "BBC Symphony Orchestra",
+    "type": "organization"
+  }
+]
+```

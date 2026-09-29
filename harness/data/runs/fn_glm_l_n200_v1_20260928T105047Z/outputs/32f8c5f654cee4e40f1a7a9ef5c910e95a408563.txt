@@ -1,0 +1,35 @@
+The task is to extract named entities from the sentence:
+
+"Skardu is located in the wide by long Skardu Valley , at the confluence of the Indus and Shigar Rivers at an elevation of nearly ."
+
+Let me identify the named entities:
+
+1. "Skardu" - a city/town in Pakistan - this is a location
+2. "Skardu Valley" - a valley - this is a location
+3. "Indus" - a river - this is a location (geographical feature)
+4. "Shigar" - a river - this is a location (geographical feature)
+
+The sentence appears to be from Wikipedia about Skardu. The entities:
+- Skardu (first mention) - location (city)
+- Skardu Valley - location
+- Indus - location (river)
+- Shigar - location (river)
+
+Should "Indus" and "Shigar" be extracted separately or as "Indus and Shigar Rivers"? The instruction says "Copy each entity's text exactly as it appears in the sentence." Typically in NER, "Indus River" would be one entity, but here it's "the Indus and Shigar Rivers" - so the entities are "Indus" and "Shigar" as separate entities, both rivers (locations).
+
+So the output should be:
+[
+  {"text": "Skardu", "type": "location"},
+  {"text": "Skardu Valley", "type": "location"},
+  {"text": "Indus", "type": "location"},
+  {"text": "Shigar", "type": "location"}
+]
+
+All are locations. Rivers and valleys are geographical locations. Skardu is a town/city - location.
+
+The output should be only[
+  {"text": "Skardu", "type": "location"},
+  {"text": "Skardu Valley", "type": "location"},
+  {"text": "Indus", "type": "location"},
+  {"text": "Shigar", "type": "location"}
+]

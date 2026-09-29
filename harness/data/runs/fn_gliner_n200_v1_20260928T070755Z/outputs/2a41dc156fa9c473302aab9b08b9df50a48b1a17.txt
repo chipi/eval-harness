@@ -1,0 +1,1 @@
+[{"text": "Ferry services", "type": "organization"}, {"text": "Pearl River Delta", "type": "location"}, {"text": "were also suspended", "type": "event"}]

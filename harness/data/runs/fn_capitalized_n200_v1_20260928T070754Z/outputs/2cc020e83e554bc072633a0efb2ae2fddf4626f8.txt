@@ -1,0 +1,1 @@
+[{"text": "The Chronicle", "type": "location"}, {"text": "Fredegar", "type": "location"}, {"text": "Merovech", "type": "location"}, {"text": "Chlodio", "type": "location"}, {"text": "Fredegar", "type": "location"}, {"text": "Merovech", "type": "location"}, {"text": "Chlodio", "type": "location"}]

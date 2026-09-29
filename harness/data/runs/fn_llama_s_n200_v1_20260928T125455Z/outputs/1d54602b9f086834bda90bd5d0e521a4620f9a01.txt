@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Wang",
+    "type": "person"
+  },
+  {
+    "text": "Department of Meteorology",
+    "type": "organization"
+  },
+  {
+    "text": "University of Hawai ‘ i",
+    "type": "organization"
+  },
+  {
+    "text": "International Pacific Research Center",
+    "type": "organization"
+  }
+]
+```

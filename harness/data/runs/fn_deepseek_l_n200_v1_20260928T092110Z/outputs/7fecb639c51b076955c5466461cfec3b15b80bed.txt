@@ -1,0 +1,8 @@
+[
+  {"text": "George Clinton", "type": "person"},
+  {"text": "Mothership Reconnection Tour", "type": "event"},
+  {"text": "Bootsy Collins", "type": "person"},
+  {"text": "Bernie Worrell", "type": "person"},
+  {"text": "P Funk", "type": "organization"},
+  {"text": "P Funk All Stars", "type": "organization"}
+]

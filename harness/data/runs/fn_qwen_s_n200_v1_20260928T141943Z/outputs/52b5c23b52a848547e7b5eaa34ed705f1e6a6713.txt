@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Venice",
+    "type": "location"
+  }
+]

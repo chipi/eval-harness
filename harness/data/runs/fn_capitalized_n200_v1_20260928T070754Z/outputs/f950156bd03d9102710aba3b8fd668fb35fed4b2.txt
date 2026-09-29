@@ -1,0 +1,1 @@
+[{"text": "Cornell University", "type": "location"}, {"text": "Oscar Tschirky", "type": "location"}, {"text": "Cornell University School", "type": "location"}, {"text": "Hotel Administration", "type": "location"}]

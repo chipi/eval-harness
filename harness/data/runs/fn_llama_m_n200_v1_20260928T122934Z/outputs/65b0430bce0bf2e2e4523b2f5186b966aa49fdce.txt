@@ -1,0 +1,14 @@
+[
+  {
+    "text": "West",
+    "type": "location"
+  },
+  {
+    "text": "Maureen Articulated Loading Column",
+    "type": "organization"
+  },
+  {
+    "text": "ALC",
+    "type": "other"
+  }
+]

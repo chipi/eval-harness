@@ -1,0 +1,1 @@
+[{"text": "Though", "type": "location"}, {"text": "Mosin-Nagant", "type": "location"}, {"text": "DP", "type": "location"}, {"text": "PM-M1910", "type": "location"}, {"text": "RPG-40", "type": "location"}, {"text": "PTRD-41", "type": "location"}, {"text": "Moscow", "type": "location"}, {"text": "Motherland", "type": "location"}]

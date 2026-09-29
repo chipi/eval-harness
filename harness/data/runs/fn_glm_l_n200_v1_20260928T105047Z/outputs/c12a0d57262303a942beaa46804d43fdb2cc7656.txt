@@ -1,0 +1,8 @@
+[
+  {"text": "Mortimer Durand", "type": "person"},
+  {"text": "Kabul", "type": "location"},
+  {"text": "British India", "type": "location"},
+  {"text": "Afghanistan", "type": "location"},
+  {"text": "Russian", "type": "location"},
+  {"text": "Amir Abdur Rahman Khan", "type": "person"}
+]

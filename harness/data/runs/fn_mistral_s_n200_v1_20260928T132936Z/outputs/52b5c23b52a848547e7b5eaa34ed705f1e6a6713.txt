@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "The plague of 1575–77", "type": "event"},
+  {"text": "50,000", "type": "other"},
+  {"text": "Venice", "type": "location"}
+]
+```

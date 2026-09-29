@@ -1,0 +1,1 @@
+[{"text":"Progressive-era","type":"event"},{"text":"Seventeenth Amendment to the United States Constitution","type":"other"},{"text":"United States","type":"location"}]

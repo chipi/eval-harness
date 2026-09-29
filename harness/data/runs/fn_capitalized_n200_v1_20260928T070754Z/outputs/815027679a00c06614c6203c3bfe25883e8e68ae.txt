@@ -1,0 +1,1 @@
+[{"text": "Victory", "type": "location"}, {"text": "Liberty", "type": "location"}]

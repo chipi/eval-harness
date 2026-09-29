@@ -1,0 +1,1 @@
+[{"text": "In September", "type": "location"}, {"text": "Flying Tigers", "type": "location"}, {"text": "USS", "type": "location"}, {"text": "Belleau Wood", "type": "location"}, {"text": "Hurricane Iniki", "type": "location"}, {"text": "Kauai", "type": "location"}]

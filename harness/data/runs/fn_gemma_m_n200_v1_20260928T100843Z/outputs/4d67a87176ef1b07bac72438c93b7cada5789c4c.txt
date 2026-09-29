@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Washington Post",
+    "type": "organization"
+  },
+  {
+    "text": "Obama",
+    "type": "person"
+  },
+  {
+    "text": "Decathlon",
+    "type": "event"
+  },
+  {
+    "text": "Mall",
+    "type": "location"
+  }
+]
+```

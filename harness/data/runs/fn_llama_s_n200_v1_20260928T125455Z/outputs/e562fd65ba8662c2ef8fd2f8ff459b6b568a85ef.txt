@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Georgy Malenkov", "type": "person"},
+  {"text": "Vyacheslav Molotov", "type": "person"},
+  {"text": "Stalin", "type": "person"}
+]
+```

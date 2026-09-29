@@ -1,0 +1,1 @@
+[{"text": "Packard", "type": "person"}, {"text": "Hewlett-Packard Company", "type": "organization"}, {"text": "August", "type": "other"}, {"text": "January", "type": "other"}, {"text": "1937", "type": "other"}, {"text": "1939", "type": "other"}]

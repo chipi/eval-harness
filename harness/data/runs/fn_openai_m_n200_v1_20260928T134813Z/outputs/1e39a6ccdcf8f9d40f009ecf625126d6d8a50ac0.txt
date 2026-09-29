@@ -1,0 +1,1 @@
+[{"text":"Václav Havel","type":"person"},{"text":"Burgtheater","type":"building"},{"text":"Vienna","type":"location"},{"text":"Vienna","type":"location"}]

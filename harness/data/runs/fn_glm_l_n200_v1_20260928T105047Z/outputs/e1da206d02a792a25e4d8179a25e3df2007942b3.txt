@@ -1,0 +1,19 @@
+The task is to extract named entities from the sentence:
+
+"In 1984 , Pettigrew received a fellowship from the Robert Wood Johnson Foundation ( RWJF ) in their Harold Amos Medical Faculty Development Program , created to help achieve more appropriate representation and inclusion of minority scientists and scholars in academia ."
+
+Types: art, building, event, location, organization, other, person, product.
+
+Let me identify entities:
+
+1. "1984" - a date/year. Hmm, is a year a named entity? Under the given types, there's no date type. "other" could be used for dates. Many NER schemes include dates. The instruction says use exactly these eight types: art, building, event, location, organization, other, person, product. A year like 1984 could be classified as "other" (since there's no date/time type). Some might argue it's not a named entity at all. But typically in these tasks, dates are extracted as "other" or sometimes skipped. Let me think. The type "other" exists likely to catch things like dates, nationalities, etc. I'll include "1984" as "other". Actually, let me consider: many similar tasks (like the "fewNERd" or similar) treat numbers/dates as non-entities. But the presence of "other" suggests it's a catch-all. Hmm.
+
+Let me think about what's clearly a named entity:
+- Pettigrew - person
+- Robert Wood Johnson Foundation - organization
+- RWJF - organization (abbreviation)
+- Harold Amos Medical Faculty Development Program - this is a program name. Could be "other" or "organization" or "event". A program... It's a fellowship program. I'd classify it as "other" perhaps, or "organization". Programs are often classified as "other" in some schemes. Hmm. In many NER datasets, programs like this could be "other". Let me think: the Harold Amos Medical Faculty Development Program is a program of the RWJF. It's not an organization per se, it's a program. I'd say "other" is safest. Actually, some might classify it as an organization since it's an institutional program. Hmm.
+
+- Harold Amos - within the program name, should we extract just the program name as a whole? The instruction says copy each entity's text exactly as it appears. The program name is "Harold Amos Medical Faculty Development Program". I think we extract the full name as one entity.
+
+- 1984 - date. Type "other"? Or skip? Given the eight types, dates would fall under "other". I'll include it as "other". Hmm, but is a year a "named entity"? In classic NER (MUC-6 etc.), dates and times are entities. In CoNLL, only person, location, organization, misc. The "other" type

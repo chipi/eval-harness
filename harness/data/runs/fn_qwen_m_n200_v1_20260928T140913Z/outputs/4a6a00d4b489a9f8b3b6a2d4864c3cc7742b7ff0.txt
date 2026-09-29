@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Calvinist Church",
+    "type": "organization"
+  },
+  {
+    "text": "United States",
+    "type": "location"
+  }
+]

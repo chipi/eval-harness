@@ -1,0 +1,11 @@
+The user wants a 2-3 sentence news wire style summary of this article. Let me identify the key points:
+
+1. Indiana Gov. Mike Pence signed a controversial "religious freedom" law that critics say opens the door to discrimination against gays and lesbians.
+2. The article argues Pence signed it to shore up conservative credentials ahead of a possible 2016 presidential run.
+3. The controversy is likely to drag the entire Republican 2016 field to the right on LGBT issues, with similar bills pending in other states.
+
+News wire style is terse, factual, lead-first. Let me draft:
+
+"Indiana Gov. Mike Pence signed a controversial religious freedom law widely criticized as enabling discrimination against gays and lesbians, a move analysts say was aimed at bolstering his conservative credentials ahead of a possible 2016 White House bid. The backlash has drawn in other Republican hopefuls, including Jeb Bush, who defended the law. With similar bills pending in more than a dozen states, the issue threatens to pull the entire GOP field to the right and make LGBT rights a defining issue of the 2016 campaign."
+
+That's 3 sentences. Terse. Good. Output only the summary.Indiana Gov. Mike Pence signed a controversial religious freedom law widely criticized as opening the door to discrimination against gays and lesbians, a move seen as shoring up his conservative credentials ahead of a possible 2016 White House bid. The backlash has drawn in other Republican hopefuls, including Jeb Bush, who rushed to defend the law. With similar bills pending in more than a dozen states, the issue threatens to drag the entire GOP field to the right and make LGBT rights a defining issue of the 2016 campaign.

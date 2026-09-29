@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Southern Sami",
+    "type": "other"
+  },
+    {
+    "text": "åulo",
+    "type": "other"
+  },
+  {
+    "text": "åulot",
+    "type": "other"
+  }
+]

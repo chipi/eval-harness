@@ -1,0 +1,7 @@
+[
+  {"text": "Kunyaza - Afrikanische Liebeskunst", "type": "product"},
+  {"text": "Pierre Roshan", "type": "person"},
+  {"text": "IntimateFilm", "type": "organization"},
+  {"text": "German", "type": "other"},
+  {"text": "2011", "type": "other"}
+]

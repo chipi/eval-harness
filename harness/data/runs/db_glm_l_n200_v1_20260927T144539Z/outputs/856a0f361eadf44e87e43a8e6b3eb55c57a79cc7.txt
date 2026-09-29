@@ -1,0 +1,1 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about LNWR Class G2A, which is a class of steam locomotives. Locomotives are means of transportation. So the category is MeanOfTransportation.MeanOfTransportation

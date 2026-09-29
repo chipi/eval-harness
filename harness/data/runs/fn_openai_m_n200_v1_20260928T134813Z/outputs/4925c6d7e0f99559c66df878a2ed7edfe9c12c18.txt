@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Feeling",
+    "type": "art"
+  },
+  {
+    "text": "Pharrell Williams",
+    "type": "person"
+  },
+  {
+    "text": "Happy",
+    "type": "art"
+  }
+]

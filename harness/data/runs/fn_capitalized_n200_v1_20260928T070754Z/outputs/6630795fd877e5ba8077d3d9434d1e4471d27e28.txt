@@ -1,0 +1,1 @@
+[{"text": "Latinos", "type": "location"}, {"text": "Nevada", "type": "location"}, {"text": "Sharron Angle", "type": "location"}, {"text": "Republican", "type": "location"}]

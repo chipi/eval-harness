@@ -1,0 +1,14 @@
+[
+  {
+    "text": "His",
+    "type": "person"
+  },
+  {
+    "text": "war",
+    "type": "other"
+  },
+  {
+    "text": "science-fiction",
+    "type": "other"
+  }
+]

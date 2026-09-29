@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Anyway",
+    "type": "art"
+  },
+  {
+    "text": "October",
+    "type": "other"
+  },
+  {
+    "text": "Ministry of Sound",
+    "type": "organization"
+  }
+]

@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about the Bitterroot Mountains, which are part of the Rocky Mountains in Idaho and Montana.
+
+The categories are: Company, EducationalInstitution, Artist, Athlete, OfficeHolder, MeanOfTransportation, Building, NaturalPlace, Village, Animal, Plant, Album, Film, WrittenWork.
+
+Mountains are natural places. So the answer is NaturalNaturalPlace

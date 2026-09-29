@@ -1,0 +1,1 @@
+[{"text": "In fall 1941", "type": "event"}, {"text": "Usta\u0161e authorities of Independent State of Croatia", "type": "organization"}, {"text": "Palanjek Pokupski", "type": "location"}, {"text": "Cerje", "type": "location"}, {"text": "Vrh Letovanski", "type": "location"}]

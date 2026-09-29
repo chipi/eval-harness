@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "September", "type": "other"},
+  {"text": "30", "type": "other"},
+  {"text": "2002", "type": "other"}
+]
+```

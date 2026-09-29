@@ -1,0 +1,1 @@
+[{"text": "Alberto de Mendoza", "type": "person"}, {"text": "Olga Zubarry", "type": "person"}]

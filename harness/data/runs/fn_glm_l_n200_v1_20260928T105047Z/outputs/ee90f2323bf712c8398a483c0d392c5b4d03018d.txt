@@ -1,0 +1,5 @@
+[
+  {"text": "June 2003", "type": "other"},
+  {"text": "Rockpalast", "type": "product"},
+  {"text": "Rock am Ring", "type": "event"}
+]

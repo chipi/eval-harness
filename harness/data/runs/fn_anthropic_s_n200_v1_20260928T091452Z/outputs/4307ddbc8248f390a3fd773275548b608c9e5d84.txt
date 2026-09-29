@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "The pen is mightier than the sword",
+    "type": "art"
+  },
+  {
+    "text": "Japanese",
+    "type": "other"
+  },
+  {
+    "text": "pen-ken",
+    "type": "other"
+  }
+]
+```

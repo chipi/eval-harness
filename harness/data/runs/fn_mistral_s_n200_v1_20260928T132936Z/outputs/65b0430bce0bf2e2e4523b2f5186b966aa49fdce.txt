@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "West gate",
+    "type": "building"
+  },
+  {
+    "text": "Maureen Articulated Loading Column ( `` ALC '' )",
+    "type": "product"
+  },
+  {
+    "text": "1982",
+    "type": "other"
+  }
+]
+```

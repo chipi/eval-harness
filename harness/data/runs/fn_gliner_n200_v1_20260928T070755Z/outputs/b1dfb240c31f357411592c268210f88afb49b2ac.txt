@@ -1,0 +1,1 @@
+[{"text": "Ureparapara Island", "type": "location"}, {"text": "Banks Islands of Vanuatu", "type": "location"}]

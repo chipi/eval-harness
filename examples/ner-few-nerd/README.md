@@ -190,12 +190,16 @@ Full write-up: [`../../research/REPORT_NER.md`](../../research/REPORT_NER.md).
 
 ```
 span_marker   0.7674   $0        separated from 26 of 26 under Holm
-openai_m      0.6864   $0.2034   best hosted; separated from only 19 of 26
-gemma_m       0.6733   $0.0057   inside the top group, 121x cheaper than anthropic_l
+openai_m      0.6864   $0.6507   best hosted; separated from only 19 of 26
+gemma_m       0.6733   $0.0088   inside the top group, 78x cheaper than anthropic_l
 gliner        0.4540   $0        same model class, no training-split exposure
 capitalized   0.1913   $0
 nothing       0.1250   $0        = the rate at which an empty answer is correct
 ```
+
+Costs are what the provider **billed** (`usage.cost`). An earlier version of this
+block used this repo's price table, which understated the cheap arms and inflated the
+spread to 121×.
 
 Three things worth reading the report for:
 

@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Homo conditus",
+    "type": "art"
+  },
+  {
+    "text": "vulgatum",
+    "type": "art"
+  },
+  {
+    "text": "Swedish",
+    "type": "other"
+  },
+  {
+    "text": "Katolska bokförlaget",
+    "type": "organization"
+  }
+]

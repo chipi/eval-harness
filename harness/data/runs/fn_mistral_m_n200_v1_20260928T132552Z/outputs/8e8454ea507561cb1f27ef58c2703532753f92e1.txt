@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Louis Botha", "type": "person"},
+  {"text": "Christiaan de Wet", "type": "person"},
+  {"text": "Europe", "type": "location"},
+  {"text": "Boers", "type": "organization"}
+]
+```

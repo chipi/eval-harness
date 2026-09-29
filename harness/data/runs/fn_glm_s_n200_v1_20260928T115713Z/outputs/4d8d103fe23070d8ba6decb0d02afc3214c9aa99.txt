@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Quo Vadis",
+    "type": "product"
+  },
+  {
+    "text": "Hollywood",
+    "type": "organization"
+  },
+  {
+    "text": "Academy",
+    "type": "organization"
+  }
+]
+```

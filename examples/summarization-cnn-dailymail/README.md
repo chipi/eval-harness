@@ -3,7 +3,7 @@
 One task — summarise a news article in 2–3 sentences — measured across 24 hosted models
 from 8 vendors, on three axes at once: **quality, cost and wall-clock speed**.
 
-It is a worked example for [`../eval-harness`](../../harness), and it is also a record
+It is a worked example for [`../../harness`](../../harness), and it is also a record
 of what a small eval can and cannot tell you. Most of what is interesting here was found
 by *disbelieving the first answer*: several headline findings in
 [`../EVAL_NOTES.md`](../../research/NOTES.md) were retracted after the numbers were checked
@@ -22,8 +22,8 @@ uv sync                       # provisions its own Python 3.11 and deps
 uv run fetch.py --n 20        # ~1 second, stdlib only, no `datasets` library
 ```
 
-That writes 20 articles into `../eval-harness/data/sources/cnn_dailymail_20/` and their
-human-written highlights into `../eval-harness/data/references/gold/cnn_dailymail_20/`.
+That writes 20 articles into `../../harness/data/sources/cnn_dailymail_20/` and their
+human-written highlights into `../../harness/data/references/gold/cnn_dailymail_20/`.
 Both paths are gitignored.
 
 **Why this dataset.** `abisee/cnn_dailymail` is Apache-2.0 — the only clearly-licensed
@@ -39,8 +39,8 @@ what makes the silver experiment below possible.
 ## Run it
 
 ```bash
-cp ../eval-harness/.env.example ../eval-harness/.env      # point at your proxy
-cd ../eval-harness
+cp ../../harness/.env.example ../../harness/.env      # point at your proxy
+cd ../../harness
 
 make experiment-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s.yaml
 make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*.yaml" REPEAT=3
@@ -157,9 +157,14 @@ wrote its reasoning out in the open and scored 0.10 for it.
 - **Temperature 0 is not deterministic.** Only **9.8%** of outputs were byte-identical
   across three repeats; **12 of 24 arms produced zero identical outputs**. `REPEAT=3` is
   not caution here, it is the minimum.
-- **Price buys very little on this task.** The dearest arm costs **202×** the cheapest and
-  ranks **9th of 24** on the primary facet. The Pareto frontier keeps 10 of 24 arms; the
-  other 14 are beaten on quality *and* cost *and* speed simultaneously.
+- **Price buys very little on this task.** At n=200 the dearest arm costs **52×** the
+  cheapest (billed) and ranks **16th of 25**. The Pareto frontier keeps **7 of 24** hosted
+  arms; the rest are beaten on quality *and* cost *and* speed simultaneously.
+
+  > This bullet previously read *"202× the cheapest, ranks 9th of 24, frontier keeps 10 of
+  > 24"*. All three were the n=20 pilot's figures, and the report's own corrections table
+  > had already retracted the frontier count to 7 of 24 — the README went on quoting the
+  > withdrawn number. Found by external review.
 - **A model-authored reference is biased, not just noisy.** See below.
 
 The leaderboard says all of this itself, and refuses to present an ordering its own data

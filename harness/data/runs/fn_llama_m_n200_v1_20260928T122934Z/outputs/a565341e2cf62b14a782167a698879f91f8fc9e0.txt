@@ -1,0 +1,14 @@
+[
+  {
+    "text": "November",
+    "type": "other"
+  },
+  {
+    "text": "Fly",
+    "type": "person"
+  },
+  {
+    "text": "Cochise County",
+    "type": "location"
+  }
+]

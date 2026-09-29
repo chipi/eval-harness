@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "November 10 , 2020",
+    "type": "event"
+  },
+  {
+    "text": "Apple",
+    "type": "organization"
+  },
+  {
+    "text": "Mac Mini",
+    "type": "product"
+  },
+  {
+    "text": "M1",
+    "type": "product"
+  },
+  {
+    "text": "MacBook Air",
+    "type": "product"
+  },
+  {
+    "text": "MacBook Pro",
+    "type": "product"
+  },
+  {
+    "text": "Apple silicon",
+    "type": "product"
+  }
+]
+```

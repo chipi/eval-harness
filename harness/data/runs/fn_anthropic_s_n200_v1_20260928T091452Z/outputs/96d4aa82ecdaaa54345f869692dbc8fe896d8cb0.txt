@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "NSB Class 86",
+    "type": "product"
+  },
+  {
+    "text": "NSB Class 87",
+    "type": "product"
+  },
+  {
+    "text": "NSB Class 91",
+    "type": "product"
+  }
+]
+```

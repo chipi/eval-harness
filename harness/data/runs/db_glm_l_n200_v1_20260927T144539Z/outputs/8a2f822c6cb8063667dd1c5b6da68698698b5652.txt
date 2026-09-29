@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about the ALCO FA, a family of diesel locomotives.
+
+A locomotive is a means of transportation. The category "MeanOfTransportation" fits perfectly.
+
+Output only the category name.MeanOfTransportation

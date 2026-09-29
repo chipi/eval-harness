@@ -1,0 +1,162 @@
+{
+  "adapter": "examples/ner-few-nerd/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "b3cc5d861cf2807c51172aa0b09fe3d2d97f739d",
+    "source": "git"
+  },
+  "config_id": "fn_anthropic_m_n200_v1",
+  "created_at": "2026-09-28T09:14:52Z",
+  "dataset_id": "few_nerd_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "fn_anthropic_m_n200_v1",
+      "params": {
+        "family": "anthropic",
+        "max_tokens": 600,
+        "model": "eval-claude-sonnet",
+        "price_tier": "mid",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 3.0,
+        "usd_per_mtok_out": 15.0
+      }
+    },
+    "data": {
+      "dataset_id": "few_nerd_280",
+      "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
+      "n_items": 280,
+      "reference_id": "gold/few_nerd_280",
+      "reference_tier": "gold"
+    },
+    "hash": "682876ba689d734c58affc1286637e1120c7be22b42fd90a8e623a7486f1c31e",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "afb00ca70aa2d97dc5fee041d9846518846890eac16eb33b91b998cfa0e4fe44"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-claude-sonnet",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "eval-claude-sonnet",
+        "id_source": "alias-unresolved",
+        "identity_declared": true,
+        "labels": [
+          "art",
+          "building",
+          "event",
+          "location",
+          "organization",
+          "other",
+          "person",
+          "product"
+        ],
+        "max_tokens": 600,
+        "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
+        "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "unavailable",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "family": "anthropic",
+    "max_tokens": 600,
+    "model": "eval-claude-sonnet",
+    "price_tier": "mid",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 3.0,
+    "usd_per_mtok_out": 15.0
+  },
+  "primary_metric": "f1",
+  "providers_seen": {
+    "Amazon Bedrock": 3,
+    "Claude Platform on AWS": 277
+  },
+  "reference_tier": "gold",
+  "run_id": "fn_anthropic_m_n200_v1_20260928T090215Z",
+  "scores": {
+    "cost_usd": 0.001525,
+    "f1": 0.666059,
+    "fn": 0.860714,
+    "fp": 0.867857,
+    "latency_ms": 2691.659436,
+    "n_gold": 2.735714,
+    "n_predicted": 2.742857,
+    "parsed": 1.0,
+    "precision": 0.672223,
+    "reasoning_tokens": 0.0,
+    "recall": 0.677835,
+    "tokens_in": 168.282143,
+    "tokens_out": 67.992857,
+    "total_cost_usd": 0.426927,
+    "total_tokens_in": 47119.0,
+    "total_tokens_out": 19038.0,
+    "tp": 1.875,
+    "truncated": 0.0,
+    "type_penalty": 0.100552,
+    "untyped_f1": 0.766611,
+    "untyped_fn": 0.557143,
+    "untyped_fp": 0.564286,
+    "untyped_tp": 2.178571
+  },
+  "warmup_ms": 3081.384
+}

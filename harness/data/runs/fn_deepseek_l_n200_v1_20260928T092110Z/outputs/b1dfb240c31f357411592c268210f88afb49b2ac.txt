@@ -1,0 +1,28 @@
+```json
+[
+  {
+    "text": "Löyöp",
+    "type": "product"
+  },
+  {
+    "text": "Lehalurup",
+    "type": "product"
+  },
+  {
+    "text": "Oceanic",
+    "type": "product"
+  },
+  {
+    "text": "Ureparapara Island",
+    "type": "location"
+  },
+  {
+    "text": "Banks Islands",
+    "type": "location"
+  },
+  {
+    "text": "Vanuatu",
+    "type": "location"
+  }
+]
+```

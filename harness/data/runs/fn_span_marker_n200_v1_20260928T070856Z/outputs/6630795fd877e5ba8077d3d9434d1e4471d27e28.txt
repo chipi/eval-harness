@@ -1,0 +1,1 @@
+[{"text": "Nevada", "type": "location"}, {"text": "Sharron Angle", "type": "person"}, {"text": "Republican", "type": "organization"}]

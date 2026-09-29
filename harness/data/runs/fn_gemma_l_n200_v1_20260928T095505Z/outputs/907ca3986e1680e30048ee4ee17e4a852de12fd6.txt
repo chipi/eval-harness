@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Strom Thurmond",
+    "type": "person"
+  }
+]
+```

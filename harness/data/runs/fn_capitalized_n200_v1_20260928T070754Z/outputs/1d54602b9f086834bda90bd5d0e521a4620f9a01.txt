@@ -1,0 +1,1 @@
+[{"text": "Wang", "type": "location"}, {"text": "Department", "type": "location"}, {"text": "Meteorology", "type": "location"}, {"text": "University", "type": "location"}, {"text": "Hawai", "type": "location"}, {"text": "International Pacific Research Center", "type": "location"}]

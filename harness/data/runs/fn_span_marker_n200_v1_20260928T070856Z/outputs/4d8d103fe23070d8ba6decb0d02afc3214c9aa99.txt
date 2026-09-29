@@ -1,0 +1,1 @@
+[{"text": "Hollywood", "type": "organization"}, {"text": "Academy", "type": "other"}]

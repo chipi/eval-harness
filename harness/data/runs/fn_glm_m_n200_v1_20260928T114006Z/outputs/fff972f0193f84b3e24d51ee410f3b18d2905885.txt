@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "French Grand Prix",
+    "type": "event"
+  },
+  {
+    "text": "Formula One",
+    "type": "other"
+  },
+  {
+    "text": "Reims-Gueux",
+    "type": "location"
+  }
+]
+```

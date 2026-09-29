@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Packard", "type": "person"},
+  {"text": "Hewlett-Packard Company", "type": "organization"},
+  {"text": "August 1937", "type": "event"},
+  {"text": "January 1 , 1939", "type": "event"}
+]
+```

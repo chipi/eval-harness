@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Yogācārabhūmi",
+    "type": "other"
+  },
+  {
+    "text": "Abhidharmakośa",
+    "type": "other"
+  },
+  {
+    "text": "Prajñāpāramitā sutra",
+    "type": "other"
+  },
+  {
+    "text": "Bodhisattvacaryāvatāra",
+    "type": "other"
+  }
+]
+```

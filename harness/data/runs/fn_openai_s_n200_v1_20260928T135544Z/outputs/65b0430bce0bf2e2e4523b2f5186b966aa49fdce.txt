@@ -1,0 +1,1 @@
+[{"text":"West gate","type":"location"},{"text":"Maureen Articulated Loading Column","type":"product"},{"text":"ALC","type":"other"},{"text":"dock","type":"location"}]

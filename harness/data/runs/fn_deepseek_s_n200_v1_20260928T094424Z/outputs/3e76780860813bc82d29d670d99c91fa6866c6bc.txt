@@ -1,0 +1,5 @@
+[
+  {"text": "Pennsylvania Station", "type": "building"},
+  {"text": "New York City", "type": "location"},
+  {"text": "New York City Landmarks Preservation Commission", "type": "organization"}
+]

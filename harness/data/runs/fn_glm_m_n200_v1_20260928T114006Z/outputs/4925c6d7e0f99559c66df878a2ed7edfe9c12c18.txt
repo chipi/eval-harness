@@ -1,0 +1,6 @@
+[
+  {"text": "Feeling", "type": "other"},
+  {"text": "Pharrell Williams", "type": "person"},
+  {"text": "Happy", "type": "other"},
+  {"text": "April 2014", "type": "other"}
+]

@@ -1,0 +1,66 @@
+```
+[
+  {
+    "text": "RAF Horsham St Faith",
+    "type": "location"
+  },
+  {
+    "text": "December 1947",
+    "type": "event"
+  },
+  {
+    "text": "RAF Coltishall",
+    "type": "location"
+  },
+  {
+    "text": "January 1948",
+    "type": "event"
+  },
+  {
+    "text": "Legion of Merit",
+    "type": "award"
+  },
+  {
+    "text": "President of the United States",
+    "type": "person"
+  },
+  {
+    "text": "9 March 1948",
+    "type": "event"
+  }
+]
+``` 
+However, since 'award' and 'art', 'building', 'organization', 'other', 'product' are not utilized and 'Legion of Merit' can be considered as 'other' or an organization and 'March' can be part of an 'event', here is the corrected JSON array.
+
+```
+[
+  {
+    "text": "RAF Horsham St Faith",
+    "type": "location"
+  },
+  {
+    "text": "December 1947",
+    "type": "event"
+  },
+  {
+    "text": "RAF Coltishall",
+    "type": "location"
+  },
+  {
+    "text": "January 1948",
+    "type": "event"
+  },
+  {
+    "text": "Legion of Merit",
+    "type": "organization"
+  },
+  {
+    "text": "President of the United States",
+    "type": "person"
+  },
+  {
+    "text": "9 March 1948",
+    "type": "event"
+  }
+]
+```

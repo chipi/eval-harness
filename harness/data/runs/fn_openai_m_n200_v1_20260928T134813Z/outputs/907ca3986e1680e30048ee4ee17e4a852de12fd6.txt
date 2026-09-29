@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Strom Thurmond",
+    "type": "person"
+  }
+]

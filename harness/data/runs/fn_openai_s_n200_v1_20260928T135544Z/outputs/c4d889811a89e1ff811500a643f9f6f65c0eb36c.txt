@@ -1,0 +1,1 @@
+[{"text":"autopsy","type":"other"},{"text":"ballistics report","type":"other"},{"text":"Jericho 941","type":"product"},{"text":"Israeli","type":"location"},{"text":"José Morales","type":"person"}]

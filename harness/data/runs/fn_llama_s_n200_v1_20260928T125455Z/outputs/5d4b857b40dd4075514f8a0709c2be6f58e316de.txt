@@ -1,0 +1,37 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  {
+    "text": "Glyceraldehyde-3-phosphate dehydrogenase",
+    "type": "other"
+  },
+  {
+    "text": "NADP+",
+    "type": "product"
+  },
+  {
+    "text": "GAPN",
+    "type": "other"
+  },
+  {
+    "text": "GAP",
+    "type": "product"
+  },
+  {
+    "text": "3-phosphoglycerate",
+    "type": "other"
+  },
+  {
+    "text": "3-PG",
+    "type": "product"
+  },
+  {
+    "text": "3-PGA",
+    "type": "product"
+  },
+  {
+    "text": "NADPH",
+    "type": "product"
+  }
+]

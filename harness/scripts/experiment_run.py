@@ -61,6 +61,29 @@ except ImportError:  # pragma: no cover
 
 
 
+class _Resumed:
+    """Stands in for an adapter's `Result` when an item is replayed from disk.
+
+    The core has no Result class of its own -- every adapter defines one -- so a resumed
+    item needs an object exposing the same read surface. Every call-derived field is
+    None on purpose: a replayed item had no latency, no tokens and no cost IN THIS PASS,
+    and reporting zeros would quietly pull the run's mean latency toward nought by an
+    amount that depends on how far the previous attempt happened to get.
+    """
+
+    __slots__ = ("output", "cost_usd", "latency_ms", "tokens_in", "tokens_out",
+                 "extra", "meta")
+
+    def __init__(self, output: str) -> None:
+        self.output = output
+        self.cost_usd = None
+        self.latency_ms = None
+        self.tokens_in = None
+        self.tokens_out = None
+        self.extra: Dict[str, float] = {}
+        self.meta: Dict[str, Any] = {"resumed_from_disk": True}
+
+
 def _adapter_metric_kinds(adapter_id: str, adapter_path: Optional[Path]) -> Dict[str, str]:
     """`METRIC_KINDS` from the loaded adapter module, or {}."""
     module = sys.modules.get(f"eval_adapter_{adapter_path.stem}") if adapter_path else None
@@ -70,7 +93,13 @@ def _adapter_metric_kinds(adapter_id: str, adapter_path: Optional[Path]) -> Dict
         except ImportError:
             return {}
     kinds = getattr(module, "METRIC_KINDS", None)
-    return dict(kinds) if isinstance(kinds, dict) else {}
+    out = dict(kinds) if isinstance(kinds, dict) else {}
+    # Metrics the CORE emits, which no adapter declares because no adapter produces
+    # them. Without this `resumed` lands among the quality columns, where a leaderboard
+    # reads higher as better -- and "was not actually run this pass" would sort to the
+    # top. Declared here rather than asked of every adapter, because the core owns them.
+    out.setdefault("resumed", "descriptive")
+    return out
 
 
 def _adapter_transient(adapter_path: Optional[Path]) -> tuple:
@@ -241,6 +270,7 @@ def one_pass(
     cfg: Dict[str, Any],
     idx: int,
     resume_dir: Optional[Path] = None,
+    live_dir: Optional[Path] = None,
     *,
     call_system: Any,
     score: Any,
@@ -264,33 +294,56 @@ def one_pass(
     cap = env_float("EVAL_MAX_COST_USD")
     capped_at: Optional[str] = None
 
-    for item in ds["items"]:
-        # Resume: an item already produced by this run is not paid for twice.
-        # A sweep that died at item 15 of 20 resumes at 16.
-        done = resume_dir / f"{item['item_id']}.txt" if resume_dir else None
-        if done is not None and done.is_file():
-            outputs[item["item_id"]] = done.read_text(encoding="utf-8")
-            continue
+    # WRITE EACH OUTPUT THE MOMENT IT EXISTS, not at the end of the pass.
+    #
+    # Outputs used to accumulate in `outputs` and reach disk only after the whole loop
+    # returned, so ANY exception -- an unhandled provider error, a Ctrl-C, a laptop lid
+    # -- discarded every item already paid for. Worse, the resume path reads exactly
+    # this directory, so the feature meant to rescue you had nothing to read: the two
+    # failures compounded into "a crash costs you the entire arm".
+    #
+    # The cost of writing incrementally is one small file per item. The cost of not
+    # doing it was measured in dollars.
+    if live_dir is not None:
+        live_dir.mkdir(parents=True, exist_ok=True)
 
-        # Check BEFORE the call: the cap is a ceiling on spend, not a report of
-        # having exceeded it.
-        if cap is not None and spent >= cap:
+    for item in ds["items"]:
+        # Resume: an item already produced is not PAID for twice -- but it is still
+        # SCORED, which is the whole point of the pass.
+        #
+        # This used to `continue` here, skipping the scoring below, so a resumed item
+        # produced no prediction row and no score. A fully-resumed run therefore emitted
+        # an empty `predictions.jsonl` and a metrics file with no scores in it, while
+        # reporting success. The outputs were all present and none of them counted.
+        done = resume_dir / f"{item['item_id']}.txt" if resume_dir else None
+        resumed = done is not None and done.is_file()
+
+        if not resumed and cap is not None and spent >= cap:
+            # Check BEFORE the call: the cap is a ceiling on spend, not a report of
+            # having exceeded it. A resumed item costs nothing, so the cap cannot stop it.
             capped_at = item["item_id"]
             break
 
         rel = item.get("source_path") or item["item_id"]
         src = mat / rel
         source_text = src.read_text(encoding="utf-8", errors="replace")
-        # EVERY adapter gets retries, whether or not its author wrote any. This used to
-        # be the adapter's business, and one adapter simply had none -- so a single
-        # upstream 429 discarded an arm mid-sweep along with the items already paid for.
-        res = call_with_retries(
-            call_system, (source_text, params),
-            extra_transient=extra_transient, label=f"item {item['item_id'][:8]}",
-        )
+
+        if resumed:
+            res = _Resumed(done.read_text(encoding="utf-8"))
+        else:
+            # EVERY adapter gets retries, whether or not its author wrote any. This used
+            # to be the adapter's business, and one adapter simply had none -- so a
+            # single upstream 429 discarded an arm mid-sweep along with the items
+            # already paid for.
+            res = call_with_retries(
+                call_system, (source_text, params),
+                extra_transient=extra_transient, label=f"item {item['item_id'][:8]}",
+            )
+            if res.cost_usd:
+                spent += res.cost_usd
         outputs[item["item_id"]] = res.output
-        if res.cost_usd:
-            spent += res.cost_usd
+        if live_dir is not None and not resumed:
+            (live_dir / f"{item['item_id']}.txt").write_text(res.output, encoding="utf-8")
 
         reference = None
         if ref_dir is not None:
@@ -308,6 +361,11 @@ def one_pass(
             else score(res.output, reference)
         )
         row: Dict[str, Any] = {"item_id": item["item_id"], **scored}
+        # On EVERY row, not just the resumed ones: the aggregate averages only the rows
+        # that carry a key, so a flag set on resumed items alone would report 1.0
+        # whether one item was replayed or all of them. As 0/1 on every row its mean is
+        # the SHARE of the run that was replayed, which is the number worth knowing.
+        row["resumed"] = 1.0 if resumed else 0.0
         for field_name in ("latency_ms", "tokens_in", "tokens_out", "cost_usd"):
             v = getattr(res, field_name)
             if v is not None:
@@ -502,19 +560,27 @@ def main() -> int:
     per_repeat: List[Dict[str, float]] = []
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
+        run_dir = RUNS / run_id
+        # The output directory exists BEFORE the pass starts, so each item lands on disk
+        # as it is produced and a crash leaves something to resume from.
         result = one_pass(
-            ds, cfg, i, resume_dir=resume_dir, call_system=call_system, score=score,
+            ds, cfg, i, resume_dir=resume_dir, live_dir=run_dir / "outputs",
+            call_system=call_system, score=score,
             extra_transient=_adapter_transient(adapter_path),
         )
-        run_dir = RUNS / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "predictions.jsonl").write_text(
             "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
             encoding="utf-8",
         )
-        (run_dir / "outputs").mkdir(exist_ok=True)
+        # Outputs are already on disk -- written per item by `one_pass`. Rewriting them
+        # here only matters for a resumed pass, whose outputs came from the PREVIOUS
+        # run's directory and must be copied into this one so the run is self-contained.
+        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
         for item_id, text in result["outputs"].items():
-            (run_dir / "outputs" / f"{item_id}.txt").write_text(text, encoding="utf-8")
+            dest = run_dir / "outputs" / f"{item_id}.txt"
+            if not dest.is_file():
+                dest.write_text(text, encoding="utf-8")
 
         metrics = {
             "run_id": run_id,

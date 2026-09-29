@@ -1,0 +1,20 @@
+Let me analyze the sentence for named entities:
+
+"M-28 was rerouted on June 4 , 1999 , when the City of Ishpeming petitioned MDOT to reroute the highway along Lakeshore Drive to US 41/M-28 ."
+
+Entities:
+1. M-28 - this is a highway designation. Highways are typically classified as... could be "other" or "location" or "product". In many NER schemes, highways are "other" or "location". Let me think. M-28 is a Michigan state highway. In the context of these eight types (art, building, event, location, organization, other, person, product), a highway route designation is often classified as "other" in some datasets, but could be "location". Actually, in CoNLL-style, M-28 would be a location or misc. Given the types available, I'd say "other" is safest for highway designations, but some might say location. Hmm.
+
+Let me think about typical annotation guidelines. In OntoNotes, highways like "Interstate 5" are FAC (facility) which falls under location in some mappings. In this eight-type scheme (which resembles the CoNLL-2003 mapped types or similar), roads could be "location" or "other".
+
+Actually, this looks like it could be from a dataset where the types are: art, building, event, location, organization, other, person, product. This resembles the "Universal Named Entities" or the WikiAnn/onto notes mapping. In some datasets like the "Broad coverage" NER, roads are "location" (as geographic features) or "other".
+
+Let me consider: M-28 appears twice (at start and in "US 41/M-28"). US 41 is also a highway.
+
+2. June 4, 1999 - this is a date. Dates are typically "other" in such schemes (not event). Hmm, but is a date a named entity here? In CoNLL, dates are not annotated. In this scheme with "other", dates might be "other". Actually, in many of these tasks, dates are excluded. But "other" could include dates. Let me think about the specific dataset. The eight types art, building, event, location, organization, other, person, product — this looks like the entity types from the "Few-NERD" dataset? No, Few-NERD has more types. 
+
+Actually this looks like it could be from the CoNLL 2003 English mapped to 8 types? CoNLL has LOC, MISC, ORG, PER. Not matching.
+
+The types art, building, event, location, organization, other, person, product appear in the "OntoNotes"-derived or "Universal" NER? Hmm.
+
+Actually, these eight types match the "MIT Restaurant" no... Let me think

@@ -1,0 +1,11 @@
+The user wants me to classify a news article into one of four categories: World, Sports, Business, Sci/Tech.
+
+The article is about Hurricane Charley hitting Florida, with rescue teams, insurance adjusters, and National Guard troops helping victims. This is a news story about a natural disaster and its aftermath in the United States.
+
+Let me think about which category fits:
+- World: This is about a US event, but "World" in news classification often means general news (non-sports, non-business, non-tech). In the AG News dataset, which has these exact four categories, "World" includes general news like disasters, politics, etc.
+- Sports: No, this is not about sports.
+- Business: While insurance adjusters are mentioned, the article is primarily about disaster relief, not business.
+- Sci/Tech: No, this is not about science or technology.
+
+In the AG News dataset (which uses exactly these four categories), hurricane/disaster news is typically classified

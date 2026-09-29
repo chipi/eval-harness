@@ -1,0 +1,1 @@
+[{"text": "Biscay Campaign", "type": "event"}, {"text": "Battle of Brunete", "type": "event"}, {"text": "Battle of Santander", "type": "event"}, {"text": "Aragon Offensive", "type": "event"}, {"text": "Vinar\u00f2s", "type": "location"}, {"text": "Castell\u00f3n", "type": "location"}]

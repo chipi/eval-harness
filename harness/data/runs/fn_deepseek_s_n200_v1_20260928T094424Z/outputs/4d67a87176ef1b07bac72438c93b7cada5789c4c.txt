@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "February 4", "type": "event"},
+  {"text": "2011", "type": "other"},
+  {"text": "Washington Post", "type": "organization"},
+  {"text": "President Obama", "type": "person"},
+  {"text": "Decathlon", "type": "other"},
+  {"text": "Mall", "type": "location"}
+]
+```

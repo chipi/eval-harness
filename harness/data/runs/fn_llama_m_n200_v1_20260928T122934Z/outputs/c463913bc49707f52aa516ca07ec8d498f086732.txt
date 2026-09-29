@@ -1,0 +1,10 @@
+[
+  {
+    "text": "20 February 1953",
+    "type": "other"
+  },
+  {
+    "text": "OMS",
+    "type": "organization"
+  }
+]

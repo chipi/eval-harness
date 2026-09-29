@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Glyceraldehyde-3-phosphate dehydrogenase",
+    "type": "product"
+  },
+  {
+    "text": "GAPN",
+    "type": "product"
+  },
+  {
+    "text": "NADP+",
+    "type": "product"
+  },
+  {
+    "text": "NADPH",
+    "type": "product"
+  }
+]
+```

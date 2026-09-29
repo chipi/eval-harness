@@ -1,0 +1,18 @@
+Let me analyze the sentence to extract named entities.
+
+Sentence: "During her first week of work as an aide for Meyer , on January 8 , 1993 , Shilling 's parents and five employees were murdered at the family 's restaurant in Palatine , Illinois , during a robbery-murder now known as the Brown 's Chicken massacre ."
+
+Named entities:
+1. Meyer - person (aide for Meyer)
+2. January 8 , 1993 - this is a date. Dates aren't in the eight types... The types are: art, building, event, location, organization, other, person, product. A date could be "other" or possibly "event". Hmm. In some NER schemes, dates are considered "other" or sometimes events. Let me think. The eight types include "other" which is a catch-all. January 8, 1993 is a date - I'd classify it as "other" or possibly "event". Actually, in many annotation schemes like OntoNotes, DATE is its own category. Here, since we only have these eight types, a date would likely be "other". But some might consider it an event. Hmm. Let me think about what's most reasonable. The date itself is a temporal expression, not an event. I'll classify it as "other".
+
+Actually, wait. Let me reconsider. Some datasets like the "Universal NER" or similar have DATE as a category. With these eight types (art, building, event, location, organization, other, person, product), this looks like it could be from a CoNLL-style expanded scheme. In CoNLL-2003, the types are PER, LOC, ORG, MISC. The expanded version with art, building, event, other, product... This looks like the "few-NERd" or similar. Actually, this looks like it could be from the MIT Restaurant corpus or... Hmm, the eight types art, building, event, location, organization, other, person, product - this is from the "CoNLL 2003 extended" or maybe the "OntoNotes" subset? 
+
+Actually, this set of eight types matches the NER annotation scheme used in some datasets where dates are "other". Let me just go with "other" for the date.
+
+Hmm, but actually, maybe the date should be considered an event? "January 8, 1993" - no, it's a date, not an event. I'll go with "other".
+
+3. Shilling - person (Shilling's parents - Shilling is a person's name)
+4. Palatine - location
+5. Illinois - location
+6. Brown 's Chicken massacre - event (the massacre). Also "Brown's Chicken" could be an organization (the restaurant chain). The text says "the Brown 's Chicken massacre" - the whole thing is the

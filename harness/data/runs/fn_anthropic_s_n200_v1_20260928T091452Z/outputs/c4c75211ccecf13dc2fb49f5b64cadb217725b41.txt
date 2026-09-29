@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Chlorine dioxide",
+    "type": "product"
+  }
+]
+```

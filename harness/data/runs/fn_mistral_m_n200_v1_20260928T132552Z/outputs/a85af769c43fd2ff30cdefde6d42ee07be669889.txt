@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Treaty of Bosque Redondo", "type": "event"},
+  {"text": "Navajo Treaty of 1868", "type": "event"},
+  {"text": "Treaty of Fort Sumner", "type": "event"},
+  {"text": "Navajo", "type": "organization"},
+  {"text": "US Federal Government", "type": "organization"},
+  {"text": "June 1, 1868", "type": "event"}
+]
+```

@@ -1,0 +1,1 @@
+[{"text": "1921", "type": "event"}, {"text": "Haugh", "type": "location"}, {"text": "A. Brownlie", "type": "person"}]

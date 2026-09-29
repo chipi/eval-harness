@@ -1,0 +1,1 @@
+[{"text": "Abhidharmako\u015ba", "type": "person"}, {"text": "Bodhisattvacary\u0101vat\u0101ra", "type": "person"}]

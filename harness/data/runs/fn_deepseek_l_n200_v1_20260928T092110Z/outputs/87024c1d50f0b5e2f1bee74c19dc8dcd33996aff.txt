@@ -1,0 +1,8 @@
+[
+  {"text": "West", "type": "organization"},
+  {"text": "German", "type": "location"},
+  {"text": "World War II", "type": "event"},
+  {"text": "Battle of the Atlantic", "type": "event"},
+  {"text": "8 May 1941", "type": "event"},
+  {"text": "20 June 1941", "type": "event"}
+]

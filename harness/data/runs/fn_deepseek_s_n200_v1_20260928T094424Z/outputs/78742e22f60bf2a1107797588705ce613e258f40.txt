@@ -1,0 +1,9 @@
+[
+  {"text": "Clube da Esquina", "type": "other"},
+  {"text": "rock and roll", "type": "other"},
+  {"text": "progressive rock", "type": "other"},
+  {"text": "bossa nova", "type": "other"},
+  {"text": "jazz", "type": "other"},
+  {"text": "Brazilian folk music", "type": "other"},
+  {"text": "classical music", "type": "other"}
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Amazing Stories",
+    "type": "product"
+  },
+  {
+    "text": "March",
+    "type": "other"
+  },
+  {
+    "text": "Michael Joseph",
+    "type": "person"
+  }
+]

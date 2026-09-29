@@ -1,0 +1,1 @@
+[{"text": "Privately", "type": "location"}, {"text": "CIA", "type": "location"}, {"text": "President Dwight D. Eisenhower", "type": "location"}, {"text": "Soviets", "type": "location"}, {"text": "Sputnik", "type": "location"}]

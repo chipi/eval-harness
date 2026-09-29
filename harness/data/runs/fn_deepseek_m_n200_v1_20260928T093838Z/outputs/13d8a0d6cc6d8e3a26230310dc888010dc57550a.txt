@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "War of Independence", "type": "event"},
+  {"text": "Israeli", "type": "organization"},
+  {"text": "army", "type": "organization"}
+]
+```

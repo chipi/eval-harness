@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Microsoft",
+    "type": "organization"
+  },
+  {
+    "text": "game",
+    "type": "product"
+  }
+]
+```

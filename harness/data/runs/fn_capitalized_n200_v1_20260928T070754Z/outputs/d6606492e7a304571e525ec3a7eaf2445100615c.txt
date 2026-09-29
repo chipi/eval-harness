@@ -1,0 +1,1 @@
+[{"text": "Slonczewski", "type": "location"}, {"text": "Quakers", "type": "location"}, {"text": "Quakerism", "type": "location"}]

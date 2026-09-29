@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Packard",
+    "type": "person"
+  },
+  {
+    "text": "August",
+    "type": "other"
+  },
+  {
+    "text": "Hewlett-Packard Company",
+    "type": "organization"
+  },
+  {
+    "text": "January",
+    "type": "other"
+  }
+]

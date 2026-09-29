@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Helena Mary Molony", "type": "person"},
+  {"text": "15 January 1883", "type": "other"},
+  {"text": "28 January 1967", "type": "other"},
+  {"text": "Irish", "type": "other"}
+]
+```

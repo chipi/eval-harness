@@ -1,0 +1,1 @@
+[{"text": "French Grand Prix", "type": "event"}, {"text": "Formula One", "type": "event"}, {"text": "Reims-Gueux", "type": "location"}]

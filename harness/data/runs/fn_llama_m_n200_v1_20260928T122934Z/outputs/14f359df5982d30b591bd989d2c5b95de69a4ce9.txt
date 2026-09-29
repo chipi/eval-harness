@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Kosovo",
+    "type": "location"
+  },
+  {
+    "text": "Vetëvendosje ( LVV )",
+    "type": "organization"
+  },
+  {
+    "text": "Democratic League of Kosovo ( LDK )",
+    "type": "organization"
+  },
+  {
+    "text": "Democratic Party of Kosovo ( PDK )",
+    "type": "organization"
+  }
+]

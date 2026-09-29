@@ -1,0 +1,6 @@
+[
+  {"text": "Lady Washington Inn", "type": "building"},
+  {"text": "Huntingdon Valley", "type": "location"},
+  {"text": "Montgomery County", "type": "location"},
+  {"text": "Pennsylvania", "type": "location"}
+]

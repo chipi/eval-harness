@@ -12,6 +12,7 @@ are tested rather than asserted in a README.
 from __future__ import annotations
 
 import json
+import pathlib
 import subprocess
 import sys
 import tempfile
@@ -34,8 +35,13 @@ def check(label: str, ok: bool, detail: str = "") -> None:
         failures.append(label)
 
 
-def run(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True)
+def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
+    """Run a harness script. `env` adds to the inherited environment, it does not
+    replace it -- a test that needs EVAL_RUNS_DIR still needs PATH and HOME."""
+    import os  # noqa: PLC0415
+
+    e = {**os.environ, **(env or {})}
+    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True, env=e)
 
 
 def test_dotenv_does_not_override_exported() -> None:
@@ -87,7 +93,8 @@ def test_cli_help_works() -> None:
                    "leaderboard", "sweep", "env_check", "holdout_significance",
                    "pair_test", "family_test", "classification_report", "bootstrap_test",
                    "rank_stability", "extraction_report", "retrieval_report", "rescore",
-                   "check_terminology"):
+                   "check_terminology", "check_report_claims", "check_links",
+                   "check_model_facts"):
         r = run(f"scripts/{script}.py", "--help")
         check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
 
@@ -191,16 +198,29 @@ def test_no_absolute_home_path_in_committed_data() -> None:
 def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     """The rule that decides what ships.
 
-    sources, datasets, configs, references and baselines are COMMITTED. materialized and
-    runs are IGNORED, because a command regenerates them. The one place those two sets
-    touched was a baseline's `promoted_from`, which named a run — so a committed artifact
-    depended on an ignored one, and V6 ("every baseline's source run still exists") could
-    not hold on a fresh clone OR after `make clean`, which deletes runs while explicitly
-    keeping baselines.
+    datasets, configs and baselines are COMMITTED, and so are runs now (metrics,
+    predictions and outputs). materialized is IGNORED because a command regenerates it.
+    The one place the two sets touched was a baseline's `promoted_from`, which named a
+    run — so a committed artifact depended on an ignored one, and V6 ("every baseline's
+    source run still exists") could not hold on a fresh clone OR after `make clean`,
+    which deletes runs while explicitly keeping baselines.
 
     Resolved by shipping ONE worked example run, force-included in .gitignore, so a fresh
     checkout sees a walked loop and the committed baseline resolves. This asserts the
     dependency stays inside the committed set.
+
+    THIS DOCSTRING USED TO SAY "sources ... and references are COMMITTED", AND THAT WENT
+    QUIETLY FALSE. It was true when the only corpus was the synthetic demo. Every real
+    corpus since added its own exclusion lines -- data/sources/<id>/ and
+    data/references/{gold,silver}/<id>/ -- because none of the four is ours to
+    redistribute. 7 reference files are tracked against 1,382 on disk.
+
+    So the committed runs DO depend on ignored references, deliberately and permanently,
+    and this test cannot forbid that. What it does instead is count the dependency so it
+    is visible, and the guarantee that makes it safe lives in
+    test_rescore_refuses_a_missing_reference_set: scoring without the references refuses
+    rather than reporting a plausible wrong number. That refusal did not exist until a
+    clone of this repo scored an arm at f1 0.1071 whose recorded f1 is 0.6798.
     """
     import subprocess
 
@@ -221,6 +241,23 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
             f"{promoted_from} is not tracked — a committed baseline citing an ignored run "
             f"breaks V6 on any clean checkout",
         )
+
+    # The runs -> references direction, counted rather than forbidden. A reader needs to
+    # know that `make rescore` on a fresh clone needs a fetch first, and how much of the
+    # tree that applies to.
+    tracked_refs = subprocess.run(
+        ["git", "ls-files", "data/references"], cwd=ROOT, capture_output=True, text=True,
+    ).stdout.split()
+    tracked_ref_ids = {pathlib.Path(f).parent.name for f in tracked_refs}
+    needs_fetch = set()
+    for mj in sorted((ROOT / "data" / "runs").glob("*/metrics.json")):
+        rid = ((json.loads(mj.read_text()).get("fingerprint") or {}).get("data")
+               or {}).get("reference_id")
+        if rid and pathlib.Path(rid).name not in tracked_ref_ids:
+            needs_fetch.add(pathlib.Path(rid).name)
+    print(f"  --   consistency: {len(needs_fetch)} reference set(s) are ignored by "
+          f"design and must be re-fetched before rescore: "
+          f"{', '.join(sorted(needs_fetch)) or 'none'}")
 
 
 def test_fingerprint_core_imports_no_ml_framework() -> None:
@@ -388,7 +425,11 @@ def test_example_scorer_suites_pass() -> None:
     """
     for script, subject in (("test_extraction_scorer.py", "set scorer"),
                             ("test_ner_parser.py", "NER JSON parser"),
-                            ("test_retrieval_scorer.py", "ranked-list scorer")):
+                            ("test_retrieval_scorer.py", "ranked-list scorer"),
+                            ("test_code_hashes.py", "scoring-code hashes"),
+                            ("check_report_claims.py", "report claims vs committed runs"),
+                            ("check_links.py", "markdown links and anchors"),
+                            ("check_model_facts.py", "model facts vs the evidence capture")):
         path = HERE / script
         if not path.is_file():
             continue
@@ -398,6 +439,178 @@ def test_example_scorer_suites_pass() -> None:
             continue
         check(f"{subject}: all assertions pass", r.returncode == 0,
               (r.stdout or r.stderr or "").strip()[-160:])
+
+
+def test_fingerprint_version_is_read_somewhere() -> None:
+    """A version field nothing reads is decoration.
+
+    v2 added `data.references_sha256`, so a v1 and a v2 hash are not comparable even
+    when everything v1 covers is identical. `compare_runs` must say so rather than
+    reporting a bare hash mismatch and sending a reader hunting for a change that is
+    not there.
+    """
+    src = (HERE / "compare_runs.py").read_text()
+    check("compare_runs notices a fingerprint version mismatch",
+          'fa.get("version") != fb.get("version")' in src)
+    from _fingerprint import build_fingerprint  # noqa: PLC0415
+    fp = build_fingerprint(root=HERE.parent, dataset={"dataset_id": "d", "items": []},
+                           reference_id=None, reference_tier=None, config_id="c",
+                           params={}, adapter_id="a", adapter_path=None)
+    check("new fingerprints are version 2", fp.get("version") == 2, str(fp.get("version")))
+
+
+def test_verdict_honours_declared_kinds() -> None:
+    """An adapter's own metric must not be judged better/worse by the sign of a delta.
+
+    `verdict_for` consulted only the built-in table, which knows the bundled adapter's
+    metrics and nothing else -- so every EXAMPLE metric got a better/worse verdict from
+    its sign. `llm_named_unknown` counts hallucinated document ids, and more of them
+    was reported as an improvement.
+    """
+    sys.path.insert(0, str(HERE))
+    from _common import verdict_for  # noqa: PLC0415
+
+    check("verdict: unknown metric, no kinds -> judged by sign (the old behaviour)",
+          verdict_for("llm_named_unknown", +1.0) == "better")
+    check("verdict: declared descriptive -> 'changed', not 'better'",
+          verdict_for("llm_named_unknown", +1.0,
+                      kinds={"llm_named_unknown": "descriptive"}) == "changed")
+    check("verdict: declared quality still gets a direction",
+          verdict_for("ndcg_10", +1.0, kinds={"ndcg_10": "quality"}) == "better")
+    check("verdict: a declaration cannot flip cost's direction",
+          verdict_for("cost_usd", +1.0, kinds={"cost_usd": "cost"}) == "worse")
+
+
+def test_fingerprint_covers_reference_bytes() -> None:
+    """Editing a reference must change the fingerprint. It did not, for five examples.
+
+    `reference_id` is a NAME. The data block hashed the source items but identified the
+    references only by name, so a changed gold file produced different scores under an
+    identical hash -- and `compare_runs` reported "reference identical" while comparing
+    two different measurements.
+    """
+    import shutil, tempfile  # noqa: PLC0415
+    sys.path.insert(0, str(HERE))
+    from _fingerprint import build_fingerprint  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        refs = root / "data" / "references" / "gold" / "t1"
+        refs.mkdir(parents=True)
+        (refs / "i1.txt").write_text("alpha", encoding="utf-8")
+        ds = {"dataset_id": "t1", "items": [{"item_id": "i1", "source_sha256": "aa"}]}
+        kw = dict(root=root, dataset=ds, reference_id="gold/t1", reference_tier="gold",
+                  config_id="c", params={}, adapter_id="a", adapter_path=None)
+        before = build_fingerprint(**kw)
+        (refs / "i1.txt").write_text("beta", encoding="utf-8")
+        after = build_fingerprint(**kw)
+        check("fingerprint: editing a reference changes the hash",
+              before["hash"] != after["hash"])
+        check("fingerprint: references_sha256 is what moved",
+              before["data"]["references_sha256"] != after["data"]["references_sha256"])
+        check("fingerprint: no references -> None, not a hash of nothing",
+              build_fingerprint(**{**kw, "reference_id": None})
+              ["data"]["references_sha256"] is None)
+
+
+def test_resume_scores_and_persists() -> None:
+    """A resumed run must SCORE its replayed items, and a crash must leave outputs.
+
+    Both directions of a bug that cost paid data. `--resume` used to `continue` past
+    scoring, so a fully-resumed run wrote zero prediction rows and empty scores while
+    reporting success -- and outputs were only written after the whole pass returned, so
+    a crash at item k discarded all k paid outputs AND left the resume path nothing to
+    read. The recovery command the cost cap prints was the broken one.
+    """
+    import shutil  # noqa: PLC0415
+
+    runs = HERE.parent / "data" / "runs-selftest-resume"
+    shutil.rmtree(runs, ignore_errors=True)
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    r = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    if r.returncode != 0:
+        print("  --   resume: skipped (demo arm did not run)")
+        shutil.rmtree(runs, ignore_errors=True)
+        return
+    src = sorted(p.name for p in runs.iterdir() if p.is_dir())[0]
+    outs = sorted((runs / src / "outputs").glob("*.txt"))
+    check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
+
+    # Simulate a crash: drop all but one output, as if the pass died at item 2.
+    for f in outs[1:]:
+        f.unlink()
+    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml",
+             "--resume", src, env=env)
+    check("resume: the resumed pass exits 0", r2.returncode == 0,
+          (r2.stderr or "")[-160:])
+    newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
+    rows = [l for l in (newest / "predictions.jsonl").read_text().splitlines() if l.strip()]
+    check("resume: every item is SCORED, not skipped", len(rows) == len(outs),
+          f"{len(rows)} rows for {len(outs)} items")
+    check("resume: replayed items are flagged",
+          any('"resumed": 1' in l or '"resumed":1' in l for l in rows))
+    shutil.rmtree(runs, ignore_errors=True)
+
+
+def test_rescore_refuses_a_missing_reference_set() -> None:
+    """Rescoring with no references must DIE, not score against an empty gold set.
+
+    Found by cloning this repo and running rescore in the clone, which is the thing
+    committing outputs/ was supposed to make possible. It ran, it exited 0, and it
+    reported f1 = 0.1071 for an arm whose recorded f1 is 0.6798.
+
+    The cause was an asymmetry two lines apart in rescore.py: a missing OUTPUT called
+    die(), a missing REFERENCE fell through as None. So the guarded artifact was the
+    expensive one and the unguarded one was the corpus -- which is gitignored, and
+    therefore exactly what every fresh clone is missing. Every prediction became a false
+    positive against an empty gold set, which does not look like a failure. It looks like
+    a weak model.
+
+    A partial reference set still only warns: a tier may legitimately not cover every
+    item. Zero found against a declared reference_id cannot be legitimate.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("*")):
+        mj = d / "metrics.json"
+        if not (mj.is_file() and (d / "outputs").is_dir()):
+            continue
+        m = _json.loads(mj.read_text())
+        if ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
+            src = d
+            break
+    if src is None:
+        print("  --   rescore/missing-refs: skipped (no committed run declares a reference_id)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-rescore"
+    shutil.rmtree(runs, ignore_errors=True)
+    dst = runs / src.name
+    dst.mkdir(parents=True)
+    for name in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / name, dst / name)
+    shutil.copytree(src / "outputs", dst / "outputs")
+
+    # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
+    # where the real one is absent because the corpus is gitignored -- and it does not
+    # touch the real references, so a crash here cannot damage them.
+    m = _json.loads((dst / "metrics.json").read_text())
+    m["fingerprint"]["data"]["reference_id"] = "gold/_selftest_absent_reference"
+    (dst / "metrics.json").write_text(_json.dumps(m))
+
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    r = run("scripts/rescore.py", "--dataset-id", str(m.get("dataset_id")),
+            "--out", str(runs / "out"), env=env)
+    check("rescore: a declared-but-absent reference set is refused, not scored",
+          r.returncode != 0, f"exit {r.returncode}")
+    check("rescore: and it says the references are what is missing",
+          "reference" in ((r.stderr or "") + (r.stdout or "")).lower(),
+          ((r.stderr or "") + (r.stdout or ""))[-160:])
+    check("rescore: it writes no partial rescored run",
+          not (runs / "out" / src.name / "metrics.json").is_file())
+    shutil.rmtree(runs, ignore_errors=True)
 
 
 def test_spearman_is_tie_correct() -> None:
@@ -508,6 +721,11 @@ def main() -> int:
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
         test_example_scorer_suites_pass,
+        test_fingerprint_version_is_read_somewhere,
+        test_verdict_honours_declared_kinds,
+        test_fingerprint_covers_reference_bytes,
+        test_resume_scores_and_persists,
+        test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
     ):

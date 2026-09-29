@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Rupert Giles", "type": "other"},
+  {"text": "Buffy the Vampire Slayer", "type": "art"},
+  {"text": "Head", "type": "person"},
+  {"text": "Adam Klaus", "type": "other"},
+  {"text": "Stuart Milligan", "type": "person"}
+]
+```

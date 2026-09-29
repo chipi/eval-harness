@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "hydrochloric acid",
+    "type": "product"
+  },
+  {
+    "text": "sulfuric acid",
+    "type": "product"
+  },
+  {
+    "text": "fluorine",
+    "type": "other"
+  }
+]
+```

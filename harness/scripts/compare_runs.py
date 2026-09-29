@@ -35,6 +35,17 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
     as "you moved to the DGX" rather than "the model got faster".
     """
     fa, fb = a.get("fingerprint"), b.get("fingerprint")
+    # DIFFERENT FINGERPRINT VERSIONS HASH DIFFERENT THINGS. v2 added
+    # `data.references_sha256`, so a v1 hash and a v2 hash are not comparable even when
+    # everything either one covers is identical -- and a bare "the hashes differ" would
+    # send a reader looking for a change that is not there. Said out loud, because a
+    # version field nothing reads is decoration.
+    if fa and fb and fa.get("version") != fb.get("version"):
+        print(f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs "
+              f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not, so\n"
+              "  the two hashes cannot be compared directly — the field-by-field list\n"
+              "  below is the comparison that still means something. Re-run the older\n"
+              "  arm to put both on the same version.")
     if not (fa and fb):
         print(
             "\n  NOTE: at least one run predates fingerprinting, so what else changed"
@@ -109,6 +120,12 @@ def main() -> int:
     keys = sorted(set(a["scores"]) | set(b["scores"]))
     w = max([len(k) for k in keys] + [6])
     print(f"\n  {'metric':{w}} {'baseline':>12} {'candidate':>12} {'delta':>12}   verdict")
+    # THE KINDS THE RUNS THEMSELVES RECORDED. `verdict_for` otherwise consults only the
+    # built-in table, which knows the bundled adapter's metrics and nothing else -- so
+    # every example's own metrics were judged "better"/"worse" by sign alone. An arm
+    # that hallucinated more document ids was reported as improved.
+    kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
+
     worth = 0
     for k in keys:
         if k not in a["scores"] or k not in b["scores"]:
@@ -125,7 +142,7 @@ def main() -> int:
             # Direction comes from _common, the same place leaderboard.py gets it.
             # This used to be `"better" if d > 0 else "worse"` for every metric, so a
             # run that got FASTER or CHEAPER was reported as worse.
-            verdict = verdict_for(k, d)
+            verdict = verdict_for(k, d, kinds=kinds)
             # Only a real regression or improvement counts toward "moved beyond the
             # noise floor". A descriptive metric moving is not a verdict, and counting
             # it inflated the number a reader uses to decide whether to care.

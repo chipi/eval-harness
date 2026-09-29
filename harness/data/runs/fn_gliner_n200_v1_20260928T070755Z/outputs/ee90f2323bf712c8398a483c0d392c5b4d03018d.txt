@@ -1,0 +1,1 @@
+[{"text": "In June 2003", "type": "event"}, {"text": "Rockpalast", "type": "location"}, {"text": "Rock am Ring", "type": "location"}]

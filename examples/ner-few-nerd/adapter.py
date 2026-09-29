@@ -127,16 +127,21 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
     fenced = _FENCE.search(body)
     if fenced:
         body = fenced.group(1).strip()
-    if not body.lstrip().startswith("["):
-        found = _ARRAY.search(body)
-        if found:
-            body = found.group(0)
-        elif body.lstrip().startswith("{"):
-            # A bare object with no enclosing array. Handled below as a one-element set;
-            # falling through to the array search would discard it.
-            pass
-        else:
-            return None
+    # EXTRACT THE ARRAY WHEREVER IT IS, including when the text STARTS with one.
+    #
+    # This used to run only when the body did not start with "[", so a valid list
+    # followed by any prose -- `[{...}]\n\nI hope this helps!` -- was handed to
+    # json.loads whole and failed. A correct answer with a courtesy sentence after it
+    # scored zero, and that may be part of what the NER report counted as "unreadable".
+    # Found by review.
+    found = _ARRAY.search(body)
+    if found:
+        body = found.group(0)
+    elif not body.lstrip().startswith("{"):
+        # Not an array anywhere and not a bare object either: there is nothing here to
+        # read as a set. A bare object falls through and is handled below as a
+        # one-element set.
+        return None
     # Repairs are tried in order, each strictly more forgiving than the last, and every
     # one of them fixes a failure OBSERVED on the dev slice rather than an imagined one:
     #
@@ -178,10 +183,17 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
 
 
 def _parser_sha256() -> str:
-    import hashlib  # noqa: PLC0415
-    import inspect  # noqa: PLC0415
+    """The parser AND the four regexes it repairs with.
 
-    return hashlib.sha256(inspect.getsource(_parse_entities).encode()).hexdigest()
+    `getsource` returns only the `def` block, so editing `_BARE_KEY` -- which is what
+    decides whether llama_m's unquoted-key output parses at all -- changed every score
+    and left this hash identical. Found by review, not by us.
+    """
+    from codehash import code_digest  # noqa: PLC0415
+
+    return code_digest(_parse_entities, consts={
+        "_FENCE": _FENCE, "_ARRAY": _ARRAY,
+        "_TRAILING_COMMA": _TRAILING_COMMA, "_BARE_KEY": _BARE_KEY})
 
 
 # ── providers ────────────────────────────────────────────────────────────────

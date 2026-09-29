@@ -1,0 +1,26 @@
+[
+  {
+    "text": "Babylon 5",
+    "type": "product"
+  },
+  {
+    "text": "Prime Time Entertainment Network",
+    "type": "organization"
+  },
+  {
+    "text": "PTEN",
+    "type": "organization"
+  },
+  {
+    "text": "WB",
+    "type": "organization"
+  },
+  {
+    "text": "UPN",
+    "type": "organization"
+  },
+  {
+    "text": "TNT",
+    "type": "organization"
+  }
+]

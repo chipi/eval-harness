@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Seventeenth Amendment",
+    "type": "other"
+  },
+  {
+    "text": "United States Constitution",
+    "type": "other"
+  },
+  {
+    "text": "Progressive-era",
+    "type": "other"
+  }
+]

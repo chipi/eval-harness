@@ -1,0 +1,18 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  {
+    "text": "Yuri Larionov",
+    "type": "person"
+  },
+  {
+    "text": "Furosemide",
+    "type": "product"
+  },
+  {
+    "text": "December",
+    "type": "event"
+  }
+]
+```

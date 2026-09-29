@@ -1,0 +1,12 @@
+```
+[
+  {
+    "text": "Prague",
+    "type": "location"
+  },
+  {
+    "text": "the two",
+    "type": "other"
+  }
+]
+```

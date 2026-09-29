@@ -1,0 +1,13 @@
+[
+  {"text": "March 1937", "type": "event"},
+  {"text": "4th Brigade", "type": "organization"},
+  {"text": "Mola ’ s Navarrese division", "type": "organization"},
+  {"text": "Biscay Campaign", "type": "event"},
+  {"text": "Battle of Brunete", "type": "event"},
+  {"text": "July 1937", "type": "event"},
+  {"text": "Battle of Santander", "type": "event"},
+  {"text": "Aragon Offensive", "type": "event"},
+  {"text": "April 15", "type": "event"},
+  {"text": "Vinaròs", "type": "location"},
+  {"text": "province of Castellón", "type": "location"}
+]

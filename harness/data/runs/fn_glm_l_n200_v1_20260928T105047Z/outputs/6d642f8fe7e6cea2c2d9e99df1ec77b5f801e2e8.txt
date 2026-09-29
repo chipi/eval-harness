@@ -1,0 +1,1 @@
+[{"text": "Ustaše", "type": "organization"}, {"text": "Independent State of Croatia", "type": "location"}, {"text": "Ser", "type": "location"}, {"text": "Palanjek Pokupski", "type": "location"}, {"text": "Cerje", "type": "location"}, {"text": "Vrh Letovanski", "type": "location"}]

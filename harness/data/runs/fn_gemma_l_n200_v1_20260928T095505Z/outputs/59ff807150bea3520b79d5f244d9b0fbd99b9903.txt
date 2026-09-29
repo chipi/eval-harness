@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Germany",
+    "type": "location"
+  },
+  {
+    "text": "Gerhard Schröder",
+    "type": "person"
+  },
+  {
+    "text": "Hitler",
+    "type": "person"
+  }
+]
+```

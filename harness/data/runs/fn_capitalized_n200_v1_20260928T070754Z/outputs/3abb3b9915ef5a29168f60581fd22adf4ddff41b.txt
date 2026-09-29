@@ -1,0 +1,1 @@
+[{"text": "Mummadi Krishnaraja Wodeyar", "type": "location"}, {"text": "Mysore", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text": "Mosin-Nagant", "type": "product"}, {"text": "DP", "type": "product"}, {"text": "PM-M1910", "type": "product"}, {"text": "RPG-40 anti-tank grenades", "type": "product"}, {"text": "PTRD-41 anti-tank rifles", "type": "product"}, {"text": "Moscow", "type": "location"}]

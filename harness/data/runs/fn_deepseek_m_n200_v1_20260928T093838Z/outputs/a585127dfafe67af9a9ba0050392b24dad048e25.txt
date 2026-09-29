@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Amazing Stories", "type": "product"},
+  {"text": "1968", "type": "other"},
+  {"text": "Michael Joseph", "type": "person"}
+]
+```

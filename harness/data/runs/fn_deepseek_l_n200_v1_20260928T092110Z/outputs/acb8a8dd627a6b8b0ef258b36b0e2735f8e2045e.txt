@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "tachycardia", "type": "other"},
+  {"text": "dilated pupils", "type": "other"},
+  {"text": "restlessness", "type": "other"},
+  {"text": "arousal", "type": "other"},
+  {"text": "euphoria", "type": "other"},
+  {"text": "open and closed eye visuals", "type": "other"},
+  {"text": "synesthesia", "type": "other"}
+]
+```

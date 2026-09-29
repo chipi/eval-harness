@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Ruby",
+    "type": "art"
+  },
+  {
+    "text": "Current TV",
+    "type": "organization"
+  }
+]

@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Mars", "type": "location"},
+  {"text": "Jupiter", "type": "location"},
+  {"text": "Pallas", "type": "other"},
+  {"text": "Juno", "type": "other"},
+  {"text": "4 Vesta", "type": "other"},
+  {"text": "5 Astraea", "type": "other"}
+]
+```

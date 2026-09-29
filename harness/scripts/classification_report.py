@@ -41,7 +41,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import REFERENCES, RUNS, SOURCES, die, read_json  # noqa: E402
+from _common import REFERENCES, RUNS, SOURCES, die, read_json, ROOT  # noqa: E402
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding
@@ -57,6 +57,34 @@ def gold_labels(dataset_id: str) -> dict:
     return {p.stem: p.read_text(encoding="utf-8").strip() for p in root.glob("*.txt")}
 
 
+def _label_parser(adapter_spec: str | None):
+    """The example's own `parse_label`, if its adapter can be imported.
+
+    Returns None when it cannot -- on a machine without the example's venv, or for a
+    run whose adapter has moved -- and the caller then falls back to the frozen
+    `_meta.predicted`. Degrading to the old behaviour is correct; silently reporting
+    two different parsers in one table was not.
+    """
+    if not adapter_spec:
+        return None
+    for base in (ROOT, ROOT.parent):
+        cand = Path(adapter_spec) if Path(adapter_spec).is_absolute() else base / adapter_spec
+        if cand.is_file():
+            break
+    else:
+        return None
+    try:
+        import importlib.util  # noqa: PLC0415
+        spec = importlib.util.spec_from_file_location(f"clsrep_{cand.stem}", cand)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)
+        task = getattr(mod, "TASK", None)
+        return getattr(task, "parse_label", None) if task is not None else None
+    except Exception:  # noqa: BLE001 — an un-importable adapter is a fallback, not a crash
+        return None
+
+
 def predictions(dataset_id: str, match: str | None) -> dict:
     """config_id -> {item_id: predicted label}, over every matching run on disk."""
     out: dict = defaultdict(dict)
@@ -70,6 +98,7 @@ def predictions(dataset_id: str, match: str | None) -> dict:
             continue
         if match and match not in cid:
             continue
+        parse = _label_parser(m.get("adapter"))
         for line in pj.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
@@ -77,7 +106,20 @@ def predictions(dataset_id: str, match: str | None) -> dict:
             item = row.get("item_id")
             if not item:
                 continue
-            pred = (row.get("_meta") or {}).get("predicted")
+            # RE-PARSE FROM THE STORED OUTPUT when it is available, exactly as
+            # `score()` does. `_meta.predicted` is the parse FROZEN AT RUN TIME, so
+            # after a parser change plus `make rescore`, accuracy reflected the new
+            # parser and macro-F1 the old one -- two numbers in the same report
+            # measuring two different systems. Parser changes are precisely what this
+            # repo studies (one was worth 8.6 accuracy points), so this was the worst
+            # possible field to freeze. Found by external review.
+            pred = None
+            if parse is not None:
+                out_f = d / "outputs" / f"{item}.txt"
+                if out_f.is_file():
+                    pred = parse(out_f.read_text(encoding="utf-8"))
+            if pred is None:
+                pred = (row.get("_meta") or {}).get("predicted")
             out[cid][item] = pred if pred else UNPARSED
     return out
 

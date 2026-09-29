@@ -1,0 +1,1 @@
+[{"text":"Nef","type":"person"},{"text":"Ahmet I","type":"person"},{"text":"1603–1617","type":"other"},{"text":"Osman II","type":"person"},{"text":"1618–1622","type":"other"}]

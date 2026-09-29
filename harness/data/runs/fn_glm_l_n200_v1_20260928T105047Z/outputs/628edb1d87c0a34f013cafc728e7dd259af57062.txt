@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Drake Bulldogs",
+    "type": "organization"
+  },
+  {
+    "text": "Drake University",
+    "type": "organization"
+  },
+  {
+    "text": "NCAA",
+    "type": "organization"
+  }
+]
+```

@@ -1,0 +1,1 @@
+[{"text": "Summer Olympics", "type": "event"}, {"text": "Games of the XXXIII Olympiad", "type": "event"}]

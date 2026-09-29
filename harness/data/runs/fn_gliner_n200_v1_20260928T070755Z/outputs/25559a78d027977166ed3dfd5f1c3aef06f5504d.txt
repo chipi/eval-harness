@@ -1,0 +1,1 @@
+[{"text": "premiered", "type": "event"}, {"text": "Smock Alley Theatre", "type": "building"}, {"text": "Dublin", "type": "location"}]

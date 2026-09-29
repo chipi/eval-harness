@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "Václav Havel",
+    "type": "person"
+  },
+  {
+    "text": "Burgtheater",
+    "type": "building"
+  },
+  {
+    "text": "Vienna",
+    "type": "location"
+  },
+  {
+    "text": "Vienna",
+    "type": "location"
+  },
+  {
+    "text": "22 April 1976",
+    "type": "event"
+  },
+  {
+    "text": "1976",
+    "type": "other"
+  },
+  {
+    "text": "1976",
+    "type": "other"
+  }
+]
+```

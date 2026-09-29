@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Aleš Hemský", "type": "person"},
+  {"text": "the most valuable player", "type": "other"},
+  {"text": "the play-offs", "type": "event"}
+]
+```

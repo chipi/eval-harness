@@ -1,0 +1,1 @@
+[{"text": "2019 season", "type": "event"}, {"text": "University of Wisconsin-Parkside baseball team", "type": "organization"}, {"text": "Oberbrunner Field", "type": "building"}, {"text": "Simmons Field", "type": "building"}]

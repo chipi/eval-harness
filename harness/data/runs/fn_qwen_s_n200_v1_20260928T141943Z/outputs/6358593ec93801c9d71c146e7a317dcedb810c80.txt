@@ -1,0 +1,34 @@
+[
+  {
+    "text": "RAF Horsham St Faith",
+    "type": "building"
+  },
+  {
+    "text": "December 1947",
+    "type": "other"
+  },
+  {
+    "text": "RAF Coltishall",
+    "type": "building"
+  },
+  {
+    "text": "January 1948",
+    "type": "other"
+  },
+  {
+    "text": "Legion of Merit",
+    "type": "art"
+  },
+  {
+    "text": "President of the United States",
+    "type": "person"
+  },
+  {
+    "text": "United States",
+    "type": "location"
+  },
+  {
+    "text": "9 March 1948",
+    "type": "other"
+  }
+]

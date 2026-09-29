@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "PSIS Semarang",
+    "type": "organization"
+  },
+  {
+    "text": "PSIS Semarang",
+    "type": "organization"
+  }
+]
+```

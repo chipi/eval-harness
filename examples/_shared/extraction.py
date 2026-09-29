@@ -68,6 +68,8 @@ import re
 import unicodedata
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from codehash import code_digest
+
 #: Leading articles are dropped before comparison. "the Taft Hotel" and "Taft Hotel" are
 #: the same entity, and an arm should not lose a point to a determiner. Not a free choice:
 #: it is hashed into the fingerprint, and tightening it later moves every score.
@@ -102,8 +104,8 @@ def normalizer_sha256() -> str:
     was on every run. A set-matcher has strictly more room to move a score than a label
     parser does, so it is fingerprinted from the start rather than after the surprise.
     """
-    body = inspect.getsource(normalize) + repr(_ARTICLES)
-    return hashlib.sha256(body.encode()).hexdigest()
+    return code_digest(normalize, consts={"_ARTICLES": _ARTICLES,
+                                          "_PUNCT": _PUNCT, "_WS": _WS})
 
 
 def scorer_sha256() -> str:
@@ -121,9 +123,8 @@ def scorer_sha256() -> str:
     changes every arm's fingerprint, which is the point -- two runs that disagree here are
     not comparable, however similar their config looks.
     """
-    body = "".join(inspect.getsource(f) for f in
-                   (normalize, as_members, match_one_to_one, prf, score_sets))
-    return hashlib.sha256((body + repr(_ARTICLES)).encode()).hexdigest()
+    return code_digest(normalize, as_members, match_one_to_one, prf, score_sets,
+                       consts={"_ARTICLES": _ARTICLES, "_PUNCT": _PUNCT, "_WS": _WS})
 
 
 Member = Tuple[str, Optional[str]]

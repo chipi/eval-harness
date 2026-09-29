@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Kunyaza - Afrikanische Liebeskunst",
+    "type": "product"
+  },
+  {
+    "text": "Pierre Roshan",
+    "type": "person"
+  },
+  {
+    "text": "IntimateFilm",
+    "type": "organization"
+  },
+  {
+    "text": "German",
+    "type": "location"
+  }
+]
+```

@@ -1,0 +1,8 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "Vlasic Pickles" - an American brand of pickles owned by Pinnacle Foods.
+
+Let me think about the categories:
+- Company: Vlasic Pickles is a brand, owned by Pinnacle Foods. A brand of pickles... Is a brand a company? The abstract describes it as a brand owned by a company. In the DBpedia classification dataset (which this appears to be from), brands like this are typically classified as Company.
+
+Actually, this looks like it's from the DBpedia ontology classification dataset. In that dataset, "Vlasic Pickles" - let me think. The categories include Company, EducationalInstitution, Artist, Athlete, OfficeHolder, MeanOfTransportation, Building, NaturalPlace, Village, Animal, Plant, Album, Film, WrittenWork.
+
+Vlasic Pickles is a brand/product. The closest category would be Company since it's

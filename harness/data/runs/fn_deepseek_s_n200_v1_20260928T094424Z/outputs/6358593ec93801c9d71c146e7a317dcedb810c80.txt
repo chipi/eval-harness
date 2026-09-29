@@ -1,0 +1,13 @@
+```json
+[
+  {"text": "Station Commander", "type": "other"},
+  {"text": "RAF Horsham St Faith", "type": "location"},
+  {"text": "December 1947", "type": "event"},
+  {"text": "Station Commander", "type": "other"},
+  {"text": "RAF Coltishall", "type": "location"},
+  {"text": "January 1948", "type": "event"},
+  {"text": "Officer of the Legion of Merit", "type": "other"},
+  {"text": "President of the United States", "type": "person"},
+  {"text": "9 March 1948", "type": "event"}
+]
+```

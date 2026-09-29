@@ -1,0 +1,1 @@
+[{"text": "Claymore", "type": "location"}, {"text": "French Navy", "type": "location"}]

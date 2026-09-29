@@ -1,0 +1,1 @@
+[{"text": "Ordinary", "type": "location"}, {"text": "Train", "type": "location"}, {"text": "U.S.", "type": "location"}]

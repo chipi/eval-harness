@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "United States",
+    "type": "location"
+  }
+]
+```

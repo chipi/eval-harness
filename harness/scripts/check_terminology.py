@@ -13,10 +13,23 @@ The canonical labels are defined in docs/REFERENCE.md#terminology. This fails if
 cell in any experiment-keyed table does not use one.
 """
 import pathlib, re, sys
-root = pathlib.Path("/Users/claude/projects/eval-harness")
+
+# The repo root, derived from THIS FILE. It was hardcoded to one laptop's absolute
+# path, so everywhere else `rglob` matched nothing, `bad` stayed empty and the check
+# exited 0 having read no files at all. It was reported as green in CI and described
+# in a commit message as having "earned itself twice". It had checked nothing.
+root = pathlib.Path(__file__).resolve().parents[2]
+
+files = [f for f in root.rglob("*.md")
+         if ".venv" not in str(f) and "/data/" not in str(f)]
+if not files:
+    # A check that cannot find its inputs must FAIL, not pass. This is the assertion
+    # that would have caught the hardcoded path immediately.
+    print(f"FAIL  no markdown found under {root} — this check is not looking at the repo")
+    sys.exit(1)
+
 bad = []
-for f in root.rglob("*.md"):
-    if ".venv" in str(f) or "/data/" in str(f): continue
+for f in files:
     lines = f.read_text().split("\n"); in_exp = False
     for i, line in enumerate(lines, 1):
         if re.match(r"^\| *experiment *\|", line, re.I): in_exp = True; continue
@@ -29,5 +42,7 @@ for f in root.rglob("*.md"):
                 ok = v.startswith(("Summarisation ·","Classification ·","Extraction ·","Retrieval ·"))
                 if not ok and v not in ("all","","—"):
                     bad.append("%s:%d  %s" % (f.relative_to(root), i, v))
-print("\n".join(bad) if bad else "every experiment-column cell uses the canonical Task · Dataset label")
+print("\n".join(bad) if bad else
+      f"every experiment-column cell in {len(files)} file(s) uses the canonical "
+      f"Task · Dataset label")
 sys.exit(1 if bad else 0)

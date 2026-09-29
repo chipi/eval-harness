@@ -1,0 +1,16 @@
+The task: extract named entities from the sentence, using types: art, building, event, location, organization, other, person, product.
+
+Sentence: "He continued his learning at home by producing music through an iPhone application called NanoStudio ."
+
+Named entities:
+- iPhone — this is a product (Apple's iPhone). It appears as "iPhone application" — the entity is "iPhone".
+- NanoStudio — this is a music production application. It's a product (software). Could be "product" or "other". NanoStudio is a music production app, so "product" seems right. Some might classify software as "other" but product fits.
+
+"He" is a pronoun, not a named entity. "home" is not a named entity here.
+
+So output:
+[{"text": "iPhone", "type": "product"}, {"text": "NanoStudio", "type": "product"}]
+
+Should I include "iPhone application"? The entity is "iPhone" — the application is called NanoStudio. So iPhone is the product name. NanoStudio is the application name, also a product.
+
+Output only[{"text": "iPhone", "type": "product"}, {"text": "NanoStudio", "type": "product"}]

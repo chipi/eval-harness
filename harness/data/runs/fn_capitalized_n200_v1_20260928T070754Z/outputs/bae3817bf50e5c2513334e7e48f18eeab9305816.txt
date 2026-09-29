@@ -1,0 +1,1 @@
+[{"text": "Congress", "type": "location"}, {"text": "Ley", "type": "location"}, {"text": "Punto Final", "type": "location"}]

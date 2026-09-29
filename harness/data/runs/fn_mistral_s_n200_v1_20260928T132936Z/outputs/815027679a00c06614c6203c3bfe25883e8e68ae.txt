@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Victory ships",
+    "type": "product"
+  },
+  {
+    "text": "Liberty ships",
+    "type": "product"
+  },
+  {
+    "text": "stack",
+    "type": "other"
+  },
+  {
+    "text": "superstructure",
+    "type": "other"
+  },
+  {
+    "text": "forecastle",
+    "type": "other"
+  }
+]
+```

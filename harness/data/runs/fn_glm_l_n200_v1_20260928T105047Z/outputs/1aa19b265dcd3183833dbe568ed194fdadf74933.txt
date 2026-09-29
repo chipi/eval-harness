@@ -1,0 +1,1 @@
+[{"text": "Lopez", "type": "person"}, {"text": "brain cancer", "type": "other"}]
