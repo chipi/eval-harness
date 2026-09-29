@@ -2234,18 +2234,33 @@ one of them is a cost. The costs were the thing most recently found to be wrong,
 they were the thing left unchecked — the claims file was written before the cost
 finding and never revisited. A checker only covers what someone thought to list.
 
-Totals, billed against recorded, over the committed measurement runs:
+Totals, billed against recorded, over the 127 committed measurement arms:
 
 ```
-  Classification · AG News    0.4854 -> 0.5808   1.20x
-  Classification · DBpedia    1.0043 -> 1.1737   1.17x
-  NER · Few-NERD              2.0546 -> 2.5708   1.25x
-  Retrieval · SciFact         1.3135 -> 2.2136   1.69x
-  Summarisation · CNN/DM      4.9270 -> 5.7404   1.17x
-  TOTAL                       9.7848 -> 12.2793  1.25x
+  Classification · AG News    0.4854 -> 0.5808   1.20x   28 arms
+  Classification · DBpedia    1.0043 -> 1.1737   1.17x   27
+  NER · Few-NERD              2.0546 -> 2.5708   1.25x   27
+  Retrieval · SciFact         1.0395 -> 1.9396   1.87x   19
+  Summarisation · CNN/DM      4.9270 -> 5.7404   1.17x   26
+  TOTAL                       9.5108 -> 12.0053  1.26x  127
 ```
 
-The repo has spent $12.28, not $9.78.
+The repo has spent **$12.01**, not $9.51.
+
+**And the first version of this entry said $12.28 against $9.78, with SciFact at
+1.69×.** Those were wrong. I computed them while three arms were being re-run, and
+summed the in-flight re-runs alongside the originals they replace — double-counting
+three arms in the middle of an entry about a total I had previously got wrong by
+measuring a subset. The figures above exclude anything dated 2026-09-29 and reconcile
+exactly with the synthesis headline, *127 measured arms · $12.01 billed*, which was
+already correct.
+
+The lesson is narrower than "check your arithmetic": **a cost total has a scope, and I
+keep failing to state it.** 3.21× was a subset reported as the range; $12.28 was a
+superset reported as the sweep. Both times the number was computed correctly over the
+wrong set, and both times nothing in the repo could tell. `scripts/cost_report.py`
+takes `--dataset-id` and prints the arms it summed, so the next total says what it
+covers.
 
 Fixed: the 31 cells now carry the bill; `rescore.py` recomputes `cost_usd` from
 `_meta.usage.cost` instead of carrying the estimate forward; `scripts/cost_report.py`
