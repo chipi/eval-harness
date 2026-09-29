@@ -140,6 +140,10 @@ Every dataset, model, paper and library used across the five examples is credite
 licence in **[`../docs/REFERENCE.md#credits`](../docs/REFERENCE.md#credits)**, and again
 per-experiment at the bottom of each `METHOD.md`.
 
-**Nothing is redistributed here** — no corpus, no model weights, no provider output. Each
+Every cited paper's redistribution licence is recorded in
+[`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the twelve that
+permit mirroring. All citations were verified by fetching them and comparing titles.
+
+**Nothing is redistributed here** — no corpus, no model weights, no papers, no provider output. Each
 example ships a download recipe, and dataset identity travels as a content hash
 (`items_sha256`, `corpus_sha256`) recorded inside every run.

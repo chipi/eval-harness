@@ -12,6 +12,7 @@ paper or specification for a metric.
 - [Models](#models) — every arm, with the exact weights or upstream model id
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
 - [Statistical tests](#statistical-tests) — how separation is decided
+- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the twelve that permit it
 
 ---
 
@@ -183,7 +184,7 @@ change is detectable.
 | `e5_base` | [`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2) | 438 MB | `f52bf8ec8c71` | Retrieval-trained, asymmetric on **both** sides (`query: ` / `passage: `) |
 
 **Blocked — checkpoints this machine cannot load.** Below torch 2.6 `transformers` refuses
-to `torch.load` a pickle ([CVE-2025-32434](https://github.com/advisories/GHSA-6qmf-mmc7-6c2p)),
+to `torch.load` a pickle ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)),
 and there is no Intel-Mac torch wheel above 2.2.2. These ship no `safetensors`:
 [`sshleifer/distilbart-cnn-12-6`](https://huggingface.co/sshleifer/distilbart-cnn-12-6),
 [`sshleifer/distilbart-cnn-6-6`](https://huggingface.co/sshleifer/distilbart-cnn-6-6),
@@ -217,7 +218,7 @@ your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 
 | Dataset | Source | Licence | Used for |
 |---|---|---|---|
-| CNN/DailyMail | [`abisee/cnn_dailymail`](https://huggingface.co/datasets/abisee/cnn_dailymail) | Apache-2.0 | 200 news articles + human highlights ([paper](https://arxiv.org/abs/1602.06023)) |
+| CNN/DailyMail | [`abisee/cnn_dailymail`](https://huggingface.co/datasets/abisee/cnn_dailymail) | Apache-2.0 | 200 news articles + human highlights. Corpus from [Hermann et al. 2015](https://arxiv.org/abs/1506.03340); adapted for summarisation by [Nallapati et al. 2016](https://arxiv.org/abs/1602.06023) |
 | AG News | [`fancyzhx/ag_news`](https://huggingface.co/datasets/fancyzhx/ag_news) | **`unknown`** on the card; the corpus description says non-commercial research use | 200 snippets, 4 topics ([paper](https://arxiv.org/abs/1509.01626)) |
 | DBpedia-14 | [`fancyzhx/dbpedia_14`](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | 280 abstracts, 14 ontology classes |
 | Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
@@ -253,7 +254,7 @@ values — and permutation assumes only exchangeability under the null.
 
 - [BEIR](https://arxiv.org/abs/2104.08663) — the benchmark design this repo's retrieval example borrows from
 - [HELM](https://crfm.stanford.edu/helm/) — multi-metric, multi-scenario LLM evaluation at scale
-- [*Pitfalls of Static Language Model Benchmarks*](https://arxiv.org/abs/2405.00332) — on contamination and why frozen slices matter
+- [*A Careful Examination of Large Language Model Performance on Grade School Arithmetic*](https://arxiv.org/abs/2405.00332) — builds a fresh GSM8k-equivalent to measure how much of a benchmark score is overfitting to the benchmark. The reason this repo freezes slices and records `items_sha256`
 - [`../research/NOTES.md`](../research/NOTES.md) — this repo's own append-only journal, including every retraction
 
 ---
@@ -267,7 +268,7 @@ run fingerprints, not the ones a lockfile would prefer.
 
 | Dataset | Authors | Licence |
 |---|---|---|
-| [CNN/DailyMail](https://huggingface.co/datasets/abisee/cnn_dailymail) | Hermann et al. (2015); [See et al. (2017)](https://arxiv.org/abs/1704.04368) | Apache-2.0 |
+| [CNN/DailyMail](https://huggingface.co/datasets/abisee/cnn_dailymail) | [Hermann et al. (2015)](https://arxiv.org/abs/1506.03340); summarisation framing by [Nallapati et al. (2016)](https://arxiv.org/abs/1602.06023); split by [See et al. (2017)](https://arxiv.org/abs/1704.04368) | Apache-2.0 |
 | [AG News](https://huggingface.co/datasets/fancyzhx/ag_news) | [Zhang, Zhao & LeCun (2015)](https://arxiv.org/abs/1509.01626); corpus by ComeToMyHead | card says `unknown`; corpus states non-commercial research use |
 | [DBpedia-14](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | [Lehmann et al., DBpedia](https://www.semantic-web-journal.net/content/dbpedia-large-scale-multilingual-knowledge-base-extracted-wikipedia); split by Zhang et al. (2015) | CC-BY-SA 3.0 + GFDL |
 | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | [Ding et al. (2021)](https://aclanthology.org/2021.acl-long.248/) | CC BY-SA 4.0 |
@@ -292,7 +293,7 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 [BERT](https://arxiv.org/abs/1810.04805), [MPNet](https://arxiv.org/abs/2004.09297),
 [DeBERTa-v3](https://arxiv.org/abs/2111.09543) (GLiNER's encoder),
 [Sentence-BERT](https://arxiv.org/abs/1908.10084),
-[E5](https://arxiv.org/abs/2212.03533), [BGE](https://arxiv.org/abs/2309.07597),
+[E5](https://arxiv.org/abs/2212.03533), [BGE, in *C-Pack*](https://arxiv.org/abs/2309.07597),
 [GLiNER](https://arxiv.org/abs/2311.08526), [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER).
 
 ### Software
@@ -301,7 +302,7 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 |---|---|---|
 | [transformers](https://github.com/huggingface/transformers) | 4.55.4 | Apache-2.0 |
 | [torch](https://github.com/pytorch/pytorch) | 2.2.2 | BSD-3-Clause |
-| [sentence-transformers](https://github.com/UKPLab/sentence-transformers) | 3.4.1 | Apache-2.0 |
+| [sentence-transformers](https://github.com/huggingface/sentence-transformers) | 3.4.1 | Apache-2.0 |
 | [datasets](https://github.com/huggingface/datasets) | 5.0.1 | Apache-2.0 |
 | [rouge-score](https://github.com/google-research/google-research/tree/master/rouge) | 0.1.2 | Apache-2.0 |
 | [rank_bm25](https://github.com/dorianbrown/rank_bm25) | 0.2.2 | Apache-2.0 |
@@ -323,11 +324,21 @@ fetched through the [HuggingFace datasets-server](https://huggingface.co/docs/da
 ### Method
 
 The statistical approach follows standard practice rather than inventing any: Holm
-step-down ([Holm 1979](https://www.jstor.org/stable/4615733)), Friedman and Nemenyi for
+step-down (Holm 1979 (*A Simple Sequentially Rejective Multiple Test Procedure*, Scandinavian Journal of Statistics 6(2):65–70)), Friedman and Nemenyi for
 multiple classifiers over multiple datasets
 ([Demšar 2006](https://www.jmlr.org/papers/v7/demsar06a.html)), and permutation tests as
 described in [Dror et al., *The Hitchhiker's Guide to Testing Statistical Significance in
 NLP*](https://aclanthology.org/P18-1128/).
 
-**No corpus, no model weight and no provider output is redistributed by this repository.**
-Every example ships a download recipe instead.
+**No corpus, no model weight, no paper and no provider output is redistributed by this
+repository.** Every example ships a download recipe instead, and
+[`papers/README.md`](papers/README.md) records the licence of each cited work — twelve of
+the twenty-four may be mirrored, twelve may not, and the split follows publisher policy
+rather than importance.
+
+**Every citation above was verified on 2026-09-29** by fetching it and comparing the real
+title to the claim made about it. That check found four errors in the first draft: a
+fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
+credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could
+**not** be verified programmatically and is therefore given as a full text reference rather
+than a link.

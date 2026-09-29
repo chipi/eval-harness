@@ -41,7 +41,7 @@ reuse article sentences nearly verbatim. A model that copies scores well. That i
 
 **Blocked, and why it matters:** `distilbart-cnn-12-6`, `distilbart-cnn-6-6` and
 `bart-large-xsum` ship pickle checkpoints, which `transformers` refuses to `torch.load`
-below torch 2.6 ([CVE-2025-32434](https://github.com/advisories/GHSA-6qmf-mmc7-6c2p)), and
+below torch 2.6 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and
 there is no Intel-Mac torch wheel above 2.2.2. Their absence removes the *distilled* size
 tier and the *out-of-distribution* (XSum-trained) comparison — see
 [`HANDOVER_ML_ARMS.md`](../../research/HANDOVER_ML_ARMS.md).
@@ -84,7 +84,7 @@ be cheaper to audit than the thing it measures.
 ## Credits
 
 **Dataset** — [CNN/DailyMail](https://huggingface.co/datasets/abisee/cnn_dailymail),
-Apache-2.0. Hermann et al. (2015); [See, Liu & Manning (2017)](https://arxiv.org/abs/1704.04368).
+Apache-2.0. [Hermann et al. (2015)](https://arxiv.org/abs/1506.03340) built the corpus; [Nallapati et al. (2016)](https://arxiv.org/abs/1602.06023) adapted it for summarisation; [See, Liu & Manning (2017)](https://arxiv.org/abs/1704.04368) defined the split used here.
 Not redistributed; [`fetch.py`](fetch.py) downloads it.
 
 **Models** — [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn)

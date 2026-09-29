@@ -138,7 +138,7 @@ Neither corpus nor queries are redistributed.
 [`all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2)
 ([Sentence-BERT](https://arxiv.org/abs/1908.10084), Reimers & Gurevych) ·
 [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5)
-([BGE](https://arxiv.org/abs/2309.07597)) ·
+([BGE, in *C-Pack*](https://arxiv.org/abs/2309.07597)) ·
 [`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2)
 ([E5](https://arxiv.org/abs/2212.03533)). Hosted models in
 [`docs/REFERENCE.md`](../../docs/REFERENCE.md#hosted--24-arms-8-vendors--3-price-tiers).
@@ -149,7 +149,7 @@ cut-off and gain conventions follow [BEIR](https://github.com/beir-cellar/beir) 
 [pytrec_eval](https://github.com/cvangysel/pytrec_eval).
 
 **Software** — [rank_bm25](https://github.com/dorianbrown/rank_bm25) 0.2.2 ·
-[sentence-transformers](https://github.com/UKPLab/sentence-transformers) 3.4.1 ·
+[sentence-transformers](https://github.com/huggingface/sentence-transformers) 3.4.1 ·
 [transformers](https://github.com/huggingface/transformers) 4.55.4 ·
 [torch](https://github.com/pytorch/pytorch) 2.2.2 · [numpy](https://numpy.org/) ·
 [LiteLLM](https://github.com/BerriAI/litellm) · [uv](https://github.com/astral-sh/uv).

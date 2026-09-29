@@ -47,7 +47,7 @@ The same 24 hosted arms plus `keyword` and `constant`, for comparability.
 **The ML arm could not run**, and that is a reported gap rather than a footnote:
 [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14)
 ships a pickle checkpoint, which `transformers` refuses below torch 2.6
-([CVE-2025-32434](https://github.com/advisories/GHSA-6qmf-mmc7-6c2p)). So **this example
+([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)). So **this example
 cannot answer the ML-vs-LLM question its twin answers** — see
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
 absence is precisely why the NER example was built with a *matched pair* of local arms.
@@ -95,7 +95,7 @@ CC-BY-SA 3.0 + GFDL. Ontology and abstracts from
 [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14).
 Hosted models in [`docs/REFERENCE.md`](../../docs/REFERENCE.md#hosted--24-arms-8-vendors--3-price-tiers).
 
-**Method** — [Holm (1979)](https://www.jstor.org/stable/4615733);
+**Method** — Holm (1979), *A Simple Sequentially Rejective Multiple Test Procedure*, Scand. J. Statist. 6(2):65–70;
 [Demšar (2006)](https://www.jmlr.org/papers/v7/demsar06a.html) for Friedman/Nemenyi;
 [Guo et al. (2017)](https://arxiv.org/abs/1706.04599) for calibration.
 

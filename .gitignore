@@ -13,3 +13,7 @@ examples/*/__pycache__/
 # Third-party corpora are referenced by download recipe, never redistributed. Each example
 # fetches its own; see examples/*/fetch.py.
 examples/*/data/
+
+# Papers are fetched, never committed — see docs/papers/README.md for the
+# licence of each. Twelve of twenty-four may not be redistributed at all.
+docs/papers/*.pdf
