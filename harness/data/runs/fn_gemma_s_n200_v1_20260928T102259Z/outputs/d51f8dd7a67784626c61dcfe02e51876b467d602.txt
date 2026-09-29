@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Xist",
+    "type": "product"
+  },
+  {
+    "text": "PRC2",
+    "type": "product"
+  },
+  {
+    "text": "RNA",
+    "type": "product"
+  },
+  {
+    "text": "RNA",
+    "type": "product"
+  }
+]
+```

@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "October 2018", "type": "event"},
+  {"text": "March 2019", "type": "event"},
+  {"text": "Howard", "type": "person"},
+  {"text": "Middletown", "type": "location"},
+  {"text": "Ohio", "type": "location"}
+]
+```

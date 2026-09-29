@@ -1,0 +1,22 @@
+[
+  {
+    "text": "West",
+    "type": "organization"
+  },
+  {
+    "text": "German",
+    "type": "location"
+  },
+  {
+    "text": "U-boats",
+    "type": "product"
+  },
+  {
+    "text": "World War II",
+    "type": "event"
+  },
+  {
+    "text": "Battle of the Atlantic",
+    "type": "event"
+  }
+]

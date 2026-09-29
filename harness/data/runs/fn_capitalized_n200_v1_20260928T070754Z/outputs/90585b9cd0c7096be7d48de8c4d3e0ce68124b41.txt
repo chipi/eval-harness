@@ -1,0 +1,1 @@
+[{"text": "Upon", "type": "location"}, {"text": "Olivares", "type": "location"}, {"text": "University", "type": "location"}, {"text": "Lima School", "type": "location"}, {"text": "Law", "type": "location"}, {"text": "Bachelor", "type": "location"}, {"text": "Law", "type": "location"}]

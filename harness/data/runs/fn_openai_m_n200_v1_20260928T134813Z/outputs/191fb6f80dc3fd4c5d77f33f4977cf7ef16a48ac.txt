@@ -1,0 +1,46 @@
+[
+  {
+    "text": "Brazil",
+    "type": "location"
+  },
+  {
+    "text": "University of Brasília",
+    "type": "organization"
+  },
+  {
+    "text": "UnB",
+    "type": "organization"
+  },
+  {
+    "text": "Federal University of Rio Grande do Sul",
+    "type": "organization"
+  },
+  {
+    "text": "UFRGS",
+    "type": "organization"
+  },
+  {
+    "text": "Federal University of Santa Catarina",
+    "type": "organization"
+  },
+  {
+    "text": "UFSC",
+    "type": "organization"
+  },
+  {
+    "text": "Federal University of Santa Maria",
+    "type": "organization"
+  },
+  {
+    "text": "UFSM",
+    "type": "organization"
+  },
+  {
+    "text": "São Paulo State University",
+    "type": "organization"
+  },
+  {
+    "text": "UNESP",
+    "type": "organization"
+  }
+]

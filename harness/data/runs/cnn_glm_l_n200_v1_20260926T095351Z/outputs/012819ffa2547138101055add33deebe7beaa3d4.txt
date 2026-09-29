@@ -1,0 +1,9 @@
+The user wants a 2-3 sentence news wire style summary of this article. Key points:
+
+1. The Taliban published a biography of Mullah Mohammed Omar, apparently to dispel rumors that he is dead and to reaffirm he is still their leader.
+2. The reclusive founder hasn't been seen or heard from since 2001; US offers $10 million reward.
+3. The biography also appears to be a response to ISIS's al-Baghdadi declaring himself caliph, asserting Omar's jihadi leadership credentials.
+
+Terse wire style: "The Taliban has published a biography of founder Mullah Mohammed Omar in an apparent bid to dispel rumors he is dead and reaffirm his leadership. The reclusive one-eyed leader has not been seen or heard from since the 2001 US-led invasion toppled the Taliban. The document also appears timed to counter ISIS leader Abu Bakr al-Baghdadi's declaration of a caliphate, analysts say."
+
+That's 3 sentences, terse. Output only the summaryThe Taliban has published a biography of founder Mullah Mohammed Omar in an apparent bid to dispel rumors of his death and reaffirm his leadership. The reclusive one-eyed leader, who carries a $10 million US bounty, has not been seen or heard from since the 2001 US-led invasion toppled the Taliban. Analysts say the document also appears aimed at countering ISIS leader Abu Bakr al-Baghdadi's declaration of a caliphate.

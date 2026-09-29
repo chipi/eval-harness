@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "1960 French Grand Prix",
+    "type": "event"
+  },
+  {
+    "text": "Reims-Gueux",
+    "type": "location"
+  }
+]
+```

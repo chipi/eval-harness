@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Islam",
+    "type": "other"
+  },
+  {
+    "text": "1971",
+    "type": "other"
+  }
+]

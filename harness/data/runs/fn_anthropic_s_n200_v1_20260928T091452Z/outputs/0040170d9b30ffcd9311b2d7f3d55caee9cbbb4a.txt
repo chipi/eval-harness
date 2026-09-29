@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "General Mohamed Farrah Aidid",
+    "type": "person"
+  },
+  {
+    "text": "Ali Mahdi Muhammad",
+    "type": "person"
+  }
+]
+```

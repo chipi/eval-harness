@@ -1,0 +1,1 @@
+[{"text": "The High and Late Middle Ages", "type": "event"}, {"text": "allegorical works and techniques", "type": "art"}]

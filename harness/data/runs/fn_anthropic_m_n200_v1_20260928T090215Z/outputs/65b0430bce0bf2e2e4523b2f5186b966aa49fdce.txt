@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "West gate", "type": "building"},
+  {"text": "Maureen Articulated Loading Column", "type": "product"},
+  {"text": "ALC", "type": "product"}
+]
+```

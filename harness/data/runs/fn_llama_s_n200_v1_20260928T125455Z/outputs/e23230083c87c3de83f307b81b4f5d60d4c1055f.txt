@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Arthur Miller",
+    "type": "person"
+  },
+  {
+    "text": "American Theater Hall of Fame",
+    "type": "building"
+  }
+]
+```

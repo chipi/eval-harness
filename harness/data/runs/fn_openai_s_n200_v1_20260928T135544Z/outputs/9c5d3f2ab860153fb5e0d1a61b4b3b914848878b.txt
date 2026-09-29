@@ -1,0 +1,1 @@
+[{"text":"The University of New Zealand Act","type":"organization"},{"text":"University","type":"organization"},{"text":"1870","type":"other"}]

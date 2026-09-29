@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "The Plain Dealer", "type": "product"},
+  {"text": "Democratic", "type": "organization"},
+  {"text": "Brown", "type": "person"},
+  {"text": "Republican", "type": "organization"}
+]
+```

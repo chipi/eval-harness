@@ -1,0 +1,1 @@
+[{"text": "Geraldine Kemper", "type": "location"}, {"text": "Jamai Loman", "type": "location"}]

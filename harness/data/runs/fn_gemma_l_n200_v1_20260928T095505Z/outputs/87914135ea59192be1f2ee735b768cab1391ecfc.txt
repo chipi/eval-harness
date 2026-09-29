@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Positive-sense viral RNA",
+    "type": "product"
+  },
+  {
+    "text": "mRNA",
+    "type": "product"
+  }
+]
+```

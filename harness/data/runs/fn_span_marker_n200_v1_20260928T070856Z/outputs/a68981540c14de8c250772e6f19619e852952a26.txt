@@ -1,0 +1,1 @@
+[{"text": "\u00a3", "type": "other"}, {"text": "\u00a3", "type": "other"}]

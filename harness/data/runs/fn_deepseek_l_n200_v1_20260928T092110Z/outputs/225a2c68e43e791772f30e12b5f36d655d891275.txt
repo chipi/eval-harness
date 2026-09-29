@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Islam",
+    "type": "organization"
+  }
+]

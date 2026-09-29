@@ -1,0 +1,12 @@
+```json
+[
+  {"text": "Chronicle of Fredegar", "type": "product"},
+  {"text": "Fredegar", "type": "person"},
+  {"text": "Merovech", "type": "person"},
+  {"text": "Chlodio", "type": "person"},
+  {"text": "Chlodio", "type": "person"},
+  {"text": "Merovech", "type": "person"},
+  {"text": "Chlodio", "type": "person"},
+  {"text": "sea", "type": "location"}
+]
+```

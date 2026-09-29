@@ -1,0 +1,1 @@
+[{"text": "tea party", "type": "event"}, {"text": "Marie-Anne", "type": "person"}, {"text": "Emmanuelle", "type": "person"}, {"text": "Bee", "type": "person"}, {"text": "naval attach\u00e9", "type": "person"}, {"text": "American Embassy", "type": "building"}]

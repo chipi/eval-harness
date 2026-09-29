@@ -1,0 +1,1 @@
+[{"text": "He", "type": "person"}, {"text": "Massachusetts University", "type": "organization"}, {"text": "New England Conservatory of Music", "type": "organization"}, {"text": "he", "type": "person"}, {"text": "voice", "type": "art"}]

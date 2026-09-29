@@ -1,0 +1,9 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about Korgen Church, a parish church in Norway.
+
+The categories are: Company, EducationalInstitution, Artist, Athlete, OfficeHolder, MeanOfTransportation, Building, NaturalPlace, Village, Animal, Plant, Album, Film, WrittenWork.
+
+A church is a building. The abstract describes a church building built in 1863 by an architect. This is clearly a Building.
+
+Note: it mentions it's located in the village of Korgen, but the article is about the church itself, which is a building.
+
+Output only the category name.Building

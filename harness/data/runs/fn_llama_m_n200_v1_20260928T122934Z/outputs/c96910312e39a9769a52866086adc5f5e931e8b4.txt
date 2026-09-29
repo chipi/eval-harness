@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Vicious Cycle",
+    "type": "organization"
+  },
+  {
+    "text": "Vicious Engine",
+    "type": "product"
+  }
+]

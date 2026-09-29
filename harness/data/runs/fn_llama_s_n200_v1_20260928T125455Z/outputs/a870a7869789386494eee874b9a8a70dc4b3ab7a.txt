@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Territory of Hawai",
+    "type": "location"
+  },
+  {
+    "text": "Congress",
+    "type": "organization"
+  }
+]
+```

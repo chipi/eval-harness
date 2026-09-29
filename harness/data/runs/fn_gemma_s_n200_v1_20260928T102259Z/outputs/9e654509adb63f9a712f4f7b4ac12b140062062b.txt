@@ -1,0 +1,10 @@
+[
+  {
+    "text": "cartridges",
+    "type": "product"
+  },
+  {
+    "text": "pistols",
+    "type": "product"
+  }
+]

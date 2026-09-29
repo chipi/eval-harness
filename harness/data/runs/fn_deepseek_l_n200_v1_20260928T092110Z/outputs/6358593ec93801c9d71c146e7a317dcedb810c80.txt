@@ -1,0 +1,38 @@
+[
+  {
+    "text": "Station Commander",
+    "type": "other"
+  },
+  {
+    "text": "RAF Horsham St Faith",
+    "type": "building"
+  },
+  {
+    "text": "December 1947",
+    "type": "event"
+  },
+  {
+    "text": "Station Commander",
+    "type": "other"
+  },
+  {
+    "text": "RAF Coltishall",
+    "type": "building"
+  },
+  {
+    "text": "January 1948",
+    "type": "event"
+  },
+  {
+    "text": "Officer of the Legion of Merit",
+    "type": "event"
+  },
+  {
+    "text": "President of the United States",
+    "type": "person"
+  },
+  {
+    "text": "9 March 1948",
+    "type": "event"
+  }
+]

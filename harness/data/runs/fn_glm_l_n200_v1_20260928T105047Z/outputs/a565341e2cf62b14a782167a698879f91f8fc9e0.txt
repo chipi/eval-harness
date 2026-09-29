@@ -1,0 +1,1 @@
+[{"text":"November 6 , 1894", "type": "event"}, {"text":"Cochise County", "type": "location"}, {"text":"January 1897", "type": "event"}]

@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Clube da Esquina",
+    "type": "organization"
+  },
+  {
+    "text": "Brazilian",
+    "type": "other"
+  }
+]

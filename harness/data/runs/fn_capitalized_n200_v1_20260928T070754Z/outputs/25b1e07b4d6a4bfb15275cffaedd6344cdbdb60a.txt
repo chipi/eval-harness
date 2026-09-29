@@ -1,0 +1,1 @@
+[{"text": "Films", "type": "location"}, {"text": "Alberto", "type": "location"}, {"text": "Mendoza", "type": "location"}, {"text": "Olga Zubarry", "type": "location"}, {"text": "Accidente", "type": "location"}, {"text": "Spain", "type": "location"}, {"text": "Argentine", "type": "location"}, {"text": "Spanish", "type": "location"}]

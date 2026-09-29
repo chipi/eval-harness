@@ -1,0 +1,1 @@
+[{"text": "Clube", "type": "location"}, {"text": "Esquina", "type": "location"}, {"text": "Brazilian", "type": "location"}]

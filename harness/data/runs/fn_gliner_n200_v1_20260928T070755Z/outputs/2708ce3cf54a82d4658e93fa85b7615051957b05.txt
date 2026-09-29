@@ -1,0 +1,1 @@
+[{"text": "908th Troop Carrier Group", "type": "organization"}, {"text": "Bates Field Alabama", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text":"Whittington Hospital","type":"building"},{"text":"UCL Medical School","type":"organization"},{"text":"Middlesex University School of Health and Social Sciences","type":"organization"}]

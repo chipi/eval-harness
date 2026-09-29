@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Bahraini dinar",
+    "type": "product"
+  },
+  {
+    "text": "Gulf rupee",
+    "type": "product"
+  },
+  {
+    "text": "1965",
+    "type": "other"
+  }
+]

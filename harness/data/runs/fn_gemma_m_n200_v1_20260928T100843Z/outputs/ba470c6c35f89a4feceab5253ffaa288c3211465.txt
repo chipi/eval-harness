@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Norwich",
+    "type": "location"
+  },
+  {
+    "text": "29 July 1549",
+    "type": "event"
+  }
+]
+```

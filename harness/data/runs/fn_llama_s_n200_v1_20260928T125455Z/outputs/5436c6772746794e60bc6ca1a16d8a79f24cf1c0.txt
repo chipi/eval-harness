@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Star Wars Battlefront",
+    "type": "product"
+  },
+  {
+    "text": "EA DICE",
+    "type": "organization"
+  },
+  {
+    "text": "Criterion Games",
+    "type": "organization"
+  },
+  {
+    "text": "Electronic Arts",
+    "type": "organization"
+  }
+]
+```

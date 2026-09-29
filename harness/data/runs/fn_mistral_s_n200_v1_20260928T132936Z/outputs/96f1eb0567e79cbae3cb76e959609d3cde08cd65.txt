@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Mann's Chinese Theatre", "type": "building"},
+  {"text": "Eric", "type": "person"},
+  {"text": "police", "type": "organization"},
+  {"text": "Cody Jarrett", "type": "person"},
+  {"text": "White Heat", "type": "product"}
+]
+```

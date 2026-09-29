@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Czech",
+    "type": "location"
+  },
+  {
+    "text": "samopal",
+    "type": "product"
+  },
+  {
+    "text": "Sa vz",
+    "type": "product"
+  }
+]
+```

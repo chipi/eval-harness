@@ -1,0 +1,1 @@
+[{"text": "1958", "type": "event"}, {"text": "Assumption College", "type": "organization"}, {"text": "Mentone Grammar School", "type": "organization"}, {"text": "AGSV", "type": "organization"}]

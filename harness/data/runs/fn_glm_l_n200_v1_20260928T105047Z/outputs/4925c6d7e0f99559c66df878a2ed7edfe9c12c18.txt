@@ -1,0 +1,4 @@
+[
+  {"text": "Pharrell Williams", "type": "person"},
+  {"text": "April 2014", "type": "event"}
+]

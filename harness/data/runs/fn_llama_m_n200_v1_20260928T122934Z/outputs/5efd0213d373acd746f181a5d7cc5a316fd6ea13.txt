@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Ordinary",
+    "type": "art"
+  },
+  {
+    "text": "Train",
+    "type": "person"
+  },
+  {
+    "text": "U.S.",
+    "type": "location"
+  }
+]

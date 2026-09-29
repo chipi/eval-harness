@@ -1,0 +1,21 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories.
+
+The abstract is about "grunt gallery" - an artist-run centre located in Vancouver BC. It's a gallery focused on contemporary art practice.
+
+Let me think about the categories:
+- Company: A business organization. The gallery is an artist-run centre, which could be considered an organization/company.
+- EducationalInstitution: No, it's not primarily educational.
+- Artist: It's not an individual artist, it's a gallery.
+- Athlete: No.
+- OfficeHolder: No.
+- MeanOfTransportation: No.
+- Building: A gallery is a building? The abstract describes it as a centre located in Vancouver. Hmm.
+- NaturalPlace: No.
+- Village: No.
+- Animal: No.
+- Plant: No.
+- Album: No.
+- Film: No.
+- WrittenWork: No.
+
+This is from the DBpedia classification dataset. In DBpedia ontology, galleries... Let me think. The

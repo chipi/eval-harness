@@ -1,0 +1,4 @@
+[
+  {"text": "1963", "type": "other"},
+  {"text": "Senator Strom Thurmond", "type": "person"}
+]

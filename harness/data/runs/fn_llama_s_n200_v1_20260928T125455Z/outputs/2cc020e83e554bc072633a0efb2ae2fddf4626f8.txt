@@ -1,0 +1,8 @@
+Here is the JSON array of extracted named entities:
+
+[
+  {"text": "The Chronicle of Fredegar", "type": "art"},
+  {"text": "Merovech", "type": "person"},
+  {"text": "Chlodio", "type": "person"},
+  {"text": "Fredegar", "type": "person"}
+]

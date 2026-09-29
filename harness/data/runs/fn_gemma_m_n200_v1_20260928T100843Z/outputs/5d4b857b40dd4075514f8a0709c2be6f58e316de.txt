@@ -1,0 +1,42 @@
+[
+  {
+    "text": "Glyceraldehyde-3-phosphate dehydrogenase",
+    "type": "other"
+  },
+  {
+    "text": "NADP+",
+    "type": "other"
+  },
+  {
+    "text": "GAPN",
+    "type": "other"
+  },
+  {
+    "text": "glyceraldehyde-3-phosphate",
+    "type": "other"
+  },
+  {
+    "text": "GAP",
+    "type": "other"
+  },
+  {
+    "text": "3-phosphoglycerate",
+    "type": "other"
+  },
+  {
+    "text": "3-PG",
+    "type": "other"
+  },
+  {
+    "text": "3-PGA",
+    "type": "other"
+  },
+  {
+    "text": "NADP+",
+    "type": "other"
+  },
+  {
+    "text": "NADPH",
+    "type": "other"
+  }
+]

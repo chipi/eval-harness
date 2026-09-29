@@ -1,0 +1,10 @@
+[
+    {
+        "text": "war",
+        "type": "other"
+    },
+    {
+        "text": "science-fiction",
+        "type": "other"
+    }
+]

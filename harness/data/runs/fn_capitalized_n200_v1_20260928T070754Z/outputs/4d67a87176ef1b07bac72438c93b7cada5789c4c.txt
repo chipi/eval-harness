@@ -1,0 +1,1 @@
+[{"text": "On February", "type": "location"}, {"text": "Washington Post", "type": "location"}, {"text": "President Obama", "type": "location"}, {"text": "Decathlon", "type": "location"}, {"text": "Mall", "type": "location"}]

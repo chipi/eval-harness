@@ -1,0 +1,4 @@
+[
+    {"text": "Silver compounds", "type": "other"},
+    {"text": "silver ions", "type": "other"}
+]

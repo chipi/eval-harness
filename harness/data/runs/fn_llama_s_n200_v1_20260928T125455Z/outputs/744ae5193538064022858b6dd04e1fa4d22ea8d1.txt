@@ -1,0 +1,9 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  { "text": "Homo conditus", "type": "product" },
+  { "text": "Swedish Catholic publisher", "type": "organization" },
+  { "text": "Katolska bokförlaget", "type": "organization" }
+]
+```

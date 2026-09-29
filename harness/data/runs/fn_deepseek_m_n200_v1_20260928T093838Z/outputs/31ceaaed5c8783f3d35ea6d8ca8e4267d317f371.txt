@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Czech", "type": "organization"},
+  {"text": "samopal", "type": "product"},
+  {"text": "Sa vz .", "type": "product"}
+]
+```

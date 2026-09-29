@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Ahmanson Theater", "type": "building"},
+  {"text": "Los Angeles", "type": "location"},
+  {"text": "Broadway", "type": "location"},
+  {"text": "Al Hirschfeld Theatre", "type": "building"}
+]
+```

@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "Palm Beach County", "type": "location"},
+  {"text": "fishing boat", "type": "product"}
+]
+```

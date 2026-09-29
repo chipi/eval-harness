@@ -1,0 +1,1 @@
+[{"text": "When whipped", "type": "event"}, {"text": "women", "type": "person"}, {"text": "thus being publicly exposed", "type": "event"}, {"text": "whipped", "type": "event"}]

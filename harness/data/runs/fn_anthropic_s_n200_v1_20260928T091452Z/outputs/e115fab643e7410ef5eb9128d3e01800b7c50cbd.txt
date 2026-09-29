@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Massachusetts University",
+    "type": "building"
+  },
+  {
+    "text": "New England Conservatory of Music",
+    "type": "building"
+  }
+]
+```

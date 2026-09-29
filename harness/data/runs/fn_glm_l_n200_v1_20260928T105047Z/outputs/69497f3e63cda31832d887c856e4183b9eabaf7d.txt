@@ -1,0 +1,5 @@
+The sentence is: "Each of Hagar 's companies are run individually ."
+
+Named entities here: "Hagar" - this is a person's name (Hagar, likely referring to Sammy Hagar, the musician, or a biblical figure). It's a person.
+
+Output: [{"text": "Hagar", "type": "[{"text": "Hagar", "type": "person"}]

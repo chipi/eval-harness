@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "inauguration ceremony",
+    "type": "event"
+  },
+  {
+    "text": "Germany",
+    "type": "location"
+  },
+  {
+    "text": "Gerhard Schröder",
+    "type": "person"
+  },
+  {
+    "text": "Hitler",
+    "type": "person"
+  },
+  {
+    "text": "underground bunker",
+    "type": "building"
+  }
+]
+```

@@ -1,0 +1,24 @@
+```
+[
+  {
+    "text": "Gorgon City",
+    "type": "organization"
+  },
+  {
+    "text": "2014",
+    "type": "event"
+  },
+  {
+    "text": "Sirens",
+    "type": "product"
+  },
+  {
+    "text": "Erik Hassle",
+    "type": "person"
+  },
+  {
+    "text": "FTPA",
+    "type": "product"
+  }
+]
+```

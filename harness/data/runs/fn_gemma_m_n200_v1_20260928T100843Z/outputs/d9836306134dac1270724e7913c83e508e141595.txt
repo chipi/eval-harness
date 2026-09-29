@@ -1,0 +1,40 @@
+```json
+[
+  {
+    "text": "Apple",
+    "type": "organization"
+  },
+  {
+    "text": "Mac Mini",
+    "type": "product"
+  },
+  {
+    "text": "Apple",
+    "type": "organization"
+  },
+  {
+    "text": "M1 processor",
+    "type": "product"
+  },
+  {
+    "text": "MacBook Air",
+    "type": "product"
+  },
+  {
+    "text": "13-inch MacBook Pro",
+    "type": "product"
+  },
+  {
+    "text": "Macs",
+    "type": "product"
+  },
+  {
+    "text": "Apple",
+    "type": "organization"
+  },
+  {
+    "text": "ARM-based Apple silicon processors",
+    "type": "product"
+  }
+]
+```

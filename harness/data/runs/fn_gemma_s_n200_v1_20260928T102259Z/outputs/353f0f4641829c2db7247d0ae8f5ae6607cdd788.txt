@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "1990s",
+    "type": "other"
+  },
+  {
+    "text": "Golan Heights Winery",
+    "type": "organization"
+  }
+]
+```

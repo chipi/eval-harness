@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Mann 's Chinese Theatre",
+    "type": "building"
+  },
+  {
+    "text": "Eric",
+    "type": "person"
+  },
+  {
+    "text": "Cody Jarrett",
+    "type": "person"
+  },
+  {
+    "text": "White Heat",
+    "type": "art"
+  }
+]

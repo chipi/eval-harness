@@ -1,0 +1,5 @@
+This is a news article classification task. The article is about Emile Heskey, a football (soccer) player, pulling out of the England squad for a friendly match against Ukraine due to a hamstring injury.
+
+This is clearly about football/soccer, which falls under the Sports category.
+
+The instruction says to output only the category name withSports

@@ -1,0 +1,1 @@
+[{"text": "Assumption College", "type": "location"}, {"text": "Essendon Grammar School", "type": "location"}, {"text": "Mentone Grammar School", "type": "location"}, {"text": "AGSV", "type": "location"}]

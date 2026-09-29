@@ -1,0 +1,1 @@
+[{"text": "Professor Immerman", "type": "location"}, {"text": "SIAM Journal", "type": "location"}, {"text": "Computing", "type": "location"}, {"text": "Logical Methods", "type": "location"}, {"text": "Computer Science", "type": "location"}]

@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Hawai`i",
+    "type": "location"
+  },
+  "text": "Congress",
+  "type": "organization"
+} ] -> 
+[
+  {
+    "text": "Hawai`i",
+    "type": "location"
+  },
+  {
+    "text": "Congress",
+    "type": "organization"
+  }
+]

@@ -1,0 +1,4 @@
+[
+  {"text": "Microsoft", "type": "organization"},
+  {"text": "television", "type": "product"}
+]

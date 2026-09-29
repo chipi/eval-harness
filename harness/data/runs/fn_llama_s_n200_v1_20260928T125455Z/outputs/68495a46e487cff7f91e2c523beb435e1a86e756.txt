@@ -1,0 +1,16 @@
+```
+[
+  {
+    "text": "Voldemort",
+    "type": "person"
+  },
+  {
+    "text": "Crouch",
+    "type": "person"
+  },
+  {
+    "text": "Harry",
+    "type": "person"
+  }
+]
+```

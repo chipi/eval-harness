@@ -1,0 +1,36 @@
+```json
+[
+  {
+    "text": "Black Mesa",
+    "type": "location"
+  },
+  {
+    "text": "Lake Powell",
+    "type": "location"
+  },
+  {
+    "text": "Black Mesa and Lake Powell Railroad",
+    "type": "organization"
+  },
+  {
+    "text": "Black Mesa Mine",
+    "type": "building"
+  },
+  {
+    "text": "Kayenta",
+    "type": "location"
+  },
+  {
+    "text": "Arizona",
+    "type": "location"
+  },
+  {
+    "text": "Navajo Generating Station",
+    "type": "building"
+  },
+  {
+    "text": "Page",
+    "type": "location"
+  }
+]
+```

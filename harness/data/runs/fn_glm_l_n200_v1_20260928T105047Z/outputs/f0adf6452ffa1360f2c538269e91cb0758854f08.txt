@@ -1,0 +1,11 @@
+The task is to extract named entities from the sentence: "Native speakers of the language usually replaced some or all of the original cast."
+
+Let me analyze this sentence for named entities of types: art, building, event, location, organization, other, person, product.
+
+- "Native speakers" - not a named entity, it's a common noun phrase
+- "the language" - not a named entity, generic reference
+- "the original cast" - not a named entity, generic reference
+
+There are no proper nouns, no specific names of people, places, organizations, works of art, buildings, events, or products in this sentence.
+
+So the answer should be an empty array.[]

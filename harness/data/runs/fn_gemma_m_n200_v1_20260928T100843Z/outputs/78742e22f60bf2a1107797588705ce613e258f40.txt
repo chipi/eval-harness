@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Clube da Esquina",
+    "type": "organization"
+  }
+]

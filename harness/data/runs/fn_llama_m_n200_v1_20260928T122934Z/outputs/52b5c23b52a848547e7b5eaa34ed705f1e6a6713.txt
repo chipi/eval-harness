@@ -1,0 +1,14 @@
+[
+  {
+    "text": "1575–77",
+    "type": "other"
+  },
+  {
+    "text": "Venice",
+    "type": "location"
+  },
+  {
+    "text": "the plague",
+    "type": "event"
+  }
+]

@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "Intravenous",
+    "type": "other"
+  },
+  {
+    "text": "IV",
+    "type": "other"
+  },
+  {
+    "text": "iron",
+    "type": "other"
+  },
+  {
+    "text": "saline solution",
+    "type": "other"
+  },
+  {
+    "text": "iron deficiency",
+    "type": "other"
+  },
+  {
+    "text": "iron-deficiency anaemia",
+    "type": "other"
+  },
+  {
+    "text": "chronic kidney disease",
+    "type": "other"
+  }
+]
+```

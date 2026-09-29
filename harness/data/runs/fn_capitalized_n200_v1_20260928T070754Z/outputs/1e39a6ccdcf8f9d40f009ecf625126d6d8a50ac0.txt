@@ -1,0 +1,1 @@
+[{"text": "V\u00e1clav Havel", "type": "location"}, {"text": "Burgtheater", "type": "location"}, {"text": "Vienna", "type": "location"}, {"text": "Vienna", "type": "location"}, {"text": "April", "type": "location"}]

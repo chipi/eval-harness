@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Cornell University",
+    "type": "organization"
+  },
+  {
+    "text": "Oscar Tschirky",
+    "type": "person"
+  },
+  {
+    "text": "Cornell University School of Hotel Administration",
+    "type": "organization"
+  }
+]
+```

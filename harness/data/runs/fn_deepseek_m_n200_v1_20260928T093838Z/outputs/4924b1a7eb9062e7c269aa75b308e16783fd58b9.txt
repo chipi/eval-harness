@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "mid-2000s", "type": "other"},
+  {"text": "2005", "type": "other"},
+  {"text": "Iraq War", "type": "event"},
+  {"text": "2004 U.S. presidential election", "type": "event"},
+  {"text": "New York", "type": "location"},
+  {"text": "Istanbul", "type": "location"},
+  {"text": "Poughkeepsie", "type": "location"}
+]
+```

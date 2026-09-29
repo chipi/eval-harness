@@ -1,0 +1,11 @@
+The task is to extract named entities from the sentence: "The aircraft , basically having no further use , were disassembled , and their engines either piled in storage or sold ."
+
+Let me analyze this sentence for named entities of the eight types: art, building, event, location, organization, other, person, product.
+
+- "The aircraft" - "aircraft" is a common noun, not a named entity. It's not a specific named product.
+- "engines" - common noun, not a named entity.
+- "storage" - common noun, not a location name.
+
+There are no proper nouns in this sentence. No names of people, organizations, locations, products (specific brand names), events, buildings, or works of art.
+
+So the answer should be an empty array[]

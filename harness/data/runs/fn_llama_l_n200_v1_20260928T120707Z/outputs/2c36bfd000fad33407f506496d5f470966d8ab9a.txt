@@ -1,0 +1,4 @@
+[
+  {"text": "Tiangco", "type": "person"},
+  {"text": "Lone District", "type": "location"}
+]

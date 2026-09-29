@@ -1,0 +1,1 @@
+[{"text":"February 4 , 2011","type":"event"},{"text":"Washington Post","type":"organization"},{"text":"Obama","type":"person"},{"text":"Decathlon","type":"other"},{"text":"Mall","type":"location"}]

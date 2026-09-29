@@ -1,0 +1,18 @@
+[
+  {
+    "text": "The Plain Dealer",
+    "type": "organization"
+  },
+  {
+    "text": "Brown",
+    "type": "person"
+  },
+  {
+    "text": "Democratic",
+    "type": "organization"
+  },
+  {
+    "text": "Republicans",
+    "type": "organization"
+  }
+]

@@ -1,0 +1,1 @@
+[{"text": "2005 Club", "type": "organization"}, {"text": "EDFL", "type": "organization"}, {"text": "Westmeadows", "type": "location"}, {"text": "round one", "type": "event"}]

@@ -1,0 +1,1 @@
+[{"text": "workshop", "type": "building"}, {"text": "old sugar factory", "type": "organization"}, {"text": "Prague", "type": "location"}]

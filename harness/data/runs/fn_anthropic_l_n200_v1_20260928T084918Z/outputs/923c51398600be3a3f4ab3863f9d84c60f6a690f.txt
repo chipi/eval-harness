@@ -1,0 +1,1 @@
+[{"text": "Villa Park", "type": "location"}, {"text": "Illinois", "type": "location"}, {"text": "Chicago", "type": "location"}, {"text": "Gambian pouched rat", "type": "other"}, {"text": "Cricetomys gambianus", "type": "other"}, {"text": "Accra", "type": "location"}, {"text": "Ghana", "type": "location"}]

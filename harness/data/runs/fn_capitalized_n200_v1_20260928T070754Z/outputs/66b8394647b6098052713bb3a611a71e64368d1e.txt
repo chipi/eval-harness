@@ -1,0 +1,1 @@
+[{"text": "Meanwhile", "type": "location"}, {"text": "Israel", "type": "location"}, {"text": "Aram", "type": "location"}, {"text": "Assyria", "type": "location"}, {"text": "Ahaz", "type": "location"}, {"text": "Isaiah", "type": "location"}, {"text": "Rezin", "type": "location"}, {"text": "Syria", "type": "location"}, {"text": "Judah", "type": "location"}]

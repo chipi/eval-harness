@@ -1,0 +1,6 @@
+[
+  {"text": "Stuart", "type": "person"},
+  {"text": "Stuart Investments", "type": "organization"},
+  {"text": "CFA Competition", "type": "event"},
+  {"text": "CME Trading Competition", "type": "event"}
+]

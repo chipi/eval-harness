@@ -1,0 +1,26 @@
+[
+  {
+    "text": "MLA",
+    "type": "other"
+  },
+  {
+    "text": "Edmonton-McClung",
+    "type": "location"
+  },
+  {
+    "text": "MacBeth",
+    "type": "person"
+  },
+  {
+    "text": "Klein",
+    "type": "person"
+  },
+  {
+    "text": "Alberta",
+    "type": "location"
+  },
+  {
+    "text": "Red Tories",
+    "type": "organization"
+  }
+]

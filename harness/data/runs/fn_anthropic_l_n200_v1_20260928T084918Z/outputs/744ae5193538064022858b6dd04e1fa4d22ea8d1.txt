@@ -1,0 +1,1 @@
+[{"text": "Homo conditus , vulgatum", "type": "art"}, {"text": "Homo conditus", "type": "art"}, {"text": "Swedish", "type": "other"}, {"text": "Swedish", "type": "other"}, {"text": "Katolska bokförlaget", "type": "organization"}]

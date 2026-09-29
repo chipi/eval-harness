@@ -1,0 +1,1 @@
+[{"text":"Germany","type":"location"},{"text":"Chancellor Gerhard Schröder","type":"person"},{"text":"Hitler","type":"person"},{"text":"the memorial field","type":"location"},{"text":"the underground bunker","type":"building"},{"text":"the inauguration ceremony","type":"event"}]

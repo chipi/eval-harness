@@ -1,0 +1,15 @@
+Let me analyze the sentence for named entities:
+
+"He is on the run after making numerous attacks against the Knights of the New Revelation , an extremist religious order responsible for the death of his lost love and her daughter ."
+
+Named entities:
+1. "Knights of the New Revelation" - this is an organization (an extremist religious order). It's a named organization.
+
+Other potential entities:
+- "He" - pronoun, not a named entity
+- "his lost love" - not named
+- "her daughter" - not named
+
+So the only named entity is "Knights of the New Revelation" which is an organization.
+
+Output format: JSON array of objects with keys "text" and "type".[{"text": "Knights of the New Revelation", "type": "organization"}]

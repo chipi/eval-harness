@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "November 11 , 2011",
+    "type": "other"
+  },
+  {
+    "text": "Twitter",
+    "type": "product"
+  }
+]
+```

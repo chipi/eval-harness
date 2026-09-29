@@ -1,0 +1,18 @@
+```
+[
+  {"text": "Saddam International Airport", "type": "building"},
+  {"text": "Baghdad International Airport", "type": "building"},
+  {"text": "Baghdad", "type": "location"},
+  {"text": "Iraq", "type": "location"},
+  {"text": "Gimpo International Airport", "type": "building"},
+  {"text": "Gangseo-gu", "type": "location"},
+  {"text": "Seoul", "type": "location"},
+  {"text": "South Korea", "type": "location"},
+  {"text": "Abu Dhabi International Airport", "type": "building"},
+  {"text": "Abu Dhabi", "type": "location"},
+  {"text": "United Arab Emirates", "type": "location"},
+  {"text": "Don Mueang International Airport", "type": "building"},
+  {"text": "Bangkok", "type": "location"},
+  {"text": "Thailand", "type": "location"}
+]
+```

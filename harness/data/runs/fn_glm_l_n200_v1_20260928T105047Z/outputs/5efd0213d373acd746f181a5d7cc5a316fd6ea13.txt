@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Ordinary",
+    "type": "product"
+  },
+  {
+    "text": "Train",
+    "type": "person"
+  },
+  {
+    "text": "U.S.",
+    "type": "location"
+  }
+]
+```

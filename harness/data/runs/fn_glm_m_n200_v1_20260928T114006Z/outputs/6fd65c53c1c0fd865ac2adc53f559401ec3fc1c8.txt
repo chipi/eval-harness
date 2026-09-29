@@ -1,0 +1,9 @@
+[
+  {"text": "Babylon 5", "type": "product"},
+  {"text": "1993", "type": "other"},
+  {"text": "Prime Time Entertainment Network", "type": "organization"},
+  {"text": "PTEN", "type": "organization"},
+  {"text": "WB/UPN-affiliated stations", "type": "organization"},
+  {"text": "TNT", "type": "organization"},
+  {"text": "1998", "type": "other"}
+]

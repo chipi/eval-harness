@@ -1,0 +1,1 @@
+[{"text":"1960 French Grand Prix","type":"event"},{"text":"Formula One","type":"other"},{"text":"Reims-Gueux","type":"location"},{"text":"3 July 1960","type":"other"}]

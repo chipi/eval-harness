@@ -1,0 +1,1 @@
+[{"text": "Usta\u0161e", "type": "location"}, {"text": "Independent State", "type": "location"}, {"text": "Croatia", "type": "location"}, {"text": "Serb Orthodox Christians", "type": "location"}, {"text": "Palanjek Pokupski", "type": "location"}, {"text": "Cerje", "type": "location"}, {"text": "Vrh Letovanski", "type": "location"}]

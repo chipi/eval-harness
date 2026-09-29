@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Voldemort",
+    "type": "person"
+  },
+  {
+    "text": "Crouch",
+    "type": "person"
+  },
+  {
+    "text": "tournament",
+    "type": "event"
+  },
+  {
+    "text": "Harry",
+    "type": "person"
+  },
+  {
+    "text": "Voldemort",
+    "type": "person"
+  }
+]

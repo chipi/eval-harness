@@ -1,0 +1,1 @@
+[{"text": "Rowlatt Act", "type": "product"}, {"text": "1919", "type": "other"}]

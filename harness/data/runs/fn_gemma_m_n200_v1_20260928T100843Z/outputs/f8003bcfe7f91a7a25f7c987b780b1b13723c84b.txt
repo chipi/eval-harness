@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Ken Flower",
+    "type": "person"
+  },
+  {
+    "text": "MI6",
+    "type": "organization"
+  },
+  {
+    "text": "ZANU",
+    "type": "organization"
+  }
+]
+```

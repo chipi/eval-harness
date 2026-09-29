@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Basi", "type": "other"},
+  {"text": "1807 Basi Revolt", "type": "event"},
+  {"text": "Spanish authorities", "type": "organization"},
+  {"text": "basi", "type": "other"}
+]
+```

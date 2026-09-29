@@ -1,0 +1,8 @@
+```
+[
+  {
+    "text": "Shuffleboard tables",
+    "type": "product"
+  }
+]
+```

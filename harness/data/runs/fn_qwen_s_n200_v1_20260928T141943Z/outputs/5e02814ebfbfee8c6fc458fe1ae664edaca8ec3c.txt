@@ -1,0 +1,1 @@
+[{"text": "hydrochloric", "type": "other"}, {"text": "sulfuric acid", "type": "other"}, {"text": "fluorine", "type": "other"}]

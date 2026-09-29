@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Packard",
+    "type": "person"
+  },
+  {
+    "text": "August 1937",
+    "type": "other"
+  },
+  {
+    "text": "Hewlett-Packard Company",
+    "type": "organization"
+  },
+  {
+    "text": "January 1 , 1939",
+    "type": "other"
+  }
+]

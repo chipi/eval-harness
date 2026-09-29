@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Quo Vadis",
+    "type": "art"
+  },
+  {
+    "text": "Hollywood",
+    "type": "location"
+  },
+  {
+    "text": "Academy",
+    "type": "organization"
+  }
+]

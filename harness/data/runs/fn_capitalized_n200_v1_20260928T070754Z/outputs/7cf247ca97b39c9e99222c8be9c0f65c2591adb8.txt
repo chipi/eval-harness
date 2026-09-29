@@ -1,0 +1,1 @@
+[{"text": "The High", "type": "location"}, {"text": "Late Middle Ages", "type": "location"}]

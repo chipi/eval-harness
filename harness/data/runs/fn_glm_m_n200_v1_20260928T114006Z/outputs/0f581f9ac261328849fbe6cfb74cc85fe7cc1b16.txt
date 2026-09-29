@@ -1,0 +1,6 @@
+[
+  {"text": "Kashmiri Pandits", "type": "person"},
+  {"text": "Kashmiri Brahmins", "type": "person"},
+  {"text": "Kashmiri Hindus", "type": "person"},
+  {"text": "Shaivite Saraswat Brahmin community", "type": "organization"}
+]

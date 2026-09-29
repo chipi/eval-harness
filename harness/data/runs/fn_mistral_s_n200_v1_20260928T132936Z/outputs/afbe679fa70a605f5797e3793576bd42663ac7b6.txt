@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "North Korea", "type": "location"},
+  {"text": "Yongbyon Nuclear Scientific Research Center", "type": "building"},
+  {"text": "United States", "type": "location"}
+]
+```

@@ -1,0 +1,15 @@
+The task: extract named entities from the sentence "In the Multi-Purpose Bayonet program , 33 different knives were evaluated ."
+
+Types: art, building, event, location, organization, other, person, product.
+
+"Multi-Purpose Bayonet program" — this is a program. Programs are typically classified as "other" in some schemes, or could be "product"? In many NER schemes (like CoNLL), programs fall under "other" or sometimes "organization". Hmm. Let me think. The eight types: art, building, event, location, organization, other, person, product. This looks like a scheme where "other" covers things like laws, programs, diseases, etc. Actually this resembles the "Few-NERD" or similar scheme? Few-NERD has: person, organization, location, building, art, product, event, other. Yes! Few-NERD has exactly these 8 types: art (paintings, books, music), building, event, location, organization, other (language, law, living thing, medical), person, product (vehicles, weapons, food, clothing).
+
+In Few-NERD, "product" includes weapons. A bayonet is a weapon. But "Multi-Purpose Bayonet program" is a program — a military program. In Few-NERD, "other" includes "law" and such. A program... Hmm. Actually, in Few-NERD, the "other" category includes: Language, Law, Living Thing, Medical. A program might be classified as... hmm.
+
+Actually, this sentence looks like it could be from a dataset. "In the Multi-Purpose Bayonet program, 33 different knives were evaluated." This is about the US military's Multi-Purpose Bayonet program (which led to the M9 bayonet). The program itself — is it an event? A program could be considered an event or "other". 
+
+In some NER schemes, programs are "other". Let me think about what's most reasonable. The "Multi-Purpose Bayonet program" is a military acquisition program. It's not a person, location, organization, building, art, or product. It could be an event (programs happen over time) or "other". 
+
+Hmm, in the OntoNotes scheme, PROGRAM is a subtype of PRODUCT? No, OntoNotes has PRODUCT including vehicles, weapons. Actually OntoNotes NER types: PERSON, NORP, FAC, ORG, GPE, LOC, PRODUCT, EVENT, WORK_OF_ART, LAW, LANGUAGE, DATE, TIME, PERCENT, MONEY, QUANTITY, ORDINAL, CARDINAL. In OntoNotes, PRODUCT includes "weapons". A program... OntoNotes doesn't have a program type; programs like TV programs are sometimes PRODUCT? Hmm.
+
+Given the eight types here match Few-NERD exactly, let me consider Few-NERD annotations

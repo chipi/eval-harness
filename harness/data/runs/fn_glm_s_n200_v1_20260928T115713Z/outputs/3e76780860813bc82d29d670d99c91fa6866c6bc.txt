@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Pennsylvania Station",
+    "type": "building"
+  },
+  {
+    "text": "1963",
+    "type": "event"
+  },
+  {
+    "text": "New York City",
+    "type": "location"
+  },
+  {
+    "text": "New York City Landmarks Preservation Commission",
+    "type": "organization"
+  },
+  {
+    "text": "1965",
+    "type": "event"
+  }
+]
+```

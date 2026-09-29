@@ -1,0 +1,1 @@
+[{"text": "Voldemort", "type": "location"}, {"text": "Crouch", "type": "location"}, {"text": "Harry", "type": "location"}, {"text": "Voldemort", "type": "location"}]

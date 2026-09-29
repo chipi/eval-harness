@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Mursili II", "type": "person"},
+  {"text": "Mursilis II", "type": "person"},
+  {"text": "Hittite Empire", "type": "organization"},
+  {"text": "New kingdom", "type": "other"}
+]
+```

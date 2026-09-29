@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Renwick",
+    "type": "person"
+  },
+  {
+    "text": "Wrigley Cup",
+    "type": "event"
+  },
+  {
+    "text": "CAHA",
+    "type": "organization"
+  },
+  {
+    "text": "1974",
+    "type": "other"
+  },
+  {
+    "text": "1975",
+    "type": "other"
+  }
+]
+```

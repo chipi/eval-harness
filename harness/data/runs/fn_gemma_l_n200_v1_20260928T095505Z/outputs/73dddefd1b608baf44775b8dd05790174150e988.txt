@@ -1,0 +1,28 @@
+```json
+[
+  {
+    "text": "Lusignans",
+    "type": "person"
+  },
+  {
+    "text": "Amalric",
+    "type": "person"
+  },
+  {
+    "text": "Tyre",
+    "type": "location"
+  },
+  {
+    "text": "Mongols",
+    "type": "organization"
+  },
+  {
+    "text": "Ghazan",
+    "type": "person"
+  },
+  {
+    "text": "Holy Land",
+    "type": "location"
+  }
+]
+```

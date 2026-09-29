@@ -1,0 +1,1 @@
+[{"text": "Progressive-era leaders", "type": "organization"}, {"text": "Seventeenth Amendment", "type": "event"}, {"text": "United States", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text": "West", "type": "location"}, {"text": "German U-boats", "type": "location"}, {"text": "World War II Battle", "type": "location"}, {"text": "Atlantic", "type": "location"}, {"text": "May", "type": "location"}, {"text": "June", "type": "location"}]

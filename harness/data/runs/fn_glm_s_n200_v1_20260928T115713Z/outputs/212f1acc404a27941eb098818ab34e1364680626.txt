@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Mexico",
+    "type": "location"
+  },
+  {
+    "text": "NdeM",
+    "type": "organization"
+  },
+  {
+    "text": "1990s",
+    "type": "event"
+  }
+]
+```

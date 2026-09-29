@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "14thcentury", "type": "other"},
+  {"text": "stone effigies", "type": "art"},
+  {"text": "knight", "type": "person"},
+  {"text": "wife", "type": "person"},
+  {"text": "sculptures", "type": "art"}
+]
+```

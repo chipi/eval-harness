@@ -1,0 +1,1 @@
+[{"text": "C-119", "type": "location"}, {"text": "Troop Carrier Group", "type": "location"}, {"text": "Bates Field Alabama", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text": "Ferry", "type": "location"}, {"text": "Pearl River Delta", "type": "location"}]

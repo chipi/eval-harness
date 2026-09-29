@@ -1,0 +1,1 @@
+[{"text": "Claymore", "type": "product"}, {"text": "French Navy", "type": "organization"}, {"text": "first decade of the 20th century", "type": "other"}]

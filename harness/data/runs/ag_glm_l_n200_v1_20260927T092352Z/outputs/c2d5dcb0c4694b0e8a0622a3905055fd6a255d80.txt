@@ -1,0 +1,9 @@
+The article is about California's smog-fighting agency adopting rules to reduce air pollution from dairy cow manure. This is about environmental regulation and air pollution science/policy.
+
+Let me think about which category this fits:
+- World: No, this is about California, US domestic news
+- Sports: No
+- Business: Could be argued since it affects dairy farms, but the focus is on air pollution regulation
+- Sci/Tech: This is about air pollution, environmental science, emissions - this fits Sci/Tech
+
+This is from the AG News dataset likely, where articles about pollution, environment, science typically go under Sci/Tech. The article is about smog, air pollution, emissions - environmental science topic. This would be classified as Sci/TechSci/Tech

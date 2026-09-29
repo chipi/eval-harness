@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Haugh",
+    "type": "location"
+  },
+  {
+    "text": "A. Brownlie",
+    "type": "person"
+  },
+  {
+    "text": "A. Brownlie , Timber Merchants",
+    "type": "organization"
+  }
+]
+```

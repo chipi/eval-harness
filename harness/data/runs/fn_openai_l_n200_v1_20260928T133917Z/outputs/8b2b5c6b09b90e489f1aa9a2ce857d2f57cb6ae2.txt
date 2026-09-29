@@ -1,0 +1,1 @@
+[{"text":"Ford","type":"organization"},{"text":"Ford Escape Hybrid","type":"product"},{"text":"Mercury Mariner Hybrid","type":"product"},{"text":"Mercury Milan Hybrid","type":"product"},{"text":"Ford Fusion Hybrid","type":"product"},{"text":"Lincoln MKZ Hybrid","type":"product"},{"text":"Ford C-Max Hybrid","type":"product"},{"text":"Ford Mondeo Hybrid","type":"product"}]

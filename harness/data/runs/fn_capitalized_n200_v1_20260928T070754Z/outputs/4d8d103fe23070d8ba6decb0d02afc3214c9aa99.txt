@@ -1,0 +1,1 @@
+[{"text": "However", "type": "location"}, {"text": "Quo Vadis", "type": "location"}, {"text": "Hollywood", "type": "location"}, {"text": "Academy", "type": "location"}]

@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Ammerallikere",
+    "type": "location"
+  }
+]

@@ -1,0 +1,1 @@
+[{"text": "Lusignans", "type": "organization"}, {"text": "Amalric", "type": "person"}, {"text": "combined military operations", "type": "event"}, {"text": "Mongols", "type": "organization"}, {"text": "Ghazan", "type": "person"}, {"text": "Holy Land", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text": "Stuart", "type": "location"}, {"text": "Stuart Investments", "type": "location"}, {"text": "CFA Competition", "type": "location"}, {"text": "CME Trading Competition", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text":"1886","type":"other"},{"text":"Sir Philip Cunliffe-Owen","type":"person"},{"text":"Sir John Coode","type":"person"},{"text":"Sir Frederick Bramwell","type":"person"},{"text":"an exhibition","type":"event"},{"text":"the Chelsea works","type":"building"},{"text":"A. Ransome and Co","type":"organization"}]

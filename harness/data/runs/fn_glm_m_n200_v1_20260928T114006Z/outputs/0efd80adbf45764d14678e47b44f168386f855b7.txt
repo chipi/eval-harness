@@ -1,0 +1,5 @@
+[
+  {"text": "Gianandrea Noseda", "type": "person"},
+  {"text": "2003", "type": "other"},
+  {"text": "2006", "type": "other"}
+]

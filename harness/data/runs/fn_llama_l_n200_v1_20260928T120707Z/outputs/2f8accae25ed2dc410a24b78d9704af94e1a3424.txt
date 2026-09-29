@@ -1,0 +1,4 @@
+[
+  {"text": "Pueblo Revolt", "type": "event"},
+  {"text": "Spaniards", "type": "person"}
+]

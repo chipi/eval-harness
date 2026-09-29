@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Drake Bulldogs",
+    "type": "organization"
+  },
+  {
+    "text": "Drake University",
+    "type": "organization"
+  },
+  {
+    "text": "2020-21 NCAA Division I FCS football season",
+    "type": "event"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "text": "aircraft",
+    "type": "other"
+  },
+  {
+    "text": "heavy bombers",
+    "type": "other"
+  }
+]

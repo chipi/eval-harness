@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Berry Plastics", "type": "organization"},
+  {"text": "Rexam SBC", "type": "organization"},
+  {"text": "$ 351 million", "type": "other"},
+  {"text": "$ 340 million", "type": "other"}
+]
+```

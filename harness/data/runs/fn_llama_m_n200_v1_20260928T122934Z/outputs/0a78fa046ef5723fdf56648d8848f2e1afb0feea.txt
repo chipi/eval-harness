@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Aleš Hemský",
+    "type": "person"
+  },
+  {
+    "text": "the play-offs",
+    "type": "event"
+  }
+]

@@ -1,0 +1,1 @@
+[{"text": "Norwich", "type": "location"}, {"text": "July", "type": "location"}]

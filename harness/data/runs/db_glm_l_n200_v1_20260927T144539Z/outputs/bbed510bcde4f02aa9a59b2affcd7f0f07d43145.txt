@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "IranRunner" - a diesel electric passenger locomotive manufactured by Mapna Locomotive Engineering and Manufacturing Company and Siemens.
+
+A locomotive is a means of transportation. The category "MeanOfTransportation" fits perfectly here.
+
+Output only the category name.MeanOfTransportation

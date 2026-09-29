@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about Fernando Milagros, a Chilean pop rock singer-songwriter. He's a musician/artist. The category "Artist" seems most appropriate since he's a singer-songwriter.
+
+Categories: Company, EducationalInstitution, Artist, Athlete, OfficeHolder, MeanOfTransportation, Building, NaturalPlace, Village, Animal, Plant, Album, Film, WrittenWork.
+
+He's a singer-songwriter, which falls under Artist. The abstract mentions his album, but the article is about the person, not the album. So the answer is ArtistArtist

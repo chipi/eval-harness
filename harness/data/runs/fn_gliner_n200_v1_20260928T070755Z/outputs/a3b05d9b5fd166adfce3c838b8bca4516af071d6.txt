@@ -1,0 +1,1 @@
+[{"text": "public confession", "type": "event"}, {"text": "al-Faruq", "type": "person"}, {"text": "Sgt Driver", "type": "person"}]

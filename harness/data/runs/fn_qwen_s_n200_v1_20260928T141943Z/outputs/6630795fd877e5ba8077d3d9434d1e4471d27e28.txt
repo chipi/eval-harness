@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Latinos",
+    "type": "other"
+  },
+  {
+    "text": "2010 midterm elections",
+    "type": "event"
+  },
+  {
+    "text": "Nevada",
+    "type": "location"
+  },
+  {
+    "text": "Sharron Angle",
+    "type": "person"
+  },
+  {
+    "text": "Republican",
+    "type": "organization"
+  }
+]

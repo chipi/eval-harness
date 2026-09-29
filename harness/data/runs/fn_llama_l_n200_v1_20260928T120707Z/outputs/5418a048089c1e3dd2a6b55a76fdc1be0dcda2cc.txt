@@ -1,0 +1,6 @@
+[
+  {"text": "Appiah", "type": "person"},
+  {"text": "A-League Minor Premiership", "type": "event"},
+  {"text": "Asian Champions League", "type": "event"},
+  {"text": "VISY Wanderers Asian Champions League", "type": "event"}
+]

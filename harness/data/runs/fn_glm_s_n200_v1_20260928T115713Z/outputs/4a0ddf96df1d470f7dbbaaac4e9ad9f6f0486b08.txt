@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "radio",
+    "type": "product"
+  },
+  {
+    "text": "TV",
+    "type": "product"
+  },
+  {
+    "text": "Soviet",
+    "type": "organization"
+  }
+]
+```

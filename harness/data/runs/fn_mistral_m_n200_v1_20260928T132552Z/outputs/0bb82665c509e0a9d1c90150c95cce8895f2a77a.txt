@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Bahraini dinar", "type": "product"},
+  {"text": "1965", "type": "other"},
+  {"text": "Gulf rupee", "type": "product"}
+]
+```

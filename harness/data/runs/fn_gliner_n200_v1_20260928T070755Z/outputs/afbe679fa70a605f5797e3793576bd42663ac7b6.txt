@@ -1,0 +1,1 @@
+[{"text": "Yongbyon Nuclear Scientific Research Center", "type": "building"}]

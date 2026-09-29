@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Four corps",
+    "type": "organization"
+  },
+  {
+    "text": "the attack",
+    "type": "event"
+  }
+]
+```

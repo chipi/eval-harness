@@ -1,0 +1,22 @@
+[
+  {
+    "text": "November 2018",
+    "type": "other"
+  },
+  {
+    "text": "United Aircraft Corporation",
+    "type": "organization"
+  },
+  {
+    "text": "Sukhoi Holding",
+    "type": "organization"
+  },
+  {
+    "text": "Irkut Corporation",
+    "type": "organization"
+  },
+  {
+    "text": "UAC",
+    "type": "organization"
+  }
+]

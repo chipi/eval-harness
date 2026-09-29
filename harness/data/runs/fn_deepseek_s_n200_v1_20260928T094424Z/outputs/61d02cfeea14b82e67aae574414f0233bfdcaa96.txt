@@ -1,0 +1,6 @@
+[
+  {"text": "School Library Journal", "type": "organization"},
+  {"text": "Truesight", "type": "product"},
+  {"text": "Lois Lowry", "type": "person"},
+  {"text": "The Giver", "type": "product"}
+]

@@ -1,0 +1,6 @@
+[
+  {"text": "Lehman", "type": "person"},
+  {"text": "July 2", "type": "event"},
+  {"text": "2005", "type": "other"},
+  {"text": "UCLA Medical Center", "type": "building"}
+]

@@ -1,0 +1,1 @@
+[{"text": "Star Wars Battlefront", "type": "product"}, {"text": "Electronic Arts", "type": "organization"}]

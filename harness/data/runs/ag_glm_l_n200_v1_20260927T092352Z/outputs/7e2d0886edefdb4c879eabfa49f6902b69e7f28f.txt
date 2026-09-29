@@ -1,0 +1,7 @@
+This is a news article classification task. The article is about a Kentucky company winning a grant to study peptides - which are chains of amino acids, building blocks of proteins. This is science-related content about chemistry research and biotechnology.
+
+The categories are: World, Sports, Business, Sci/Tech.
+
+This is clearly Sci/Tech - it's about chemistry research, peptides, amino acids, proteins. While it mentions a company and a grant (which could suggest Business), the core content is about scientific research on peptides.
+
+The instruction says to output only the category name withSci/Tech

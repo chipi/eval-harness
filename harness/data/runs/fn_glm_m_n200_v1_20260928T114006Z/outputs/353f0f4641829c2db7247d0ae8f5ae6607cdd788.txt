@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "Golan Heights Winery",
+    "type": "building"
+  }
+]
+```

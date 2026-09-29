@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "NanoStudio",
+    "type": "product"
+  }
+]
+```

@@ -1,0 +1,5 @@
+[
+  {"text": "McLean", "type": "person"},
+  {"text": "Jimmy Stewart", "type": "person"},
+  {"text": "Mr. Krueger 's Christmas", "type": "product"}
+]

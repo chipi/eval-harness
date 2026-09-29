@@ -1,0 +1,1 @@
+[{"text": "Glyceraldehyde-3-phosphate", "type": "location"}, {"text": "NADP", "type": "location"}, {"text": "GAPN", "type": "location"}, {"text": "GAP", "type": "location"}, {"text": "PG", "type": "location"}, {"text": "PGA", "type": "location"}, {"text": "NADP", "type": "location"}, {"text": "NADPH", "type": "location"}]

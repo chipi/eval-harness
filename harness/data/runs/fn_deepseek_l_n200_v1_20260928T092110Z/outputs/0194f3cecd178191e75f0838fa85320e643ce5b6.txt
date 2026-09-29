@@ -1,0 +1,3 @@
+[
+  {"text": "Microsoft", "type": "organization"}
+]

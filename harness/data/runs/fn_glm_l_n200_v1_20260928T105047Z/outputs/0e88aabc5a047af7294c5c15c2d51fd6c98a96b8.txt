@@ -1,0 +1,24 @@
+The sentence is: "Epsilon Centauri is a relatively young star , with an age of around 16 million years ."
+
+Named entities:
+- "Epsilon Centauri" - this is a star. Stars are typically classified as... In the given types: art, building, event, location, organization, other, person, product. A star would be "other" or "location"? In many NER schemes, celestial objects are "other" or sometimes "location". In OntoNotes, stars aren't typically tagged. In some schemes, celestial bodies are "location". Hmm.
+
+Common practice: In the "eight types" scheme (art, building, event, location, organization, other, person, product) — this resembles the CoNLL-2003 style extended or the "few-NERD" or similar. Actually this looks like the entity types from the "CrossNER" or similar datasets. In many such datasets, stars/celestial bodies are classified as "other" or "location".
+
+Let me think: In the CoNLL 2003 dataset, entities are LOC, PER, ORG, MISC. Stars would be MISC. In this eight-type scheme, MISC maps to "other" typically. But "location" could include natural locations like mountains, rivers... Stars are sometimes considered locations in space.
+
+Hmm. In the "Universal Named Entities" or the "WikiAnn" dataset, celestial objects like stars are often tagged as LOC. For example, in WikiAnn, "Epsilon Centauri" would likely be tagged as LOC since it's a celestial location.
+
+Actually, let me think about which dataset uses exactly these eight types: art, building, event, location, organization, other, person, product. This is the entity type set from... "CrossNER"? CrossNER has different sets per domain. Hmm, this could be from the "NER" task in "UnifiedNER"? Or the "MIT" datasets?
+
+Actually, these eight types (art, building, event, location, organization, other, person, product) match the entity types used in... I recall "CoNLL 2003" extended? No. Let me think — "art, building, event, location, organization, other, person, product" — this is the type set of the "OntoNotes"? No, OntoNotes has 18 types.
+
+This matches the type set from the "Broad Twitter Corpus"? No.
+
+It matches "FIGER"? No, FIGER has 112 types.
+
+Hmm, it could be from "BBN"? No.
+
+Actually, I believe this is the entity set from the "CoNLL-2003 shared task" converted? No.
+
+It might be from "NER with eight types" used in some instruction-tuning datasets like "Universal NER" (UniNER). UniNER uses a collection of datasets. One dataset with these types... "Wiki

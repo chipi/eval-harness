@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "2019",
+    "type": "other"
+  },
+  {
+    "text": "University of Wisconsin-Parkside",
+    "type": "organization"
+  },
+  {
+    "text": "Oberbrunner Field",
+    "type": "location"
+  },
+  {
+    "text": "UW-Parkside",
+    "type": "organization"
+  },
+  {
+    "text": "Simmons Field",
+    "type": "location"
+  }
+]
+```

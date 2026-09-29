@@ -1,0 +1,1 @@
+[{"text": "Library", "type": "location"}, {"text": "Glendale", "type": "location"}]

@@ -1,0 +1,44 @@
+```json
+[
+  {
+    "text": "Glyceraldehyde-3-phosphate dehydrogenase",
+    "type": "other"
+  },
+  {
+    "text": "NADP+",
+    "type": "product"
+  },
+  {
+    "text": "GAPN",
+    "type": "other"
+  },
+  {
+    "text": "glyceraldehyde-3-phosphate",
+    "type": "product"
+  },
+  {
+    "text": "GAP",
+    "type": "product"
+  },
+  {
+    "text": "3-phosphoglycerate",
+    "type": "product"
+  },
+  {
+    "text": "3-PG",
+    "type": "product"
+  },
+  {
+    "text": "3-PGA",
+    "type": "product"
+  },
+  {
+    "text": "NADP+",
+    "type": "product"
+  },
+  {
+    "text": "NADPH",
+    "type": "product"
+  }
+]
+```

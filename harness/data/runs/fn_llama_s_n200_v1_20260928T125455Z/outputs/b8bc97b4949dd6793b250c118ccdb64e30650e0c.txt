@@ -1,0 +1,9 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  {
+    "text": "United States",
+    "type": "location"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "text": "French",
+    "type": "organization"
+  },
+  {
+    "text": "France",
+    "type": "location"
+  },
+  {
+    "text": "France",
+    "type": "location"
+  }
+]

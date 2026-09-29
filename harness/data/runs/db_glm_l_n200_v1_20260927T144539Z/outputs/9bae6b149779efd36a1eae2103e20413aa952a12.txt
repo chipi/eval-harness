@@ -1,0 +1,3 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about Edmund James Bristol, a Canadian politician. Politicians are classified as OfficeHolder in this taxonomy (this is the DBpedia classification scheme).
+
+The answer isOfficeHolder

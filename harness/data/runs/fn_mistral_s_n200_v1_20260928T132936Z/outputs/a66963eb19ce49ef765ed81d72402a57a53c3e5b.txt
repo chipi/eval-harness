@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "communists", "type": "other"},
+  {"text": "communist governments", "type": "organization"},
+  {"text": "Ireland", "type": "location"},
+  {"text": "Dublin", "type": "location"},
+  {"text": "western allies", "type": "organization"}
+]
+```

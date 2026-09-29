@@ -1,0 +1,10 @@
+```
+[
+  { "text": "Lusignans", "type": "person" },
+  { "text": "Amalric", "type": "person" },
+  { "text": "Prince of Tyre", "type": "other" },
+  { "text": "Mongols", "type": "organization" },
+  { "text": "Ghazan", "type": "person" },
+  { "text": "Holy Land", "type": "location" }
+]
+```

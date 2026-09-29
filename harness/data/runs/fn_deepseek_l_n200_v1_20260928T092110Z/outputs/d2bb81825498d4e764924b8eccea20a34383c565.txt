@@ -1,0 +1,18 @@
+[
+  {
+    "text": "IV",
+    "type": "other"
+  },
+  {
+    "text": "iron deficiency",
+    "type": "other"
+  },
+  {
+    "text": "iron-deficiency anaemia",
+    "type": "other"
+  },
+  {
+    "text": "chronic kidney disease",
+    "type": "other"
+  }
+]

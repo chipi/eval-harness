@@ -1,0 +1,24 @@
+```
+[
+  {
+    "text": "University of Wisconsin-Parkside",
+    "type": "organization"
+  },
+  {
+    "text": "2019 season",
+    "type": "event"
+  },
+  {
+    "text": "Oberbrunner Field",
+    "type": "building"
+  },
+  {
+    "text": "UW-Parkside",
+    "type": "organization"
+  },
+  {
+    "text": "Simmons Field",
+    "type": "building"
+  }
+]
+```

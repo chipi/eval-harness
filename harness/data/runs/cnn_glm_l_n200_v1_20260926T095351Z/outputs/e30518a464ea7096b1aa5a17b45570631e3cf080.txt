@@ -1,0 +1,6 @@
+The user wants a terse news wire style summary of this article in 2-3 short sentences. Key facts:
+- Mark Wahlberg will star in "Patriots' Day," a film about the Boston Marathon bombing and manhunt
+- Produced by CBS Films, Wahlberg hopes to play Boston Police Commissioner Ed Davis
+- It's the second Boston bombing film announced, after Fox's "Boston Strong"
+
+News wire style is very terse, factual, no fluff. Let me write 2-3 shortMark Wahlberg will star in "Patriots' Day," a CBS Films production about the 2013 Boston Marathon bombing and subsequent manhunt. Wahlberg, a Boston native, hopes to play former Police Commissioner Ed Davis, with the story told from Davis's perspective. It is the second film on the bombing announced, following Fox's "Boston Strong."

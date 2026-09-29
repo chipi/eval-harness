@@ -1,0 +1,1 @@
+[{"text":"Ordinary","type":"art"},{"text":"Train","type":"organization"},{"text":"U.S.","type":"location"}]

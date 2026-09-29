@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "April 13 , 2012",
+    "type": "event"
+  },
+  {
+    "text": "Cartoon Planet",
+    "type": "product"
+  },
+  {
+    "text": "2013",
+    "type": "event"
+  }
+]
+```

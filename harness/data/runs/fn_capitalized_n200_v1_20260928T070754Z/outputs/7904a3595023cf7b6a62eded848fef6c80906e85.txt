@@ -1,0 +1,1 @@
+[{"text": "Whittington Hospital", "type": "location"}, {"text": "UCL Medical School", "type": "location"}, {"text": "Middlesex University School", "type": "location"}, {"text": "Health", "type": "location"}, {"text": "Social Sciences", "type": "location"}]

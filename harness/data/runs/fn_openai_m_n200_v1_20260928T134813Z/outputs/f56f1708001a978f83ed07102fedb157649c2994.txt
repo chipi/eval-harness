@@ -1,0 +1,30 @@
+[
+  {
+    "text": "Mosin-Nagant",
+    "type": "product"
+  },
+  {
+    "text": "DP",
+    "type": "product"
+  },
+  {
+    "text": "PM-M1910",
+    "type": "product"
+  },
+  {
+    "text": "RPG-40",
+    "type": "product"
+  },
+  {
+    "text": "PTRD-41",
+    "type": "product"
+  },
+  {
+    "text": "Moscow",
+    "type": "location"
+  },
+  {
+    "text": "Motherland",
+    "type": "location"
+  }
+]

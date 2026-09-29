@@ -1,0 +1,1 @@
+[{"text": "Library services", "type": "organization"}, {"text": "Glendale", "type": "location"}, {"text": "1906", "type": "event"}]

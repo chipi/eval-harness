@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Iron Age",
+    "type": "event"
+  },
+  {
+    "text": "Hellenistic",
+    "type": "other"
+  },
+  {
+    "text": "Roman",
+    "type": "other"
+  },
+  {
+    "text": "Islamic",
+    "type": "other"
+  }
+]

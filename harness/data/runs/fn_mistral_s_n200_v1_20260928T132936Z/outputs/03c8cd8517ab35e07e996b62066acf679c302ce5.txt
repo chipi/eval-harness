@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "November 11 , 2011", "type": "event"},
+  {"text": "Twitter", "type": "product"},
+  {"text": "hallway", "type": "building"},
+  {"text": "stretcher", "type": "product"},
+  {"text": "nurses", "type": "person"}
+]
+```

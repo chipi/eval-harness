@@ -1,0 +1,1 @@
+[{"text": "Recent research", "type": "event"}, {"text": "Xist", "type": "person"}]

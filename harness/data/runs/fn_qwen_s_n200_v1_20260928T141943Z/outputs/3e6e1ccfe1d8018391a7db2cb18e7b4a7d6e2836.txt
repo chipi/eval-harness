@@ -1,0 +1,14 @@
+[
+  {
+    "text": "September 2011",
+    "type": "other"
+  },
+  {
+    "text": "Berry Plastics",
+    "type": "organization"
+  },
+  {
+    "text": "Rexam SBC",
+    "type": "organization"
+  }
+]

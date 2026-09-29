@@ -1,0 +1,5 @@
+The user wants me to classify a news article into one of four categories: World, Sports, Business, Sci/Tech.
+
+The article is about Qantas Airways reporting a record annual net profit, oil prices threatening performance, and potential ticket price surcharges. This is clearly a business article about a company's financial performance.
+
+The answer is Business. The user asked for only the category name withBusiness

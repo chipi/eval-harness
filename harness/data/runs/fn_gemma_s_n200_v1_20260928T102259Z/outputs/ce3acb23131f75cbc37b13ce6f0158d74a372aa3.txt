@@ -1,0 +1,4 @@
+[
+  {"text": "Azores", "type": "location"},
+  {"text": "midsummer", "type": "event"}
+]

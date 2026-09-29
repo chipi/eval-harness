@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "United Aircraft Corporation", "type": "organization"},
+  {"text": "Sukhoi Holding", "type": "organization"},
+  {"text": "Irkut Corporation", "type": "organization"},
+  {"text": "UAC", "type": "organization"},
+  {"text": "November", "type": "event"}
+]
+```

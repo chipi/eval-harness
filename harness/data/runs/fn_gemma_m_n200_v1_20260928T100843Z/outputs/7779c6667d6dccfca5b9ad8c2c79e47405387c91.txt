@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Packard",
+    "type": "person"
+  },
+  {
+    "text": "Hewlett-Packard Company",
+    "type": "organization"
+  }
+]

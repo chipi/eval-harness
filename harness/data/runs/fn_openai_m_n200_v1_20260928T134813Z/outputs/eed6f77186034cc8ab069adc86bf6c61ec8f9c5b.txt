@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Plewa",
+    "type": "person"
+  },
+  {
+    "text": "New York",
+    "type": "organization"
+  },
+  {
+    "text": "Swope Park Rangers",
+    "type": "organization"
+  },
+  {
+    "text": "2016 USL Cup Final",
+    "type": "event"
+  }
+]

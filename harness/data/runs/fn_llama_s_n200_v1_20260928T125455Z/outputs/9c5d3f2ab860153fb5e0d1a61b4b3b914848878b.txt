@@ -1,0 +1,16 @@
+```
+[
+  {
+    "text": "University of New Zealand Act",
+    "type": "other"
+  },
+  {
+    "text": "University",
+    "type": "organization"
+  },
+  {
+    "text": "New Zealand",
+    "type": "location"
+  }
+]
+```

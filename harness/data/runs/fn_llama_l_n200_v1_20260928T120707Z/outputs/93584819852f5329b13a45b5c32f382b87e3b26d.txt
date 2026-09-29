@@ -1,0 +1,5 @@
+[
+  {"text": "Milard", "type": "person"},
+  {"text": "Hsinbyushin", "type": "person"},
+  {"text": "Burmese", "type": "location"}
+]

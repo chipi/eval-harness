@@ -1,0 +1,20 @@
+```json
+[
+  {"text": "ATF -2", "type": "product"},
+  {"text": "Chop", "type": "product"},
+  {"text": "c-Jun", "type": "product"},
+  {"text": "c-Myc", "type": "product"},
+  {"text": "DPC4", "type": "product"},
+  {"text": "Elk-1", "type": "product"},
+  {"text": "Ets1", "type": "product"},
+  {"text": "Max", "type": "product"},
+  {"text": "MEF2C", "type": "product"},
+  {"text": "NFAT4", "type": "product"},
+  {"text": "Sap1a", "type": "product"},
+  {"text": "STATs", "type": "product"},
+  {"text": "Tal", "type": "product"},
+  {"text": "p53", "type": "product"},
+  {"text": "CREB", "type": "product"},
+  {"text": "Myc", "type": "product"}
+]
+```

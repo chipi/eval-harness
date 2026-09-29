@@ -1,0 +1,1 @@
+[{"text": "Corfu International Airport", "type": "location"}, {"text": "Greece", "type": "location"}]

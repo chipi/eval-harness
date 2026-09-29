@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Sealey", "type": "person"},
+  {"text": "Coventry City", "type": "organization"},
+  {"text": "11 April 1977", "type": "event"},
+  {"text": "Queens Park Rangers", "type": "organization"}
+]
+```

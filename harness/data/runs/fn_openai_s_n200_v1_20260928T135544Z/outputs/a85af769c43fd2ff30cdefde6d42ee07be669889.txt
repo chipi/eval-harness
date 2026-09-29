@@ -1,0 +1,1 @@
+[{"text":"The Treaty of Bosque Redondo","type":"other"},{"text":"Navajo Treaty of 1868","type":"other"},{"text":"Treaty of Fort Sumner","type":"other"},{"text":"Navajo","type":"person"},{"text":"US Federal Government","type":"organization"},{"text":"June 1 , 1868","type":"event"}]

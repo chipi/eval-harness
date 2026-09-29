@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "piers",
+    "type": "building"
+  },
+  {
+    "text": "rearming",
+    "type": "other"
+  },
+  {
+    "text": "floating barracks ship",
+    "type": "other"
+  },
+  {
+    "text": "20 February 1953",
+    "type": "event"
+  },
+  {
+    "text": "OMS resourcing fund",
+    "type": "organization"
+  }
+]
+```

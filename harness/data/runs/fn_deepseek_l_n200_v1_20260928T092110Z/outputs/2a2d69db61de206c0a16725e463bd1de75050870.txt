@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Ernest Smith",
+    "type": "person"
+  },
+  {
+    "text": "e Thekwini Council",
+    "type": "organization"
+  },
+  {
+    "text": "Parks , Recreation and Culture committee",
+    "type": "organization"
+  }
+]

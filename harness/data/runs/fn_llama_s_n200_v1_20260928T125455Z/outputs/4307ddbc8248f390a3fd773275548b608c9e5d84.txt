@@ -1,0 +1,45 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  {
+    "text": "pen-ken",
+    "type": "product"
+  },
+  {
+    "text": "The pen is mightier than the sword",
+    "type": "art"
+  },
+  "pen-sword",
+  {
+    "text": "pen-sword",
+    "type": "product"
+  },
+  {
+    "text": "Japanese",
+    "type": "other"
+  }
+]
+```
+However, upon re-examining the sentence, I realized that "pen-sword" and "pen-ken" are not proper quotes or products but rather translations/explanations. Here is the corrected output:
+
+```
+[
+  {
+    "text": "The pen is mightier than the sword",
+    "type": "art"
+  },
+  {
+    "text": "pen-ken",
+    "type": "product"
+  },
+  {
+    "text": "pen-sword",
+    "type": "product"
+  },
+  {
+    "text": "Japanese",
+    "type": "other"
+  }
+]
+```

@@ -1,0 +1,18 @@
+[
+  {
+    "text": "West",
+    "type": "organization"
+  },
+  {
+    "text": "German",
+    "type": "other"
+  },
+  {
+    "text": "World War II",
+    "type": "event"
+  },
+  {
+    "text": "Battle of the Atlantic",
+    "type": "event"
+  }
+]

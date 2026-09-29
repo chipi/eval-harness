@@ -1,0 +1,14 @@
+The user wants a 2-3 sentence news wire style summary of this article about Amnesty International's death penalty report.
+
+Key points:
+- Amnesty International's annual report on death penalty (Death Sentences and Executions 2014)
+- Governments using terrorism threat to justify executions (Pakistan lifted moratorium after Peshawar school attack, China's "Strike Hard" campaign in Xinjiang)
+- Executions fell 22% globally (607 in 2014 vs 778 in 2013), excluding China
+- But death sentences rose 28% (2,466 people sentenced)
+- US only country in Americas executing; 35 executions in 2014
+
+News wire style is terse. Let me draft:
+
+"Amnesty International says governments worldwide are using the threat of terrorism to justify executions, citing Pakistan's lifting of a six-year moratorium after the Peshawar school attack and China's crackdown in Xinjiang. The rights group's annual report found global executions fell 22% to at least 607 in 2014, though death sentences rose 28% to 2,466. The United States remained the only country in the Americas to carry out executions, putting 35 people to death."
+
+That's three sentences, terse, wireAmnesty International says governments worldwide are using the threat of terrorism to justify executions, citing Pakistan's lifting of a six-year moratorium after the Peshawar school attack and China's "Strike Hard" campaign in Xinjiang. The rights group's annual report found global executions fell 22% to at least 607 in 2014, but death sentences rose 28% to 2,466, driven by mass sentencings in countries including Egypt and Nigeria. The United States remained the only country in the Americas to carry out executions, putting 35 people to death.

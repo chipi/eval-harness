@@ -1,0 +1,10 @@
+[
+  {"text": "A hierro muere", "type": "product"},
+  {"text": "Alberto de Mendoza", "type": "person"},
+  {"text": "Olga Zubarry", "type": "person"},
+  {"text": "Accidente 703", "type": "product"},
+  {"text": "1962", "type": "other"},
+  {"text": "Spain", "type": "location"},
+  {"text": "Argentine", "type": "location"},
+  {"text": "Spanish", "type": "other"}
+]

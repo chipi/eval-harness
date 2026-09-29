@@ -1,0 +1,1 @@
+[{"text":"Kennedy","type":"person"},{"text":"African - American","type":"other"}]

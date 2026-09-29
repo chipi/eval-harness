@@ -1,0 +1,3 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about Charlotte Dujardin, a British dressage rider who won Olympic gold medals. She is clearly an athlete - a dressage rider competing in the Olympics.
+
+The answer isAthlete

@@ -1,0 +1,32 @@
+Let me extract named entities from the sentence:
+
+"Maxine Leeds Craig is a professor in the Sociology Department at the University of California , Davis ( USA ) ."
+
+Entities:
+1. "Maxine Leeds Craig" - a person (professor name)
+2. "Sociology Department" - this is a department within a university. Is it a named entity? It could be considered an organization or "other". Department names are often tagged as organizations or facilities. In many NER schemes, "Sociology Department" would be an organization (a sub-unit of a university). Let me think - in CoNLL-style NER, departments are typically ORG. But here the types are: art, building, event, location, organization, other, person, product. "Sociology Department" would be an organization.
+3. "University of California , Davis" - an organization (university). Note the text has spaces around the comma: "University of California , Davis". I should copy exactly as it appears: "University of California , Davis"
+4. "USA" - a location (country).
+
+So the output:
+- "Maxine Leeds Craig" - person
+- "Sociology Department" - organization
+- "University of California , Davis" - organization
+- "USA" - location
+
+Should I include "Sociology Department"? It's a named entity referring to a specific department at UC Davis. Yes, it's an organization.
+
+The exact text copying: "University of California , Davis" - with spaces around the comma as in the sentence. The sentence shows "University of California , Davis ( USA )". So the text is "University of California , Davis".
+
+Output JSON array:
+[
+  {"text": "Maxine Leeds Craig", "type": "person"},
+  {"text": "Sociology Department", "type": "organization"},
+  {"text": "University of California , Davis", "type": "organization"},
+  {"text": "USA", "type": "location"}
+][
+  {"text": "Maxine Leeds Craig", "type": "person"},
+  {"text": "Sociology Department", "type": "organization"},
+  {"text": "University of California , Davis", "type": "organization"},
+  {"text": "USA", "type": "location"}
+]

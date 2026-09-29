@@ -1,0 +1,1 @@
+[{"text": "Ahmanson Theater", "type": "location"}, {"text": "Los Angeles", "type": "location"}, {"text": "July", "type": "location"}, {"text": "Broadway", "type": "location"}, {"text": "Al Hirschfeld Theatre", "type": "location"}, {"text": "March", "type": "location"}, {"text": "June", "type": "location"}]

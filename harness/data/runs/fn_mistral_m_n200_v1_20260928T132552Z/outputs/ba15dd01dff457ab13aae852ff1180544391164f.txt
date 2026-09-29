@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Avianca", "type": "organization"},
+  {"text": "Pan Am", "type": "organization"},
+  {"text": "June 1967", "type": "event"},
+  {"text": "1977", "type": "event"}
+]
+```

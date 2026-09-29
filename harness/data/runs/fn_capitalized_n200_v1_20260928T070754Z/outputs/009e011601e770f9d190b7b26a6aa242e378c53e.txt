@@ -1,0 +1,1 @@
+[{"text": "Nef", "type": "location"}, {"text": "Ahmet I", "type": "location"}, {"text": "Osman II", "type": "location"}]

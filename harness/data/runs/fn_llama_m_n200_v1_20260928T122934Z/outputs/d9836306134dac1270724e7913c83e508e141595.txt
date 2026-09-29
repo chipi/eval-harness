@@ -1,0 +1,34 @@
+[
+  {
+    "text": "November",
+    "type": "other"
+  },
+  {
+    "text": "Apple",
+    "type": "organization"
+  },
+  {
+    "text": "Mac Mini",
+    "type": "product"
+  },
+  {
+    "text": "M1",
+    "type": "product"
+  },
+  {
+    "text": "MacBook Air",
+    "type": "product"
+  },
+  {
+    "text": "MacBook Pro",
+    "type": "product"
+  },
+  {
+    "text": "Apple silicon",
+    "type": "product"
+  },
+  {
+    "text": "ARM",
+    "type": "organization"
+  }
+]

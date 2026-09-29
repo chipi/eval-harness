@@ -1,0 +1,6 @@
+[
+  {"text": "March 1963", "type": "event"},
+  {"text": "Amazing Stories", "type": "organization"},
+  {"text": "1968", "type": "event"},
+  {"text": "Michael Joseph", "type": "person"}
+]

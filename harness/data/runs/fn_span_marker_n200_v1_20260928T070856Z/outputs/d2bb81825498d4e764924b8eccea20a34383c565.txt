@@ -1,0 +1,1 @@
+[{"text": "iron", "type": "other"}, {"text": "iron", "type": "other"}, {"text": "saline", "type": "other"}, {"text": "iron", "type": "other"}, {"text": "iron-deficiency anaemia", "type": "other"}, {"text": "chronic kidney disease", "type": "other"}]

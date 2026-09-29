@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Progressive-era",
+    "type": "other"
+  },
+  {
+    "text": "Seventeenth Amendment",
+    "type": "other"
+  },
+  {
+    "text": "United States Constitution",
+    "type": "other"
+  }
+]
+```

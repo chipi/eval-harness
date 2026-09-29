@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Cameron Mitchell Restaurants",
+    "type": "organization"
+  },
+  {
+    "text": "Bob Evans Restaurants",
+    "type": "organization"
+  },
+  {
+    "text": "Max & amp; Erma 's",
+    "type": "organization"
+  },
+  {
+    "text": "Damon 's Grill",
+    "type": "organization"
+  },
+  {
+    "text": "Donatos Pizza",
+    "type": "organization"
+  }
+]
+```

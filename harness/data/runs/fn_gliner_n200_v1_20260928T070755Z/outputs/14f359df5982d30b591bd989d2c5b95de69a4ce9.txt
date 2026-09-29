@@ -1,0 +1,1 @@
+[{"text": "Kosovo", "type": "location"}, {"text": "Vet\u00ebvendosje", "type": "person"}, {"text": "Democratic League of Kosovo", "type": "organization"}, {"text": "Democratic Party of Kosovo", "type": "organization"}]

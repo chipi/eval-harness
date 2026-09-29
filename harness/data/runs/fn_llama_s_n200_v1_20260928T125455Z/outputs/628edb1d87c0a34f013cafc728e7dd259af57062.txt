@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Drake Bulldogs football team",
+    "type": "other"
+  },
+  {
+    "text": "Drake University",
+    "type": "organization"
+  },
+  {
+    "text": "NCAA",
+    "type": "organization"
+  },
+  {
+    "text": "Drake",
+    "type": "person"
+  }
+]
+```

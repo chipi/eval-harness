@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Chelsea",
+    "type": "organization"
+  },
+  {
+    "text": "P.E",
+    "type": "other"
+  }
+]

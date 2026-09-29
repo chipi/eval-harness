@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "Cold Harbor", "type": "event"},
+  {"text": "June 1–12", "type": "other"}
+]
+```

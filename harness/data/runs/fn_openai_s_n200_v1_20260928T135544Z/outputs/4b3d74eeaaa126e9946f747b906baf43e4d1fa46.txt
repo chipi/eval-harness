@@ -1,0 +1,1 @@
+[{"text":"20 August","type":"other"},{"text":"Toulon","type":"location"},{"text":"2nd","type":"other"},{"text":"13th","type":"other"},{"text":"Regiments of Engineering","type":"organization"},{"text":"UNIFIL","type":"organization"}]

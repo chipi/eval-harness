@@ -1,0 +1,18 @@
+[
+  {"text": "ATF -2", "type": "other"},
+  {"text": "Chop", "type": "other"},
+  {"text": "c-Jun", "type": "other"},
+  {"text": "c-Myc", "type": "other"},
+  {"text": "DPC4", "type": "other"},
+  {"text": "Elk-1", "type": "other"},
+  {"text": "Ets1", "type": "other"},
+  {"text": "Max", "type": "other"},
+  {"text": "MEF2C", "type": "other"},
+  {"text": "NFAT4", "type": "other"},
+  {"text": "Sap1a", "type": "other"},
+  {"text": "STATs", "type": "other"},
+  {"text": "Tal", "type": "other"},
+  {"text": "p53", "type": "other"},
+  {"text": "CREB", "type": "other"},
+  {"text": "Myc", "type": "other"}
+]

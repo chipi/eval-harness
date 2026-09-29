@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "North Korea",
+    "type": "location"
+  },
+  {
+    "text": "February",
+    "type": "other"
+  },
+  {
+    "text": "United States",
+    "type": "location"
+  },
+  {
+    "text": "Yongbyon Nuclear Scientific Research Center",
+    "type": "building"
+  }
+]
+```

@@ -1,0 +1,14 @@
+The user wants a 2-3 sentence news wire style summary of this article about Anne Frank's death date being revised by new research.
+
+Key points:
+- New research from the Anne Frank House shows Anne and her sister Margot died at least a month earlier than previously thought
+- Previously believed she died March 31, 1945, just two weeks before Bergen-Belsen was liberated
+- Researchers re-examined Red Cross archives, ITS, Bergen-Belsen Memorial, and survivor testimonies
+- Both sisters likely died of typhus in February 1945
+- Exact dates remain unclear
+
+News wire style is terse, factual, leads with the news. Let me draft:
+
+"New research by the Anne Frank House suggests Anne Frank and her sister Margot died at least a month earlier than previously believed, likely in February 1945 rather than March. The findings, based on Red Cross archives and survivor testimonies, indicate the sisters died of typhus at Bergen-Belsen before the camp's liberation. Exact dates of death remain unknown."
+
+That's three sentences, terse, factual. Good.New research by the Anne Frank House indicates Anne Frank and her sister Margot died at least a month earlier than previously believed, likely in February 1945 rather than late March. The findings, based on Red Cross archives and survivor testimonies, suggest both sisters died of typhus at Bergen-Belsen before the camp's liberation. Exact dates of death remain unknown.

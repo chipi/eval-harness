@@ -1,0 +1,10 @@
+[
+  {
+    "text": "NHL",
+    "type": "organization"
+  },
+  {
+    "text": "Montreal Canadiens",
+    "type": "organization"
+  }
+]

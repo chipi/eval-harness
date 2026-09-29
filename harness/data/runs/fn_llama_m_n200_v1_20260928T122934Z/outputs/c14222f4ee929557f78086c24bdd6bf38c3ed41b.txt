@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Kennedy",
+    "type": "person"
+  },
+  {
+    "text": "African",
+    "type": "other"
+  },
+  {
+    "text": "American",
+    "type": "other"
+  }
+]

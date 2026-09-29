@@ -1,0 +1,4 @@
+[
+  {"text": "Washington", "type": "location"},
+  {"text": "State Routes", "type": "other"}
+]

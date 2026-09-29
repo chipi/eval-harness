@@ -1,0 +1,1 @@
+[{"text": "August", "type": "location"}, {"text": "Toulon", "type": "location"}, {"text": "Regiments", "type": "location"}, {"text": "Engineering", "type": "location"}, {"text": "UNIFIL", "type": "location"}]

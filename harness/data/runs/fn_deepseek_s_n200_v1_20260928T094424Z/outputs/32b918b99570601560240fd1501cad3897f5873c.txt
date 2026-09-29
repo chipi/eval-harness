@@ -1,0 +1,10 @@
+[
+    {
+        "text": "30.0 megajoules per kilogram",
+        "type": "other"
+    },
+    {
+        "text": "MJ/kg",
+        "type": "other"
+    }
+]

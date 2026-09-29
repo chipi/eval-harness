@@ -1,0 +1,10 @@
+```
+[
+  {"text": "TRA", "type": "organization"},
+  {"text": "MOTC", "type": "organization"},
+  {"text": "TRTC", "type": "organization"},
+  {"text": "Taoyuan City Government", "type": "organization"},
+  {"text": "Taoyuan Rapid Transit Corporation", "type": "organization"},
+  {"text": "Taoyuan", "type": "location"}
+]
+```

@@ -1,0 +1,1 @@
+[{"text": "Starting", "type": "location"}, {"text": "University", "type": "location"}, {"text": "Wisconsin-Parkside", "type": "location"}, {"text": "Oberbrunner Field", "type": "location"}, {"text": "UW-Parkside", "type": "location"}, {"text": "Simmons Field", "type": "location"}]

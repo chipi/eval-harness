@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "French",
+    "type": "organization"
+  },
+  {
+    "text": "island",
+    "type": "location"
+  },
+  {
+    "text": "France",
+    "type": "location"
+  },
+  {
+    "text": "sugarcane",
+    "type": "product"
+  }
+]
+```

@@ -1,0 +1,1 @@
+[{"text": "However", "type": "location"}, {"text": "Rupert Giles", "type": "location"}, {"text": "Buffy", "type": "location"}, {"text": "Vampire Slayer", "type": "location"}, {"text": "Head", "type": "location"}, {"text": "Adam Klaus", "type": "location"}, {"text": "Stuart Milligan", "type": "location"}]

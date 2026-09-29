@@ -1,0 +1,1 @@
+[{"text": "Despite", "type": "location"}, {"text": "Tecumseh", "type": "location"}, {"text": "General Proctor", "type": "location"}, {"text": "Fort Malden", "type": "location"}, {"text": "Niagara", "type": "location"}]

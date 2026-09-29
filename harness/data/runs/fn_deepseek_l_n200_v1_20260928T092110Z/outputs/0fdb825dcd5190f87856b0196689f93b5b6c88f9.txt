@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Grebler",
+    "type": "person"
+  },
+  {
+    "text": "1985",
+    "type": "event"
+  },
+  {
+    "text": "Jenga",
+    "type": "product"
+  },
+  {
+    "text": "Leslie Scott",
+    "type": "person"
+  },
+  {
+    "text": "early 1980s",
+    "type": "event"
+  }
+]

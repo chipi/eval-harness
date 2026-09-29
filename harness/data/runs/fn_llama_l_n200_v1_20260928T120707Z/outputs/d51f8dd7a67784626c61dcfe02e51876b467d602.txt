@@ -1,0 +1,5 @@
+[
+  {"text": "Xist", "type": "other"},
+  {"text": "PRC2", "type": "other"},
+  {"text": "RNA", "type": "other"}
+]

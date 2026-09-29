@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "The Round Table India", "type": "organization"},
+  {"text": "Faria", "type": "person"},
+  {"text": "Pride of Karnataka Award", "type": "event"},
+  {"text": "6 May 2011", "type": "other"},
+  {"text": "India", "type": "location"},
+  {"text": "Miss Earth 2010", "type": "event"},
+  {"text": "crown", "type": "product"}
+]
+```

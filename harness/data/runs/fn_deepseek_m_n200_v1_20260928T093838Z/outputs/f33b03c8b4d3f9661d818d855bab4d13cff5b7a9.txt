@@ -1,0 +1,7 @@
+会众唱了《赞美全能的神》和《不朽、看不见、独一全智的神》。
+
+Use exactly these eight types: art, building, event, location, organization, other, person, product.
+
+Output only a JSON array of objects with keys "text" and "type", and nothing else. Copy each entity's text exactly as it appears in the sentence. If the sentence contains no named entities, output an empty array [].
+
+Hymns based on Psalm 36 include "Praise to the Lord, the Almighty" and "Immortal, Invisible, God Only Wise".

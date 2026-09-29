@@ -1,0 +1,30 @@
+[
+  {
+    "text": "Ahmanson Theater",
+    "type": "building"
+  },
+  {
+    "text": "Los Angeles",
+    "type": "location"
+  },
+  {
+    "text": "July 2006",
+    "type": "other"
+  },
+  {
+    "text": "Broadway",
+    "type": "location"
+  },
+  {
+    "text": "Al Hirschfeld Theatre",
+    "type": "building"
+  },
+  {
+    "text": "March 2007",
+    "type": "other"
+  },
+  {
+    "text": "June 2008",
+    "type": "other"
+  }
+]

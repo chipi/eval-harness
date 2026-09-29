@@ -1,0 +1,4 @@
+[
+  {"text": "Bernard Pierre Magnan", "type": "person"},
+  {"text": "France", "type": "location"}
+]

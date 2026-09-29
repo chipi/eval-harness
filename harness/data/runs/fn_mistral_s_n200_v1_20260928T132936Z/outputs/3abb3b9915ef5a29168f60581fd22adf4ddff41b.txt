@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Mummadi Krishnaraja Wodeyar", "type": "person"},
+  {"text": "Mysore", "type": "location"},
+  {"text": "the princely state of Mysore", "type": "location"},
+  {"text": "the era", "type": "other"}
+]
+```

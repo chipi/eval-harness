@@ -1,0 +1,1 @@
+[{"text": "Georgy Malenkov", "type": "location"}, {"text": "Vyacheslav Molotov", "type": "location"}, {"text": "Stalin", "type": "location"}]

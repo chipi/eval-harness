@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "The Plain Dealer",
+    "type": "organization"
+  },
+  {
+    "text": "Brown",
+    "type": "person"
+  },
+  {
+    "text": "abolitionist Republicans",
+    "type": "organization"
+  },
+  {
+    "text": "the raid",
+    "type": "event"
+  }
+]
+```

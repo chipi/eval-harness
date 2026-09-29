@@ -1,0 +1,1 @@
+[{"text": "iron", "type": "other"}, {"text": "saline solution", "type": "other"}]

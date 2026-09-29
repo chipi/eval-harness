@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Czech",
+    "type": "location"
+  },
+  {
+    "text": "samopal",
+    "type": "other"
+  },
+  {
+    "text": "Sa vz",
+    "type": "product"
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "text": "£ 4,424",
+    "type": "other"
+  },
+  {
+    "text": "1901",
+    "type": "other"
+  },
+  {
+    "text": "£ 274,989",
+    "type": "other"
+  },
+  {
+    "text": "1910",
+    "type": "other"
+  }
+]

@@ -1,0 +1,1 @@
+[{"text":"Broadmoor","type":"location"},{"text":"San Bruno Mountain State Park","type":"location"},{"text":"Olympic Club","type":"organization"},{"text":"Colma","type":"location"}]

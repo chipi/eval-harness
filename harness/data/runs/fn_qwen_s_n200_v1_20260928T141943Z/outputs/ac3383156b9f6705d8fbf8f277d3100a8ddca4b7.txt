@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Gorgon City",
+    "type": "organization"
+  },
+  {
+    "text": "Sirens",
+    "type": "art"
+  },
+  {
+    "text": "Erik Hassle",
+    "type": "person"
+  },
+  {
+    "text": "FTPA",
+    "type": "art"
+  }
+]

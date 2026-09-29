@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Haitian",
+    "type": "location"
+  },
+  {
+text: "Aristide",
+    "type": "person"
+  }
+]

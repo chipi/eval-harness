@@ -1,0 +1,1 @@
+[{"text": "Now", "type": "location"}, {"text": "MLA", "type": "location"}, {"text": "Edmonton-McClung", "type": "location"}, {"text": "MacBeth", "type": "location"}, {"text": "Klein", "type": "location"}, {"text": "Alberta", "type": "location"}, {"text": "Red Tories", "type": "location"}]

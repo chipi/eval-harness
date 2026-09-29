@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Cleo Lemon",
+    "type": "person"
+  },
+  {
+    "text": "September 6 , 2011",
+    "type": "event"
+  },
+  {
+    "text": "Jyles",
+    "type": "person"
+  },
+  {
+    "text": "BC Lions",
+    "type": "organization"
+  },
+  {
+    "text": "September 10 , 2011",
+    "type": "event"
+  }
+]

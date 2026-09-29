@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "Morgan",
+    "type": "person"
+  },
+  {
+    "text": "The Sheep-Shearing or Florizel and Perdita",
+    "type": "other"
+  },
+  {
+    "text": "Dublin",
+    "type": "location"
+  },
+  {
+    "text": "1747",
+    "type": "other"
+  },
+  {
+    "text": "Smock Alley Theatre",
+    "type": "building"
+  },
+  {
+    "text": "Covent Garden",
+    "type": "building"
+  },
+  {
+    "text": "1754",
+    "type": "other"
+  }
+]
+```

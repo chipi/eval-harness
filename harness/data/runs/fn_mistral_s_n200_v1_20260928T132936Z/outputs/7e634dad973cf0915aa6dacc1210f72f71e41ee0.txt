@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Cleo Lemon", "type": "person"},
+  {"text": "September 6 , 2011", "type": "other"},
+  {"text": "Jyles", "type": "person"},
+  {"text": "September 10 , 2011", "type": "other"},
+  {"text": "BC Lions", "type": "organization"}
+]
+```

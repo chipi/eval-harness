@@ -1,0 +1,5 @@
+[
+  {"text": "Kennedy", "type": "person"},
+  {"text": "African", "type": "other"},
+  {"text": "1963", "type": "other"}
+]

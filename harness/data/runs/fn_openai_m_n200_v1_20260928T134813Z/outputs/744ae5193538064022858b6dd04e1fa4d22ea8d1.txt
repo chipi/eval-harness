@@ -1,0 +1,1 @@
+[{"text":"Homo conditus","type":"art"},{"text":"Homo conditus","type":"art"},{"text":"Swedish","type":"other"},{"text":"Swedish Catholic","type":"organization"},{"text":"Katolska bokförlaget","type":"organization"}]

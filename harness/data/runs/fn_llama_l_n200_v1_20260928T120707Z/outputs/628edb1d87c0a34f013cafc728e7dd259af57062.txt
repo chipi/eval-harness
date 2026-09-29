@@ -1,0 +1,7 @@
+[
+  {"text": "Drake Bulldogs", "type": "organization"},
+  {"text": "Drake University", "type": "organization"},
+  {"text": "NCAA", "type": "organization"},
+  {"text": "NCAA Division I FCS", "type": "other"},
+  {"text": "Drake", "type": "person"}
+]

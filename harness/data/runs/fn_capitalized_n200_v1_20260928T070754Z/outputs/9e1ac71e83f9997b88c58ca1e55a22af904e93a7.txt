@@ -1,0 +1,1 @@
+[{"text": "Road", "type": "location"}, {"text": "Avenue", "type": "location"}, {"text": "Street", "type": "location"}, {"text": "Avenue", "type": "location"}, {"text": "Street", "type": "location"}, {"text": "Road", "type": "location"}]

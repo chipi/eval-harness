@@ -1,0 +1,14 @@
+[
+  {
+    "text": "14th century",
+    "type": "other"
+  },
+  {
+    "text": "knight",
+    "type": "person"
+  },
+  {
+    "text": "wife",
+    "type": "person"
+  }
+]

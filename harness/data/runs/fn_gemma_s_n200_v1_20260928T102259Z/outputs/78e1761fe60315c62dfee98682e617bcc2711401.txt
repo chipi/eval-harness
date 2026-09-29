@@ -1,0 +1,13 @@
+Here's the sentence:
+
+"In 2018, the Louvre Museum in Paris hosted a special exhibit of Leonardo da Vinci’s Mona Lisa to commemorate the 500th anniversary of his death."
+
+```json
+[
+  {"text": "2018", "type": "other"},
+  {"text": "Louvre Museum", "type": "building"},
+  {"text": "Paris", "type": "location"},
+  {"text": "Leonardo da Vinci", "type": "person"},
+  {"text": "Mona Lisa", "type": "art"}
+]
+```

@@ -1,0 +1,1 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "Beautiful Kate," which is described as a 2009 Australian film directed by Rachel Ward. This is clearly a Film.Film

@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "cubic boron nitride", "type": "other"},
+  {"text": "Borazon", "type": "product"}
+]
+```

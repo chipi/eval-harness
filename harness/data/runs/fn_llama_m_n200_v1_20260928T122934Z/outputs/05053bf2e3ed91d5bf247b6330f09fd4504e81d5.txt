@@ -1,0 +1,18 @@
+[
+  {
+    "text": "GDR",
+    "type": "organization"
+  },
+  {
+    "text": "West Germany",
+    "type": "location"
+  },
+  {
+    "text": "GDR",
+    "type": "organization"
+  },
+  {
+    "text": "West",
+    "type": "location"
+  }
+]

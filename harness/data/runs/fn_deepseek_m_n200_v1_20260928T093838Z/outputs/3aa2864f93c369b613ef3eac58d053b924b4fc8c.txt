@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Meyer", "type": "organization"},
+  {"text": "January 8 , 1993", "type": "other"},
+  {"text": "Shilling", "type": "person"},
+  {"text": "Palatine", "type": "location"},
+  {"text": "Illinois", "type": "location"},
+  {"text": "Brown 's Chicken massacre", "type": "event"}
+]
+```

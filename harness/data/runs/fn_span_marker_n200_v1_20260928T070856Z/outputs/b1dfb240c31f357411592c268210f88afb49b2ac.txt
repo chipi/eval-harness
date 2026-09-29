@@ -1,0 +1,1 @@
+[{"text": "L\u00f6y\u00f6p", "type": "other"}, {"text": "Ureparapara Island", "type": "location"}, {"text": "Banks Islands", "type": "location"}, {"text": "Vanuatu", "type": "location"}]

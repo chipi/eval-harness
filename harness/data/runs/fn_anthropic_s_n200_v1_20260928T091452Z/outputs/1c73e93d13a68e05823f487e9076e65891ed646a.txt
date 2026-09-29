@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "CIA",
+    "type": "organization"
+  },
+  {
+    "text": "President Dwight D. Eisenhower",
+    "type": "person"
+  },
+  {
+    "text": "Soviets",
+    "type": "other"
+  },
+  {
+    "text": "Sputnik",
+    "type": "product"
+  }
+]
+```

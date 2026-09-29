@@ -1,0 +1,8 @@
+[
+  {"text": "Homo conditus", "type": "art"},
+  {"text": "1984", "type": "other"},
+  {"text": "Homo conditus", "type": "art"},
+  {"text": "Swedish", "type": "location"},
+  {"text": "Katolska bokförlaget", "type": "organization"},
+  {"text": "1986", "type": "other"}
+]

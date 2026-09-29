@@ -1,0 +1,1 @@
+[{"text": "The School Library Journal", "type": "location"}, {"text": "Truesight", "type": "location"}, {"text": "Lois Lowry", "type": "location"}, {"text": "The Giver", "type": "location"}]

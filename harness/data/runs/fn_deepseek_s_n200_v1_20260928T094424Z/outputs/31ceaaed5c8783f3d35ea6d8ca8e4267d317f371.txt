@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Czech",
+    "type": "other"
+  },
+  {
+    "text": "Sa vz",
+    "type": "product"
+  }
+]

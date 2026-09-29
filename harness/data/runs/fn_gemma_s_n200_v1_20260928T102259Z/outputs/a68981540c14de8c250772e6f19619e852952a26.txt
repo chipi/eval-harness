@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "1901", "type": "other"},
+  {"text": "1910", "type": "other"},
+  {"text": "£ 4,424", "type": "product"},
+  {"text": "£ 274,989", "type": "product"}
+]
+```

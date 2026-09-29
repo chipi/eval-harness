@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Cold Harbor",
+    "type": "location"
+  },
+  {
+    "text": "June",
+    "type": "other"
+  }
+]

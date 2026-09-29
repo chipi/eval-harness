@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Whittington Hospital", "type": "organization"},
+  {"text": "UCL Medical School", "type": "organization"},
+  {"text": "Middlesex University School of Health and Social Sciences", "type": "organization"}
+]
+```

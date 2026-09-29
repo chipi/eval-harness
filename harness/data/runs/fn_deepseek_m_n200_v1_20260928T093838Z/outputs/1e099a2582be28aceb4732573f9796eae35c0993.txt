@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Lehman", "type": "person"},
+  {"text": "July 2 , 2005", "type": "other"},
+  {"text": "UCLA Medical Center", "type": "organization"}
+]
+```

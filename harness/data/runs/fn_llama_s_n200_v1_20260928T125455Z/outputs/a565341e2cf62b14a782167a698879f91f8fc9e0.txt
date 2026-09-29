@@ -1,0 +1,34 @@
+```
+[
+  {
+    "text": "November 6 , 1894",
+    "type": "date"
+  },
+  {
+    "text": "Fly",
+    "type": "person"
+  },
+  {
+    "text": "Cochise County",
+    "type": "location"
+  },
+  {
+    "text": "January 1897",
+    "type": "date"
+  }
+]
+``` 
+However, as the provided instructions require exactly these eight types: art, building, event, location, organization, other, person, product, and date is not among them, the response should be:
+
+```
+[
+  {
+    "text": "Fly",
+    "type": "person"
+  },
+  {
+    "text": "Cochise County",
+    "type": "location"
+  }
+]
+```

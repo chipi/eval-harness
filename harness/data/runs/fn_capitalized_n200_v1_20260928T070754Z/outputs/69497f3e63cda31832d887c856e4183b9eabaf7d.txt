@@ -1,0 +1,1 @@
+[{"text": "Each", "type": "location"}, {"text": "Hagar", "type": "location"}]

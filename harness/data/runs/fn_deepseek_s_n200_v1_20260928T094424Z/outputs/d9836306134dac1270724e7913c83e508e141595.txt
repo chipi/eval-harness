@@ -1,0 +1,9 @@
+[
+  {"text": "Apple", "type": "organization"},
+  {"text": "Mac Mini", "type": "product"},
+  {"text": "Apple-designed M1 processor", "type": "product"},
+  {"text": "MacBook Air", "type": "product"},
+  {"text": "13-inch MacBook Pro", "type": "product"},
+  {"text": "Apple", "type": "organization"},
+  {"text": "Apple silicon", "type": "product"}
+]

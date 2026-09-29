@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Meyer", "type": "person"},
+  {"text": "January 8", "type": "event"},
+  {"text": "Palatine", "type": "location"},
+  {"text": "Illinois", "type": "location"},
+  {"text": "Brown 's Chicken", "type": "product"},
+  {"text": "Shilling", "type": "person"}
+]
+```

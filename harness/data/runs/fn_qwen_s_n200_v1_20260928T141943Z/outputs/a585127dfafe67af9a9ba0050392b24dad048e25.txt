@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Amazing Stories",
+    "type": "art"
+  },
+  {
+    "text": "Michael Joseph",
+    "type": "organization"
+  }
+]

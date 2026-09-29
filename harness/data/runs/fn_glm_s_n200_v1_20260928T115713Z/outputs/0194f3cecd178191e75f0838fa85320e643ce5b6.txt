@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Microsoft",
+    "type": "organization"
+  },
+  {
+    "text": "online",
+    "type": "other"
+  },
+  {
+    "text": "print",
+    "type": "other"
+  },
+  {
+    "text": "television",
+    "type": "other"
+  },
+  {
+    "text": "game",
+    "type": "product"
+  }
+]
+```

@@ -1,0 +1,24 @@
+```
+[
+  {
+    "text": "A-League Minor Premiership",
+    "type": "other"
+  },
+  {
+    "text": "Asian Champions League",
+    "type": "other"
+  },
+  {
+    "text": "Appiah",
+    "type": "person"
+  },
+  {
+    "text": "VISY Wanderers",
+    "type": "organization"
+  },
+  {
+    "text": "A-League",
+    "type": "other"
+  }
+]
+```

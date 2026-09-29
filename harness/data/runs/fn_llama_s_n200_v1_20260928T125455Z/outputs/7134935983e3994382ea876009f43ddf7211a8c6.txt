@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Southern Sami",
+    "type": "other"
+  },
+  {
+    "text": "åulo",
+    "type": "product"
+  },
+  {
+    "text": "melted snow",
+    "type": "other"
+  },
+  {
+    "text": "åulot",
+    "type": "product"
+  },
+  {
+    "text": "thaw",
+    "type": "other"
+  }
+]
+```

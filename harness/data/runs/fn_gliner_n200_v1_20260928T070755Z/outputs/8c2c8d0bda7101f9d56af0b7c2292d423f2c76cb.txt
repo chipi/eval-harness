@@ -1,0 +1,1 @@
+[{"text": "M-28", "type": "location"}, {"text": "June 4 , 1999", "type": "event"}, {"text": "City of Ishpeming", "type": "organization"}, {"text": "MDOT", "type": "organization"}, {"text": "Lakeshore Drive", "type": "location"}, {"text": "M-28", "type": "location"}]

@@ -1,0 +1,1 @@
+[{"text": "Yog\u0101c\u0101rabh\u016bmi", "type": "art"}, {"text": "Abhidharmako\u015ba", "type": "art"}, {"text": "Bodhisattvacary\u0101vat\u0101ra", "type": "art"}]

@@ -1,0 +1,8 @@
+[
+  {"text": "Mursili II", "type": "person"},
+  {"text": "Mursilis II", "type": "person"},
+  {"text": "Hittite Empire", "type": "organization"},
+  {"text": "New kingdom", "type": "other"},
+  {"text": "1321–1295 BC", "type": "other"},
+  {"text": "short chronology", "type": "other"}
+]

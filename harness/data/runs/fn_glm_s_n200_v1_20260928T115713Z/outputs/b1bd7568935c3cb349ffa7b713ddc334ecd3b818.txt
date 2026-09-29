@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "English Language",
+    "type": "other"
+  },
+  {
+    "text": "1923",
+    "type": "event"
+  },
+  {
+    "text": "Calcutta University",
+    "type": "organization"
+  }
+]
+```

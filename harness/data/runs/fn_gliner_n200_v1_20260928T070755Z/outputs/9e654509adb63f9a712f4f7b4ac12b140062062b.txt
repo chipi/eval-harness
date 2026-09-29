@@ -1,0 +1,1 @@
+[{"text": "Magazines", "type": "product"}, {"text": "pistols", "type": "product"}]

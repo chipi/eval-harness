@@ -1,0 +1,1 @@
+[{"text": "Senator Strom Thurmond", "type": "location"}]

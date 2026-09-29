@@ -1,0 +1,1 @@
+[{"text": "Star Wars Battlefront", "type": "location"}, {"text": "EA DICE", "type": "location"}, {"text": "Criterion Games", "type": "location"}, {"text": "Electronic Arts", "type": "location"}]

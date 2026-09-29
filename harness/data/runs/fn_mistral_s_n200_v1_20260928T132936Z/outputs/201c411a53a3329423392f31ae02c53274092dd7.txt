@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Debian",
+    "type": "organization"
+  },
+  {
+    "text": "derivatives",
+    "type": "other"
+  }
+]
+```

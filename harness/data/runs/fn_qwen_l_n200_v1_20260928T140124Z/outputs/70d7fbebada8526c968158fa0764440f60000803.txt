@@ -1,0 +1,1 @@
+[{"text":"Yuri Larionov","type":"person"},{"text":"Furosemide","type":"product"}]

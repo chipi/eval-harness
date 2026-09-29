@@ -1,0 +1,4 @@
+[
+  {"text": "Jericho 941", "type": "product"},
+  {"text": "José Morales", "type": "person"}
+]

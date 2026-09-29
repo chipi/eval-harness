@@ -1,0 +1,1 @@
+[{"text": "Flying Tigers", "type": "organization"}, {"text": "Belleau Wood", "type": "product"}, {"text": "Hurricane Iniki", "type": "event"}, {"text": "Kauai", "type": "location"}]

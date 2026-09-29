@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "games",
+    "type": "product"
+  },
+  {
+    "text": "instruction manuals",
+    "type": "product"
+  },
+  {
+    "text": "Wii Shop Channel",
+    "type": "product"
+  }
+]
+```

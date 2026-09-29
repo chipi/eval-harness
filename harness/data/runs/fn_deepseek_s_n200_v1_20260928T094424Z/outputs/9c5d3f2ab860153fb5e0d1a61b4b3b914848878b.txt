@@ -1,0 +1,10 @@
+[
+  {
+    "text": "The University of New Zealand Act",
+    "type": "other"
+  },
+  {
+    "text": "the University",
+    "type": "organization"
+  }
+]

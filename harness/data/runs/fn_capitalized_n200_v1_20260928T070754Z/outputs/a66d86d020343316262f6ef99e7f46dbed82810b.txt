@@ -1,0 +1,1 @@
+[{"text": "The Round Table India", "type": "location"}, {"text": "Faria", "type": "location"}, {"text": "Pride", "type": "location"}, {"text": "Karnataka Award", "type": "location"}, {"text": "May", "type": "location"}, {"text": "India", "type": "location"}, {"text": "Miss Earth", "type": "location"}]

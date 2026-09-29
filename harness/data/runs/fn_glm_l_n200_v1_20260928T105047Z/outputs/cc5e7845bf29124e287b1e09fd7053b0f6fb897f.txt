@@ -1,0 +1,26 @@
+The task is to extract named entities from the sentence: "It was en route to Corfu International Airport in Greece ."
+
+Let me identify the named entities:
+1. "Corfu International Airport" - this is an airport. Airports could be classified as "building" or "location" or "other". In many NER schemes, airports are considered locations or facilities/buildings. Given the eight types: art, building, event, location, organization, other, person, product. An airport is a facility/building. Hmm, but it could also be considered a location. Airports are typically classified as facilities, which in this taxonomy would map to "building" since there's no "facility" type. Actually, in some datasets like the one this seems modeled after (possibly CoNLL or similar), airports might be "other" or "location". Let me think.
+
+The eight types: art, building, event, location, organization, other, person, product. This looks like it could be from a specific NER dataset. Airports... "Corfu International Airport" - an airport is a structure/building. I'd classify it as "building" or "location". 
+
+Hmm, in the WikiANN or similar datasets, airports are often tagged as "location" or "facility". Given the options, "building" seems most appropriate for an airport as a physical structure. But "location" could also work since it's a place.
+
+Actually, let me think about this more carefully. In many NER taxonomies with these exact eight types (art, building, event, location, organization, other, person, product), this resembles the OntoNotes or a specific dataset. Actually, this looks like it might be from the "Few-NERD" dataset or similar. 
+
+In OntoNotes, the types are: PERSON, NORP, FACILITY, ORG, GPE, LOC, PRODUCT, EVENT, WORK_OF_ART, LAW, LANGUAGE, DATE, TIME, PERCENT, MONEY, QUANTITY, ORDINAL, CARDINAL.
+
+FACILITY in OntoNotes includes buildings, airports, highways, bridges, etc. So "Corfu International Airport" would be FACILITY, which maps to "building" in this taxonomy.
+
+2. "Greece" - this is a country, which is a location (GPE in OntoNotes maps to location).
+
+So the entities:
+- "Corfu International Airport" - building (airport as facility)
+- "Greece" - location
+
+Wait, but should the airport be "location" instead? Airports are named places. Hmm. In OntoNotes, FACILITY includes "names of politically-defined geographical units... no wait, that's GPE. FACILITY: "Names of man-made structures... buildings, airports, highways, bridges". So airports are FACILITY = building.
+
+So my answer:
+[
+  {"text": "Corfu International Airport", "

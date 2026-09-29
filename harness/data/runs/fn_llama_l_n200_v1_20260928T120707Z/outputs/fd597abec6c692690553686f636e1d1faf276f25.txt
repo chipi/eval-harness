@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Multi-Purpose Bayonet",
+    "type": "product"
+  },
+  {
+    "text": "Multi-Purpose Bayonet program",
+    "type": "event"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "text": "air-to air combat",
+    "type": "event"
+  },
+  {
+    "text": "aircraft",
+    "type": "product"
+  },
+  {
+    "text": "bombers",
+    "type": "product"
+  }
+]

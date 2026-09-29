@@ -1,0 +1,10 @@
+[
+  {
+    "text": "French",
+    "type": "other"
+  },
+  {
+    "text": "France",
+    "type": "location"
+  }
+]

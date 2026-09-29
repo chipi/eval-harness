@@ -1,0 +1,6 @@
+[
+  {"text": "Europe", "type": "location"},
+  {"text": "Louis Botha", "type": "person"},
+  {"text": "Christiaan de Wet", "type": "person"},
+  {"text": "Boers", "type": "other"}
+]

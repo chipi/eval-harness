@@ -1,0 +1,18 @@
+[
+    {
+        "text": "The pen is mightier than the sword",
+        "type": "other"
+    },
+    {
+        "text": "Japanese",
+        "type": "other"
+    },
+    {
+        "text": "pen-ken",
+        "type": "other"
+    },
+    {
+        "text": "pen-sword",
+        "type": "other"
+    }
+]

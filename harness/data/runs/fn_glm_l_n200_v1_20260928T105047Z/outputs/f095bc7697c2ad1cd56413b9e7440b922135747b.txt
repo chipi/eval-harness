@@ -1,0 +1,13 @@
+The sentence is: "His work of this period is mainly related to war and science-fiction genres."
+
+Let me analyze this for named entities:
+- "His" - pronoun, not a named entity
+- "work" - common noun
+- "this period" - not a named entity
+- "war" - genre, common noun
+- "science-fiction" - genre, common noun
+- "genres" - common noun
+
+There are no named entities in this sentence. No person names, no locations, no organizations, no products, no events, no buildings, no artworks, nothing that qualifies as a named entity.
+
+The output should be an empty array [].[]

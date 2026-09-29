@@ -1,0 +1,1 @@
+[{"text": "Mann", "type": "location"}, {"text": "Chinese Theatre", "type": "location"}, {"text": "Eric", "type": "location"}, {"text": "Cody Jarrett", "type": "location"}, {"text": "White Heat", "type": "location"}]

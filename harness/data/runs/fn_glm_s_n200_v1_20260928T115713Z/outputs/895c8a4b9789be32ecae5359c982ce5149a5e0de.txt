@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Hurst Street",
+    "type": "location"
+  },
+  {
+    "text": "National Trust",
+    "type": "organization"
+  }
+]
+```

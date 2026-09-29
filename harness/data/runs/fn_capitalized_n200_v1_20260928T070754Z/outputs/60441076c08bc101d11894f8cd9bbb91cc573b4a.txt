@@ -1,0 +1,1 @@
+[{"text": "May", "type": "location"}, {"text": "Pope Innocent XII", "type": "location"}, {"text": "Bishop", "type": "location"}, {"text": "Tinos", "type": "location"}]

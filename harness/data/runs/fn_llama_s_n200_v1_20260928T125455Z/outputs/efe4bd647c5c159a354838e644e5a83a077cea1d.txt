@@ -1,0 +1,32 @@
+```
+[
+  {
+    "text": "Klaus Friedrich Roth",
+    "type": "person"
+  },
+  {
+    "text": "Fields Medal",
+    "type": "award"
+  },
+  {
+    "text": "Roth 's theorem",
+    "type": "other"
+  },
+  {
+    "text": "Diophantine approximation",
+    "type": "other"
+  },
+  {
+    "text": "algebraic numbers",
+    "type": "other"
+  },
+  {
+    "text": "German",
+    "type": "other"
+  },
+  {
+    "text": "British",
+    "type": "other"
+  }
+]
+```

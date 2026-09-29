@@ -1,0 +1,26 @@
+The task is to extract named entities from the sentence:
+
+"These include the `` Yogācārabhūmi , '' the `` Abhidharmakośa , '' the long `` Prajñāpāramitā sutra '' and the `` Bodhisattvacaryāvatāra . ''"
+
+The entities here are titles of texts:
+- Yogācārabhūmi — a Buddhist treatise (a text/work of art/literature)
+- Abhidharmakośa — a Buddhist text
+- Prajñāpāramitā sutra — a Buddhist sutra
+- Bodhisattvacaryāvatāra — a Buddhist text
+
+These are all texts. In the given eight types: art, building, event, location, organization, other, person, product. Texts like these would typically be classified as "art" (works of literature/treatises) or possibly "other" or "product". In many NER schemes (like CoNLL), works of art fall under "art" or "work of art" category. Given the options, "art" seems most appropriate for literary works/texts.
+
+The text should be copied exactly as it appears. The entities appear as:
+- `` Yogācārabhūmi , '' — the entity itself is "Yogācārabhūmi" (the quotes and punctuation are formatting). But the instruction says "Copy each entity's text exactly as it appears in the sentence." The entity text is "Yogācārabhūmi". Should I include the quotes? Typically the entity is the name itself, not the surrounding punctuation. I'll extract just the names: "Yogācārabhūmi", "Abhidharmakośa", "Prajñāpāramitā sutra", "Bodhisattvacaryāvatāra".
+
+Wait, "Prajñāpāramitā sutra" — the word "long" precedes it: "the long `` Prajñāpāramitā sutra ''". The entity is "Prajñāpāramitā sutra" — "long" is a descriptor, not part of the name. So the entity is "Prajñāpāramitā sutra".
+
+So output:
+[
+  {"text": "Yogācārabhūmi", "type": "art"},
+  {"text": "Abhidharmakośa", "type": "art"},
+  {"text": "Prajñāpāramitā sutra", "type": "art"},
+  {"text": "Bodhisattvacaryāvatāra", "type": "art"}
+]
+
+All are Buddhist texts, so "art" (works of literature) is the best fit among the eight types.

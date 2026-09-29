@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Homo conditus",
+    "type": "art"
+  },
+  {
+    "text": "Homo conditus",
+    "type": "art"
+  },
+  {
+    "text": "Katolska bokförlaget",
+    "type": "organization"
+  }
+]
+```

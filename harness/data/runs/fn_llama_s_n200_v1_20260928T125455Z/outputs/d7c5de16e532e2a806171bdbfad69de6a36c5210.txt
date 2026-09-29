@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Yogācārabhūmi",
+    "type": "art"
+  },
+  {
+    "text": "Abhidharmakośa",
+    "type": "art"
+  },
+  {
+    "text": "Prajñāpāramitā sutra",
+    "type": "art"
+  },
+  {
+    "text": "Bodhisattvacaryāvatāra",
+    "type": "art"
+  }
+]
+```

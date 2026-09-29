@@ -1,0 +1,1 @@
+[{"text": "By", "type": "location"}, {"text": "The Plain Dealer", "type": "location"}, {"text": "Democratic", "type": "location"}, {"text": "Brown", "type": "location"}, {"text": "Republicans", "type": "location"}]

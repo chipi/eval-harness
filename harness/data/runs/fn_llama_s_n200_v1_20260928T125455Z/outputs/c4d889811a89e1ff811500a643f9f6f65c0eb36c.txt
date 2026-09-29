@@ -1,0 +1,12 @@
+```
+[
+  {
+    "text": "José Morales",
+    "type": "person"
+  },
+  {
+    "text": "Jericho 941",
+    "type": "product"
+  }
+]
+```

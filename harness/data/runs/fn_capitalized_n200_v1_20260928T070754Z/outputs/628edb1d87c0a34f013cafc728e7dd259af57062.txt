@@ -1,0 +1,1 @@
+[{"text": "Drake Bulldogs", "type": "location"}, {"text": "Drake University", "type": "location"}, {"text": "NCAA Division I FCS", "type": "location"}]

@@ -1,0 +1,20 @@
+```
+[
+  {
+    "text": "Rupert Giles",
+    "type": "person"
+  },
+  {
+    "text": "Buffy the Vampire Slayer",
+    "type": "product"
+  },
+  {
+    "text": "Adam Klaus",
+    "type": "person"
+  },
+  {
+    "text": "Stuart Milligan",
+    "type": "person"
+  }
+]
+```

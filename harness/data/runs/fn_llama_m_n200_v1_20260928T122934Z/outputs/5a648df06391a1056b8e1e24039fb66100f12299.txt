@@ -1,0 +1,8 @@
+[]
+becomes 
+[{"text": "aircraft", "type": "product"}] 
+
+However, "aircraft" can also be classified under "other" depending on the context. But in this case, it seems more appropriate to classify it as a "product". 
+
+So the final answer is:
+[{"text": "aircraft", "type": "product"}]

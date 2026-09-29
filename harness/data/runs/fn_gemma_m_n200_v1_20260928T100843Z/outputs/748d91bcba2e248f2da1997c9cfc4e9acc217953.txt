@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Week 5",
+    "type": "other"
+  },
+  {
+    "text": "Family Teams",
+    "type": "other"
+  },
+  {
+    "text": "Blue Team",
+    "type": "organization"
+  },
+  {
+    "text": "Black Team",
+    "type": "organization"
+  }
+]

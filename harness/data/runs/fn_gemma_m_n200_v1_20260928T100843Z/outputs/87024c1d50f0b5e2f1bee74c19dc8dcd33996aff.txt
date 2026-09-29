@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "German U-boats",
+    "type": "product"
+  },
+  {
+    "text": "World War II",
+    "type": "event"
+  },
+  {
+    "text": "Battle of the Atlantic",
+    "type": "event"
+  }
+]
+```

@@ -1,0 +1,12 @@
+```json
+[
+  {"text": "Babylon 5", "type": "product"},
+  {"text": "Prime Time Entertainment Network", "type": "organization"},
+  {"text": "PTEN", "type": "organization"},
+  {"text": "WB", "type": "organization"},
+  {"text": "UPN", "type": "organization"},
+  {"text": "TNT", "type": "organization"},
+  {"text": "1993", "type": "other"},
+  {"text": "1998", "type": "other"}
+]
+```

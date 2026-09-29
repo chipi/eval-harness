@@ -1,0 +1,1 @@
+[{"text":"September 1992","type":"other"},{"text":"Flying Tigers","type":"organization"},{"text":"USS `` Belleau Wood ``","type":"product"},{"text":"Hurricane Iniki","type":"event"},{"text":"Kauai","type":"location"}]

@@ -1,0 +1,9 @@
+```json
+[
+  {"text": "Sir Philip Cunliffe-Owen", "type": "person"},
+  {"text": "Sir John Coode", "type": "person"},
+  {"text": "Sir Frederick Bramwell", "type": "person"},
+  {"text": "Chelsea", "type": "location"},
+  {"text": "A. Ransome and Co", "type": "organization"}
+]
+```

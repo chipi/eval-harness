@@ -1,0 +1,8 @@
+```
+[
+  { "text": "Ahmanson Theater", "type": "building" },
+  { "text": "Los Angeles", "type": "location" },
+  { "text": "Al Hirschfeld Theatre", "type": "building" },
+  { "text": "Broadway", "type": "location" }
+]
+```

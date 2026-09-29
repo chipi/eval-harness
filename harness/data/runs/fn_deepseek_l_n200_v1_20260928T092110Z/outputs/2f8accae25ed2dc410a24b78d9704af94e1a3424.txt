@@ -1,0 +1,14 @@
+[
+  {
+    "text": "The Pueblo Revolt",
+    "type": "event"
+  },
+  {
+    "text": "Spaniards",
+    "type": "person"
+  },
+  {
+    "text": "the province",
+    "type": "location"
+  }
+]

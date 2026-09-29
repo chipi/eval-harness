@@ -1,0 +1,26 @@
+[
+  {
+    "text": "Columbus",
+    "type": "person"
+  },
+  {
+    "text": "August",
+    "type": "other"
+  },
+  {
+    "text": "Betsy",
+    "type": "person"
+  },
+  {
+    "text": "Dash",
+    "type": "person"
+  },
+  {
+    "text": "Nazis",
+    "type": "organization"
+  },
+  {
+    "text": "Monkey King",
+    "type": "other"
+  }
+]

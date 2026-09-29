@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Stuart",
+    "type": "organization"
+  },
+  {
+    "text": "Stuart Investments",
+    "type": "organization"
+  },
+  {
+    "text": "CFA Competition",
+    "type": "event"
+  },
+  {
+    "text": "CME Trading Competition",
+    "type": "event"
+  }
+]

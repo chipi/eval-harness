@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "United Methodist",
+    "type": "organization"
+  }
+]
+```

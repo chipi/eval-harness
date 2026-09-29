@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Immerman", "type": "person"},
+  {"text": "SIAM Journal on Computing", "type": "other"},
+  {"text": "Logical Methods in Computer Science", "type": "other"}
+]
+```

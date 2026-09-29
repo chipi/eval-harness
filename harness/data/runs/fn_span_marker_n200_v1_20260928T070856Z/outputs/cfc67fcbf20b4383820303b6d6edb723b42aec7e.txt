@@ -1,0 +1,1 @@
+[{"text": "Maple Blues Awards", "type": "other"}, {"text": "Toronto Blues Society", "type": "organization"}]

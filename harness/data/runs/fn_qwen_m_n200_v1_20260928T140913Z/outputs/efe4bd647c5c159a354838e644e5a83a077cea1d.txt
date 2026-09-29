@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Klaus Friedrich Roth",
+    "type": "person"
+  },
+  {
+    "text": "German",
+    "type": "other"
+  },
+  {
+    "text": "British",
+    "type": "other"
+  },
+  {
+    "text": "Fields Medal",
+    "type": "event"
+  },
+  {
+    "text": "Roth 's theorem",
+    "type": "other"
+  }
+]

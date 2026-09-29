@@ -1,0 +1,1 @@
+[{"text": "After", "type": "location"}, {"text": "Europe", "type": "location"}, {"text": "Louis Botha", "type": "location"}, {"text": "Christiaan", "type": "location"}, {"text": "Wet", "type": "location"}, {"text": "Boers", "type": "location"}]

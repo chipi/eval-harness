@@ -1,0 +1,23 @@
+The sentence is: "The post office closed in 1928 ."
+
+Let me identify named entities:
+- "The post office" - is this a named entity? "post office" is a common noun, not a proper noun. It's not a specific named entity like "Springfield Post Office". So it's not a named entity.
+- "1928" - is a year/date. In many NER schemes, dates are entities. The eight types given are: art, building, event, location, organization, other, person, product. This looks like the CoNLL-2003 style or perhaps the "eight types" from some specific dataset. Actually, these eight types (art, building, event, location, organization, other, person, product) are from the OntoNotes-based... no wait, these are from the "Few-NERD" dataset? No... Actually these eight types appear in the CoNLL 2003 English? No, CoNLL 2003 has PER, LOC, ORG, MISC.
+
+The eight types art, building, event, location, organization, other, person, product — this is the entity type set from the "Broad-coverage..." Hmm, this is actually the type set used in the "GUM" corpus? No. Let me think: art, building, event, location, organization, other, person, product — this is the type set from the "WikiANN"? No, WikiANN has person, organization, location, etc.
+
+Actually, these eight types are from the "CoNLL 2003"? No. They match the "OntoNotes"? No, OntoNotes has PERSON, NORP, FAC, ORG, GPE, LOC, PRODUCT, EVENT, WORK_OF_ART, LAW, LANGUAGE, DATE, TIME, PERCENT, MONEY, QUANTITY, ORDINAL, CARDINAL.
+
+The set {art, building, event, location, organization, other, person, product} is from the "ACE"? No. It's from the "MUC"? No.
+
+Actually, this is the entity type set from the "CoNLL-2003 shared task" for German? No.
+
+I recall this set from the "Named Entity Recognition" dataset used in some benchmarks — it's the type set of the "CoNLL 2002"? No.
+
+It's the type set of the "WikiFANE"? Hmm. Actually, I believe {art, building, event, location, organization, other, person, product} is the entity type set used in the "CrossWeigh" paper? No.
+
+Wait — this is the type set from the "NER" task in the "Universal Dependencies"? No.
+
+I think it's from the "CoNLL 2003" MISC... no.
+
+Actually, I remember: this eight-type set is used in the "Few-NERD"? Few-NERD

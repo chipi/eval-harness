@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Psalm 36",
+    "type": "other"
+  },
+  {
+    "text": "English",
+    "type": "other"
+  },
+  {
+    "text": "Praise to the Lord , the Almighty",
+    "type": "art"
+  },
+  {
+    "text": "Immortal , Invisible , God Only Wise",
+    "type": "art"
+  }
+]

@@ -1,0 +1,14 @@
+Here is the JSON array of extracted named entities:
+
+```
+[
+  {
+    "text": "Czech",
+    "type": "other"
+  },
+  {
+    "text": "Sa vz",
+    "type": "product"
+  }
+]
+```

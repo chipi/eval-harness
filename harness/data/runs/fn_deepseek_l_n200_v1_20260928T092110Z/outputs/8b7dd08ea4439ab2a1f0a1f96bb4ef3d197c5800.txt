@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "June",
+    "type": "other"
+  },
+  {
+    "text": "Robert Emmett Keane",
+    "type": "person"
+  }
+]
+```

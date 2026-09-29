@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "planes", "type": "product"},
+  {"text": "workshop", "type": "building"},
+  {"text": "sugar factory", "type": "building"},
+  {"text": "Prague", "type": "location"}
+]
+```

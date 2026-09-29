@@ -1,0 +1,9 @@
+[
+  {"text": "Columbus", "type": "person"},
+  {"text": "August 6", "type": "event"},
+  {"text": "1985", "type": "other"},
+  {"text": "Betsy", "type": "person"},
+  {"text": "Dash", "type": "person"},
+  {"text": "Nazis", "type": "organization"},
+  {"text": "Monkey King", "type": "person"}
+]

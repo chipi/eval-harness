@@ -1,0 +1,5 @@
+[]
+Become:
+[ 
+{ "text": "Silver", "type": "other" } 
+]

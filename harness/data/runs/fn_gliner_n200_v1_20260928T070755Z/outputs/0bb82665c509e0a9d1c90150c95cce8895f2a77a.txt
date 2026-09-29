@@ -1,0 +1,1 @@
+[{"text": "The Bahraini dinar", "type": "product"}, {"text": "1965", "type": "event"}, {"text": "Gulf rupee", "type": "product"}]

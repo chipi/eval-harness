@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "commander in chief",
+    "type": "person"
+  },
+  {
+    "text": "Ichimaru",
+    "type": "organization"
+  },
+  {
+    "text": "135 casemates",
+    "type": "other"
+  }
+]
+```

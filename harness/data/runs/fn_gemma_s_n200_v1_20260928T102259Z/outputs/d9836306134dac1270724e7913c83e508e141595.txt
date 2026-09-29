@@ -1,0 +1,16 @@
+```json
+[
+  {"text": "November 10", "type": "event"},
+  {"text": "2020", "type": "event"},
+  {"text": "Apple", "type": "organization"},
+  {"text": "Mac Mini", "type": "product"},
+  {"text": "Apple", "type": "organization"},
+  {"text": "M1", "type": "product"},
+  {"text": "MacBook Air", "type": "product"},
+  {"text": "13-inch MacBook Pro", "type": "product"},
+  {"text": "Macs", "type": "product"},
+  {"text": "Apple", "type": "organization"},
+  {"text": "ARM", "type": "other"},
+  {"text": "Apple silicon", "type": "product"}
+]
+```

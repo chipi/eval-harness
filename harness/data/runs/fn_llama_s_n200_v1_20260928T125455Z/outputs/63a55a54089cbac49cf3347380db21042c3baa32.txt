@@ -1,0 +1,28 @@
+```
+[
+  {
+    "text": "Mars",
+    "type": "other"
+  },
+  {
+    "text": "Jupiter",
+    "type": "other"
+  },
+  {
+    "text": "Pallas",
+    "type": "other"
+  },
+  {
+    "text": "Juno",
+    "type": "other"
+  },
+  {
+    "text": "Vesta",
+    "type": "other"
+  },
+  {
+    "text": "Astraea",
+    "type": "other"
+  }
+]
+```

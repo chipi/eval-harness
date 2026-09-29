@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "The University of New Zealand",
+    "type": "organization"
+  },
+  {
+    "text": "the University",
+    "type": "organization"
+  },
+  {
+    "text": "1870",
+    "type": "other"
+  }
+]
+```

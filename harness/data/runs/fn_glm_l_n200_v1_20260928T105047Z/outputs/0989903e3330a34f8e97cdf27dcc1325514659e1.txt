@@ -1,0 +1,7 @@
+[
+  {"text": "September 12", "type": "event"},
+  {"text": "16", "type": "event"},
+  {"text": "2004", "type": "event"},
+  {"text": "Winnemem Wintu", "type": "organization"},
+  {"text": "war dance", "type": "event"}
+]

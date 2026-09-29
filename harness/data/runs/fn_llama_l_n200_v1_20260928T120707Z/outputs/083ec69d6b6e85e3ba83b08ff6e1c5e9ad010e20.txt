@@ -1,0 +1,7 @@
+[
+  {"text": "Luft Hansa", "type": "organization"},
+  {"text": "1936", "type": "other"},
+  {"text": "Berlin", "type": "location"},
+  {"text": "Azores", "type": "location"},
+  {"text": "New York City", "type": "location"}
+]

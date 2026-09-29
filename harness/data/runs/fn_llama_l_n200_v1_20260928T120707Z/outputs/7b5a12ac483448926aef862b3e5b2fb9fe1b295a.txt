@@ -1,0 +1,16 @@
+[
+  {
+    "text": "Margarita",
+    "type": "person"
+  },
+  "text": "Spanish",
+  "type": "location"
+} ] is not correct because "Spanish" refers to a language or a culture, not a specific location.
+
+Here is the correct output:
+[
+  {
+    "text": "Margarita",
+    "type": "person"
+  }
+]

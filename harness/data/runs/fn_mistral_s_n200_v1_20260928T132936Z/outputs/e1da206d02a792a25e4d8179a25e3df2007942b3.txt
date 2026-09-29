@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Pettigrew", "type": "person"},
+  {"text": "Robert Wood Johnson Foundation", "type": "organization"},
+  {"text": "RWJF", "type": "organization"},
+  {"text": "Harold Amos Medical Faculty Development Program", "type": "event"},
+  {"text": "minority scientists and scholars", "type": "other"},
+  {"text": "academia", "type": "other"}
+]
+```

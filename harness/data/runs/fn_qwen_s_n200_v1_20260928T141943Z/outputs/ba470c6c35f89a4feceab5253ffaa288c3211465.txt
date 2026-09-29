@@ -1,0 +1,6 @@
+[
+  {
+    "text": "Norwich",
+    "type": "location"
+  }
+]

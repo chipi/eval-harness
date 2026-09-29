@@ -1,0 +1,24 @@
+```json
+[
+  {
+    "text": "Marie-Anne",
+    "type": "person"
+  },
+  {
+    "text": "Emmanuelle",
+    "type": "person"
+  },
+  {
+    "text": "Bee",
+    "type": "person"
+  },
+  {
+    "text": "naval attaché",
+    "type": "other"
+  },
+  {
+    "text": "American Embassy",
+    "type": "organization"
+  }
+]
+```

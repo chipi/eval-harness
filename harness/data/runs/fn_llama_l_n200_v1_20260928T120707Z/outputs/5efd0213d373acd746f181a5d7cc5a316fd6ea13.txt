@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Ordinary",
+    "type": "product"
+  },
+  {
+    "text": "Train",
+    "type": "organization"
+  },
+  {
+    "text": "U.S.",
+    "type": "location"
+  }
+]

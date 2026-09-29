@@ -1,0 +1,1 @@
+[{"text": "Knowles", "type": "location"}, {"text": "Harvard", "type": "location"}, {"text": "U.S. Army Air Service", "type": "location"}, {"text": "April", "type": "location"}]

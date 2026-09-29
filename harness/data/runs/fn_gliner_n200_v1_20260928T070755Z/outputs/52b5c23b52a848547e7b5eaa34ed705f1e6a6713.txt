@@ -1,0 +1,1 @@
+[{"text": "The plague of 1575\u201377", "type": "event"}, {"text": "Venice", "type": "location"}]

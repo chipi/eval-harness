@@ -1,0 +1,11 @@
+```json
+[
+  {"text": "Fan Nedd", "type": "location"},
+  {"text": "Fan Dringarth", "type": "location"},
+  {"text": "Fforest Fawr", "type": "location"},
+  {"text": "national park", "type": "location"},
+  {"text": "river", "type": "other"},
+  {"text": "Afon Dringarth", "type": "other"},
+  {"text": "Afon Mellte", "type": "other"}
+]
+```

@@ -1,0 +1,4 @@
+Athlete is incorrect, the correct category is: 
+Author 
+However among the categories provided, Author is not there but  "WrittenWork" and "Artist" could make sense. 
+The best category for this abstract is: Artist

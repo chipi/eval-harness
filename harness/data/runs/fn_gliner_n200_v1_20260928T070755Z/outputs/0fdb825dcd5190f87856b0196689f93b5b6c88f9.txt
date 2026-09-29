@@ -1,0 +1,1 @@
+[{"text": "Grebler", "type": "person"}, {"text": "tower", "type": "building"}, {"text": "1985", "type": "event"}, {"text": "Jenga set", "type": "product"}, {"text": "Leslie Scott", "type": "person"}, {"text": "early 1980s", "type": "event"}]

@@ -1,0 +1,1 @@
+[{"text": "Homo conditus", "type": "art"}, {"text": "Swedish", "type": "other"}, {"text": "Swedish Catholic", "type": "organization"}, {"text": "Katolska bokf\u00f6rlaget", "type": "organization"}]

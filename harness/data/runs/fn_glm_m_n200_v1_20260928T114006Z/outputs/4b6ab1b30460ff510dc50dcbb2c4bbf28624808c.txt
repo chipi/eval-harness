@@ -1,0 +1,7 @@
+[
+  {"text": "1958", "type": "other"},
+  {"text": "Assumption College", "type": "building"},
+  {"text": "Essendon Grammar School", "type": "building"},
+  {"text": "Mentone Grammar School", "type": "building"},
+  {"text": "AGSV", "type": "organization"}
+]

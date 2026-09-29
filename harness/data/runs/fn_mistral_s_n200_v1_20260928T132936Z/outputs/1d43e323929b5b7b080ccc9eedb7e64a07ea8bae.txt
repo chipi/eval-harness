@@ -1,0 +1,12 @@
+```json
+[
+  {"text": "Icons of Soul", "type": "product"},
+  {"text": "Rock & amp ; Roll Hall Of Fame", "type": "organization"},
+  {"text": "Songwriter Hall of Fame", "type": "organization"},
+  {"text": "Felix Cavaliere", "type": "person"},
+  {"text": "The Rascals", "type": "organization"},
+  {"text": "Lamont Dozier", "type": "person"},
+  {"text": "Holland-Dozier-Holland", "type": "organization"},
+  {"text": "2018", "type": "other"}
+]
+```

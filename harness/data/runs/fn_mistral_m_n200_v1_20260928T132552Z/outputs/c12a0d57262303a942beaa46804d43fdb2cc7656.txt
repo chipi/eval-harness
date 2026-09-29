@@ -1,0 +1,10 @@
+```json
+[
+  {"text": "Mortimer Durand", "type": "person"},
+  {"text": "Kabul", "type": "location"},
+  {"text": "British India", "type": "organization"},
+  {"text": "northeastern Afghanistan", "type": "location"},
+  {"text": "Russian", "type": "organization"},
+  {"text": "Amir Abdur Rahman Khan", "type": "person"}
+]
+```

@@ -1,0 +1,13 @@
+The sentence: "He is best known as the inventor of cubic boron nitride ( trade name , `` Borazon `` ) , the second-hardest material known ."
+
+Named entities:
+- "cubic boron nitride" — this is a material/product. Is it a named entity? It's a chemical compound name. In NER tasks (like CoNLL), chemical compounds are often not tagged. But in this task with types including "product" and "other", cubic boron nitride could be a product or other. Hmm.
+- "Borazon" — this is a trade name, so it's a product (or other). It's clearly a named entity — a brand/trade name.
+
+The question: should "cubic boron nitride" be extracted? It's a generic chemical name, not a proper name. Typically in NER, "cubic boron nitride" would not be a named entity (it's a common noun phrase describing a material). However, some datasets (like OntoNotes) might tag it as product. The instruction says "Extract every named entity". Borazon is definitely a named entity (trade name). Cubic boron nitride is a chemical compound — chemical compound names are sometimes considered named entities in chemistry NER, but in general NER, they're usually not.
+
+Given the eight types include "product", Borazon fits as product. Cubic boron nitride — I'd lean toward not including it since it's a generic material name, not a proper noun. But some might argue it's a product name. Hmm.
+
+Actually, in many NER annotation schemes (e.g., the one this task seems derived from — possibly the "Broad Entity Recognition" or CoNLL-style with types like art, building, event, location, organization, other, person, product — this looks like the CoNLL-2003 extended or the "Named Entity Recognition" dataset with these 8 types). The types art, building, event, location, organization, other, person, product match the CoNLL-2003 style extended... Actually CoNLL-2003 has PER, LOC, ORG, MISC. The 8 types art, building, event, location, organization, other, person, product match the "OntoNotes"-like or the "Broad" NER dataset used in some benchmarks (e.g., the "Universal NER" or the few-NERd?). Actually these 8 types match the CoNLL 2003 English extended? Hmm, they match the entity types in the "GMB" (Groningen Meaning Bank) NER dataset? GMB has types: person, location, organization, geo, etc. Not quite.
+
+The 8 types art, building, event, location, organization, other, person, product — this matches the NER types from the "CoNLL-2003

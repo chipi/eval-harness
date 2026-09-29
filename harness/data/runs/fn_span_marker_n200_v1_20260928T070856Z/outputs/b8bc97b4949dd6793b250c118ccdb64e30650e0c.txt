@@ -1,0 +1,1 @@
+[{"text": "sulfite", "type": "other"}, {"text": "chloramines", "type": "other"}, {"text": "United States", "type": "location"}]

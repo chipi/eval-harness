@@ -1,0 +1,14 @@
+The task is to extract named entities from the sentence:
+
+"Upon its release , it was endorsed by Jonathan Davis and Fred Durst , both friends of the band ."
+
+Named entities:
+- Jonathan Davis - a person (Korn frontman)
+- Fred Durst - a person (Limp Bizkit frontman)
+
+Types available: art, building, event, location, organization, other, person, product.
+
+"the band" - not a named entity, no specific name given.
+
+So the output should be:
+[{"text": "Jonathan Davis", "type": "person"}, {"text": "Fred Durst", "type": "person"}][{"text": "Jonathan Davis", "type": "person"}, {"text": "Fred Durst", "type": "person"}]

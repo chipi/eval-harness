@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about the Nanu River, a tributary of the Valea Pinului River in Romania.
+
+A river is a natural place. The category "NaturalPlace" fits rivers, mountains, lakes, etc.
+
+Output only the category name.NaturalPlace

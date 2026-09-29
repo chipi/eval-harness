@@ -1,0 +1,19 @@
+The task: extract named entities from the sentence, with types: art, building, event, location, organization, other, person, product.
+
+Sentence: "The current club was founded at the summer of 2014 as Sport Club Kiryat Yam , and registered at the Israel Football Association for the 2014–15 season in Liga Gimel as Sport Football Club Hapoel Kiryat Yam ."
+
+Named entities:
+- "Sport Club Kiryat Yam" - organization (a football club)
+- "Israel Football Association" - organization
+- "2014–15 season" - hmm, is a season an event? The "2014–15 season" could be considered an event. But typically in NER tasks like this (this looks like the WikiANN or similar dataset with types art, building, event, location, organization, other, person, product), seasons might be tagged as events or not tagged. Let me think.
+
+The types art, building, event, location, organization, other, person, product correspond to the NER tag set used in some datasets (e.g., the "multilingual" NER with these 8 types). In such datasets, dates like "2014" and "2014–15" would typically not be tagged, or could be "other". Hmm.
+
+Actually, this looks like it could be from a dataset where entities are tagged. Let me consider what entities appear:
+- "Sport Club Kiryat Yam" - organization
+- "Israel Football Association" - organization
+- "Liga Gimel" - this is a football league. Leagues are typically organizations (or "other"). In WikiANN-style tagging, "Liga Gimel" would be organization.
+- "Sport Football Club Hapoel Kiryat Yam" - organization
+- "Kiryat Yam" - location (city in Israel). But it's part of the club names. Should we extract it separately? The instruction says "Extract every named entity" and "Copy each entity's text exactly as it appears". Typically in NER, nested entities - we'd extract the full spans. "Kiryat Yam" appears within club names. If we extract the club names as organizations, extracting "Kiryat Yam" separately as location might be considered overlapping. But some datasets do tag nested entities. However, standard practice: extract maximal spans. So "Sport Club Kiryat Yam" as organization, "Israel Football Association" as organization, "Liga Gimel" as organization, "Sport Football Club Hapoel Kiryat Yam" as organization.
+
+- "2014" - date, not in the type list. Could be "other"? In some datasets, dates are "other". Hmm. The type "other" is used for entities that don't fit the other categories. In the dataset with these 8 types (I recall this is from the "Universal NER" or the CoNLL-like scheme used in some

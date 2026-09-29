@@ -1,0 +1,6 @@
+```json
+[
+  {"text": "Seventeenth Amendment", "type": "other"},
+  {"text": "United States Constitution", "type": "other"}
+]
+```

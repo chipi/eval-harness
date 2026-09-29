@@ -1,0 +1,4 @@
+[
+  {"text": "Rihand River", "type": "location"},
+  {"text": "Son River", "type": "location"}
+]

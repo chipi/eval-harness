@@ -1,0 +1,7 @@
+```json
+[
+  {"text": "Chashma", "type": "location"},
+  {"text": "Mangla", "type": "location"},
+  {"text": "Tarbela", "type": "location"}
+]
+```

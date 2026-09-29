@@ -1,0 +1,6 @@
+[
+  {
+    "text": "September 30 , 2002",
+    "type": "event"
+  }
+]

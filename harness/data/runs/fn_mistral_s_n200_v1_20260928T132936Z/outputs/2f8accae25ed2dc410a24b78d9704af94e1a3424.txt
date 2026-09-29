@@ -1,0 +1,8 @@
+```json
+[
+  {"text": "Pueblo Revolt", "type": "event"},
+  {"text": "400 Spaniards", "type": "person"},
+  {"text": "2,000 settlers", "type": "person"},
+  {"text": "province", "type": "location"}
+]
+```

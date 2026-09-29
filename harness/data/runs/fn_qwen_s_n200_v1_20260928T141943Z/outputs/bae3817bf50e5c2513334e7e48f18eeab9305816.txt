@@ -1,0 +1,14 @@
+[
+  {
+    "text": "2003",
+    "type": "event"
+  },
+  {
+    "text": "Congress",
+    "type": "organization"
+  },
+  {
+    "text": "Ley de Punto Final",
+    "type": "other"
+  }
+]

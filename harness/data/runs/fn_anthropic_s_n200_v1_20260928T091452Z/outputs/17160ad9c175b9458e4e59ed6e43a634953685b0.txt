@@ -1,0 +1,8 @@
+```json
+[
+  {
+    "text": "post office",
+    "type": "building"
+  }
+]
+```

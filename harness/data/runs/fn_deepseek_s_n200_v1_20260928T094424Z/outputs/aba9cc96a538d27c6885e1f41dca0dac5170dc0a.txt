@@ -1,0 +1,18 @@
+[
+    {
+        "text": "2011",
+        "type": "other"
+    },
+    {
+        "text": "Delacôte",
+        "type": "person"
+    },
+    {
+        "text": "Cambridge Science Centre",
+        "type": "organization"
+    },
+    {
+        "text": "Cambridge",
+        "type": "location"
+    }
+]

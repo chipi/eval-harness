@@ -1,0 +1,7 @@
+```
+[
+  {
+    "text": "Microsoft",
+    "type": "organization"
+  }
+]

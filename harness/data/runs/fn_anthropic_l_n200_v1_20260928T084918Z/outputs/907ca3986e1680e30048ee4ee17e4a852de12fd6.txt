@@ -1,0 +1,1 @@
+[{"text": "Senator", "type": "other"}, {"text": "Strom Thurmond", "type": "person"}]

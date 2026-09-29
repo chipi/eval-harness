@@ -1,0 +1,18 @@
+[
+  {
+    "text": "March 1963",
+    "type": "other"
+  },
+  {
+    "text": "Amazing Stories",
+    "type": "art"
+  },
+  {
+    "text": "1968",
+    "type": "other"
+  },
+  {
+    "text": "Michael Joseph",
+    "type": "organization"
+  }
+]

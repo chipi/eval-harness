@@ -1,0 +1,1 @@
+[{"text": "Anyway", "type": "location"}, {"text": "October", "type": "location"}, {"text": "Ministry", "type": "location"}, {"text": "Sound", "type": "location"}]

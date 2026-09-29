@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Tecumseh",
+    "type": "person"
+  },
+  {
+    "text": "General Proctor",
+    "type": "person"
+  },
+  {
+    "text": "Fort Malden",
+    "type": "building"
+  },
+  {
+    "text": "Niagara",
+    "type": "location"
+  }
+]

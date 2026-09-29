@@ -1,0 +1,32 @@
+```json
+[
+  {
+    "text": "Homo conditus",
+    "type": "product"
+  },
+  {
+    "text": "1984",
+    "type": "other"
+  },
+  {
+    "text": "Homo conditus",
+    "type": "product"
+  },
+  {
+    "text": "Swedish",
+    "type": "other"
+  },
+  {
+    "text": "Katolska bokförlaget",
+    "type": "organization"
+  },
+  {
+    "text": "1986",
+    "type": "other"
+  },
+  {
+    "text": "Swedish",
+    "type": "location"
+  }
+]
+```

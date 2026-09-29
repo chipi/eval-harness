@@ -1,0 +1,5 @@
+[
+  {"text": "Mummadi Krishnaraja Wodeyar", "type": "person"},
+  {"text": "1794–1868", "type": "other"},
+  {"text": "Mysore", "type": "location"}
+]

@@ -1,0 +1,1 @@
+[{"text": "Nishioka", "type": "person"}, {"text": "Achilles tendon rupture", "type": "event"}]

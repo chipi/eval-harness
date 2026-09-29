@@ -1,0 +1,1 @@
+[{"text":"February 2012","type":"event"},{"text":"North Korea","type":"location"},{"text":"Yongbyon Nuclear Scientific Research Center","type":"organization"},{"text":"the United States","type":"location"}]

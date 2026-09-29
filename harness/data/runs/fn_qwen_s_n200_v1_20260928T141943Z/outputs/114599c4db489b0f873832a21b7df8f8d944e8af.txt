@@ -1,0 +1,14 @@
+[
+  {
+    "text": "Basi",
+    "type": "product"
+  },
+  {
+    "text": "1807 Basi Revolt",
+    "type": "event"
+  },
+  {
+    "text": "Spanish",
+    "type": "organization"
+  }
+]

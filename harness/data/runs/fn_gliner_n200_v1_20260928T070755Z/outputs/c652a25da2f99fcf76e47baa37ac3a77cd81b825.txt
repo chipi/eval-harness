@@ -1,0 +1,1 @@
+[{"text": "Fan Nedd", "type": "location"}, {"text": "Fan Dringarth", "type": "location"}, {"text": "Fforest Fawr section", "type": "location"}, {"text": "Afon Dringarth", "type": "location"}]

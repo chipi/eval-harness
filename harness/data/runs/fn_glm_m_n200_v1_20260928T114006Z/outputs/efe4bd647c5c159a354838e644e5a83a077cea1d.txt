@@ -1,0 +1,11 @@
+[
+  {"text": "Klaus Friedrich Roth", "type": "person"},
+  {"text": "29 October 1925", "type": "other"},
+  {"text": "10 November 2015", "type": "other"},
+  {"text": "German-born", "type": "other"},
+  {"text": "British", "type": "other"},
+  {"text": "Fields Medal", "type": "product"},
+  {"text": "Roth 's theorem", "type": "other"},
+  {"text": "Diophantine approximation", "type": "other"},
+  {"text": "algebraic numbers", "type": "other"}
+]

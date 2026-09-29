@@ -1,0 +1,1 @@
+[{"text": "Mothership", "type": "building"}, {"text": "George Clinton", "type": "person"}, {"text": "Mothership", "type": "building"}, {"text": "Bootsy Collins", "type": "person"}, {"text": "Bernie Worrell", "type": "person"}, {"text": "P Funk", "type": "organization"}, {"text": "P Funk", "type": "organization"}]

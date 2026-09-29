@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Debian",
+    "type": "organization"
+  },
+  {
+    "text": "Debian",
+    "type": "organization"
+  }
+]

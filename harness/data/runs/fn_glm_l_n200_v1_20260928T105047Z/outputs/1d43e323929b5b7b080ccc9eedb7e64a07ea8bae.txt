@@ -1,0 +1,13 @@
+Let me analyze this sentence to extract named entities.
+
+The sentence: "McMaster 's latest project , '' Icons of Soul , '' is a new album and potential TV documentary series that will feature his collaborations on new material with such iconic songwriters as Rock & amp ; Roll Hall Of Fame and Songwriter Hall of Fame members Felix Cavaliere ( founder of The Rascals ) and Motown legend Lamont Dozier of Holland-Dozier-Holland and is scheduled for release in 2018 ."
+
+Named entities:
+1. "McMaster" - person (a person's name)
+2. "Icons of Soul" - this is a project name, an album/TV documentary series. Could be "other" or "product". Since it's an album title, "product" might fit, but "other" could also work. Album titles are often classified as "other" or "product". Let me think - in many NER schemes, creative works like albums are "other" or sometimes "product". Given the eight types: art, building, event, location, organization, other, person, product. An album could be "art" (creative work) or "product". Hmm. "art" typically refers to works of art like paintings, sculptures, or creative works. An album title... In some datasets (like CoNLL), works of art are MISC. Here "art" seems appropriate for creative works like albums, songs, books. Actually, let me reconsider - "Icons of Soul" is an album and TV documentary series. I'd classify it as "art" since it's a creative work. Or "product" since it's an album (commercial product). Hmm.
+
+Let me think about the typical classification. In the eight types given: art, building, event, location, organization, other, person, product. This looks like it could be from a specific dataset. "art" would be for creative works (albums, songs, movies, books). "product" would be for commercial products (cars, phones, etc.). So "Icons of Soul" as an album → "art".
+
+3. "Rock & Roll Hall of Fame" - organization (it's a hall of fame organization). The text appears as "Rock & amp ; Roll Hall Of Fame" - I need to copy exactly as it appears. The sentence has "Rock & amp ; Roll Hall Of Fame" - this is HTML-encoded "&amp;" split up. The exact text in the sentence is "Rock & amp ; Roll Hall Of Fame". Hmm, should I copy it exactly as it appears? The instruction says "Copy each entity's text exactly as it appears in the sentence." So I should copy "Rock & amp ; Roll Hall Of Fame" exactly. That's tricky. The literal text is "Rock & amp ; Roll Hall Of Fame". Let me copy that exactly.
+
+4. "Songwriter Hall of Fame" - organization.

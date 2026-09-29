@@ -1,0 +1,14 @@
+The task: extract named entities from the sentence, using types: art, building, event, location, organization, other, person, product.
+
+Sentence: "Rho Aquilae is therefore a rare occurrence of a mismatch between current constellation and Bayer designation constellation ."
+
+Named entities:
+- "Rho Aquilae" — this is a star designation. What type? It's a celestial object. In typical NER schemes (like CoNLL), celestial objects are often "other" or sometimes location. In the eight types given (art, building, event, location, organization, other, person, product), a star would likely be "other" — since it's not a location in the geographic sense... Actually, some datasets classify celestial bodies as "location" (e.g., in some schemes, "Mars" is location). But typically in these eight-type schemes (which resemble the OntoNotes or the "multilingual NER" types), celestial objects... Hmm.
+
+The eight types art, building, event, location, organization, other, person, product — this resembles the CoNLL-2003 types extended? CoNLL-2003 has LOC, MISC, ORG, PER. The eight types here look like the ones from the "Cross-lingual NER" or maybe the WikiAnn dataset? Actually these eight types appear in the "Polyglot NER" or the dataset used in "mDeBERTa"? Let me think: art, building, event, location, organization, other, person, product — this is the type set of the "CoNLL-2002/2003"? No. This is the type set from the "WikiNER" dataset (Nothman et al.), which has: ART, BUILDING, EVENT, LOCATION, ORGANIZATION, OTHER, PERSON, PRODUCT. Yes, WikiNER.
+
+In WikiNER, celestial objects like stars: "Rho Aquilae" — stars are typically annotated as... In WikiNER, planets and stars are often tagged as LOCATION? Actually in WikiNER, celestial bodies like "Mars", "Jupiter" are often tagged as LOCATION. Stars like "Sirius"? Hmm. Let me think about how WikiNER annotated things. WikiNER derived annotations from Wikipedia. Stars would be... I recall that in WikiNER, astronomical objects are often labeled as LOCATION or OTHER. For example, "the Sun" might be OTHER. Hmm.
+
+Actually, in the WikiNER dataset, I believe stars are typically labeled as "other" — hmm, not sure. Let me think about typical examples. In WikiNER English: "The Moon" — I think it's tagged as... I don't have direct memory.
+
+Given ambiguity, "Rho Aquilae" is a star (now in the constellation Delphinus). It's a named entity. The safest classification: "other" (since it's not a person, organization

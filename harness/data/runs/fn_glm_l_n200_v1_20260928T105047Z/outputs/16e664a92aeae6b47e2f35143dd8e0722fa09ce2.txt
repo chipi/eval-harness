@@ -1,0 +1,11 @@
+The sentence is: "In addition , the dam conserves about of runoff per year for drinking water and groundwater recharge purposes ."
+
+Let me look for named entities:
+- "the dam" - not a named entity, no specific name
+- "runoff" - not a named entity
+- "drinking water" - not a named entity
+- "groundwater recharge" - not a named entity
+
+There are no named entities in this sentence. The sentence appears to be missing a number (about ___ of runoff), but regardless, there are no named entities like persons, locations, organizations, etc.
+
+Output should be an empty array [].[]

@@ -1,0 +1,1 @@
+[{"text":"November 6 , 1894","type":"event"},{"text":"Fly","type":"person"},{"text":"Cochise County","type":"location"}]

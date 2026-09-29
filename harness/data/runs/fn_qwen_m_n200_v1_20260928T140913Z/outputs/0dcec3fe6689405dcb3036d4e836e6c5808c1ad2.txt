@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Federal Correctional Institution , Lompoc",
+    "type": "organization"
+  },
+  {
+    "text": "FCI Lompoc",
+    "type": "organization"
+  },
+  {
+    "text": "United States",
+    "type": "location"
+  },
+  {
+    "text": "California",
+    "type": "location"
+  }
+]

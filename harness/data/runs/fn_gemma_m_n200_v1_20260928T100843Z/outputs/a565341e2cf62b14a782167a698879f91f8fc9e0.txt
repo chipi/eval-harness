@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Cochise County",
+    "type": "location"
+  },
+  {
+    "text": "Fly",
+    "type": "person"
+  }
+]

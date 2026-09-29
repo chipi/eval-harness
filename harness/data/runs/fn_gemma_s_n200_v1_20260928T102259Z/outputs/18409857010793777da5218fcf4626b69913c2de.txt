@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Nishioka",
+    "type": "person"
+  },
+  {
+    "text": "Achilles tendon",
+    "type": "other"
+  }
+]
+```

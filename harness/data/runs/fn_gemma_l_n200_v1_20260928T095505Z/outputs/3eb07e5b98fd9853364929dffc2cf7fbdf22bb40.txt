@@ -1,0 +1,40 @@
+```json
+[
+  {
+    "text": "4th Brigade",
+    "type": "organization"
+  },
+  {
+    "text": "Mola",
+    "type": "person"
+  },
+  {
+    "text": "Navarrese division",
+    "type": "organization"
+  },
+  {
+    "text": "Biscay Campaign",
+    "type": "event"
+  },
+  {
+    "text": "Battle of Brunete",
+    "type": "event"
+  },
+  {
+    "text": "Battle of Santander",
+    "type": "event"
+  },
+  {
+    "text": "Aragon Offensive",
+    "type": "event"
+  },
+  {
+    "text": "Vinaròs",
+    "type": "location"
+  },
+  {
+    "text": "Castellón",
+    "type": "location"
+  }
+]
+```

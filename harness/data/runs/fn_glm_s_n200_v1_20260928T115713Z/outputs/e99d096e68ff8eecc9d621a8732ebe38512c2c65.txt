@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Sanitarium",
+    "type": "organization"
+  },
+  {
+    "text": "main facility",
+    "type": "building"
+  }
+]
+```

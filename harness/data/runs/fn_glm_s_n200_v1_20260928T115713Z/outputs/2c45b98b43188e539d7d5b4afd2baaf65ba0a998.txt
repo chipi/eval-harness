@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "University of Wisconsin-Parkside",
+    "type": "organization"
+  },
+  {
+    "text": "Oberbrunner Field",
+    "type": "building"
+  },
+  {
+    "text": "UW-Parkside campus",
+    "type": "location"
+  },
+  {
+    "text": "Simmons Field",
+    "type": "building"
+  }
+]
+```

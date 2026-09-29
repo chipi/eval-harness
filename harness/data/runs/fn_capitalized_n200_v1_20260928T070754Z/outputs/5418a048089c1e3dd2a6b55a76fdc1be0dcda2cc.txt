@@ -1,0 +1,1 @@
+[{"text": "Appiah", "type": "location"}, {"text": "A-League Minor Premiership", "type": "location"}, {"text": "Asian Champions League", "type": "location"}, {"text": "VISY Wanderers Asian Champions League", "type": "location"}]

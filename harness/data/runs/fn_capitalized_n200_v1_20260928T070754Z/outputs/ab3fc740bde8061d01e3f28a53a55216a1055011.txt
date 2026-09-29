@@ -1,0 +1,1 @@
+[{"text": "Maxine Leeds Craig", "type": "location"}, {"text": "Sociology Department", "type": "location"}, {"text": "University", "type": "location"}, {"text": "California", "type": "location"}, {"text": "Davis", "type": "location"}, {"text": "USA", "type": "location"}]

@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Slonczewski",
+    "type": "person"
+  },
+  {
+    "text": "Quakers",
+    "type": "organization"
+  }
+]

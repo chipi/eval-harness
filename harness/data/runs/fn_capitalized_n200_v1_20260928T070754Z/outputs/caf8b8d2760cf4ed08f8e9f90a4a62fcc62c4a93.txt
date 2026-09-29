@@ -1,0 +1,1 @@
+[{"text": "November", "type": "location"}, {"text": "United Aircraft Corporation", "type": "location"}, {"text": "Sukhoi Holding", "type": "location"}, {"text": "Irkut Corporation", "type": "location"}, {"text": "UAC", "type": "location"}]

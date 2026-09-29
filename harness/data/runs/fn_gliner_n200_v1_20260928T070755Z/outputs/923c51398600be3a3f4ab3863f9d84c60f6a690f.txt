@@ -1,0 +1,1 @@
+[{"text": "Villa Park", "type": "location"}, {"text": "Illinois", "type": "location"}, {"text": "Chicago", "type": "location"}, {"text": "exotic animal dealer", "type": "organization"}, {"text": "Accra , Ghana", "type": "location"}]

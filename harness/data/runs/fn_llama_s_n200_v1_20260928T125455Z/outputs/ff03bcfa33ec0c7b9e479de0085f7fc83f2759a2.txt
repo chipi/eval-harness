@@ -1,0 +1,8 @@
+```
+[
+  { "text": "Super Bowl XXVIII", "type": "event" },
+  { "text": "Dallas Cowboys", "type": "organization" },
+  { "text": "Buffalo Bills", "type": "organization" },
+  { "text": "Georgia Dome", "type": "building" }
+]
+```

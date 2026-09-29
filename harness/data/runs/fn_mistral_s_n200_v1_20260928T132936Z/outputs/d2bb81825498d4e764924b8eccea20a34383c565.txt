@@ -1,0 +1,36 @@
+```json
+[
+  {
+    "text": "iron infusion",
+    "type": "product"
+  },
+  {
+    "text": "iron",
+    "type": "other"
+  },
+  {
+    "text": "saline solution",
+    "type": "product"
+  },
+  {
+    "text": "bloodstream",
+    "type": "other"
+  },
+  {
+    "text": "vein",
+    "type": "other"
+  },
+  {
+    "text": "iron deficiency",
+    "type": "other"
+  },
+  {
+    "text": "iron-deficiency anaemia",
+    "type": "other"
+  },
+  {
+    "text": "chronic kidney disease",
+    "type": "other"
+  }
+]
+```

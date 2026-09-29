@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "text": "Toulon",
+    "type": "location"
+  },
+  {
+    "text": "UNIFIL",
+    "type": "organization"
+  }
+]
+```

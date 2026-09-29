@@ -1,0 +1,1 @@
+[{"text": "He", "type": "person"}, {"text": "home", "type": "location"}, {"text": "music", "type": "art"}, {"text": "iPhone", "type": "organization"}, {"text": "NanoStudio", "type": "product"}]

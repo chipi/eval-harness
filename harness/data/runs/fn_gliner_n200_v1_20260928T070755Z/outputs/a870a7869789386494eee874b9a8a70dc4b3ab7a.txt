@@ -1,0 +1,1 @@
+[{"text": "Territory of Hawai ` i", "type": "location"}, {"text": "Delegate", "type": "person"}, {"text": "Congress", "type": "organization"}]

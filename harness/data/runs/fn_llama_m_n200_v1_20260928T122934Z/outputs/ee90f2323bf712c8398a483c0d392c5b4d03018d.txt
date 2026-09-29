@@ -1,0 +1,14 @@
+[
+  {
+    "text": "June",
+    "type": "other"
+  },
+  {
+    "text": "Rockpalast",
+    "type": "event"
+  },
+  {
+    "text": "Rock am Ring",
+    "type": "event"
+  }
+]

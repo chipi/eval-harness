@@ -1,0 +1,6 @@
+[
+    {
+        "text": "imprisonment",
+        "type": "other"
+    }
+]

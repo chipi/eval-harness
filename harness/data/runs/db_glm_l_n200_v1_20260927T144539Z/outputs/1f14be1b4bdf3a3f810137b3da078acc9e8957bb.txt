@@ -1,0 +1,5 @@
+The task is to classify a Wikipedia abstract into one of fourteen categories. The abstract is about "Burnham and Highbridge Times" - a newspaper published in Somerset, England.
+
+A newspaper is a written work. The categories include WrittenWork, which would cover newspapers, books, etc.
+
+So the answer is WrittenWrittenWork

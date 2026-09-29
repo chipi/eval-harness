@@ -1,0 +1,5 @@
+[
+  {"text": "Yuri Larionov", "type": "person"},
+  {"text": "Furosemide", "type": "product"},
+  {"text": "December", "type": "other"}
+]

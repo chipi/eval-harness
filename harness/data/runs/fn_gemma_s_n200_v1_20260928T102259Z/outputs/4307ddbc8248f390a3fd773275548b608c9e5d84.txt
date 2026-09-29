@@ -1,0 +1,16 @@
+```json
+[
+  {
+    "text": "Japanese",
+    "type": "other"
+  },
+  {
+    "text": "pen-ken",
+    "type": "product"
+  },
+  {
+    "text": "pen-sword",
+    "type": "product"
+  }
+]
+```

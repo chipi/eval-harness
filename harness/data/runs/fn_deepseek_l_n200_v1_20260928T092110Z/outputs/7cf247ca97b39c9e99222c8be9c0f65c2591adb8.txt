@@ -1,0 +1,10 @@
+[
+  {
+    "text": "High",
+    "type": "event"
+  },
+  {
+    "text": "Late Middle Ages",
+    "type": "event"
+  }
+]

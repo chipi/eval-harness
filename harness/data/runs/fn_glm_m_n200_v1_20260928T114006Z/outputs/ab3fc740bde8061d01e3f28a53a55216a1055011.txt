@@ -1,0 +1,20 @@
+```json
+[
+  {
+    "text": "Maxine Leeds Craig",
+    "type": "person"
+  },
+  {
+    "text": "Sociology Department",
+    "type": "organization"
+  },
+  {
+    "text": "University of California , Davis",
+    "type": "organization"
+  },
+  {
+    "text": "USA",
+    "type": "location"
+  }
+]
+```
