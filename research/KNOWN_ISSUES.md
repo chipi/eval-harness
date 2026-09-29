@@ -92,7 +92,7 @@ n=20 half therefore cannot be recomputed from this repo.
 These are decisions, not oversights. Argue with them by all means.
 
 1. **Costs are what the provider billed** (`usage.cost`), not a price table. The table was
-   wrong per arm by 0.67×–3.21× because an alias is not a price.
+   wrong per arm by 0.67×–3.76× because an alias is not a price.
 2. **The `nothing` / `random` / `constant` arms are calibration checks first**, baselines
    second. A floor whose score is predictable is how you find a scorer bug.
 3. **Label noise is kept, degenerate items are filtered.** A mislabelled item still poses

@@ -414,7 +414,7 @@ config can state in advance.
 
 The provider reports what it actually charged, per call, in `usage.cost`. That was in
 every stored run all along and nothing read it. Measured across all four examples, the
-price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+price table was wrong **per arm by 0.67× to 3.76×, in both directions**.
 
 **The error is not uniform, and that is what makes it matter.** Arms served by a single
 provider — the Anthropic models, notably — match the table exactly. The cheap,

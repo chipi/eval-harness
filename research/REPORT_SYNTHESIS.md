@@ -548,7 +548,7 @@ would have:
 | Extraction · Few-NERD | an unreadable answer scored **1.0** on empty-gold items | +0.0214 f1 to one arm |
 | Extraction · Few-NERD | `normalizer_sha256` covered the normaliser, not the scorer | a scorer change was invisible in the fingerprint |
 | Retrieval · SciFact | the adapter never disabled reasoning, unlike the other three | one arm went **0.6124 → 0.6991** once fixed |
-| all | cost computed from a price table, not what was billed | wrong per arm by 0.67×–3.21× |
+| all | cost computed from a price table, not what was billed | wrong per arm by 0.67×–3.76× |
 | all | Spearman had no tie correction; ranks broke ties **alphabetically** | ρ measured the alphabet on saturated tasks |
 
 Three of these — the parser, the unparsed-as-empty rule, the reasoning flag — moved a

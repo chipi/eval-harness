@@ -2197,3 +2197,57 @@ would be suppressing a case rather than fixing one. Regression test fails 3/3 ag
 old code — checked by reverting, not assumed. Verified the other direction too: with the
 references restored, rescoring in a fresh clone reproduces **all 23 numeric metrics** at
 the stored six-decimal precision.
+
+---
+
+### 2026-09-29 · 58 — The correction that was itself uncorrected
+
+Entry 55 established that cost came from a price table rather than the bill, put the
+error at **0.67x–3.21x per arm**, and said the reports were corrected. A second review
+checked the number and the coverage. Both were wrong, in the same direction: I measured
+a subset and reported it as the range.
+
+**The range is 0.67x to 3.76x.** Recomputed over all 109 arms with a bill:
+`db_openai_m` was recorded at $0.0634 and cost $0.2380. 3.21x was simply the worst arm
+in whatever slice I looked at.
+
+**And only two of the four reports had actually been corrected.** Measured by parsing
+each report's own cost cells and comparing them to both candidate figures:
+
+| report | cells matching the bill | cells matching the price table |
+|---|---|---|
+| NER | 20 | 0 |
+| Classification | — (no per-arm cost column) | — |
+| Retrieval | 0 | **10** |
+| Summarisation | 0 | **21** |
+
+31 cost cells still carried the estimate, in two reports that each ship a section
+headed *"every cost figure here was an estimate, and the estimate was wrong"*. The
+correction notice was copied to all four; the correction was applied to one.
+
+That is a worse failure than the original error. The original was a wrong assumption
+made once. This was a claim that it had been fixed, published in the two reports where
+it had not been, where it reads as verification.
+
+**Why nothing caught it.** `check_report_claims.py` checks 17 headline numbers and not
+one of them is a cost. The costs were the thing most recently found to be wrong, and
+they were the thing left unchecked — the claims file was written before the cost
+finding and never revisited. A checker only covers what someone thought to list.
+
+Totals, billed against recorded, over the committed measurement runs:
+
+```
+  Classification · AG News    0.4854 -> 0.5808   1.20x
+  Classification · DBpedia    1.0043 -> 1.1737   1.17x
+  NER · Few-NERD              2.0546 -> 2.5708   1.25x
+  Retrieval · SciFact         1.3135 -> 2.2136   1.69x
+  Summarisation · CNN/DM      4.9270 -> 5.7404   1.17x
+  TOTAL                       9.7848 -> 12.2793  1.25x
+```
+
+The repo has spent $12.28, not $9.78.
+
+Fixed: the 31 cells now carry the bill; `rescore.py` recomputes `cost_usd` from
+`_meta.usage.cost` instead of carrying the estimate forward; `scripts/cost_report.py`
+prints billed against recorded for any dataset, and lists separately the runs with no
+bill, so a total is never half-measured without saying so.

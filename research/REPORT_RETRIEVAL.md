@@ -155,20 +155,20 @@ BM25's, to four decimals.
 
 | arm | nDCG@10 | recall@10 | recall@100 | MRR@10 | index build | cost |
 |---|---|---|---|---|---|---|
-| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.0548 |
-| glm_m ⟳ | 0.7419 | 0.8067 | 0.8586 | 0.7325 | 0.8 s | $0.1374 |
-| deepseek_m ⟳ | 0.7399 | 0.7893 | 0.8586 | 0.7373 | 0.8 s | $0.1233 |
-| deepseek_s ⟳ | 0.7378 | 0.8017 | 0.8586 | 0.7303 | 0.8 s | $0.0838 |
-| gemma_m ⟳ | 0.7363 | 0.7967 | 0.8586 | 0.7287 | 0.8 s | $0.0620 |
-| gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 0.8 s | $0.0884 |
-| qwen_s ⟳ | 0.7338 | 0.7997 | 0.8586 | 0.7270 | 0.8 s | $0.0547 |
+| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.1421 |
+| glm_m ⟳ | 0.7419 | 0.8067 | 0.8586 | 0.7325 | 0.8 s | $0.4576 |
+| deepseek_m ⟳ | 0.7399 | 0.7893 | 0.8586 | 0.7373 | 0.8 s | $0.2381 |
+| deepseek_s ⟳ | 0.7378 | 0.8017 | 0.8586 | 0.7303 | 0.8 s | $0.0600 |
+| gemma_m ⟳ | 0.7363 | 0.7967 | 0.8586 | 0.7287 | 0.8 s | $0.0721 |
+| gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 0.8 s | $0.1701 |
+| qwen_s ⟳ | 0.7338 | 0.7997 | 0.8586 | 0.7270 | 0.8 s | $0.1559 |
 | llama_l ⟳ | 0.7281 | 0.7955 | 0.8586 | 0.7234 | 0.8 s | $0.1540 |
 | **e5_base** | **0.7191** | **0.8305** | **0.9540** | 0.6889 | 1825 s | **$0** |
 | llama_s ⟳ | 0.7172 | 0.7855 | 0.8586 | 0.7065 | 0.8 s | $0.0715 |
 | **bge_small** | **0.7097** | 0.8298 | 0.9325 | 0.6812 | 874 s | **$0** |
-| llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 0.8 s | $0.1022 |
-| mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 0.8 s | $0.0467 |
-| gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 0.8 s | $0.0607 |
+| llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 0.8 s | $0.1434 |
+| mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 0.8 s | $0.0852 |
+| gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 0.8 s | $0.0962 |
 | mpnet | 0.6643 | 0.7707 | 0.9350 | 0.6355 | 1825 s | $0 |
 | minilm | 0.6533 | 0.7705 | 0.9125 | 0.6212 | 194 s | $0 |
 | bm25 | 0.6451 | 0.7635 | 0.8586 | 0.6152 | **0.8 s** | $0 |
@@ -380,7 +380,7 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers
   that charge differently. Measured across all four examples the table was wrong **per arm
-  by 0.67× to 3.21×**, in both directions, and it reordered arms by cost. All four reports
+  by 0.67× to 3.76×**, in both directions, and it reordered arms by cost. All four reports
   are now corrected and all four adapters record `usage.cost`. An earlier draft of this
   report quoted **2.41×** from a single before/after spend delta on a **$0.0055** run —
   far too small for fixed overhead and concurrent traffic not to dominate. That number

@@ -141,6 +141,7 @@ def main() -> int:
 
         rows: List[Dict[str, Any]] = []
         refs_found = 0
+        recosted = 0
         # Keys the ADAPTER attached at call time (Result.extra) rather than at score time:
         # `truncated`, `reasoning_tokens`. Unrecoverable afterwards, so they ride along.
         extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
@@ -186,6 +187,29 @@ def main() -> int:
                 # computed.
                 if k in CARRY or k in extra_keys or k.startswith("_"):
                     row[k] = v
+
+            # COST IS RECOMPUTED FROM THE BILL, NOT CARRIED.
+            #
+            # `cost_usd` was carried verbatim, and for every run measured before the
+            # adapters learned to prefer `usage.cost` that value is the PRICE TABLE --
+            # tokens multiplied by the rate in the arm's yaml. The provider's actual
+            # charge is sitting in the same row, in `_meta.usage.cost`, and the two
+            # differ by 0.67x to 3.76x per arm and 1.25x over the whole repo
+            # ($9.78 recorded against $12.28 billed). Every cost column, every
+            # dollars-per-month figure and every cost-per-quality-point in the reports
+            # is computed from the wrong one.
+            #
+            # An alias is not a price: a provider routes, discounts, caches and rounds.
+            # The bill is the measurement; the price table was always the fallback for
+            # when there is no bill, and it is kept as exactly that.
+            billed = ((old.get("_meta") or {}).get("usage") or {}).get("cost")
+            if billed is not None:
+                try:
+                    row["cost_usd"] = round(float(billed), 10)
+                    if abs(float(billed) - float(old.get("cost_usd") or 0)) > 1e-9:
+                        recosted += 1
+                except (TypeError, ValueError):
+                    pass
                 else:
                     dropped.add(k)
             rows.append(row)
@@ -295,7 +319,8 @@ def main() -> int:
             new["rescore_dropped_metrics"] = sorted(dropped)
         write_json(run_dir / "metrics.json", new)
         written += 1
-        print(f"  {d.name}  -> {len(rows)} item(s)")
+        note = f", {recosted} re-costed from the bill" if recosted else ""
+        print(f"  {d.name}  -> {len(rows)} item(s){note}")
 
     print(f"\n{written} run(s) rescored into {args.out}")
     print(f"  EVAL_RUNS_DIR={args.out} make leaderboard DATASET_ID={args.dataset_id}")
