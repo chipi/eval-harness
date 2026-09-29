@@ -26,8 +26,9 @@ Reproduction commands are in §8.
 
 **Across five tasks and 127 measured arms: the most expensive model was never the best,
 four of five leaderboard tops are statistical ties, a small model trained on your task
-beat every frontier LLM for $0 wherever one could run, and a 10× cost increase bought
-between −0.4% and +5.9% of quality.**
+beat every frontier LLM for $0 wherever one could run, a 10× cost increase bought between
+−0.4% and +5.9% of quality — and a 64 GB machine reached the same answer as unlimited
+hardware on four of the five tasks.**
 
 **The production question — should you fine-tune a small model instead of paying an
 LLM?** Yes, for a task you can define and label: every model fine-tuned on its dataset
@@ -46,9 +47,15 @@ self-hostable option *is* the winner; in the fifth it trails by 0.0071, which th
 cannot resolve. Across five unrelated tasks, the best configuration runnable entirely on
 your own machines is either first or statistically tied with first.
 
+**And hardware buys almost nothing.** Of the 13 open-weight arms, four exceed 700 GB —
+cluster models, not workstation ones. But capping the budget costs almost no quality:
+**four of five ≤128 GB answers equal the unlimited-hardware answer, and four of five
+≤64 GB answers equal the ≤128 GB one.** Going from a 765 GB model to a 35 GB one costs
+**0.0078 on one task and nothing on the other four.**
+
 The counter-argument is measured too: one hosted model covers all five tasks at the 70th
 percentile with a prompt change, where each local model does exactly one. Full reasoning,
-the three-tier breakdown, and four ways it could be wrong:
+the three-tier breakdown, the memory budgets, and four ways it could be wrong:
 [§0](#0-the-production-question-should-you-fine-tune-a-small-model-instead-of-paying-an-llm).
 
 ### The seven findings
@@ -88,16 +95,22 @@ Three more numbers that travel:
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
   classification against **3,926 for retrieval reranking** — a 38× difference that no
   model substitution recovers.
+- **Every experiment has a $0 answer.** In four of five the self-hostable option *is* the
+  winner; in the fifth it trails by 0.0071, which the data cannot resolve.
 
 ### What to do with this
 
 1. **Check the architecture before the model.** The largest cost lever here was structural.
 2. **If you can label a few thousand examples, fine-tune a small model** — $0 against up to
-   $9,826/month, and far lower latency.
-3. **Never buy the most expensive arm.** In three experiments it was *worse* than free.
-4. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
+   $9,826/month, and far lower latency. Three of the four task-specific winners are **under
+   2 GB and need no GPU**.
+3. **If you cannot, self-host an open-weight LLM before renting one.** A proprietary model
+   never separated from the best open-weight arm in any experiment, and **64 GB of memory
+   is enough to match the unlimited-hardware answer on four of five tasks.**
+4. **Never buy the most expensive arm.** In three experiments it was *worse* than free.
+5. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
    separation test, not a leaderboard.
-5. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
+6. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
 
 **When paying more is right:** you cannot label data; the task is unlike anything a small
 model has seen; a wrong answer is expensive; your volume is low enough that the whole

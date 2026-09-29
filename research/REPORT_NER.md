@@ -47,6 +47,12 @@ the first unambiguous winner in this repo. But 57% of its lead comes from a sing
 type whose meaning is a corpus convention rather than a fact about the world, and on the
 one type that means the same thing everywhere, a frontier LLM beats it.**
 
+**On deployment:** this is the task where a small model wins by the widest margin. The
+best open-weight LLM you could self-host, Gemma-4-26B at 52 GB, scores **0.6733** — a
+model **109× larger** than `span_marker` and **0.0941 worse**. Memory budget changes
+nothing here: 52 GB fits a 64 GB box natively, and the answer is the same at every budget
+from 64 GB to unlimited.
+
 1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
    field of 0.524–0.686. Holm step-down over a family of 26 declared in advance:
    **separated from 26 of 26**. Neither classification corpus produced this — AG News gave

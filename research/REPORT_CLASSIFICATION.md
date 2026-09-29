@@ -38,6 +38,13 @@
 **Read the two together or not at all.** They were chosen before any result was seen to
 sit in opposite regimes; either alone supports whichever conclusion it happens to produce.
 
+**On deployment, the two corpora disagree here too.** On AG News a **44 MB** fine-tune
+beats the best self-hostable LLM (Llama-3.3-70B, ~141 GB) by **0.0650** — a **3,205×**
+size difference in the small model's favour. On DBpedia no fine-tuned arm could be loaded
+at all, so the practical answer is an open-weight LLM: **Gemma-4-26B at 52 GB scores
+0.9857, identical to GLM-4.6 at 714 GB** and not separated from the overall winner. Both
+answers fit a 64 GB machine; neither needs a proprietary model.
+
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 

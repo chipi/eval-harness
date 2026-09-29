@@ -45,6 +45,13 @@
 models.** Those are different questions, and conflating them is the easiest way to misread
 this report in either direction.
 
+**On deployment:** `bart_l` (1.6 GB, MIT, CPU) wins outright, and the best open-weight LLM
+that matches it — DeepSeek-V4.1-Flash — is **765 GB**, a cluster model. This is the one
+experiment where capping your hardware costs quality: the best arm that fits 128 GB is
+Llama-3.3-70B at int8, **0.3382**, giving up **0.0078**. It is also the one where the free
+model is *slower* than renting (11.0 s vs 1.6 s per item), because generation on a CPU is
+genuinely expensive.
+
 **The expensive arms do not earn their price, and this is now the firmest result here.**
 `deepseek_m` at **$0.0381** per 200 articles beats `anthropic_l` at **$1.9652** — 52×
 dearer — by +0.0306 coverage, p = 0.0000, and it holds on the 180 out-of-sample articles

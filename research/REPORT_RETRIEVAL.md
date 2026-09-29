@@ -51,6 +51,13 @@ mechanism transferred too (headroom-used 90.9% → 90.2%).
 And a prediction registered before the arm existed — that swapping only the first stage
 would move the pipeline from 0.74 to 0.786–0.797 — came back at 0.7891.**
 
+**On deployment:** this is the only experiment whose *best* configuration is entirely
+open-weight — `e5_base` (438 MB, MIT) retrieving, `glm_s` (MIT) reranking, **0.7891**, no
+proprietary model at any point. It is also the only one where halving the memory budget
+costs anything: GLM-4.5-Air needs ~55 GB at int4 to fit 128 GB comfortably, and at 64 GB
+you drop to Gemma-4-26B for **0.7363**, −0.0074 — a gap its own separation test cannot
+resolve.
+
 1. **A twelve-way tie at the top.** The best arm, `glm_s` at **0.7437**, separates from
    only **6 of 18** opponents under Holm. The twelve it cannot separate from include
    `e5_base` (**0.7191**) and `bge_small` (**0.7097**) — both **$0**, local, CPU.
