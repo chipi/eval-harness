@@ -22,16 +22,16 @@
 
 ### The decision, in one table
 
-| question | answer |
+| the choice | what the data says |
 |---|---|
-| **What should I deploy?** | `span_marker` — 476 MB, fine-tuned on this corpus, **$0**, 0.76 s/item, **0.7674**. The only unambiguous winner in this repo: **separated from 26 of 26**. |
+| **Deploy — on your own hardware** | **`span_marker`** — 476 MB, fine-tuned on this corpus, CC-BY-SA-4.0 weights, **$0**, **0.76 s/item**, **0.7674**. The only unambiguous winner in this repo: **separated from 26 of 26**. Faster *and* better than every hosted arm. |
+| **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 476 MB model. |
 | **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
 | **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
 | **What does fine-tuning buy?** | **+0.3134 F1**, isolated by a matched pair at price zero on both sides (`span_marker` vs `gliner`). |
 | **Is a pilot enough?** | Here yes — ρ = 0.895, right winner. It was wrong in 3 of the other 4 experiments. |
 | **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 from exposure alone**, at $0 on both sides. |
-| **Can I self-host the answer?** | **Yes — it is already local.** `span_marker` is CC-BY-SA-4.0 weights on HuggingFace, 476 MB, CPU. No proprietary model appears anywhere in the recommendation. |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*

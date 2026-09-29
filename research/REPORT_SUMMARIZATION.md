@@ -22,15 +22,15 @@
 
 ### The decision, in one table
 
-| question | answer |
+| the choice | what the data says |
 |---|---|
-| **What should I deploy?** | `bart_l` (free, local, 1.6 GB) — or `deepseek_m` at **$191/month per 1M items** if you need generation off-box. They differ by **0.0001**. |
+| **Deploy — on your own hardware** | **`bart_l`** — fine-tuned on this corpus, MIT weights, 1.6 GB, **$0**, **0.3461**. It wins outright. Cost of choosing it: **11.0 s/item** on CPU against 1.6 s for a hosted call. |
+| **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
 | **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **16th of 25** and is 8.9% below free. |
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
 | **How many arms are really tied at the top?** | **13 of 25.** The cheapest of them is 143× cheaper than the dearest. |
 | **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
 | **Fine-tune or pay?** | **Cost only.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free — but it is *slower* (11.0 s vs 1.6 s), because generation on a CPU is expensive. |
-| **Can I self-host the answer?** | **Yes — it is already local.** `bart_l` is MIT-licensed weights on HuggingFace. The best paid alternative, `deepseek_m`, is *also* open-weight (MIT), so **neither answer requires a proprietary model.** |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*

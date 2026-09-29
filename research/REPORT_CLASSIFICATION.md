@@ -21,15 +21,15 @@
 
 ### The decision, in one table
 
-| question | AG News (headroom) | DBpedia-14 (saturated) |
+| the choice | AG News (headroom) | DBpedia-14 (saturated) |
 |---|---|---|
-| **What should I deploy?** | `bert_mini` — 44 MB, fine-tuned, **$0**, **7 ms/item**, **0.9450** | **If you have hardware: `glm_m`** — MIT, open-weight, **$0 self-hosted**, 0.9857, and **not separated** from the winner. Otherwise `qwen_m` at **$51/month per 1M items**, 0.9929 (proprietary — no self-host option). |
+| **Deploy — on your own hardware** | **`bert_mini`** — 44 MB, fine-tuned, Apache weights, **$0**, **7 ms/item**, **0.9450**. Wins outright. | **`glm_m`** — MIT open-weight, **$0**, **0.9857**. Costs **0.0071** against the overall winner, which the test **cannot resolve**. |
+| **Deploy — rented API** | **`anthropic_m`** at **$351/month per 1M items**, 0.9100 — **3.7% worse than free**. | **`qwen_m`** at **$51/month**, **0.9929** — the best score here, and **proprietary: no self-host option at any price**. |
 | **What should I not deploy?** | `anthropic_l` at $875/mo: **−4.8%** vs free | `anthropic_l` at **$1,351/mo**: **−0.4%** vs $51/mo |
 | **Does paying more help?** | Marginally: **+2.3%** per 10× cost | **Barely: +0.9%** per 10× cost |
 | **Arms tied at the top?** | 9 of 26 | **18 of 25** — the ranking is mostly noise |
 | **What limits the score?** | model quality | **the annotation.** Top ten separated by 4 items, 3 disputed by the whole field |
 | **Is a pilot enough?** | No — ρ = 0.852 and it picked `anthropic_l`, truly 3rd | No — ρ = 0.728, picked `anthropic_l`, truly 2nd |
-| **Can I self-host the answer?** | **Yes — it is already local.** `bert_mini` is 44 MB and Apache-licensed weights are on HuggingFace | **Yes, at a cost of 0.0071 that the test cannot resolve.** `glm_m` is MIT; the *winner* `qwen_m` is not self-hostable at any price |
 | **Fine-tune or pay?** | **Fine-tune** — `bert_mini` is 1st of 26 at $0 | **Not answered — the measurement is blocked, not negative.** The fine-tuned DBpedia checkpoint could not be loaded here, so the only free arm that ran is *zero-shot* and finishes last. AG News's near-identical setup says a fine-tuned arm would likely win; **that is a prior, not a result.** See [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](HANDOVER_DBPEDIA_BLOCKED_ARM.md) |
 
 **Read the two together or not at all.** They were chosen before any result was seen to

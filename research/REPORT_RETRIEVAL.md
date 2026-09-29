@@ -23,15 +23,15 @@
 
 ### The decision, in one table
 
-| question | answer |
+| the choice | what the data says |
 |---|---|
-| **What should I deploy?** | **Everything here is self-hostable.** `e5_base` alone: free, 0.06 s/item, **0.7191**, not statistically separable from any paid arm. Add `glm_s` — which is **MIT open-weight**, not a proprietary API — for **0.7891**: $732/month rented, or **$0 on your own hardware**. |
+| **Deploy — on your own hardware** | **Both halves are open-weight, so the best configuration here is free.** `e5_base` alone (438 MB, MIT): **0.7191**, 0.06 s/item, not separable from any paid arm. Add **`glm_s`** (GLM-4.5-Air, **MIT**) reranking it: **0.7891** — the highest score measured in this experiment. |
+| **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
 | **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |
 | **Arms tied at the top?** | **12 of 18** — and two of them (`e5_base`, `bge_small`) are **free and local**. |
 | **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
 | **Is a pilot enough?** | **Emphatically no.** ρ = 0.756 and the dev slice's leader finished **10th of 19**. |
-| **Can I self-host the answer?** | **Yes, entirely.** The winning arm `glm_s` is GLM-4.5-Air under **MIT**, and the first stage `e5_base` is a 438 MB encoder. This is the only experiment whose *best* configuration needs no proprietary model at all. |
 | **Fine-tune or pay?** | **The one genuinely marginal case.** No arm here was fine-tuned *on SciFact*; `e5_base` is retrieval-trained but not on this corpus, and lands mid-field — beaten by 0.0246 that the test cannot resolve. Partially-trained looks like a tie, not a win. |
 
 **A prediction registered before the arm existed** — that swapping only the first stage
