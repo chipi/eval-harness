@@ -318,7 +318,7 @@ class ClassificationTask:
             output=raw,
             tokens_in=ti,
             tokens_out=to,
-            cost_usd=_price(params, ti, to),
+            cost_usd=_billed(usage) if _billed(usage) is not None else _price(params, ti, to),
             extra={
                 "truncated": 1.0 if truncated else 0.0,
                 **({"reasoning_tokens": float(reasoning_tokens)}
@@ -537,6 +537,37 @@ def _reasoning_tokens(usage: Any) -> Optional[int]:
             if isinstance(details.get(k), int):
                 return details[k]
     return None
+
+
+def _billed(usage: Any) -> Optional[float]:
+    """What the PROVIDER says this call cost, or None if it did not say.
+
+    WHY THIS OUTRANKS THE PRICE TABLE. `usd_per_mtok_in/out` is one price per model
+    ALIAS, and an alias is not a price: OpenRouter routes each request to one of several
+    upstream providers -- a single NER run recorded Novita 262 times, Parasail 9, DeepInfra
+    6, Nebius 3 -- and they charge differently. The effective price is a routing-dependent
+    mixture that no config can state in advance.
+
+    Measured across the four examples in this repo, the price table was wrong by 0.67x to
+    3.21x PER ARM, in both directions, and it reordered arms by cost: on few_nerd_280
+    `glm_s` is the 2nd-cheapest arm by the table and the 9th by what was actually billed,
+    and the cheapest-to-dearest span is 155x by the table against 90x billed. Every cost
+    figure computed from the table is therefore an estimate of a number the provider
+    already told us exactly.
+
+    So: bill what was billed, and fall back to the table only when the provider is silent.
+    """
+    d = usage if isinstance(usage, dict) else (
+        usage.model_dump() if hasattr(usage, "model_dump") else None)
+    if not isinstance(d, dict):
+        return None
+    c = d.get("cost")
+    if c is None:
+        c = (d.get("cost_details") or {}).get("upstream_inference_cost")
+    try:
+        return round(float(c), 10) if c is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> Optional[float]:

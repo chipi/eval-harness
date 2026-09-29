@@ -2,7 +2,7 @@
 
 **Dataset** `cnn_dailymail_200` · 200 articles · human-written gold references
 **Arms** 24 hosted models, 8 vendors, 3 price tiers each
-**Design** 1 pass per arm · 4,800 calls · $4.93 · identical prompt, temperature 0, reasoning off
+**Design** 1 pass per arm · 4,800 calls · **$5.74 billed** ($4.93 by the price table — see Correction) · identical prompt, temperature 0, reasoning off
 **Date** 2026-09-26 · **Harness** `examples/eval-harness` · **Journal** [`EVAL_NOTES.md`](EVAL_NOTES.md)
 
 > **This report was re-measured at n=200 on 2026-09-26.** It previously covered
@@ -20,7 +20,7 @@ models.** Those are different questions, and conflating them is the easiest way 
 this report in either direction.
 
 **The expensive arms do not earn their price, and this is now the firmest result here.**
-`deepseek_m` at **$0.0296** per 200 articles beats `anthropic_l` at **$1.9652** — 66×
+`deepseek_m` at **$0.0381** per 200 articles beats `anthropic_l` at **$1.9652** — 52×
 dearer — by +0.0306 coverage, p = 0.0000, and it holds on the 180 out-of-sample articles
 and on the literature-standard metric too. At n=20 that same comparison came back
 "not separated"; the question was never unanswerable, twenty articles just could not
@@ -28,13 +28,13 @@ answer it.
 
 | pre-registered pair | all 200 | 180 held out |
 |---|---|---|
-| `deepseek_m` > `anthropic_l` (66× dearer) | +0.0306, p=0.0000 | +0.0308, p=0.0000 |
+| `deepseek_m` > `anthropic_l` (52× dearer) | +0.0306, p=0.0000 | +0.0308, p=0.0000 |
 | `deepseek_m` > `anthropic_m` (38×) | +0.0224, p=0.0006 | +0.0224, p=0.0010 |
 | `deepseek_m` > `openai_l` (18×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
 | `deepseek_s` > `qwen_m` (control) | +0.0255, p=0.0000 | +0.0208, p=0.0003 |
 
 All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place;
-$0.0296 buys 1st.**
+$0.0381 buys 1st.**
 
 **Seventeen of 24 arms are off the table entirely**, with no statistics required: each is
 beaten by some other arm on quality *and* cost *and* speed at once. Seven remain on the
@@ -261,7 +261,7 @@ a family of four:
 
 | question | metric | all 200 | 180 held out |
 |---|---|---|---|
-| `deepseek_m` vs `anthropic_l` — is 66× the price worth it? | coverage | +0.0306, 114/200, **p=0.0000** | +0.0308, 102/180, **p=0.0000** |
+| `deepseek_m` vs `anthropic_l` — is 52× the price worth it? | coverage | +0.0306, 114/200, **p=0.0000** | +0.0308, 102/180, **p=0.0000** |
 | | rougeLsum | +0.0310, 139/200, **p=0.0000** | +0.0331, 127/180, **p=0.0000** |
 | `deepseek_m` vs `anthropic_m` — 38× | coverage | +0.0224, 112/200, **p=0.0006** | +0.0224, 104/180, **p=0.0010** |
 | `deepseek_m` vs `openai_l` — 18× | coverage | +0.0193, 96/200, **p=0.0032** | +0.0171, 85/180, **p=0.0153** |
@@ -358,9 +358,9 @@ available is a word count. An eval that picks its headline metric by which one s
 cleanest will pick a length measure and call it quality.
 
 **Price behaves almost independently of quality, and now demonstrably so.** `anthropic_l`
-at **$1.9652** ranks 15th; `deepseek_m` at **$0.0296** ranks 1st, and the gap is separated
+at **$1.9652** ranks 15th; `deepseek_m` at **$0.0381** ranks 1st, and the gap is separated
 at p = 0.0000 in both item cuts and on both ROUGE facets. At n=20 the same comparison was
-"not separated" (p = 0.52) and the honest reading was *"if a model 66× cheaper cannot be
+"not separated" (p = 0.52) and the honest reading was *"if a model 52× cheaper cannot be
 shown to be worse, the expensive one has not earned its price."* That reading was right,
 and the stronger version is now available: it **is** shown to be better.
 
@@ -490,3 +490,33 @@ entry 31, and the leaderboard warns if it ever reads runs written at less.
 Expect different absolute numbers. Providers update models behind stable names, and
 `reasoning_tokens`, `providers_seen` and the resolved upstream model id are recorded per run
 precisely so a future divergence can be attributed rather than guessed at.
+
+---
+
+## Correction — every cost figure here was an estimate, and the estimate was wrong
+
+**Added 2026-09-29.** The `$` figures originally published in this report were computed
+from `usd_per_mtok_in/out` in each arm's config: one price per model **alias**. An alias
+is not a price. OpenRouter routes each request to one of several upstream providers — a
+single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 —
+and they charge differently, so the effective price is a routing-dependent mixture no
+config can state in advance.
+
+The provider reports what it actually charged, per call, in `usage.cost`. That was in
+every stored run all along and nothing read it. Measured across all four examples, the
+price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+
+**The error is not uniform, and that is what makes it matter.** Arms served by a single
+provider — the Anthropic models, notably — match the table exactly. The cheap,
+multi-routed models were undercounted. So the error systematically **understates the cheap
+end of the field, and therefore inflates every price-ratio claim.** It also reorders arms
+by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by
+what was billed.
+
+The figures below are corrected to what the provider billed. Rankings by *quality* are
+untouched — cost was never an input to them.
+
+**Fixed at cause:** all four adapters now record `usage.cost` when the provider supplies
+it and fall back to the table only when it is silent. Runs made before that fix keep the
+estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run, and
+these corrections were computed from it.

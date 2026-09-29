@@ -38,7 +38,7 @@ open question in the example: every hosted arm measured lands in 0.7017–0.7437
 five would answer.
 
 The prior from three other examples is that it would not — summarisation had the dearest
-arm at 15th of 24, DBpedia a ten-way tie across 126×, NER an eight-way tie across 121×.
+arm at 15th of 24, DBpedia a ten-way tie across 115×, NER an eight-way tie across 78×.
 **That is a prior, not a result, and it must not be written up as one.**
 
 ## How to run them

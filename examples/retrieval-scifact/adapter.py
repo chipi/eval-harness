@@ -389,8 +389,15 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
     usage = getattr(resp, "usage", None)
     tin = getattr(usage, "prompt_tokens", 0) or 0
     tout = getattr(usage, "completion_tokens", 0) or 0
-    cost = (tin * float(params.get("usd_per_mtok_in", 0.0))
-            + tout * float(params.get("usd_per_mtok_out", 0.0))) / 1_000_000
+    # WHAT THE PROVIDER BILLED, falling back to the price table only if it is silent.
+    # An alias is not a price: OpenRouter routes across several upstream providers that
+    # charge differently, so a per-alias `usd_per_mtok` is an estimate of a number the
+    # response already carries exactly. Measured across this repo, the table was wrong by
+    # 0.67x to 3.21x per arm and reordered arms by cost.
+    billed = _billed(usage)
+    cost = billed if billed is not None else (
+        tin * float(params.get("usd_per_mtok_in", 0.0))
+        + tout * float(params.get("usd_per_mtok_out", 0.0))) / 1_000_000
     extra = {"truncated": 1.0 if choice.finish_reason == "length" else 0.0}
     extra["reasoning_tokens"] = float(_reasoning_tokens(usage) or 0)
     return Result(output=text, cost_usd=cost, tokens_in=tin, tokens_out=tout,
@@ -398,6 +405,35 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
                         "response_model": getattr(resp, "model", None),
                         "usage": usage.model_dump() if usage else None},
                   extra=extra)
+
+
+def _billed(usage: Any) -> Optional[float]:
+    """What the PROVIDER says this call cost, or None if it did not say.
+
+    WHY THIS OUTRANKS THE PRICE TABLE. `usd_per_mtok_in/out` is one price per model
+    ALIAS, and an alias is not a price: OpenRouter routes each request to one of several
+    upstream providers -- a single run here recorded Novita 262 times, Parasail 9,
+    DeepInfra 6, Nebius 3 -- and they charge differently. The effective price is a
+    routing-dependent mixture no config can state in advance.
+
+    Measured across the four examples in this repo, the table was wrong by 0.67x to 3.21x
+    PER ARM, in both directions, and it reordered arms by cost: on few_nerd_280 `glm_s` is
+    2nd-cheapest by the table and 9th by what was billed, and the cheapest-to-dearest span
+    is 155x by the table against 90x billed.
+
+    So: bill what was billed, and fall back to the table only when the provider is silent.
+    """
+    d = usage if isinstance(usage, dict) else (
+        usage.model_dump() if hasattr(usage, "model_dump") else None)
+    if not isinstance(d, dict):
+        return None
+    c = d.get("cost")
+    if c is None:
+        c = (d.get("cost_details") or {}).get("upstream_inference_cost")
+    try:
+        return round(float(c), 10) if c is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _reasoning_tokens(usage: Any) -> Optional[int]:

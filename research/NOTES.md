@@ -2014,3 +2014,60 @@ BM25's nDCG. I diagnosed it as a budget problem first and raised max_tokens, whi
 right diagnostic and the wrong fix. I also twice read the stored outputs as the model's
 reply when my own adapter had overwritten them with the pipeline's ranking. And the tree
 went dirty mid-sweep again, for one arm.
+
+---
+
+### 2026-09-29 · 55 — Every cost figure in this repo was an estimate of a number we already had
+
+**An alias is not a price.** `usd_per_mtok_in/out` is one number per model alias in a
+config. OpenRouter routes each request to one of several upstream providers — one NER run
+recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge
+differently. The effective price is a routing-dependent mixture that no config can state
+in advance, so a per-alias price cannot be right except by accident.
+
+Meanwhile the provider reports what it actually charged, per call, in `usage.cost`. It has
+been in every stored run since the first example. Nothing read it.
+
+```
+                 price table   billed    ratio
+summarisation        $4.9270  $5.7404    1.17x
+AG News              $0.4854  $0.5808    1.20x
+DBpedia              $1.0043  $1.1737    1.17x
+NER                  $2.0546  $2.5708    1.25x
+Retrieval            $1.0395  $1.9396    1.87x
+```
+
+**The per-example ratio hides the real problem.** Per ARM the table was wrong by **0.67x
+to 3.21x, in both directions** — and the error is systematic in a way that matters. Arms
+served by a SINGLE provider match exactly: every Anthropic arm is 1.00x. The cheap,
+multi-routed models were undercounted. So the table **understates the cheap end of the
+field and therefore inflates every price-ratio claim in this repo**, and it reorders arms
+by cost: on few_nerd_280 `glm_s` is 2nd-cheapest by the table and 9th by what was billed.
+
+Corrected, in every report:
+
+```
+summarisation  deepseek_m vs anthropic_l   66x -> 52x
+DBpedia        top-ten group span         126x -> 115x
+NER            top-eight group span       121x ->  78x
+full paid span (cnn / ag / db / fn)   199/169/180/155x -> 143/125/133/90x
+```
+
+**Quality rankings are untouched.** Cost was never an input to any of them. What changes
+is every sentence of the form "N times the price buys nothing" — and all of them get
+*weaker*, because the cheap arms were cheaper on paper than they were in fact.
+
+**Fixed at cause, not just in the prose.** All four adapters now prefer `usage.cost` and
+fall back to the table only when the provider is silent. Runs made before the fix keep the
+estimate in `cost_usd`; `rescore.py` carries cost across rather than recomputing it, so the
+historical runs are not retroactively changed — the billed figure is in
+`_meta.usage.cost` in each of them, and these corrections were computed from there.
+
+**AND I HAVE TO RETRACT MY OWN CORRECTION.** Yesterday I told Marko the understatement was
+**2.41x**, from a single before/after spend delta on the LiteLLM key. That run cost
+**$0.0055**. At that size any fixed overhead or concurrent traffic on the same key
+dominates the delta, and I generalised from it to "every published cost figure is
+understated by ~2.4x" without checking it against the per-run data that was sitting in
+`_meta.usage.cost` the whole time. The defensible figure is 1.17x-1.87x per example and
+0.67x-3.21x per arm. The direction of the finding survived; the number did not, and I
+stated it with more confidence than one measurement earned.

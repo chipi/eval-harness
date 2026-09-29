@@ -2,8 +2,9 @@
 
 **Dataset** `scifact_200` · 200 scientific claims · a **5,183-document corpus** · 234 relevance judgments
 **Arms** BM25 · 4 sentence-transformer bi-encoders · 12 hosted LLMs reranking BM25's top-20 · 2 floors
-**Design** 1 pass per arm · temperature 0, reasoning off, `max_tokens` 700 · rerank depth 20 · **$1.04 by price table, $2.45 enforced**
+**Design** 1 pass per arm · temperature 0, reasoning off, `max_tokens` 700 · rerank depth 20 · **$1.94 billed**
 **Date** 2026-09-29 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
+**Costs** are what the provider billed (`usage.cost`), not this repo's price table — see §7
 
 > **The fourth metric shape, and the first where POSITION carries meaning.** Summarisation
 > compares one text to one text. Classification compares one label to one label.
@@ -258,7 +259,7 @@ nothing; money spent on the retriever raises the cap itself.
 
 **The tie is the recurring result across all four examples in this repo.** Summarisation:
 the dearest arm ranked 15th of 24. AG News: a leader tied with five. DBpedia: a group of
-ten across a 126× price range. NER: eight hosted arms across 121×. Here: twelve, two of
+ten across a 115× price range. NER: eight hosted arms across 78×. Here: twelve, two of
 which are free. Four unrelated tasks, the same shape — at the top of a field, price stops
 predicting quality well before quality stops varying.
 
@@ -326,10 +327,14 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
   read. **So this report says nothing about whether a frontier model is a better
   reranker**, and the 12-way tie is a tie among cheap models plus two free ones. See
   [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
-- **Every cost figure in this repo understates the bill.** Measured today: the provider
-  reports **1.14–1.55×** this repo's price table, and a before/after spend delta on the
-  proxy came to **2.41×**. This affects the `$` column in all four reports and is not yet
-  corrected anywhere.
+- **The cost column is what the provider BILLED, not this repo's price table.** Those
+  differ, because an alias is not a price: OpenRouter routes across upstream providers
+  that charge differently. Measured across all four examples the table was wrong **per arm
+  by 0.67× to 3.21×**, in both directions, and it reordered arms by cost. All four reports
+  are now corrected and all four adapters record `usage.cost`. An earlier draft of this
+  report quoted **2.41×** from a single before/after spend delta on a **$0.0055** run —
+  far too small for fixed overhead and concurrent traffic not to dominate. That number
+  was wrong and stated with more confidence than one measurement earned.
 - **One first-stage swap, two rerankers, one corpus.** §3.4 is a pair, not a study. It does
   not show that e5_base is the best possible first stage, or that the headroom share
   transfers for any other reranker or corpus.

@@ -2,7 +2,7 @@
 
 **Dataset** `few_nerd_280` · 280 Wikipedia-derived sentences · 768 gold entities · 8 coarse types
 **Arms** 24 hosted models (8 vendors × 3 price tiers) · 1 fine-tuned span tagger · 1 zero-shot span tagger · 2 non-learned baselines
-**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off, `max_tokens` 600 · **$2.05**
+**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off, `max_tokens` 600 · **$2.57 billed** ($2.05 by the price table — see Correction)
 **Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
 
 > **The third metric shape.** Summarisation compares one text to one text and scores
@@ -27,8 +27,8 @@ one type that means the same thing everywhere, a frontier LLM beats it.**
 
 2. **And behind it, the familiar tie.** The best hosted arm, `openai_m` at 0.6864,
    separates from only **19 of 26**. The eight it cannot separate from span
-   `gemma_m` at **$0.0057** to `anthropic_l` at **$0.6897** — a **121× price range** buying
-   nothing measurable. DBpedia's figure was 126×. Two unrelated tasks, the same shape.
+   `gemma_m` at **$0.0088** to `anthropic_l` at **$0.6897** — a **78× price range** buying
+   nothing measurable. DBpedia's figure was 115×. Two unrelated tasks, the same shape.
 
 3. **The lead is concentrated in one label, and that label is a convention.** Broken down
    by type, `span_marker` beats `openai_m` by +0.4693 F1 on `other` — Few-NERD's catch-all
@@ -140,29 +140,29 @@ reported; the mean is the ranking metric.
 | arm | f1 | untyped f1 | parsed | lat/item | cost |
 |---|---|---|---|---|---|
 | **span_marker** | **0.7674** | 0.8370 | 1.000 | 0.76 s | **$0** |
-| openai_m | 0.6864 | 0.7783 | 1.000 | 1.60 s | $0.2034 |
+| openai_m | 0.6864 | 0.7783 | 1.000 | 1.60 s | $0.6507 |
 | anthropic_l | 0.6798 | 0.7820 | 1.000 | 2.76 s | $0.6897 |
-| gemma_m | 0.6733 | 0.7750 | 1.000 | 3.05 s | $0.0057 |
-| openai_l | 0.6716 | 0.7691 | 1.000 | 1.90 s | $0.2411 |
-| anthropic_m | 0.6661 | 0.7666 | 1.000 | 2.69 s | $0.4269 |
-| qwen_s | 0.6650 | 0.7649 | 1.000 | 2.15 s | $0.0061 |
-| qwen_m | 0.6548 | 0.7525 | 1.000 | 2.24 s | $0.0248 |
-| gemma_l | 0.6481 | 0.7689 | 1.000 | 2.91 s | $0.0080 |
-| qwen_l | 0.6240 | 0.7283 | 1.000 | 1.67 s | $0.0323 |
-| deepseek_m | 0.6122 | 0.7233 | 1.000 | 1.23 s | $0.0128 |
-| openai_s | 0.5948 | 0.6855 | 1.000 | 1.21 s | $0.0322 |
-| glm_m | 0.5939 | 0.7151 | 1.000 | 3.66 s | $0.0149 |
+| gemma_m | 0.6733 | 0.7750 | 1.000 | 3.05 s | $0.0088 |
+| openai_l | 0.6716 | 0.7691 | 1.000 | 1.90 s | $0.1715 |
+| anthropic_m | 0.6661 | 0.7666 | 1.000 | 2.69 s | $0.2846 |
+| qwen_s | 0.6650 | 0.7649 | 1.000 | 2.15 s | $0.0157 |
+| qwen_m | 0.6548 | 0.7525 | 1.000 | 2.24 s | $0.0396 |
+| gemma_l | 0.6481 | 0.7689 | 1.000 | 2.91 s | $0.0134 |
+| qwen_l | 0.6240 | 0.7283 | 1.000 | 1.67 s | $0.0722 |
+| deepseek_m | 0.6122 | 0.7233 | 1.000 | 1.23 s | $0.0200 |
+| openai_s | 0.5948 | 0.6855 | 1.000 | 1.21 s | $0.0784 |
+| glm_m | 0.5939 | 0.7151 | 1.000 | 3.66 s | $0.0445 |
 | mistral_m | 0.5914 | 0.6870 | 1.000 | 0.79 s | $0.0462 |
-| llama_l | 0.5911 | 0.7067 | 0.986 | 4.80 s | $0.0155 |
-| deepseek_l | 0.5872 | 0.6940 | 1.000 | 3.73 s | $0.0290 |
+| llama_l | 0.5911 | 0.7067 | 0.986 | 4.80 s | $0.0176 |
+| deepseek_l | 0.5872 | 0.6940 | 1.000 | 3.73 s | $0.0853 |
 | anthropic_s | 0.5843 | 0.7279 | 1.000 | 1.34 s | $0.1552 |
-| deepseek_s | 0.5756 | 0.6996 | 1.000 | 2.28 s | $0.0101 |
-| llama_m | 0.5704 | 0.6733 | 0.943 | 5.40 s | $0.0111 |
-| llama_s | 0.5686 | 0.6812 | 0.993 | 2.64 s | $0.0082 |
-| glm_s | 0.5529 | 0.6863 | 1.000 | 2.11 s | $0.0060 |
-| gemma_s | 0.5500 | 0.6758 | 1.000 | 5.94 s | $0.0063 |
-| glm_l | 0.5269 | 0.6065 | **0.836** | 3.01 s | $0.0647 |
-| mistral_s | 0.5243 | 0.6446 | 1.000 | 2.06 s | $0.0044 |
+| deepseek_s | 0.5756 | 0.6996 | 1.000 | 2.28 s | $0.0091 |
+| llama_m | 0.5704 | 0.6733 | 0.943 | 5.40 s | $0.0194 |
+| llama_s | 0.5686 | 0.6812 | 0.993 | 2.64 s | $0.0103 |
+| glm_s | 0.5529 | 0.6863 | 1.000 | 2.11 s | $0.0194 |
+| gemma_s | 0.5500 | 0.6758 | 1.000 | 5.94 s | $0.0093 |
+| glm_l | 0.5269 | 0.6065 | **0.836** | 3.01 s | $0.1023 |
+| mistral_s | 0.5243 | 0.6446 | 1.000 | 2.06 s | $0.0076 |
 | gliner | 0.4540 | 0.5522 | 1.000 | **0.17 s** | **$0** |
 | capitalized | 0.1913 | 0.6191 | 1.000 | ~0 | $0 |
 | nothing | 0.1250 | 0.1250 | 1.000 | ~0 | $0 |
@@ -198,8 +198,8 @@ separated from 19 of 26; ahead on the point estimate against 25 of 26
     anthropic_l  +0.0066  p = 0.6664   ($0.6897)
 ```
 
-**$0.0057 to $0.6897 — 121× — for a difference the data cannot resolve.** DBpedia gave
-126× on a completely different task. The consistency is the finding: at the top of a
+**$0.0088 to $0.6897 — 78× — for a difference the data cannot resolve.** DBpedia gave
+115× on a completely different task. The consistency is the finding: at the top of a
 hosted field, price stops predicting quality long before quality stops varying.
 
 ### 3.4 Where the lead actually comes from
@@ -377,7 +377,7 @@ label training data, a 476MB model on CPU beats every frontier LLM at 0.76 s/ite
 That is a real and useful claim — it is the podcast-product case. The claim it does *not*
 support is that the small model is better at named-entity recognition in general.
 
-**The hosted field is a commodity at the top.** Eight arms, 121× price spread, no
+**The hosted field is a commodity at the top.** Eight arms, 78× price spread, no
 resolvable difference. `gemma_m` at $0.0057 is inside the top group; `anthropic_l` at
 $0.6897 is too. Buying the expensive one bought 3.05 s/item of latency and nothing else
 measurable.
@@ -517,3 +517,33 @@ EVAL_RUNS_DIR=data/runs-rescored python scripts/rank_stability.py \
 
 The corpus is never committed: `fetch.py` downloads it to whoever runs this and the slice is
 gitignored. Dataset identity travels as `items_sha256`, not as bytes in the repo.
+
+---
+
+## Correction — every cost figure here was an estimate, and the estimate was wrong
+
+**Added 2026-09-29.** The `$` figures originally published in this report were computed
+from `usd_per_mtok_in/out` in each arm's config: one price per model **alias**. An alias
+is not a price. OpenRouter routes each request to one of several upstream providers — a
+single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 —
+and they charge differently, so the effective price is a routing-dependent mixture no
+config can state in advance.
+
+The provider reports what it actually charged, per call, in `usage.cost`. That was in
+every stored run all along and nothing read it. Measured across all four examples, the
+price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+
+**The error is not uniform, and that is what makes it matter.** Arms served by a single
+provider — the Anthropic models, notably — match the table exactly. The cheap,
+multi-routed models were undercounted. So the error systematically **understates the cheap
+end of the field, and therefore inflates every price-ratio claim.** It also reorders arms
+by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by
+what was billed.
+
+The figures below are corrected to what the provider billed. Rankings by *quality* are
+untouched — cost was never an input to them.
+
+**Fixed at cause:** all four adapters now record `usage.cost` when the provider supplies
+it and fall back to the table only when it is silent. Runs made before that fix keep the
+estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run, and
+these corrections were computed from it.

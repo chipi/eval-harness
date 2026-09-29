@@ -2,7 +2,7 @@
 
 **Datasets** `ag_news_200` · 200 news snippets · 4 classes — and `dbpedia_280` · 280 Wikipedia abstracts · 14 classes
 **Arms** 24 hosted models (8 vendors × 3 price tiers), plus a fine-tuned classifier, a zero-shot NLI model, ~20 regex rules and a constant
-**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · $0.45 and $1.25
+**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.45 and $1.25 by the price table — see Correction)
 **Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 47–50
 
 > **This report covers two corpora on purpose, and should not be read one at a time.**
@@ -14,7 +14,7 @@
 
 ## Executive summary
 
-**On a task with headroom, a 44MB model beat 24 frontier LLMs. On a saturated task, a 126×
+**On a task with headroom, a 44MB model beat 24 frontier LLMs. On a saturated task, a 115×
 price difference bought nothing measurable. Same harness, same arms, same statistics.**
 
 1. **AG News.** `bert_mini` — 44MB, fine-tuned, $0, 7 ms/item — scored **0.9450** and was
@@ -22,9 +22,9 @@ price difference bought nothing measurable. Same harness, same arms, same statis
    declared in advance: ahead of 27 of 27, **separated from 18**. Not separated from the
    top six. A group, not a podium.
 
-2. **DBpedia-14.** `qwen_m` led at **0.9929 for $0.0089**; `anthropic_l` was one item in
-   280 behind at **0.9893 for $0.378**, p = 1.0000. The leader separated from only **8 of
-   26**. The top ten arms are one group across a 126× price range.
+2. **DBpedia-14.** `qwen_m` led at **0.9929 for $0.0143**; `anthropic_l` was one item in
+   280 behind at **0.9893 for $0.3784**, p = 1.0000. The leader separated from only **8 of
+   26**. The top ten arms are one group across a 115× price range.
 
 3. **Both corpora have systematic label noise, and on DBpedia it is the same size as the
    signal.** Items the entire field gets "wrong" are items whose gold label is wrong: a
@@ -50,7 +50,7 @@ price difference bought nothing measurable. Same harness, same arms, same statis
 | dev slice | 20 items (first-k per class) | 56 items (seeded-random per class) |
 | licence | **`unknown`**, source says non-commercial | **CC-BY-SA 3.0 + GFDL** |
 | median length | 40 words | 52 words |
-| hosted spend | $0.45 | $1.25 |
+| hosted spend (billed) | $0.58 | $1.17 |
 
 Both slices are class-balanced by construction, so the floor is exact: **0.2500** and
 **0.0714**. A `constant` arm is run on every slice and reads those values to four decimal
@@ -170,8 +170,8 @@ outside the dev slice: identical, 74 of 351.
 separated from **8**. Against `anthropic_l`: delta **+0.0036** — one item in 280 — at
 **p = 1.0000**.
 
-**A 126× price difference buys nothing this data can detect.** `gemma_m` costs $0.0030 and
-`anthropic_l` $0.3780, and they differ by one item.
+**A 115× price difference buys nothing this data can detect.** `gemma_m` costs $0.0033 and
+`anthropic_l` $0.3784, and they differ by one item.
 
 ### 3.3 Macro-F1, and why it needed a different test
 
@@ -327,3 +327,33 @@ $PY scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct
 
 Runs are gitignored and live on one machine. The datasets are frozen by `items_sha256`,
 and `make dataset-materialize` verifies a refetch against them.
+
+---
+
+## Correction — every cost figure here was an estimate, and the estimate was wrong
+
+**Added 2026-09-29.** The `$` figures originally published in this report were computed
+from `usd_per_mtok_in/out` in each arm's config: one price per model **alias**. An alias
+is not a price. OpenRouter routes each request to one of several upstream providers — a
+single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 —
+and they charge differently, so the effective price is a routing-dependent mixture no
+config can state in advance.
+
+The provider reports what it actually charged, per call, in `usage.cost`. That was in
+every stored run all along and nothing read it. Measured across all four examples, the
+price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+
+**The error is not uniform, and that is what makes it matter.** Arms served by a single
+provider — the Anthropic models, notably — match the table exactly. The cheap,
+multi-routed models were undercounted. So the error systematically **understates the cheap
+end of the field, and therefore inflates every price-ratio claim.** It also reorders arms
+by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by
+what was billed.
+
+The figures below are corrected to what the provider billed. Rankings by *quality* are
+untouched — cost was never an input to them.
+
+**Fixed at cause:** all four adapters now record `usage.cost` when the provider supplies
+it and fall back to the table only when it is silent. Runs made before that fix keep the
+estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run, and
+these corrections were computed from it.
