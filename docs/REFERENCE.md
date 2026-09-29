@@ -12,6 +12,7 @@ paper or specification for a metric.
 - [Models](#models) — every arm, with the exact weights or upstream model id
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
 - [Statistical tests](#statistical-tests) — how separation is decided
+- [Terminology](#terminology) — the canonical name for every experiment, arm and term
 - [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the twelve that permit it
 
 ---
@@ -40,7 +41,7 @@ descriptive metric.
 > the article's wording scores well; a correct paraphrase scores badly. Read `grounding`
 > beside it, never instead of it. ROUGE is the standard because it is cheap and
 > reproducible, not because it is right — see
-> [Kryscinski et al., *Neural Text Summarization: A Critical Evaluation*](https://aclanthology.org/D19-1051/).
+> [Kryscinski et al., *Neural Text Summarisation: A Critical Evaluation*](https://aclanthology.org/D19-1051/).
 
 Implementation: [`google-research/rouge`](https://github.com/google-research/google-research/tree/master/rouge) via the `rouge-score` package.
 
@@ -109,11 +110,11 @@ it.
 
 | Experiment | Ranked by | Floor that must read true first | Secondary criteria, read after |
 |---|---|---|---|
-| Summarisation | `coverage` | `lead3` — the first three sentences. A model below it has not earned its inference cost. | `grounding` (did it leave the source?), `length_vs_reference` (did it win by padding?), `concision` |
-| AG News | `correct` | `constant` (always one class, ≈0.25) and `keyword` (~20 regex rules) | `parsed` and `correct_after_repair` — the parser is part of the system; macro-F1 for concentrated blind spots; `confidence` calibration |
-| DBpedia-14 | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
-| Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
-| SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
+| Summarisation · CNN/DM | `coverage` | `lead3` — the first three sentences. A model below it has not earned its inference cost. | `grounding` (did it leave the source?), `length_vs_reference` (did it win by padding?), `concision` |
+| Classification · AG News | `correct` | `constant` (always one class, ≈0.25) and `keyword` (~20 regex rules) | `parsed` and `correct_after_repair` — the parser is part of the system; macro-F1 for concentrated blind spots; `confidence` calibration |
+| Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
+| Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
+| Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
 
 **Why each example has floors that are not models.** `nothing`, `random`, `constant` and
 `first_k` have predictable scores. They are **calibration checks on the scorer** before
@@ -264,6 +265,45 @@ values — and permutation assumes only exchangeability under the null.
 - [HELM](https://crfm.stanford.edu/helm/) — multi-metric, multi-scenario LLM evaluation at scale
 - [*A Careful Examination of Large Language Model Performance on Grade School Arithmetic*](https://arxiv.org/abs/2405.00332) — builds a fresh GSM8k-equivalent to measure how much of a benchmark score is overfitting to the benchmark. The reason this repo freezes slices and records `items_sha256`
 - [`../research/NOTES.md`](../research/NOTES.md) — this repo's own append-only journal, including every retraction
+
+---
+
+## Terminology
+
+Fixed names, used the same way in every document here. Where a table's first column is
+"experiment", every cell in it reads **`Task · Dataset`** — mixing a task name in one row
+with a dataset name in the next is what this convention exists to stop.
+
+| canonical label | task | dataset | report |
+|---|---|---|---|
+| **Summarisation · CNN/DM** | summarisation | [CNN/DailyMail](https://huggingface.co/datasets/abisee/cnn_dailymail) | [REPORT_SUMMARIZATION](../research/REPORT_SUMMARIZATION.md) |
+| **Classification · AG News** | classification | [AG News](https://huggingface.co/datasets/fancyzhx/ag_news) | [REPORT_CLASSIFICATION](../research/REPORT_CLASSIFICATION.md) |
+| **Classification · DBpedia** | classification | [DBpedia-14](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | [REPORT_CLASSIFICATION](../research/REPORT_CLASSIFICATION.md) |
+| **Extraction · Few-NERD** | extraction (NER) | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | [REPORT_NER](../research/REPORT_NER.md) |
+| **Retrieval · SciFact** | retrieval | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | [REPORT_RETRIEVAL](../research/REPORT_RETRIEVAL.md) |
+
+Two experiments share the *classification* task and differ only in dataset, which is why
+the dataset is never optional in these labels.
+
+### Other fixed terms
+
+| term | means | not |
+|---|---|---|
+| **arm** | one configuration under test — a model *plus* its prompt, parameters and parsing | "model", which is only part of an arm |
+| **experiment** | one task on one dataset, with its own report section | "dataset" or "task" alone |
+| **dev slice / measurement slice** | the small tuning set / the frozen set results are reported on | "train/test", which implies we trained something |
+| **floor** | an arm whose score is predictable in advance (`nothing`, `random`, `constant`) | "baseline" — these are scorer calibration checks first |
+| **separated** | the difference survives Holm step-down at α = 0.05 | "better", which only needs a point estimate |
+| **billed** | what the provider charged (`usage.cost`) | "cost", which used to mean a price-table estimate |
+| **local ML** / **open-weight** / **proprietary** | the three tiers in [REPORT_SYNTHESIS §0](../research/REPORT_SYNTHESIS.md) | "free vs paid", which conflates tiers 1 and 2 |
+
+### Spelling
+
+**Prose uses British `-isation`** (summarisation, normalisation, normaliser) — the
+majority form across this repo. **Identifiers keep whatever they were named**, because
+renaming them breaks paths and hashes: `REPORT_SUMMARIZATION.md`,
+`examples/summarization-cnn-dailymail/`, `normalizer_sha256`, `normalize()`. The two
+spellings coexisting in one sentence is expected when one of them is code.
 
 ---
 

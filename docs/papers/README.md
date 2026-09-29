@@ -24,7 +24,7 @@ Mirroring these is permitted provided the author and licence travel with the cop
 | Lin (2004), *ROUGE: A Package for Automatic Evaluation of Summaries* | CC BY 4.0 | [ACL W04-1013](https://aclanthology.org/W04-1013/) |
 | Tjong Kim Sang & De Meulder (2003), *Introduction to the CoNLL-2003 Shared Task* | CC BY 4.0 | [ACL W03-0419](https://aclanthology.org/W03-0419/) |
 | Dror et al. (2018), *The Hitchhiker's Guide to Testing Statistical Significance in NLP* | CC BY 4.0 | [ACL P18-1128](https://aclanthology.org/P18-1128/) |
-| Kryscinski et al. (2019), *Neural Text Summarization: A Critical Evaluation* | CC BY 4.0 | [ACL D19-1051](https://aclanthology.org/D19-1051/) |
+| Kryscinski et al. (2019), *Neural Text Summarisation: A Critical Evaluation* | CC BY 4.0 | [ACL D19-1051](https://aclanthology.org/D19-1051/) |
 | Wadden et al. (2020), *Fact or Fiction: Verifying Scientific Claims* | CC BY 4.0 | [ACL 2020.emnlp-main.609](https://aclanthology.org/2020.emnlp-main.609/) |
 | Ding et al. (2021), *Few-NERD: A Few-shot Named Entity Recognition Dataset* | CC BY 4.0 | [ACL 2021.acl-long.248](https://aclanthology.org/2021.acl-long.248/) |
 | Reimers & Gurevych (2019), *Sentence-BERT* | CC BY-SA 4.0 | [arXiv 1908.10084](https://arxiv.org/abs/1908.10084) |
@@ -40,7 +40,7 @@ Mirroring these is permitted provided the author and licence travel with the cop
 |---|---|---|
 | Hermann et al. (2015), *Teaching Machines to Read and Comprehend* | [arXiv non-exclusive 1.0](https://arxiv.org/abs/1506.03340) | Grants **arXiv** the right to distribute, not third parties |
 | Zhang, Zhao & LeCun (2015), *Character-level Convolutional Networks* | arXiv non-exclusive 1.0 | same |
-| Nallapati et al. (2016), *Abstractive Text Summarization Using Seq2Seq RNNs* | arXiv non-exclusive 1.0 | same |
+| Nallapati et al. (2016), *Abstractive Text Summarisation Using Seq2Seq RNNs* | arXiv non-exclusive 1.0 | same |
 | See, Liu & Manning (2017), *Get To The Point* | arXiv non-exclusive 1.0 | same |
 | Guo et al. (2017), *On Calibration of Modern Neural Networks* | arXiv non-exclusive 1.0 | same |
 | Devlin et al. (2018), *BERT* | arXiv non-exclusive 1.0 | same |

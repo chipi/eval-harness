@@ -1,4 +1,4 @@
-# Handover — eval harness and the summarization example
+# Handover — eval harness and the summarisation example
 
 State as of 2026-09-26. Facts and locations only; reasoning is in
 [`NOTES.md`](NOTES.md), results in [`REPORT_SUMMARIZATION.md`](REPORT_SUMMARIZATION.md), forward

@@ -27,7 +27,7 @@ Two examples under `examples/`, each self-contained, each with its own dependenc
 chain (uv: PEP 621 `pyproject.toml` + `uv.lock` + `.python-version`, so an example
 provisions its own interpreter and cannot bleed into a sibling):
 
-1. **summarization** — LLMs against a standard public corpus.
+1. **summarisation** — LLMs against a standard public corpus.
 2. **classification** — classical ML against LLMs, deliberately, so the example can
    show what an eval is *for*: the cheap old method is often competitive, and only
    measurement tells you.
@@ -55,7 +55,7 @@ Ground rules set at the start, all of which held:
   it is excluded and replaced by the nearest same-family model that allows it.
 - **REPEAT=3.** LLMs are non-deterministic by nature; one sample is not a measurement.
 
-### 2026-09-25 · 2 — The summarization experiment as built
+### 2026-09-25 · 2 — The summarisation experiment as built
 
 - **Corpus**: CNN/DailyMail, 20 articles, pulled by `fetch.py` (stdlib only, HF
   datasets-server rows API). Gold references are the dataset's own human-written
