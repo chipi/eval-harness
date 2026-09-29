@@ -32,7 +32,7 @@
 | **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
 | **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |
-| **Arms tied at the top?** | **12 of 18** — and two of them (`e5_base`, `bge_small`) are **free and local**. |
+| **Arms tied at the top?** | **11 of 18** — and two of them (`e5_base`, `bge_small`) are **free and local**. |
 | **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
 | **Is a pilot enough?** | **Emphatically no.** ρ = 0.756 and the dev slice's leader finished **10th of 19**. |
 | **Fine-tune or pay?** | **The one genuinely marginal case.** No arm here was fine-tuned *on SciFact*; `e5_base` is retrieval-trained but not on this corpus, and lands mid-field — beaten by 0.0246 that the test cannot resolve. Partially-trained looks like a tie, not a win. |
@@ -59,7 +59,7 @@ you drop to Gemma-4-26B for **0.7363**, −0.0074 — a gap its own separation t
 resolve.
 
 1. **A twelve-way tie at the top.** The best arm, `glm_s` at **0.7437**, separates from
-   only **6 of 18** opponents under Holm. The twelve it cannot separate from include
+   only **7 of 18** opponents under Holm. The eleven it cannot separate from include
    `e5_base` (**0.7191**) and `bge_small` (**0.7097**) — both **$0**, local, CPU.
 
 2. **Reranking beats retrieval, and which reranker barely matters.** All twelve
@@ -161,14 +161,14 @@ BM25's, to four decimals.
 | deepseek_s ⟳ | 0.7378 | 0.8017 | 0.8586 | 0.7303 | 0.8 s | $0.0600 |
 | gemma_m ⟳ | 0.7363 | 0.7967 | 0.8586 | 0.7287 | 0.8 s | $0.0721 |
 | gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 0.8 s | $0.1701 |
-| qwen_s ⟳ | 0.7338 | 0.7997 | 0.8586 | 0.7270 | 0.8 s | $0.1559 |
-| llama_l ⟳ | 0.7281 | 0.7955 | 0.8586 | 0.7234 | 0.8 s | $0.1540 |
 | **e5_base** | **0.7191** | **0.8305** | **0.9540** | 0.6889 | 1825 s | **$0** |
-| llama_s ⟳ | 0.7172 | 0.7855 | 0.8586 | 0.7065 | 0.8 s | $0.0715 |
+| qwen_s ⟳ | 0.7183 | 0.7947 | 0.8586 | 0.7062 | 0.8 s | $0.1559 |
+| llama_s ⟳ | 0.7129 | 0.7805 | 0.8586 | 0.7024 | 0.8 s | $0.0715 |
 | **bge_small** | **0.7097** | 0.8298 | 0.9325 | 0.6812 | 874 s | **$0** |
 | llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 0.8 s | $0.1434 |
 | mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 0.8 s | $0.0852 |
 | gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 0.8 s | $0.0962 |
+| llama_l ⟳ | 0.6864 | 0.7455 | 0.8586 | 0.6842 | 0.8 s | $0.1540 |
 | mpnet | 0.6643 | 0.7707 | 0.9350 | 0.6355 | 1825 s | $0 |
 | minilm | 0.6533 | 0.7705 | 0.9125 | 0.6212 | 194 s | $0 |
 | bm25 | 0.6451 | 0.7635 | 0.8586 | 0.6152 | **0.8 s** | $0 |

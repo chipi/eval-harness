@@ -1,0 +1,123 @@
+{
+  "adapter": "examples/retrieval-scifact/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "0e20aaeb3dcabfcb0f9832740764147ceb9bffff",
+    "source": "git"
+  },
+  "config_id": "sf_first_k_n200_v1",
+  "created_at": "2026-09-28T17:46:07Z",
+  "dataset_id": "scifact_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "sf_first_k_n200_v1",
+      "params": {
+        "corpus_id": "scifact",
+        "family": "first_k",
+        "price_tier": "free",
+        "provider": "first_k",
+        "top_k": 100
+      }
+    },
+    "data": {
+      "dataset_id": "scifact_200",
+      "items_sha256": "b97dfe735a78eb4978cde41e2ca9a0bff424de9e6a0a2bdada5d167e3423004d",
+      "n_items": 200,
+      "reference_id": "gold/scifact_200",
+      "reference_tier": "gold"
+    },
+    "hash": null,
+    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see reparsed_with",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/retrieval-scifact/adapter.py",
+        "sha256": "cedb9f962aac9aef991ab83a63393769ed2976796bbfa2e7ecdf8e020dfd74f2"
+      },
+      "harness": {
+        "commit": "0e20aaeb3dca",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "sentence-transformers": "3.4.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "corpus_id": "scifact",
+        "corpus_n_docs": 5183,
+        "corpus_sha256": "297643e2d005109d9fc25d460c080faa45b0cc3ad881ea002941c67b6e41984e",
+        "identity_declared": true,
+        "provider": "first_k",
+        "revision": null,
+        "revision_source": "unavailable",
+        "scorer_sha256": "51d9e8bd57bc2e75ceccce80b7d60157c42f9959cadf3d7e9cf738f73fd10d04",
+        "tokenizer_sha256": "67a185c8c30efefa133188f15ba429328086f837a642a17e347a5a2ee437b79d",
+        "top_k": 100
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "duplicate_ids": "descriptive",
+    "found_any": "descriptive",
+    "mrr_10": "quality",
+    "n_relevant": "descriptive",
+    "n_returned": "descriptive",
+    "ndcg_10": "quality",
+    "parsed": "quality",
+    "rank_of_first": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "recall_10": "quality",
+    "recall_100": "quality",
+    "truncated": "descriptive",
+    "unknown_ids": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "corpus_id": "scifact",
+    "family": "first_k",
+    "price_tier": "free",
+    "provider": "first_k",
+    "top_k": 100
+  },
+  "primary_metric": "ndcg_10",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "reparsed_from": "sf_first_k_n200_v1_20260928T174607Z",
+  "reparsed_with": {
+    "parser": "examples/_shared/retrieval.parse_ranking",
+    "scorer_sha256": "ada829012438c24e1cd33a4a7d315af065b098e59ff508a5479b72306c66db3c"
+  },
+  "run_id": "sf_first_k_n200_v1_20260928T174607Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "duplicate_ids": 0.0,
+    "found_any": 0.035,
+    "latency_ms": 0.253425,
+    "mrr_10": 0.0,
+    "n_relevant": 1.135,
+    "n_returned": 100.0,
+    "ndcg_10": 0.0,
+    "parsed": 1.0,
+    "rank_of_first": 2.34,
+    "recall_10": 0.0,
+    "recall_100": 0.035,
+    "total_cost_usd": 0.0,
+    "unknown_ids": 0.0
+  },
+  "warmup_ms": 66.207
+}

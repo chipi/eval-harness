@@ -148,6 +148,19 @@ data/runs-*/
 !data/runs-superseded/README.md
 
 # --- re-allowed, and only these ---------------------------------------------------
+
+# data/runs-reparsed/ — the SciFact rankings rebuilt from each run's stored LLM reply
+# with the corrected parser. `rescore` cannot produce these: this adapter parses at
+# CALL time and writes the resulting ranking as its output, so the parser bug is baked
+# into every stored output and recomputing scores from them changes nothing. Committed
+# because REPORT_RETRIEVAL's §3.1 table quotes these figures, and round 2's H5 was
+# exactly a headline number with no committed run behind it.
+!data/runs-reparsed/
+data/runs-reparsed/*/*
+!data/runs-reparsed/*/metrics.json
+!data/runs-reparsed/*/predictions.jsonl
+!data/runs-reparsed/README.md
+
 !data/runs-rescored/
 data/runs-rescored/*/outputs/
 data/runs-rescored/*/*
