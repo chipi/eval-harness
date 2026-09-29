@@ -195,6 +195,42 @@ some tasks that this much data cannot demonstrate.** What the data does rule out
 large one.
 
 
+
+### If you are self-hosting anyway: small ML or an open-weight LLM?
+
+Both run on your hardware at $0 marginal cost, so the choice is quality against the
+machine it demands. They are not close in size.
+
+| experiment | small ML | size | score | best open-weight LLM | size | score | verdict |
+|---|---|---|---|---|---|---|---|
+| Classification · AG News | `bert_mini` | **44 MB** | **0.9450** | Llama-3.3-70B | ~141 GB | 0.8800 | **ML wins by 0.0650, at 1/3,205 the size** |
+| Extraction · Few-NERD | `span_marker` | **476 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
+| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | ~765 GB | 0.3460 | **tie, at 1/478** |
+| Retrieval · SciFact | `e5_base` | **438 MB** | 0.7191 | GLM-4.5-Air | ~221 GB | **0.7437** | LLM wins by 0.0246, **not separated** |
+| Classification · DBpedia | *blocked* | — | — | GLM-4.6 | ~714 GB | **0.9857** | **LLM by default** — the ML arm would not load |
+
+**Three wins or ties for a model between 44 MB and 1.6 GB, against LLMs 109× to 3,205×
+larger.** The one place the LLM clearly earns its size is SciFact — and even there the
+margin is not statistically separated, and the *best* configuration uses **both**:
+`e5_base` retrieving, `glm_s` reranking, for 0.7891.
+
+Two practical consequences a DGX owner should weigh:
+
+- **Two of these "self-hostable" LLMs do not fit one 640 GB node at BF16.**
+  DeepSeek-V4.1-Flash is ~765 GB and GLM-4.6 ~714 GB; running them means quantisation,
+  multi-node, or offload — each of which costs throughput and changes the quality you
+  measured. The small ML models fit in RAM on a laptop.
+- **Concurrency is where the size gap really lands.** A 44 MB classifier at 7 ms/item
+  saturates a CPU core and scales by forking; a 70B model occupies most of a GPU and
+  scales by buying more of them. The scores above are per-item quality, and they say
+  nothing about how many items per second each arrangement sustains — **this report
+  measures no throughput at all.**
+
+**So the ordering for a hardware owner is: fine-tuned small ML first, open-weight LLM
+where no fine-tuned model exists or the task is generative, and a rented API only when
+neither can run.** DBpedia is the honest exception, and only because its ML arm is
+blocked rather than beaten.
+
 ### Every experiment has a $0 answer, if you own hardware
 
 Combining the tiers with the separation tests: in **all five** experiments there is a

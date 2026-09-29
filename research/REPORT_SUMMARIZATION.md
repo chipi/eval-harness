@@ -24,7 +24,8 @@
 
 | the choice | what the data says |
 |---|---|
-| **Deploy — on your own hardware** | **`bart_l`** — fine-tuned on this corpus, MIT weights, 1.6 GB, **$0**, **0.3461**. It wins outright. Cost of choosing it: **11.0 s/item** on CPU against 1.6 s for a hosted call. |
+| **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. |
+| **Self-host · open-weight LLM** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **763B params / ~765 GB in BF16**. **0.3460** — statistically identical, **478× the weights**, and it will not fit one 640 GB node unquantised. |
 | **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
 | **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **16th of 25** and is 8.9% below free. |
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |

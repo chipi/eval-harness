@@ -23,7 +23,8 @@
 
 | the choice | AG News (headroom) | DBpedia-14 (saturated) |
 |---|---|---|
-| **Deploy — on your own hardware** | **`bert_mini`** — 44 MB, fine-tuned, Apache weights, **$0**, **7 ms/item**, **0.9450**. Wins outright. | **`glm_m`** — MIT open-weight, **$0**, **0.9857**. Costs **0.0071** against the overall winner, which the test **cannot resolve**. |
+| **Self-host · small ML** | **`bert_mini`** — BERT-mini fine-tuned on AG News, **44 MB**, 7 ms/item. **0.9450 — wins outright.** | **Blocked.** The fine-tuned DBpedia checkpoint will not load here; the only small model that ran is *zero-shot* `bart_mnli` at **0.6286 — last of 25**. |
+| **Self-host · open-weight LLM** | **`llama_m`** — Llama-3.3-70B, **70.6B / ~141 GB**. **0.8800** — **0.0650 worse** than a model **3,205× smaller**. | **`glm_m`** — GLM-4.6, MIT, **357B / ~714 GB**. **0.9857**, and **not separated** from the overall winner. **The only viable self-host answer here**, because the ML arm is blocked. |
 | **Deploy — rented API** | **`anthropic_m`** at **$351/month per 1M items**, 0.9100 — **3.7% worse than free**. | **`qwen_m`** at **$51/month**, **0.9929** — the best score here, and **proprietary: no self-host option at any price**. |
 | **What should I not deploy?** | `anthropic_l` at $875/mo: **−4.8%** vs free | `anthropic_l` at **$1,351/mo**: **−0.4%** vs $51/mo |
 | **Does paying more help?** | Marginally: **+2.3%** per 10× cost | **Barely: +0.9%** per 10× cost |

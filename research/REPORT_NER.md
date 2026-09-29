@@ -24,7 +24,8 @@
 
 | the choice | what the data says |
 |---|---|
-| **Deploy — on your own hardware** | **`span_marker`** — 476 MB, fine-tuned on this corpus, CC-BY-SA-4.0 weights, **$0**, **0.76 s/item**, **0.7674**. The only unambiguous winner in this repo: **separated from 26 of 26**. Faster *and* better than every hosted arm. |
+| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **476 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
+| **Self-host · open-weight LLM** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B params / ~52 GB**. **0.6733** — **0.0941 worse** than a model **109× smaller**. The clearest ML-beats-LLM result in the set. |
 | **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 476 MB model. |
 | **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
 | **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
