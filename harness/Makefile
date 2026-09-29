@@ -24,7 +24,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge check ci test clean clean-cache
+        validate judge check ci test smoke-fixture clean clean-cache
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -225,7 +225,20 @@ run-promote:
 validate:
 	$(PYTHON) scripts/validate_tree.py
 
-test:
+# MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
+#
+# `data/materialized/` is regenerated rather than committed, so in a FRESH CLONE
+# smoke_v1 is absent, the demo arm cannot run, and the resume and cost-cap tests skip
+# themselves -- honestly, but they skip. That is the whole of this harness's
+# crash-durability and spend-guard coverage, absent for anyone who is not the author.
+# smoke_v1's sources ARE committed (they are synthetic), so rebuilding it costs nothing
+# and is deterministic: `all hashes verified` or the build fails.
+#
+# `-` so a machine that cannot materialize still runs the rest of the suite.
+smoke-fixture:
+	@test -d data/materialized/smoke_v1 || $(PYTHON) scripts/materialize.py --dataset-id smoke_v1 >/dev/null 2>&1 || true
+
+test: smoke-fixture
 	$(PYTHON) scripts/self_test.py
 
 check: validate test
