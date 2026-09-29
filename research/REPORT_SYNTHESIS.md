@@ -236,15 +236,65 @@ model beats the top of that range by 11.4%.
 | **SciFact** | best | `glm_s` | 0.7437 | $711 | — |
 | | dearest | `glm_m` | 0.7419 | $2,288 | −0.2% |
 
-Three rows are worth stopping on:
+One row per experiment, since each says something different:
 
-- **DBpedia: $1,351/month buys −0.4% quality** against $51/month. Twenty-six times the
-  price for slightly worse output, and the difference is not statistically separable.
-- **Few-NERD: $2,463/month buys −11.4%** against a free model on a CPU.
-- **Summarisation: $9,826/month buys −8.9%** against a free model, and −0.0% against
-  $191/month.
+- **Summarisation: $9,826/month buys −8.9%** against free, and **−0.0% against $191/month.**
+  The dearest arm is beaten by a model costing 51× less.
+- **AG News: $875/month buys −4.8%** against free. The gap to the best paid arm
+  ($351/month) is −3.7%, so here the money is buying a *deficit* either way.
+- **DBpedia: $1,351/month buys −0.4%** against $51/month — 26× the price for slightly
+  worse output, and not statistically separable. **But this is also the one experiment
+  where paying beats free by a mile** (+58%); see the table below for why.
+- **Few-NERD: $2,463/month buys −11.4%** against a free model on a CPU. The largest
+  free-vs-paid gap in the set, and the free arm separates from all 26 opponents.
+- **SciFact: $2,288/month buys −0.2%** against $711/month, and the $711 arm buys **+3.4%
+  over free** — the one case where paying is defensible, and even there the free arm is
+  not statistically separated from it.
 
-In no experiment did the most expensive option win. In three, the free option did.
+In no experiment did the most expensive option win. In three of five, the free option did.
+
+### What "free" actually gets you, in all five
+
+The free-vs-paid comparison in full, because the two cases where free *loses* are the more
+instructive ones:
+
+| experiment | best free arm | quality | rank | best paid arm | quality | $/month | verdict |
+|---|---|---|---|---|---|---|---|
+| Few-NERD | `span_marker` 476 MB | 0.7674 | **1** | `openai_m` | 0.6864 | $2,324 | **free wins +11.8%** |
+| AG News | `bert_mini` 44 MB | 0.9450 | **1** | `anthropic_m` | 0.9100 | $351 | **free wins +3.8%** |
+| summarisation | `bart_l` 1.6 GB | 0.3461 | **1** | `deepseek_m` | 0.3460 | $191 | free wins +0.0% *(a tie)* |
+| SciFact | `e5_base` 438 MB | 0.7191 | 9 | `glm_s` | 0.7437 | $711 | paid wins +3.4%, **not separated** |
+| DBpedia | `bart_mnli` zero-shot | 0.6286 | **25** | `qwen_m` | 0.9929 | $51 | **paid wins +58%** |
+
+**The DBpedia row is not a counterexample — it is the control.** Its free arm is
+`bart_mnli`, a *zero-shot* NLI model that has never seen the task, because the fine-tuned
+DBpedia checkpoint could not be loaded on this machine (a pickle checkpoint blocked by
+[CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6); see
+[`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](HANDOVER_DBPEDIA_BLOCKED_ARM.md)). It is the only
+experiment where **no fine-tuned free arm ran**, and it is the only experiment where free
+loses badly.
+
+So the axis is not free-versus-paid. It is:
+
+> **trained on your task** → beats everything, at $0
+> **not trained on your task** → loses to everything, also at $0
+
+Few-NERD proves it directly with a matched pair: `span_marker` (fine-tuned on Few-NERD)
+scores 0.7674 and `gliner` (same model class, never trained on it) scores 0.4540 — a
+**+0.3134** gap from exposure alone, with price held at zero on both sides.
+
+SciFact is the genuinely marginal case and deserves its own reading: `e5_base` is
+retrieval-*trained* but not on SciFact specifically, and it lands mid-field — beaten by
+0.0246 which the separation test cannot resolve. That is what "partially trained for the
+task" looks like: not a win, not a rout, and cheap enough that $711/month for +3.4% is a
+real decision rather than an obvious one.
+
+**And free is not only cheaper, it is faster.** `bert_mini` answers in 0.01 s against
+1.92 s for the best paid arm on the same task — 192× — and `e5_base` in 0.06 s against
+3.12 s. The exception is `bart_l` at 11.01 s — 23rd slowest of 25, though not last: two hosted
+arms (`mistral_l` 11.04 s and `qwen_s` 25.04 s) are slower still. It is a 1.6 GB seq2seq
+model generating on a CPU. Free buys latency on *classification and embedding*, and costs
+it on *generation*.
 
 ### The cheapest arm you cannot tell apart from the best
 
