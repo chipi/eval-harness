@@ -35,6 +35,17 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
     as "you moved to the DGX" rather than "the model got faster".
     """
     fa, fb = a.get("fingerprint"), b.get("fingerprint")
+    # DIFFERENT FINGERPRINT VERSIONS HASH DIFFERENT THINGS. v2 added
+    # `data.references_sha256`, so a v1 hash and a v2 hash are not comparable even when
+    # everything either one covers is identical -- and a bare "the hashes differ" would
+    # send a reader looking for a change that is not there. Said out loud, because a
+    # version field nothing reads is decoration.
+    if fa and fb and fa.get("version") != fb.get("version"):
+        print(f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs "
+              f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not, so\n"
+              "  the two hashes cannot be compared directly — the field-by-field list\n"
+              "  below is the comparison that still means something. Re-run the older\n"
+              "  arm to put both on the same version.")
     if not (fa and fb):
         print(
             "\n  NOTE: at least one run predates fingerprinting, so what else changed"

@@ -92,7 +92,8 @@ def test_cli_help_works() -> None:
                    "leaderboard", "sweep", "env_check", "holdout_significance",
                    "pair_test", "family_test", "classification_report", "bootstrap_test",
                    "rank_stability", "extraction_report", "retrieval_report", "rescore",
-                   "check_terminology", "check_report_claims", "check_links"):
+                   "check_terminology", "check_report_claims", "check_links",
+                   "check_model_facts"):
         r = run(f"scripts/{script}.py", "--help")
         check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
 
@@ -396,7 +397,8 @@ def test_example_scorer_suites_pass() -> None:
                             ("test_retrieval_scorer.py", "ranked-list scorer"),
                             ("test_code_hashes.py", "scoring-code hashes"),
                             ("check_report_claims.py", "report claims vs committed runs"),
-                            ("check_links.py", "markdown links and anchors")):
+                            ("check_links.py", "markdown links and anchors"),
+                            ("check_model_facts.py", "model facts vs the evidence capture")):
         path = HERE / script
         if not path.is_file():
             continue
@@ -406,6 +408,24 @@ def test_example_scorer_suites_pass() -> None:
             continue
         check(f"{subject}: all assertions pass", r.returncode == 0,
               (r.stdout or r.stderr or "").strip()[-160:])
+
+
+def test_fingerprint_version_is_read_somewhere() -> None:
+    """A version field nothing reads is decoration.
+
+    v2 added `data.references_sha256`, so a v1 and a v2 hash are not comparable even
+    when everything v1 covers is identical. `compare_runs` must say so rather than
+    reporting a bare hash mismatch and sending a reader hunting for a change that is
+    not there.
+    """
+    src = (HERE / "compare_runs.py").read_text()
+    check("compare_runs notices a fingerprint version mismatch",
+          'fa.get("version") != fb.get("version")' in src)
+    from _fingerprint import build_fingerprint  # noqa: PLC0415
+    fp = build_fingerprint(root=HERE.parent, dataset={"dataset_id": "d", "items": []},
+                           reference_id=None, reference_tier=None, config_id="c",
+                           params={}, adapter_id="a", adapter_path=None)
+    check("new fingerprints are version 2", fp.get("version") == 2, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
@@ -609,6 +629,7 @@ def main() -> int:
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
         test_example_scorer_suites_pass,
+        test_fingerprint_version_is_read_somewhere,
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,

@@ -64,6 +64,10 @@ research/    reports, handovers, and an append-only journal of how each example 
 
 ## The worked examples
 
+**[`research/KNOWN_ISSUES.md`](research/KNOWN_ISSUES.md)** — what is open, what was
+never measured, and which calls are judgement rather than oversight. Read this first if
+you are reviewing.
+
 **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)** — what all five
 experiments agree on, and where that contradicts how leaderboards are usually read:
 the dearest arm was never the best, four of five leaderboard tops are ties, and **every

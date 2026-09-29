@@ -95,9 +95,25 @@ data/sources/few_nerd_*/
 data/references/gold/few_nerd_*/
 data/references/silver/few_nerd_*/
 
-# Rescored runs are derived: regenerate with `make rescore`. Same reasoning as
-# data/runs/ -- the originals are the record, these are a recomputation of them.
-data/runs-rescored*/
+# Rescored runs are derived -- but NOT regenerable by anyone else, which is the whole
+# point. `rescore.py` reads `outputs/`, and outputs are not committed (model
+# generations from copyrighted articles). So a reader who cannot rescore also cannot
+# check any number in REPORT_NER.md, whose figures ALL come from this directory: it is
+# the uniform instrument that report states, and data/runs still holds the pre-fix
+# glm_l. Scores and per-item rows are therefore committed here too, 8.7 MB, on the same
+# terms as data/runs -- no outputs, no article text, no home paths.
+data/runs-rescored/*/outputs/
+data/runs-rescored/*/*
+!data/runs-rescored/*/metrics.json
+!data/runs-rescored/*/predictions.jsonl
+
+# Every OTHER runs directory stays out: smoke passes, tuning sweeps, the superseded
+# runs, the first-stage pair. They are working artifacts, not the record.
+data/runs-smoke*/
+data/runs-tune*/
+data/runs-pair/
+data/runs-superseded/
+!data/runs-superseded/README.md
 
 # Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
 # same reason, plus one the last sweep learned the hard way -- an untracked directory under
@@ -109,7 +125,6 @@ data/runs-tune*/
 # someone to remember a new line is one forgotten line away from committing 240 run
 # artifacts. `data/runs-tune/` was exactly that -- the comment above already said "any
 # other EVAL_RUNS_DIR" and only `runs-smoke*` was actually listed.
-data/runs-[a-z]*/
 !data/runs/
 # The superseded-runs README is the CONVENTION, not an artifact: runs whose
 # instrument changed are moved there rather than deleted. The runs stay ignored.
