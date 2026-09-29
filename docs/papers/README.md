@@ -58,26 +58,25 @@ Mirroring these is permitted provided the author and licence travel with the cop
 
 ---
 
-## Why nothing is committed
+## What is committed here
 
-Twelve of the twenty-four **could** be mirrored. They are not, for three reasons:
+**The twelve CC-licensed papers above are mirrored in this directory**, 18 MB, with
+[`ATTRIBUTION.md`](ATTRIBUTION.md) carrying the author, title, licence and source of each —
+which is what CC BY and CC BY-SA require of anyone redistributing them. None is modified;
+each is the publisher's PDF byte-for-byte.
 
-1. **A half-mirror misleads.** A `papers/` directory holding 12 of 24 tells a browsing
-   reader that those twelve are the canon and the rest are optional. They are not — the
-   split is by *publisher licensing policy*, which correlates with nothing about
-   importance. nDCG and Holm, two of the most load-bearing citations in the repo, are both
-   in the un-mirrorable half.
-2. **CC BY is an obligation, not a permission slip.** Each mirrored PDF must carry its
-   author and licence. That is twelve ongoing obligations in a public repo, for offline
-   convenience that a script provides on demand.
-3. **It is 20–40 MB of PDFs** in a repository whose entire design is that it commits no
-   corpora, no weights and no third-party content — only recipes. Mirroring papers would
-   be the one exception, and it would be the least defensible one.
+The other twelve are **not** here and are gitignored by name, so `--all` cannot commit them
+by accident.
 
-So: a fetcher, a ledger, and a link. Same reasoning as
-[`data/corpora/`](../../harness/data/corpora/README.md) — **the recipe travels, the bytes
-do not.**
+Two caveats a reader of this directory should have:
 
-If you want the twelve committed anyway, `fetch_papers.py` writes them here and the
-gitignore rule is one line; the licence column above is what an attribution file would be
-built from.
+- **The split follows publisher licensing policy, not importance.** Twelve papers sitting
+  here does not make them the canon. nDCG (Järvelin & Kekäläinen) and Holm — two of the
+  most load-bearing citations in this repo — are both in the *un*-mirrorable half. Read
+  the table above, not the file listing.
+- **Two are CC BY-SA**, which is share-alike: a derivative of them must carry the same
+  licence. Unmodified redistribution, as here, does not trigger that.
+
+This is the one exception to the rule everywhere else in the repo — no corpora, no weights,
+no third-party bytes, only recipes. It is an exception the licences explicitly permit, and
+the obligation that comes with it is discharged in `ATTRIBUTION.md`.

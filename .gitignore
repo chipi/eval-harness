@@ -14,6 +14,21 @@ examples/*/__pycache__/
 # fetches its own; see examples/*/fetch.py.
 examples/*/data/
 
-# Papers are fetched, never committed — see docs/papers/README.md for the
-# licence of each. Twelve of twenty-four may not be redistributed at all.
+# Papers. The twelve under CC BY / CC BY-SA ARE committed, with attribution in
+# docs/papers/ATTRIBUTION.md as those licences require. The other twelve are not
+# redistributable — ten arXiv papers carry the non-exclusive licence, which covers
+# arXiv and not us, and two are behind ACM and JSTOR. `fetch_papers.py --all` pulls
+# those for reading; this rule stops them being committed by accident.
 docs/papers/*.pdf
+!docs/papers/lin-2004-rouge.pdf
+!docs/papers/conll-2003-ner.pdf
+!docs/papers/dror-2018-significance.pdf
+!docs/papers/kryscinski-2019-summarization-critique.pdf
+!docs/papers/wadden-2020-scifact.pdf
+!docs/papers/ding-2021-few-nerd.pdf
+!docs/papers/reimers-2019-sentence-bert.pdf
+!docs/papers/thakur-2021-beir.pdf
+!docs/papers/he-2021-deberta-v3.pdf
+!docs/papers/wang-2022-e5.pdf
+!docs/papers/zaratiana-2023-gliner.pdf
+!docs/papers/zhang-2024-gsm1k.pdf
