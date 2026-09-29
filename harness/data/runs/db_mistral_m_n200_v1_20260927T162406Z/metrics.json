@@ -1,0 +1,146 @@
+{
+  "adapter": "examples/classification-dbpedia-14/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "73604a08b84a7def4f4569102514bdc9e9ec0238",
+    "source": "git"
+  },
+  "config_id": "db_mistral_m_n200_v1",
+  "created_at": "2026-09-27T16:26:11Z",
+  "dataset_id": "dbpedia_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "db_mistral_m_n200_v1",
+      "params": {
+        "family": "mistral",
+        "max_tokens": 200,
+        "model": "eval-mistral-medium",
+        "price_tier": "mid",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.4,
+        "usd_per_mtok_out": 2.0
+      }
+    },
+    "data": {
+      "dataset_id": "dbpedia_280",
+      "items_sha256": "a7419dc6a5876490c3ed1f96eae9398969a2f8b794e744d45ace5790bc0146f2",
+      "n_items": 280,
+      "reference_id": "gold/dbpedia_280",
+      "reference_tier": "gold"
+    },
+    "hash": "2cffe42260d6d6d6a500d72e30d61e06c85855bcd253cb1d57716f5192f81b7f",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "67a5bc27da0455c4f8bf21c03f399134838c72cfe861b282f56d7996c8432fcb"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "model": {
+        "alias": "eval-mistral-medium",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/mistralai/mistral-medium-3.1",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "labels": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
+        "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "provider": "litellm",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "family": "mistral",
+    "max_tokens": 200,
+    "model": "eval-mistral-medium",
+    "price_tier": "mid",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.4,
+    "usd_per_mtok_out": 2.0
+  },
+  "primary_metric": "correct",
+  "providers_seen": {
+    "Mistral": 280
+  },
+  "reference_tier": "gold",
+  "run_id": "db_mistral_m_n200_v1_20260927T162406Z",
+  "scores": {
+    "answer_words": 1.0,
+    "correct": 0.957143,
+    "correct_after_repair": 0.0,
+    "cost_usd": 6.7e-05,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 439.4898,
+    "parsed": 1.0,
+    "reasoning_tokens": 0.0,
+    "tokens_in": 153.167857,
+    "tokens_out": 2.953571,
+    "total_cost_usd": 0.0188088,
+    "total_tokens_in": 42887.0,
+    "total_tokens_out": 827.0,
+    "truncated": 0.0
+  },
+  "warmup_ms": 1472.385
+}

@@ -1,0 +1,157 @@
+{
+  "adapter": "summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "eval-harness-scenario",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "cnn_deepseek_m_n200_v1",
+  "created_at": "2026-09-25T23:42:13Z",
+  "dataset_id": "cnn_dailymail_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_deepseek_m_n200_v1",
+      "params": {
+        "family": "deepseek",
+        "max_tokens": 1200,
+        "model": "eval-deepseek-41flash",
+        "price_tier": "mid",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.15,
+        "usd_per_mtok_out": 0.5
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold"
+    },
+    "hash": "0d79abdd85ea51be7400e9988bd574d0b23f47ec53407d9ef27e8c06e5e6663f",
+    "host": {
+      "cpu_count": 12,
+      "label": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "summarization-cnn-dailymail/adapter.py",
+        "sha256": "efb387bfca67b4b9f62b8c15f8e1ee8d6837c72a59d72284b6189fba75329bd7"
+      },
+      "harness": {
+        "commit": "d9def7c7b0f9",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "alias": "eval-deepseek-41flash",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/deepseek/deepseek-v4.1-flash",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "compression": "descriptive",
+    "concision": "quality",
+    "coverage": "quality",
+    "fmt_bullets": "descriptive",
+    "fmt_label": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_narration": "descriptive",
+    "fmt_overlong": "descriptive",
+    "fmt_paragraphs": "descriptive",
+    "grounding": "quality",
+    "length_vs_reference": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "reference_words": "descriptive",
+    "rouge1": "quality",
+    "rougeLsum": "quality",
+    "summary_words": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "deepseek",
+    "max_tokens": 1200,
+    "model": "eval-deepseek-41flash",
+    "price_tier": "mid",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.15,
+    "usd_per_mtok_out": 0.5
+  },
+  "primary_metric": "coverage",
+  "providers_seen": {
+    "Alibaba": 2,
+    "DeepInfra": 122,
+    "DekaLLM": 1,
+    "GMICloud": 1,
+    "Makora": 2,
+    "Modal": 1,
+    "Novita": 33,
+    "OpenInference": 2,
+    "Relace": 2,
+    "Sail Research": 1,
+    "StreamLake": 1,
+    "Together": 32
+  },
+  "reference_tier": "gold",
+  "run_id": "cnn_deepseek_m_n200_v1_20260925T233650Z",
+  "scores": {
+    "compression": 0.145358,
+    "concision": 0.253878,
+    "cost_usd": 0.000148,
+    "coverage": 0.346039,
+    "fmt_bullets": 0.0,
+    "fmt_label": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_narration": 0.0,
+    "fmt_overlong": 0.01,
+    "fmt_paragraphs": 0.0,
+    "grounding": 0.433848,
+    "latency_ms": 1595.415005,
+    "length_vs_reference": 1.767254,
+    "reasoning_tokens": 0.0,
+    "reference_words": 34.735,
+    "rouge1": 0.36117,
+    "rougeLsum": 0.318812,
+    "summary_words": 57.11,
+    "tokens_in": 736.075,
+    "tokens_out": 75.59,
+    "total_cost_usd": 0.02964125,
+    "total_tokens_in": 147215.0,
+    "total_tokens_out": 15118.0,
+    "truncated": 0.0
+  },
+  "warmup_ms": 1957.395
+}

@@ -25,7 +25,7 @@
 | the choice | what the data says |
 |---|---|
 | **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. |
-| **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **763B / ~765 GB**. **0.3460** — statistically identical to the 1.6 GB model, at **478× the weights**. Needs a multi-node cluster. |
+| **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **552B backbone params** — but **~765 GB of weights in the published checkpoint**, because the card's headline count excludes a 196B Engram memory that ships with it. **0.3460** — statistically identical to the 1.6 GB model. Whether it fits one node depends on whether the Engram memory must be GPU-resident; **this report does not know, and no longer claims it cannot fit.** |
 | **Self-host · open-weight LLM, ≤128 GB** | **`llama_m`** — Llama-3.3-70B at **int8, ~70 GB**. **0.3382**, costing **0.0078** against a 765 GB model. Native-precision alternative: `mistral_s` (24B, 48 GB) at 0.3255. |
 | **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB** — 0.3382, **no further loss on paper**. If you would rather not quantise that far: `mistral_s` at 48 GB native, 0.3255. |
 | **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
@@ -85,8 +85,8 @@ same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthrop
 substantially by luck.
 
 **And ten times the data does not stabilise a ladder.** Two *independent* 100-article
-evals of these arms agree at only ρ = 0.753 and crown the same winner 58% of the time; at
-20 articles it is ρ = 0.346 and 15%. What is stable is membership, not order —
+evals of these arms agree at only ρ = 0.80 and crown the same winner 1% of the time; at
+20 articles it is ρ = 0.42 and 14%. What is stable is membership, not order —
 `deepseek_m` has P(top 5) = 1.00, `llama_l` 0.95, `llama_m` 0.90, and everything from 13th
 down has P(top 5) = 0.00.
 
@@ -429,7 +429,7 @@ cost *and* speed simultaneously. No statistics are required for that, and it ans
 question a team actually has — not "which is best" but "which are not worth considering".
 
 **A ladder needs more data than a decision, and possibly more than exists.** §3.6 measures
-it: two independent 100-article evals of these arms still disagree at ρ = 0.753. The gap
+it: two independent 100-article evals of these arms still disagree at ρ = 0.80. The gap
 between 1st and 3rd here is 0.0078 coverage; between 2nd and 3rd, 0.0005. Closing the
 latter needs a sample in the six figures. The correct output is therefore a *set* — the
 six arms with P(top 5) ≥ 0.47 — not a podium.
@@ -462,7 +462,7 @@ dearest, which is worth noticing before paying for either.
 - **Which model is best.** 34 of 276 pairs separate on the primary facet, and none of them
   are inside the top six. The output is a set, not a winner.
 - **Whether the ordering would hold on another 200 articles.** Measured, and it largely
-  would not: two independent 100-article evals agree at rho = 0.753 (section 3.6).
+  would not: two independent 100-article evals agree at rho = 0.80 (section 3.6).
 - **Anything about model size.** The tier axis is price, and confounds generation.
 - **Whether abstractive outputs are accurate.** No metric here detects fabrication;
   `grounding` measures extractiveness and cannot distinguish paraphrase from invention.

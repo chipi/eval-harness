@@ -1,0 +1,107 @@
+{
+  "adapter": "examples/classification-ag-news/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "1e80be6531e2f71118762f498b4493e946f0c944",
+    "source": "git"
+  },
+  "config_id": "ag_constant_n200_v1",
+  "created_at": "2026-09-27T09:03:24Z",
+  "dataset_id": "ag_news_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "ag_constant_n200_v1",
+      "params": {
+        "family": "baseline",
+        "label": "World",
+        "price_tier": "free",
+        "provider": "constant"
+      }
+    },
+    "data": {
+      "dataset_id": "ag_news_200",
+      "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
+      "n_items": 200,
+      "reference_id": "gold/ag_news_200",
+      "reference_tier": "gold"
+    },
+    "hash": "74d665148440c073f334b580b95a7accdd5b1dc8c568b60074d457b6c7cd5aa9",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "668097eb04f061c04d590ec034aca96b3dc4420872f29451068c7d8b9c4dea17"
+      },
+      "harness": {
+        "commit": "1e80be6531e2",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "id": "constant:World",
+        "identity_declared": true,
+        "label": "World",
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "provider": "constant",
+        "revision": null,
+        "revision_source": "unavailable"
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "baseline",
+    "label": "World",
+    "price_tier": "free",
+    "provider": "constant"
+  },
+  "primary_metric": "correct",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "ag_constant_n200_v1_20260927T090323Z",
+  "scores": {
+    "answer_words": 1.0,
+    "correct": 0.25,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 0.002135,
+    "parsed": 1.0,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": 0.401
+}

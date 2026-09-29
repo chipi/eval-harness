@@ -35,19 +35,19 @@ LLM?** Yes, for a task you can define and label: every model fine-tuned on its d
 ranked **first** (3 of 3), and every zero-shot model ranked **last** (3 of 3). The
 predictor is training exposure, not model size.
 
-**And "paying" splits in two.** 13 of the 24 hosted arms have **downloadable weights** and
+**And "paying" splits in two.** 14 of the 24 hosted arms have **downloadable weights** and
 could run on hardware you own — renting them was a convenience. Head to head, **a
 proprietary model never separated from the best open-weight model in any of the five
 experiments**, and open weights won outright on one. At 1M items/month that tier is
-$14,255 rented and **$0 self-hosted**; the 11 genuinely proprietary arms have no floor
-below $40,422.
+**$14,868** rented and **$0 self-hosted**; the 10 genuinely proprietary arms have no floor
+below **$39,809**.
 
 **Combining the two: every experiment has a $0 answer.** In four of five the
 self-hostable option *is* the winner; in the fifth it trails by 0.0071, which the data
 cannot resolve. Across five unrelated tasks, the best configuration runnable entirely on
 your own machines is either first or statistically tied with first.
 
-**And hardware buys almost nothing.** Of the 13 open-weight arms, four exceed 700 GB —
+**And hardware buys almost nothing.** Of the 14 open-weight arms, several are cluster-scale —
 cluster models, not workstation ones. But capping the budget costs almost no quality:
 **four of five ≤128 GB answers equal the unlimited-hardware answer, and four of five
 ≤64 GB answers equal the ≤128 GB one.** Going from a 765 GB model to a 35 GB one costs
@@ -169,23 +169,29 @@ only.
 
 ### Three tiers, not two: the "paid" arms split in half
 
-Calling the 24 hosted arms "paid" conflates two very different things. **13 of them have
+Calling the 24 hosted arms "paid" conflates two very different things. **14 of them have
 downloadable weights** and could run on hardware you own; paying OpenRouter for them was a
-convenience, not a requirement. The other 11 have no such option.
+convenience, not a requirement. The other 10 have no such option.
 
-Verified against the HuggingFace API and OpenRouter's endpoint list on 2026-09-29 — a
-model served by many independent providers (DeepInfra, Novita, Parasail…) necessarily has
-distributable weights; one served only by its vendor does not.
+Verified against the HuggingFace API on 2026-09-29.
+
+> **A correction, because the first version of this section used a broken test.** It
+> inferred openness from OpenRouter's endpoint list — *many independent providers implies
+> distributable weights; one provider implies closed*. The first half holds; **the second
+> does not.** `mistral_l` is served only by Mistral and was filed as proprietary, but
+> `mistralai/Mistral-Large-3` is on HuggingFace under **Apache-2.0**. A vendor can publish
+> weights and still be the only one serving them. Found by review; the split is 14/10, not
+> 13/11, and every figure in this section is recomputed.
 
 | tier | arms | what you can do with it |
 |---|---|---|
 | **1 · Local ML** | 10 task-specific models | download, fine-tune, self-host. $0 at the margin |
-| **2 · Open-weight LLM** | **13 of the 24** — DeepSeek ×3 (MIT), GLM ×3 (MIT), Gemma ×3, Llama ×3, `mistral_s` (Apache-2.0) | download and self-host, **or** rent. We rented |
-| **3 · Proprietary** | **11 of the 24** — Anthropic ×3, OpenAI ×3, Qwen ×3, `mistral_l`, `mistral_m` | rent only. No floor below the API price |
+| **2 · Open-weight LLM** | **14 of the 24** — DeepSeek ×3 (MIT), GLM ×3 (MIT), Gemma ×3, Llama ×3, `mistral_s` and **`mistral_l`** (Apache-2.0) | download and self-host, **or** rent. We rented |
+| **3 · Proprietary** | **10 of the 24** — Anthropic ×3, OpenAI ×3, Qwen ×3, `mistral_m` | rent only. No floor below the API price |
 
-Licence nuance inside tier 2: **nine are unrestricted** (MIT or Apache-2.0 — all DeepSeek,
-all GLM, `gemma_l`, `gemma_m`, `mistral_s`); **four are gated** behind acceptance and carry
-use conditions (`gemma_s` under the Gemma licence, all three Llama arms). Gated still means
+Licence nuance inside tier 2: **ten are unrestricted** (MIT or Apache-2.0 — all DeepSeek,
+all GLM, `gemma_l`, `gemma_m`, `mistral_s`, `mistral_l`); **four are gated** behind
+acceptance and carry use conditions (`gemma_s` under the Gemma licence, all three Llama arms). Gated still means
 self-hostable; it does not mean unconditionally reusable.
 
 ### Best open-weight vs best proprietary, head to head
@@ -216,23 +222,27 @@ machine it demands. They are not close in size.
 
 | experiment | small ML | size | score | best open-weight LLM | size | score | verdict |
 |---|---|---|---|---|---|---|---|
-| Classification · AG News | `bert_mini` | **44 MB** | **0.9450** | Llama-3.3-70B | ~141 GB | 0.8800 | **ML wins by 0.0650, at 1/3,205 the size** |
+| Classification · AG News | `bert_mini` | **44 MB** | **0.9450** | Llama-3.3-70B | ~141 GB | 0.8800 | ML ahead by 0.0650 at 1/3,205 the size — **not separated under Holm** (p = 0.0136 against a 0.0083 threshold) |
 | Extraction · Few-NERD | `span_marker` | **476 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
-| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | ~765 GB | 0.3460 | **tie, at 1/478** |
+| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, ~765 GB checkpoint | 0.3460 | **tie** |
 | Retrieval · SciFact | `e5_base` | **438 MB** | 0.7191 | GLM-4.5-Air | ~221 GB | **0.7437** | LLM wins by 0.0246, **not separated** |
 | Classification · DBpedia | *blocked* | — | — | GLM-4.6 | ~714 GB | **0.9857** | **LLM by default** — the ML arm would not load |
 
 **Three wins or ties for a model between 44 MB and 1.6 GB, against LLMs 109× to 3,205×
-larger.** The one place the LLM clearly earns its size is SciFact — and even there the
+larger** — though only Few-NERD's is a *separated* win; AG News's 0.0650 lead does not
+survive Holm over the full family, and summarisation's 0.0001 is a tie by any reading. The one place the LLM clearly earns its size is SciFact — and even there the
 margin is not statistically separated, and the *best* configuration uses **both**:
 `e5_base` retrieving, `glm_s` reranking, for 0.7891.
 
 Two practical consequences a DGX owner should weigh:
 
-- **Two of these "self-hostable" LLMs do not fit one 640 GB node at BF16.**
-  DeepSeek-V4.1-Flash is ~765 GB and GLM-4.6 ~714 GB; running them means quantisation,
-  multi-node, or offload — each of which costs throughput and changes the quality you
-  measured. The small ML models fit in RAM on a laptop.
+- **Several of these "self-hostable" LLMs are cluster-scale, and the published
+  parameter counts understate them.** DeepSeek-V4.1-Flash is advertised as 552B backbone
+  parameters; its checkpoint totals ~765 GB, because a 196B Engram memory ships with it
+  and the headline count excludes it. GLM-4.6 is ~714 GB. Whether either fits a given
+  node depends on what must stay GPU-resident — a question about serving strategy that
+  a parameter count cannot answer and **this report does not attempt to.** The small ML
+  models fit in RAM on a laptop, which needs no such caveat.
 - **Concurrency is where the size gap really lands.** A 44 MB classifier at 7 ms/item
   saturates a CPU core and scales by forking; a 70B model occupies most of a GPU and
   scales by buying more of them. The scores above are per-item quality, and they say
@@ -247,7 +257,7 @@ blocked rather than beaten.
 
 ### What you would actually install on a 128 GB machine
 
-"Open-weight" and "runnable" are not the same thing. Of the 13 open-weight arms here,
+"Open-weight" and "runnable" are not the same thing. Of the 14 open-weight arms here,
 **four exceed 700 GB** at native precision and one is 3.2 TB — those are cluster models,
 not something you put on a workstation. So the practical question is: *what is the best
 open-weight model that fits the box I have?*
@@ -320,8 +330,8 @@ price** (`qwen_m`, one vendor, no published weights).
 competitive" but: *across five unrelated tasks, the best configuration you can run
 entirely on your own machines is either the outright winner or statistically tied with it.*
 
-The bill you avoid is **$14,255/month** at 1M items for the open-weight tier, and the
-proprietary tier's **$40,422/month** floor becomes irrelevant rather than merely expensive.
+The bill you avoid is **$14,868/month** at 1M items for the open-weight tier, and the
+proprietary tier's **$39,809/month** floor becomes irrelevant rather than merely expensive.
 
 ### What that means if you own the hardware
 
@@ -329,8 +339,8 @@ At 1M items/month, summed across the whole tier:
 
 | | inference bill, rented | inference bill, self-hosted |
 |---|---|---|
-| tier 2 (13 open-weight arms) | $14,255/month | **$0** |
-| tier 3 (11 proprietary arms) | $40,422/month | **not possible** |
+| tier 2 (14 open-weight arms) | $14,868/month | **$0** |
+| tier 3 (10 proprietary arms) | $39,809/month | **not possible** |
 
 For someone with a DGX, tier 2 collapses into tier 1 economically: **the marginal cost of
 an open-weight LLM becomes electricity, and the quality question stops being a cost
@@ -677,7 +687,7 @@ that the winner does **not** statistically separate from:
 | experiment | tied with the winner | cheapest tied arm | $/1k items | vs the dearest arm |
 |---|---|---|---|---|
 | Summarisation · CNN/DM | 13 arms | `deepseek_s` | $0.069 | **143× cheaper** |
-| Classification · DBpedia | 18 arms | `gemma_m` | $0.012 | **116× cheaper** |
+| Classification · DBpedia | 18 arms | `gemma_m` | $0.012 | **115× cheaper** |
 | Classification · AG News | 9 arms | `gemma_s` | $0.011 | **82× cheaper** |
 | Retrieval · SciFact | 12 arms | `deepseek_s` | $0.300 | 8× cheaper |
 | Extraction · Few-NERD | 0 arms | — | — | *no paid arm ties the winner* |

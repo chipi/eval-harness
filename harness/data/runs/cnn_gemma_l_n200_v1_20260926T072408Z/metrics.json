@@ -1,0 +1,152 @@
+{
+  "adapter": "summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "eval-harness-scenario",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "cnn_gemma_l_n200_v1",
+  "created_at": "2026-09-26T07:32:50Z",
+  "dataset_id": "cnn_dailymail_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_gemma_l_n200_v1",
+      "params": {
+        "family": "gemma",
+        "max_tokens": 1200,
+        "model": "eval-gemma-31b",
+        "price_tier": "large",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.2
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold"
+    },
+    "hash": "f793ae159de55387ee2a7d1d784b25f289489128a97933fb46f81ccac356efec",
+    "host": {
+      "cpu_count": 12,
+      "label": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "summarization-cnn-dailymail/adapter.py",
+        "sha256": "efb387bfca67b4b9f62b8c15f8e1ee8d6837c72a59d72284b6189fba75329bd7"
+      },
+      "harness": {
+        "commit": "e0810991f3fb",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "alias": "eval-gemma-31b",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/google/gemma-4-31b-it",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "compression": "descriptive",
+    "concision": "quality",
+    "coverage": "quality",
+    "fmt_bullets": "descriptive",
+    "fmt_label": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_narration": "descriptive",
+    "fmt_overlong": "descriptive",
+    "fmt_paragraphs": "descriptive",
+    "grounding": "quality",
+    "length_vs_reference": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "reference_words": "descriptive",
+    "rouge1": "quality",
+    "rougeLsum": "quality",
+    "summary_words": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "gemma",
+    "max_tokens": 1200,
+    "model": "eval-gemma-31b",
+    "price_tier": "large",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.1,
+    "usd_per_mtok_out": 0.2
+  },
+  "primary_metric": "coverage",
+  "providers_seen": {
+    "Chutes": 4,
+    "CoreWeave": 73,
+    "DeepInfra": 106,
+    "Friendli": 4,
+    "ModelRun": 11,
+    "Parasail": 1,
+    "Reka": 1
+  },
+  "reference_tier": "gold",
+  "run_id": "cnn_gemma_l_n200_v1_20260926T072408Z",
+  "scores": {
+    "compression": 0.107813,
+    "concision": 0.273896,
+    "cost_usd": 8.7e-05,
+    "coverage": 0.320424,
+    "fmt_bullets": 0.0,
+    "fmt_label": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_narration": 0.0,
+    "fmt_overlong": 0.0,
+    "fmt_paragraphs": 0.0,
+    "grounding": 0.34469,
+    "latency_ms": 2591.08254,
+    "length_vs_reference": 1.308654,
+    "reasoning_tokens": 0.0,
+    "reference_words": 34.735,
+    "rouge1": 0.351098,
+    "rougeLsum": 0.308578,
+    "summary_words": 42.49,
+    "tokens_in": 755.125,
+    "tokens_out": 55.1,
+    "total_cost_usd": 0.0173065,
+    "total_tokens_in": 151025.0,
+    "total_tokens_out": 11020.0,
+    "truncated": 0.0
+  },
+  "warmup_ms": 1534.344
+}

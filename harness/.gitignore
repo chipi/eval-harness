@@ -5,9 +5,42 @@
 data/materialized/*
 !data/materialized/README.md
 
-# experiment output — commit what you promote, not every run
-data/runs/*
+# Experiment output. THE SCORES ARE COMMITTED; the generations are not.
+#
+# An external review found the decisive gap: with every run ignored, not one number in
+# the five reports could be recomputed by anyone but the author on one laptop. A repo
+# whose entire argument is "verify the instrument" was itself unverifiable. So:
+#
+#   metrics.json      1.0 MB total — every leaderboard, cost and headline figure
+#   predictions.jsonl  39 MB total — per-item scores, so every separation test,
+#                                    rank-stability curve and holdout can be rerun
+#   outputs/           NOT committed — the models' generated text, which for
+#                                      CNN/DailyMail is derived from copyrighted
+#                                      articles, and which `rescore` is the only
+#                                      thing that needs
+#
+# Checked before committing: predictions.jsonl carries no article text. `_meta` holds
+# provider metadata, a predicted label, a list of document ids, or Few-NERD entity
+# spans (CC BY-SA 4.0, redistributable with attribution). No summary, no source
+# sentence, no abstract.
+data/runs/*/outputs/
+data/runs/*/*
+!data/runs/*/metrics.json
+!data/runs/*/predictions.jsonl
 !data/runs/README.md
+
+# EXCEPT the 72 summarisation DEV runs (cnn_dailymail_20, three repeats each). They
+# predate `_portable_id` and record an absolute adapter path containing a username and
+# a former project name. They are excluded rather than edited: rewriting a field inside
+# a finished run would leave `fingerprint.hash`, which was computed over the original
+# bytes, describing content that no longer exists -- a worse failure than withholding
+# the file. No MEASUREMENT run is affected; every number in the reports comes from the
+# n=200/280 runs, which are committed. Regenerate these with
+#   make experiment-run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
+data/runs/cnn_*_v1_2026092[56]T*_r[0-9]/metrics.json
+data/runs/cnn_*_v1_2026092[56]T*_r[0-9]/predictions.jsonl
+data/runs/cnn_*_v2_2026092[56]T*_r[0-9]/metrics.json
+data/runs/cnn_*_v2_2026092[56]T*_r[0-9]/predictions.jsonl
 # The ONE worked example that ships, so a fresh checkout sees a walked loop instead of an
 # empty directory: sources -> dataset -> reference -> run -> baseline. It is also what keeps
 # the tree self-consistent — data/baselines/ is committed and V6 requires each baseline's

@@ -1,0 +1,75 @@
+{
+  "adapter": "scripts/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "a1d902558cf4aac6ddc7f8046f6e81ee1b09209b",
+    "source": "git"
+  },
+  "config_id": "demo_v1",
+  "created_at": "2026-09-26T14:42:08Z",
+  "dataset_id": "smoke_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "demo_v1",
+      "params": {
+        "provider": "echo",
+        "sentences": 3
+      }
+    },
+    "data": {
+      "dataset_id": "smoke_v1",
+      "items_sha256": "d56cca0b6c3cea45f104e938e41b7ebdffa753e99e219bf15e1028f23a98a8e9",
+      "n_items": 5,
+      "reference_id": "silver/smoke_v1",
+      "reference_tier": "silver"
+    },
+    "hash": "720c851ec6c5dc195c54234431251057e7f68be6e0184b5cc1c8e6f328409947",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.9.6",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "scripts/adapter.py",
+        "sha256": "bd6da686ee2b261f8a801488285cc6f269e7941629661c52f2decb2975fd8358"
+      },
+      "harness": {
+        "commit": "a1d902558cf4",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "0.125.0",
+        "openai": "2.48.0"
+      },
+      "model": {
+        "identity_declared": false
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {},
+  "n_items": 5,
+  "params": {
+    "provider": "echo",
+    "sentences": 3
+  },
+  "primary_metric": null,
+  "providers_seen": {},
+  "reference_tier": "silver",
+  "repeat_index": 2,
+  "run_id": "demo_v1_20260926T144208Z_r2",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 0.0122,
+    "output_words": 34.8,
+    "overlap_f1": 0.415895,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": null
+}

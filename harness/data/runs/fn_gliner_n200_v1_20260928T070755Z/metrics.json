@@ -1,0 +1,140 @@
+{
+  "adapter": "examples/ner-few-nerd/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "b3cc5d861cf2807c51172aa0b09fe3d2d97f739d",
+    "source": "git"
+  },
+  "config_id": "fn_gliner_n200_v1",
+  "created_at": "2026-09-28T07:08:54Z",
+  "dataset_id": "few_nerd_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "fn_gliner_n200_v1",
+      "params": {
+        "device": "cpu",
+        "family": "gliner",
+        "model": "urchade/gliner_medium-v2.1",
+        "precision": "fp32",
+        "price_tier": "free",
+        "provider": "gliner",
+        "threshold": 0.5
+      }
+    },
+    "data": {
+      "dataset_id": "few_nerd_280",
+      "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
+      "n_items": 280,
+      "reference_id": "gold/few_nerd_280",
+      "reference_tier": "gold"
+    },
+    "hash": "ce2242b15b5c1f63c8eae91fe3f400dd8de6bac39717a9273becd4a9b0697ba9",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "afb00ca70aa2d97dc5fee041d9846518846890eac16eb33b91b998cfa0e4fe44"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "device": "cpu",
+        "id": "urchade/gliner_medium-v2.1",
+        "identity_declared": true,
+        "labels": [
+          "art",
+          "building",
+          "event",
+          "location",
+          "organization",
+          "other",
+          "person",
+          "product"
+        ],
+        "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
+        "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
+        "precision": "fp32",
+        "provider": "gliner",
+        "revision": "40ec419335d09393f298636f471328b722c6da9e",
+        "revision_source": "hf-snapshot",
+        "threshold": 0.5,
+        "weight_files": [
+          "model.safetensors:780735696"
+        ]
+      }
+    },
+    "version": 1
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "device": "cpu",
+    "family": "gliner",
+    "model": "urchade/gliner_medium-v2.1",
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "gliner",
+    "threshold": 0.5
+  },
+  "primary_metric": "f1",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "fn_gliner_n200_v1_20260928T070755Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "f1": 0.453989,
+    "fn": 1.189286,
+    "fp": 1.678571,
+    "latency_ms": 169.427139,
+    "n_gold": 2.735714,
+    "n_predicted": 3.225,
+    "parsed": 1.0,
+    "precision": 0.435778,
+    "recall": 0.517928,
+    "total_cost_usd": 0.0,
+    "tp": 1.546429,
+    "type_penalty": 0.098185,
+    "untyped_f1": 0.552174,
+    "untyped_fn": 0.907143,
+    "untyped_fp": 1.396429,
+    "untyped_tp": 1.828571
+  },
+  "warmup_ms": 11443.551
+}
