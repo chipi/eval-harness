@@ -65,6 +65,7 @@ research/    reports, handovers, and an append-only journal of how each example 
 ## The worked examples
 
 Full index, with what each one found and what it broke: **[`examples/README.md`](examples/README.md)**.
+Every metric, model, dataset and statistical test explained and linked to source: **[`docs/REFERENCE.md`](docs/REFERENCE.md)**.
 
 Five tasks, four metric shapes, one harness. Each ships a download recipe rather than a
 corpus, and each exists because it breaks something the previous one did not.

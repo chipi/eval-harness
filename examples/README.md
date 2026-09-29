@@ -7,13 +7,28 @@ already express, and every example's most interesting output is the defect it ex
 None of them ships a corpus. Each ships a `fetch.py` download recipe, and the data is
 gitignored.
 
-| Example | Task | Shape of the answer | What it broke | Report |
-|---|---|---|---|---|
-| [`summarization-cnn-dailymail`](summarization-cnn-dailymail) | summarise a news article | one text vs one text, **continuous** | nothing — it *is* the baseline the others are measured against | [REPORT_SUMMARIZATION.md](../research/REPORT_SUMMARIZATION.md) |
-| [`classification-ag-news`](classification-ag-news) | 4-way topic label | one label vs one label, **0 or 1** | a discrete metric ties, and the duplicate-run check flagged honest ties as copies | [REPORT_CLASSIFICATION.md](../research/REPORT_CLASSIFICATION.md) |
-| [`classification-dbpedia-14`](classification-dbpedia-14) | 14-way ontology label | same, but **saturated** | rank-stability measured the alphabet when most arms tie | [REPORT_CLASSIFICATION.md](../research/REPORT_CLASSIFICATION.md) |
-| [`ner-few-nerd`](ner-few-nerd) | named entities + types | **a set** vs a set, order irrelevant | an unreadable answer scored 1.0, and no fingerprint covered the scorer | [REPORT_NER.md](../research/REPORT_NER.md) |
-| [`retrieval-scifact`](retrieval-scifact) | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | the corpus is not the items, so nothing in the fingerprint identified it | [REPORT_RETRIEVAL.md](../research/REPORT_RETRIEVAL.md) |
+> ### Start here
+>
+> **[`../docs/REFERENCE.md`](../docs/REFERENCE.md)** — the encyclopedia. Every metric
+> explained with a link to its paper, every model with a link to its weights, every
+> dataset with its licence, and every statistical test with the reason it was chosen.
+> Read it once and the five examples stop needing footnotes.
+>
+> Each example then has **three** documents:
+>
+> | file | answers |
+> |---|---|
+> | `README.md` | **how** — commands, arms, what the data licence permits |
+> | `METHOD.md` | **why** — why this dataset, why these arms, why these criteria, and what each choice gives up |
+> | the report in [`../research/`](../research) | **what happened** — results, statistics, corrections, and what was *not* covered |
+
+| Example | Task | Shape of the answer | What it broke | Why | Report |
+|---|---|---|---|---|---|
+| [`summarization-cnn-dailymail`](summarization-cnn-dailymail) | summarise a news article | one text vs one text, **continuous** | nothing — it *is* the baseline the others are measured against | [METHOD](summarization-cnn-dailymail/METHOD.md) | [report](../research/REPORT_SUMMARIZATION.md) |
+| [`classification-ag-news`](classification-ag-news) | 4-way topic label | one label vs one label, **0 or 1** | a discrete metric ties, and the duplicate-run check flagged honest ties as copies | [METHOD](classification-ag-news/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
+| [`classification-dbpedia-14`](classification-dbpedia-14) | 14-way ontology label | same, but **saturated** | rank-stability measured the alphabet when most arms tie | [METHOD](classification-dbpedia-14/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
+| [`ner-few-nerd`](ner-few-nerd) | named entities + types | **a set** vs a set, order irrelevant | an unreadable answer scored 1.0, and no fingerprint covered the scorer | [METHOD](ner-few-nerd/METHOD.md) | [report](../research/REPORT_NER.md) |
+| [`retrieval-scifact`](retrieval-scifact) | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | the corpus is not the items, so nothing in the fingerprint identified it | [METHOD](retrieval-scifact/METHOD.md) | [report](../research/REPORT_RETRIEVAL.md) |
 
 Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extraction.py`,
 `retrieval.py`, plus `hf_identity.py` for pinning local model weights.
@@ -116,3 +131,15 @@ Every example has a handover for what was not run and why, in
 [`../research/`](../research): blocked ML arms needing a machine that can load pickle
 checkpoints, one NER arm rate-limited upstream, and five frontier rerankers that cost
 $31.40 against the retrieval sweep's $2.45.
+
+---
+
+## Credits
+
+Every dataset, model, paper and library used across the five examples is credited with its
+licence in **[`../docs/REFERENCE.md#credits`](../docs/REFERENCE.md#credits)**, and again
+per-experiment at the bottom of each `METHOD.md`.
+
+**Nothing is redistributed here** — no corpus, no model weights, no provider output. Each
+example ships a download recipe, and dataset identity travels as a content hash
+(`items_sha256`, `corpus_sha256`) recorded inside every run.
