@@ -67,7 +67,7 @@ fingerprint), `configs/arm_*.yaml` (24), `fetch.py`, `model_provenance.json`,
 
 ```bash
 cd examples/summarization-cnn-dailymail && uv sync && uv run fetch.py --n 20
-cd ../eval-harness && cp .env.example .env         # LITELLM_BASE_URL, LITELLM_API_KEY
+cd harness && cp .env.example .env         # LITELLM_BASE_URL, LITELLM_API_KEY
 make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*.yaml" REPEAT=3
 make rescore DATASET_ID=cnn_dailymail_20 MATCH=_v2
 EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=cnn_dailymail_20

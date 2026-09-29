@@ -92,7 +92,7 @@ def test_cli_help_works() -> None:
                    "leaderboard", "sweep", "env_check", "holdout_significance",
                    "pair_test", "family_test", "classification_report", "bootstrap_test",
                    "rank_stability", "extraction_report", "retrieval_report", "rescore",
-                   "check_terminology"):
+                   "check_terminology", "check_report_claims", "check_links"):
         r = run(f"scripts/{script}.py", "--help")
         check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
 
@@ -394,7 +394,9 @@ def test_example_scorer_suites_pass() -> None:
     for script, subject in (("test_extraction_scorer.py", "set scorer"),
                             ("test_ner_parser.py", "NER JSON parser"),
                             ("test_retrieval_scorer.py", "ranked-list scorer"),
-                            ("test_code_hashes.py", "scoring-code hashes")):
+                            ("test_code_hashes.py", "scoring-code hashes"),
+                            ("check_report_claims.py", "report claims vs committed runs"),
+                            ("check_links.py", "markdown links and anchors")):
         path = HERE / script
         if not path.is_file():
             continue

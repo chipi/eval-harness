@@ -55,7 +55,7 @@ data/references/
       ↓  make experiment-run          → scores + cost + speed + build provenance
 data/runs/
       ↓  make run-compare / make judge
-data/baselines/      make promote — the number future work is judged against
+data/baselines/      make run-promote — the number future work is judged against
 ```
 
 `make validate` checks the whole tree — six integrity rules, exits non-zero, so

@@ -6,7 +6,7 @@ on 2026-09-29 rather than assumed.
 
 [`fetch_papers.py`](fetch_papers.py) downloads the redistributable ones into this
 directory for offline reading. **Its output is gitignored.** See
-[Why nothing is committed](#why-nothing-is-committed).
+[What is committed here](#what-is-committed-here).
 
 ```bash
 python docs/papers/fetch_papers.py          # the 12 that permit redistribution

@@ -363,11 +363,19 @@ the dev slice sampled its truncation rate at 5.4% and the measurement slice foun
 
 ```
 global test (permutation on within-item ranks): p = 0.0002 -> an arm effect exists
-Nemenyi critical difference = 2.74 rank positions; observed span = 13.94
-pairs distinguishable: 156 of 351
+Nemenyi critical difference: NOT AVAILABLE for k=27 arms — the tabulated
+studentised range stops at k=25.   observed rank span = 13.94
 
   fn_span_marker_n200_v1   avg rank 8.61   P(1st) = 1.00
 ```
+
+> **Corrected 2026-09-29.** This block previously read *"critical difference = 2.74;
+> pairs distinguishable: 156 of 351"*. Both came from silently reusing the k=25 critical
+> value for a 27-arm field, which is too small — so the CD was understated and more pairs
+> were called distinguishable than the test supports (~153 at an interpolated k=27). The
+> tool now declines to print a pairwise verdict above its table rather than guessing one.
+> **The global test is unaffected**, and so is every claim in this report: the separation
+> results come from `family_test.py`'s Holm step-down, which does not use this table.
 
 This is the direct opposite of the summarisation result, where BART's 0.0737 lead at n=20
 collapsed to 0.00008 at n=200. A lead can be an artifact of a small slice; this one is not,

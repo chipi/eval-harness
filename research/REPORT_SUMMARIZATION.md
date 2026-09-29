@@ -528,7 +528,7 @@ cd examples/summarization-cnn-dailymail
 uv sync
 uv run fetch.py --n 200
 
-cd ../eval-harness
+cd harness
 cp .env.example .env                      # point at a proxy
 make dataset-create      DATASET_ID=cnn_dailymail_200 ARGS='--source-dir data/sources/cnn_dailymail_200'
 make dataset-materialize DATASET_ID=cnn_dailymail_200
