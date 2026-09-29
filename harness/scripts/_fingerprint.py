@@ -232,8 +232,15 @@ def _references_digest(root: Path, reference_id: Optional[str]) -> Optional[str]
     ref_dir = root / "data" / "references" / reference_id
     if not ref_dir.is_dir():
         return None
+    # EVERY FILE, not just *.txt. A silver reference directory also carries
+    # manifest.json, which records WHICH MODEL authored those references and whether
+    # its provenance is complete -- and this hashed only the texts, so that record
+    # could change without the fingerprint moving. For a reference tier whose whole
+    # caveat is "these were written by a model, and which model matters", leaving the
+    # statement of which model outside the hash is the wrong half to omit. Found by
+    # external review.
     h = hashlib.sha256()
-    for f in sorted(ref_dir.glob("*.txt")):
+    for f in sorted(x for x in ref_dir.iterdir() if x.is_file()):
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(f.read_bytes())

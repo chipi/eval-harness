@@ -144,6 +144,37 @@ A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran.
 For anything you intend to promote, commit first and re-run.
 
+### When a run dies partway: `--resume`
+
+A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
+`EVAL_MAX_COST_USD` cap — leaves its finished items on disk. Outputs are written
+**as each item is produced**, so what you already paid for survives.
+
+```bash
+make experiment-run CONFIG=data/configs/arm_a.yaml ARGS="--resume arm_a_v1_20260929T101500Z"
+```
+
+The run id is the directory under `data/runs/`, and the cost cap prints the exact
+command when it stops you. A resumed pass **re-reads every finished output and scores
+it again**, rather than skipping it — so the new run is complete, not a fragment — and
+calls the model only for the items that are missing.
+
+Three things worth knowing:
+
+- **It costs nothing to replay.** Items read from disk make no API call, and the cost
+  cap cannot stop them, because they spend nothing.
+- **A replayed item keeps what was measured for it** — cost, tokens, latency and
+  `_meta` all carry over from the pass that produced it, and every replayed row is
+  flagged `resumed: 1` so you can separate them. It reports what the *results* cost,
+  not what this pass cost.
+- **You cannot resume from a different arm.** The source run's `config_id` and
+  `dataset_id` are checked against the config you are launching, and a mismatch is
+  refused. Without that check one mistyped run id would replay another model's answers
+  and record them under this one, with a valid fingerprint.
+
+Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
+results, `1` nothing was measured at all.
+
 ---
 
 ## 7. Compare, with the noise floor you measured

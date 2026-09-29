@@ -616,6 +616,64 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_rescore_rehashes_the_references_it_actually_read() -> None:
+    """A rescored run must not assert a reference hash over bytes it never read.
+
+    The fingerprint was copied wholesale from the source run, so
+    `data.references_sha256` described the reference files AS THEY WERE WHEN THAT RUN
+    EXECUTED -- while the scores beside it were computed against whatever is on disk
+    now. If the gold set changed in between, the rescored run made the one claim a
+    fingerprint exists to make, about the wrong bytes.
+
+    Built by injecting a reference hash that cannot match, which is what a changed gold
+    set looks like from here.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("fn_*")):
+        m = d / "metrics.json"
+        if m.is_file() and (d / "outputs").is_dir():
+            j = _json.loads(m.read_text())
+            if ((j.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
+                src = d
+                break
+    if src is None:
+        print("  --   rescore/refhash: skipped (no run with references on disk)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-refhash"
+    shutil.rmtree(runs, ignore_errors=True)
+    dst = runs / src.name
+    dst.mkdir(parents=True)
+    for n in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / n, dst / n)
+    shutil.copytree(src / "outputs", dst / "outputs")
+    j = _json.loads((dst / "metrics.json").read_text())
+    j["fingerprint"]["data"]["references_sha256"] = "0" * 64      # cannot match
+    (dst / "metrics.json").write_text(_json.dumps(j))
+
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    out = runs / "out"
+    r = run("scripts/rescore.py", "--dataset-id", str(j.get("dataset_id")),
+            "--out", str(out.relative_to(HERE.parent)), env=env)
+    mf = out / src.name / "metrics.json"
+    if r.returncode != 0 or not mf.is_file():
+        check("rescore: rehashing references did not break rescore", False,
+              ((r.stderr or "") + (r.stdout or ""))[-160:])
+    else:
+        data = _json.loads(mf.read_text())["fingerprint"]["data"]
+        check("rescore: references_sha256 is recomputed, not copied",
+              data.get("references_sha256") not in (None, "0" * 64),
+              f"got {str(data.get('references_sha256'))[:24]}")
+        check("rescore: and a changed gold set is flagged, not silently overwritten",
+              data.get("references_changed_since_measurement") is True
+              and data.get("references_sha256_at_measurement") == "0" * 64,
+              f"keys present: {sorted(k for k in data if 'reference' in k)}")
+    shutil.rmtree(runs, ignore_errors=True)
+
+
 def test_rescore_takes_source_path_from_the_dataset() -> None:
     """`source_path` lives in the dataset. rescore was reading it off the prediction row.
 
@@ -1055,6 +1113,7 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_rescore_rehashes_the_references_it_actually_read,
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,

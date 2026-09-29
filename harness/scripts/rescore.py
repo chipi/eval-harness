@@ -32,6 +32,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
+from _fingerprint import _references_digest  # noqa: E402
 from experiment_run import load_adapter, _score_wants_source  # noqa: E402
 
 try:
@@ -267,6 +268,23 @@ def main() -> int:
             fp.setdefault("instrument", {})["adapter"] = {
                 "id": adapter_id, "sha256": _sha(adapter_path),
             }
+            # THE REFERENCE HASH DESCRIBED THE WRONG BYTES. `data.references_sha256`
+            # was copied from the source run, where it records the references as they
+            # were WHEN THAT RUN EXECUTED -- while these scores were computed against
+            # whatever is in data/references now. A rescored run could therefore assert
+            # a hash over reference files it had never read, which is the one claim a
+            # fingerprint exists to make. Recomputed here, with the source's value kept
+            # beside it when the two differ, because "the gold set changed under us" is
+            # a finding and not a detail. Found by external review.
+            fp_data = fp.setdefault("data", {})
+            actual_refs = _references_digest(ROOT, fp_data.get("reference_id"))
+            prior_refs = fp_data.get("references_sha256")
+            fp_data["references_sha256"] = actual_refs
+            if prior_refs and actual_refs and prior_refs != actual_refs:
+                fp_data["references_sha256_at_measurement"] = prior_refs
+                fp_data["references_changed_since_measurement"] = True
+                print(f"    WARNING: {d.name}: the reference files have CHANGED since "
+                      f"this run was measured; scores here are against the current ones")
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "scores were recomputed by a different scorer than the one this "

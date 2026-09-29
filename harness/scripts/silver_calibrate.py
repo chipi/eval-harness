@@ -113,8 +113,18 @@ def main() -> int:
     refs_side = _collect(args.dataset_id, args.ref_match)
     arms_side = _collect(args.dataset_id, args.arm_match)
     arms = sorted(set(refs_side) & set(arms_side))
-    if len(arms) < 3:
-        die(f"need at least 3 arms present on both sides; found {len(arms)}")
+    # FOUR, NOT THREE. Each arm takes a turn as the silver AUTHOR and is judged on how
+    # it ranks THE OTHERS, so the subject group is always one smaller than the field.
+    # With exactly 3 arms every subject group is 2, every author is skipped by the
+    # `len(subject) < 3` guard below, `rows` ends up empty, and the script died on
+    #   ValueError: max() arg is an empty sequence
+    # while formatting a table with no rows. The gate said 3 because it was counting the
+    # field instead of the comparison. Found by external review.
+    if len(arms) < 4:
+        die(f"need at least 4 arms present on both sides; found {len(arms)}.\n"
+            f"  Each arm authors a silver reference and is scored on how it ranks the "
+            f"OTHER {len(arms) - 1 if arms else 0}, so the comparison needs 3 subjects "
+            f"plus the author.")
 
     spec = arms_side[arms[0]]["adapter"]
     if not spec:
@@ -201,6 +211,13 @@ def main() -> int:
         rows.append((rho, lift, author, len(sibs)))
 
     rows.sort(key=lambda r: -r[0])
+    if not rows:
+        # Belt and braces: the gate above makes this unreachable for arm COUNT, but a
+        # field where the two sides barely overlap can still leave every subject group
+        # under three. Say which, rather than dying in the table formatter.
+        die(f"no author had 3+ subject arms in common between the two reference sides; "
+            f"{len(arms)} arm(s) were present on both, and the overlap is what decides "
+            f"this, not the total.")
     w = max(len(r[2]) for r in rows) + 2
     print(f"\n  {'silver author':{w}}{'rho vs trusted':>16}{'sibling lift':>14}")
     print("  " + "-" * (w + 30))
