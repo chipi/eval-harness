@@ -106,9 +106,33 @@ and delete the first bullet of §7.
 - **Do not lower `max_tokens` or change the prompt to make it cheaper.** Every arm in the
   family ran the identical configuration; changing one makes it incomparable, and the
   report's whole claim is that only the model differs.
-- **Do not add a personal OpenRouter key just for this arm.** The error message suggests it
-  and it would work, but then this arm's routing differs from the other 23 and
-  `providers_seen` would no longer be comparable.
+- **Do not substitute a different Mistral model.** `mistral-large-2512` is the arm.
+
+## Correction to this handover, 2026-09-29
+
+An earlier version said: *"Do not add a personal OpenRouter key just for this arm — then
+this arm's routing differs from the other 23 and `providers_seen` would no longer be
+comparable."* **That reasoning does not apply to this model, and I did not check before
+writing it.**
+
+`mistralai/mistral-large-2512` is served by exactly **one** provider — Mistral itself
+(two endpoints, both Mistral, $0.50/$1.50 and $0.55/$1.65 per Mtok). There is nothing to
+route between. A BYOK key changes which account is *billed* and which rate-limit bucket
+applies; it does not change which provider serves the request, so `providers_seen` would
+still read `Mistral` and the measurement would be the same weights on the same endpoint.
+
+It also means the error's other suggestion — "route to another provider with provider
+routing" — is boilerplate that cannot help here.
+
+**What the block actually is.** The OpenRouter account is not free-tier and has credit.
+The 429 carries `"is_byok": false` and
+`"limit_source": "upstream_provider_shared_pool"`: Mistral is throttling OpenRouter's
+aggregate pool, upstream of this account. Buying more OpenRouter credit does nothing.
+
+**So: wait for the pool to quieten (free, timing unknown), or add a Mistral API key at
+openrouter.ai/settings/integrations so requests bill against your own Mistral rate limits
+(~$0.05 for this arm).** Neither changes what is measured. Probed three times on
+2026-09-29: HTTP 429 after ~35 s each.
 
 ## Expected result
 
