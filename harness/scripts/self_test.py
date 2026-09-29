@@ -399,6 +399,45 @@ def test_example_scorer_suites_pass() -> None:
               (r.stdout or r.stderr or "").strip()[-160:])
 
 
+def test_spearman_is_tie_correct() -> None:
+    """rho must equal the textbook shortcut WITHOUT ties, and differ WITH them.
+
+    Both directions, because widening a formula until it stops disagreeing is how a
+    correct-looking wrong answer gets in. The shortcut
+    `1 - 6*sum(d^2)/(n(n^2-1))` is an algebraic identity for Pearson-on-ranks that holds
+    only when every rank is distinct; the repo shipped it against tied data for four
+    examples, where it did not approximate rho but computed a different quantity.
+    """
+    sys.path.insert(0, str(HERE))
+    from rank_stability import ranks_on, spearman  # noqa: PLC0415
+
+    def shortcut(x, y):
+        n = len(x)
+        return 1 - 6 * sum((x[i] - y[i]) ** 2 for i in range(n)) / (n * (n * n - 1))
+
+    a = [1, 2, 3, 4, 5]
+    b = [2, 1, 4, 3, 5]
+    check("spearman: no ties -> agrees with the textbook shortcut",
+          abs(spearman(a, b) - shortcut(a, b)) < 1e-12,
+          f"{spearman(a, b)} vs {shortcut(a, b)}")
+    check("spearman: identical orderings -> 1.0", abs(spearman(a, a) - 1.0) < 1e-12)
+    check("spearman: reversed -> -1.0",
+          abs(spearman([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]) + 1.0) < 1e-12)
+
+    # Midranks: three arms tied for first share rank 2.0, the fourth gets 4.0.
+    M = {"a": {"i": 1.0}, "b": {"i": 1.0}, "c": {"i": 1.0}, "d": {"i": 0.0}}
+    r = ranks_on(M, ["a", "b", "c", "d"], ["i"])
+    check("ranks_on: tied arms share the average rank, not the alphabet",
+          r["a"] == r["b"] == r["c"] == 2.0 and r["d"] == 4.0, str(r))
+
+    tied = [2.0, 2.0, 2.0, 4.0]
+    check("spearman: a half where EVERY arm ties -> NaN, not 0.0",
+          spearman([1.0, 1.0, 1.0, 1.0], tied) != spearman([1.0, 1.0, 1.0, 1.0], tied))
+    check("spearman: with ties it DIFFERS from the shortcut",
+          abs(spearman(tied, [1.0, 2.0, 3.0, 4.0])
+              - shortcut(tied, [1.0, 2.0, 3.0, 4.0])) > 1e-9)
+
+
 def test_v5_tells_a_tie_from_a_copy() -> None:
     """Agreeing MEANS are not suspicious on a discrete metric; agreeing per ITEM is.
 
@@ -468,6 +507,7 @@ def main() -> int:
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
         test_example_scorer_suites_pass,
+        test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
     ):
         fn()

@@ -158,7 +158,7 @@ separated from 6 of 18; ahead on the point estimate against 18 of 18
 encoder running on a laptop CPU is not distinguishable from twelve hosted LLM rerankers.
 
 The tie also explains the stability numbers: ρ between two disjoint halves rises
-monotonically 0.415 → 0.741, so the *ordering* is real, while **P(same winner) is 0.01–0.07**
+monotonically 0.408 → 0.742, so the *ordering* is real, while **P(same winner) is 0.01–0.07**
 — with twelve indistinguishable arms, which one crowns a random half is close to a coin
 toss. Both statements are true at once, and reading either alone would mislead.
 
@@ -346,6 +346,11 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
   tuned BM25 might close some of the 0.074 gap to e5_base; nothing here bounds how much.
 - **No confidence, no calibration.** Logprobs were never requested from any hosted model,
   in this example or any other.
+- **The stability figures here were recomputed after a scorer fix on 2026-09-29.**
+  `spearman()` had no tie correction and `ranks_on()` broke ties alphabetically. On this
+  corpus the correction is small (≤0.007 at any n, because nDCG@10 rarely ties) but it is
+  not zero, and the numbers above are the corrected ones. `P(same winner)` now excludes
+  draws where either half had no unique best arm rather than crediting them as agreement.
 - **One pass per arm, temperature 0** — and temperature 0 is *not* reproducible here.
   Two runs of an identical config scored 0.6691 and 0.6617, because OpenRouter routes
   across providers. Every interval in this report is over *queries*, not over *runs*, and

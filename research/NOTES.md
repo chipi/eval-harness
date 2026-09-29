@@ -2071,3 +2071,60 @@ understated by ~2.4x" without checking it against the per-run data that was sitt
 `_meta.usage.cost` the whole time. The defensible figure is 1.17x-1.87x per example and
 0.67x-3.21x per arm. The direction of the finding survived; the number did not, and I
 stated it with more confidence than one measurement earned.
+
+---
+
+### 2026-09-29 · 56 — The tie correction, and what it was actually worth
+
+Entry 50 flagged `spearman()` as a known defect and left it. Fixed now, and it was **two**
+bugs, not one:
+
+- `spearman()` used `1 - 6*sum(d^2)/(n(n^2-1))`. That is an algebraic identity for
+  Pearson-on-ranks **only when every rank is distinct**. Against tied data it does not
+  approximate rho; it computes a different quantity.
+- `ranks_on()` handed every arm a distinct integer from `sorted`, which is stable, so ties
+  were broken ALPHABETICALLY before the correlation ever saw them. Fixing the formula
+  without this would have changed nothing — the input was already the alphabet.
+
+Now: midranks for tied arms, and rho as Pearson-on-ranks. `P(same winner)` is redefined
+too, because the old one could not be salvaged: a draw counts only when BOTH halves have a
+UNIQUE best arm; otherwise it is **undecided** and excluded, never scored as agreement.
+
+**Old vs new on identical data, which is the only comparison that isolates the fix from
+the arm set having grown since these reports were written:**
+
+```
+                   n=10    n=20    n=50   n=100   tied@1st(n=10)
+CNN/DM  coverage  +0.000  +0.000  +0.000  +0.000       1.0
+NER     f1        +0.002   0.000   0.000   0.000       1.0
+SciFact ndcg_10   -0.007  -0.002   0.000  +0.001       1.8
+AG News correct   -0.089  -0.021  +0.024  +0.030       9.5
+DBpedia correct   -0.115  -0.107  -0.055  -0.030      19.8
+```
+
+Exactly the predicted pattern: **zero on continuous metrics, large on discrete ones.** The
+zeroes are the evidence that the fix is correct rather than merely different, and the
+self-test now pins that — the new rho must EQUAL the textbook shortcut when there are no
+ties and DIFFER when there are, asserted in both directions.
+
+**The result worth having is DBpedia's.** With a unique winner required, **400 of 400
+draws are undecided at every n tested**. The corpus is so saturated that neither half ever
+produces a single best arm. So `P(same winner)` there is not 0.94, and not 0.28, and not
+anything — it is undefined, and every earlier value was the alphabet reporting itself as
+consensus.
+
+AG News's rho FALLS where ties dominate (n=10, n=20) and RISES where they clear (n=50,
+n=100). The old formula was not wrong by a constant, which is why "inflated" was the wrong
+word for it in entry 50.
+
+**I ALSO HAVE TO CORRECT ENTRY 50 AND MY OWN ADVICE THIS WEEK.** Both said fixing this
+"would change numbers already published in REPORT.md §3.6" and that this made it Marko's
+call. It would not: CNN/DM moves by ±0.000 at every n, because `coverage` is continuous
+and never ties. I had the reasoning right — ties are where the formula breaks — and then
+failed to apply it to the one report I was worried about. The summarisation numbers were
+never at risk, and I deferred a correctness fix for four days on a hazard I could have
+falsified in one command.
+
+REPORT.md §3.6 is stale for a DIFFERENT reason worth separating: it was computed over 24
+arms and the field is now 26, since the ML work added `bart_l` and `lead3`. That is arm-set
+drift, not this bug, and it is not corrected here.

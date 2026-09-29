@@ -250,10 +250,41 @@ CNN/DM       1.0     1.0     1.0     1.0    continuous metric, never ties
 tied arms are ordered by *name*, and at n=10 nearly all 27 arms score 10/10. The statistic
 was measuring the alphabet.
 
-**A known defect, not fixed:** `spearman()` uses the plain rank-difference formula with no
-tie correction, so in the flagged rows it correlates alphabetical positions and rho is
-*wrong*, not merely inflated. Fixing it would change numbers published in
-[`REPORT.md`](REPORT.md) §3.6.
+**FIXED 2026-09-29, and the corrected numbers are below.** Two bugs, not one. `spearman()`
+used `1 - 6*sum(d^2)/(n(n^2-1))`, an algebraic shortcut for Pearson-on-ranks that is an
+identity only when every rank is distinct — against tied data it does not approximate rho,
+it computes a different quantity. And `ranks_on()` handed every arm a distinct integer, so
+ties were broken alphabetically before the correlation ever saw them. Now: midranks for
+ties, and rho as Pearson-on-ranks.
+
+`P(same winner)` is also redefined, because the old one could not be salvaged: a draw
+counts only when **both** halves have a *unique* best arm. Draws where either half's top is
+tied are reported as **undecided** and excluded, never scored as agreement.
+
+| | n=10 | n=20 | n=50 | n=100 |
+|---|---|---|---|---|
+| **AG News** ρ (was) | 0.492 | 0.470 | 0.540 | 0.675 |
+| **AG News** ρ (fixed) | **0.403** | **0.453** | **0.548** | **0.715** |
+| AG News undecided draws | 361/400 | 316/400 | 173/400 | 34/400 |
+| AG News P(same winner), of decided | 0.74 | 0.77 | 0.78 | 0.97 |
+| **DBpedia** ρ (was) | 0.782 | 0.709 | 0.671 | 0.742 |
+| **DBpedia** ρ (fixed) | **0.667** | **0.602** | **0.616** | **0.713** |
+| DBpedia undecided draws | **400/400** | **400/400** | **400/400** | **400/400** |
+| DBpedia P(same winner) | — | — | — | — |
+
+**DBpedia has no winner to agree about, at any size tested.** In 400 of 400 draws at every
+n, at least one half had no unique best arm. The honest value is undefined, and the old
+0.94 was the alphabet reporting itself as consensus.
+
+AG News's rho *falls* where ties dominate (n=10, n=20) and *rises* where they clear
+(n=50, n=100) — the correction is not a uniform shift, because the old formula was not
+wrong by a constant.
+
+**The summarisation report is unaffected.** Re-measured on identical data, old and new
+agree to ±0.000 at every n on `cnn_dailymail_200`, and to ≤0.002 on `few_nerd_280` — both
+continuous metrics where ties essentially never occur, which is the check that the fix is
+sound rather than merely different. An earlier version of this paragraph claimed fixing
+this *would* change [`REPORT.md`](REPORT.md) §3.6. It does not.
 
 ---
 

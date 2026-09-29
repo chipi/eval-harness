@@ -344,10 +344,10 @@ and the same machinery says so in both directions.
 
 ```
  n per half   rho(A,B)   5th pct   P(same winner)   median |rank move|   arms tied 1st
-         10      0.545     0.253             0.31                 3.21             1.0
-         20      0.691     0.477             0.57                 2.45             1.0
-         50      0.835     0.725             0.87                 1.65             1.0
-        100      0.899     0.849             1.00                 1.07             1.0
+         10      0.540     0.247             0.32                 3.23             1.0
+         20      0.684     0.474             0.57                 2.49             1.0
+         50      0.827     0.721             0.87                 1.70             1.0
+        100      0.891     0.837             1.00                 1.12             1.0
 ```
 
 Monotone in every column — which DBpedia's was not. There, P(same winner) *fell* from 0.94
@@ -359,6 +359,12 @@ takes many values, ties essentially never happen, and ρ measures the data. Bina
 on a saturated task ties constantly, and ρ measures the sort order. The tie column was
 added after DBpedia; Few-NERD is the case that shows what it looks like when nothing is
 wrong.
+
+The formula itself was fixed on 2026-09-29 — `spearman()` had no tie correction and
+`ranks_on()` broke ties alphabetically — and the table above is the corrected one. On this
+corpus the change is ≤0.008 at any n, which is the point: a metric that does not tie is
+not affected by how ties are handled. The two classification corpora moved by up to 0.115.
+See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
 
 ---
 
