@@ -31,8 +31,8 @@
 | **Self-host · open-weight LLM, ≤64 GB** | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**, **0.7363**. Costs **0.0074** against GLM-4.5-Air, which its own separation test cannot resolve. The only experiment where halving the memory budget costs anything at all. |
 | **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
-| **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |
-| **Arms tied at the top?** | **11 of 18** — and two of them (`e5_base`, `bge_small`) are **free and local**. |
+| **Does paying more help?** | Slightly: **+2.7%** per 10× cost (r = 0.32, on billed cost). The dearest arm ranks **2nd of 19** at $2,288/month for **−0.2%**. |
+| **Arms tied at the top?** | **11–12 of 18**, the count sitting on a Holm boundary (see §3.2) — and two of them (`e5_base`, `bge_small`) are **free and local**. |
 | **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
 | **Is a pilot enough?** | **Emphatically no.** ρ = 0.756 and the dev slice's leader finished **10th of 19**. |
 | **Fine-tune or pay?** | **The one genuinely marginal case.** No arm here was fine-tuned *on SciFact*; `e5_base` is retrieval-trained but not on this corpus, and lands mid-field — beaten by 0.0246 that the test cannot resolve. Partially-trained looks like a tie, not a win. |
@@ -58,13 +58,16 @@ costs anything: GLM-4.5-Air needs ~55 GB at int4 to fit 128 GB comfortably, and 
 you drop to Gemma-4-26B for **0.7363**, −0.0074 — a gap its own separation test cannot
 resolve.
 
-1. **A twelve-way tie at the top.** The best arm, `glm_s` at **0.7437**, separates from
-   only **7 of 18** opponents under Holm. The eleven it cannot separate from include
-   `e5_base` (**0.7191**) and `bge_small` (**0.7097**) — both **$0**, local, CPU.
+1. **A tie of twelve or thirteen arms at the top.** The best arm, `glm_s` at
+   **0.7437**, separates from only **6–7 of 18** opponents under Holm — 6 at the
+   default 20,000 permutations, 7 at 400,000, because `gemma_s` and `mistral_s` sit on
+   their Holm thresholds. So **11–12 opponents are not separated from it, and the group
+   including `glm_s` is 12–13 arms.** Two of them are `e5_base` (**0.7191**) and
+   `bge_small` (**0.7097**) — both **$0**, local, CPU.
 
 2. **Reranking beats retrieval, and which reranker barely matters.** All twelve
    rerankers land in **0.7017–0.7437**, every one above BM25's 0.6451. The spread among
-   them is 0.042 across a 3.6× price range; the gap from BM25 to the worst of them is
+   them is 0.042 across a **7.6× billed** price range; the gap from BM25 to the worst of them is
    0.057. The *act* of reranking is worth more than the *choice* of reranker.
 
 3. **The ceiling is the finding.** A reranker cannot rank a document its first stage never
@@ -162,14 +165,14 @@ BM25's, to four decimals.
 | deepseek_s ⟳ | 0.7378 | 0.8017 | 0.8586 | 0.7303 | 0.8 s | $0.0600 |
 | gemma_m ⟳ | 0.7363 | 0.7967 | 0.8586 | 0.7287 | 0.8 s | $0.0721 |
 | gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 0.8 s | $0.1701 |
+| llama_l ⟳ | 0.7281 | 0.7955 | 0.8586 | 0.7234 | 0.8 s | $0.1731 |
 | **e5_base** | **0.7191** | **0.8305** | **0.9540** | 0.6889 | 1825 s | **$0** |
 | qwen_s ⟳ | 0.7183 | 0.7947 | 0.8586 | 0.7062 | 0.8 s | $0.1559 |
-| llama_s ⟳ | 0.7129 | 0.7805 | 0.8586 | 0.7024 | 0.8 s | $0.1458 |
+| llama_s ⟳ | 0.7172 | 0.7855 | 0.8586 | 0.7065 | 0.8 s | $0.1458 |
 | **bge_small** | **0.7097** | 0.8298 | 0.9325 | 0.6812 | 874 s | **$0** |
 | llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 0.8 s | $0.1434 |
 | mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 0.8 s | $0.0852 |
 | gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 0.8 s | $0.0962 |
-| llama_l ⟳ | 0.6864 | 0.7455 | 0.8586 | 0.6842 | 0.8 s | $0.1731 |
 | mpnet | 0.6643 | 0.7707 | 0.9350 | 0.6355 | 1825 s | $0 |
 | minilm | 0.6533 | 0.7705 | 0.9125 | 0.6212 | 194 s | $0 |
 | bm25 | 0.6451 | 0.7635 | 0.8586 | 0.6152 | **0.8 s** | $0 |
@@ -185,15 +188,18 @@ converted to the bill, and while §1 and the retraction in §7 both said the bil
 being used. Three statements, two of them right. The 2.4× was also a multiplier this
 repo retracted. Found by external review.*
 
-### 3.2 A twelve-way tie, and two of the twelve are free
+### 3.2 A tie of twelve or thirteen arms, and two of them are free
 
 `glm_s` vs a family of 18 declared before any p-value was read, Holm step-down at α = 0.05:
 
 ```
-separated from 7 of 18; ahead on the point estimate against 18 of 18
+separated from 6 of 18; ahead on the point estimate against 18 of 18
 
   SEPARATED:      bm25 (+0.0986)  first_k  random  minilm (+0.0904)
-                  mpnet (+0.0794)  llama_l (+0.0573)  llama_m (+0.0349)
+                  mpnet (+0.0794)  llama_m (+0.0349)
+
+  ON THE BOUNDARY: gemma_s  p = 0.0045  vs threshold 0.0042
+                   mistral_s p = 0.0055 vs threshold 0.0045
 
   NOT separated:  gemma_s  mistral_s  llama_s  bge_small  llama_l  e5_base
                   qwen_s  gemma_m  gemma_l  deepseek_s  deepseek_m  glm_m
@@ -210,7 +216,7 @@ toss. Both statements are true at once, and reading either alone would mislead.
 ### 3.3 Reranking is worth more than the retriever, and the retriever is worth more than the reranker choice
 
 - BM25 → worst reranker (`gemma_s`): **+0.0566**
-- worst reranker → best reranker (`glm_s`): **+0.0420**, across a 3.6× price range
+- worst reranker → best reranker (`glm_s`): **+0.0420**, across a **7.6× billed** price range
 - BM25 → `e5_base`, no LLM at all: **+0.0740**
 
 The largest single move available on this corpus is **replacing the retriever**, not adding
@@ -302,43 +308,58 @@ trained for retrieval.
 
 ---
 
-### The parser fix, and what re-measuring three arms revealed
+### The parser fix, what it actually moved, and a correction to this section
 
-The round-2 retrieval parser fix (`§Corrections`) changes three arms. Their stored
-replies were re-parsed with the corrected parser, and all three were then **re-measured
-from scratch** to check that recomputation against a fresh run.
+**One arm changes: `qwen_s`, 0.7338 → 0.7183.** 16 of its 200 replies were prose the
+parser had been reading as a one-document ranking.
 
-| arm | as first measured | recomputed from the stored replies | re-measured 2026-09-29 |
+**This section previously said three arms changed, and two of those were my own bug.**
+The round-2 fix added a comma path to the line parser so that `4983, 13734012` would
+parse. `llama_l` opens with a real array and then corrects itself in prose —
+`…, 4459491 is removed and [30813140, …` — so `json.loads` fails, the line path split
+that line on commas, and tokens like `[8925851` and `21884449]` passed the
+"no spaces" test and were accepted as document ids. 25 of 200 items on one run.
+
+Those bracket tokens are never real ids, so they counted as hallucinations *and* the
+harvested partial ranking scored **below the BM25 fallback the pipeline uses when a
+reply is unreadable** — 0.6386 against 0.7155 on the same bytes. The arm was punished
+for the parser's guess.
+
+| arm | as first measured | round-2 "correction" | corrected parser |
 |---|---|---|---|
-| `llama_s` | 0.7172 | 0.7129 | **0.7132** |
-| `qwen_s` | 0.7338 | 0.7183 | **0.7187** |
-| `llama_l` | 0.7281 | 0.6864 | **0.6386** |
+| `llama_l` | 0.7281 | 0.6864 | **0.7281 — unchanged** |
+| `llama_s` | 0.7172 | 0.7129 | **0.7172 — unchanged** |
+| `qwen_s` | 0.7338 | 0.7183 | **0.7183 — real** |
 
-**Two of three agree to within 0.0004**, which is the check that makes the recomputation
-trustworthy: re-parsing the stored `_meta.llm_raw` reproduces what a fresh run finds.
-(It was validated the other way too — re-parsing those replies with a reimplementation
-of the OLD parser reproduces the recorded `llm_returned` for 200/200 items on all 12
-reranking arms.)
+The parser now refuses a leading array that will not parse, rather than harvesting
+fragments from it, and a line-path token must look like an id (`[\w.-]+`). Found by
+external review.
 
-**`llama_l` is the exception, and it is not the parser.** Between the two runs the
-share of queries where it invented a document id went from **1 of 200 to 30 of 200**,
-and `llm_named_unknown` from 0.005 to 0.485. Invented ids displace real candidates in
-the reranking, so nDCG falls. The parser accounts for −0.0417 of the move, on the same
-stored bytes; the remaining −0.048 is the model answering differently on a different
-day.
+### Between-run variance — smaller than this report claimed, and still unmeasured
 
-**That is worth more than the correction it turned up.** This report states elsewhere
-that two runs of an identical SciFact config scored 0.6691 and 0.6617 — a spread of
-0.0074 — and uses that as the noise floor. `llama_l` moved **0.0895 between two runs of
-an identical config**, twelve times that. Every separation test here is over items
-within one run, and none of them can see this. The honest reading is that a single run
-of a hosted reranking arm pins its score much less tightly than this report has been
-assuming, and that the tie group in §3.2 is if anything wider than stated, not narrower.
+Three arms were re-run on 2026-09-29 (`data/runs-repeats/`). Once the parser artifact
+is removed, the like-for-like deltas are:
 
-Both the original and the re-measured runs are committed, so the comparison above can
-be re-derived. **Caveat on the three re-runs:** they were made from a dirty working
-tree, so their fingerprints do not identify the code that produced them, and
-`runs-list` marks them. They are evidence about variance, not promotable measurements.
+| arm | Δ between two runs of an identical config |
+|---|---|
+| `llama_l` | **0.0126** |
+| `llama_s` | −0.0003 |
+| `qwen_s` | −0.0004 |
+| `glm_s` bm25first vs `glm_s` | −0.0015 |
+| `qwen_s` bm25first vs `qwen_s` | −0.0045 |
+
+**An earlier version of this section reported that swing as 0.0895 and called it twelve
+times the noise floor.** Most of it was the parser artifact above. Pooled, σ_run is
+about **0.0045 per arm** (0.0089 for `llama_l` alone), which makes the 0.0074 figure
+this report has been using roughly the right size after all — arrived at from two runs
+that, as round 3 pointed out, **appear in no committed run and cannot be re-derived.**
+The five pairs above replace them.
+
+What does not go away: temperature 0 is not reproducible on any hosted provider here —
+between 13 and 78 of 200 replies are byte-identical across two runs of the same config
+— and every separation test in this report is over items *within* one run, so none of
+them can see σ_run at all. Adding 2σ_run² to the standard error takes the separated set
+from 6 to 5 of 18. **No arm outside SciFact has a repeat run at all.**
 
 ---
 

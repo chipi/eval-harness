@@ -140,7 +140,7 @@
   "reparsed_from": "sf_glm_m_n200_v1_20260928T212304Z",
   "reparsed_with": {
     "parser": "examples/_shared/retrieval.parse_ranking",
-    "scorer_sha256": "ada829012438c24e1cd33a4a7d315af065b098e59ff508a5479b72306c66db3c"
+    "scorer_sha256": "9eaf5c34160a937dcca20757f75ef3a41d8ec9ac7e0599477797cda368e7291d"
   },
   "run_id": "sf_glm_m_n200_v1_20260928T212304Z",
   "scores": {
@@ -148,8 +148,8 @@
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 6920.054765,
-    "llm_named_unknown": 0.2,
-    "llm_parsed": 1.0,
+    "llm_named_unknown": 0.1,
+    "llm_parsed": 0.995,
     "mrr_10": 0.7324722222,
     "n_relevant": 1.135,
     "n_returned": 100.0,

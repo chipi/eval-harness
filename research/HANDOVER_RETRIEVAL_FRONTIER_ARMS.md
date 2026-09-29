@@ -46,7 +46,7 @@ a selection on outcome.
 **The 12-way tie in §3.2 is a tie among cheap and free models.** The report cannot say
 whether a frontier model is a better reranker, and says so. That is the single largest
 open question in the example: every hosted arm measured lands in 0.7017–0.7437 across a
-3.6× price range, and whether a 100× price step breaks that pattern is exactly what these
+7.6× billed price range, and whether a 100× price step breaks that pattern is exactly what these
 five would answer.
 
 The prior from three other examples is that it would not — summarisation had the dearest

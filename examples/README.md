@@ -113,7 +113,7 @@ varying.** Every example produced a tie group spanning a large price range:
 | AG News | leader tied with 5 | — |
 | DBpedia | a group of 10 | 115× |
 | Few-NERD | 8 hosted arms | 78× |
-| SciFact | 12 arms, **2 of them free** | 3.6× among cheap arms |
+| SciFact | 12 arms, **2 of them free** | 7.6× billed, among cheap arms |
 
 And every example found something wrong with the instrument before it found anything about
 the models. The append-only journal, [`../research/NOTES.md`](../research/NOTES.md), is the

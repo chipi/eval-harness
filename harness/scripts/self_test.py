@@ -1049,12 +1049,29 @@ def test_the_reports_separation_counts_are_real() -> None:
         return
     sep, fam = int(m.group(1)), int(m.group(2))
     report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text()
-    check(f"REPORT_RETRIEVAL states the {sep} of {fam} that family_test computes",
-          f"**{sep} of {fam}**" in report,
-          f"the tool says {sep} of {fam}; the report does not state that")
-    check(f"...and the tie group it implies, {fam - sep} of {fam}",
-          f"**{fam - sep} of {fam}**" in report,
-          f"tie group should read {fam - sep} of {fam}")
+
+    # A RANGE IS AN ACCEPTABLE ANSWER, AND HERE IT IS THE HONEST ONE. This count is not
+    # stable: two arms sit on their Holm thresholds (gemma_s 0.0045 vs 0.0042,
+    # mistral_s 0.0055 vs 0.0045), so 20k permutations give 6 or 7 depending on the
+    # seed and 400k give 7. An earlier version of this test demanded one exact figure,
+    # which would have forced the report to publish a number more precise than the
+    # measurement -- exactly the error it exists to catch.
+    def _states(n: int) -> bool:
+        return (f"**{n} of {fam}**" in report
+                or any(f"**{lo}\u2013{hi} of {fam}**" in report
+                       for lo in range(n - 2, n + 1) for hi in range(n, n + 3)
+                       if lo <= n <= hi))
+
+    check(f"REPORT_RETRIEVAL states a separated count consistent with the tool's {sep}",
+          _states(sep),
+          f"the tool says {sep} of {fam}; the report states neither that nor a range "
+          f"containing it")
+    check(f"...and a tie group consistent with {fam - sep} of {fam}",
+          _states(fam - sep),
+          f"tie group should read {fam - sep} of {fam}, or a range containing it")
+    check("...and says the count sits on a boundary, since it does",
+          "boundary" in report.lower(),
+          "two arms sit on their Holm thresholds and the report does not say so")
 
 
 def test_the_checks_can_actually_fail() -> None:

@@ -140,7 +140,7 @@ Sorting all ten local arms by how much task-specific training they had produces 
 | training exposure | arms | rank among all arms | vs the best **paid** arm |
 |---|---|---|---|
 | **Fine-tuned on this dataset** | `span_marker`, `bert_mini`, `bart_l` | **1st, 1st, 1st** | **+0.0810, +0.0350, +0.0001** |
-| Trained for the task *type* | `e5_base`, `bge_small` | 9th, 11th of 17 | −0.0246, −0.0340 — **not separated** |
+| Trained for the task *type* | `e5_base`, `bge_small` | 8th, 11th of 19 | −0.0246, −0.0340 — **not separated** |
 | General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 17 | −0.0794, −0.0904 |
 | **Zero-shot** | `bart_mnli` ×2, `gliner` | **25th, 25th, 26th — last** | **−0.2100, −0.2324, −0.3643** |
 
@@ -602,7 +602,7 @@ A log-linear fit over the paid arms in each experiment — quality against `log1
 | experiment | arms | quality per 10× cost | as % of the best arm | correlation |
 |---|---|---|---|---|
 | Extraction · Few-NERD | 23 | +0.0405 | **+5.9%** | r = 0.49 |
-| Retrieval · SciFact | 12 | +0.0212 | +2.8% | r = 0.34 |
+| Retrieval · SciFact | 12 | +0.0200 | +2.7% | r = 0.32 |
 | Classification · AG News | 24 | +0.0214 | +2.3% | r = 0.63 |
 | Classification · DBpedia | 24 | +0.0094 | +0.9% | r = 0.40 |
 | Summarisation · CNN/DM | 24 | −0.0013 | **−0.4%** | r = −0.07 |

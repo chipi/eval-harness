@@ -140,5 +140,37 @@ check("a numbered line of comma-separated ids",
 check("a prose line with commas is still refused",
       parse_ranking("The claim is X, which implies Y") is None)
 
+# A LEADING ARRAY THAT WILL NOT PARSE IS A REFUSAL, NOT A HINT. llama_l opens with a
+# real array and corrects itself in prose; json.loads fails, and the line path used to
+# split the line on commas and accept "[8925851" and "21884449]" as document ids --
+# 25 of 200 items on one run. The harvested ranking scored BELOW the BM25 fallback the
+# pipeline uses for an unreadable reply (0.6386 against 0.7155 on the same bytes), so
+# the arm was punished for the parser's guess.
+SELFCORRECT = ("[24737389, 8925851, 7487927, 4459491, 13717103, 30813140, 21884449, "
+               "4459491 is removed and  [30813140, 40078758]")
+check("a leading array that fails to parse -> None, not harvested fragments",
+      parse_ranking(SELFCORRECT) is None)
+check("a bracket-laden token is never an id",
+      parse_ranking("[8925851\n21884449]") is None)
+check("but a clean comma list on one line still parses",
+      parse_ranking("8925851, 21884449") == ["8925851", "21884449"])
+
+# TRAILING COMMAS. "4983," split to ["4983", ""], the empty part failed the all(), and
+# the whole line was discarded -- so this parsed as ["999"].
+check("trailing commas on separate lines",
+      parse_ranking("4983,\n13734012,\n999") == ["4983", "13734012", "999"])
+
+# AN ARRAY INSIDE A SENTENCE IS NOT A RANKING. The lead is short and unfinished, so the
+# wrapper and sentence-end guards both let these through.
+check("'See [4983]' is prose, not a one-document ranking",
+      parse_ranking("See [4983]") is None)
+check("an array with a trailing clause is prose",
+      parse_ranking("The most relevant document is [4983], because it shows the effect.")
+      is None)
+check("a lead-in ending in a colon on the SAME line still parses",
+      parse_ranking("Here you go: [\"a\",\"b\"]") == ["a", "b"])
+check("and an array that begins its own line still parses",
+      parse_ranking("Here are the results:\n[\"a\",\"b\"]") == ["a", "b"])
+
 print(f"\n{sum(1 for _, c in ok if c)}/{len(ok)} passed")
 sys.exit(0 if all(c for _, c in ok) else 1)

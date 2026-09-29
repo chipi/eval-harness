@@ -162,9 +162,15 @@ Round 2 found the deeper bug in both parsers — the array matcher, not the wrap
 | NER `llama_l` f1 | 0.5911 | **0.5990** |
 | NER `llama_m` f1 | 0.5704 | **0.5740** |
 | NER `deepseek_m` f1 | 0.6122 | **0.6148** |
-| SciFact `llama_l` nDCG@10 | 0.7281 | **0.6864** |
 | SciFact `qwen_s` nDCG@10 | 0.7338 | **0.7183** |
-| SciFact `llama_s` nDCG@10 | 0.7172 | **0.7129** |
+
+*This table listed `llama_l` (0.7281 → 0.6864) and `llama_s` (0.7172 → 0.7129) until
+2026-09-30. Both were artifacts of the round-2 fix itself: its new comma path let the
+line parser accept `[8925851` and `21884449]` as document ids out of a reply that had
+opened with an array and then corrected itself in prose. With the parser tightened,
+both arms return to their original scores and only `qwen_s` moves. Found by external
+review — the round-3 reviewers measured the like-for-like `llama_l` delta at 0.0126,
+inside noise.*
 
 The lesson I take from the pair: "I re-ran the fixed parser over the stored outputs and
 nothing moved" proves the fix I just made was inert. It says nothing about whether the

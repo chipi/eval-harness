@@ -75,6 +75,9 @@ _LIST_PREFIX = re.compile(r"^(?:\d{1,3}[.)]\s+|[-*\u2022]\s+)")
 _WRAPPER_MAX = 64
 #: A sentence that has ENDED means the model was talking, not labelling.
 _SENTENCE_END = re.compile(r"[.!?](?:\s|$)")
+#: What a document id may look like on the line path. Anything with a bracket, a quote
+#: or a space in it is a fragment of prose, not an id -- see `parse_ranking`.
+_ID_TOKEN = re.compile(r"^[\w.\-]+$")
 
 NDCG_AT = 10
 RECALL_AT = (10, 100)
@@ -108,7 +111,8 @@ def scorer_sha256() -> str:
                        consts={"NDCG_AT": NDCG_AT, "RECALL_AT": RECALL_AT,
                                "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX,
                                "_WRAPPER_MAX": _WRAPPER_MAX,
-                               "_SENTENCE_END": _SENTENCE_END})
+                               "_SENTENCE_END": _SENTENCE_END,
+                               "_ID_TOKEN": _ID_TOKEN})
 
 
 def dedupe(ranking: Sequence[str]) -> tuple[List[str], int]:
@@ -239,6 +243,14 @@ def parse_ranking(text: str) -> Optional[List[str]]:
         lead = body[:opened].strip()
         if len(lead) > _WRAPPER_MAX or _SENTENCE_END.search(lead):
             return None
+        # THE ARRAY MUST BEGIN A LINE, or sit behind a lead-in that ends in a colon.
+        # Without this, "See [4983]" and "The most relevant document is [4983], because
+        # ..." both parse as a one-document ranking: the lead is short and has no
+        # finished sentence, so the two earlier guards let them through. An answer is
+        # a list; a sentence that happens to cite one id is not.
+        same_line = body[:opened].rsplit("\n", 1)[-1].strip()
+        if same_line and not same_line.endswith(":"):
+            return None
         depth, cut = 0, None
         for i in range(opened, len(body)):
             if body[i] == "[":
@@ -255,6 +267,21 @@ def parse_ranking(text: str) -> Optional[List[str]]:
                 val = None
             if isinstance(val, list):
                 return [normalize_id(v) for v in val if normalize_id(v)]
+        # A LEADING ARRAY THAT WILL NOT PARSE IS A REFUSAL, NOT A HINT.
+        #
+        # Falling through to the line path here is what produced the worst number in
+        # this example. llama_l opens with a real array and then corrects itself in
+        # prose -- "..., 4459491 is removed and [30813140, ..." -- so json.loads fails,
+        # the line path splits the line on commas, and tokens like "[8925851" and
+        # "21884449]" were accepted as document ids because they contain no space. 25
+        # of 200 items on the 2026-09-29 llama_l run harvested fragments that way.
+        #
+        # Those bracket tokens are never real ids, so they counted as hallucinations
+        # and the harvested partial ranking scored BELOW the BM25 fallback the pipeline
+        # is supposed to use when a reply is unreadable -- 0.6386 against 0.7155 on the
+        # same bytes. The arm was punished for the parser's guess. Found by external
+        # review.
+        return None
     # One id per line: what a model produces when told "just list them".
     #
     # THE BULLET STRIPPER MUST NOT EAT THE ID. This used to be
@@ -277,8 +304,14 @@ def parse_ranking(text: str) -> Optional[List[str]]:
         ln = _LIST_PREFIX.sub("", raw.strip(), count=1).strip()
         if not ln:
             continue
+        # Trailing commas are dropped rather than failing the line: "4983," used to
+        # split to ["4983", ""], the empty part failed the all() below, and the whole
+        # line was thrown away -- so "4983,\n13734012,\n999" parsed as ["999"].
         parts = [x.strip() for x in ln.split(",")] if "," in ln else [ln]
-        if all(x and " " not in x and len(x) <= 64 for x in parts):
+        parts = [x for x in parts if x]
+        # `_ID_TOKEN`, not just "no spaces". A bracket or a quote in a token means the
+        # line is prose that happens to lack a space, not a list of ids.
+        if parts and all(_ID_TOKEN.match(x) and len(x) <= 64 for x in parts):
             ids.extend(parts)
     return ids or None
 

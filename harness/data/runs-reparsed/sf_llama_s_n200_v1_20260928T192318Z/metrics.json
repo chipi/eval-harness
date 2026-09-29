@@ -140,7 +140,7 @@
   "reparsed_from": "sf_llama_s_n200_v1_20260928T192318Z",
   "reparsed_with": {
     "parser": "examples/_shared/retrieval.parse_ranking",
-    "scorer_sha256": "ada829012438c24e1cd33a4a7d315af065b098e59ff508a5479b72306c66db3c"
+    "scorer_sha256": "9eaf5c34160a937dcca20757f75ef3a41d8ec9ac7e0599477797cda368e7291d"
   },
   "run_id": "sf_llama_s_n200_v1_20260928T192318Z",
   "scores": {
@@ -148,16 +148,16 @@
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 17481.64788,
-    "llm_named_unknown": 0.41,
-    "llm_parsed": 1.0,
-    "mrr_10": 0.7023531746,
+    "llm_named_unknown": 0.2,
+    "llm_parsed": 0.98,
+    "mrr_10": 0.7065198413,
     "n_relevant": 1.135,
     "n_returned": 100.0,
-    "ndcg_10": 0.71290262,
+    "ndcg_10": 0.7172479713,
     "parsed": 1.0,
-    "rank_of_first": 2.905,
+    "rank_of_first": 2.825,
     "reasoning_tokens": 0.0,
-    "recall_10": 0.7805,
+    "recall_10": 0.7855,
     "recall_100": 0.8585833333,
     "tokens_in": 3848.265,
     "tokens_out": 164.825,
