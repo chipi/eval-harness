@@ -67,6 +67,15 @@ from codehash import code_digest
 #: numbering -- see parse_ranking.
 _LIST_PREFIX = re.compile(r"^(?:\d{1,3}[.)]\s+|[-*\u2022]\s+)")
 
+#: How much text may sit BEFORE a JSON array and still count as a wrapper rather than
+#: prose. See `parse_ranking`: measured on sf_qwen_s, the wrapper case is 0 characters
+#: (150 of 200 replies) and the prose case starts at 140, so anything in between
+#: separates them. 64 is chosen inside that gap, wide enough for "Here are the results:"
+#: and far below the shortest real prose reply.
+_WRAPPER_MAX = 64
+#: A sentence that has ENDED means the model was talking, not labelling.
+_SENTENCE_END = re.compile(r"[.!?](?:\s|$)")
+
 NDCG_AT = 10
 RECALL_AT = (10, 100)
 MRR_AT = 10
@@ -97,7 +106,9 @@ def scorer_sha256() -> str:
     """
     return code_digest(normalize_id, dedupe, dcg, score_ranking, parse_ranking,
                        consts={"NDCG_AT": NDCG_AT, "RECALL_AT": RECALL_AT,
-                               "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX})
+                               "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX,
+                               "_WRAPPER_MAX": _WRAPPER_MAX,
+                               "_SENTENCE_END": _SENTENCE_END})
 
 
 def dedupe(ranking: Sequence[str]) -> tuple[List[str], int]:
@@ -205,12 +216,29 @@ def parse_ranking(text: str) -> Optional[List[str]]:
             inner = body[start + 3:end]
             body = inner.split("\n", 1)[1] if inner.lstrip().startswith("json") else inner
             body = body.strip()
-    # The array may be ANYWHERE in the body, not only at the start. Requiring it at the
-    # start sent "Here are the results:\n[...]" down the line-splitting path below, which
-    # cheerfully returned the literal string '["a","b"]' as a single document id. Caught
-    # by the test suite before an arm ran, which is the point of writing it first.
+    # The array may sit behind a WRAPPER ("Here are the results:") but not behind PROSE.
+    #
+    # This used to accept the first "[" anywhere in the body, and that is how a model
+    # reasoning aloud got scored as if it had answered. A reply like
+    #
+    #   "The claim states that rapamycin decreases ... the most relevant is [4983]. The
+    #    evidence in that abstract ..."
+    #
+    # parsed as the one-document ranking ["4983"] -- a confident, plausible, wrong
+    # answer -- instead of being refused as unreadable. On sf_qwen_s it hit 50 of 200
+    # items, nearly all of them replies the token limit cut off mid-reasoning.
+    #
+    # The two cases separate cleanly and the threshold is measured, not guessed: of 200
+    # replies, 150 put the array at character 0, and the 50 with anything before it have
+    # at least 140 characters of it. No reply in the corpus has a short lead-in, so the
+    # "Here are the results:" case the previous version was protecting never actually
+    # occurred -- but it is cheap to keep allowing, so a lead-in is accepted while it is
+    # short AND contains no finished sentence.
     opened = body.find("[")
     if opened != -1:
+        lead = body[:opened].strip()
+        if len(lead) > _WRAPPER_MAX or _SENTENCE_END.search(lead):
+            return None
         depth, cut = 0, None
         for i in range(opened, len(body)):
             if body[i] == "[":
@@ -238,11 +266,20 @@ def parse_ranking(text: str) -> Optional[List[str]]:
     # A numbering prefix is now matched as a PREFIX -- digits followed by a delimiter
     # and whitespace, or a bullet followed by whitespace -- so "1. 4983923" loses the
     # "1. " and a bare "4983923" loses nothing.
+    #
+    # COMMA-SEPARATED IDS ON ONE LINE are a ranking too. "4983, 13734012" used to be
+    # rejected whole, because the line contains a space -- so a model that answered in
+    # the most natural non-JSON format scored as unreadable. Each comma-separated part
+    # must still look like an id, so a prose line ("The claim is X, which implies Y")
+    # is rejected exactly as before: its parts contain spaces.
     ids = []
     for raw in body.splitlines():
         ln = _LIST_PREFIX.sub("", raw.strip(), count=1).strip()
-        if ln and " " not in ln and len(ln) <= 64:
-            ids.append(ln)
+        if not ln:
+            continue
+        parts = [x.strip() for x in ln.split(",")] if "," in ln else [ln]
+        if all(x and " " not in x and len(x) <= 64 for x in parts):
+            ids.extend(parts)
     return ids or None
 
 

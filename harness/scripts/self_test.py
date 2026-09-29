@@ -552,6 +552,62 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_adapter_declaration_beats_a_stale_run() -> None:
+    """A metric kind fixed in the adapter must take effect on runs measured before it.
+
+    `llm_named_unknown` counts document ids a reranker INVENTED. Undeclared, it fell
+    into the leaderboard's quality columns, where higher reads as better -- so an arm
+    that hallucinated more ids looked like it had improved. It was declared
+    `descriptive` in the adapter in round 1, and round 2 found it still showing as
+    quality, because the leaderboard merged the metric kinds recorded IN THE RUNS and
+    19 committed SciFact runs predate the fix.
+
+    A run freezes what was declared when it was measured. The adapter is the authority
+    on what its own metrics mean, so it now wins; runs remain the fallback for an
+    adapter that cannot be imported.
+
+    This builds a run that declares the WRONG kind and asserts the adapter overrides it,
+    which is the direction that was broken -- asserting the fixed state alone would pass
+    against the old code too.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")):
+        if (d / "metrics.json").is_file() and (d / "predictions.jsonl").is_file():
+            m = _json.loads((d / "metrics.json").read_text())
+            if "llm_named_unknown" in (m.get("scores") or {}):
+                src = d
+                break
+    if src is None:
+        print("  --   metric kinds: skipped (no reranking run on disk)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-kinds"
+    shutil.rmtree(runs, ignore_errors=True)
+    dst = runs / src.name
+    dst.mkdir(parents=True)
+    for name in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / name, dst / name)
+    m = _json.loads((dst / "metrics.json").read_text())
+    m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"   # the stale state
+    (dst / "metrics.json").write_text(_json.dumps(m))
+
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    r = run("scripts/leaderboard.py", "--dataset-id", str(m.get("dataset_id")), env=env)
+    # The COLUMN header, not the "ranked by: ndcg_10" caption above it -- both contain
+    # the metric name, and matching the caption made this fail for the wrong reason.
+    header = next((ln for ln in (r.stdout or "").splitlines()
+                   if "ndcg_10" in ln and ln.split()[:1] == ["arm"]), "")
+    cols = header.split()
+    ok = ("llm_named_unknown" in cols and "recall_100" in cols
+          and cols.index("llm_named_unknown") > cols.index("recall_100"))
+    check("metric kinds: the adapter's 'descriptive' overrides a run's stale 'quality'",
+          ok, f"columns: {cols[:14]}")
+    shutil.rmtree(runs, ignore_errors=True)
+
+
 def test_the_checks_can_actually_fail() -> None:
     """Every `make ci` checker must EXIT NON-ZERO on the thing it exists to catch.
 
@@ -804,6 +860,7 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_adapter_declaration_beats_a_stale_run,
         test_the_checks_can_actually_fail,
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
