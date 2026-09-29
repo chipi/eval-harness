@@ -239,10 +239,10 @@ number in this repo was the one number with no committed run behind it.
 rather than against itself.*
 
 *The `glm_s` row is unaffected by the round-2 retrieval parser fix — **0 of 200 items
-reorder** under the corrected parser. The `qwen_s` row IS affected and is being
-re-measured; under the corrected parser its stored replies give 0.7138 over BM25 and
-0.7713 over e5_base, so the +0.0575 becomes about +0.0575 again but from a lower base.
-The figures in that row are the pre-fix measurement until the re-run lands.*
+reorder** under the corrected parser. The `qwen_s` row IS affected: under the corrected
+parser its stored replies give 0.7138 over BM25 and 0.7713 over e5_base. Those two runs
+have not been re-measured, so the row below is the pre-fix figure with the corrected
+one stated here.*
 
 | reranker | over BM25 | over e5_base | Δ | headroom used |
 |---|---|---|---|---|
@@ -292,6 +292,46 @@ an index build.
 which builds in less than half the time. Size is not the variable; training objective is.
 `minilm` and `mpnet` are general sentence-similarity models, `bge_small` and `e5_base` are
 trained for retrieval.
+
+---
+
+### The parser fix, and what re-measuring three arms revealed
+
+The round-2 retrieval parser fix (`§Corrections`) changes three arms. Their stored
+replies were re-parsed with the corrected parser, and all three were then **re-measured
+from scratch** to check that recomputation against a fresh run.
+
+| arm | as first measured | recomputed from the stored replies | re-measured 2026-09-29 |
+|---|---|---|---|
+| `llama_s` | 0.7172 | 0.7129 | **0.7132** |
+| `qwen_s` | 0.7338 | 0.7183 | **0.7187** |
+| `llama_l` | 0.7281 | 0.6864 | **0.6386** |
+
+**Two of three agree to within 0.0004**, which is the check that makes the recomputation
+trustworthy: re-parsing the stored `_meta.llm_raw` reproduces what a fresh run finds.
+(It was validated the other way too — re-parsing those replies with a reimplementation
+of the OLD parser reproduces the recorded `llm_returned` for 200/200 items on all 12
+reranking arms.)
+
+**`llama_l` is the exception, and it is not the parser.** Between the two runs the
+share of queries where it invented a document id went from **1 of 200 to 30 of 200**,
+and `llm_named_unknown` from 0.005 to 0.485. Invented ids displace real candidates in
+the reranking, so nDCG falls. The parser accounts for −0.0417 of the move, on the same
+stored bytes; the remaining −0.048 is the model answering differently on a different
+day.
+
+**That is worth more than the correction it turned up.** This report states elsewhere
+that two runs of an identical SciFact config scored 0.6691 and 0.6617 — a spread of
+0.0074 — and uses that as the noise floor. `llama_l` moved **0.0895 between two runs of
+an identical config**, twelve times that. Every separation test here is over items
+within one run, and none of them can see this. The honest reading is that a single run
+of a hosted reranking arm pins its score much less tightly than this report has been
+assuming, and that the tie group in §3.2 is if anything wider than stated, not narrower.
+
+Both the original and the re-measured runs are committed, so the comparison above can
+be re-derived. **Caveat on the three re-runs:** they were made from a dirty working
+tree, so their fingerprints do not identify the code that produced them, and
+`runs-list` marks them. They are evidence about variance, not promotable measurements.
 
 ---
 

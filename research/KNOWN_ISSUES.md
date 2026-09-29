@@ -1,12 +1,41 @@
 # Known issues — read before reviewing
 
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
-better spent on what is not on this list. Things fixed in response to round 1 are in the
-git log, not here.
+better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-09-29, after round 1 (three independent reviews, 4 high-severity and
-~20 further findings — all reproduced in code before fixing, all fixed except where
-noted below).
+Last updated 2026-09-29, after **round 2**.
+
+## What round 2 says about round 1, and about this file
+
+The previous version of this paragraph read: *"round 1 — 4 high-severity and ~20 further
+findings, all reproduced in code before fixing, **all fixed except where noted below**."*
+
+That was wrong, and it is the most useful thing on this page. Round 2, reviewing the
+same repo after those fixes, found **6 round-1 findings still open** and **26 new ones**,
+several of them created or left by the round-1 fixes themselves:
+
+| what round 1 was told | what round 2 found |
+|---|---|
+| the `EVAL_PROMOTE_REASON` injection is closed | `make run-promote` raised `NameError` on **every** invocation — the fix shipped broken, and the only test of that script was `--help` |
+| `check_terminology.py` reporting green while reading zero files is fixed | fixed in that one file. `check_links.py` printed broken links and **exited 0**; `check_report_claims.py` printed "0/0 claims verified" and **exited 0** with no runs. The lesson was learned as an instance when the finding was a class |
+| the cost figures are corrected to what the provider billed | corrected in **one** of the four reports. Two others shipped the correction *notice* over 31 uncorrected cells |
+| the parsers are fixed | the round-1 fixes were inert — re-running them over the stored outputs moved nothing, which I reported as "the parsers are settled". The real bug was underneath, in both array matchers, and moved **seven arms across two experiments** |
+| `rescore.py` works from a clone now that outputs are committed | for four of five examples. Summarisation's 24 committed runs record their adapter relative to a path `rescore` never tried, so the experiment this repo leads with could not be rescored at all |
+| DeepSeek-V4.1-Flash is ~765 GB | 510 GB, measured. 765 was computed by assuming one byte per `I8` element; those tensors are packed at ~4 bits |
+
+**The pattern, stated so a third round can look for it rather than re-find it:** the
+recurring failure here is not a wrong answer, it is a *check that cannot fail* — a
+script that exits 0 whatever it saw, a test that only runs `--help`, a correction
+notice copied without the correction, a claims file that covers the numbers I was
+proud of and not the ones most recently found wrong. Round 2 added
+`test_the_checks_can_actually_fail`, which points each `make ci` checker at a tree that
+must make it fail and asserts on the exit code. That test exists because I fixed this
+class of bug twice while believing each time that I had fixed the class.
+
+**Not claimed:** that round 2's fixes are complete or that the same pattern is now
+absent. Every round-2 fix was verified by reverting the code and confirming the new
+test fails — which is evidence about those fixes, and says nothing about what neither
+of us thought to check.
 
 ---
 
