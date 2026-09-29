@@ -26,7 +26,8 @@
 |---|---|
 | **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **476 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
 | **Self-host · open-weight LLM, absolute** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B / ~52 GB**. **0.6733** — **0.0941 worse** than a model **109× smaller**. The clearest ML-beats-LLM result in the set. |
-| **Self-host · open-weight LLM, on a 128 GB box** | **The same model.** At 52 GB it fits natively with room to spare — **the absolute open-weight winner here is already the practical one**, and it still loses to a 476 MB tagger. |
+| **Self-host · open-weight LLM, ≤128 GB** | **The same model.** At 52 GB native it fits with room to spare — **the absolute open-weight winner here is already the practical one.** |
+| **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 476 MB tagger.** |
 | **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 476 MB model. |
 | **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
 | **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
@@ -45,6 +46,12 @@
 the first unambiguous winner in this repo. But 57% of its lead comes from a single entity
 type whose meaning is a corpus convention rather than a fact about the world, and on the
 one type that means the same thing everywhere, a frontier LLM beats it.**
+
+**On deployment:** this is the task where a small model wins by the widest margin. The
+best open-weight LLM you could self-host, Gemma-4-26B at 52 GB, scores **0.6733** — a
+model **109× larger** than `span_marker` and **0.0941 worse**. Memory budget changes
+nothing here: 52 GB fits a 64 GB box natively, and the answer is the same at every budget
+from 64 GB to unlimited.
 
 1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
    field of 0.524–0.686. Holm step-down over a family of 26 declared in advance:

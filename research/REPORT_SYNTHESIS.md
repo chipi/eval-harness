@@ -26,8 +26,9 @@ Reproduction commands are in §8.
 
 **Across five tasks and 127 measured arms: the most expensive model was never the best,
 four of five leaderboard tops are statistical ties, a small model trained on your task
-beat every frontier LLM for $0 wherever one could run, and a 10× cost increase bought
-between −0.4% and +5.9% of quality.**
+beat every frontier LLM for $0 wherever one could run, a 10× cost increase bought between
+−0.4% and +5.9% of quality — and a 64 GB machine reached the same answer as unlimited
+hardware on four of the five tasks.**
 
 **The production question — should you fine-tune a small model instead of paying an
 LLM?** Yes, for a task you can define and label: every model fine-tuned on its dataset
@@ -46,9 +47,15 @@ self-hostable option *is* the winner; in the fifth it trails by 0.0071, which th
 cannot resolve. Across five unrelated tasks, the best configuration runnable entirely on
 your own machines is either first or statistically tied with first.
 
+**And hardware buys almost nothing.** Of the 13 open-weight arms, four exceed 700 GB —
+cluster models, not workstation ones. But capping the budget costs almost no quality:
+**four of five ≤128 GB answers equal the unlimited-hardware answer, and four of five
+≤64 GB answers equal the ≤128 GB one.** Going from a 765 GB model to a 35 GB one costs
+**0.0078 on one task and nothing on the other four.**
+
 The counter-argument is measured too: one hosted model covers all five tasks at the 70th
 percentile with a prompt change, where each local model does exactly one. Full reasoning,
-the three-tier breakdown, and four ways it could be wrong:
+the three-tier breakdown, the memory budgets, and four ways it could be wrong:
 [§0](#0-the-production-question-should-you-fine-tune-a-small-model-instead-of-paying-an-llm).
 
 ### The seven findings
@@ -88,16 +95,22 @@ Three more numbers that travel:
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
   classification against **3,926 for retrieval reranking** — a 38× difference that no
   model substitution recovers.
+- **Every experiment has a $0 answer.** In four of five the self-hostable option *is* the
+  winner; in the fifth it trails by 0.0071, which the data cannot resolve.
 
 ### What to do with this
 
 1. **Check the architecture before the model.** The largest cost lever here was structural.
 2. **If you can label a few thousand examples, fine-tune a small model** — $0 against up to
-   $9,826/month, and far lower latency.
-3. **Never buy the most expensive arm.** In three experiments it was *worse* than free.
-4. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
+   $9,826/month, and far lower latency. Three of the four task-specific winners are **under
+   2 GB and need no GPU**.
+3. **If you cannot, self-host an open-weight LLM before renting one.** A proprietary model
+   never separated from the best open-weight arm in any experiment, and **64 GB of memory
+   is enough to match the unlimited-hardware answer on four of five tasks.**
+4. **Never buy the most expensive arm.** In three experiments it was *worse* than free.
+5. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
    separation test, not a leaderboard.
-5. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
+6. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
 
 **When paying more is right:** you cannot label data; the task is unlike anything a small
 model has seen; a wrong answer is expensive; your volume is low enough that the whole
@@ -243,18 +256,30 @@ Sizes are native on-disk (dtype-aware, read from each HuggingFace safetensors in
 the budget is **128 GB of unified or GPU memory** — an Apple M-series box, a dual-GPU
 workstation, or a single node with room for weights plus KV cache.
 
-| experiment | **absolute** open-weight winner | size | score | **practical** winner ≤128 GB | how | score | cost |
-|---|---|---|---|---|---|---|---|
-| Classification · AG News | Llama-3.3-70B | 141 GB | 0.8800 | **the same model** | int8, 70 GB | **0.8800** | **none** |
-| Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B-A4B** | native, 52 GB | **0.9857** | **none — identical at 1/14 the size** |
-| Extraction · Few-NERD | Gemma-4-26B-A4B | 52 GB | 0.6733 | **the same model** | native | **0.6733** | **none** |
-| Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **the same model** | int8, 110 GB | **0.7437** | **none** |
-| Summarisation · CNN/DM | DeepSeek-V4.1-Flash | 765 GB | 0.3460 | Llama-3.3-70B | int8, 70 GB | 0.3382 | **−0.0078** |
+A model needs room for KV cache and activations as well as weights, so an arm qualifies
+here only if its weights fit in **85% of nominal memory**.
 
-**In four of five, the 128 GB answer is as good as the unlimited-hardware answer.** Three
-times it is literally the same model quantised or already small enough; once (DBpedia) a
-26B model matches a 357B one exactly. Only summarisation pays anything, and it pays
-0.0078 — about a tenth of the gap between the best and worst hosted arm on that task.
+| experiment | **absolute** winner | size | score | **≤128 GB** | score | **≤64 GB** | score |
+|---|---|---|---|---|---|---|---|
+| Classification · AG News | Llama-3.3-70B | 141 GB | 0.8800 | **same**, int8 70 GB | **0.8800** | **same**, int4 35 GB | **0.8800** |
+| Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B**, native 52 GB | **0.9857** | **same**, native 52 GB | **0.9857** |
+| Extraction · Few-NERD | Gemma-4-26B | 52 GB | 0.6733 | **same**, native | **0.6733** | **same**, native | **0.6733** |
+| Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **same**, int4 55 GB | **0.7437** | Gemma-4-26B, native 52 GB | 0.7363 |
+| Summarisation · CNN/DM | DeepSeek-V4.1 | 765 GB | 0.3460 | Llama-3.3-70B, int8 70 GB | 0.3382 | **same**, int4 35 GB | 0.3382 |
+
+**Hardware buys almost nothing here.** Four of five 128 GB answers equal the
+unlimited-hardware answer, and **four of five 64 GB answers equal the 128 GB one.** Only
+SciFact loses anything by halving the budget — 0.0074, which its own separation test
+cannot resolve. Only summarisation loses anything by capping the budget at all — 0.0078,
+about a tenth of the spread between the best and worst hosted arm on that task.
+
+Going from a 765 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
+the other four**.
+
+**But the 64 GB column leans on int4 twice**, and that is where the caveat below bites
+hardest: int8 is usually close to lossless, int4 frequently is not. If your box is 64 GB,
+the native-precision options (Gemma-4-26B at 52 GB, Mistral-Small-24B at 48 GB) are the
+ones whose numbers here you can trust without re-measuring.
 
 > **The caveat, and it is a real one: quantised quality was never measured here.** Every
 > score in this table comes from the full-precision model as served by a provider. int8 is
@@ -270,7 +295,7 @@ times it is literally the same model quantised or already small enough; once (DB
 | classification | **`bert_mini`-style fine-tune** (44 MB) if you can label; else **Gemma-4-26B** (52 GB) |
 | entity extraction | **SpanMarker fine-tune** (476 MB). No open-weight LLM here came close |
 | summarisation | **BART-large-CNN** (1.6 GB) if the domain is stable; else **Llama-3.3-70B int8** (70 GB) |
-| retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int8** (110 GB) only if you need the last 0.07 |
+| retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int4** (55 GB) only if you need the last 0.07 |
 
 Three of those four are under 2 GB and need no GPU at all.
 

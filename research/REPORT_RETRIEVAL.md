@@ -27,7 +27,8 @@
 |---|---|
 | **Self-host · small ML** | **`e5_base`** — e5-base-v2, MIT, **438 MB**, 0.06 s/item. **0.7191** alone, and **not separable from any paid arm**. |
 | **Self-host · open-weight LLM, absolute** | **`glm_s`** — GLM-4.5-Air, MIT, **110B / ~221 GB**. **0.7437** reranking BM25 — **+0.0246 over the encoder alone, not separated**. Paired with `e5_base` it reaches **0.7891**, the highest score here. |
-| **Self-host · open-weight LLM, on a 128 GB box** | **The same model, quantised: GLM-4.5-Air at int8 is ~110 GB and fits.** No quality is given up on paper. At native precision instead: `gemma_m` (26B, 52 GB) at 0.7363, costing 0.0074. |
+| **Self-host · open-weight LLM, ≤128 GB** | **The same model, quantised.** GLM-4.5-Air is ~110 GB at int8 — 86% of a 128 GB box, tight once KV cache is counted — or **~55 GB at int4**, comfortable. No quality is given up *on paper*; quantised quality was not measured. |
+| **Self-host · open-weight LLM, ≤64 GB** | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**, **0.7363**. Costs **0.0074** against GLM-4.5-Air, which its own separation test cannot resolve. The only experiment where halving the memory budget costs anything at all. |
 | **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
 | **Does paying more help?** | Slightly: **+2.8%** per 10× cost. The dearest arm ranks **2nd of 17** at $2,288/month for **−0.2%**. |
@@ -49,6 +50,13 @@ mechanism transferred too (headroom-used 90.9% → 90.2%).
 **Two free local models are statistically indistinguishable from every paid LLM reranker.
 And a prediction registered before the arm existed — that swapping only the first stage
 would move the pipeline from 0.74 to 0.786–0.797 — came back at 0.7891.**
+
+**On deployment:** this is the only experiment whose *best* configuration is entirely
+open-weight — `e5_base` (438 MB, MIT) retrieving, `glm_s` (MIT) reranking, **0.7891**, no
+proprietary model at any point. It is also the only one where halving the memory budget
+costs anything: GLM-4.5-Air needs ~55 GB at int4 to fit 128 GB comfortably, and at 64 GB
+you drop to Gemma-4-26B for **0.7363**, −0.0074 — a gap its own separation test cannot
+resolve.
 
 1. **A twelve-way tie at the top.** The best arm, `glm_s` at **0.7437**, separates from
    only **6 of 18** opponents under Holm. The twelve it cannot separate from include

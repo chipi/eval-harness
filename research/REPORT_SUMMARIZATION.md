@@ -26,7 +26,8 @@
 |---|---|
 | **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. |
 | **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **763B / ~765 GB**. **0.3460** — statistically identical to the 1.6 GB model, at **478× the weights**. Needs a multi-node cluster. |
-| **Self-host · open-weight LLM, on a 128 GB box** | **`llama_m`** — Llama-3.3-70B at **int8: ~70 GB**. **0.3382**, costing **0.0078** against the absolute winner. At native precision instead: `mistral_s` (24B, 48 GB) at 0.3255. |
+| **Self-host · open-weight LLM, ≤128 GB** | **`llama_m`** — Llama-3.3-70B at **int8, ~70 GB**. **0.3382**, costing **0.0078** against a 765 GB model. Native-precision alternative: `mistral_s` (24B, 48 GB) at 0.3255. |
+| **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB** — 0.3382, **no further loss on paper**. If you would rather not quantise that far: `mistral_s` at 48 GB native, 0.3255. |
 | **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
 | **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **16th of 25** and is 8.9% below free. |
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
@@ -43,6 +44,13 @@
 **Two hundred articles separate a top group and a price verdict, and still cannot rank 24
 models.** Those are different questions, and conflating them is the easiest way to misread
 this report in either direction.
+
+**On deployment:** `bart_l` (1.6 GB, MIT, CPU) wins outright, and the best open-weight LLM
+that matches it — DeepSeek-V4.1-Flash — is **765 GB**, a cluster model. This is the one
+experiment where capping your hardware costs quality: the best arm that fits 128 GB is
+Llama-3.3-70B at int8, **0.3382**, giving up **0.0078**. It is also the one where the free
+model is *slower* than renting (11.0 s vs 1.6 s per item), because generation on a CPU is
+genuinely expensive.
 
 **The expensive arms do not earn their price, and this is now the firmest result here.**
 `deepseek_m` at **$0.0381** per 200 articles beats `anthropic_l` at **$1.9652** — 52×
