@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
@@ -101,9 +102,38 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def write_json(path: Path, obj: Any) -> None:
+def write_text_atomic(path: Path, text: str) -> None:
+    """Write via a temp file in the same directory, then rename.
+
+    `write_text` truncates the target and then writes into it, so a crash, a full disk
+    or a kill signal partway leaves a SHORT FILE where a complete one should be. That
+    matters here more than in most places, because `--resume` treats the presence of
+    an output file as proof the item is done: a half-written output is replayed as if
+    it were the model's answer, and scored. The failure looks like a bad answer rather
+    than a broken file.
+
+    `os.replace` is atomic on POSIX and on Windows, so a reader sees either the old
+    file or the whole new one and never a partial. The temp file is created in the
+    same directory because rename is only atomic within a filesystem.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def write_json(path: Path, obj: Any) -> None:
+    write_text_atomic(path, json.dumps(obj, indent=2, sort_keys=True) + "\n")
 
 
 def build_info() -> Dict[str, Any]:

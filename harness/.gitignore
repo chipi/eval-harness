@@ -127,16 +127,27 @@ data/references/silver/few_nerd_*/
 # the uniform instrument that report states, and data/runs still holds the pre-fix
 # glm_l. Scores and per-item rows are therefore committed here too, 8.7 MB, on the same
 # terms as data/runs -- no outputs, no article text, no home paths.
+# Re-allowed after the blanket `data/runs-*/` deny above. Order matters: a later rule
+# wins in gitignore, so these must come below it or they have no effect.
+!data/runs-rescored/
 data/runs-rescored/*/outputs/
 data/runs-rescored/*/*
 !data/runs-rescored/*/metrics.json
 !data/runs-rescored/*/predictions.jsonl
 
-# Every OTHER runs directory stays out: smoke passes, tuning sweeps, the superseded
-# runs. They are working artifacts, not the record.
-data/runs-smoke*/
-data/runs-tune*/
-data/runs-superseded/
+# EVERY OTHER runs directory stays out, BY DEFAULT RATHER THAN BY NAME. Smoke passes,
+# tuning sweeps, superseded runs, self-test fixtures, one-off scopes: working
+# artifacts, not the record.
+#
+# This used to list them one per line, which is default-ALLOW wearing a deny's clothes:
+# any directory nobody thought to add was tracked. `data/runs-resumesrc/` -- a fixture
+# a self-test creates and deletes -- was committed that way, 7 files of it, because it
+# happened to exist when someone ran `git add -A`. I then did the same thing to myself
+# while fixing it, sweeping an in-progress re-run into a commit. Found by external
+# review.
+#
+# So: deny the whole shape, then name the two that genuinely ship.
+data/runs-*/
 !data/runs-superseded/README.md
 
 # EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
@@ -145,6 +156,7 @@ data/runs-superseded/
 # 0.786-0.797, which came back at 0.7891. I filed it under "the first-stage pair" as
 # scratch and ignored the whole directory, so the one number a reader is most likely to
 # want to check was the one number with no committed evidence. Found by external review.
+!data/runs-pair/
 data/runs-pair/*/*
 !data/runs-pair/*/metrics.json
 !data/runs-pair/*/predictions.jsonl

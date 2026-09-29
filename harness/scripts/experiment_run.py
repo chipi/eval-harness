@@ -50,6 +50,7 @@ from _common import (  # noqa: E402
     now,
     read_json,
     write_json,
+    write_text_atomic,
 )
 
 try:
@@ -367,7 +368,9 @@ def one_pass(
                 spent += res.cost_usd
         outputs[item["item_id"]] = res.output
         if live_dir is not None and not resumed:
-            (live_dir / f"{item['item_id']}.txt").write_text(res.output, encoding="utf-8")
+            # Atomic: `--resume` treats the presence of this file as proof the item is
+            # done, so a half-written one is replayed as the model's answer and scored.
+            write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
 
         reference = None
         if ref_dir is not None:
@@ -638,9 +641,9 @@ def main() -> int:
             extra_transient=_adapter_transient(adapter_path),
         )
         run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "predictions.jsonl").write_text(
+        write_text_atomic(
+            run_dir / "predictions.jsonl",
             "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
-            encoding="utf-8",
         )
         # Outputs are already on disk -- written per item by `one_pass`. Rewriting them
         # here only matters for a resumed pass, whose outputs came from the PREVIOUS
@@ -649,7 +652,7 @@ def main() -> int:
         for item_id, text in result["outputs"].items():
             dest = run_dir / "outputs" / f"{item_id}.txt"
             if not dest.is_file():
-                dest.write_text(text, encoding="utf-8")
+                write_text_atomic(dest, text)
 
         metrics = {
             "run_id": run_id,

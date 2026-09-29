@@ -616,6 +616,77 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_writes_leave_no_partial_file() -> None:
+    """A failed write must leave the previous file intact, not a truncated one.
+
+    `write_text` truncates the target and then writes into it, so a crash, a full disk
+    or a kill partway leaves a SHORT file where a complete one should be. That matters
+    more here than in most places: `--resume` treats the presence of an output file as
+    proof the item is done, so a half-written output is replayed as the model's answer
+    and scored. The failure then looks like a bad answer rather than a broken file.
+
+    Simulated by making the encode fail mid-write, which is the observable shape of a
+    death during serialisation.
+    """
+    import tempfile as _tf  # noqa: PLC0415
+
+    sys.path.insert(0, str(HERE))
+    from _common import write_text_atomic  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        target = pathlib.Path(td) / "out.txt"
+        target.write_text("the original, complete content")
+
+        # WINDOW 1: death DURING the write. A lone surrogate cannot be encoded to
+        # utf-8, so the write raises partway -- the same shape as running out of disk.
+        try:
+            write_text_atomic(target, "good start \ud800 bad")
+        except Exception:  # noqa: BLE001 — what survives is the point, not what raised
+            pass
+        check("atomic write: a write that dies partway leaves the original intact",
+              target.read_text() == "the original, complete content",
+              f"file now: {target.read_text()[:60]!r}")
+
+        # WINDOW 2: death AFTER the temp file is complete, BEFORE the rename. This is
+        # the window the whole design exists for, and the only way to reach it is to
+        # make the rename itself fail.
+        import os as _os  # noqa: PLC0415
+
+        real_replace = _os.replace
+        _os.replace = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("killed"))
+        try:
+            write_text_atomic(target, "replacement")
+        except Exception:  # noqa: BLE001
+            pass
+        finally:
+            _os.replace = real_replace
+        check("atomic write: a death before the rename leaves the original intact",
+              target.read_text() == "the original, complete content",
+              f"file now: {target.read_text()[:60]!r}")
+
+        leftovers = [f.name for f in pathlib.Path(td).iterdir() if f.name != "out.txt"]
+        check("atomic write: and leaves no temp file behind", not leftovers,
+              str(leftovers))
+
+        write_text_atomic(target, "the new content")
+        check("atomic write: a successful write still replaces the file",
+              target.read_text() == "the new content", target.read_text()[:60])
+
+        # THE CONTRAST, so this test shows a difference rather than just asserting the
+        # new behaviour. `write_text` truncates first: the same failure destroys the
+        # file. Without this the test would pass against any implementation that
+        # happens to exist, including a broken one.
+        naive = pathlib.Path(td) / "naive.txt"
+        naive.write_text("the original, complete content")
+        try:
+            naive.write_text("good start \ud800 bad", encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            pass
+        check("atomic write: and the plain write_text it replaces DOES lose the file",
+              naive.read_text() != "the original, complete content",
+              f"write_text somehow preserved it: {naive.read_text()[:40]!r}")
+
+
 def test_rescore_rehashes_the_references_it_actually_read() -> None:
     """A rescored run must not assert a reference hash over bytes it never read.
 
@@ -1113,6 +1184,7 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_writes_leave_no_partial_file,
         test_rescore_rehashes_the_references_it_actually_read,
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
@@ -1123,7 +1195,19 @@ def main() -> int:
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
     ):
-        fn()
+        # A TEST THAT RAISES MUST NOT HIDE THE ONES AFTER IT. `fn()` bare meant one
+        # ImportError -- from a helper that had been renamed, say -- aborted the suite
+        # at that point and every later test simply never ran, silently, while the
+        # output looked like a normal early exit. That is the same shape as every
+        # other "reported green for checking nothing" bug in this repo.
+        try:
+            fn()
+        except Exception as exc:  # noqa: BLE001 — a crashing test is a failing test
+            import traceback  # noqa: PLC0415
+
+            check(f"{fn.__name__} ran without raising", False,
+                  f"{type(exc).__name__}: {exc}")
+            traceback.print_exc()
     if failures:
         print(f"\n{len(failures)} FAILED: {', '.join(failures)}")
         return 1
