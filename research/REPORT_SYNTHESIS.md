@@ -32,9 +32,18 @@ between −0.4% and +5.9% of quality.**
 **The production question — should you fine-tune a small model instead of paying an
 LLM?** Yes, for a task you can define and label: every model fine-tuned on its dataset
 ranked **first** (3 of 3), and every zero-shot model ranked **last** (3 of 3). The
-predictor is training exposure, not model size. The counter-argument is also measured: one
-hosted model covers all five tasks at the 70th percentile with a prompt change, where each
-local model does exactly one. Full reasoning and four ways it could be wrong:
+predictor is training exposure, not model size.
+
+**And "paying" splits in two.** 13 of the 24 hosted arms have **downloadable weights** and
+could run on hardware you own — renting them was a convenience. Head to head, **a
+proprietary model never separated from the best open-weight model in any of the five
+experiments**, and open weights won outright on one. At 1M items/month that tier is
+$14,255 rented and **$0 self-hosted**; the 11 genuinely proprietary arms have no floor
+below $40,422.
+
+The counter-argument is measured too: one hosted model covers all five tasks at the 70th
+percentile with a prompt change, where each local model does exactly one. Full reasoning,
+the three-tier breakdown, and four ways it could be wrong:
 [§0](#0-the-production-question-should-you-fine-tune-a-small-model-instead-of-paying-an-llm).
 
 ### The seven findings
@@ -138,6 +147,67 @@ Better quality, zero inference cost, and **44×–766× lower latency** on the t
 classification-shaped tasks. On summarisation the quality is a tie and the local model is
 *slower*, because generation on a CPU is genuinely expensive — so the win there is cost
 only.
+
+
+### Three tiers, not two: the "paid" arms split in half
+
+Calling the 24 hosted arms "paid" conflates two very different things. **13 of them have
+downloadable weights** and could run on hardware you own; paying OpenRouter for them was a
+convenience, not a requirement. The other 11 have no such option.
+
+Verified against the HuggingFace API and OpenRouter's endpoint list on 2026-09-29 — a
+model served by many independent providers (DeepInfra, Novita, Parasail…) necessarily has
+distributable weights; one served only by its vendor does not.
+
+| tier | arms | what you can do with it |
+|---|---|---|
+| **1 · Local ML** | 10 task-specific models | download, fine-tune, self-host. $0 at the margin |
+| **2 · Open-weight LLM** | **13 of the 24** — DeepSeek ×3 (MIT), GLM ×3 (MIT), Gemma ×3, Llama ×3, `mistral_s` (Apache-2.0) | download and self-host, **or** rent. We rented |
+| **3 · Proprietary** | **11 of the 24** — Anthropic ×3, OpenAI ×3, Qwen ×3, `mistral_l`, `mistral_m` | rent only. No floor below the API price |
+
+Licence nuance inside tier 2: **nine are unrestricted** (MIT or Apache-2.0 — all DeepSeek,
+all GLM, `gemma_l`, `gemma_m`, `mistral_s`); **four are gated** behind acceptance and carry
+use conditions (`gemma_s` under the Gemma licence, all three Llama arms). Gated still means
+self-hostable; it does not mean unconditionally reusable.
+
+### Best open-weight vs best proprietary, head to head
+
+| experiment | best open-weight | best proprietary | delta | separated? |
+|---|---|---|---|---|
+| summarisation | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | **yes — open wins** |
+| SciFact | `glm_s` 0.7437 | `qwen_s` 0.7338 | **+0.0100** | no |
+| DBpedia | `glm_m` 0.9857 | `qwen_m` 0.9929 | −0.0071 | no |
+| Few-NERD | `gemma_m` 0.6733 | `openai_m` 0.6864 | −0.0131 | no |
+| AG News | `llama_m` 0.8800 | `anthropic_m` 0.9100 | −0.0300 | no |
+
+**A proprietary model never separated from the best open-weight model. Not once in five.**
+Open weights won outright on summarisation, led without separation on SciFact, and trailed
+by 0.007–0.030 without separation on the other three.
+
+"Not separated at n=200" is not "equal" — AG News's 0.0300 gap would likely resolve with
+more items, and the honest reading is that **proprietary may hold a small real edge on
+some tasks that this much data cannot demonstrate.** What the data does rule out is a
+large one.
+
+### What that means if you own the hardware
+
+At 1M items/month, summed across the whole tier:
+
+| | inference bill, rented | inference bill, self-hosted |
+|---|---|---|
+| tier 2 (13 open-weight arms) | $14,255/month | **$0** |
+| tier 3 (11 proprietary arms) | $40,422/month | **not possible** |
+
+For someone with a DGX, tier 2 collapses into tier 1 economically: **the marginal cost of
+an open-weight LLM becomes electricity, and the quality question stops being a cost
+question at all.** The only arms whose price is unavoidable are the eleven that never
+statistically beat an open-weight alternative here.
+
+What self-hosting costs instead — and this report measures none of it — is the hardware,
+the serving stack, the ops burden, throughput engineering, and the fact that a 70B model
+on your own GPUs is slower per request than a provider's optimised fleet unless you invest
+in batching. **The trade is capex and engineering time against a rental bill**, and the
+crossover depends entirely on volume.
 
 ### The strongest argument on the other side, also measured
 

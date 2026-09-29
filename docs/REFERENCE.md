@@ -131,32 +131,40 @@ Every example runs the same 24, at temperature 0 with reasoning disabled, so a d
 between examples is the **task** and not the configuration. Reached through a
 [LiteLLM](https://docs.litellm.ai/) proxy, which routes to [OpenRouter](https://openrouter.ai/).
 
-| arm | alias | upstream model |
-|---|---|---|
-| `anthropic_l` | `eval-opus-5` | [anthropic/claude-opus-5](https://openrouter.ai/anthropic/claude-opus-5) |
-| `anthropic_m` | `eval-claude-sonnet` | [anthropic/claude-sonnet-5](https://openrouter.ai/anthropic/claude-sonnet-5) |
-| `anthropic_s` | `eval-claude-haiku` | [anthropic/claude-haiku-4.5](https://openrouter.ai/anthropic/claude-haiku-4.5) |
-| `openai_l` | `eval-gpt-6sol` | [openai/gpt-6-sol](https://openrouter.ai/openai/gpt-6-sol) |
-| `openai_m` | `eval-gpt-55` | [openai/gpt-5.5](https://openrouter.ai/openai/gpt-5.5) |
-| `openai_s` | `eval-gpt-mini` | [openai/gpt-5.4-mini](https://openrouter.ai/openai/gpt-5.4-mini) |
-| `deepseek_l` | `eval-deepseek-pro` | [deepseek/deepseek-v4-pro](https://openrouter.ai/deepseek/deepseek-v4-pro) |
-| `deepseek_m` | `eval-deepseek-41flash` | [deepseek/deepseek-v4.1-flash](https://openrouter.ai/deepseek/deepseek-v4.1-flash) |
-| `deepseek_s` | `eval-deepseek-flash` | [deepseek/deepseek-v4-flash](https://openrouter.ai/deepseek/deepseek-v4-flash) |
-| `gemma_l` | `eval-gemma-31b` | [google/gemma-4-31b-it](https://openrouter.ai/google/gemma-4-31b-it) |
-| `gemma_m` | `eval-gemma-26b` | [google/gemma-4-26b-a4b-it](https://openrouter.ai/google/gemma-4-26b-a4b-it) |
-| `gemma_s` | `eval-gemma-3-27b` | [google/gemma-3-27b-it](https://openrouter.ai/google/gemma-3-27b-it) |
-| `llama_l` | `eval-llama-maverick` | [meta-llama/llama-4-maverick](https://openrouter.ai/meta-llama/llama-4-maverick) |
-| `llama_m` | `eval-llama-70b` | [meta-llama/llama-3.3-70b-instruct](https://openrouter.ai/meta-llama/llama-3.3-70b-instruct) |
-| `llama_s` | `eval-llama-scout` | [meta-llama/llama-4-scout](https://openrouter.ai/meta-llama/llama-4-scout) |
-| `mistral_l` | `eval-mistral-large` | [mistralai/mistral-large-2512](https://openrouter.ai/mistralai/mistral-large-2512) |
-| `mistral_m` | `eval-mistral-medium` | [mistralai/mistral-medium-3.1](https://openrouter.ai/mistralai/mistral-medium-3.1) |
-| `mistral_s` | `eval-mistral-small` | [mistralai/mistral-small-3.2-24b-instruct](https://openrouter.ai/mistralai/mistral-small-3.2-24b-instruct) |
-| `qwen_l` | `eval-qwen-3max` | [qwen/qwen3-max](https://openrouter.ai/qwen/qwen3-max) |
-| `qwen_m` | `eval-qwen-37plus` | [qwen/qwen3.7-plus](https://openrouter.ai/qwen/qwen3.7-plus) |
-| `qwen_s` | `eval-qwen-flash` | [qwen/qwen3.8-flash](https://openrouter.ai/qwen/qwen3.8-flash) |
-| `glm_l` | `eval-glm-5` | [z-ai/glm-5](https://openrouter.ai/z-ai/glm-5) |
-| `glm_m` | `eval-glm-46` | [z-ai/glm-4.6](https://openrouter.ai/z-ai/glm-4.6) |
-| `glm_s` | `eval-glm-45-air` | [z-ai/glm-4.5-air](https://openrouter.ai/z-ai/glm-4.5-air) |
+| arm | alias | upstream model | weights |
+|---|---|---|---|
+| `anthropic_l` | `eval-opus-5` | [anthropic/claude-opus-5](https://openrouter.ai/anthropic/claude-opus-5) | proprietary |
+| `anthropic_m` | `eval-claude-sonnet` | [anthropic/claude-sonnet-5](https://openrouter.ai/anthropic/claude-sonnet-5) | proprietary |
+| `anthropic_s` | `eval-claude-haiku` | [anthropic/claude-haiku-4.5](https://openrouter.ai/anthropic/claude-haiku-4.5) | proprietary |
+| `openai_l` | `eval-gpt-6sol` | [openai/gpt-6-sol](https://openrouter.ai/openai/gpt-6-sol) | proprietary |
+| `openai_m` | `eval-gpt-55` | [openai/gpt-5.5](https://openrouter.ai/openai/gpt-5.5) | proprietary |
+| `openai_s` | `eval-gpt-mini` | [openai/gpt-5.4-mini](https://openrouter.ai/openai/gpt-5.4-mini) | proprietary |
+| `deepseek_l` | `eval-deepseek-pro` | [deepseek/deepseek-v4-pro](https://openrouter.ai/deepseek/deepseek-v4-pro) | **open** · MIT |
+| `deepseek_m` | `eval-deepseek-41flash` | [deepseek/deepseek-v4.1-flash](https://openrouter.ai/deepseek/deepseek-v4.1-flash) | **open** · MIT |
+| `deepseek_s` | `eval-deepseek-flash` | [deepseek/deepseek-v4-flash](https://openrouter.ai/deepseek/deepseek-v4-flash) | **open** · MIT |
+| `gemma_l` | `eval-gemma-31b` | [google/gemma-4-31b-it](https://openrouter.ai/google/gemma-4-31b-it) | **open** · Apache-2.0 |
+| `gemma_m` | `eval-gemma-26b` | [google/gemma-4-26b-a4b-it](https://openrouter.ai/google/gemma-4-26b-a4b-it) | **open** · Apache-2.0 |
+| `gemma_s` | `eval-gemma-3-27b` | [google/gemma-3-27b-it](https://openrouter.ai/google/gemma-3-27b-it) | **open** · Gemma, gated |
+| `llama_l` | `eval-llama-maverick` | [meta-llama/llama-4-maverick](https://openrouter.ai/meta-llama/llama-4-maverick) | **open** · Llama, gated |
+| `llama_m` | `eval-llama-70b` | [meta-llama/llama-3.3-70b-instruct](https://openrouter.ai/meta-llama/llama-3.3-70b-instruct) | **open** · Llama 3.3, gated |
+| `llama_s` | `eval-llama-scout` | [meta-llama/llama-4-scout](https://openrouter.ai/meta-llama/llama-4-scout) | **open** · Llama, gated |
+| `mistral_l` | `eval-mistral-large` | [mistralai/mistral-large-2512](https://openrouter.ai/mistralai/mistral-large-2512) | proprietary |
+| `mistral_m` | `eval-mistral-medium` | [mistralai/mistral-medium-3.1](https://openrouter.ai/mistralai/mistral-medium-3.1) | proprietary |
+| `mistral_s` | `eval-mistral-small` | [mistralai/mistral-small-3.2-24b-instruct](https://openrouter.ai/mistralai/mistral-small-3.2-24b-instruct) | **open** · Apache-2.0 |
+| `qwen_l` | `eval-qwen-3max` | [qwen/qwen3-max](https://openrouter.ai/qwen/qwen3-max) | proprietary |
+| `qwen_m` | `eval-qwen-37plus` | [qwen/qwen3.7-plus](https://openrouter.ai/qwen/qwen3.7-plus) | proprietary |
+| `qwen_s` | `eval-qwen-flash` | [qwen/qwen3.8-flash](https://openrouter.ai/qwen/qwen3.8-flash) | proprietary |
+| `glm_l` | `eval-glm-5` | [z-ai/glm-5](https://openrouter.ai/z-ai/glm-5) | **open** · MIT |
+| `glm_m` | `eval-glm-46` | [z-ai/glm-4.6](https://openrouter.ai/z-ai/glm-4.6) | **open** · MIT |
+| `glm_s` | `eval-glm-45-air` | [z-ai/glm-4.5-air](https://openrouter.ai/z-ai/glm-4.5-air) | **open** · MIT |
+
+> **13 of these 24 have downloadable weights and could be self-hosted.** Verified on
+> 2026-09-29 against the HuggingFace API and OpenRouter's per-model endpoint list: a model
+> served by many independent providers necessarily has distributable weights, one served
+> only by its vendor does not. Nine are unrestricted (MIT / Apache-2.0); four are gated
+> behind licence acceptance and carry use conditions. What that is worth is measured in
+> [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **no proprietary model
+> separated from the best open-weight model in any of the five experiments.**
 
 > **A hosted model has no verifiable identity.** The fingerprint records
 > `identity_declared: true` and `revision_source: unavailable` — we record the alias we
