@@ -2,6 +2,9 @@
 
 **Five tasks · four metric shapes · 127 measured arms · $12.01 billed · one harness**
 
+Seven findings that hold across every experiment (§1–§7), and what they imply for
+**quality vs cost vs latency** in production (§8).
+
 A cross-cutting report. Each of the four underlying reports answers *"which model is best
 at this task"*; this one asks what is true in **all** of them, and it is written because
 several findings only became visible once there were five corpora to compare.
@@ -185,21 +188,155 @@ readable. **The tool was never wrong in general; it was wrong for a metric shape
 
 ---
 
+---
+
+## The economics: what money actually buys
+
+The four reports each measure quality and record cost. Put together, they answer the
+question a production decision actually asks — **how much quality does a dollar buy, and
+where does it stop buying any.**
+
+All figures are what the provider billed, projected to **1,000,000 items/month**. Latency
+is per item, excluding one-time setup.
+
+### What a 10× cost increase buys
+
+A log-linear fit over the paid arms in each experiment — quality against `log10(cost)`:
+
+| experiment | arms | quality per 10× cost | as % of the best arm | correlation |
+|---|---|---|---|---|
+| Few-NERD | 23 | +0.0405 | **+5.9%** | r = 0.49 |
+| SciFact | 12 | +0.0212 | +2.8% | r = 0.34 |
+| AG News | 24 | +0.0214 | +2.3% | r = 0.63 |
+| DBpedia | 24 | +0.0094 | +0.9% | r = 0.40 |
+| summarisation | 24 | −0.0013 | **−0.4%** | r = −0.07 |
+
+**An order of magnitude more money buys between nothing and six percent.** On
+summarisation the slope is *negative* and the correlation is zero — across 24 arms and a
+143× price range, cost carried no information about quality at all.
+
+Even the best case is a bad trade at scale: Few-NERD's +5.9% per 10× means going from
+$27/month to $2,463/month (a 91× step) buys about 11 points of F1 — and a **free** local
+model beats the top of that range by 11.4%.
+
+### The same picture at production scale
+
+| experiment | | arm | quality | $/month at 1M items | vs the best |
+|---|---|---|---|---|---|
+| **summarisation** | best | `bart_l` (local) | 0.3461 | **free** | — |
+| | dearest | `anthropic_l` | 0.3155 | **$9,826** | **−8.9%** |
+| | best paid | `deepseek_m` | 0.3460 | $191 | −0.0% |
+| **AG News** | best | `bert_mini` (local) | 0.9450 | **free** | — |
+| | dearest | `anthropic_l` | 0.9000 | $875 | −4.8% |
+| | best paid | `anthropic_m` | 0.9100 | $351 | −3.7% |
+| **DBpedia** | best | `qwen_m` | 0.9929 | **$51** | — |
+| | dearest | `anthropic_l` | 0.9893 | **$1,351** | **−0.4%** |
+| **Few-NERD** | best | `span_marker` (local) | 0.7674 | **free** | — |
+| | dearest | `anthropic_l` | 0.6798 | **$2,463** | **−11.4%** |
+| **SciFact** | best | `glm_s` | 0.7437 | $711 | — |
+| | dearest | `glm_m` | 0.7419 | $2,288 | −0.2% |
+
+Three rows are worth stopping on:
+
+- **DBpedia: $1,351/month buys −0.4% quality** against $51/month. Twenty-six times the
+  price for slightly worse output, and the difference is not statistically separable.
+- **Few-NERD: $2,463/month buys −11.4%** against a free model on a CPU.
+- **Summarisation: $9,826/month buys −8.9%** against a free model, and −0.0% against
+  $191/month.
+
+In no experiment did the most expensive option win. In three, the free option did.
+
+### The cheapest arm you cannot tell apart from the best
+
+Eyeballing "within 2%" is not a test. Using Holm separation — the cheapest **paid** arm
+that the winner does **not** statistically separate from:
+
+| experiment | tied with the winner | cheapest tied arm | $/1k items | vs the dearest arm |
+|---|---|---|---|---|
+| summarisation | 13 arms | `deepseek_s` | $0.069 | **143× cheaper** |
+| DBpedia | 18 arms | `gemma_m` | $0.012 | **116× cheaper** |
+| AG News | 9 arms | `gemma_s` | $0.011 | **82× cheaper** |
+| SciFact | 12 arms | `deepseek_s` | $0.300 | 8× cheaper |
+| Few-NERD | 0 arms | — | — | *no paid arm ties the winner* |
+
+**In four of five experiments you can drop 8× to 143× of your inference bill and the data
+cannot detect the difference.** Few-NERD is the exception and it goes the other way: no
+paid arm is indistinguishable from the free one.
+
+### Cost does not buy speed
+
+| experiment | correlation, log(cost) vs latency | hosted latency range | fastest local arm |
+|---|---|---|---|
+| Few-NERD | **r = −0.30** | 0.79 – 5.94 s | `gliner` 0.17 s |
+| summarisation | r = −0.18 | 1.28 – 25.04 s | `bart_l` 11.01 s |
+| DBpedia | r = +0.02 | 0.44 – 12.35 s | `bart_mnli` 5.72 s |
+| SciFact | r = +0.03 | 1.14 – 17.48 s | `bge_small` 0.03 s |
+| AG News | r = +0.20 | 0.44 – 7.66 s | `bert_mini` **0.01 s** |
+
+Essentially uncorrelated, and negative twice. **Price is not a proxy for latency**, and
+the spread *within* the hosted field (up to 20×) dwarfs anything cost predicts.
+
+Local models are a different regime entirely: `bert_mini` answers in **0.01 s** against
+0.44–7.66 s for hosted arms on the same task — 44× to 766× faster, with no network in the
+path. What they cost instead is **setup**: e5-base takes 1,825 s to embed the SciFact
+corpus once, BM25 takes 0.8 s for the same job. That is a real cost, it is reported as
+`warmup_ms` rather than hidden, and it is paid once rather than per item.
+
+### The task shape sets the bill, not the model
+
+Cost per item varies more across *tasks* than across *models*:
+
+| task | input tokens per item | why |
+|---|---|---|
+| classification | ~104 | one snippet in, one word out |
+| NER | ~125 | one sentence in, a short JSON array out |
+| summarisation | ~776 | a full news article in |
+| **retrieval reranking** | **~3,926** | the prompt carries **20 full abstracts** |
+
+A reranking prompt costs **38× more per item** than a classification prompt on the same
+model at the same price (3,926 vs 104 input tokens, measured). Before shopping for a
+cheaper model, check whether the *architecture* is what is expensive: on the SciFact dev
+slice, halving the rerank depth from 20 to 10 cut input tokens from 3,926 to 2,027 — a
+**48% bill reduction** — for 0.011 nDCG@10. Both halves of that comparison ran under the
+same (pre-reasoning-fix) instrument, so the delta is internally valid but is not
+comparable to the measurement table above.
+
+No model substitution in any of these five experiments moved cost that far for that
+little.
+
 ## What this means if you are choosing a model
 
-1. **Do not buy the most expensive arm.** It was never the best, in five for five.
-2. **Do not read rank 1 as the winner** without a separation test. Four of five top spots
-   are ties, and "ahead on the average" was true of the leader in 100% of cases while
-   meaning almost nothing.
-3. **If you can label a few thousand examples, fine-tune a small model.** It won outright
-   in three of five, and tied in a fourth, at $0 and CPU latency.
-4. **Do not select on a pilot.** ρ ≈ 0.8 feels like enough and picked the wrong winner
+Ordered by what they are worth, not by how obvious they are.
+
+1. **Start with the task shape, not the model.** A reranking prompt costs 38× per item
+   what a classification prompt does on the same model. The largest cost lever here was
+   architectural, and no model choice could recover it.
+2. **If you can label a few thousand examples, fine-tune a small model.** It won outright
+   in three of five and tied in a fourth — at **$0/month against up to $9,826/month**, and
+   44×–766× lower latency. This is the single biggest lever in the table.
+3. **Never buy the most expensive arm.** Five for five it was not the best, and in three
+   experiments it was *worse* than free while costing $875–$9,826/month.
+4. **Pick the cheapest arm your test cannot separate from the leader.** That is 8×–143×
+   cheaper than the dearest, in four of five. Requires a separation test, not a
+   leaderboard — "ahead on the average" was true of the leader in 100% of cases and meant
+   almost nothing.
+5. **Do not select on a pilot.** ρ ≈ 0.8 feels like enough and picked the wrong winner
    three times in five. Use the pilot to catch instrument bugs, which is what it is
    genuinely good for.
-5. **Read the items your whole field gets wrong before you read the ranking.** On a
-   saturated benchmark that is where the ceiling is.
-6. **Budget attention for the scorer, not just the model.** Three separate scoring bugs
+6. **Read the items your whole field gets wrong before you read the ranking.** On a
+   saturated benchmark that is where the ceiling is, and it is annotation rather than
+   capability.
+7. **Budget attention for the scorer, not just the model.** Three separate scoring bugs
    here moved an arm further than most model swaps did.
+
+**When paying more IS right**, and this report should not be read as saying never: when
+you cannot label data and the task is unlike anything a small model was trained on; when
+the quality difference is worth more than the bill (at 1,000 items/month the entire
+DBpedia spread is $1.35 and the analysis is not worth your time); when a single wrong
+answer is expensive; or when engineering time to fine-tune and host costs more than the
+API. The finding is not that expensive models are bad — it is that **price stops
+predicting quality long before it stops rising**, so the premium has to be justified by
+something other than the leaderboard.
 
 ## What this cannot say
 
@@ -219,6 +356,17 @@ readable. **The tool was never wrong in general; it was wrong for a metric shape
   several of these metrics, and the reports say so individually.
 - **§5 is three corpora, not five.** Two were never checked for gold errors, and their
   absence from the table is a gap, not a clean bill.
+- **The economics in §8 price inference and nothing else.** No engineering time to
+  fine-tune or host a local model, no GPU rental, no maintenance, no serving
+  infrastructure, no cost of a wrong answer. "Free" means *zero inference cost*, and a
+  local model that takes a week to set up is not free in any sense a business recognises.
+- **The 1M-items/month projections are linear extrapolations** from 200–280 item runs.
+  They ignore volume discounts, batch pricing, caching, and rate limits — all of which a
+  real deployment at that scale would negotiate or hit. Treat them as *ratios* that are
+  sound, and absolute figures that are indicative.
+- **Prices are one snapshot**, taken 2026-09-28/29 through one reseller. Model pricing
+  moves fast and the ordering of vendors is the least durable finding here. The
+  *structure* — that price stops predicting quality — is what is expected to survive.
 
 ---
 
