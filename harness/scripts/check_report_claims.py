@@ -47,7 +47,7 @@ CLAIMS = [
     ("NER capitalized typed",     RESCORED, "fn_capitalized_n200_v1", "f1",        0.1913),
     ("NER capitalized untyped",   RESCORED, "fn_capitalized_n200_v1", "untyped_f1",0.6191),
     ("NER nothing = the floor",   RESCORED, "fn_nothing_n200_v1",     "f1",        0.1250),
-    ("NER glm_l parsed",          RESCORED, "fn_glm_l_n200_v1",       "parsed",    0.8857),
+    ("NER glm_l parsed",          RESCORED, "fn_glm_l_n200_v1",       "parsed",    0.8893),
     ("SciFact glm_s ndcg@10",     DATA,     "sf_glm_s_n200_v1",       "ndcg_10",   0.7437),
     ("SciFact e5_base ndcg@10",   DATA,     "sf_e5_base_n200_v1",     "ndcg_10",   0.7191),
     ("SciFact bm25 ndcg@10",      DATA,     "sf_bm25_n200_v1",        "ndcg_10",   0.6451),
@@ -190,7 +190,16 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
         if _arm not in _data:
             continue
         _bil, _rec = _data[_arm]
-        if _bil <= 0 or abs(_bil - _rec) < 1e-9:
+        # ONLY skip an arm with no bill. This also skipped every arm whose recorded
+        # cost already EQUALS its bill -- commented "the table happens to be right",
+        # which is a statement about the RUN, not about the cell in the report. So any
+        # arm measured since the 2026-09-29 adapter fix had its table cost unchecked,
+        # and that is every hosted run from here on. Changing anthropic_l's $0.6897 to
+        # $0.5000 passed. Found by external review.
+        #
+        # When bill == recorded the "price table" branch below is simply unreachable
+        # and the "neither" branch still does the work.
+        if _bil <= 0:
             continue          # no bill, or the table happens to be right
         for _c in _cells[1:]:
             # THE DOLLAR SIGN IS REQUIRED. With it optional this matched any

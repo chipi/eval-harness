@@ -136,7 +136,18 @@ def _balanced_arrays(body: str) -> List[str]:
                     end = j + 1
                     break
         if end is None:
-            return out
+            # AN UNCLOSED "[" IS NOT THE END OF THE SCAN. Returning here stopped at the
+            # first bracket that never closes, so a reply that opens a fragment and then
+            # emits a complete array was read as having none:
+            #   Output: [{"text": "Hagar", "type": "[{"text": "Hagar", "type": "person"}]
+            # glm_l wrote exactly that, finish_reason=stop at 89 tokens -- not a
+            # truncation, a restart. Skip past the stray "[" and keep looking.
+            #
+            # Truncation protection is unchanged: a reply cut off mid-array has no LATER
+            # balanced array either, so the scan still comes back empty. Verified across
+            # all 48 unreadable rows -- this recovers exactly one item and no other.
+            i = start + 1
+            continue
         out.append(body[start:end])
         i = end
 

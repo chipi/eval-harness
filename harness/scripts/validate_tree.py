@@ -277,6 +277,67 @@ def v7_committed_runs_are_readable() -> None:
           f"{len(bad)} run(s) committed as outputs only")
 
 
+def v8_no_duplicate_config_ids() -> None:
+    """No two run directories may claim the same (dataset_id, config_id).
+
+    This is the round-3 ext4 failure made structural. `check_report_claims.py` globs
+    for a run in SIX places and only one of them goes through `runs_by_arm`, which is
+    the function that refuses ambiguity -- so copying a second SciFact run back into
+    data/runs passes 33/33 in BOTH listing orders while two of its internal lookups
+    silently disagree about which run they mean. Two defects were masking each other:
+    the cost row that would have caught it was being skipped for an unrelated reason.
+
+    Routing five more globs through `runs_by_arm` would fix those five. This forbids
+    the situation instead, which is one rule in one place and covers every tool that
+    has not been written yet.
+
+    `--repeat N` writes `<id>_r1.._rN`: one arm measured N times, averaged on purpose,
+    and not ambiguous.
+    """
+    import re as _re  # noqa: PLC0415
+
+    #: The directories whose runs back a report. Scratch dirs (runs-smoke, runs-tune,
+    #: runs-superseded) are gitignored working artifacts where repeats are normal.
+    COMMITTED = ("runs", "runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats")
+    #: One documented exception. `demo_v1` on `smoke_v1` is the bundled demo, run many
+    #: times by `make demo` and by the self-test; smoke_v1 is not an experiment and no
+    #: report cites it. Named here rather than scoped away silently, so that adding a
+    #: second exception is a deliberate edit someone has to justify.
+    ALLOWED = {("smoke_v1", "demo_v1")}
+
+    bad = []
+    for base in [(ROOT / "data" / n) for n in COMMITTED]:
+        if not base.is_dir():
+            continue
+        groups: dict = {}
+        for mj in sorted(base.glob("*/metrics.json")):
+            try:
+                m = json.loads(mj.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            key = (m.get("dataset_id"), m.get("config_id"))
+            if key[1]:
+                groups.setdefault(key, []).append(mj.parent.name)
+        for (ds, cid), names in sorted(groups.items()):
+            if len(names) < 2:
+                continue
+            stems = {_re.sub(r"_r\d+$", "", n) for n in names}
+            if len(stems) == 1 and all(_re.search(r"_r\d+$", n) for n in names):
+                continue
+            if (ds, cid) in ALLOWED:
+                notes.append(f"{base.name}/: {len(names)} {cid!r} runs on {ds} "
+                             f"(allowed: the bundled demo, cited by no report)")
+                continue
+            bad.append(f"{base.name}/: {len(names)} runs claim {cid!r} on {ds} "
+                       f"— {', '.join(sorted(names))}")
+    for x in bad[:6]:
+        print(f"       {x}")
+    if len(bad) > 6:
+        print(f"       ... and {len(bad) - 6} more")
+    check(not bad, "V8 no two runs share a config_id (outside a --repeat set)",
+          f"{len(bad)} ambiguous config_id(s)")
+
+
 def main() -> int:
     # `--help` prints help. It used to fall through and run the whole validation, which
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
@@ -287,7 +348,8 @@ def main() -> int:
         return 0
     print(f"eval tree: {ROOT / 'data'}\n")
     for fn in (v1_schemas, v2_dataset_ids, v3_provenance, v4_materialized,
-               v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable):
+               v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable,
+               v8_no_duplicate_config_ids):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

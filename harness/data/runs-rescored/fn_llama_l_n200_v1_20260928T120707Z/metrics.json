@@ -31,7 +31,8 @@
       "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
       "n_items": 280,
       "reference_id": "gold/few_nerd_280",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see rescored_with",
@@ -46,7 +47,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "1d5c72b2deccad1e2e18d8071363001ee6af3c63f8dab419f567b765aa24f51c"
+        "sha256": "4e83f7fc8e346af5035508a379c7581e66571c35b0f344a8a637ef219f0900a6"
       },
       "harness": {
         "commit": "107aef1af2e4",
@@ -137,20 +138,23 @@
     "Parasail": 10
   },
   "reference_tier": "gold",
-  "rescored_at": "2026-09-29T17:02:50Z",
+  "rescore_dropped_metrics": [
+    "untyped_tp"
+  ],
+  "rescored_at": "2026-09-30T17:37:51Z",
   "rescored_from": "fn_llama_l_n200_v1_20260928T120707Z",
   "rescored_with": {
     "adapter": "examples/ner-few-nerd/adapter.py",
     "scorer": {
       "normalizer_sha256": "10c4df840844e0c3e74965e43ae9cd4d91e8922d594abeff7ec23dfc19094cf2",
-      "parser_sha256": "1a4878aa7ac9a63b315b30ce19bc21390d60601dc5151ab57c7527de6ffc1e20",
+      "parser_sha256": "6eafd853f71aa3c730b434e2eeb48737efe4827572c66d2dc1c6298a1991dd1d",
       "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e"
     },
-    "sha256": "1d5c72b2deccad1e2e18d8071363001ee6af3c63f8dab419f567b765aa24f51c"
+    "sha256": "4e83f7fc8e346af5035508a379c7581e66571c35b0f344a8a637ef219f0900a6"
   },
   "run_id": "fn_llama_l_n200_v1_20260928T120707Z",
   "scores": {
-    "cost_usd": 5.53918e-05,
+    "cost_usd": 6.29245e-05,
     "f1": 0.5989598828,
     "fn": 0.8964285714,
     "fp": 1.5214285714,
@@ -163,7 +167,7 @@
     "recall": 0.6470316043,
     "tokens_in": 119.4821428571,
     "tokens_out": 56.475,
-    "total_cost_usd": 0.0155097,
+    "total_cost_usd": 0.01761887,
     "total_tokens_in": 33455.0,
     "total_tokens_out": 15813.0,
     "tp": 1.8392857143,

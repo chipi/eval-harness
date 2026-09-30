@@ -58,6 +58,15 @@ check("an explicit empty array is still an empty answer, not None",
 
 # TRUNCATION STAYS UNREADABLE. glm_l ran out of tokens mid-object; there is no answer
 # there, and a repair that invented one would be mining prose for entities.
+# AN UNCLOSED BRACKET IS NOT THE END OF THE SCAN. glm_l opened a fragment, restarted,
+# and emitted a complete array -- finish_reason=stop, 89 tokens, not a truncation. The
+# scan stopped at the stray "[" and reported nothing. One real item of 48.
+check("a stray unclosed bracket does not hide a later complete array",
+      _parse_entities('Output: [{"text": "Hagar", "type": "[{"text": "Hagar", "type": "person"}]')
+      == [{"text": "Hagar", "type": "person"}])
+check("but a reply genuinely cut off mid-array is still unreadable",
+      _parse_entities('Here goes:\n[\n  {"text": "Corfu International') is None)
+
 check("an array cut off mid-object -> None",
       _parse_entities('Here goes:\n[\n  {"text": "Corfu International') is None)
 check("refusal text -> None", _parse_entities("You didn't provide the sentence.") is None)

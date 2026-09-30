@@ -192,7 +192,7 @@ reported; the mean is the ranking metric.
 | deepseek_s | 0.5756 | 0.6996 | 1.000 | 2.28 s | $0.0091 |
 | llama_m | 0.5740 | 0.6769 | 0.954 | 5.40 s | $0.0194 |
 | llama_s | 0.5686 | 0.6812 | 0.993 | 2.64 s | $0.0103 |
-| glm_l | 0.5662 | 0.6493 | 0.886 | 3.01 s | $0.1023 |
+| glm_l | 0.5662 | 0.6529 | 0.889 | 3.01 s | $0.1023 |
 | glm_s | 0.5529 | 0.6863 | 1.000 | 2.11 s | $0.0194 |
 | gemma_s | 0.5500 | 0.6758 | 1.000 | 5.94 s | $0.0093 |
 | mistral_s | 0.5243 | 0.6446 | 1.000 | 2.06 s | $0.0076 |
@@ -423,14 +423,21 @@ See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
 look.** `span_marker` wins outright and separates from all 26. But decompose it:
 
 - ~57% of the margin is one type whose definition exists only inside this corpus.
-- ~7% of the margin (0.0059 of **0.0810** vs the nearest hosted arm, `openai_m` at
-  0.6864) is agreeing with annotation the rest of the field rejects.
+- **~38% of the margin** is agreeing with annotation the rest of the field rejects.
+  Under the annotation bound the lead over `openai_m` falls from **0.0810 to 0.0503**,
+  and `1 − 0.0503/0.0810 = 37.9%`. `span_marker` itself gains only 0.0060 under the
+  bound; `openai_m` gains 0.0365, and it is the **difference** between the two that
+  closes the margin.
 
-  *The denominator read 0.0876 until 2026-09-30, from before the NER rescoring; the
-  margin is 0.0810 now and the share is 7% either way. Round 3 reported this share as
-  38% and I could not reproduce that from any pairing of the committed numbers —
-  0.0059 is 7.3% of 0.0810 and 6.7% of 0.0876. Flagged rather than silently kept: if
-  38% comes from a different decomposition, it is worth seeing.*
+  *This bullet said "~7%" for a week, from dividing span_marker's own 0.0060 gain by
+  the margin. That is the wrong quantity: a share of the margin is about how the margin
+  MOVES, and the margin moves by the difference between the two arms, not by one arm's
+  gain. §0 and §3.6 of this same report already said 38% and were right.*
+
+  *Worse, when round 3 flagged the inconsistency I recorded it here as a disagreement
+  and wrote that I "could not reproduce 38% from any pairing of the committed numbers".
+  It was my own figure, 350 lines up in the file I was editing. Round 4 had to point at
+  my own lines 34, 82 and 323 to show me. I was defending a number against myself.*
 - On the type with a corpus-independent meaning, it loses.
 
 So the defensible claim is: **if your labels are a fixed in-house taxonomy and you can
@@ -448,8 +455,8 @@ and untyped orderings is **0.955** over 27 arms, same leader, so it is not an al
 leaderboard. What it does is split each arm's error into detection and labelling.
 `anthropic_s` is typed 0.5843 / untyped 0.7279 (`type_penalty` 0.1436) and rises six places
 on the untyped view — a labelling problem. `openai_s` is 0.5948 / 0.6855 and *falls* seven
-places — it is typing well what little it finds. `glm_l` is 0.5662 / 0.6493 (penalty
-0.0831): not a labelling problem at all, a *not answering* problem.
+places — it is typing well what little it finds. `glm_l` is 0.5662 / 0.6529 (penalty
+0.0867): not a labelling problem at all, a *not answering* problem.
 
 ---
 
