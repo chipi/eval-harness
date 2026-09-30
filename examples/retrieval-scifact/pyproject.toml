@@ -40,7 +40,7 @@ dependencies = [
 # built against the NumPy 1.x C API.
 local = [
     "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "transformers>=4.40,<4.56",
     # The bi-encoders. `sentence-transformers` rather than raw transformers because the
     # pooling strategy is part of the model -- mean-pooling a checkpoint that was trained

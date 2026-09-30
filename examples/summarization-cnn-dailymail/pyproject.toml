@@ -38,7 +38,7 @@ local = [
     # Every other platform keeps a current torch; the cap is this machine's, not the
     # example's.
     "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     # Two separate ceilings, both caused by the torch 2.2.2 cap above:
     #
     #   transformers 5.x  does not recognise torch 2.2 at all. It installs, imports, and

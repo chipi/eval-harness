@@ -39,7 +39,7 @@ dependencies = [
 # safetensors cannot load at all. The arm configs say which ones that hits.
 local = [
     "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    "torch>=2.2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "transformers>=4.40,<4.56",
     # GLiNER: zero-shot NER where the CALLER supplies the label set, so it can be
     # handed Few-NERD's eight types directly with no label mapping. Its own package
