@@ -11,7 +11,7 @@ frozen datasets, runs that know what produced them, cost and speed alongside
 quality, and comparisons that **refuse** to mislead you.
 
 ```bash
-cp -r eval-harness your-project/eval && cd your-project/eval
+cp -r eval-harness/harness your-project/eval && cd your-project/eval
 make demo        # the whole loop on bundled data — no API key, no network
 make help        # the verbs, in the order you need them
 ```

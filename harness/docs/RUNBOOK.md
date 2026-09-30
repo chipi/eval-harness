@@ -195,6 +195,35 @@ It refuses outright if the two runs used different `dataset_id`s.
 
 ---
 
+## 7b. The analysis tools, none of which this runbook used to name
+
+Sections 0–7 walk one arm from data to comparison. Everything that turns a pile of runs
+into a *finding* is a separate verb, and this runbook listed none of them — so the tools
+that produced every number in `research/` were discoverable only by reading the
+Makefile. Found by external review.
+
+| verb | answers |
+|---|---|
+| `make leaderboard DATASET_ID=…` | how do all the arms rank, on every metric at once |
+| `make family-test DATASET_ID=… A=… AGAINST=…` | is arm A separated from a **pre-declared family**, Holm step-down. This is what every separation claim in the reports rests on |
+| `make pair-test DATASET_ID=… A=… B=…` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
+| `make holdout DATASET_ID=… EXCLUDE_DATASET=…` | does the result survive on the items the dev slice never contained |
+| `make rank-stability DATASET_ID=…` | how many items before the ordering stops moving — measured, not assumed from a power table |
+| `make bootstrap-test DATASET_ID=…` | a percentile interval for a corpus-level metric that has no per-item value |
+| `make rescore DATASET_ID=…` | recompute every score from stored outputs under the current scorer. **$0, no API calls** |
+| `make cost-report DATASET_ID=…` | what each arm actually cost, from the provider's bill rather than a price table |
+| `make silver-calibrate DATASET_ID=…` | does a model-authored reference rank arms the way the trusted one does |
+
+Two that are easy to reach for and wrong:
+
+- **`pair-test` on a pair you chose after seeing the leaderboard** is the winner's
+  curse with extra steps. If you did not name the pair in advance, use `family-test`.
+- **`leaderboard` as a ranking.** It sorts; it does not separate. Four of the five
+  experiments here have a top group its own tests cannot tell apart, and the table
+  still prints them 1, 2, 3.
+
+---
+
 ## 8. Promote — a decision, not a copy
 
 ```bash

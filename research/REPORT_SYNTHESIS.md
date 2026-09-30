@@ -2,6 +2,9 @@
 
 **Five tasks · four metric shapes · 127 measured arms · $12.01 billed · one harness**
 
+*$12.01 is the 127 arms under `harness/data/runs/`. Including the four paired runs
+behind the registered prediction and the three repeat runs, the repo has spent $13.04.*
+
 Seven findings that hold across every experiment (§1–§7), and what they imply for
 **quality vs cost vs latency** in production (§8).
 
@@ -296,7 +299,7 @@ here only if its weights fit in **85% of nominal memory**.
 unlimited-hardware answer, and **four of five 64 GB answers equal the 128 GB one.** Only
 SciFact loses anything by halving the budget — 0.0074, which its own separation test
 cannot resolve. Only summarisation loses anything by capping the budget at all — 0.0078,
-about a tenth of the spread between the best and worst hosted arm on that task.
+about **18%** of the spread between the best and worst hosted arm on that task (0.0431).
 
 Going from a 510 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
 the other four**.
@@ -322,7 +325,7 @@ ones whose numbers here you can trust without re-measuring.
 | summarisation | **BART-large-CNN** (1.6 GB) if the domain is stable; else **Llama-3.3-70B int8** (70 GB) |
 | retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int4** (55 GB) only if you need the last 0.07 |
 
-Three of those four are under 2 GB and need no GPU at all.
+All four are under 2 GB and need no GPU at all.
 
 ### Every experiment has a $0 answer, if you own hardware
 
@@ -537,7 +540,7 @@ whose gold is probably wrong. Independent models do not agree on a mistake.
 
 ### 6. The instrument was broken before the models got interesting — every time
 
-*Sources: the Corrections section of each report, and [`NOTES.md`](NOTES.md), 56 entries*
+*Sources: the Corrections section of each report, and [`NOTES.md`](NOTES.md), 58 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -613,8 +616,11 @@ A log-linear fit over the paid arms in each experiment — quality against `log1
 summarisation the slope is *negative* and the correlation is zero — across 24 arms and a
 143× price range, cost carried no information about quality at all.
 
-Even the best case is a bad trade at scale: Few-NERD's +5.9% per 10× means going from
-$27/month to $2,463/month (a 91× step) buys about 11 points of F1 — and a **free** local
+Even the best case is a bad trade at scale: Few-NERD's +5.9% per 10× predicts that
+going from $27/month to $2,463/month (a 90× step) buys about **8 points** of F1. The
+two arms at those ends — `mistral_s` at $0.0076 and `anthropic_l` at $0.6897 — actually
+differ by **15.6 points**, so the regression understates this particular pair by half;
+it is a fit across twelve arms, not a prediction about two. Either way a **free** local
 model beats the top of that range by 11.4%.
 
 ### The same picture at production scale
@@ -839,4 +845,4 @@ python scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct --mat
 
 Terms, models, datasets and tests are defined in
 [`../docs/REFERENCE.md`](../docs/REFERENCE.md). The append-only journal of how each finding
-arrived — including the ones that were retracted — is [`NOTES.md`](NOTES.md), 56 entries.
+arrived — including the ones that were retracted — is [`NOTES.md`](NOTES.md), 58 entries.

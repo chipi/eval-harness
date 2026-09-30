@@ -30,7 +30,7 @@
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model, quantised.** GLM-4.5-Air is ~110 GB at int8 — 86% of a 128 GB box, tight once KV cache is counted — or **~55 GB at int4**, comfortable. No quality is given up *on paper*; quantised quality was not measured. |
 | **Self-host · open-weight LLM, ≤64 GB** | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**, **0.7363**. Costs **0.0074** against GLM-4.5-Air, which its own separation test cannot resolve. The only experiment where halving the memory budget costs anything at all. |
 | **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
-| **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and 11 of 12 are within 4 points of that cap. |
+| **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and **11 of 12 land within 4 points of each other** — none is within 4 points of the cap itself. |
 | **Does paying more help?** | Slightly: **+2.7%** per 10× cost (r = 0.32, on billed cost). The dearest arm ranks **2nd of 19** at $2,288/month for **−0.2%**. |
 | **Arms tied at the top?** | **11–12 of 18**, the count sitting on a Holm boundary (see §3.2) — and two of them (`e5_base`, `bge_small`) are **free and local**. |
 | **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
@@ -372,7 +372,8 @@ the cheapest LLM on top of it reaches 0.7891 — a real +0.070 — for $0.055 pe
 
 **What you should not do is add a reranker to a weak first stage.** Every BM25-based
 pipeline here is capped at 0.8163 no matter which model does the reordering, and eleven of
-twelve are within 4 points of that cap. Money spent on a better reranker there buys almost
+twelve are within 4 points of one another — and none is within 4 points of the cap.
+Money spent on a better reranker there buys almost
 nothing; money spent on the retriever raises the cap itself.
 
 **The tie is the recurring result across all four examples in this repo.** Summarisation:

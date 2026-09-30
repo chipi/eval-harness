@@ -24,7 +24,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge check ci test smoke-fixture clean clean-cache
+        validate judge check ci test smoke-fixture cost-report clean clean-cache
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -153,6 +153,11 @@ rescore:
 	$(PYTHON) scripts/rescore.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) --out $(OUT)
 	@echo ""
 	@echo "  EVAL_RUNS_DIR=$(OUT) make leaderboard DATASET_ID=$(DATASET_ID)"
+
+# What each arm actually cost, from `_meta.usage.cost` rather than the price table in
+# its yaml. Added because RUNBOOK §7b documented this verb before it existed.
+cost-report:
+	$(PYTHON) scripts/cost_report.py $(ARGS)
 
 
 leaderboard:
