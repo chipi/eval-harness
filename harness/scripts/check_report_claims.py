@@ -55,7 +55,22 @@ CLAIMS = [
     ("AG News bert_mini",         DATA,     "ag_bert_mini_n200_v1",   "correct",   0.9450),
     ("DBpedia qwen_m",            DATA,     "db_qwen_m_n200_v1",      "correct",   0.9929),
     ("Summarisation bart_l",      DATA,     "cnn_bart_l_n200_v1",     "coverage",  0.3461),
+    # The six local arms added 2026-09-30.
+    ("AG News bert_base_ta",      DATA,     "ag_bert_base_ta_n200_v1", "correct",  0.9600),
+    ("AG News bert_base_fy",      DATA,     "ag_bert_base_fy_n200_v1", "correct",  0.9500),
+    ("DBpedia bert_base_fy",      DATA,     "db_bert_base_fy_n200_v1", "correct",  0.9857),
+    ("Summarisation bart_m",      DATA,     "cnn_bart_m_n200_v1",      "coverage", 0.3367),
+    ("Summarisation bart_s",      DATA,     "cnn_bart_s_n200_v1",      "coverage", 0.3276),
+    ("Summarisation bart_l_xsum", DATA,     "cnn_bart_l_xsum_n200_v1", "coverage", 0.2071),
 ]
+
+#: Which report states each CLAIM. A claim here is a copy of a number in a report, and a
+#: copy verified only against the run proves the copy, not the report: change the report's
+#: figure and this file still passes. So every claim must also appear, to four decimals,
+#: in the report it came from.
+CLAIM_REPORT = {"fn_": "REPORT_NER.md", "sf_": "REPORT_RETRIEVAL.md",
+                "ag_": "REPORT_CLASSIFICATION.md", "db_": "REPORT_CLASSIFICATION.md",
+                "cnn_": "REPORT_SUMMARIZATION.md"}
 
 #: (label, claimed, a - b) — the DIFFERENCES the reports lead with.
 #: The registered prediction, checked as a RANGE rather than a point, because that is
@@ -102,6 +117,16 @@ for label, base, cid, metric, claimed in CLAIMS:
         print(f"  --   {label}: run not present ({cid}) — skipped")
         continue
     check(label, abs(got - claimed) <= TOL, f"claimed {claimed}, run says {got:.6f}")
+
+_absent = []
+for label, base, cid, metric, claimed in CLAIMS:
+    rep = next((r for p, r in CLAIM_REPORT.items() if cid.startswith(p)), None)
+    # 4 decimals, or 3 where the report's column is 3dp (NER's parse rate: 0.886).
+    _txt = (ROOT / "research" / rep).read_text() if rep else ""
+    if rep and f"{claimed:.4f}" not in _txt and f"{claimed:.3f}" not in _txt:
+        _absent.append(f"{label}: {claimed:.4f} not in {rep}")
+check(f"every claimed figure appears in its report ({len(CLAIMS)} checked)", not _absent,
+      "; ".join(_absent[:5]))
 
 for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
     a, b = score(b1, c1, m1), score(b2, c2, m2)
@@ -498,6 +523,68 @@ for label, pref, ds, cheap, row_key in CHEAPNESS:
     got = max(paid.values()) / paid[cheap]
     check(f"{label} (report says {claimed:g}×)", abs(got - claimed) / claimed <= 0.02,
           f"the report says {claimed:g}×, the bill gives {got:.1f}×")
+
+#: THE TIE GROUP ITSELF, recomputed. The rows above lock onto "| … | 15 arms (13 paid) |"
+#: and check only the ratio after it; the group size and the cheapest tied arm were
+#: literals in this file, so when two arms joined AG News and the group went from 9 to 3,
+#: nothing here could have noticed. Now: run the leader's Holm family test, count what it
+#: does not separate from, split paid from free by the provider each run recorded, and
+#: compare all three to what the synthesis row says. (leader, runs dir, dataset, metric,
+#: prefix, the row's first cell)
+TIE_GROUPS = [
+    ("cnn_bart_l_n200_v1", DATA, "cnn_dailymail_200", "coverage", "cnn_", "| Summarisation · CNN/DM |"),
+    ("db_qwen_m_n200_v1", DATA, "dbpedia_280", "correct", "db_", "| Classification · DBpedia |"),
+    ("ag_bert_base_ta_n200_v1", DATA, "ag_news_200", "correct", "ag_", "| Classification · AG News |"),
+]
+
+
+def _not_separated(leader, runs_dir, dataset_id, metric):
+    """Opponents the leader's Holm family test does not separate from, or None."""
+    import subprocess  # noqa: PLC0415
+    r = subprocess.run(
+        [sys.executable, str(HERE / "family_test.py"), "--dataset-id", dataset_id,
+         "--a", leader, "--against", "_n200_v1", "--metric", metric,
+         "--runs-dir", str(runs_dir)],
+        capture_output=True, text=True)
+    if r.returncode != 0:
+        return None
+    return [ln.split()[0] for ln in r.stdout.splitlines()
+            if ln.strip().endswith("--") and ln.split()[0].endswith("_n200_v1")]
+
+
+def _provider(runs_dir, config_id):
+    for f in sorted(glob.glob(str(runs_dir / f"{config_id}_2*" / "metrics.json"))):
+        if "20260929" in Path(f).parent.name:
+            continue
+        return (json.load(open(f)).get("params") or {}).get("provider")
+    return None
+
+
+for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
+    # The first cell repeats across the synthesis's tables; the tie row is the one that
+    # says "N arms".
+    _tie = re.compile(r"\|\s*(\d+) arms(?: \((\d+) paid\))?\s*\|\s*`([a-z0-9_]+)`")
+    m = next((_tie.search(ln) for ln in SYNTH.splitlines()
+              if ln.startswith(cell) and _tie.search(ln)), None)
+    if not m:
+        missing += 1
+        print(f"  --   tie group {cell.strip('| ')}: row not found in the synthesis — skipped")
+        continue
+    tied = _not_separated(leader, rdir, ds, metric)
+    if tied is None:
+        missing += 1
+        print(f"  --   tie group {cell.strip('| ')}: family test did not run — skipped")
+        continue
+    paid = [a for a in tied if _provider(rdir, a) == "litellm"]
+    costs = _arm_costs(pref, ds)
+    cheapest = min(paid, key=lambda a: costs.get(a.replace(pref, "").replace("_n200_v1", ""),
+                                                 float("inf"))) if paid else None
+    n, n_paid, named = int(m.group(1)), int(m.group(2) or m.group(1)), m.group(3)
+    got_name = cheapest.replace(pref, "").replace("_n200_v1", "") if cheapest else None
+    check(f"tie group {cell.strip('| ')}: {n} arms ({n_paid} paid), cheapest `{named}`",
+          len(tied) == n and len(paid) == n_paid and got_name == named,
+          f"the row says {n} ({n_paid} paid), cheapest {named}; the family test gives "
+          f"{len(tied)} ({len(paid)} paid), cheapest {got_name}")
 
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")

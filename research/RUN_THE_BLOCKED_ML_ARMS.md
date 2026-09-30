@@ -13,8 +13,9 @@
 >   recorded `dirty` (the earlier run directories are untracked files). Copy the finished
 >   runs into `harness/data/runs/` afterwards, without `run.json` and `outputs/_rows.jsonl`.
 >
-> And a shortcut nobody took: each checkpoint has a safetensors conversion PR on the Hub
-> that loads on torch 2.2.2 — see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+> And a shortcut nobody took: each checkpoint has a safetensors conversion PR on the Hub,
+> and five of the six reproduce the recorded outputs on torch 2.2.2 (`bart_s`'s is fp16 and
+> does not run there) — see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
 These six need **torch ≥ 2.6**, which has no Intel-Mac wheel. On Linux or Apple Silicon
 the lock resolves torch 2.14 by platform marker — **no code changes, no config edits.**

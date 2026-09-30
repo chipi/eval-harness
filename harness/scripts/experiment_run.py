@@ -63,11 +63,6 @@ except ImportError:  # pragma: no cover
 
 
 
-# Row keys the core writes itself, as opposed to the scorer's or the adapter's `extra`.
-_CORE_ROW_KEYS = frozenset({"item_id", "resumed", "latency_ms", "tokens_in", "tokens_out",
-                            "cost_usd"})
-
-
 class _Resumed:
     """Stands in for an adapter's `Result` when an item is replayed from disk.
 
@@ -79,7 +74,7 @@ class _Resumed:
     """
 
     __slots__ = ("output", "cost_usd", "latency_ms", "tokens_in", "tokens_out",
-                 "extra", "meta")
+                 "extra", "extra_known", "meta")
 
     def __init__(self, output: str, prior: Optional[Dict[str, Any]] = None) -> None:
         """`prior` is the item's row from the run being resumed, when one was found.
@@ -112,13 +107,21 @@ class _Resumed:
         # `reasoning_tokens`, `llm_parsed` -- ride in `Result.extra`, and used to be
         # dropped here. The aggregate averages only the rows that carry a key, so a
         # resumed `bart_s` reported input_truncated 0.75: 3 of the 4 items computed
-        # fresh, against a true 46 of 200. Carried as every numeric key of the prior row
-        # that the core does not own; `one_pass` then lets the scorer's fresh values win.
+        # fresh, against a true 46 of 200.
+        #
+        # The first fix carried every numeric key of the prior row that the core does not
+        # own. That also carried the prior pass's SCORES, and any score the current scorer
+        # no longer emits -- references absent, a metric renamed -- then reached the
+        # aggregate from the replayed rows alone, reported as if measured. A prior row
+        # cannot tell an extra from a score by looking at it, so rows now record their
+        # extras under `_extra`, and exactly that is carried. A row written before `_extra`
+        # existed carries nothing, and the run says how many such rows it replayed.
+        carried = prior.get("_extra")
+        self.extra_known = isinstance(carried, dict)
         self.extra: Dict[str, float] = {
-            k: float(v) for k, v in prior.items()
-            if not k.startswith("_") and k not in _CORE_ROW_KEYS
-            and isinstance(v, (int, float)) and not isinstance(v, bool)
-        }
+            k: float(v) for k, v in (carried or {}).items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+        } if self.extra_known else {}
         self.meta: Dict[str, Any] = dict(prior.get("_meta") or {})
         self.meta["resumed_from_disk"] = True
 
@@ -333,6 +336,9 @@ def one_pass(
     spent = 0.0
     cap = env_float("EVAL_MAX_COST_USD")
     capped_at: Optional[str] = None
+    n_replayed = 0
+    n_unknown_extra = 0
+    carried_keys: set = set()
 
     # WRITE EACH OUTPUT THE MOMENT IT EXISTS, not at the end of the pass.
     #
@@ -413,10 +419,19 @@ def one_pass(
             v = getattr(res, field_name)
             if v is not None:
                 row[field_name] = float(v)
-        # A replayed item's carried extras include its OLD scores; the scorer just
-        # recomputed those against the current code, so the fresh value wins.
-        row.update({k: float(v) for k, v in res.extra.items()
-                    if not (resumed and k in scored)})
+        # If an adapter ever names an extra the same as a score, the score just computed
+        # against the current code wins on a replayed row.
+        extra = {k: float(v) for k, v in res.extra.items() if not (resumed and k in scored)}
+        row.update(extra)
+        # The extras again, by name, so a later `--resume` can carry exactly these and
+        # never mistake a score for one. `_`-prefixed, so never aggregated.
+        if extra:
+            row["_extra"] = extra
+        if resumed:
+            n_replayed += 1
+            carried_keys.update(extra)
+            if not res.extra_known:
+                n_unknown_extra += 1
         # Raw provider metadata rides along under a `_`-prefixed key. Everything
         # `_`-prefixed is excluded from the aggregation below, so an adapter can record
         # a nested dict (a usage object, a finish_reason) without the mean-of-every-key
@@ -464,9 +479,23 @@ def one_pass(
         name = (pred.get("_meta") or {}).get("provider")
         if name:
             providers[name] = providers.get(name, 0) + 1
+    resume_note = None
+    if n_replayed:
+        resume_note = {
+            "replayed_items": n_replayed,
+            "carried_extra_keys": sorted(carried_keys),
+            # Rows written before rows recorded their extras: nothing could be carried
+            # for them, so any extra metric's mean covers only the items computed fresh.
+            "replayed_without_recorded_extra": n_unknown_extra,
+        }
+        if n_unknown_extra:
+            print(f"  WARNING: {n_unknown_extra} replayed item(s) predate per-row `_extra`; "
+                  "their adapter extras could not be carried, so extra metrics average "
+                  "only the items computed in this pass.", file=sys.stderr)
     return {
         "predictions": predictions,
         "scores": scores,
+        "resume": resume_note,
         "providers_seen": providers,
         "outputs": outputs,
         "reference_tier": ref_tier,
@@ -782,6 +811,11 @@ def main() -> int:
         }
         if result["reference_tier"]:
             metrics["reference_tier"] = result["reference_tier"]
+        if result.get("resume"):
+            # What a resumed run carried from the pass it replayed, on the record rather
+            # than only in the terminal: which extras came forward, and for how many
+            # replayed items nothing could.
+            metrics["resume"] = result["resume"]
         if args.repeat > 1:
             metrics["repeat_index"] = i + 1
         write_json(run_dir / "metrics.json", metrics)

@@ -2334,3 +2334,71 @@ but the figures themselves cannot be checked here, and both reports now say that
 re-run produced 200 of 200 byte-identical outputs. The hosted arms at temperature 0 repeat
 13–78 of 200. That contrast is the one piece of run-to-run evidence this repo has for the
 local side, and it is zero.
+
+### 2026-09-30 · 60 — Auditing my own entry 59
+
+Entry 59 was written the same day as the runs it describes. Reading it back against the
+data found six things it, or the reports it summarised, got wrong or claimed too widely.
+All six are corrected in the reports. This entry records what they were, because the
+journal is append-only and 59 still says them.
+
+**1. Latency across two machines.** "Distillation halves latency" compared `bart_m`'s
+5.1 s and `bart_s`'s 4.5 s, timed on a 4-core Linux container, with `bart_l`'s 11.0 s,
+timed on the 12-core Intel Mac. That was the wrong comparison, and it favoured the claim:
+the Linux box runs `bart_l` itself **1.7× faster** (6.3 s median). All nine local arms
+were re-timed there, idle and one at a time (`harness/data/runs-linux/`). On one machine
+`bart_m` takes 0.66× `bart_l`'s time and `bart_s` 0.54×, so the saving is a third to a
+half. The same cross-machine error sat under "bert-base 5×–140× faster than hosted" and
+"10–25×". Those ratios are now labelled as crossing machines, and the local-vs-local ones
+use the one-machine table.
+
+**2. A contaminated timing.** The recorded `bart_s` mean, 4,484 ms, was slowed by analysis
+I ran on the same CPU while it generated. Its idle median is 3,387 ms. The run is
+unchanged; the reports mark the figure.
+
+**3. Means that describe one item.** The warm-up loads a model but runs no forward pass,
+so a local run's first one to three items pay lazy initialisation. In the two
+`bert_base_fy` re-runs that was 23–24 s on item 1, which lifts a ~60 ms mean to
+166–202 ms. The one-machine table uses medians, and the warm-up gap is in KNOWN_ISSUES.
+
+**4. Determinism, generalised from one arm.** "A local arm cannot disagree with itself"
+rested on two runs of `bart_s`. It is now measured more widely:
+- six arms re-run on the same machine are byte-identical in every scored field and every
+  output file;
+- `bart_l` and `lead3`, re-run on a *different* machine, are byte-identical too;
+- `bert_mini`'s labels are identical across machines, with 37 of 200 confidences moving by
+  ≤ 1.8 × 10⁻⁶.
+
+That is the claim now: these nine arms, two CPUs, no GPU. The "13–78 of 200" contrast
+belongs to five SciFact arms in the retrieval study, and is cited there now instead of
+being implied for summarisation.
+
+**5. The conversion-PR shortcut, verified on one model and stated for six.** "Loads on
+torch 2.2.2 and predicts identically" was checked on 40 items of the DBpedia BERT. Now
+checked for all six through each arm's own adapter
+(`docs/evidence/conversion_pr_check.py`, `.json`), with `main` refused by the CVE check
+in every case:
+- the three BERTs reproduce the recorded outputs byte for byte on every item;
+- `bart_m` and `bart_l_xsum` match on 20 of 20;
+- `bart_s` does not run at all (item 6); cast to fp32 it matches 19 of 20, which is a
+  different computation.
+
+So the block was avoidable for five of the six, not six.
+
+**6. The precision label is not applied.** Found by item 5. `bart_s`'s conversion PR
+failed on torch 2.2.2 with `"LayerNormKernelImpl" not implemented for 'Half'`. The reason:
+the pipeline keeps a checkpoint's stored dtype, and no adapter applies the config's
+`precision: fp32`. So **`bart_s` ran at fp16** in every run, recorded as fp32. Entry 59's
+source note said it "was upcast to fp32 at load as its config asks", which I had not
+measured. The other seven model arms here are stored, and ran, at fp32.
+
+**Smaller corrections.**
+- The torch pin "moved no other package": it moved triton and ~30 CUDA packages.
+- 59's resume fix carried scores from the original pass onto replayed rows. That was
+  harmless for these runs, but wrong if the scorer changes between passes. Now only the
+  adapter's own `extra` is carried (recorded per row as `_extra`); scores are recomputed.
+  A run records what it carried under `metrics.resume`, and a fixture test fails if either
+  half is reverted.
+- The checker gained two things: a check that each claimed figure appears in its report,
+  and a recomputation of each tie group from the leader's family test — which, mutated to
+  AG News's old "9 arms, `gemma_s`", fails as it should.

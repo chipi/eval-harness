@@ -1,18 +1,25 @@
 # Running the three blocked ML arms on another machine
 
 > **Done 2026-09-30.** All three ran on Linux (torch 2.14.0, clean tree, configs
-> unchanged): `bart_m` **0.3367** (5.1 s/item), `bart_s` **0.3276** (4.5 s/item),
+> unchanged): `bart_m` **0.3367** (5.1 s/item), `bart_s` **0.3276** (4.5 s/item — slowed by other work
+> on the same CPU; 3.4 s idle), `bart_l` 6.3 s on the same machine (`harness/data/runs-linux/`),
 > `bart_l_xsum` **0.2071** (last of 29). The three checks below came out as follows:
 > (1) `input_truncated` is 0.23 for all three, as predicted; (2) `bart_s` is 230M
-> parameters **stored at fp16** (from the safetensors header), which is why it is 460 MB,
-> and was upcast to fp32 at load as its config asks — `weight_files` did not settle it,
+> parameters **stored at fp16**, which is why it is 460 MB — the conversion PR's safetensors
+> header says F16 for every tensor, and the pickle the run actually loaded is 460,021,128
+> bytes, within 0.01% of it, which only fp16 fits — and it **ran at fp16**, not upcast as its config's
+> `precision: fp32` implies: the pipeline keeps the stored dtype and the adapter records
+> `precision` without applying it (`next(model.parameters()).dtype` is float16 on torch
+> 2.14; this sentence first said "upcast to fp32", unmeasured — see `KNOWN_ISSUES.md`) — `weight_files` did not settle it,
 > because these runs recorded none; (3) `bart_l_xsum` writes 21-word summaries against a
 > 35-word reference (`length_vs_reference` 0.66), so its last place mixes training
 > distribution with length exactly as warned. Results:
 > [`REPORT_SUMMARIZATION.md`](../../research/REPORT_SUMMARIZATION.md). Two traps found on
 > the way are in [`KNOWN_ISSUES.md`](../../research/KNOWN_ISSUES.md): runs after the first
 > on a machine are marked dirty unless `EVAL_RUNS_DIR` points outside the tree, and each
-> checkpoint has a safetensors conversion PR that would have loaded on the original Mac.
+> checkpoint has a safetensors conversion PR, and two of these three (`bart_m`,
+> `bart_l_xsum`) reproduce the recorded outputs on torch 2.2.2, the original Mac's torch;
+> `bart_s`'s is fp16 and does not run there.
 
 `cnn_bart_m_n200_v1`, `cnn_bart_s_n200_v1` and `cnn_bart_l_xsum_n200_v1` cannot run on
 x86_64 macOS. Everything else in this example can, and already has. This document is how

@@ -1,0 +1,135 @@
+{
+  "adapter": "examples/classification-ag-news/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "4068ea23007d6d8057a61f0abd54b08da3eaba40",
+    "source": "git"
+  },
+  "config_id": "ag_bert_base_fy_n200_v1",
+  "created_at": "2026-09-30T14:40:24Z",
+  "dataset_id": "ag_news_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "ag_bert_base_fy_n200_v1",
+      "params": {
+        "device": "cpu",
+        "family": "bert",
+        "label_order": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "model": "fabriceyhc/bert-base-uncased-ag_news",
+        "precision": "fp32",
+        "price_tier": "free",
+        "provider": "hf_local"
+      }
+    },
+    "data": {
+      "dataset_id": "ag_news_200",
+      "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
+      "n_items": 200,
+      "reference_id": "gold/ag_news_200",
+      "reference_tier": "gold",
+      "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
+    },
+    "hash": "e88f9a2b8200846d897cd440fd87fd3d55ee4deee1fa5b4e747784183fc48ffe",
+    "host": {
+      "cpu_count": 4,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "56489ac4d78f3cebce9cf321d0fea18726684ffe4434b7c7969dae21a12775ba"
+      },
+      "harness": {
+        "commit": "4068ea23007d",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "device": "cpu",
+        "encoder_window": 512,
+        "id": "fabriceyhc/bert-base-uncased-ag_news",
+        "identity_declared": true,
+        "label_order": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "3a1ff6d4c5022ac09a66164b9752633fae93239b09ee6736d3e5e91ca219babb",
+        "precision": "fp32",
+        "provider": "hf_local",
+        "revision": null,
+        "revision_source": "unavailable"
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "device": "cpu",
+    "family": "bert",
+    "label_order": [
+      "World",
+      "Sports",
+      "Business",
+      "Sci/Tech"
+    ],
+    "model": "fabriceyhc/bert-base-uncased-ag_news",
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "primary_metric": "correct",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "ag_bert_base_fy_n200_v1_20260930T143928Z",
+  "scores": {
+    "answer_words": 1.0,
+    "confidence": 0.988891,
+    "correct": 0.95,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 201.525935,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": 14798.462
+}

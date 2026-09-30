@@ -81,14 +81,16 @@ which the result says you do not need.
 
 ## What this example shows that AG News could not
 
-**A 133× price difference buys nothing measurable.** `qwen_m` leads at 0.9929 for
-**$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**. Holm over a family of 26
-declared in advance: the leader is ahead of 26 of 26 and **separated from only 8**. The
-top ten arms are one group.
+**A 115× price difference buys nothing measurable.** `qwen_m` leads at 0.9929 for
+**$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**, and
+`gemma_m` ties the fine-tuned arm at 0.9857 for $0.0033 — 115× cheaper. Holm over a family
+of 27 declared in advance: the leader is ahead of 27 of 27 and **separated from only 8**.
+The top eleven arms are one group, and one of them is the free fine-tuned classifier.
 
-**Label noise is the same size as the signal.** Three items are disputed by the entire
-field — a canal labelled `NaturalPlace`, a "historic school" labelled `Building` rather
-than `EducationalInstitution`. The top ten arms are separated by four items in total. Any
+**Label noise is the same size as the signal.** Three items are disputed by 24–25 of the 26
+learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `Building`
+rather than `EducationalInstitution`; the one arm that sides with the gold on the canal is
+the one trained on DBpedia. The top eleven arms are separated by four items in total. Any
 ranking within that group is a ranking of which model best reproduces DBpedia's ontology
 quirks, not of which classifies better.
 

@@ -39,7 +39,7 @@ reuse article sentences nearly verbatim. A model that copies scores well. That i
 | [`bart_l`](https://huggingface.co/facebook/bart-large-cnn) | Fine-tuned **on this exact dataset**. The in-distribution ceiling — what a small model does when it has seen the training split. |
 | `lead3` | The first three sentences. **Not a joke baseline.** On CNN/DailyMail it is famously hard to beat, and an LLM that does not clear it has not earned its inference cost. |
 
-| [`bart_m`](https://huggingface.co/sshleifer/distilbart-cnn-12-6), [`bart_s`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | `bart_l` distilled (306M params fp32; 230M stored fp16). The **size** axis inside one model family: does distillation cost quality? (No separable loss; half the latency.) |
+| [`bart_m`](https://huggingface.co/sshleifer/distilbart-cnn-12-6), [`bart_s`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | `bart_l` distilled (306M params fp32; 230M stored and run at fp16). The **size** axis inside one model family: does distillation cost quality? (No separable loss; on one machine `bart_m` takes 0.66× `bart_l`'s time and `bart_s` 0.54×.) |
 | [`bart_l_xsum`](https://huggingface.co/facebook/bart-large-xsum) | Same architecture as `bart_l`, fine-tuned on **XSum**. The **out-of-distribution** control: is `bart_l` good at summarising, or at CNN/DailyMail? (Last of 29, below `lead3`.) |
 
 **Why those three needed another machine:** they ship pickle checkpoints on `main`, which

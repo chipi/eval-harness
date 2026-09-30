@@ -1,0 +1,175 @@
+{
+  "adapter": "examples/classification-dbpedia-14/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "4068ea23007d6d8057a61f0abd54b08da3eaba40",
+    "source": "git"
+  },
+  "config_id": "db_bert_base_fy_n200_v1",
+  "created_at": "2026-09-30T14:41:30Z",
+  "dataset_id": "dbpedia_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "db_bert_base_fy_n200_v1",
+      "params": {
+        "device": "cpu",
+        "family": "bert",
+        "label_order": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "model": "fabriceyhc/bert-base-uncased-dbpedia_14",
+        "precision": "fp32",
+        "price_tier": "free",
+        "provider": "hf_local"
+      }
+    },
+    "data": {
+      "dataset_id": "dbpedia_280",
+      "items_sha256": "a7419dc6a5876490c3ed1f96eae9398969a2f8b794e744d45ace5790bc0146f2",
+      "n_items": 280,
+      "reference_id": "gold/dbpedia_280",
+      "reference_tier": "gold",
+      "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
+    },
+    "hash": "4260ad168ef1d0911a54afae059f5dccd247b3d77aac50e7d274153ef80eb596",
+    "host": {
+      "cpu_count": 4,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "67a5bc27da0455c4f8bf21c03f399134838c72cfe861b282f56d7996c8432fcb"
+      },
+      "harness": {
+        "commit": "4068ea23007d",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "device": "cpu",
+        "encoder_window": 512,
+        "id": "fabriceyhc/bert-base-uncased-dbpedia_14",
+        "identity_declared": true,
+        "label_order": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "labels": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
+        "parser_sha256": "a185519a3ed6270ab6fe0e16898b2ade189d4ad29a7f7fe9e8dc65c4cd1b9f9f",
+        "precision": "fp32",
+        "provider": "hf_local",
+        "revision": null,
+        "revision_source": "unavailable"
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "device": "cpu",
+    "family": "bert",
+    "label_order": [
+      "Company",
+      "EducationalInstitution",
+      "Artist",
+      "Athlete",
+      "OfficeHolder",
+      "MeanOfTransportation",
+      "Building",
+      "NaturalPlace",
+      "Village",
+      "Animal",
+      "Plant",
+      "Album",
+      "Film",
+      "WrittenWork"
+    ],
+    "model": "fabriceyhc/bert-base-uncased-dbpedia_14",
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "primary_metric": "correct",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "db_bert_base_fy_n200_v1_20260930T144025Z",
+  "scores": {
+    "answer_words": 1.0,
+    "confidence": 0.997399,
+    "correct": 0.985714,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 165.765007,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": 18297.13
+}

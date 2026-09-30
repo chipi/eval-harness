@@ -30,7 +30,7 @@
 
 | the choice | AG News (headroom) | DBpedia-14 (saturated) |
 |---|---|---|
-| **Self-host · small ML** | **`bert_base_ta`** — BERT-base fine-tuned on AG News, **438 MB**, 76 ms/item on CPU. **0.9600 — 1st of 30**, separated from 26 of the 29 others. But **`bert_mini`** (44 MB, 7 ms) scores 0.9450 and is **not separated** from it (p = 0.55): ten times smaller and faster for no measurable loss. **Read §3.4 before relying on either** — the fine-tuned lead lives in items whose gold labels the whole LLM field disputes. | **`bert_base_fy`** — BERT-base fine-tuned on DBpedia-14, **438 MB**, 87 ms/item on CPU. **0.9857 — tied 3rd**, two items in 280 behind the leader and **not separated** from it (p = 0.62). Ties the top; does not clear it. |
+| **Self-host · small ML** | **`bert_base_ta`** — BERT-base fine-tuned on AG News, **438 MB**, 76 ms/item on a 4-core Linux CPU. **0.9600 — 1st of 30**, separated from 26 of the 29 others. But **`bert_mini`** (44 MB, 7 ms on the Mac) scores 0.9450 and is **not separated** from it (p = 0.55): ten times smaller and 11× faster on the same machine, for no measurable loss. **Read §3.4 before relying on either** — the fine-tuned lead lives in items whose gold labels the whole LLM field disputes. | **`bert_base_fy`** — BERT-base fine-tuned on DBpedia-14, **438 MB**, 87 ms/item on a 4-core Linux CPU. **0.9857 — tied 3rd**, two items in 280 behind the leader and **not separated** from it (p = 0.62). Ties the top; does not clear it. |
 | **Self-host · open-weight LLM, absolute** | **`llama_m`** — Llama-3.3-70B, **70.6B / ~141 GB**. **0.8800** — **0.0800 behind a 438 MB fine-tune and separated from it**; 0.0650 behind the 44 MB one (**3,205× smaller**) and **not separated** from that (p = 0.0149 vs a 0.0063 threshold at m=29). | **`glm_m`** — GLM-4.6, MIT, **357B / ~714 GB**. **0.9857**, **not separated** from the overall winner. Needs a multi-node cluster. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model at int8, ~70 GB.** 0.8800 — no loss on paper. Native alternative: `gemma_s` (27B, 55 GB) at 0.8750. | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**. **0.9857 — identical to GLM-4.6 at 1/14 the size.** |
 | **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB.** 0.8800 on paper. Native alternative: `gemma_s` at 55 GB, 0.8750 — and still **0.0700 below a 44 MB fine-tune.** | **Still `gemma_m`**, 52 GB native. Halving the budget costs nothing here. |
@@ -38,8 +38,10 @@
 | **What should I not deploy?** | `anthropic_l` at $875/mo: **−6.3%** vs free (was −4.8% against `bert_mini`) | `anthropic_l` at **$1,351/mo**: **−0.4%** vs $51/mo |
 | **Does paying more help?** | Marginally: **+2.3%** per 10× cost | **Barely: +0.9%** per 10× cost |
 | **Arms tied at the top?** | **3 of the 29 others** — two fine-tunes and `anthropic_m` (was 9 of 26 around `bert_mini`) | **19 of the 27 others** (was 18 of 26 before the fine-tuned arm joined, and it joined the tie) — the ranking is mostly noise |
-| **What limits the score?** | **the annotation, more than it looked.** 17 items are disputed by ≥80% of the hosted field; the fine-tunes agree with the gold on 12–14 of them, the best hosted arms on 0–3 | **the annotation.** Top ten separated by 4 items, 3 disputed by the whole field |
-| **Is a pilot enough?** | No — ρ = 0.852 and it picked `anthropic_l`, truly **5th of 30** (3rd before the bert-base arms) | No — ρ = 0.728, picked `anthropic_l`, truly 2nd |
+| **What limits the score?** | **the annotation, more than it looked.** 17 items are disputed by ≥80% of the hosted field; the fine-tunes agree with the gold on 12–14 of them, the best hosted arms on 0–3. (The 17 are selected by the hosted arms' own errors — §3.4 on what that does and does not show.) | **the annotation.** Top eleven separated by 4 items, 3 disputed by 24–25 of the 26 learned arms (the dissenter on one is the arm trained on DBpedia) |
+| **Is a pilot enough?** | No — ρ = 0.852* and it picked `anthropic_l`, truly **5th of 30** (3rd before the bert-base arms) | No — ρ = 0.728*, picked `anthropic_l`, truly 2nd |
+
+\* From dev-slice runs that were never committed; the committed runs give 0.677 and 0.757 (§5). The pick and its true rank are from committed runs.
 | **Fine-tune or pay?** | **Fine-tune — for this corpus's labels.** Three independent fine-tunes take 1st, 2nd and 3rd of 30 at $0. What they learned is partly AG News's labelling convention (§3.4): on your own data that is exactly what you want; as evidence that a small model "understands news" better than an LLM, it is not. | **Fine-tune for cost, not for quality.** Measured 2026-09-30: the fine-tuned arm scores **0.9857**, statistically tied with the $51/mo leader (−0.0071, 1 item won against 3 lost, p = 0.62) at **$0**. On a saturated task training buys a free seat in the top group, not a lead. The prior from AG News — that it would win — **did not hold.** |
 
 **Read the two together or not at all.** They were chosen before any result was seen to
@@ -74,9 +76,10 @@ fine-tuning: it bought a tie at $0. Same harness, same arms, same statistics.**
 
 2. **The AG News lead is mostly label convention.** 17 items are called "wrong" by ≥80% of
    the 24 hosted arms. The fine-tunes agree with the gold on 12–14 of them; `anthropic_l`
-   on none. About half follow a convention a trained model learns and a zero-shot one has no
-   reason to — business news about technology companies (HP, IBM, Dell, Sohu, Vodafone)
-   filed under `Sci/Tech`; the rest are plain mislabels (Olympic results filed as `World`).
+   on none. 8 follow a convention a trained model learns and a zero-shot one has no reason
+   to — business news about technology companies (HP, IBM, Dell, Sohu, Vodafone) filed
+   under `Sci/Tech`; 7 are plain mislabels (Olympic results filed as `World`); 2 are
+   ambiguous. All 17 are listed in §3.4.
    On the other 183 items the order reverses — `anthropic_l` 0.984, `bert_base_ta` 0.973 —
    though that cut is selected by the hosted arms' own errors and so flatters them. **What
    fine-tuning bought here is this corpus's labelling; on your own labels that is the point,
@@ -196,8 +199,9 @@ mistral_s            0.8600    0.8597   0.0019
 ```
 
 ◆ = fine-tuned on AG News, local, $0. `bert_base_ta` (textattack) and `bert_base_fy`
-(fabriceyhc) added 2026-09-30: 438 MB each, 76 and 90 ms/item on CPU; `bert_mini` is
-44 MB at 7 ms. textattack's model card reports 0.9514 on its own eval set; 0.9600 here on
+(fabriceyhc) added 2026-09-30: 438 MB each, 76 and 90 ms/item on a 4-core Linux CPU; `bert_mini`
+is 44 MB at 7 ms on the 12-core Mac. Re-timed together on the Linux machine (medians,
+`harness/data/runs-linux/`): 49, 55 and 4.3 ms. textattack's model card reports 0.9514 on its own eval set; 0.9600 here on
 200 items is consistent with it, and both new arms' confusion matrices are diagonal — the
 `label_order` the configs assume (`LABEL_0…3` carry no names) is the right one.
 
@@ -234,7 +238,9 @@ test (§3.3), so that is an upper bound, not a reversal.
 
 The defensible claim is therefore: **three fine-tuned classifiers of 44–438 MB are
 statistically indistinguishable from each other, ahead of every hosted arm, and clearly
-separated from all but one of them, at zero marginal cost and 20–270× lower latency** —
+separated from all but one of them, at zero marginal cost and lower latency** (`bert_mini` 61×–1,078× faster than the hosted
+field, timed on the same Mac; the two bert-base fine-tunes roughly 5×–100×, timed on a
+Linux machine, a cross-machine ratio good to about a factor of two) —
 with the qualification in §3.4 about *what* they are better at.
 
 ### 3.2 DBpedia-14 — no winner, a group of eleven
@@ -258,7 +264,7 @@ anthropic_s          0.9786    0.9782    0.0536    glm_s              0.9393    
                                                    constant           0.0714    0
 ```
 
-◆ = fine-tuned on DBpedia-14, local, $0, 87 ms/item on CPU. Added 2026-09-30.
+◆ = fine-tuned on DBpedia-14, local, $0, 87 ms/item on a 4-core Linux CPU (61 ms median). Added 2026-09-30.
 
 `p = 0.0002`, **CD 2.58**, **77 of 378** pairs distinguishable, observed span 12.90
 (k=28). Holdout on the 224 items outside the dev slice: CD 2.89, **76 of 378**.
@@ -330,8 +336,8 @@ AG News   "Rivals Try to Turn Tables on Charles Schwab"   gold Sci/Tech   26/28 
           "Live: Olympics day four … gold for GB"         gold World      25/28 → Sports
 ```
 
-The models are right in every case. **On DBpedia the top ten arms are separated by four
-items in total and three items are disputed by the entire field: the noise floor and the
+The models are right in every case. **On DBpedia the top eleven arms are separated by four
+items in total and three items are disputed by 24–25 of the 26 learned arms: the noise floor and the
 signal are the same size.** Any ranking inside that group ranks which model best
 reproduces the corpus's ontology quirks.
 
@@ -362,16 +368,42 @@ anthropic_l       0.9000             0 of 17                    0.9836
 llama_m           0.8800             0 of 17                    0.9617
 ```
 
-**Almost the entire fine-tuned lead lives in those 17 items.** Reading them, they split in
-two:
+**Almost the entire fine-tuned lead lives in those 17 items** — `bert_base_ta` is 11 items
+ahead of `anthropic_m` on them and 1 item behind on the other 183. All 17, so the reading
+below can be checked rather than taken on trust (the corpus is not redistributed; these are
+headlines only). "F" marks which of the three fine-tunes (`ta`, `fy`, `mini`) agree with the
+gold; the reading is mine:
 
-- **About half follow a convention.** Business news *about technology companies* is filed
-  under `Sci/Tech`: HP's earnings, IBM's hiring, Dell leaving China's consumer market, Sohu
-  shares, Vodafone's Czech bid, Charles Schwab's rivals. A model trained on AG News learns
-  that; a zero-shot LLM, asked for the topic, says Business — defensibly.
-- **The rest are mislabels.** Two Olympic results filed under `World`; "Stocks Climb on
-  Drop in Consumer Prices" under `World`; Google cutting its IPO price range under
-  `World`; a Chinese crackdown on phone-sex lines under `Sci/Tech`.
+| headline | gold | field's majority | F | reading |
+|---|---|---|---|---|
+| Storage, servers bruise HP earnings update | Sci/Tech | Business | ta fy mini | convention |
+| Some People Not Eligible to Get in on Google IPO | Sci/Tech | Business | fy | convention |
+| Consumers Would Pay In Phone Proposal | Sci/Tech | Business | ta fy mini | convention |
+| IBM to hire even more new workers | Sci/Tech | Business | ta mini | convention |
+| Spam suspension hits Sohu.com shares | Sci/Tech | Business | ta fy mini | convention |
+| Vodafone hires Citi for Cesky bid | Sci/Tech | Business | ta fy mini | convention |
+| IBM Buys Two Danish Services Firms | Sci/Tech | Business | mini | convention |
+| Dell Exits Low-End China Consumer PC Market | Sci/Tech | Business | ta mini | convention |
+| Card fraud unit nets 36,000 cards | Sci/Tech | Business | ta fy | ambiguous |
+| Rivals Try to Turn Tables on Charles Schwab | Sci/Tech | Business | ta fy | ambiguous |
+| China cracks down on "phone sex" services | Sci/Tech | World | ta fy mini | mislabel |
+| Live: Olympics day four | World | Sports | ta fy mini | mislabel |
+| U.S. Misses Cut in Olympic 100 Free | World | Sports | ta fy mini | mislabel |
+| Oil prices bubble to record high | World | Business | — | mislabel |
+| India's Tata expands regional footprint via NatSteel buyout | World | Business | ta fy | mislabel |
+| Stocks Climb on Drop in Consumer Prices | World | Business | ta fy mini | mislabel |
+| Google Lowers Its IPO Price Range | World | Business | ta fy mini | mislabel |
+
+- **8 follow a convention.** Business news *about technology and telecoms companies* is
+  filed under `Sci/Tech` — HP, IBM twice, Dell, Sohu, Vodafone, Google, a phone-fee
+  proposal. A model trained on AG News learns that; a zero-shot LLM, asked for the topic,
+  says Business — defensibly.
+- **7 are mislabels** by any reading: Olympic results filed under `World`, a stock-market
+  report and an oil-price record under `World`, a Chinese crackdown on phone-sex lines under
+  `Sci/Tech`.
+- **2 are ambiguous** — a card-fraud unit's arrests and a discount broker's rivals fit
+  neither label well. (An earlier version of this section put Charles Schwab in the
+  convention group without saying it was arguable.)
 
 **Two cautions about the table.** The "other 183" column is selected by the hosted arms'
 own errors, so it flatters them by construction — it does *not* show that LLMs are more
@@ -501,8 +533,8 @@ and it says headroom decides whether training buys quality; it always buys the p
 preferentially rewards the arm trained on those labels. This paragraph used to say that
 *part* of `bert_mini`'s lead *may* be having learned that the corpus thinks an IPO story is
 `World`. With three fine-tunes it is measured (§3.4): the fine-tuned lead on AG News sits
-almost entirely in 17 items the LLM field disputes, half of them a learnable convention and
-half plain mislabels. That is not classifying news, and it transfers only to data labelled
+almost entirely in 17 items the LLM field disputes — 8 a learnable convention, 7 plain
+mislabels, 2 ambiguous. That is not classifying news, and it transfers only to data labelled
 the same way — which, for a model trained on your own labels, is your data.
 
 ---
@@ -512,7 +544,7 @@ the same way — which, for a model trained on your own labels, is your data.
 - **Whether a *different* DBpedia fine-tune would clear the top group.** One was measured
   (`fabriceyhc/bert-base-uncased-dbpedia_14`, 2026-09-30, on Linux — no DBpedia-14
   fine-tune loads on x86_64 macOS, because the whole 2021–2023 cohort ships pickles only).
-  One checkpoint is not the cohort, and the top ten are separated by four items, three of
+  One checkpoint is not the cohort, and the top eleven are separated by four items, three of
   them disputed labels; a RoBERTa or a newer fine-tune could land one item higher or lower
   and nothing here would say which.
 - **How much of each arm's error is irreducible.** Doing that properly means adjudicating
@@ -582,7 +614,7 @@ $PY scripts/holdout_significance.py --dataset-id ag_news_200 --exclude-dataset a
 The three bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves 2.14 everywhere
 except x86_64 macOS). Their checkpoints ship only a pickle on `main`; each also has a
 safetensors conversion PR on the Hub (`refs/pr/1`), which loads on torch 2.2.2 and gives
-identical predictions — see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+byte-identical outputs on every item for all three (`docs/evidence/conversion_pr_check.py`) — see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
 The `ag_news_200` and `dbpedia_280` runs are committed (metrics, predictions and
 outputs, since 2026-09-29), so these commands run against the same bytes the report was

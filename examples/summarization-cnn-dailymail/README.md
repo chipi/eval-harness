@@ -255,6 +255,8 @@ exists, so you cannot check which author you got.
 - **Speed is machine-bound.** The latency column mixes this machine, the proxy and the
   upstream provider. It is a property of your setup, not of the model — which is
   deliberate: the same experiment measures how fast *your* machine is at *this* task.
+  The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
+  ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
 - ~~**No local model arm yet.**~~ **Built.** `bart_l` (BART fine-tuned on this corpus,
   1.6 GB) and `lead3` are measured, and `bart_l` ties the best hosted arm to 0.0001.
   This bullet outlived the work it described. Since 2026-09-30 three more local arms

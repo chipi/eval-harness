@@ -8,8 +8,8 @@
 > **Updated 2026-09-30 with the three local arms that could not run on the original
 > machine** — two distilled BARTs (`bart_m`, `bart_s`) and BART fine-tuned on XSum
 > (`bart_l_xsum`), all pickle checkpoints that need torch ≥ 2.6. The field is now 29.
-> They answer the two questions `bart_l` left open: distillation halves the latency with no
-> separable loss, and the same architecture trained on a *different* corpus's house style
+> They answer the two questions `bart_l` left open: distillation takes a third (`bart_m`) to
+> nearly half (`bart_s`) off `bart_l`'s time on the same machine with no separable loss, and the same architecture trained on a *different* corpus's house style
 > finishes last — below LEAD-3. Old figures are named where they changed.
 
 > **This report was re-measured at n=200 on 2026-09-26.** It previously covered
@@ -31,16 +31,16 @@
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. **Or its distillation `bart_m`** (1.2 GB): **0.3367, 5.1 s/item — half the latency, not separated from `bart_l`** (p = 0.16). |
+| **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on the 12-core Mac's CPU (6.3 s on a 4-core Linux box). **Or its distillation `bart_m`** (1.2 GB): **0.3367, 1.5× faster than `bart_l` on the same machine (4.1 s vs 6.3 s), not separated from `bart_l`** (p = 0.16–0.17). |
 | **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **552B backbone params** — but **510 GB of weights in the published checkpoint** (measured: 48 safetensors shards), because the card's headline count excludes a 196B Engram memory that ships with it. **0.3460** — statistically identical to the 1.6 GB model. Whether it fits one node depends on whether the Engram memory must be GPU-resident; **this report does not know, and no longer claims it cannot fit.** |
 | **Self-host · open-weight LLM, ≤128 GB** | **`llama_m`** — Llama-3.3-70B at **int8, ~70 GB**. **0.3382**, costing **0.0078** against a 510 GB model. Native-precision alternative: `mistral_s` (24B, 48 GB) at 0.3255. |
 | **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB** — 0.3382, **no further loss on paper**. If you would rather not quantise that far: `mistral_s` at 48 GB native, 0.3255. |
-| **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
+| **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item than `bart_l` on the Mac it was timed from (4× against `bart_l`'s faster Linux timing). It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
 | **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **18th of 29** (16th of 25 before the distilled arms, both of which beat it) and is 8.9% below free. |
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
 | **How many arms are really tied at the top?** | **15 of the 28 others** — 13 paid arms and both distilled BARTs (was 13 of 25). The cheapest paid one is 143× cheaper than the dearest. |
 | **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
-| **Fine-tune or pay?** | **Cost only — and only if it is fine-tuned on text like yours.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free, but *slower* (11.0 s vs 1.6 s); distilled, 5.1 s. The control is decisive: **the same architecture fine-tuned on XSum scores 0.2071 — last of 29, below LEAD-3**. What `bart_l` has is this corpus's house style, not summarisation. |
+| **Fine-tune or pay?** | **Cost only — and only if it is fine-tuned on text like yours.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free, but *slower* (11.0 s vs 1.6 s, both timed from the Mac); distilled, 1.5–1.8× faster than `bart_l` on one machine. The control is decisive: **the same architecture fine-tuned on XSum scores 0.2071 — last of 29, below LEAD-3**. What `bart_l` has is this corpus's house style, not summarisation. |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
@@ -57,9 +57,9 @@ that matches it — DeepSeek-V4.1-Flash — is **510 GB**, a cluster model. This
 experiment where capping your hardware costs quality: the best arm that fits 128 GB is
 Llama-3.3-70B at int8, **0.3382**, giving up **0.0078**. It is also the one where the free
 model is *slower* than renting (11.0 s vs 1.6 s per item), because generation on a CPU is
-genuinely expensive. Distillation narrows that without a measurable cost: `bart_m`
-(1.2 GB) at **5.1 s** and 0.3367, `bart_s` (460 MB) at **4.5 s** and 0.3276, neither
-separated from `bart_l` under Holm.
+genuinely expensive. Distillation narrows that without a measurable cost. Timed on one
+machine (`data/runs-linux/`), `bart_l` takes **6.3 s**, `bart_m` (1.2 GB, 0.3367) **4.1 s**
+and `bart_s` (460 MB, 0.3276) **3.4 s**, neither separated from `bart_l` under Holm.
 
 **The expensive arms do not earn their price, and this is now the firmest result here.**
 `deepseek_m` at **$0.0381** per 200 articles beats `anthropic_l` at **$1.9652** — 52×
@@ -241,6 +241,10 @@ outputs were once read by hand and all 1440 declared clean.
 **Speed is machine-bound and not a model property.** The latency column mixes this
 machine, a local proxy, and the upstream provider. One value is a known artifact:
 `mistral_l`'s 16100 ms includes retry backoff from its rate-limited recovery run.
+The local arms add a second machine: `bart_l` and `lead3` ran on a 12-core Intel Mac, the
+other three on a 4-core Linux container, which ran `bart_l` itself 1.7× faster. All five
+were re-timed on the Linux container alone, one at a time, and that is the table to compare
+local arms on (below, and `data/runs-linux/README.md`).
 
 ---
 
@@ -282,23 +286,35 @@ Spearman between the n=20 and n=200 orderings: **+0.667**.
 other three on 2026-09-30, on Linux, because their checkpoints are pickles that need torch
 ≥ 2.6. Rank is among all 29.
 
-| arm | coverage | concision | rougeLsum | rouge1 | grounding | words | ms | rank |
-|---|---|---|---|---|---|---|---|---|
-| bart_l | **0.3461** | 0.2608 | 0.3161 | 0.3477 | 0.884 | 51 | 11010 | 1 |
-| bart_m | 0.3367 | 0.2578 | 0.3153 | 0.3457 | 0.853 | 55 | 5062 | 5 |
-| bart_s | 0.3276 | 0.2599 | 0.3111 | 0.3418 | 0.877 | 52 | 4484 | 10 |
-| lead3 | 0.2718 | 0.2145 | 0.2701 | 0.3020 | 1.000 | 62 | 0 | 28 |
-| bart_l_xsum | 0.2071 | **0.3120** | 0.2458 | 0.2836 | 0.422 | 21 | 4621 | 29 |
+| arm | coverage | concision | rougeLsum | rouge1 | grounding | words | ms | rank | ms, one machine |
+|---|---|---|---|---|---|---|---|---|---|
+| bart_l | **0.3461** | 0.2608 | 0.3161 | 0.3477 | 0.884 | 51 | 11010 (Mac) | 1 | 6257 |
+| bart_m | 0.3367 | 0.2578 | 0.3153 | 0.3457 | 0.853 | 55 | 5062 | 5 | 4108 |
+| bart_s | 0.3276 | 0.2599 | 0.3111 | 0.3418 | 0.877 | 52 | 4484 † | 10 | 3387 |
+| lead3 | 0.2718 | 0.2145 | 0.2701 | 0.3020 | 1.000 | 62 | 0 (Mac) | 28 | 0 |
+| bart_l_xsum | 0.2071 | **0.3120** | 0.2458 | 0.2836 | 0.422 | 21 | 4621 | 29 | 3934 |
+
+*`ms` is the recorded run's mean, on the machine it ran on. `ms, one machine` is the median
+of a re-run of all five on the Linux container, idle and one at a time
+(`data/runs-linux/`). The median is used because a local run's first one to three items
+pay a one-off initialisation cost that the warm-up does not absorb. † The recorded
+`bart_s` mean is inflated by analysis work I ran on the same CPU during the run; its own
+median was 3,683 ms. On one machine `bart_m` takes 0.66× `bart_l`'s time and `bart_s`
+0.54×.*
 
 `bart_m` is distilbart-cnn-12-6 (12 encoder / 6 decoder layers, 1.2 GB) and `bart_s`
-distilbart-cnn-6-6 (460 MB) — both distilled from `bart_l`, so they sit below it as they
+distilbart-cnn-6-6 (460 MB, stored and **run** at fp16, although its config declares
+`precision: fp32` — the adapter records that field without applying it) — both distilled from `bart_l`, so they sit below it as they
 should, in the order their size predicts. Their grounding stays in `bart_l`'s range
 (0.85–0.88) against 0.25–0.43 for the hosted field. `bart_l_xsum`'s concision is the best
 in the table only because concision rewards brevity and XSum writes one sentence.
 
-A local arm cannot be run twice and differ: a second run of `bart_s` on the same machine
-produced **200 of 200 outputs byte-identical** (`data/runs-repeats/`). The hosted arms at
-temperature 0 repeat 13–78 of 200 (§3.3 and the retrieval study).
+No local arm here differed between runs. On the same machine all three new arms re-ran
+**200 of 200 outputs byte-identical** (`bart_s` three times, counting the resumed run in
+`data/runs-repeats/`), and across machines (Mac → Linux) so did `bart_l` and `lead3`
+(`data/runs-linux/README.md`). Hosted arms at temperature 0 do not: 47 of 480 article
+outputs were identical across three repeats in the earlier sweep here (§3.3), and 13–78 of
+200 across two runs of five SciFact arms (`REPORT_RETRIEVAL.md`).
 
 ### 3.1 Is the ordering real?
 
@@ -337,7 +353,7 @@ Membership is far better determined than order. From 2,000 item-resamples:
 claim this data supports.
 
 **Over all 29 arms** (k=29: CD 3.18, 80 of 406 pairs): `bart_l` P(1st) 0.45 and
-`deepseek_m` 0.41 — the same coin flip — with `bart_m` P(top 5) 0.57. Family tests, Holm
+`deepseek_m` 0.41 — the same coin flip — with `bart_m` P(top 5) 0.57 (`scripts/leaderboard.py --dataset-id cnn_dailymail_200 --sort coverage`, rank bootstrap). Family tests, Holm
 over the 28 others on `coverage`:
 
 | arm | separated from | ahead on the point estimate | against `bart_l` |
@@ -346,6 +362,13 @@ over the 28 others on `coverage`:
 | `bart_m` | 4 of 28 | 24 of 28 | −0.0095, p = 0.17 |
 | `bart_s` | 2 of 28 — only `lead3` and `bart_l_xsum` | 19 of 28 | −0.0186, p = 0.017 (threshold 0.0020) |
 | `bart_l_xsum` | **28 of 28, all from below** | 0 of 28 | −0.1390, p = 0.0000 |
+
+*The "against `bart_l`" column is from each arm's own family. The same pair tested from
+`bart_l`'s side gives p = 0.16 for `bart_m` and 0.017 for `bart_s`: the sign-flip test is
+Monte Carlo (20,000 permutations, fixed seed), so the two directions differ in the second
+decimal, and the Holm threshold differs because each family is sorted by its own
+p-values. Deltas here are per-item means against `bart_l`; §0 of the synthesis gives
+them against the best paid arm, `deepseek_m`, which is why its figures differ by 0.0001.*
 
 ### 3.1b Decision questions, asked one at a time
 
@@ -388,10 +411,14 @@ is expected when the article pool widens.)
 article-outputs byte-identical across three repeats, and 12 of 24 arms with none at all.
 Nothing in this run contradicts that; nothing in it confirms it either.
 
-**The local contrast was measured.** `bart_s` ran twice on the same machine (the first run
-is kept in `data/runs-repeats/`): **200 of 200 outputs byte-identical**, beam search on a
-CPU at fp32. Run-to-run variance for a local arm here is zero; for a hosted one it is not,
-and no test in this report sees it (every separation test is over items within one run).
+**The local contrast was measured.** Every local arm was re-run (`data/runs-linux/`):
+`bart_m`, `bart_s` and `bart_l_xsum` on the same Linux machine, `bart_l` and `lead3` on a
+different one from their recorded Mac runs. **All five reproduced 200 of 200 outputs
+byte-identically** — beam search on a CPU, at fp32 except `bart_s`, which runs at its stored
+fp16. Run-to-run variance for these local arms,
+on these two CPUs, is zero; for a hosted one it is not, and no test in this report sees it
+(every separation test is over items within one run). GPUs and other torch builds were not
+tried.
 
 ### 3.4 Pareto frontier (coverage / cost / latency)
 
@@ -568,8 +595,8 @@ dearest, which is worth noticing before paying for either.
   was not run. (This bullet used to read "ML versus LLM: not built" — five local arms have
   since run, so the comparison exists; what it cannot yet say is *why* the specialist wins.)
 - **Within-arm variance for the hosted arms.** This run is r=1; the determinism figures are
-  from the earlier r=3 sweep and were not re-measured. For the local arms it was: 200 of
-  200 byte-identical across two runs of `bart_s`.
+  from the earlier r=3 sweep and were not re-measured. For the five local arms it was: each
+  re-run was 200 of 200 byte-identical (`data/runs-linux/`).
 
 ---
 
@@ -642,7 +669,9 @@ python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_xsum
 
 The three 2026-09-30 BART arms load `main`'s `pytorch_model.bin`; each checkpoint also has
 a safetensors conversion PR on the Hub (distilbart-cnn-12-6 `refs/pr/29`, -6-6 `refs/pr/2`,
-bart-large-xsum `refs/pr/9`) that loads on torch 2.2.2 — see
+bart-large-xsum `refs/pr/9`). On torch 2.2.2 the `bart_m` and `bart_l_xsum` PRs reproduce the
+recorded outputs on 20 of 20 items checked; the `bart_s` PR does not run, because it is
+fp16 and torch 2.2.2 has no fp16 LayerNorm on CPU (`docs/evidence/conversion_pr_check.py`) — see
 [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
 No `rescore` step is needed here. It was, for the n=20 sweep: scores were written rounded

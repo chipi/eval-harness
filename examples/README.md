@@ -45,7 +45,8 @@ three times in five, and the scoring code moved single arms further than most mo
 did.
 
 It also answers the deployment question directly. **Every experiment has a $0 answer**:
-the best model fine-tuned on each dataset ranked first or tied for first in 4 of 4, a
+the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal (not
+separable from the leader) on saturated DBpedia, a
 proprietary model never separated from the best open-weight one in any of the five, and
 **a 64 GB machine reaches the same answer as unlimited hardware on four of the five
 tasks**. Every task-specific winner is under 2 GB and needs no GPU.
@@ -64,16 +65,18 @@ demonstration in the repo, and it turns up twice: in the leaderboard, and in
 
 Then the control: the same BART fine-tuned on **XSum** instead of CNN/DailyMail finishes
 **last of 29** — below LEAD-3. BART's tie with the frontier is this corpus's house style,
-learned. Its distillations keep most of it at half the latency (`bart_m` 0.3367 at 5.1 s,
-not separated from `bart_l`).
+learned. Its distillations keep most of it at 1.5–1.8× the speed on the same machine (`bart_m`
+0.3367 at 4.1 s against `bart_l`'s 6.3 s, not separated from `bart_l`).
 
 ### AG News — small models win, on a task with headroom — by learning its labels
 Three fine-tuned classifiers take the top three places: `bert_base_ta` **0.9600**,
 `bert_base_fy` 0.9500, the 44 MB `bert_mini` 0.9450, against a hosted field of
 0.835–0.910. The leader separates from 26 of 29. But nearly the whole lead sits in **17
 items the hosted field disputes** — the fine-tunes agree with the gold on 12–14 of them,
-the best LLM on none. Half of those follow a learnable AG News convention, half are plain
-mislabels: what fine-tuning bought here is the corpus's labelling.
+the best LLM on none. 8 of the 17 follow a learnable AG News convention, 7 are plain
+mislabels and 2 are ambiguous: what fine-tuning bought here is the corpus's labelling.
+(The 17 are selected by the LLMs' own errors, which flatters the LLMs on the rest — see the
+report's §3.4.)
 
 The example also found that **the scoring code is a bigger lever than the model choice for
 some arms**: the label parser is worth 8.6 accuracy points to `glm_l`, wider than the gap
@@ -87,8 +90,8 @@ by a pickle checkpoint, run on 2026-09-30 — lands *inside* that group at 0.985
 where there is no headroom, training buys a tie, not a win.
 
 Both corpora carry systematic label noise, and on DBpedia it is the size of the signal —
-the top ten are separated by four items, three of which the entire field disputes because
-the gold label is wrong.
+the top eleven are separated by four items, three of which 24–25 of the 26 learned arms
+dispute because the gold label is wrong.
 
 ### Few-NERD — task-specific training, isolated
 A 476MB span tagger fine-tuned on the corpus beat all 24 LLMs and separated from **26 of

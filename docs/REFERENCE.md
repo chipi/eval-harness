@@ -96,7 +96,7 @@ than one that is merely wrong.
 | metric | kind | what it is |
 |---|---|---|
 | `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction cost four reports a correction. |
-| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. |
+| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see `harness/data/runs-linux/`. |
 | `truncated` | descriptive | The provider stopped at `max_tokens`. Distinguishes "the model is bad" from "the budget was too small". |
 | `reasoning_tokens` | descriptive | Tokens spent on hidden reasoning. All examples run `reasoning: {enabled: false}`; this verifies it took. |
 
@@ -177,9 +177,12 @@ between examples is the **task** and not the configuration. Reached through a
 
 ### Local — downloaded weights, pinned by revision
 
-Every one is loaded from [HuggingFace](https://huggingface.co/) and its commit SHA and
-`model.safetensors` byte size are recorded in the run fingerprint, so a silent upstream
-change is detectable.
+Every one is loaded from [HuggingFace](https://huggingface.co/). For the first ten, the
+commit SHA and `model.safetensors` byte size are recorded in the run fingerprint, so a
+silent upstream change is detectable. **For five of the last six they are not** (all but
+`bert_base_ta`): their runs record `revision: null` and no weight files (two snapshots in the cache — see
+[`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)), so the revisions below were read from
+the cache by hand and are a record, not a fingerprint.
 
 | arm | model | size | revision | what it is |
 |---|---|---|---|---|
@@ -206,8 +209,13 @@ torch above 2.2.2. The revisions above are the `main` commits the runs loaded �
 the local cache, because these runs' fingerprints record `revision: null` (see
 [`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)). **Each also has a safetensors conversion
 PR on the Hub** — `refs/pr/29` (12-6), `refs/pr/2` (6-6), `refs/pr/9` (xsum) and `refs/pr/1`
-for the three BERTs — which loads on torch 2.2.2 and, checked for the DBpedia model,
-predicts identically.
+for the three BERTs. On torch 2.2.2, through each arm's own adapter
+([`evidence/conversion_pr_check.py`](evidence/conversion_pr_check.py), results in
+`conversion_pr_check.json`), **five of the six reproduce the recorded outputs byte for
+byte**: the three BERTs on every item (200, 200, 280) and `bart_m` and `bart_l_xsum` on 20
+of 20. **`bart_s` does not run**: its PR is fp16, as its pickle is, and torch 2.2.2 has no
+fp16 LayerNorm on CPU. Cast to fp32 it matches 19 of 20, but that is a different
+computation from the recorded run, which ran at fp16.
 
 ### Non-model arms
 

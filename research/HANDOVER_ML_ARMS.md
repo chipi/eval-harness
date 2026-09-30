@@ -1,10 +1,12 @@
 # Handover — the ML arms
 
 > **Update 2026-09-30 — the three blocked arms ran** (Linux, torch 2.14.0, configs
-> unchanged): `bart_m` 0.3367 (5th of 29, 5.1 s), `bart_s` 0.3276 (10th, 4.5 s), neither
+> unchanged): `bart_m` 0.3367 (5th of 29), `bart_s` 0.3276 (10th) — 4.1 s and 3.4 s/item
+> against `bart_l`'s 6.3 s, all re-timed on one Linux machine (`harness/data/runs-linux/`;
+> `bart_l`'s 11.0 s was the Mac) — neither
 > separated from `bart_l`; `bart_l_xsum` 0.2071, **last of 29**, below `lead3`, separated
 > from all 28. Open items below, resolved: `bart_s` is 230M params stored at fp16, hence
-> 460 MB; `rank_stability` re-run at k=29 (ρ 0.44 at 20 items, 0.79 at 100);
+> 460 MB, and run at fp16 despite its config's `precision: fp32` (safetensors header of the conversion PR; the loaded pickle's size matches it); `rank_stability` re-run at k=29 (ρ 0.44 at 20 items, 0.79 at 100);
 > REPORT_SUMMARIZATION and NOTES (entry 59) now carry all of it. Still open: the XSum arm
 > cannot separate training distribution from decode length. The runs listed below as
 > uncommitted were committed on 2026-09-29. The rest of this file is as of 2026-09-26.

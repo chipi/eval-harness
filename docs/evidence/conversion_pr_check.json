@@ -1,0 +1,72 @@
+{
+  "torch": "2.2.2+cpu",
+  "transformers": "4.55.4",
+  "bart_items": 20,
+  "arms": {
+    "ag_bert_base_ta_n200_v1": {
+      "model": "textattack/bert-base-uncased-ag-news",
+      "revision": "refs/pr/1",
+      "main": "ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the ",
+      "items_checked": 200,
+      "recorded_run": "ag_bert_base_ta_n200_v1_20260930T094555Z",
+      "loaded_dtype": null,
+      "byte_identical": 200,
+      "differing_items": []
+    },
+    "ag_bert_base_fy_n200_v1": {
+      "model": "fabriceyhc/bert-base-uncased-ag_news",
+      "revision": "refs/pr/1",
+      "main": "ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the ",
+      "items_checked": 200,
+      "recorded_run": "ag_bert_base_fy_n200_v1_20260930T094519Z",
+      "loaded_dtype": null,
+      "byte_identical": 200,
+      "differing_items": []
+    },
+    "db_bert_base_fy_n200_v1": {
+      "model": "fabriceyhc/bert-base-uncased-dbpedia_14",
+      "revision": "refs/pr/1",
+      "main": "ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the ",
+      "items_checked": 280,
+      "recorded_run": "db_bert_base_fy_n200_v1_20260930T091006Z",
+      "loaded_dtype": null,
+      "byte_identical": 280,
+      "differing_items": []
+    },
+    "cnn_bart_m_n200_v1": {
+      "model": "sshleifer/distilbart-cnn-12-6",
+      "revision": "refs/pr/29",
+      "main": "ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the ",
+      "items_checked": 20,
+      "recorded_run": "cnn_bart_m_n200_v1_20260930T083949Z",
+      "loaded_dtype": "torch.float32",
+      "byte_identical": 20,
+      "differing_items": []
+    },
+    "cnn_bart_s_n200_v1": {
+      "model": "sshleifer/distilbart-cnn-6-6",
+      "revision": "refs/pr/2",
+      "main": "ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the ",
+      "items_checked": 20,
+      "recorded_run": "cnn_bart_s_n200_v1_20260930T091438Z",
+      "loaded_dtype": "torch.float16",
+      "error": "RuntimeError: \"LayerNormKernelImpl\" not implemented for 'Half'",
+      "fp32_cast": {
+        "byte_identical": 19,
+        "differing_items": [
+          "0d3c8c276d079c4c225f034c69aa024cdab7869d"
+        ]
+      }
+    },
+    "cnn_bart_l_xsum_n200_v1": {
+      "model": "facebook/bart-large-xsum",
+      "revision": "refs/pr/9",
+      "main": "ValueError: Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the ",
+      "items_checked": 20,
+      "recorded_run": "cnn_bart_l_xsum_n200_v1_20260930T092945Z",
+      "loaded_dtype": "torch.float32",
+      "byte_identical": 20,
+      "differing_items": []
+    }
+  }
+}

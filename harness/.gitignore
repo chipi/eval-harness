@@ -184,7 +184,22 @@ data/runs-repeats/*/*
 !data/runs-repeats/*/predictions.jsonl
 !data/runs-repeats/*/outputs
 !data/runs-repeats/*/outputs/**
+data/runs-repeats/*/outputs/_rows.jsonl
 !data/runs-repeats/README.md
+
+# data/runs-linux/ — every local arm re-run on ONE machine, back to back, idle. The
+# record in data/runs/ mixes two hosts (a 12-core Intel Mac for the original arms, a
+# 4-core Linux container for the six added on 2026-09-30), so latencies across that
+# boundary are not comparable; these are. Same config_ids as data/runs, which is why they
+# cannot live there. Point EVAL_RUNS_DIR here to compare local arms' speed.
+!data/runs-linux/
+data/runs-linux/*/*
+!data/runs-linux/*/metrics.json
+!data/runs-linux/*/predictions.jsonl
+!data/runs-linux/*/outputs
+!data/runs-linux/*/outputs/**
+data/runs-linux/*/outputs/_rows.jsonl
+!data/runs-linux/README.md
 
 
 # data/runs-reparsed/ — the SciFact rankings rebuilt from each run's stored LLM reply

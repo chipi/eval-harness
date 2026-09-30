@@ -97,7 +97,8 @@ better than documentation can:
   sentences.
 - **Classification.** Three small fine-tuned models took the top three places on AG News
   from 24 frontier LLMs — and their lead turns out to live almost entirely in 17 items
-  whose gold labels the whole LLM field disputes. On DBpedia a **115× price difference**
+  whose gold labels nearly the whole LLM field disputes (8 a labelling convention, 7
+  mislabels, 2 ambiguous). On DBpedia a **115× price difference**
   bought nothing measurable, and the fine-tuned model bought a tie, not a win: the top
   eleven arms are separated by four items, three of which the field disputes because the
   gold label is wrong.

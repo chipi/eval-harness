@@ -140,8 +140,8 @@ Cross-facet ranking and per-million costs: journal entry 41. Power analysis: ent
   safetensors cannot load, at any transformers version carrying the guard.
   `facebook/bart-large-cnn` ships safetensors, which is why one BART arm ran here.
   *(2026-09-30: every one of the blocked checkpoints turns out to have a safetensors
-  conversion PR on the Hub, which loads on torch 2.2.2 — `revision: refs/pr/N` would have
-  run them here. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).)*
+  conversion PR on the Hub; five of the six reproduce the recorded outputs on torch 2.2.2 —
+  `revision: refs/pr/N` would have run them here. `bart_s`'s is fp16 and would not. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).)*
 - No classification example.
 - No judge wired into this example. Existing judge machinery is in
   `podcast-scraper-eval-data` (journal entry 43); harness `runner.py` / `make judge`

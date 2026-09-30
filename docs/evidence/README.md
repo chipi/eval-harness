@@ -34,3 +34,21 @@ snapshot are indistinguishable.
 
 Re-capture with `docs/evidence/capture.sh` when the facts need refreshing. The reports
 cite these values; `check_model_facts.py` fails if a report and this file disagree.
+
+## `conversion_pr_check.py` / `.json` — the safetensors conversion PRs, on torch 2.2.2
+
+The six local arms added on 2026-09-30 load `main`'s pickle, which needs torch ≥ 2.6. The
+script loads each checkpoint's Hub safetensors conversion PR on **torch 2.2.2**, the
+newest Intel-Mac wheel, and runs it through the arm's own adapter with the arm's own
+params. The `.json` records the results from 2026-09-30:
+
+- `main` is refused by the CVE-2025-32434 guard for all six.
+- The three BERTs reproduce the recorded outputs byte for byte on every item (200, 200 and
+  280). So do `bart_m` and `bart_l_xsum`, on the first 20 items: beam search costs 3–6 s
+  per item, so the BARTs were checked on a subset.
+- `bart_s` does not run. Its PR is fp16, as its pickle is, and torch 2.2.2 has no fp16
+  LayerNorm on CPU. Cast to fp32 it matches 19 of 20, but that is a different computation:
+  the recorded run was fp16.
+
+The usage line is in the script's docstring. It needs the datasets materialised under
+`harness/data/materialized/` and network access to the Hub.

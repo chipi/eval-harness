@@ -43,9 +43,12 @@ and the run was finished with `--resume`; it is marked `dirty` only because the 
 run's directory was untracked in the same tree. A clean re-run is the record in
 `data/runs/`.
 
-**Two things it is evidence for.** First, local generation is deterministic here: the two
-runs produced **200 of 200 byte-identical outputs** — beam search, CPU, fp32 — against
-13–78 of 200 for hosted arms at temperature 0. Second, it is the run that exposed the
+**Two things it is evidence for.** First, this arm's generation is deterministic on this
+machine: the two runs produced **200 of 200 byte-identical outputs** — beam search, CPU,
+fp16 (its stored dtype; the config's `precision: fp32` is recorded but not applied). (`data/runs-linux/` extends that to all nine local arms of summarisation and
+classification, including three re-run on a second machine.) Hosted arms at temperature 0
+do not repeat like this: 13–78 of 200 across two runs of five SciFact arms
+(`REPORT_RETRIEVAL.md`). Second, it is the run that exposed the
 resume bug: its `input_truncated` reads **0.75**, averaged over only the 4 items computed
 fresh, because resume did not carry adapter `extra` metrics onto replayed rows. The true
 value — 46 of 200 articles over the 1,024-token window, in the clean run — is 0.23. Fixed;

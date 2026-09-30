@@ -37,15 +37,18 @@ Reproduction commands are in §8.
 
 **Across five tasks and 133 measured arms: the most expensive model was never the best,
 four of five leaderboard tops are statistical ties, a small model fine-tuned on your data
-won or tied for first at $0 in every experiment that has one, a 10× cost increase bought
+ranked first in three experiments and third-equal — not separable from the leader — in the
+fourth, always at $0, a 10× cost increase bought
 between −0.4% and +5.9% of quality — and a 64 GB machine reached the same answer as
 unlimited hardware on four of the five tasks.**
 
 **The production question — should you fine-tune a small model instead of paying an
 LLM?** Yes, for a task you can define and label: in all four experiments with a model
-fine-tuned on that dataset, the best one **ranked first or statistically tied for first**
-(first on Few-NERD, AG News and — by 0.0001 — summarisation; tied third on DBpedia, not
-separated from the leader). Every zero-shot model ranked **last** among the learned arms
+fine-tuned on that dataset, the best one **ranked first in three** (Few-NERD, AG News and
+— by 0.0001 — summarisation) and **third-equal on DBpedia**, two items behind the leader
+and not separable from it. "Not separable" is weaker than it sounds on DBpedia: the leader
+cannot separate from 19 of its 27 opponents, so the fine-tune sits in a large group, not
+beside the winner. Every zero-shot model ranked **last** among the learned arms
 (3 of 3), and the one model fine-tuned on a *different* corpus of the same task ranked
 **last of 29**. The predictor is training exposure to *your* data, not model size — and on
 AG News what that exposure buys is largely the corpus's own labelling (§0).
@@ -60,7 +63,7 @@ below **$39,809**.
 **Combining the two: every experiment has a $0 answer.** In four of five the
 self-hostable option *is* the winner; in the fifth it trails by 0.0071, which the data
 cannot resolve. Across five unrelated tasks, the best configuration runnable entirely on
-your own machines is either first or statistically tied with first.
+your own machines is either first or in the group the leader cannot separate from.
 
 **And hardware buys almost nothing.** Of the 14 open-weight arms, several are cluster-scale —
 cluster models, not workstation ones. But capping the budget costs almost no quality:
@@ -83,7 +86,7 @@ the three-tier breakdown, the memory budgets, and four ways it could be wrong:
 | **2** | **The top is a group, not a podium** | Every winner leads on the point estimate against **100%** of its declared family, and separates from only **30–100%**. Few-NERD produced a real podium (26 of 26) and AG News nearly one (26 of 29); DBpedia's winner separates from 8 of 27. |
 | **3** | **The axis is trained-on-your-task, not free-vs-paid** | A free arm ranks first in 3 of 5 (one by 0.0001) and is statistically tied with first in the other 2 — it never loses once a *fine-tuned* free arm can run. Two matched pairs at price zero on both sides: `span_marker` 0.7674 vs `gliner` 0.4540 — **+0.3134 from exposure alone** — and BART fine-tuned on CNN/DailyMail vs on XSum, **1st vs 29th of 29**. |
 | **4** | **A pilot correlates beautifully and picks the wrong winner** | ρ(dev, full) = **0.72–0.90** in every experiment, and the pilot chose wrong in **3 of 5**. On SciFact it chose the **tenth-best of nineteen**; on AG News, now, the fifth of thirty. |
-| **5** | **The gold is wrong, in every corpus that was checked** | 3 for 3 where anyone looked; 2 were never checked. Few-NERD: **34 of 768** gold types unanimously rejected by all 25 learned arms. DBpedia's top eleven are separated by four items, three of which the field disputes. On AG News the fine-tuned lead sits almost entirely in **17 items** the hosted field disputes — fine-tunes agree with the gold on 12–14, `anthropic_l` on 0. |
+| **5** | **The gold is wrong, in every corpus that was checked** | 3 for 3 where anyone looked; 2 were never checked. Few-NERD: **34 of 768** gold types unanimously rejected by all 25 learned arms. DBpedia's top eleven are separated by four items, three of which the field disputes. On AG News the fine-tuned lead sits almost entirely in **17 items** the hosted field disputes — fine-tunes agree with the gold on 12–14, `anthropic_l` on 0 (a set selected by the hosted arms' own errors; classification §3.4 says what it does and does not show). |
 | **6** | **The instrument broke before the models got interesting** | Every time. 8 defects tabulated; **3 moved a single arm further than the gap separating most of the field** — the label parser (8.6 accuracy points), the unparsed-as-empty rule (+0.0214 f1), the reasoning flag (0.6124 → 0.6991). |
 | **7** | **The metric's shape decides which diagnostics can be read** | Not which model wins — which *tools* work. On DBpedia at n=10, **19.9 of 28 arms tied** and the rank statistic was correlating arm names; 354–399 of 400 resampling draws are undecided at every size, and in every decided one the two halves crown different arms. |
 
@@ -108,8 +111,10 @@ Three more numbers that travel:
   cheaper than the dearest** in three experiments — and on AG News, where the fine-tuned
   leader now ties with only one paid arm, 2.5×. Few-NERD has none.
 - **Cost does not buy speed.** log(cost) vs latency correlates at **r = −0.30 to +0.20** —
-  uncorrelated, negative twice. Free local classifiers run 5× (bert-base, 76–90 ms) to
-  1,078× (bert-mini, 7 ms) faster than the hosted field, and generators run *slower*.
+  uncorrelated, negative twice. `bert_mini` (7 ms) runs 61× to 1,078× faster than the
+  hosted field, timed on the same Mac. The bert-base fine-tunes (76–90 ms) come out roughly
+  5×–140× faster, but they were timed on a different machine, so that ratio is good to
+  about a factor of two. Generators run *slower*.
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
   classification against **3,926 for retrieval reranking** — a 38× difference that no
   model substitution recovers.
@@ -164,12 +169,14 @@ Sorting all sixteen local arms by how much training on *this* data they had prod
 | General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 19 | −0.0794, −0.0904 |
 | **Zero-shot** | `bart_mnli` ×2, `gliner` | **last among learned arms** | **−0.2100, −0.2324, −0.3643** |
 
-**The best model fine-tuned on each dataset ranked first, or tied with first where the task
-was saturated. Every zero-shot model ranked last among the learned arms.** Until
-2026-09-30 the first sentence read "every model fine-tuned on its dataset ranked first",
-3 of 3. With eight such arms it is true of the best one per experiment and not of every
-one: distillation costs `bart_m` and `bart_s` a few places without a separable loss, and on
-DBpedia the fine-tune lands in a five-way tie two items behind the leader.
+**The best model fine-tuned on each dataset ranked first in three experiments and
+third-equal in the saturated fourth. Every zero-shot model ranked last among the learned
+arms.** Until 2026-09-30 the first sentence read "every model fine-tuned on its dataset
+ranked first", 3 of 3. With eight such arms it is true of the best one per experiment in
+three of four and not of every one: distillation costs `bart_m` and `bart_s` a few places
+without a separable loss, and on DBpedia the fine-tune lands in a five-way tie for third,
+two items behind the leader — inside the 19-arm group the leader cannot separate from,
+which is a weak kind of tie.
 
 **The cleanest proofs are matched pairs with price held at zero on both sides.**
 `span_marker` and `gliner` are the same model class on the same task, differing only in
@@ -184,15 +191,22 @@ variable; "trained on text like yours" is.
 | | fine-tuned local | best paid alternative |
 |---|---|---|
 | Few-NERD | **0.7674**, $0, 0.76 s | 0.6864, **$2,324/mo**, 1.60 s |
-| AG News | **0.9600**, $0, 76 ms (`bert_mini`: 0.9450, **7 ms**) | 0.9100, **$351/mo**, 1.92 s |
-| summarisation | **0.3461**, $0, 11.0 s (`bart_m`: 0.3367, 5.1 s) | 0.3460, **$191/mo**, 1.60 s |
-| DBpedia | 0.9857, $0, 87 ms | **0.9929**, **$51/mo**, 0.85 s |
+| AG News | **0.9600**, $0, 76 ms‡ (`bert_mini`: 0.9450, **7 ms**) | 0.9100, **$351/mo**, 1.92 s |
+| summarisation | **0.3461**, $0, 11.0 s (`bart_m`: 0.3367, 1.5× faster than `bart_l` on one machine) | 0.3460, **$191/mo**, 1.60 s |
+| DBpedia | 0.9857, $0, 87 ms‡ | **0.9929**, **$51/mo**, 0.85 s |
+
+*‡ Timed on a 4-core Linux container. Every other figure in this table was timed on a
+12-core Intel Mac, and the Linux machine ran `bart_l` 1.7× faster than the Mac did
+(`harness/data/runs-linux/README.md`).*
 
 Better or equal quality, zero inference cost, and **10–270× lower latency** on the
-classification-shaped tasks. On DBpedia the quality is a statistical tie that the paid arm
+classification-shaped tasks: 270× for `bert_mini`, timed on the same Mac as the paid arm;
+10–25× for the bert-base fine-tunes, a Linux-against-Mac ratio that is good to about a
+factor of two. On DBpedia the quality is a statistical tie that the paid arm
 leads by two items in 280. On summarisation the quality is a tie and the local model is
-*slower*, because generation on a CPU is genuinely expensive — distillation halves that,
-and the win there is still cost only.
+*slower*, because generation on a CPU is genuinely expensive. Distillation takes a third
+(`bart_m`) to nearly half (`bart_s`) off `bart_l`'s time on the same machine, and the win
+there is still cost only.
 
 
 ### Three tiers, not two: the "paid" arms split in half
@@ -362,7 +376,7 @@ ones whose numbers here you can trust without re-measuring.
 |---|---|
 | classification | **a BERT fine-tune** (44–438 MB) if you can label — it won AG News and tied DBpedia's best; else **Gemma-4-26B** (52 GB) |
 | entity extraction | **SpanMarker fine-tune** (499 MB). No open-weight LLM here came close |
-| summarisation | **BART-large-CNN** (1.6 GB), or its distillation (1.2 GB, half the latency, no separable loss), if your summaries look like CNN/DailyMail's; else **Llama-3.3-70B int8** (70 GB) — a BART trained on someone else's summaries finished last |
+| summarisation | **BART-large-CNN** (1.6 GB), or its distillation (1.2 GB, 1.5× faster on the same CPU, no separable loss), if your summaries look like CNN/DailyMail's; else **Llama-3.3-70B int8** (70 GB) — a BART trained on someone else's summaries finished last |
 | retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int4** (55 GB) only if you need the last 0.07 |
 
 All four are under 2 GB and need no GPU at all.
@@ -444,9 +458,9 @@ compromise — it is the only thing that works.
    annotation that the rest of the field rejects, and **57% of its margin is one entity
    type** whose meaning exists only inside that corpus. AG News is starker: three
    fine-tunes agree with the gold on 12–14 of 17 items that ≥80% of the hosted field
-   disputes, the best hosted arms on 0–3, and that is almost the whole lead — half a
-   learnable convention (tech-company business news filed as `Sci/Tech`), half plain
-   mislabels. And summarisation shows the other face of it: BART trained on another
+   disputes, the best hosted arms on 0–3, and that is almost the whole lead — 8 of the 17 a
+   learnable convention (tech-company business news filed as `Sci/Tech`), 7 plain
+   mislabels, 2 ambiguous. And summarisation shows the other face of it: BART trained on another
    corpus's summaries finishes last. In production, *your* conventions are what you want
    — but the measured win does not transfer to a different labelling standard.
 3. **"Free" means zero inference cost and nothing else.** No labelling, no training
@@ -598,7 +612,7 @@ Three for three where anyone looked. The honest statement is not "60% of corpora
 noisy gold" — it is **every corpus we examined had it, and two were never examined.**
 
 On a saturated benchmark this stops being a footnote and becomes the ceiling: DBpedia's top
-ten arms are separated by four items, and three of those are items the whole field disputes
+eleven arms are separated by four items, and three of those are items 24–25 of 26 learned arms dispute
 because the label is wrong. **The measurement was resolving annotation, not capability.**
 
 The diagnostic is cheap and general: items nearly every *learned* arm gets wrong are items
@@ -747,6 +761,11 @@ The free-vs-paid comparison in full. Free now loses nowhere by a margin the data
 | Retrieval · SciFact | `e5_base` 438 MB | 0.7191 | 8 | `glm_s` | 0.7437 | $711 | paid wins +3.4%, **not separated** |
 | Classification · DBpedia | `bert_base_fy` 438 MB | 0.9857 | 3= | `qwen_m` | 0.9929 | $51 | paid wins +0.7%, **not separated** |
 
+*The SciFact rank is 8th against the corrected-parser runs in `data/runs-reparsed/`, which
+are the retrieval report's record (`qwen_s` 0.7183). A plain `leaderboard.py` over
+`data/runs/` reads the original-parser `qwen_s` (0.7338) and puts `e5_base` 9th — which is
+what this row said until 2026-09-30, when it was changed without this note.*
+
 **The DBpedia row used to be `bart_mnli`, zero-shot, 25th, "paid wins +58%"** — the only
 free arm that had run, because the fine-tuned checkpoint is a pickle that `transformers`
 refuses below torch 2.6 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6))
@@ -771,11 +790,14 @@ task" looks like: not a win, not a rout, and cheap enough that $711/month for +3
 real decision rather than an obvious one.
 
 **And free is not only cheaper, it is faster.** `bert_mini` answers in 7 ms against
-1.92 s for the best paid arm on the same task — **270×** — the bert-base fine-tunes in
-76–90 ms (about 10–25×), and `e5_base` in 0.06 s against 3.12 s. The exception is `bart_l`
-at 11.01 s — third-slowest of 29, behind two hosted arms (`mistral_l` 11.04 s and
-`qwen_s` 25.04 s). It is a 1.6 GB seq2seq model generating on a CPU; its distillations
-take 4.5–5.1 s. Free buys latency on *classification and embedding*, and costs it on
+1.92 s for the best paid arm on the same task — **270×**, both timed on the same Mac — the
+bert-base fine-tunes in 76–90 ms on a Linux machine (about 10–25×, a cross-machine ratio),
+and `e5_base` in 0.06 s against 3.12 s. The exception is `bart_l` at 11.01 s on the Mac —
+third-slowest of 29, behind two hosted arms (`mistral_l` 11.04 s and `qwen_s` 25.04 s). It
+is a 1.6 GB seq2seq model generating on a CPU. Re-timed with its distillations on one
+Linux machine, `bart_l` takes 6.3 s, `bart_m` 4.1 s and `bart_s` 3.4 s
+(`harness/data/runs-linux/`); even the fastest is slower than 17 of the 24 hosted arms (their
+Mac timings, so again a cross-machine comparison). Free buys latency on *classification and embedding*, and costs it on
 *generation*.
 
 ### The cheapest arm you cannot tell apart from the best
@@ -802,7 +824,7 @@ AG News is the free arm, as on Few-NERD, where no paid arm is indistinguishable 
 | experiment | correlation, log(cost) vs latency | hosted latency range | fastest local arm |
 |---|---|---|---|
 | Extraction · Few-NERD | **r = −0.30** | 0.79 – 5.94 s | `gliner` 0.17 s |
-| Summarisation · CNN/DM | r = −0.18 | 1.28 – 25.04 s | `bart_s` 4.48 s (`bart_l` 11.01 s) |
+| Summarisation · CNN/DM | r = −0.18 | 1.28 – 25.04 s | `bart_s` 3.39 s (`bart_l` 6.26 s), one Linux machine; `bart_l` 11.01 s on the Mac |
 | Classification · DBpedia | r = +0.02 | 0.44 – 12.35 s | `bert_base_fy` **0.087 s** |
 | Retrieval · SciFact | r = +0.03 | 1.14 – 17.48 s | `bge_small` 0.03 s |
 | Classification · AG News | r = +0.20 | 0.44 – 7.66 s | `bert_mini` **0.007 s** |
@@ -813,8 +835,10 @@ the spread *within* the hosted field (up to 20×) dwarfs anything cost predicts.
 Local models are a different regime entirely: `bert_mini` answers in **7 ms** against
 0.44–7.66 s for hosted arms on the same task — 61× to 1,078× faster, with no network in the
 path (this read 44×–766× until 2026-09-30, computed from 10 ms rather than the measured
-7.11 ms). The bert-base fine-tunes, ten times larger, take 76–90 ms: still 5× to 140×
-faster than any hosted arm on their tasks. What they cost instead is **setup**: e5-base takes 1,825 s to embed the SciFact
+7.11 ms). The bert-base fine-tunes, ten times larger, take 76–90 ms, timed on a different (Linux)
+machine: roughly 5× to 140× faster than any hosted arm on their tasks, a cross-machine
+ratio good to about a factor of two. On one machine `bert_mini` is 11–13× faster than
+them (`harness/data/runs-linux/`). What they cost instead is **setup**: e5-base takes 1,825 s to embed the SciFact
 corpus once, BM25 takes 0.8 s for the same job. That is a real cost, it is reported as
 `warmup_ms` rather than hidden, and it is paid once rather than per item.
 
@@ -848,9 +872,9 @@ Ordered by what they are worth, not by how obvious they are.
    what a classification prompt does on the same model. The largest cost lever here was
    architectural, and no model choice could recover it.
 2. **If you can label a few thousand examples, fine-tune a small model — on your own
-   data.** The best fine-tune ranked first in three of five and tied for first in a fourth
-   (DBpedia) — at **$0/month against up to $9,826/month**, and 5×–1,078× lower latency on
-   classification. On someone else's data of the same task it finished last. This is the
+   data.** The best fine-tune ranked first in three of five and third-equal, not separable
+   from the leader, in a fourth (DBpedia) — at **$0/month against up to $9,826/month**, and lower latency on classification — 61×–1,078× for `bert_mini` against the hosted
+   field on the same Mac, roughly 5×–140× for the bert-base fine-tunes timed elsewhere. On someone else's data of the same task it finished last. This is the
    single biggest lever in the table.
 3. **Never buy the most expensive arm.** Five for five it was not the best, and in three
    experiments it was *worse* than free while costing $875–$9,826/month.
@@ -885,8 +909,10 @@ something other than the leaderboard.
 - **One pass per arm, temperature 0.** Every interval here is over *items*, never over
   *runs*. Run-to-run variance is real and, for hosted arms, unmeasured — two runs of an
   identical SciFact config scored 0.6691 and 0.6617, because OpenRouter routes across
-  providers. For the local arms it is measured and zero: two runs of `bart_s` produced 200
-  of 200 byte-identical outputs.
+  providers. For the local arms of summarisation and classification it is measured and zero: all
+  nine re-ran byte-identically, six on the same machine and `bart_l`, `lead3` and
+  `bert_mini` on a different one (`bert_mini`'s confidences moved by ≤ 2 × 10⁻⁶, its
+  labels not at all). The NER and retrieval local arms were not re-run.
 - **24 hosted arms, one snapshot in time, no verifiable identity.** A provider can change
   weights behind an alias; runs record `identity_declared: true`, not proof.
 - **Five of the 24 arms never ran on SciFact** (the frontier tier, ≈$12 against that

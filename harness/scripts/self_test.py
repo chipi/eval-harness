@@ -677,13 +677,22 @@ def test_resume_scores_and_persists() -> None:
     # reported input_truncated 0.75 (3 of the 4 fresh items) against a true 0.23.
     # The demo adapter emits no `extra`, which is why every assertion above passed:
     # this uses a fixture adapter that does.
+    #
+    # AND THE OPPOSITE DIRECTION. The first fix carried every numeric key of the prior
+    # row, so a score the current scorer no longer emits came back from the replayed rows
+    # alone, reported as measured. Both passes' values are deliberately different --
+    # `call_flag` 1.0 then 2.0, `old_metric` present then absent -- because a constant
+    # cannot tell a carried value from a freshly computed one.
     fx = runs / "fixture"
     fx.mkdir(parents=True, exist_ok=True)
     (fx / "fx_adapter.py").write_text(
+        "import os\n"
         "from dataclasses import dataclass, field\n"
         "from typing import Any, Dict, Optional\n"
         "PRIMARY_METRIC = 'words'\n"
-        "METRIC_KINDS = {'words': 'quality', 'call_flag': 'descriptive'}\n"
+        "METRIC_KINDS = {'words': 'quality', 'call_flag': 'descriptive',\n"
+        "                'old_metric': 'quality'}\n"
+        "PASS = float(os.environ.get('FX_PASS', '1'))\n"
         "@dataclass\n"
         "class Result:\n"
         "    output: str\n"
@@ -694,16 +703,20 @@ def test_resume_scores_and_persists() -> None:
         "    extra: Dict[str, float] = field(default_factory=dict)\n"
         "    meta: Dict[str, Any] = field(default_factory=dict)\n"
         "def call_system(text, params):\n"
-        "    return Result(output=text[:60], extra={'call_flag': 1.0})\n"
+        "    return Result(output=text[:60], extra={'call_flag': PASS})\n"
         "def score(output, reference):\n"
-        "    return {'words': float(len(output.split()))}\n"
+        "    out = {'words': float(len(output.split()))}\n"
+        "    if PASS == 1.0:\n"
+        "        out['old_metric'] = 1.0\n"
+        "    return out\n"
     )
     (fx / "arm_fx.yaml").write_text(
         "config_id: fx_extra_v1\ndataset_id: smoke_v1\nadapter: fx_adapter.py\n"
         "params:\n  provider: fixture\n"
     )
     cfg_fx = str((fx / "arm_fx.yaml").relative_to(HERE.parent))
-    rf = run("scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_src", env=env)
+    rf = run("scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_src",
+             env={**env, "FX_PASS": "1"})
     if rf.returncode != 0:
         check("resume: the extra-carrying fixture arm runs", False,
               ((rf.stderr or "") + (rf.stdout or ""))[-200:])
@@ -714,15 +727,28 @@ def test_resume_scores_and_persists() -> None:
         (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
         (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
         rr = run("scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_res",
-                 "--resume", "fx_src", env=env)
+                 "--resume", "fx_src", env={**env, "FX_PASS": "2"})
         fx_rows = [_json.loads(l) for l in
                    (runs / "fx_res" / "predictions.jsonl").read_text().splitlines()
                    if l.strip()] if rr.returncode == 0 else []
         fx_rep = [r for r in fx_rows if r.get("resumed") == 1.0]
-        check("resume: replayed rows keep the adapter's extra metrics",
-              bool(fx_rep) and all(r.get("call_flag") == 1.0 for r in fx_rep),
-              f"{len(fx_rep)} replayed; call_flag on them = "
-              f"{[r.get('call_flag') for r in fx_rep][:5]}")
+        fx_new = [r for r in fx_rows if r.get("resumed") == 0.0]
+        check("resume: replayed rows keep the adapter's extra metrics FROM THEIR OWN PASS",
+              bool(fx_rep) and all(r.get("call_flag") == 1.0 for r in fx_rep)
+              and bool(fx_new) and all(r.get("call_flag") == 2.0 for r in fx_new),
+              f"replayed call_flag={[r.get('call_flag') for r in fx_rep][:3]} "
+              f"fresh call_flag={[r.get('call_flag') for r in fx_new][:3]}")
+        fx_m = _json.loads((runs / "fx_res" / "metrics.json").read_text()) \
+            if (runs / "fx_res" / "metrics.json").is_file() else {}
+        check("resume: a score the current scorer no longer emits is NOT carried",
+              bool(fx_rows) and not any("old_metric" in r for r in fx_rows)
+              and "old_metric" not in (fx_m.get("scores") or {}),
+              f"old_metric on {sum('old_metric' in r for r in fx_rows)} row(s); "
+              f"in scores: {'old_metric' in (fx_m.get('scores') or {})}")
+        check("resume: the run records which extras it carried",
+              (fx_m.get("resume") or {}).get("carried_extra_keys") == ["call_flag"]
+              and (fx_m.get("resume") or {}).get("replayed_without_recorded_extra") == 0,
+              f"resume note: {fx_m.get('resume')}")
 
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
