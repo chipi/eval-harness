@@ -162,6 +162,12 @@ data/references/silver/few_nerd_*/
 # the two directories stayed tracked only because git ignores nothing already tracked,
 # and adding any NEW file to either (this README, for one) silently failed.
 data/runs-*/
+# `!data/runs-superseded/README.md` used to sit here and did nothing: git does
+# not descend into an excluded DIRECTORY, so a negation for a file inside one is
+# inert. Re-allow the directory first, then exclude its contents. Found by
+# external review.
+!data/runs-superseded/
+data/runs-superseded/*
 !data/runs-superseded/README.md
 
 # --- re-allowed, and only these ---------------------------------------------------

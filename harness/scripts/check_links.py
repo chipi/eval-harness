@@ -10,7 +10,14 @@ GitHub's rule: lowercase, drop punctuation, replace EACH space with a hyphen
 produces a double hyphen). My first version of this collapsed them and produced
 five false positives, so the rule is written down here rather than re-derived.
 """
-import re, pathlib
+import re, pathlib, sys
+
+if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
+    # It used to fall through and run the whole check, so `--help`
+    # returned 0 only when every assertion happened to pass -- the trap
+    # validate_tree and check_model_facts already learned.
+    print(__doc__)
+    raise SystemExit(0)
 root = pathlib.Path(__file__).resolve().parents[2]
 def slugs(text):
     out=set()

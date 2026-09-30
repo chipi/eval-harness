@@ -377,7 +377,7 @@ At 1M items/month, summed across the whole tier:
 
 For someone with a DGX, tier 2 collapses into tier 1 economically: **the marginal cost of
 an open-weight LLM becomes electricity, and the quality question stops being a cost
-question at all.** The only arms whose price is unavoidable are the eleven that never
+question at all.** The only arms whose price is unavoidable are the ten that never
 statistically beat an open-weight alternative here.
 
 What self-hosting costs instead — and this report measures none of it — is the hardware,

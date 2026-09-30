@@ -251,6 +251,24 @@ def v7_committed_runs_are_readable() -> None:
         if len(parts) >= 4:                      # data/runs/<id>/<file...>
             have.setdefault(parts[2], set()).add(parts[3])
     bad = sorted(r for r, files in have.items() if "metrics.json" not in files)
+
+    # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. `data/runs-rescored`,
+    # `-reparsed`, `-pair` and `-repeats` are all committed and all cited by reports,
+    # and nothing validated them at all. Found by external review.
+    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats"):
+        base = ROOT / "data" / extra
+        if not base.is_dir():
+            continue
+        tracked_x = subprocess.run(
+            ["git", "ls-files", f"data/{extra}"], cwd=ROOT, capture_output=True, text=True,
+        ).stdout.split()
+        seen: dict[str, set] = {}
+        for f in tracked_x:
+            parts = f.split("/")
+            if len(parts) >= 4:
+                seen.setdefault(parts[2], set()).add(parts[3])
+        bad += [f"{extra}/{r}" for r, files in sorted(seen.items())
+                if "metrics.json" not in files]
     for x in bad[:10]:
         print(f"       {x}")
     if len(bad) > 10:

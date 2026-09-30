@@ -604,6 +604,19 @@ def main() -> int:
               "           record, or accept that this run cannot be reproduced from its\n"
               "           own fingerprint.")
 
+    # `--resume` WITH `--repeat N` REPLAYS THE SAME OUTPUTS N TIMES. Each repeat reads
+    # the same resume directory, so every pass after the first is a copy of the same
+    # answers -- and each one carries their cost again, so an arm that cost $1 reports
+    # $3 across three "repeats" that measured nothing. The two flags mean opposite
+    # things: --repeat asks for N independent measurements, --resume says do not
+    # measure what you already have. Found by external review.
+    if args.resume and args.repeat > 1:
+        die("--resume and --repeat are mutually exclusive.\n"
+            "  --repeat N asks for N INDEPENDENT passes; --resume says replay what is\n"
+            "  already on disk. Together, every repeat after the first replays the same\n"
+            "  outputs and re-counts their cost.\n"
+            "  Resume the interrupted pass with --repeat 1, then run the rest.")
+
     resume_dir = (RUNS / args.resume / "outputs") if args.resume else None
     if args.resume and not resume_dir.is_dir():
         die(f"cannot resume: no outputs under {resume_dir}")

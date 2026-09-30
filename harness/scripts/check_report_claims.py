@@ -21,6 +21,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import AmbiguousRuns, runs_by_arm  # noqa: E402
 
+if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
+    # It used to fall through and run the whole check, so `--help`
+    # returned 0 only when every assertion happened to pass -- the trap
+    # validate_tree and check_model_facts already learned.
+    print(__doc__)
+    raise SystemExit(0)
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 DATA = HERE.parent / "data" / "runs"
@@ -161,7 +168,12 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
         if _bil <= 0 or abs(_bil - _rec) < 1e-9:
             continue          # no bill, or the table happens to be right
         for _c in _cells[1:]:
-            _m = re.fullmatch(r"\$?([0-9]+\.[0-9]{3,4})", _c.replace("**", ""))
+            # THE DOLLAR SIGN IS REQUIRED. With it optional this matched any
+            # four-decimal cell, so an f1 of 0.6864 was read as a cost. That was
+            # harmless while the check only flagged exact price-table matches, and
+            # became 214 false failures the moment it also flagged "neither" -- a
+            # latent looseness that only shows when something downstream gets stricter.
+            _m = re.fullmatch(r"\$([0-9]+\.[0-9]{3,4})", _c.replace("**", ""))
             if not _m:
                 continue
             _v = float(_m.group(1))
@@ -170,6 +182,13 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
             elif abs(_v - _rec) < 0.0002:
                 _stale_cost.append(f"{_rep}: {_arm} shows ${_v:.4f} (price table); "
                                    f"billed ${_bil:.4f}")
+            elif _v > 0 and abs(_v - _bil) / max(_bil, 1e-9) > 0.02:
+                # NEITHER the bill nor the price table. This used to pass: the check
+                # only recognised the one wrong value it knew about, so a cost that was
+                # simply made up sailed through. Found by external review.
+                _stale_cost.append(f"{_rep}: {_arm} shows ${_v:.4f}, which is neither "
+                                   f"the bill (${_bil:.4f}) nor the price table "
+                                   f"(${_rec:.4f})")
 # The cost verdict is asserted AFTER the code-block scan below, which also appends to
 # `_stale_cost`. Asserting here ran before that scan had found anything, so 20 stale
 # classification cells passed while the list was still empty -- a check evaluated
@@ -476,7 +495,7 @@ for label, pref, ds, cheap, row_key in CHEAPNESS:
         print(f"  --   {label}: {cheap} not present — skipped")
         continue
     got = max(paid.values()) / paid[cheap]
-    check(f"{label} (report says {claimed:g}×)", abs(got - claimed) / claimed <= 0.08,
+    check(f"{label} (report says {claimed:g}×)", abs(got - claimed) / claimed <= 0.02,
           f"the report says {claimed:g}×, the bill gives {got:.1f}×")
 
 #: Pairwise cost ratios the summarisation report states in its separation tables.

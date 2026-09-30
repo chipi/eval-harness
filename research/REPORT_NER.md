@@ -423,8 +423,14 @@ See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
 look.** `span_marker` wins outright and separates from all 26. But decompose it:
 
 - ~57% of the margin is one type whose definition exists only inside this corpus.
-- ~7% of the margin (0.0059 of 0.0876 vs the nearest hosted arm) is agreeing with
-  annotation the rest of the field rejects.
+- ~7% of the margin (0.0059 of **0.0810** vs the nearest hosted arm, `openai_m` at
+  0.6864) is agreeing with annotation the rest of the field rejects.
+
+  *The denominator read 0.0876 until 2026-09-30, from before the NER rescoring; the
+  margin is 0.0810 now and the share is 7% either way. Round 3 reported this share as
+  38% and I could not reproduce that from any pairing of the committed numbers —
+  0.0059 is 7.3% of 0.0810 and 6.7% of 0.0876. Flagged rather than silently kept: if
+  38% comes from a different decomposition, it is worth seeing.*
 - On the type with a corpus-independent meaning, it loses.
 
 So the defensible claim is: **if your labels are a fixed in-house taxonomy and you can
@@ -576,7 +582,7 @@ This section is deliberately as detailed as the results.
 - **One pass per arm, temperature 0.** No variance estimate over repeated sampling. Every
   interval here is over *items*, not over *runs*.
 - **The upper bound in §3.6 is an upper bound.** It is not an estimate of performance
-  against clean annotation, and the 26 spans were found by the field's own agreement, which
+  against clean annotation, and the 34 spans were found by the field's own agreement, which
   is not an independent judge.
 - **`span_marker`'s fine→coarse mapping is asserted, not verified against a spec.** Few-NERD
   fine labels are literally `coarse-detail`, so the mapping is deterministic, but no test

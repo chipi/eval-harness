@@ -1,6 +1,6 @@
 # Evaluation report — BM25, four dense retrievers and twelve LLM rerankers on SciFact
 
-**Dataset** `scifact_200` · 200 scientific claims · a **5,183-document corpus** · 234 relevance judgments
+**Dataset** `scifact_200` · 200 scientific claims · a **5,183-document corpus** · 227 relevance judgments
 **Arms** BM25 · 4 sentence-transformer bi-encoders · 12 hosted LLMs reranking BM25's top-20 · 2 floors
 **Design** 1 pass per arm · temperature 0, reasoning off, `max_tokens` 700 · rerank depth 20 · **$1.94 billed**
 **Date** 2026-09-29 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
@@ -368,7 +368,10 @@ from 6 to 5 of 18. **No arm outside SciFact has a repeat run at all.**
 **For the product case, the answer is: use a retrieval-trained bi-encoder, and add a
 reranker only if you need the last four points.** `e5_base` alone reaches 0.7191 for
 nothing, on a CPU, and is not statistically distinguishable from any paid reranker. Adding
-the cheapest LLM on top of it reaches 0.7891 — a real +0.070 — for $0.055 per 200 queries.
+an LLM on top of it reaches 0.7891 — a real +0.070 — for **$0.1421 billed** per 200
+queries. (`glm_s` is not the cheapest reranker; `deepseek_s` is, at $0.0600. The
+$0.055 previously quoted here was the price table, and the "cheapest" was wrong under
+either cost.)
 
 **What you should not do is add a reranker to a weak first stage.** Every BM25-based
 pipeline here is capped at 0.8163 no matter which model does the reordering, and eleven of

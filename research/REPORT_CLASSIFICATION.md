@@ -2,7 +2,7 @@
 
 **Datasets** `ag_news_200` · 200 news snippets · 4 classes — and `dbpedia_280` · 280 Wikipedia abstracts · 14 classes
 **Arms** 24 hosted models (8 vendors × 3 price tiers), plus a fine-tuned classifier, a zero-shot NLI model, ~20 regex rules and a constant
-**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.45 and $1.25 by the price table — see Correction)
+**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.49 and $1.00 by the price table — see Correction)
 **Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 47–50
 
 > **This report covers two corpora on purpose, and should not be read one at a time.**

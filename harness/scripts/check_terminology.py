@@ -14,6 +14,13 @@ cell in any experiment-keyed table does not use one.
 """
 import pathlib, re, sys
 
+if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
+    # It used to fall through and run the whole check, so `--help`
+    # returned 0 only when every assertion happened to pass -- the trap
+    # validate_tree and check_model_facts already learned.
+    print(__doc__)
+    raise SystemExit(0)
+
 # The repo root, derived from THIS FILE. It was hardcoded to one laptop's absolute
 # path, so everywhere else `rglob` matched nothing, `bad` stayed empty and the check
 # exited 0 having read no files at all. It was reported as green in CI and described
