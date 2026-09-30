@@ -146,7 +146,7 @@ Sorting all ten local arms by how much task-specific training they had produces 
 |---|---|---|---|
 | **Fine-tuned on this dataset** | `span_marker`, `bert_mini`, `bart_l` | **1st, 1st, 1st** | **+0.0810, +0.0350, +0.0001** |
 | Trained for the task *type* | `e5_base`, `bge_small` | 8th, 11th of 19 | −0.0246, −0.0340 — **not separated** |
-| General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 17 | −0.0794, −0.0904 |
+| General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 19 | −0.0794, −0.0904 |
 | **Zero-shot** | `bart_mnli` ×2, `gliner` | **25th, 25th, 26th — last** | **−0.2100, −0.2324, −0.3643** |
 
 **Every model fine-tuned on its dataset ranked first. Every zero-shot model ranked last or
@@ -435,10 +435,10 @@ compromise — it is the only thing that works.
 | experiment | dearest paid arm | cost | its rank |
 |---|---|---|---|
 | Summarisation · CNN/DM | `anthropic_l` | $1.9652 | **16 of 25** |
-| Classification · AG News | `anthropic_l` | $0.1750 | 3 of 26 |
+| Classification · AG News | `anthropic_l` | $0.1750 | 3 of 28 |
 | Classification · DBpedia | `anthropic_l` | $0.3784 | 2 of 25 |
 | Extraction · Few-NERD | `anthropic_l` | $0.6897 | 3 of 25 |
-| Retrieval · SciFact | `glm_m` | $0.4576 | 2 of 17 |
+| Retrieval · SciFact | `glm_m` | $0.4576 | 2 of 19 |
 
 **But the naive version of this claim is false, and worth killing.** "Price buys nothing"
 is not supported: the dearest arm beats the *cheapest* arm in 4 of 5 experiments. Price is
@@ -473,9 +473,9 @@ and "distinguishable from a third of it" is the single most repeated result here
 | experiment | best free arm | rank | margin over the best **paid** arm |
 |---|---|---|---|
 | Extraction · Few-NERD | `span_marker`, 499 MB | **1 of 25** | +0.0810 over `openai_m` |
-| Classification · AG News | `bert_mini`, 44 MB | **1 of 26** | +0.0350 over `anthropic_m` |
+| Classification · AG News | `bert_mini`, 44 MB | **1 of 28** | +0.0350 over `anthropic_m` |
 | Summarisation · CNN/DM | `bart_l`, 1.6 GB | **1 of 25** | **+0.0001** over `deepseek_m` |
-| Retrieval · SciFact | `e5_base`, 438 MB | 9 of 17 | −0.0246 vs `glm_s`, **not separated** |
+| Retrieval · SciFact | `e5_base`, 438 MB | 8 of 19 | −0.0246 vs `glm_s`, **not separated** |
 | Classification · DBpedia | `bart_mnli` (zero-shot) | 25 of 25 | −0.3643 |
 
 Read the third row before the first two. **`bart_l` "wins" summarisation by 0.0001** — it

@@ -3,7 +3,35 @@
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
 better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-09-29, after **round 2**.
+Last updated 2026-09-30, after **round 3**.
+
+## What round 3 says about round 2
+
+Round 2's 32 findings were all addressed. Round 3 — four reviewers, fresh clones, Linux
+— found **`make ci` RED on their machines and green on mine**, plus 9 high, ~20 medium
+and ~15 low findings. The pattern from round 2 held and sharpened:
+
+| what round 2 was told | what round 3 found |
+|---|---|
+| `make ci` is green in a fresh clone | green on APFS, **red on ext4**. Five glob sites picked among duplicate `config_id`s by filesystem order, and the failure was real: two cost cells were genuinely stale. I had verified on one OS and reported it as verified |
+| the checks can now fail | the guard covered 3 of 9 checkers, only their missing-input path, and `check_report_claims` never reached its own guard there — it died on `FileNotFoundError` and exited 1 for an unrelated reason. A checker printing FAIL and exiting 0 passed all of it |
+| the cost correction is applied | 21 more stale cells, in fenced **code blocks** that both scanners skipped. The AG column summed to $0.49 under a header saying $0.58 |
+| the retrieval parser is fixed | my fix **created** the worst number in the example. Its new comma path accepted `[8925851` as a document id, and the harvested ranking scored below the BM25 fallback. Two of the three arms I "corrected" were unchanged all along |
+| the NER parser hash covers the parser | it covered a regex my own fix had made dead. Gutting the real function left the digest byte-identical |
+| resume keeps what was measured | true for a tidy re-run; false for a crash, which is the only case resume is for. A crashed run has no `predictions.jsonl`, so every replayed row came back `latency: None, cost: None` |
+| Nemenyi above k=25 is a deliberate gap | about thirty lines of stdlib. Now computed, validated against all 24 published values, and all five experiments have a CD line |
+
+**Three findings I disputed and was right about** (the retrieval sub-conclusion does not
+reverse; the tie is 12–13 arms not 11; Few-NERD's +5.9% is correct) — all three because
+round 3 measured them on runs carrying **my** parser bug. **One I disputed and lost**:
+NER's 21st recoverable item is real, and `_balanced_arrays` stopping at the first
+unclosed `[` is why I found only 20.
+
+**The lesson that keeps recurring, stated for round 4:** every round, a fix of mine has
+recreated the class of bug it fixed — a checker validating its own constants, a hash
+that stops covering refactored code, a correction applied where it was found and
+nowhere else. Assume this round's fixes did it again, and start by asking what it would
+take for a green check to be red.
 
 ## What round 2 says about round 1, and about this file
 
