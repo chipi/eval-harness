@@ -36,6 +36,7 @@ RESCORED = HERE.parent / "data" / "runs-rescored"
 #: directory until round 2, so the most-advertised number in the repo -- 0.7891 -- was
 #: the one number no reader could check.
 PAIR = HERE.parent / "data" / "runs-pair"
+REPARSED = HERE.parent / "data" / "runs-reparsed"
 
 #: (label, runs-dir, config_id, metric, claimed). NER reads the rescored directory,
 #: because that is the instrument its report states -- the un-rescored copies carry the
@@ -48,10 +49,14 @@ CLAIMS = [
     ("NER capitalized untyped",   RESCORED, "fn_capitalized_n200_v1", "untyped_f1",0.6191),
     ("NER nothing = the floor",   RESCORED, "fn_nothing_n200_v1",     "f1",        0.1250),
     ("NER glm_l parsed",          RESCORED, "fn_glm_l_n200_v1",       "parsed",    0.8893),
-    ("SciFact glm_s ndcg@10",     DATA,     "sf_glm_s_n200_v1",       "ndcg_10",   0.7437),
-    ("SciFact e5_base ndcg@10",   DATA,     "sf_e5_base_n200_v1",     "ndcg_10",   0.7191),
-    ("SciFact bm25 ndcg@10",      DATA,     "sf_bm25_n200_v1",        "ndcg_10",   0.6451),
-    ("SciFact rerank recall@100", DATA,     "sf_glm_s_n200_v1",       "recall_100",0.8586),
+    # SciFact reads REPARSED, which is the instrument REPORT_RETRIEVAL states. These
+    # four pointed at data/runs, which is harmless only because no claimed arm moved
+    # under the parser fix -- a claim about qwen_s would have been verified against
+    # 0.7338 rather than the report's 0.7183. Found by external review.
+    ("SciFact glm_s ndcg@10",     REPARSED, "sf_glm_s_n200_v1",       "ndcg_10",   0.7437),
+    ("SciFact e5_base ndcg@10",   REPARSED, "sf_e5_base_n200_v1",     "ndcg_10",   0.7191),
+    ("SciFact bm25 ndcg@10",      REPARSED, "sf_bm25_n200_v1",        "ndcg_10",   0.6451),
+    ("SciFact rerank recall@100", REPARSED, "sf_glm_s_n200_v1",       "recall_100",0.8586),
     ("AG News bert_mini",         DATA,     "ag_bert_mini_n200_v1",   "correct",   0.9450),
     ("DBpedia qwen_m",            DATA,     "db_qwen_m_n200_v1",      "correct",   0.9929),
     ("Summarisation bart_l",      DATA,     "cnn_bart_l_n200_v1",     "coverage",  0.3461),

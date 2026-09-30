@@ -26,10 +26,16 @@ WHY THE RESULT IS TRUSTWORTHY, AND HOW THAT WAS ESTABLISHED
   is truncated at 2000 characters, and that check is what shows the truncation is not
   hiding anything the parser would have used.
 
-  Two of the three affected arms were then RE-MEASURED from scratch, and the rebuild
-  predicted them to within 0.0004 (llama_s 0.7129 vs 0.7132, qwen_s 0.7183 vs 0.7187).
-  The third, llama_l, diverged for a reason that is not the parser: it invented document
-  ids on 30 of 200 queries in the new run against 1 of 200 in the old one.
+  `qwen_s` was then RE-MEASURED from scratch and the rebuild predicted it to within
+  0.0004 (0.7183 against 0.7187).
+
+  THIS PARAGRAPH TOLD THE RETRACTED STORY UNTIL 2026-09-30. It said three arms were
+  affected and that llama_l "diverged for a reason that is not the parser". Both were
+  artifacts of the round-2 parser, which this tool's own fix removed -- under the
+  shipped parser llama_l and llama_s are unchanged and only qwen_s moves. The tool that
+  produces runs-reparsed was documenting the version of events its own output disproves.
+  Found by external review, which is the fourth time a correction reached the reports
+  and not one of the places that generates them.
 
 WHAT THIS IS NOT
 

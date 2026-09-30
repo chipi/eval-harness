@@ -3,3 +3,7 @@ pyyaml>=6.0
 jsonschema>=4.0
 # `litellm`, `openrouter` and `openai` providers all go through this client.
 openai>=1.0
+# Needed by the summarisation scorer, which `self_test` spawns for the two corpus
+# tests. Without it they skip, and the setup note claimed `fetch.py` alone was
+# enough to un-skip them -- it is not. Pure Python, small. Found by review.
+rouge-score

@@ -419,7 +419,9 @@ The cause was mine. The other three examples all pass `reasoning: {enabled: fals
 `extra_body`; I dropped that passthrough when writing this adapter and set it in none of the
 48 configs. That is not a tuning difference — it breaks the one property the four examples
 exist to support, that only the *task* differs between them. Fixed, fingerprinted, and
-`qwen_s` then scored 0.7338.
+`qwen_s` then scored 0.7338 — **0.7183 under the corrected parser**, which is the
+figure §3.1 and the rest of this report use. The 0.7338 is what that fix produced
+at the time and is kept because the sentence is about that fix.
 
 Every reranking run made before the fix is in `data/runs-superseded/` with the reason
 written down — including `gemma_m`, which was fine. A uniform instrument means re-running

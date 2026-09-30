@@ -943,7 +943,10 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
             src = d
             break
     if src is None or not ds_file.is_file() or not mat.is_dir():
-        print("  --   rescore/source_path: skipped (corpus not fetched on this machine)")
+        print("  --   rescore/source_path: skipped. Needs THREE things, not one: the\n"
+              "       corpus fetched (examples/summarization-cnn-dailymail/fetch.py),\n"
+              "       cnn_dailymail_200 materialized (make smoke-fixture does it), and\n"
+              "       an interpreter with rouge_score (now in harness/requirements.txt).")
         return
 
     tmp = HERE.parent / "data" / "runs-selftest-srcpath"
@@ -1259,19 +1262,29 @@ def test_the_reports_separation_counts_are_real() -> None:
     # seed and 400k give 7. An earlier version of this test demanded one exact figure,
     # which would have forced the report to publish a number more precise than the
     # measurement -- exactly the error it exists to catch.
-    def _states(n: int) -> bool:
-        return (f"**{n} of {fam}**" in report
-                or any(f"**{lo}\u2013{hi} of {fam}**" in report
-                       for lo in range(n - 2, n + 1) for hi in range(n, n + 3)
-                       if lo <= n <= hi))
+    # EVERY STATED COUNT MUST AGREE, not just one of them. `_states` asked whether ANY
+    # "**N of 18**" appeared anywhere, so a second, stale sentence was invisible -- and
+    # so was a range as loose as "**4-8 of 18**", which contains the answer while saying
+    # almost nothing. Appending "the tie group is **9 of 18**" left the suite green.
+    # Found by external review.
+    stated = re.findall(r"\*\*(\d+)(?:\u2013(\d+))?\s+of\s+" + str(fam) + r"\*\*", report)
+    check(f"REPORT_RETRIEVAL states at least one count out of {fam}", bool(stated),
+          "no '**N of 18**' found at all")
 
-    check(f"REPORT_RETRIEVAL states a separated count consistent with the tool's {sep}",
-          _states(sep),
-          f"the tool says {sep} of {fam}; the report states neither that nor a range "
-          f"containing it")
-    check(f"...and a tie group consistent with {fam - sep} of {fam}",
-          _states(fam - sep),
-          f"tie group should read {fam - sep} of {fam}, or a range containing it")
+    def _ok(lo: str, hi: str, want: int) -> bool:
+        a = int(lo)
+        b = int(hi) if hi else a
+        return a <= want <= b and (b - a) <= 2      # a range wider than 2 is not a claim
+
+    bad = [f"**{lo}{'–' + hi if hi else ''} of {fam}**" for lo, hi in stated
+           if not (_ok(lo, hi, sep) or _ok(lo, hi, fam - sep))]
+    check(f"...and EVERY one is consistent with {sep} separated or {fam - sep} tied",
+          not bad,
+          f"the tool says {sep}/{fam - sep}; the report also states " + ", ".join(bad))
+    check("...and no stated range is wider than 2",
+          all((int(hi) - int(lo)) <= 2 for lo, hi in stated if hi),
+          "a range wide enough to contain any answer is not a claim")
+
     check("...and says the count sits on a boundary, since it does",
           "boundary" in report.lower(),
           "two arms sit on their Holm thresholds and the report does not say so")
@@ -1302,6 +1315,14 @@ def test_the_checks_can_actually_fail() -> None:
         f = HERE.parents[1] / rel
         before = f.read_text(encoding="utf-8")
         if before.count(old) != 1:
+            # AN ANCHOR THAT NO LONGER MATCHES IS A FAILURE, NOT A SKIP. This used to
+            # `yield False`, which printed "skipped (anchor not found)" and left the
+            # suite green -- so bolding a cell in the anchored row, or a rescore that
+            # moves the number, silently turned that checker's guard into a no-op.
+            # The guard exists because checks stop working quietly; it cannot itself
+            # stop working quietly. Found by external review.
+            check(f"checks can fail: the planted defect still anchors in {rel}", False,
+                  f"{before.count(old)} matches for {old[:60]!r} — update the anchor")
             yield False
             return
         try:
@@ -1329,6 +1350,26 @@ def test_the_checks_can_actually_fail() -> None:
          "docs/REFERENCE.md",
          "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | MIT |",
          "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | GPL-3.0 |"),
+        # ONE DEFECT PER ASSERTION FAMILY, not one per checker. The claims checker has
+        # five independent families and the guard exercised a table row only -- so the
+        # cost scan, the code-block scan, the ratio checks and the Pareto count were
+        # each unguarded, and R4-H1 (a cost family blind to most arms) survived
+        # precisely there. Found by external review.
+        ("check_report_claims.py", "a wrong COST in a table cell",
+         "research/REPORT_RETRIEVAL.md",
+         "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.1421 |",
+         "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.5000 |"),
+        ("check_report_claims.py", "a wrong number in a CODE BLOCK",
+         "research/REPORT_CLASSIFICATION.md",
+         "bert_mini ◆          0.9450", "bert_mini ◆          0.9999"),
+        ("check_report_claims.py", "a wrong CHEAPNESS RATIO",
+         "research/REPORT_SYNTHESIS.md",
+         "| Classification · DBpedia | 19 arms (18 paid) | `gemma_m` | $0.012 | **115× cheaper** |",
+         "| Classification · DBpedia | 19 arms (18 paid) | `gemma_m` | $0.012 | **250× cheaper** |"),
+        ("check_report_claims.py", "a wrong PARETO count",
+         "research/REPORT_SUMMARIZATION.md",
+         "| **8 of 24** | three arms' quality",
+         "| **5 of 24** | three arms' quality"),
     ]
     for script, what, rel, old, new_text in DEFECTS:
         if not (HERE / script).is_file():

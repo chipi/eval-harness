@@ -242,6 +242,11 @@ validate:
 # `-` so a machine that cannot materialize still runs the rest of the suite.
 smoke-fixture:
 	@test -d data/materialized/smoke_v1 || $(PYTHON) scripts/materialize.py --dataset-id smoke_v1 >/dev/null 2>&1 || true
+# ...and the summarisation slice when its sources are present, because the two
+# corpus tests need it materialized as well as fetched. The setup note said
+# `fetch.py` was enough; it is not. Found by external review.
+	@test ! -d data/sources/cnn_dailymail_200 || test -d data/materialized/cnn_dailymail_200 || \
+	  $(PYTHON) scripts/materialize.py --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
 
 test: smoke-fixture
 	$(PYTHON) scripts/self_test.py
