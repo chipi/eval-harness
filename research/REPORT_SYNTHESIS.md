@@ -50,7 +50,9 @@ your own machines is either first or statistically tied with first.
 **And hardware buys almost nothing.** Of the 14 open-weight arms, several are cluster-scale —
 cluster models, not workstation ones. But capping the budget costs almost no quality:
 **four of five ≤128 GB answers equal the unlimited-hardware answer, and four of five
-≤64 GB answers equal the ≤128 GB one.** Going from a 510 GB model to a 35 GB one costs
+≤64 GB answers equal the ≤128 GB one** — SciFact is the exception, losing **0.0074**
+(`glm_s` 0.7437 → `gemma_m` 0.7363, a gap its own test cannot resolve). Going from a
+510 GB model to a 35 GB one costs
 **0.0078 on one task and nothing on the other four.**
 
 The counter-argument is measured too: one hosted model covers all five tasks at the 70th
@@ -223,7 +225,7 @@ machine it demands. They are not close in size.
 | experiment | small ML | size | score | best open-weight LLM | size | score | verdict |
 |---|---|---|---|---|---|---|---|
 | Classification · AG News | `bert_mini` | **44 MB** | **0.9450** | Llama-3.3-70B | ~141 GB | 0.8800 | ML ahead by 0.0650 at 1/3,205 the size — **not separated under Holm** (p = 0.0136 against a 0.0083 threshold) |
-| Extraction · Few-NERD | `span_marker` | **476 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
+| Extraction · Few-NERD | `span_marker` | **499 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
 | Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, 510 GB checkpoint | 0.3460 | **tie** |
 | Retrieval · SciFact | `e5_base` | **438 MB** | 0.7191 | GLM-4.5-Air | ~221 GB | **0.7437** | LLM wins by 0.0246, **not separated** |
 | Classification · DBpedia | *blocked* | — | — | GLM-4.6 | ~714 GB | **0.9857** | **LLM by default** — the ML arm would not load |
@@ -316,7 +318,7 @@ ones whose numbers here you can trust without re-measuring.
 | if your task is | install |
 |---|---|
 | classification | **`bert_mini`-style fine-tune** (44 MB) if you can label; else **Gemma-4-26B** (52 GB) |
-| entity extraction | **SpanMarker fine-tune** (476 MB). No open-weight LLM here came close |
+| entity extraction | **SpanMarker fine-tune** (499 MB). No open-weight LLM here came close |
 | summarisation | **BART-large-CNN** (1.6 GB) if the domain is stable; else **Llama-3.3-70B int8** (70 GB) |
 | retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int4** (55 GB) only if you need the last 0.07 |
 
@@ -452,7 +454,7 @@ and "distinguishable from a third of it" is the single most repeated result here
 
 | experiment | best free arm | rank | margin over the best **paid** arm |
 |---|---|---|---|
-| Extraction · Few-NERD | `span_marker`, 476 MB | **1 of 25** | +0.0810 over `openai_m` |
+| Extraction · Few-NERD | `span_marker`, 499 MB | **1 of 25** | +0.0810 over `openai_m` |
 | Classification · AG News | `bert_mini`, 44 MB | **1 of 26** | +0.0350 over `anthropic_m` |
 | Summarisation · CNN/DM | `bart_l`, 1.6 GB | **1 of 25** | **+0.0001** over `deepseek_m` |
 | Retrieval · SciFact | `e5_base`, 438 MB | 9 of 17 | −0.0246 vs `glm_s`, **not separated** |
@@ -656,7 +658,7 @@ instructive ones:
 
 | experiment | best free arm | quality | rank | best paid arm | quality | $/month | verdict |
 |---|---|---|---|---|---|---|---|
-| Extraction · Few-NERD | `span_marker` 476 MB | 0.7674 | **1** | `openai_m` | 0.6864 | $2,324 | **free wins +11.8%** |
+| Extraction · Few-NERD | `span_marker` 499 MB | 0.7674 | **1** | `openai_m` | 0.6864 | $2,324 | **free wins +11.8%** |
 | Classification · AG News | `bert_mini` 44 MB | 0.9450 | **1** | `anthropic_m` | 0.9100 | $351 | **free wins +3.8%** |
 | Summarisation · CNN/DM | `bart_l` 1.6 GB | 0.3461 | **1** | `deepseek_m` | 0.3460 | $191 | free wins +0.0% *(a tie)* |
 | Retrieval · SciFact | `e5_base` 438 MB | 0.7191 | 9 | `glm_s` | 0.7437 | $711 | paid wins +3.4%, **not separated** |
@@ -795,7 +797,7 @@ something other than the leaderboard.
 - **24 hosted arms, one snapshot in time, no verifiable identity.** A provider can change
   weights behind an alias; runs record `identity_declared: true`, not proof.
 - **Five of the 24 arms never ran on SciFact** (the frontier tier, ≈$12 against that
-  sweep's $2.45), so §1 and §2 are weaker there than elsewhere. One NER arm and several
+  sweep's $1.94 billed), so §1 and §2 are weaker there than elsewhere. One NER arm and several
   local ML arms are also unrun — see the handovers in this directory.
 - **Nothing here measures factual accuracy, safety, or instruction-following.** ROUGE is
   n-gram overlap; accuracy is label match. A confident, fluent, wrong answer scores well on

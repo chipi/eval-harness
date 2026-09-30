@@ -24,11 +24,11 @@
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **476 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
+| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **499 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
 | **Self-host · open-weight LLM, absolute** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B / ~52 GB**. **0.6733** — **0.0941 worse** than a model **109× smaller**. The clearest ML-beats-LLM result in the set. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model.** At 52 GB native it fits with room to spare — **the absolute open-weight winner here is already the practical one.** |
-| **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 476 MB tagger.** |
-| **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 476 MB model. |
+| **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 499 MB tagger.** |
+| **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 499 MB model. |
 | **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
 | **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
@@ -56,10 +56,10 @@ from 64 GB to unlimited.
 1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
    field of 0.524–0.686. Holm step-down over a family of 26 declared in advance:
    **separated from 26 of 26**. Neither classification corpus produced this — AG News gave
-   a leader tied with five others, DBpedia a group of ten.
+   a leader tied with nine others, DBpedia a group of ten.
 
 2. **And behind it, the familiar tie.** The best hosted arm, `openai_m` at 0.6864,
-   separates from only **19 of 26**. The eight it cannot separate from span
+   separates from only **19 of 26**. The seven it cannot separate from span
    `gemma_m` at **$0.0088** to `anthropic_l` at **$0.6897** — a **78× price range** buying
    nothing measurable. DBpedia's figure was 115×. Two unrelated tasks, the same shape.
 
@@ -108,7 +108,7 @@ where an arm that invents entities is caught, and they fix the floor.
 
 | Arm | What it is | Weights |
 |---|---|---|
-| `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, **fine-tuned on Few-NERD's training split**, predicts the 66 fine types mapped down to 8 | 476 MB |
+| `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, **fine-tuned on Few-NERD's training split**, predicts the 66 fine types mapped down to 8 | 499 MB |
 | `gliner` | `urchade/gliner_medium-v2.1`, zero-shot, **caller supplies the label set**, threshold 0.5 (library default, untuned) | 745 MB |
 | 24 hosted | 8 vendors × {small, medium, large}, one prompt, temperature 0 | — |
 | `capitalized` | every capitalised run, minus a stoplist written from English orthography | — |

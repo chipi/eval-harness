@@ -59,7 +59,7 @@ price difference bought nothing measurable. Same harness, same arms, same statis
 1. **AG News.** `bert_mini` — 44MB, fine-tuned, $0, 7 ms/item — scored **0.9450** and was
    ahead of all 24 hosted arms, whose field spanned 0.835–0.910. Holm over a family of 27
    declared in advance: ahead of 27 of 27, **separated from 18**. Not separated from the
-   top six. A group, not a podium.
+   top ten. A group, not a podium.
 
 2. **DBpedia-14.** `qwen_m` led at **0.9929 for $0.0143**; `anthropic_l` was one item in
    280 behind at **0.9893 for $0.3784**, p = 1.0000. The leader separated from only **8 of

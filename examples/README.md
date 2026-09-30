@@ -110,7 +110,7 @@ varying.** Every example produced a tie group spanning a large price range:
 | | tie at the top | price span |
 |---|---|---|
 | summarisation | dearest arm ranks 15th of 24 | 52× |
-| AG News | leader tied with 5 | — |
+| AG News | leader tied with 9 | — |
 | DBpedia | a group of 10 | 115× |
 | Few-NERD | 8 hosted arms | 78× |
 | SciFact | 12 arms, **2 of them free** | 7.6× billed, among cheap arms |
@@ -145,7 +145,7 @@ cost this repo four reports' worth of corrections.
 Every example has a handover for what was not run and why, in
 [`../research/`](../research): blocked ML arms needing a machine that can load pickle
 checkpoints, one NER arm rate-limited upstream, and five frontier rerankers that cost
-$31.40 against the retrieval sweep's $2.45.
+About $12 against the retrieval sweep's $1.94 billed.
 
 ---
 

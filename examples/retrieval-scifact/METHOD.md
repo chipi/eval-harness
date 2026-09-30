@@ -89,8 +89,9 @@ to BM25's, to four decimals.
 **Only 12 of the 24 hosted arms ran.** The cut was *everything under $0.60/Mtok input* —
 price-ordered and declared before any result was read. A reranking prompt carries 20 full
 abstracts (**3,926 input tokens per query** against NER's 125), so the five frontier arms
-would have cost **$31.40** against this sweep's **$2.45**. The consequence is stated
-plainly in the report: the twelve-way tie is a tie among *cheap* models, and this example
+would have cost **about $12** against this sweep's **$1.94 billed**. The consequence is stated
+plainly in the report: the top tie (12–13 arms, the count on a Holm boundary) is a tie
+among *cheap* models, and this example
 **cannot say whether a frontier model reranks better**. See
 [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](../../research/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 

@@ -158,7 +158,7 @@ wrote its reasoning out in the open and scored 0.10 for it.
   across three repeats; **12 of 24 arms produced zero identical outputs**. `REPEAT=3` is
   not caution here, it is the minimum.
 - **Price buys very little on this task.** At n=200 the dearest arm costs **52×** the
-  cheapest (billed) and ranks **16th of 25**. The Pareto frontier keeps **7 of 24** hosted
+  cheapest (billed) and ranks **16th of 25**. The Pareto frontier keeps **8 of 24** hosted
   arms; the rest are beaten on quality *and* cost *and* speed simultaneously.
 
   > This bullet previously read *"202× the cheapest, ranks 9th of 24, frontier keeps 10 of
@@ -242,8 +242,9 @@ exists, so you cannot check which author you got.
 
 ## Not covered
 
-- **20 articles.** Everything above rests on a 20-article sample, which is why the
-  critical-difference line matters so much.
+- **200 articles, not 20.** This section said "everything above rests on a 20-article
+  sample" long after the n=200 sweep replaced it. The dev slice is 20; every number
+  above is n=200.
 - **One reference per article.** ROUGE against a single human summary is a weak proxy; two
   valid summaries can share few n-grams.
 - **`grounding` is ours**, ~20 lines, not a standard metric and not comparable to any
@@ -251,5 +252,6 @@ exists, so you cannot check which author you got.
 - **Speed is machine-bound.** The latency column mixes this machine, the proxy and the
   upstream provider. It is a property of your setup, not of the model — which is
   deliberate: the same experiment measures how fast *your* machine is at *this* task.
-- **No local model arm yet.** The ML-vs-LLM contrast this example is named for — a
-  classical seq2seq summariser against the hosted models — is not built.
+- ~~**No local model arm yet.**~~ **Built.** `bart_l` (BART fine-tuned on this corpus,
+  1.6 GB) and `lead3` are measured, and `bart_l` ties the best hosted arm to 0.0001.
+  This bullet outlived the work it described.

@@ -31,7 +31,7 @@ cost on the order of **$12, and somewhere between about $8 and $45** depending o
 the provider actually routes and bills them. If the exact figure matters to the
 decision, the decision needs a measurement, not a better estimate.
 
-**The 19-arm sweep that WAS run cost $2.21 as billed** ($1.31 by the same price table —
+**The 19-arm sweep that WAS run cost $1.94 as billed** ($1.04 by the same price table —
 the sweep is one of the places the table understates most, at 1.69×). So these five
 would cost roughly 5× the rest of the experiment put together, not 12.8×, because a
 reranking prompt carries 20 full abstracts — 3,926 input tokens per query against 125
@@ -43,7 +43,7 @@ a selection on outcome.
 
 ## What this costs the report
 
-**The 12-way tie in §3.2 is a tie among cheap and free models.** The report cannot say
+**The top tie in §3.2 (12–13 arms) is a tie among cheap and free models.** The report cannot say
 whether a frontier model is a better reranker, and says so. That is the single largest
 open question in the example: every hosted arm measured lands in 0.7017–0.7437 across a
 7.6× billed price range, and whether a 100× price step breaks that pattern is exactly what these
@@ -67,7 +67,7 @@ done
 ```
 
 Cheapest-first is deliberate: if `anthropic_s` lands inside the existing tie group, the
-remaining four are buying a negative result at $29, and that is worth knowing before
+remaining four are buying a negative result at about $11, and that is worth knowing before
 spending it.
 
 ## What must be recomputed afterwards

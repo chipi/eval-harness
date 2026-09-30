@@ -63,9 +63,10 @@ for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
 done
 ```
 
-The whole 19-arm measurement sweep is **$1.04** by this repo's price table (**$2.45**
-enforced — see the report §7). The local arms are free; the dense ones cost time instead,
-and that cost is reported rather than hidden.
+The whole 19-arm measurement sweep is **$1.94 as the provider billed it** — $1.04 by
+this repo's price table, which understates it by 1.87×, the widest gap of the five
+experiments (see the report §7). The local arms are free; the dense ones cost time
+instead, and that cost is reported rather than hidden.
 
 ---
 
@@ -151,7 +152,7 @@ glm_s   ⟳ e5_base   0.7891   $0.055    the registered prediction: 0.786-0.797
 
 Four things worth reading the report for:
 
-1. **A twelve-way tie, and two of the twelve are free.** `e5_base` and `bge_small` — local,
+1. **A tie of twelve or thirteen arms, and two of them are free.** `e5_base` and `bge_small` — local,
    CPU, $0 — are not statistically distinguishable from any paid reranker.
 2. **A prediction registered before the arm existed.** The ceiling analysis said swapping
    only the first stage would reach 0.786–0.797. It reached **0.7891**, and the *mechanism*

@@ -376,7 +376,7 @@ twelve are within 4 points of that cap. Money spent on a better reranker there b
 nothing; money spent on the retriever raises the cap itself.
 
 **The tie is the recurring result across all four examples in this repo.** Summarisation:
-the dearest arm ranked 15th of 24. AG News: a leader tied with five. DBpedia: a group of
+the dearest arm ranked 15th of 24. AG News: a leader tied with nine. DBpedia: a group of
 ten across a 115× price range. NER: eight hosted arms across 78×. Here: twelve, two of
 which are free. Four unrelated tasks, the same shape — at the top of a field, price stops
 predicting quality well before quality stops varying.
@@ -440,11 +440,11 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
 
 - **Five of the 24 standard arms were never run.** `anthropic_s`, `openai_m`, `openai_l`,
   `anthropic_m`, `anthropic_l` — the frontier tier. They would cost **about $12**,
-  against this sweep's **$2.21 as billed** — not the $31.40 stated here until
+  against this sweep's **$1.94 as billed** — not the $31.40 stated here until
   2026-09-29, which rested on a multiplier that does not survive checking. The cut was
   "everything under $0.60/Mtok input", price-ordered and declared before any result was
   read. **So this report says nothing about whether a frontier model is a better
-  reranker**, and the 12-way tie is a tie among cheap models plus two free ones. See
+  reranker**, and the top tie (12–13 arms) is a tie among cheap models plus two free ones. See
   [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers

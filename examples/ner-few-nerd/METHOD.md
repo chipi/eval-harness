@@ -57,7 +57,7 @@ The pair is the whole point of this example:
 
 | Arm | Trained on Few-NERD? | Why it is here |
 |---|---|---|
-| [`span_marker`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | **Yes** | [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER), 476 MB. The in-distribution ceiling. Predicts the 66 fine types, deterministically mapped to the coarse 8. |
+| [`span_marker`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | **Yes** | [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER), 499 MB. The in-distribution ceiling. Predicts the 66 fine types, deterministically mapped to the coarse 8. |
 | [`gliner`](https://huggingface.co/urchade/gliner_medium-v2.1) | **No** | [GLiNER](https://arxiv.org/abs/2311.08526), 745 MB. Zero-shot, and the **caller supplies the label set** — so it can be handed Few-NERD's eight types directly with no lossy mapping. |
 
 **Why this pair and not an off-the-shelf NER model.** Most predict their own taxonomy —
