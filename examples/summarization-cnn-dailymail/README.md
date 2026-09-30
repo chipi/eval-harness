@@ -157,14 +157,17 @@ wrote its reasoning out in the open and scored 0.10 for it.
 - **Temperature 0 is not deterministic.** Only **9.8%** of outputs were byte-identical
   across three repeats; **12 of 24 arms produced zero identical outputs**. `REPEAT=3` is
   not caution here, it is the minimum.
-- **Price buys very little on this task.** At n=200 the dearest arm costs **52×** the
-  cheapest (billed) and ranks **16th of 25**. The Pareto frontier keeps **8 of 24** hosted
-  arms; the rest are beaten on quality *and* cost *and* speed simultaneously.
+- **Price buys very little on this task.** At n=200 the dearest arm (`anthropic_l`,
+  **$1.9652** billed) costs **143×** the cheapest paid arm (`deepseek_s`, $0.0137) and
+  ranks **16th of 26** on coverage. The Pareto frontier keeps **8 of 24** hosted arms;
+  the other 16 are beaten on quality *and* cost *and* speed simultaneously.
 
-  > This bullet previously read *"202× the cheapest, ranks 9th of 24, frontier keeps 10 of
-  > 24"*. All three were the n=20 pilot's figures, and the report's own corrections table
-  > had already retracted the frontier count to 7 of 24 — the README went on quoting the
-  > withdrawn number. Found by external review.
+  > Three rounds of review have each moved a number in this bullet. It first read
+  > *"202× the cheapest, ranks 9th of 24, frontier keeps 10 of 24"* — all n=20 pilot
+  > figures. Round 2 corrected the frontier to 7 of 24 on price-table costs; round 3
+  > pointed out the cost axis should be the bill, which makes it **8 of 24**
+  > (`gemma_m` and `deepseek_s` join, `mistral_s` leaves). The price ratio and the rank
+  > are recomputed here from the bill and the full 26-arm field.
 - **A model-authored reference is biased, not just noisy.** See below.
 
 The leaderboard says all of this itself, and refuses to present an ordering its own data

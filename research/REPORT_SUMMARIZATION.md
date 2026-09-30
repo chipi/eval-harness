@@ -335,9 +335,14 @@ Nothing in this run contradicts that; nothing in it confirms it either.
 
 ### 3.4 Pareto frontier (coverage / cost / latency)
 
-**7 of 24 arms**: `deepseek_m`, `llama_m`, `llama_s`, `mistral_s`, `openai_s`, `glm_s`,
-`qwen_m`. The other **17 are beaten on quality *and* cost *and* speed** by some other arm
-— off the table at any budget, with no statistics required.
+**8 of 24 arms**: `deepseek_m`, `deepseek_s`, `gemma_m`, `glm_s`, `llama_m`, `llama_s`,
+`openai_s`, `qwen_m`. The other **16 are beaten on quality *and* cost *and* speed** by
+some other arm — off the table at any budget, with no statistics required.
+
+*This listed seven arms, on the price-table cost axis, until 2026-09-30. On the bill
+`gemma_m` and `deepseek_s` join the frontier and `mistral_s` leaves it — the ranking by
+cost changes because the price table was wrong per arm by 0.67× to 3.76×, not by a
+constant.*
 
 At n=20 the frontier held 10 arms. The three that dropped off did so because more data
 moved their quality estimate, not because their cost or latency changed — a reminder that
@@ -431,7 +436,7 @@ at p = 0.0000 in both item cuts and on both ROUGE facets. At n=20 the same compa
 shown to be worse, the expensive one has not earned its price."* That reading was right,
 and the stronger version is now available: it **is** shown to be better.
 
-**The eliminations are the actionable output.** 17 of 24 arms are beaten on quality *and*
+**The eliminations are the actionable output.** 16 of 24 arms are beaten on quality *and*
 cost *and* speed simultaneously. No statistics are required for that, and it answers the
 question a team actually has — not "which is best" but "which are not worth considering".
 

@@ -95,7 +95,7 @@ Three more numbers that travel:
 - **The cheapest arm you cannot statistically separate from the best is 8×–143× cheaper
   than the dearest**, in four of five experiments.
 - **Cost does not buy speed.** log(cost) vs latency correlates at **r = −0.30 to +0.20** —
-  uncorrelated, negative twice. Free local models run 44×–766× faster on classification
+  uncorrelated, negative twice. Free local models run 61×–1,078× faster on classification
   and embedding, and *slower* on generation.
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
   classification against **3,926 for retrieval reranking** — a 38× difference that no
@@ -166,7 +166,7 @@ the entire spread of the 23 hosted arms on that task.
 | AG News | **0.9450**, $0, **7 ms** | 0.9100, **$351/mo**, 1.92 s |
 | summarisation | **0.3461**, $0, 11.0 s | 0.3460, **$191/mo**, 1.60 s |
 
-Better quality, zero inference cost, and **44×–766× lower latency** on the two
+Better quality, zero inference cost, and **61×–1,078× lower latency** on the two
 classification-shaped tasks. On summarisation the quality is a tie and the local model is
 *slower*, because generation on a CPU is genuinely expensive — so the win there is cost
 only.
@@ -203,13 +203,28 @@ self-hostable; it does not mean unconditionally reusable.
 
 | experiment | best open-weight | best proprietary | delta | separated? |
 |---|---|---|---|---|
-| Summarisation · CNN/DM | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | **yes — open wins** |
-| Retrieval · SciFact | `glm_s` 0.7437 | `glm_m` 0.7419 | **+0.0018** | no |
+| Summarisation · CNN/DM | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | no |
+| Retrieval · SciFact | `glm_s` 0.7437 | `qwen_s` 0.7183 | **+0.0254** | no |
 | Classification · DBpedia | `glm_m` 0.9857 | `qwen_m` 0.9929 | −0.0071 | no |
 | Extraction · Few-NERD | `gemma_m` 0.6733 | `openai_m` 0.6864 | −0.0131 | no |
 | Classification · AG News | `llama_m` 0.8800 | `anthropic_m` 0.9100 | −0.0300 | no |
 
-**A proprietary model never separated from the best open-weight model. Not once in five.**
+**A proprietary model never separated from the best open-weight model. Not once in five —
+and now neither did open-weight, in the one row where it appeared to.**
+
+*Two corrections to this table, 2026-09-30, both found by external review.*
+
+*The summarisation row read **"yes — open wins"**. That rested on an UNCORRECTED pair
+test of a pair nobody registered in advance — the winner's curse the rest of this repo
+is built to avoid. Under Holm over `deepseek_m`'s declared family it is **p = 0.0070
+against a 0.0063 threshold: not separated.** The point estimate still favours the
+open-weight model by 0.0192; it is simply not a separation, and calling it one was
+picking the comparison after seeing the leaderboard.*
+
+*The SciFact row named `glm_m` as "best proprietary". **GLM is open-weight** — MIT, and
+this document's own tier table two sections above says so. The genuine best proprietary
+reranker is `qwen_s` at 0.7183, a gap of 0.0254 that its own test also cannot resolve
+(p = 0.0283 against a 0.0050 threshold).*
 Open weights won outright on summarisation, led without separation on SciFact, and trailed
 by 0.007–0.030 without separation on the other three.
 
@@ -276,7 +291,7 @@ blocked rather than beaten.
 ### What you would actually install on a 128 GB machine
 
 "Open-weight" and "runnable" are not the same thing. Of the 14 open-weight arms here,
-**four exceed 700 GB** at native precision and one is 3.2 TB — those are cluster models,
+**five exceed 700 GB** at native precision and the largest is **1.5 TB** (GLM-5) — those are cluster models,
 not something you put on a workstation. So the practical question is: *what is the best
 open-weight model that fits the box I have?*
 
@@ -694,7 +709,7 @@ task" looks like: not a win, not a rout, and cheap enough that $711/month for +3
 real decision rather than an obvious one.
 
 **And free is not only cheaper, it is faster.** `bert_mini` answers in 7 ms against
-1.92 s for the best paid arm on the same task — 192× — and `e5_base` in 0.06 s against
+1.92 s for the best paid arm on the same task — **270×** — and `e5_base` in 0.06 s against
 3.12 s. The exception is `bart_l` at 11.01 s — 23rd slowest of 25, though not last: two hosted
 arms (`mistral_l` 11.04 s and `qwen_s` 25.04 s) are slower still. It is a 1.6 GB seq2seq
 model generating on a CPU. Free buys latency on *classification and embedding*, and costs
@@ -767,7 +782,7 @@ Ordered by what they are worth, not by how obvious they are.
    architectural, and no model choice could recover it.
 2. **If you can label a few thousand examples, fine-tune a small model.** It won outright
    in three of five and tied in a fourth — at **$0/month against up to $9,826/month**, and
-   44×–766× lower latency. This is the single biggest lever in the table.
+   61×–1,078× lower latency. This is the single biggest lever in the table.
 3. **Never buy the most expensive arm.** Five for five it was not the best, and in three
    experiments it was *worse* than free while costing $875–$9,826/month.
 4. **Pick the cheapest arm your test cannot separate from the leader.** That is 8×–143×
