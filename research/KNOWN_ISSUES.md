@@ -122,6 +122,40 @@ than edited, because rewriting a field inside a finished run would leave
 `fingerprint.hash` describing bytes that no longer exist. REPORT_SUMMARIZATION §3.6's
 n=20 half therefore cannot be recomputed from this repo.
 
+## What the automated checks do NOT cover
+
+`make ci` verifies 33 report claims, 37 model facts, every arm row in every leaderboard
+table and code block, every relative link and anchor, and that each checker still fails
+on the defect it exists to catch. The gaps below are known and are the ones a reviewer
+should spend time on.
+
+- **Numbers in PROSE are unchecked.** The arm-row checker reads markdown table rows and
+  fenced code blocks. A figure inside a sentence — *"`span_marker` scored 0.7674"* — is
+  invisible to it, and that is how several stale numbers survived two review rounds.
+
+  Not fixed, and the reason is measured: the obvious rule (any 4-decimal number within
+  60 characters of an arm name on the same line) produces **18 false positives on the
+  current, correct repo**. `anthropic_l shows 0.6897` is that arm's *cost* sitting next
+  to its name; `openai_m shows 0.4693` is a different statistic entirely. A check that
+  cries wolf on correct text gets muted, and this repo already learned that the
+  expensive way. Covering prose properly means the reports interpolating from a
+  structured figures block rather than restating numbers — a real change, not a
+  tightening.
+
+- **Exec summaries, READMEs, handovers and KNOWN_ISSUES itself** are outside the
+  arm-row scan entirely; only the four experiment reports are in it.
+
+- **Deleting evidence passes.** Removing a committed run, a rescored run, or one
+  `predictions.jsonl` does not fail anything: V7 checks the git index rather than the
+  working tree, V1 validates `data/runs` only, and the arm-row check silently skips
+  arms it cannot find.
+
+- **No committed run's `scorer_sha256` is compared to the current code**, so changing a
+  scorer constant moves the hash and nothing notices that the runs were scored with
+  something else.
+
+---
+
 ## Judgement calls a reviewer may disagree with
 
 These are decisions, not oversights. Argue with them by all means.

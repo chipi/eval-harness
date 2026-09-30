@@ -12,6 +12,7 @@ are tested rather than asserted in a README.
 from __future__ import annotations
 
 import json
+import re
 import pathlib
 import subprocess
 import sys
@@ -85,6 +86,14 @@ def test_score_handles_absent_reference() -> None:
 def test_compare_refuses_cross_dataset() -> None:
     r = run("scripts/compare_runs.py", "--baseline", "nope_a", "--candidate", "nope_b")
     check("compare: unknown run is an error", r.returncode != 0)
+
+
+#: Modules that belong to an EXAMPLE's venv, not to the harness. Only these justify
+#: skipping a checker: anything else missing is a broken import in our own code.
+_EXAMPLE_ONLY_MODULES = frozenset({
+    "rouge_score", "rank_bm25", "torch", "transformers", "span_marker", "gliner",
+    "sentence_transformers", "sklearn", "numpy", "datasets", "nltk",
+})
 
 
 def test_cli_help_works() -> None:
@@ -431,14 +440,34 @@ def test_example_scorer_suites_pass() -> None:
                             ("check_links.py", "markdown links and anchors"),
                             ("check_model_facts.py", "model facts vs the evidence capture")):
         path = HERE / script
+        # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
+        # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
+        # on reporting all-green over one fewer check. Found by external review.
         if not path.is_file():
+            check(f"{subject}: its checker exists", False, f"{script} is missing")
             continue
         r = run(f"scripts/{script}")
-        if r.returncode != 0 and "ModuleNotFoundError" in (r.stderr or ""):
-            print(f"  --   {subject}: skipped (example deps not on this interpreter)")
+        out = (r.stdout or "") + (r.stderr or "")
+        # THE SKIP IS FOR AN EXAMPLE'S DEPENDENCIES, NOT FOR ANY IMPORT ERROR. Matching
+        # bare "ModuleNotFoundError" meant a typo'd import inside a checker read as
+        # "this machine lacks rouge_score" and vanished from the run.
+        missing = re.search(r"No module named '([^']+)'", out)
+        if r.returncode != 0 and missing and missing.group(1) in _EXAMPLE_ONLY_MODULES:
+            print(f"  --   {subject}: skipped (needs {missing.group(1)}, an example "
+                  f"dependency not on this interpreter)")
             continue
-        check(f"{subject}: all assertions pass", r.returncode == 0,
-              (r.stdout or r.stderr or "").strip()[-160:])
+        # Show the FAIL lines, not the tail. The tail is the summary footer, so a
+        # second failure below the first was invisible.
+        fails = [ln for ln in out.splitlines() if "FAIL" in ln][:3]
+        detail = " | ".join(f.strip() for f in fails) or out.strip()[-160:]
+        check(f"{subject}: all assertions pass", r.returncode == 0, detail)
+        # AND THE EXIT CODE MUST AGREE WITH WHAT IT PRINTED. A checker that prints FAIL
+        # and exits 0 satisfied every guard here: `make` reads only the exit code and
+        # the guard read only that too. Changing one checker's final line to
+        # sys.exit(0) turned a red baseline green.
+        check(f"{subject}: exits non-zero if it printed FAIL",
+              not (any("FAIL" in ln for ln in out.splitlines()) and r.returncode == 0),
+              "printed FAIL and exited 0")
 
 
 def test_fingerprint_version_is_read_somewhere() -> None:
@@ -1168,52 +1197,90 @@ def test_the_reports_separation_counts_are_real() -> None:
 
 
 def test_the_checks_can_actually_fail() -> None:
-    """Every `make ci` checker must EXIT NON-ZERO on the thing it exists to catch.
+    """Every checker must FAIL on the defect it exists to catch. Not on an empty tree.
 
-    Round 1 found `check_terminology.py` reporting green while reading zero files. I
-    fixed that one file and never asked whether its siblings had the same hole. Round 2
-    found two more, and they had been green through real breakage the whole time:
+    The first version of this test pointed three checkers at a directory containing
+    nothing and asserted a non-zero exit. Round 3 showed what that was worth:
 
-      check_links.py            printed the broken link and exited 0
-      check_report_claims.py    printed "0/0 claims verified" and exited 0 with no runs
+      - it covered 3 of 9 checkers, and only their missing-input path;
+      - `check_report_claims` did not even reach its own guard there -- the fixture had
+        no `research/`, so it died with FileNotFoundError and exited 1 for a reason
+        that has nothing to do with the check. Deleting its 0/0 guard would not have
+        been noticed;
+      - and a checker that prints FAIL and exits 0 satisfied all of it.
 
-    So the round-1 lesson was learned as an instance when it was a class. This test is
-    the class: each checker is pointed at a tree that must make it fail, and the
-    assertion is on the EXIT CODE, because that is the only part `make` reads.
-
-    Each checker resolves its own root from `__file__`, so copying `scripts/` into a
-    throwaway tree is enough to aim it somewhere harmless.
+    So this plants the REAL defect in the REAL tree, one at a time, restoring each
+    afterwards. A checker that cannot see a wrong number in the file it is pointed at
+    is not checking that file, whatever it prints.
     """
+    import contextlib  # noqa: PLC0415
+
+    @contextlib.contextmanager
+    def planted(rel: str, old: str, new: str):
+        """Swap a string in a repo file, then put it back whatever happens."""
+        f = HERE.parents[1] / rel
+        before = f.read_text(encoding="utf-8")
+        if before.count(old) != 1:
+            yield False
+            return
+        try:
+            f.write_text(before.replace(old, new), encoding="utf-8")
+            yield True
+        finally:
+            f.write_text(before, encoding="utf-8")
+
+    #: (checker, label, file, the defect, what the string becomes)
+    DEFECTS = [
+        # A TABLE ROW, because prose is not covered -- see KNOWN_ISSUES. Pointing this
+        # at the same number in a sentence FAILS, and that failure is a true statement
+        # about the checker rather than a bug in this test.
+        ("check_report_claims.py", "a wrong number in a leaderboard row",
+         "research/REPORT_NER.md",
+         "| **span_marker** | 0.7674 | 0.8370 |",
+         "| **span_marker** | 0.9999 | 0.8370 |"),
+        ("check_links.py", "a link to a file that does not exist",
+         "research/KNOWN_ISSUES.md",
+         "# Known issues — read before reviewing",
+         "# Known issues — read before reviewing\n\n[x](./_no_such_file_.md)"),
+        ("check_terminology.py", "a non-canonical experiment label",
+         "docs/REFERENCE.md", "| Retrieval · SciFact |", "| Retrieval on SciFact |"),
+        ("check_model_facts.py", "a licence the evidence contradicts",
+         "docs/REFERENCE.md",
+         "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | MIT |",
+         "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | GPL-3.0 |"),
+    ]
+    for script, what, rel, old, new_text in DEFECTS:
+        if not (HERE / script).is_file():
+            check(f"checks can fail: {script} exists", False, "missing")
+            continue
+        with planted(rel, old, new_text) as ok:
+            if not ok:
+                print(f"  --   checks can fail: {script} skipped "
+                      f"({what!r} anchor not found in {rel})")
+                continue
+            r = run(f"scripts/{script}")
+            out = (r.stdout or "") + (r.stderr or "")
+            check(f"checks can fail: {script} catches {what}",
+                  r.returncode != 0, f"exit {r.returncode}")
+            # AND IT MUST FAIL FOR THE RIGHT REASON. Exiting 1 on a traceback is how
+            # the previous version of this test passed while proving nothing.
+            check(f"checks can fail: ...by failing, not by crashing ({script})",
+                  "Traceback" not in out, out.strip().splitlines()[-1][:120] if out.strip() else "")
+
+    # The no-input path is still worth pinning -- it is the original
+    # check_terminology bug -- but it is now one case among several, not the whole test.
     import shutil  # noqa: PLC0415
     import tempfile as _tf  # noqa: PLC0415
 
     with _tf.TemporaryDirectory() as td:
-        tmp = pathlib.Path(td)
-        fake = tmp / "repo" / "harness"
+        fake = pathlib.Path(td) / "repo" / "harness"
         (fake / "data" / "runs").mkdir(parents=True)
         (fake / "data" / "runs-rescored").mkdir(parents=True)
         shutil.copytree(HERE, fake / "scripts")
-
-        def run_there(script: str) -> subprocess.CompletedProcess:
-            return subprocess.run([PY, str(fake / "scripts" / script)],
-                                  cwd=fake, capture_output=True, text=True)
-
-        # check_report_claims: no runs at all. Every claim skips.
-        r = run_there("check_report_claims.py")
-        check("checks can fail: check_report_claims with no runs exits non-zero",
-              r.returncode != 0, f"exit {r.returncode}: {(r.stdout or '')[-120:]}")
-
-        # check_links: one markdown file with a link to nothing.
-        (tmp / "repo" / "BROKEN.md").write_text("[x](./does_not_exist_xyz.md)\n")
-        r = run_there("check_links.py")
-        check("checks can fail: check_links with a broken link exits non-zero",
-              r.returncode != 0, f"exit {r.returncode}: {(r.stdout or '')[-120:]}")
-
-        # check_terminology: the round-1 hole, re-asserted here so it cannot regress.
-        (tmp / "repo" / "BROKEN.md").unlink()
-        r = run_there("check_terminology.py")
+        r = subprocess.run([PY, str(fake / "scripts" / "check_terminology.py")],
+                           cwd=fake, capture_output=True, text=True)
         check("checks can fail: check_terminology with no markdown exits non-zero",
-              r.returncode != 0, f"exit {r.returncode}: {(r.stdout or '')[-120:]}")
+              r.returncode != 0, f"exit {r.returncode}")
 
 
 def test_promote_reads_its_reason_from_the_env() -> None:
