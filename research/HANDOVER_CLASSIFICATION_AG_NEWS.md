@@ -48,7 +48,7 @@ before the p-values were read:
 
 So the defensible claim is: **a 44MB classifier is statistically indistinguishable from
 the best frontier models and clearly better than the other 18, at zero marginal cost and
-270x lower latency.** Not "it beats them all" — the top six are a group, not a ranking.
+270x lower latency.** Not "it beats them all" — the top ten are a group, not a ranking.
 
 > **CORRECTION, added 2026-09-27 after the DBpedia example.** The ranking above stands.
 > Its INTERPRETATION does not, and the original version of this document did not say so.

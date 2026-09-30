@@ -25,8 +25,8 @@
 | the choice | what the data says |
 |---|---|
 | **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. |
-| **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **552B backbone params** — but **~765 GB of weights in the published checkpoint**, because the card's headline count excludes a 196B Engram memory that ships with it. **0.3460** — statistically identical to the 1.6 GB model. Whether it fits one node depends on whether the Engram memory must be GPU-resident; **this report does not know, and no longer claims it cannot fit.** |
-| **Self-host · open-weight LLM, ≤128 GB** | **`llama_m`** — Llama-3.3-70B at **int8, ~70 GB**. **0.3382**, costing **0.0078** against a 765 GB model. Native-precision alternative: `mistral_s` (24B, 48 GB) at 0.3255. |
+| **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **552B backbone params** — but **510 GB of weights in the published checkpoint** (measured: 48 safetensors shards), because the card's headline count excludes a 196B Engram memory that ships with it. **0.3460** — statistically identical to the 1.6 GB model. Whether it fits one node depends on whether the Engram memory must be GPU-resident; **this report does not know, and no longer claims it cannot fit.** |
+| **Self-host · open-weight LLM, ≤128 GB** | **`llama_m`** — Llama-3.3-70B at **int8, ~70 GB**. **0.3382**, costing **0.0078** against a 510 GB model. Native-precision alternative: `mistral_s` (24B, 48 GB) at 0.3255. |
 | **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB** — 0.3382, **no further loss on paper**. If you would rather not quantise that far: `mistral_s` at 48 GB native, 0.3255. |
 | **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
 | **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **16th of 25** and is 8.9% below free. |
@@ -46,7 +46,7 @@ models.** Those are different questions, and conflating them is the easiest way 
 this report in either direction.
 
 **On deployment:** `bart_l` (1.6 GB, MIT, CPU) wins outright, and the best open-weight LLM
-that matches it — DeepSeek-V4.1-Flash — is **765 GB**, a cluster model. This is the one
+that matches it — DeepSeek-V4.1-Flash — is **510 GB**, a cluster model. This is the one
 experiment where capping your hardware costs quality: the best arm that fits 128 GB is
 Llama-3.3-70B at int8, **0.3382**, giving up **0.0078**. It is also the one where the free
 model is *slower* than renting (11.0 s vs 1.6 s per item), because generation on a CPU is
@@ -62,8 +62,8 @@ answer it.
 | pre-registered pair | all 200 | 180 held out |
 |---|---|---|
 | `deepseek_m` > `anthropic_l` (52× dearer) | +0.0306, p=0.0000 | +0.0308, p=0.0000 |
-| `deepseek_m` > `anthropic_m` (38×) | +0.0224, p=0.0006 | +0.0224, p=0.0010 |
-| `deepseek_m` > `openai_l` (18×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
+| `deepseek_m` > `anthropic_m` (19.6×) | +0.0224, p=0.0006 | +0.0224, p=0.0010 |
+| `deepseek_m` > `openai_l` (11.4×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
 | `deepseek_s` > `qwen_m` (control) | +0.0255, p=0.0000 | +0.0208, p=0.0003 |
 
 All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place;
@@ -78,6 +78,13 @@ frontier. That is the most directly actionable output here.
 180). The critical difference fell from 8.13 rank positions to 2.57. A leaderboard
 printing a smooth 1-to-24 ordering is still asserting hundreds of comparisons it cannot
 support.
+
+*Both figures are over the **24 hosted arms** this section was computed on. The field
+is now 26 — `bart_l` and `lead3` were added later — and over all 26 the critical
+difference is **2.81** with **54 of 325** pairs separating. Until 2026-09-30 this note
+said k=26 could not be given a CD at all, because the studentised-range table stopped
+at 25; it is now computed rather than transcribed. The 2.57 figures above remain those
+of the original 24, reproducible with the command in §2.*
 
 **The n=20 ranking largely did not survive.** Spearman between the two orderings of the
 same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthropic_m` fell
@@ -222,30 +229,30 @@ rank in the earlier 20-article run, over the same 24 arms.
 
 | arm | coverage | concision | rougeLsum | rouge1 | words | $/200 | ms | flags | n20 → n200 |
 |---|---|---|---|---|---|---|---|---|---|
-| deepseek_m | **0.3460** | 0.2539 | 0.3188 | 0.3612 | 57 | 0.0296 | 1595 | 0.01 | 1 → 1 |
-| llama_l | 0.3387 | 0.2714 | **0.3221** | **0.3636** | 49 | 0.0344 | 3473 | 0.00 | 3 → 2 |
-| llama_m | 0.3382 | 0.2616 | 0.3098 | 0.3477 | 49 | 0.0217 | 4045 | 0.01 | 5 → 3 |
-| llama_s | 0.3333 | 0.2475 | 0.3081 | 0.3526 | 56 | 0.0162 | 2388 | 0.01 | **16 → 4** |
-| deepseek_l | 0.3325 | 0.2595 | 0.3116 | 0.3547 | 50 | 0.0556 | 2665 | 0.00 | 10 → 5 |
-| glm_m | 0.3320 | 0.2566 | 0.3080 | 0.3517 | 50 | 0.0300 | 3230 | 0.01 | 13 → 6 |
-| deepseek_s | 0.3285 | 0.2628 | 0.3081 | 0.3504 | 48 | 0.0198 | 2753 | 0.01 | **2 → 7** |
-| openai_m | 0.3268 | 0.2787 | 0.3122 | 0.3599 | 42 | 0.2965 | 1745 | 0.00 | 11 → 8 |
-| openai_l | 0.3268 | **0.2800** | 0.3151 | 0.3620 | 42 | 0.5352 | 1775 | 0.01 | 12 → 9 |
-| mistral_s | 0.3255 | 0.2346 | 0.2895 | 0.3285 | 54 | **0.0099** | 2820 | 0.18 | 6 → 10 |
+| deepseek_m | **0.3460** | 0.2539 | 0.3188 | 0.3612 | 57 | 0.0381 | 1595 | 0.01 | 1 → 1 |
+| llama_l | 0.3387 | 0.2714 | **0.3221** | **0.3636** | 49 | 0.0389 | 3473 | 0.00 | 3 → 2 |
+| llama_m | 0.3382 | 0.2616 | 0.3098 | 0.3477 | 49 | 0.0330 | 4045 | 0.01 | 5 → 3 |
+| llama_s | 0.3333 | 0.2475 | 0.3081 | 0.3526 | 56 | 0.0222 | 2388 | 0.01 | **16 → 4** |
+| deepseek_l | 0.3325 | 0.2595 | 0.3116 | 0.3547 | 50 | 0.1389 | 2665 | 0.00 | 10 → 5 |
+| glm_m | 0.3320 | 0.2566 | 0.3080 | 0.3517 | 50 | 0.0995 | 3230 | 0.01 | 13 → 6 |
+| deepseek_s | 0.3285 | 0.2628 | 0.3081 | 0.3504 | 48 | 0.0137 | 2753 | 0.01 | **2 → 7** |
+| openai_m | 0.3268 | 0.2787 | 0.3122 | 0.3599 | 42 | 1.0717 | 1745 | 0.00 | 11 → 8 |
+| openai_l | 0.3268 | **0.2800** | 0.3151 | 0.3620 | 42 | 0.4362 | 1775 | 0.01 | 12 → 9 |
+| mistral_s | 0.3255 | 0.2346 | 0.2895 | 0.3285 | 54 | 0.0179 | 2820 | 0.18 | 6 → 10 |
 | anthropic_s | 0.3238 | 0.2084 | 0.2815 | 0.3259 | 71 | 0.2611 | 2025 | 0.08 | 8 → 11 |
-| anthropic_m | 0.3236 | 0.2207 | 0.2903 | 0.3347 | 64 | 1.1218 | 3034 | 0.03 | **4 → 12** |
-| gemma_l | 0.3204 | 0.2739 | 0.3086 | 0.3511 | 42 | 0.0173 | 2591 | 0.00 | 17 → 13 |
-| openai_s | 0.3171 | 0.2508 | 0.2977 | 0.3506 | 48 | 0.0622 | **1277** | 0.01 | 18 → 14 |
+| anthropic_m | 0.3236 | 0.2207 | 0.2903 | 0.3347 | 64 | 0.7478 | 3034 | 0.03 | **4 → 12** |
+| gemma_l | 0.3204 | 0.2739 | 0.3086 | 0.3511 | 42 | 0.0237 | 2591 | 0.00 | 17 → 13 |
+| openai_s | 0.3171 | 0.2508 | 0.2977 | 0.3506 | 48 | 0.1672 | **1277** | 0.01 | 18 → 14 |
 | anthropic_l | 0.3155 | 0.2092 | 0.2878 | 0.3289 | 75 | **1.9652** | 3402 | 0.23 | **9 → 15** |
-| glm_s | 0.3139 | **0.2800** | 0.3012 | 0.3489 | **39** | 0.0110 | 1610 | 0.00 | 21 → 16 |
-| gemma_m | 0.3136 | 0.2661 | 0.3016 | 0.3442 | 44 | 0.0123 | 1873 | 0.00 | 22 → 17 |
-| glm_l | 0.3124 | 0.2456 | 0.2939 | 0.3334 | 65 | 0.0750 | 5689 | 0.38 | 14 → 18 |
-| gemma_s | 0.3120 | 0.2328 | 0.2835 | 0.3215 | 53 | 0.0126 | 6956 | 0.01 | 20 → 19 |
-| qwen_l | 0.3108 | 0.2309 | 0.2803 | 0.3309 | 55 | 0.0842 | 2945 | 0.01 | 15 → 20 |
-| mistral_l | 0.3080 | 0.2356 | 0.2798 | 0.3188 | 48 | 0.1167 | 11045 | **0.93** | 24 → 21 |
-| qwen_s | 0.3068 | 0.2600 | 0.2874 | 0.3360 | 43 | 0.0099 | 25038 | 0.00 | **7 → 22** |
+| glm_s | 0.3139 | **0.2800** | 0.3012 | 0.3489 | **39** | 0.0304 | 1610 | 0.00 | 21 → 16 |
+| gemma_m | 0.3136 | 0.2661 | 0.3016 | 0.3442 | 44 | 0.0154 | 1873 | 0.00 | 22 → 17 |
+| glm_l | 0.3124 | 0.2456 | 0.2939 | 0.3334 | 65 | 0.1532 | 5689 | 0.38 | 14 → 18 |
+| gemma_s | 0.3120 | 0.2328 | 0.2835 | 0.3215 | 53 | 0.0200 | 6956 | 0.01 | 20 → 19 |
+| qwen_l | 0.3108 | 0.2309 | 0.2803 | 0.3309 | 55 | 0.1689 | 2945 | 0.01 | 15 → 20 |
+| mistral_l | 0.3080 | 0.2356 | 0.2798 | 0.3188 | 48 | 0.0973 | 11045 | **0.93** | 24 → 21 |
+| qwen_s | 0.3068 | 0.2600 | 0.2874 | 0.3360 | 43 | 0.0270 | 25038 | 0.00 | **7 → 22** |
 | mistral_m | 0.3043 | 0.2507 | 0.2806 | 0.3197 | 43 | 0.0871 | 2654 | 0.01 | 19 → 23 |
-| qwen_m | 0.3030 | 0.2206 | 0.2737 | 0.3164 | 57 | 0.0417 | 1534 | 0.00 | 23 → 24 |
+| qwen_m | 0.3030 | 0.2206 | 0.2737 | 0.3164 | 57 | 0.0661 | 1534 | 0.00 | 23 → 24 |
 
 Spearman between the n=20 and n=200 orderings: **+0.667**.
 
@@ -296,8 +303,8 @@ a family of four:
 |---|---|---|---|
 | `deepseek_m` vs `anthropic_l` — is 52× the price worth it? | coverage | +0.0306, 114/200, **p=0.0000** | +0.0308, 102/180, **p=0.0000** |
 | | rougeLsum | +0.0310, 139/200, **p=0.0000** | +0.0331, 127/180, **p=0.0000** |
-| `deepseek_m` vs `anthropic_m` — 38× | coverage | +0.0224, 112/200, **p=0.0006** | +0.0224, 104/180, **p=0.0010** |
-| `deepseek_m` vs `openai_l` — 18× | coverage | +0.0193, 96/200, **p=0.0032** | +0.0171, 85/180, **p=0.0153** |
+| `deepseek_m` vs `anthropic_m` — 19.6× | coverage | +0.0224, 112/200, **p=0.0006** | +0.0224, 104/180, **p=0.0010** |
+| `deepseek_m` vs `openai_l` — 11.4× | coverage | +0.0193, 96/200, **p=0.0032** | +0.0171, 85/180, **p=0.0153** |
 | | rougeLsum | +0.0037, 107/200, p=0.47 | +0.0038, 97/180, p=0.47 |
 | `deepseek_s` vs `qwen_m` — the control | coverage | +0.0255, 107/200, **p=0.0000** | +0.0208, 93/180, **p=0.0003** |
 
@@ -328,9 +335,14 @@ Nothing in this run contradicts that; nothing in it confirms it either.
 
 ### 3.4 Pareto frontier (coverage / cost / latency)
 
-**7 of 24 arms**: `deepseek_m`, `llama_m`, `llama_s`, `mistral_s`, `openai_s`, `glm_s`,
-`qwen_m`. The other **17 are beaten on quality *and* cost *and* speed** by some other arm
-— off the table at any budget, with no statistics required.
+**8 of 24 arms**: `deepseek_m`, `deepseek_s`, `gemma_m`, `glm_s`, `llama_m`, `llama_s`,
+`openai_s`, `qwen_m`. The other **16 are beaten on quality *and* cost *and* speed** by
+some other arm — off the table at any budget, with no statistics required.
+
+*This listed seven arms, on the price-table cost axis, until 2026-09-30. On the bill
+`gemma_m` and `deepseek_s` join the frontier and `mistral_s` leaves it — the ranking by
+cost changes because the price table was wrong per arm by 0.67× to 3.76×, not by a
+constant.*
 
 At n=20 the frontier held 10 arms. The three that dropped off did so because more data
 moved their quality estimate, not because their cost or latency changed — a reminder that
@@ -424,7 +436,7 @@ at p = 0.0000 in both item cuts and on both ROUGE facets. At n=20 the same compa
 shown to be worse, the expensive one has not earned its price."* That reading was right,
 and the stronger version is now available: it **is** shown to be better.
 
-**The eliminations are the actionable output.** 17 of 24 arms are beaten on quality *and*
+**The eliminations are the actionable output.** 16 of 24 arms are beaten on quality *and*
 cost *and* speed simultaneously. No statistics are required for that, and it answers the
 question a team actually has — not "which is best" but "which are not worth considering".
 
@@ -494,7 +506,7 @@ size itself, and only the re-measurement at n=200 exposed them.
 | "no arm emitted preamble or bullets" | 77 of 1440 outputs trip a format flag | read 5 outputs, generalised to 1440 |
 | "Anthropic arms bill hidden reasoning tokens" | provider reports 0 on all 1440 calls | inferred from a token/word ratio |
 | "`deepseek_m` vs `anthropic_l` is not separated" (p=0.52) | separated at p=0.0000, both cuts, both metrics | 20 articles could not resolve a real 0.031 gap |
-| "10 of 24 arms are on the Pareto frontier" | 7 of 24 | three arms' quality estimates moved with more data |
+| "10 of 24 arms are on the Pareto frontier" | **8 of 24** | three arms' quality estimates moved with more data, and the cost axis now uses the bill rather than the price table (7 of 24 under the old cost figures) |
 | "CI stops baking a 990 MB model" (commit c7f47e4c) | it kept shipping, restored from cache | manifest drives the preload, not the artifact |
 
 Two were caused by defects in this harness's own scorer, and three by trusting 20 articles.
@@ -564,7 +576,7 @@ config can state in advance.
 
 The provider reports what it actually charged, per call, in `usage.cost`. That was in
 every stored run all along and nothing read it. Measured across all four examples, the
-price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+price table was wrong **per arm by 0.67× to 3.76×, in both directions**.
 
 **The error is not uniform, and that is what makes it matter.** Arms served by a single
 provider — the Anthropic models, notably — match the table exactly. The cheap,

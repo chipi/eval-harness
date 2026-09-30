@@ -32,6 +32,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
+from _fingerprint import _references_digest  # noqa: E402
 from experiment_run import load_adapter, _score_wants_source  # noqa: E402
 
 try:
@@ -76,6 +77,26 @@ def main() -> int:
         die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
 
     mat = MATERIALIZED / args.dataset_id
+
+    # THE DATASET KNOWS EACH ITEM'S FILENAME. PREDICTION ROWS DO NOT.
+    #
+    # Below, `source_path` was read off the stored prediction row -- and no prediction
+    # row has ever carried one. Measured: 0 of 20,001 rows across every committed run.
+    # `dataset_create.py` writes `source_path` into the DATASET; `experiment_run`,
+    # `materialize`, `reference_create` and `validate_tree` all read it from there, and
+    # rescore was the one place that looked in the wrong object. So the fallback
+    # `<item_id>.txt` fired every single time, and on any dataset whose files are not
+    # named that way the source text arrived as None -- silently, because a scorer that
+    # wanted the source then measured nothing rather than failing.
+    #
+    # Round 1 reported this fixed. The commit that claimed it added the `source_path`
+    # lookup without checking that the field existed where it was being read from.
+    item_source: Dict[str, str] = {}
+    ds_file = ROOT / "data" / "datasets" / f"{args.dataset_id}.json"
+    if ds_file.is_file():
+        for it in (read_json(ds_file).get("items") or []):
+            if it.get("item_id") and it.get("source_path"):
+                item_source[it["item_id"]] = it["source_path"]
     print(f"rescoring {len(todo)} run(s) -> {args.out}")
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -88,17 +109,29 @@ def main() -> int:
             continue
         if spec not in adapters:
             # Adapter ids are relative to the HARNESS root for its own bundled adapter
-            # ("scripts/adapter.py") and to the examples root for an example's
-            # ("summarization-cnn-dailymail/adapter.py"). Assuming one broke the other:
-            # `make rescore DATASET_ID=smoke_v1` died looking for examples/scripts/adapter.py.
-            for base in (ROOT, ROOT.parent):
+            # ("scripts/adapter.py"), to the REPO root for most examples
+            # ("examples/ner-few-nerd/adapter.py"), and to the EXAMPLES root for the
+            # oldest sweep ("summarization-cnn-dailymail/adapter.py").
+            #
+            # The examples root was named in this comment and not in the list below, so
+            # the case it describes was the case that failed. 24 committed
+            # cnn_dailymail_200 runs -- the whole summarisation measurement sweep, and
+            # the experiment this repo leads with -- could not be rescored at all:
+            #
+            #   ERROR: adapter not found ... 'summarization-cnn-dailymail/adapter.py'
+            #   is under neither .../harness nor .../eval-harness
+            #
+            # Found while testing a different fix. Resolving the id is the right repair;
+            # rewriting `adapter` inside 24 finished runs is not, because their
+            # fingerprint hashes were computed over the bytes that are there.
+            for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
                 cand = Path(spec) if Path(spec).is_absolute() else base / spec
                 if cand.is_file():
                     adapters[spec] = load_adapter(str(cand), None)
                     break
             else:
-                die(f"adapter not found for {d.name}: {spec!r} is under neither "
-                    f"{ROOT} nor {ROOT.parent}")
+                die(f"adapter not found for {d.name}: {spec!r} is under none of "
+                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
         wants_source = _score_wants_source(score)
 
@@ -108,6 +141,7 @@ def main() -> int:
 
         rows: List[Dict[str, Any]] = []
         refs_found = 0
+        recosted = 0
         # Keys the ADAPTER attached at call time (Result.extra) rather than at score time:
         # `truncated`, `reasoning_tokens`. Unrecoverable afterwards, so they ride along.
         extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
@@ -133,7 +167,8 @@ def main() -> int:
             # equal "<item_id>.txt" here. Ignoring it means source_text is silently None
             # on any dataset that names files differently -- and a scorer that wanted the
             # source then measures nothing, quietly.
-            rel = (old.get("source_path") or f"{item_id}.txt")
+            rel = (item_source.get(item_id) or old.get("source_path")
+                   or f"{item_id}.txt")
             for cand in (mat / rel, mat / f"{item_id}.txt", mat / item_id):
                 if cand.is_file():
                     source_text = cand.read_text(encoding="utf-8", errors="replace")
@@ -152,6 +187,29 @@ def main() -> int:
                 # computed.
                 if k in CARRY or k in extra_keys or k.startswith("_"):
                     row[k] = v
+
+            # COST IS RECOMPUTED FROM THE BILL, NOT CARRIED.
+            #
+            # `cost_usd` was carried verbatim, and for every run measured before the
+            # adapters learned to prefer `usage.cost` that value is the PRICE TABLE --
+            # tokens multiplied by the rate in the arm's yaml. The provider's actual
+            # charge is sitting in the same row, in `_meta.usage.cost`, and the two
+            # differ by 0.67x to 3.76x per arm and 1.25x over the whole repo
+            # ($9.78 recorded against $12.28 billed). Every cost column, every
+            # dollars-per-month figure and every cost-per-quality-point in the reports
+            # is computed from the wrong one.
+            #
+            # An alias is not a price: a provider routes, discounts, caches and rounds.
+            # The bill is the measurement; the price table was always the fallback for
+            # when there is no bill, and it is kept as exactly that.
+            billed = ((old.get("_meta") or {}).get("usage") or {}).get("cost")
+            if billed is not None:
+                try:
+                    row["cost_usd"] = round(float(billed), 10)
+                    if abs(float(billed) - float(old.get("cost_usd") or 0)) > 1e-9:
+                        recosted += 1
+                except (TypeError, ValueError):
+                    pass
                 else:
                     dropped.add(k)
             rows.append(row)
@@ -234,6 +292,23 @@ def main() -> int:
             fp.setdefault("instrument", {})["adapter"] = {
                 "id": adapter_id, "sha256": _sha(adapter_path),
             }
+            # THE REFERENCE HASH DESCRIBED THE WRONG BYTES. `data.references_sha256`
+            # was copied from the source run, where it records the references as they
+            # were WHEN THAT RUN EXECUTED -- while these scores were computed against
+            # whatever is in data/references now. A rescored run could therefore assert
+            # a hash over reference files it had never read, which is the one claim a
+            # fingerprint exists to make. Recomputed here, with the source's value kept
+            # beside it when the two differ, because "the gold set changed under us" is
+            # a finding and not a detail. Found by external review.
+            fp_data = fp.setdefault("data", {})
+            actual_refs = _references_digest(ROOT, fp_data.get("reference_id"))
+            prior_refs = fp_data.get("references_sha256")
+            fp_data["references_sha256"] = actual_refs
+            if prior_refs and actual_refs and prior_refs != actual_refs:
+                fp_data["references_sha256_at_measurement"] = prior_refs
+                fp_data["references_changed_since_measurement"] = True
+                print(f"    WARNING: {d.name}: the reference files have CHANGED since "
+                      f"this run was measured; scores here are against the current ones")
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "scores were recomputed by a different scorer than the one this "
@@ -244,7 +319,8 @@ def main() -> int:
             new["rescore_dropped_metrics"] = sorted(dropped)
         write_json(run_dir / "metrics.json", new)
         written += 1
-        print(f"  {d.name}  -> {len(rows)} item(s)")
+        note = f", {recosted} re-costed from the bill" if recosted else ""
+        print(f"  {d.name}  -> {len(rows)} item(s){note}")
 
     print(f"\n{written} run(s) rescored into {args.out}")
     print(f"  EVAL_RUNS_DIR={args.out} make leaderboard DATASET_ID={args.dataset_id}")

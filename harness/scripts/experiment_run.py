@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import importlib.util
 import statistics
 import sys
@@ -50,6 +51,7 @@ from _common import (  # noqa: E402
     now,
     read_json,
     write_json,
+    write_text_atomic,
 )
 
 try:
@@ -74,14 +76,36 @@ class _Resumed:
     __slots__ = ("output", "cost_usd", "latency_ms", "tokens_in", "tokens_out",
                  "extra", "meta")
 
-    def __init__(self, output: str) -> None:
+    def __init__(self, output: str, prior: Optional[Dict[str, Any]] = None) -> None:
+        """`prior` is the item's row from the run being resumed, when one was found.
+
+        WHAT CHANGED AND WHY. Every field here used to be None, on the reasoning in the
+        docstring above -- a replayed item spent no time and no money IN THIS PASS. That
+        is true of this pass and false of the results, and the results are what the run
+        reports. The consequences were concrete:
+
+          - the money vanished. A resumed run reported $0.03 for $0.05 of actual spend,
+            because the items paid for in the first pass reported nothing.
+          - `_meta` vanished with it. For retrieval that is `llm_raw`, `first_stage` and
+            `ranking`; without them a resumed retrieval or NER run cannot be reported at
+            all, and the diagnostics this repo added specifically to explain an arm's
+            behaviour are gone for exactly the items that were hardest to get.
+
+        Carrying the ORIGINAL numbers is not the same as reporting zeros, which is what
+        the old docstring was arguing against. They were measured, on the same machine,
+        against the same item, by the pass that produced the output being replayed. A
+        resumed run should look like the run that would have happened without the crash,
+        and `resumed` flags every replayed row so a reader can separate them.
+        """
+        prior = prior or {}
         self.output = output
-        self.cost_usd = None
-        self.latency_ms = None
-        self.tokens_in = None
-        self.tokens_out = None
+        self.cost_usd = prior.get("cost_usd")
+        self.latency_ms = prior.get("latency_ms")
+        self.tokens_in = prior.get("tokens_in")
+        self.tokens_out = prior.get("tokens_out")
         self.extra: Dict[str, float] = {}
-        self.meta: Dict[str, Any] = {"resumed_from_disk": True}
+        self.meta: Dict[str, Any] = dict(prior.get("_meta") or {})
+        self.meta["resumed_from_disk"] = True
 
 
 def _adapter_metric_kinds(adapter_id: str, adapter_path: Optional[Path]) -> Dict[str, str]:
@@ -270,6 +294,7 @@ def one_pass(
     cfg: Dict[str, Any],
     idx: int,
     resume_dir: Optional[Path] = None,
+    prior_rows: Optional[Dict[str, Dict[str, Any]]] = None,
     live_dir: Optional[Path] = None,
     *,
     call_system: Any,
@@ -329,7 +354,8 @@ def one_pass(
         source_text = src.read_text(encoding="utf-8", errors="replace")
 
         if resumed:
-            res = _Resumed(done.read_text(encoding="utf-8"))
+            res = _Resumed(done.read_text(encoding="utf-8"),
+                           (prior_rows or {}).get(item["item_id"]))
         else:
             # EVERY adapter gets retries, whether or not its author wrote any. This used
             # to be the adapter's business, and one adapter simply had none -- so a
@@ -343,7 +369,9 @@ def one_pass(
                 spent += res.cost_usd
         outputs[item["item_id"]] = res.output
         if live_dir is not None and not resumed:
-            (live_dir / f"{item['item_id']}.txt").write_text(res.output, encoding="utf-8")
+            # Atomic: `--resume` treats the presence of this file as proof the item is
+            # done, so a half-written one is replayed as the model's answer and scored.
+            write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
 
         reference = None
         if ref_dir is not None:
@@ -378,6 +406,24 @@ def one_pass(
         if res.meta:
             row["_meta"] = res.meta
         predictions.append(row)
+
+        # THE ROW GOES TO DISK NOW, NOT AT THE END OF THE PASS.
+        #
+        # `predictions.jsonl` is written after one_pass RETURNS, so a crashed run has
+        # outputs/ and nothing else. Round 2 taught the resume path to carry each
+        # replayed item's cost, tokens and _meta forward -- from predictions.jsonl,
+        # which by construction does not exist in the one case resume is for. So the
+        # fix worked for a tidy re-run and not for a crash, and RUNBOOK said "a
+        # replayed item keeps what was measured" for exactly the case where it did not.
+        # Found by external review.
+        #
+        # Appended per item, so a kill at item k leaves k rows. Not atomic-per-file
+        # because it is an append, but a torn final line is discarded on read.
+        if live_dir is not None and not resumed:
+            with (live_dir / "_rows.jsonl").open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, sort_keys=True) + "\n")
+                fh.flush()
+                os.fsync(fh.fileno())
 
     keys = sorted(
         {k for p in predictions for k in p if k != "item_id" and not k.startswith("_")}
@@ -463,6 +509,12 @@ def main() -> int:
         "--dry-run",
         action="store_true",
         help="cost and shape the sweep WITHOUT calling anything",
+    )
+    ap.add_argument(
+        "--resume-unverified", action="store_true",
+        help="resume from a directory whose arm cannot be identified. Only for runs "
+             "made before run.json existed; it will record another arm's answers "
+             "under this config if you are wrong.",
     )
     ap.add_argument(
         "--resume",
@@ -552,26 +604,123 @@ def main() -> int:
               "           record, or accept that this run cannot be reproduced from its\n"
               "           own fingerprint.")
 
+    # `--resume` WITH `--repeat N` REPLAYS THE SAME OUTPUTS N TIMES. Each repeat reads
+    # the same resume directory, so every pass after the first is a copy of the same
+    # answers -- and each one carries their cost again, so an arm that cost $1 reports
+    # $3 across three "repeats" that measured nothing. The two flags mean opposite
+    # things: --repeat asks for N independent measurements, --resume says do not
+    # measure what you already have. Found by external review.
+    if args.resume and args.repeat > 1:
+        die("--resume and --repeat are mutually exclusive.\n"
+            "  --repeat N asks for N INDEPENDENT passes; --resume says replay what is\n"
+            "  already on disk. Together, every repeat after the first replays the same\n"
+            "  outputs and re-counts their cost.\n"
+            "  Resume the interrupted pass with --repeat 1, then run the rest.")
+
     resume_dir = (RUNS / args.resume / "outputs") if args.resume else None
     if args.resume and not resume_dir.is_dir():
         die(f"cannot resume: no outputs under {resume_dir}")
 
+    # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
+    #
+    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
+    # run's arm to the one being launched, so
+    #   make experiment-run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
+    # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
+    # a fabricated result with a valid fingerprint. One mistyped run id in a recovery
+    # command, which is exactly when the operator is rushed. Found by external review.
+    #
+    # The dataset must match too: replaying answers produced against different items is
+    # the same failure wearing different clothes.
+    prior_rows: Dict[str, Dict[str, Any]] = {}
+    if args.resume:
+        # WHAT ARM DID THESE OUTPUTS COME FROM? A crashed run has no metrics.json --
+        # it is written after the pass returns -- so the previous version of this check
+        # could only WARN, and
+        #     make experiment-run CONFIG=arm_a.yaml ARGS="--resume <crashed arm_b run>"
+        # exited 0 having recorded arm_a with arm_b's answers. The guard covered the
+        # tidy case and not the crash, which is the only case resume exists for.
+        #
+        # `run.json` is now written BEFORE the first item, so identity survives a kill.
+        src_id = RUNS / args.resume / "run.json"
+        src_metrics = RUNS / args.resume / "metrics.json"
+        ident = (read_json(src_id) if src_id.is_file()
+                 else read_json(src_metrics) if src_metrics.is_file() else None)
+        if ident is None:
+            if not args.resume_unverified:
+                die(f"cannot resume: {args.resume} has neither run.json nor "
+                    f"metrics.json, so the arm that produced those outputs cannot be "
+                    f"identified.\n"
+                    f"  Resuming anyway would replay whatever is in that directory and "
+                    f"record it under {cfg.get('config_id')!r}.\n"
+                    f"  Runs started before 2026-09-30 predate run.json. If you are "
+                    f"certain, pass --resume-unverified.")
+            print(f"  WARNING: --resume-unverified: {args.resume} cannot be identified "
+                  f"and its outputs are being replayed as {cfg.get('config_id')!r}.")
+        else:
+            if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
+                die(f"cannot resume: {args.resume} is arm {ident['config_id']!r}, "
+                    f"this config is {cfg.get('config_id')!r}.\n"
+                    f"  Resuming would replay another arm's answers and record them "
+                    f"under this one.")
+            if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
+                die(f"cannot resume: {args.resume} ran on dataset "
+                    f"{ident['dataset_id']!r}, this config is on "
+                    f"{cfg.get('dataset_id')!r}.")
+
+        # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
+        # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
+        # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
+        for src in (RUNS / args.resume / "outputs" / "_rows.jsonl",
+                    RUNS / args.resume / "predictions.jsonl"):
+            if not src.is_file():
+                continue
+            for line in src.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue          # a torn final line from a kill mid-append
+                if r.get("item_id"):
+                    prior_rows.setdefault(r["item_id"], r)
+        if not prior_rows:
+            print(f"  WARNING: {args.resume} carries no per-item rows — replayed items "
+                  f"will report no cost, tokens or _meta.")
+
     made: List[Path] = []
+
+    capped = False
     per_repeat: List[Dict[str, float]] = []
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = RUNS / run_id
         # The output directory exists BEFORE the pass starts, so each item lands on disk
         # as it is produced and a crash leaves something to resume from.
+        #
+        # AND SO DOES THE RUN'S IDENTITY. `metrics.json` is written after the pass
+        # returns, so a crashed run could not say which arm produced its outputs --
+        # which made `--resume`'s arm guard unenforceable in the one case resume is
+        # for. This is small, written first, and never rewritten.
+        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
+        write_json(run_dir / "run.json", {
+            "config_id": cfg.get("config_id"),
+            "dataset_id": cfg.get("dataset_id"),
+            "started_at": now(),
+            "run_id": run_id,
+            "note": "written before the first item so a crashed run can still be "
+                    "identified; metrics.json is written only on a clean exit",
+        })
         result = one_pass(
-            ds, cfg, i, resume_dir=resume_dir, live_dir=run_dir / "outputs",
+            ds, cfg, i, resume_dir=resume_dir, prior_rows=prior_rows,
+            live_dir=run_dir / "outputs",
             call_system=call_system, score=score,
             extra_transient=_adapter_transient(adapter_path),
         )
         run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "predictions.jsonl").write_text(
+        write_text_atomic(
+            run_dir / "predictions.jsonl",
             "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
-            encoding="utf-8",
         )
         # Outputs are already on disk -- written per item by `one_pass`. Rewriting them
         # here only matters for a resumed pass, whose outputs came from the PREVIOUS
@@ -580,7 +729,7 @@ def main() -> int:
         for item_id, text in result["outputs"].items():
             dest = run_dir / "outputs" / f"{item_id}.txt"
             if not dest.is_file():
-                dest.write_text(text, encoding="utf-8")
+                write_text_atomic(dest, text)
 
         metrics = {
             "run_id": run_id,
@@ -622,6 +771,7 @@ def main() -> int:
         per_repeat.append(result["scores"])
         print(f"  {run_id}  " + "  ".join(f"{k}={v}" for k, v in result["scores"].items()))
         if result["capped_at"]:
+            capped = True
             print(
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
                 f"spent ${result['spent_usd']:.4f} of EVAL_MAX_COST_USD.\n"
@@ -640,6 +790,31 @@ def main() -> int:
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
 
     print(f"\n{len(made)} run(s) under {RUNS}")
+
+    # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
+    #
+    # This returned 0 whatever happened. `EVAL_MAX_COST_USD=0` wrote a run directory
+    # holding `"scores": {}` and zero prediction rows, printed the cost-cap notice, and
+    # exited 0 -- so a sweep script or CI job saw success and moved on, leaving a run
+    # that measured nothing sitting in data/runs/ looking like the others. Found by
+    # external review.
+    #
+    # Partial results are still KEPT on disk and the resume hint still prints: that part
+    # of the design was deliberate and is not changed. What changes is that the caller is
+    # told, because "the cap stopped me after 3 of 200 items" and "I measured 200 items"
+    # must not both be exit 0.
+    empty = [d for d in made if not (read_json(d / "metrics.json").get("scores") or {})]
+    if empty:
+        print(f"\n  FAILED: {len(empty)} run(s) scored NO items and carry empty scores:")
+        for d in empty:
+            print(f"    {d.name}")
+        print("  Nothing was measured. Raise EVAL_MAX_COST_USD, or check the adapter.")
+        return 1
+    if capped:
+        # Distinct from 1 (nothing measured) so a caller can tell "stopped early with
+        # usable partial results" from "produced nothing".
+        print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
+        return 2
     return 0
 
 

@@ -2,7 +2,7 @@
 
 **Datasets** `ag_news_200` · 200 news snippets · 4 classes — and `dbpedia_280` · 280 Wikipedia abstracts · 14 classes
 **Arms** 24 hosted models (8 vendors × 3 price tiers), plus a fine-tuned classifier, a zero-shot NLI model, ~20 regex rules and a constant
-**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.45 and $1.25 by the price table — see Correction)
+**Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.49 and $1.00 by the price table — see Correction)
 **Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 47–50
 
 > **This report covers two corpora on purpose, and should not be read one at a time.**
@@ -59,7 +59,7 @@ price difference bought nothing measurable. Same harness, same arms, same statis
 1. **AG News.** `bert_mini` — 44MB, fine-tuned, $0, 7 ms/item — scored **0.9450** and was
    ahead of all 24 hosted arms, whose field spanned 0.835–0.910. Holm over a family of 27
    declared in advance: ahead of 27 of 27, **separated from 18**. Not separated from the
-   top six. A group, not a podium.
+   top ten. A group, not a podium.
 
 2. **DBpedia-14.** `qwen_m` led at **0.9929 for $0.0143**; `anthropic_l` was one item in
    280 behind at **0.9893 for $0.3784**, p = 1.0000. The leader separated from only **8 of
@@ -151,26 +151,38 @@ no single example could claim.
 
 ```
 arm                accuracy  macro_f1    $/200     arm              accuracy   $/200
-bert_mini            0.9450    0.9453   0.0000     mistral_s          0.8600   0.0099
-anthropic_m          0.9100    0.9106   0.1054     glm_l              0.8600   0.0092
+bert_mini            0.9450    0.9453   0.0000     mistral_s          0.8600   0.0019
+anthropic_m          0.9100    0.9106   0.0703     glm_l              0.8600   0.0186
 anthropic_l          0.9000    0.8998   0.1750     mistral_m          0.8600   0.0096
-openai_m             0.8950    0.8952   0.0345     glm_m              0.8600   0.0032
-openai_l             0.8900    0.8900   0.0636     openai_s           0.8600   0.0069
-qwen_m               0.8850    0.8855   0.0043     gemma_m            0.8550   0.0015
-llama_m              0.8800    0.8791   0.0026     glm_s              0.8500   0.0013
-mistral_l            0.8750    0.8751   0.0124     deepseek_m         0.8450   0.0030
-gemma_s              0.8750    0.8748   0.0015     deepseek_s         0.8400   0.0021
-qwen_s               0.8750    0.8747   0.0012     anthropic_s        0.8400   0.0254
-qwen_l               0.8700    0.8698   0.0083     llama_l            0.8400   0.0038
-gemma_l              0.8700    0.8696   0.0022     llama_s            0.8350   0.0017
-deepseek_l           0.8700    0.8681   0.0057     ──────────────────────────────────
+openai_m             0.8950    0.8952   0.1272     glm_m              0.8600   0.0107
+openai_l             0.8900    0.8900   0.0487     openai_s           0.8600   0.0190
+qwen_m               0.8850    0.8855   0.0070     gemma_m            0.8550   0.0016
+llama_m              0.8800    0.8791   0.0040     glm_s              0.8500   0.0027
+mistral_l            0.8750    0.8751   0.0103     deepseek_m         0.8450   0.0043
+gemma_s              0.8750    0.8748   0.0021     deepseek_s         0.8400   0.0014
+qwen_s               0.8750    0.8747   0.0036     anthropic_s        0.8400   0.0254
+qwen_l               0.8700    0.8698   0.0164     llama_l            0.8400   0.0043
+gemma_l              0.8700    0.8696   0.0028     llama_s            0.8350   0.0025
+deepseek_l           0.8700    0.8681   0.0114     ──────────────────────────────────
                                                    bart_mnli          0.7000   0
                                                    keyword            0.6700   0
                                                    constant           0.2500   0
 ```
 
-**Is the ordering real?** `p = 0.0002`, Nemenyi CD 3.01, **34 of 378** pairs
-distinguishable. On the 180 items the dev slice does not contain: 29 of 378.
+**Is the ordering real?** `p = 0.0002`, **Nemenyi CD 3.06** rank positions,
+**33 of 378** pairs distinguishable, observed span 9.73.
+
+*This number has been wrong, then absent, and is now computed — the sequence is worth
+recording. It first read "CD 3.01, 34 of 378", produced by silently reusing the k=25
+critical value for a 28-arm field, which understates the CD and overstates how many
+pairs differ. Round 2 made the tool refuse above k=25 and I withdrew the counts as
+unrecoverable. A round-3 reviewer observed that the values are about thirty lines of
+stdlib. They are: [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py)
+solves the studentised-range integral and reproduces all 24 of Demsar's published
+values to within 0.0007. The correct k=28 figure is **3.06**, against the 3.01 first
+published — so the original was biased in the direction I said, by about the amount I
+could not then quantify. "Unrecoverable" was a statement about my effort, not about the
+mathematics.*
 
 **Pre-registered family test** (`bert_mini` vs all others, Holm over m=27 named before the
 p-values were read): ahead on the point estimate against **27 of 27**, separated from
@@ -202,8 +214,13 @@ anthropic_s          0.9786    0.9782    0.0536    deepseek_s         0.9429    
                                                    constant           0.0714    0
 ```
 
-`p = 0.0002`, CD 2.45, **74 of 351** pairs distinguishable. Holdout on the 224 items
-outside the dev slice: identical, 74 of 351.
+`p = 0.0002`, **CD 2.48**, **74 of 351** pairs distinguishable, observed span 12.44.
+Holdout on the 224 items outside the dev slice: identical, 74 of 351.
+
+*Was "CD 2.45, 74 of 351" from a reused k=25 value, then withdrawn, now computed for
+k=27. The CD moves by 0.03 and the pair count not at all — but a figure that happens to
+land close is not the same as a figure that was right, and there was no way to know
+which it was without computing it.*
 
 **Pre-registered family test** (`qwen_m`, Holm over m=26): ahead against **26 of 26**,
 separated from **8**. Against `anthropic_l`: delta **+0.0036** — one item in 280 — at
@@ -414,7 +431,7 @@ config can state in advance.
 
 The provider reports what it actually charged, per call, in `usage.cost`. That was in
 every stored run all along and nothing read it. Measured across all four examples, the
-price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+price table was wrong **per arm by 0.67× to 3.76×, in both directions**.
 
 **The error is not uniform, and that is what makes it matter.** Arms served by a single
 provider — the Anthropic models, notably — match the table exactly. The cheap,

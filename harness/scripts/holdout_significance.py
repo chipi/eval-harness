@@ -29,7 +29,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import leaderboard as lb  # noqa: E402
-from _common import RUNS, SOURCES, read_json  # noqa: E402
+from _common import RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 
 def _matrix(dataset_id: str, metric: str, keep: set[str] | None, match: str | None):
@@ -68,6 +68,9 @@ def main() -> int:
     ap.add_argument("--metric", default="coverage")
     ap.add_argument("--match", help="only config_ids containing this substring")
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     keep = None
     if args.exclude_dataset:

@@ -1,12 +1,69 @@
 # Known issues — read before reviewing
 
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
-better spent on what is not on this list. Things fixed in response to round 1 are in the
-git log, not here.
+better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-09-29, after round 1 (three independent reviews, 4 high-severity and
-~20 further findings — all reproduced in code before fixing, all fixed except where
-noted below).
+Last updated 2026-09-30, after **round 3**.
+
+## What round 3 says about round 2
+
+Round 2's 32 findings were all addressed. Round 3 — four reviewers, fresh clones, Linux
+— found **`make ci` RED on their machines and green on mine**, plus 9 high, ~20 medium
+and ~15 low findings. The pattern from round 2 held and sharpened:
+
+| what round 2 was told | what round 3 found |
+|---|---|
+| `make ci` is green in a fresh clone | green on APFS, **red on ext4**. Five glob sites picked among duplicate `config_id`s by filesystem order, and the failure was real: two cost cells were genuinely stale. I had verified on one OS and reported it as verified |
+| the checks can now fail | the guard covered 3 of 9 checkers, only their missing-input path, and `check_report_claims` never reached its own guard there — it died on `FileNotFoundError` and exited 1 for an unrelated reason. A checker printing FAIL and exiting 0 passed all of it |
+| the cost correction is applied | 21 more stale cells, in fenced **code blocks** that both scanners skipped. The AG column summed to $0.49 under a header saying $0.58 |
+| the retrieval parser is fixed | my fix **created** the worst number in the example. Its new comma path accepted `[8925851` as a document id, and the harvested ranking scored below the BM25 fallback. Two of the three arms I "corrected" were unchanged all along |
+| the NER parser hash covers the parser | it covered a regex my own fix had made dead. Gutting the real function left the digest byte-identical |
+| resume keeps what was measured | true for a tidy re-run; false for a crash, which is the only case resume is for. A crashed run has no `predictions.jsonl`, so every replayed row came back `latency: None, cost: None` |
+| Nemenyi above k=25 is a deliberate gap | about thirty lines of stdlib. Now computed, validated against all 24 published values, and all five experiments have a CD line |
+
+**Three findings I disputed and was right about** (the retrieval sub-conclusion does not
+reverse; the tie is 12–13 arms not 11; Few-NERD's +5.9% is correct) — all three because
+round 3 measured them on runs carrying **my** parser bug. **One I disputed and lost**:
+NER's 21st recoverable item is real, and `_balanced_arrays` stopping at the first
+unclosed `[` is why I found only 20.
+
+**The lesson that keeps recurring, stated for round 4:** every round, a fix of mine has
+recreated the class of bug it fixed — a checker validating its own constants, a hash
+that stops covering refactored code, a correction applied where it was found and
+nowhere else. Assume this round's fixes did it again, and start by asking what it would
+take for a green check to be red.
+
+## What round 2 says about round 1, and about this file
+
+The previous version of this paragraph read: *"round 1 — 4 high-severity and ~20 further
+findings, all reproduced in code before fixing, **all fixed except where noted below**."*
+
+That was wrong, and it is the most useful thing on this page. Round 2, reviewing the
+same repo after those fixes, found **6 round-1 findings still open** and **26 new ones**,
+several of them created or left by the round-1 fixes themselves:
+
+| what round 1 was told | what round 2 found |
+|---|---|
+| the `EVAL_PROMOTE_REASON` injection is closed | `make run-promote` raised `NameError` on **every** invocation — the fix shipped broken, and the only test of that script was `--help` |
+| `check_terminology.py` reporting green while reading zero files is fixed | fixed in that one file. `check_links.py` printed broken links and **exited 0**; `check_report_claims.py` printed "0/0 claims verified" and **exited 0** with no runs. The lesson was learned as an instance when the finding was a class |
+| the cost figures are corrected to what the provider billed | corrected in **one** of the four reports. Two others shipped the correction *notice* over 31 uncorrected cells |
+| the parsers are fixed | the round-1 fixes were inert — re-running them over the stored outputs moved nothing, which I reported as "the parsers are settled". The real bug was underneath, in both array matchers, and moved **seven arms across two experiments** |
+| `rescore.py` works from a clone now that outputs are committed | for four of five examples. Summarisation's 24 committed runs record their adapter relative to a path `rescore` never tried, so the experiment this repo leads with could not be rescored at all |
+| DeepSeek-V4.1-Flash is ~765 GB | 510 GB, measured. 765 was computed by assuming one byte per `I8` element; those tensors are packed at ~4 bits |
+
+**The pattern, stated so a third round can look for it rather than re-find it:** the
+recurring failure here is not a wrong answer, it is a *check that cannot fail* — a
+script that exits 0 whatever it saw, a test that only runs `--help`, a correction
+notice copied without the correction, a claims file that covers the numbers I was
+proud of and not the ones most recently found wrong. Round 2 added
+`test_the_checks_can_actually_fail`, which points each `make ci` checker at a tree that
+must make it fail and asserts on the exit code. That test exists because I fixed this
+class of bug twice while believing each time that I had fixed the class.
+
+**Not claimed:** that round 2's fixes are complete or that the same pattern is now
+absent. Every round-2 fix was verified by reverting the code and confirming the new
+test fails — which is evidence about those fixes, and says nothing about what neither
+of us thought to check.
 
 ---
 
@@ -15,7 +72,7 @@ noted below).
 | gap | consequence | why |
 |---|---|---|
 | **`fn_mistral_l_n200_v1`** never ran | every "of 26" in REPORT_NER is a family of 26, not 27 | `mistral-large-2512` is rate-limited upstream on OpenRouter's shared pool; 3 items in 7 minutes. [Handover](HANDOVER_NER_BLOCKED_ARM.md) |
-| **5 frontier SciFact rerankers** never ran | the 12-way tie is a tie among *cheap* models; the report cannot say whether a frontier model reranks better | $31.40 against that sweep's $2.45. [Handover](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md) |
+| **5 frontier SciFact rerankers** never ran | the top tie (12–13 arms) is a tie among *cheap* models; the report cannot say whether a frontier model reranks better | ≈$12 (price-table; $8–$45 once the 0.67×–3.76× billing spread is allowed for) against that sweep's $1.94 billed. Was stated as $31.40 until 2026-09-29, on a multiplier that did not survive checking. [Handover](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md) |
 | **6 local ML checkpoints** never ran | DBpedia has no fine-tuned local arm at all, so it cannot answer the fine-tune-vs-pay question its twin answers | pickle checkpoints need torch ≥ 2.6; no Intel-Mac wheel above 2.2.2. [Run them](RUN_THE_BLOCKED_ML_ARMS.md) |
 | **No quantised arm was measured** | §0's ≤64 GB column assumes int8/int4 preserve quality. int8 usually does, int4 often does not | would need a local serving stack |
 | **No throughput measured anywhere** | every latency figure is per-item at concurrency 1. A 44 MB model and a 70B model scale completely differently and nothing here says how | out of scope as built |
@@ -33,10 +90,16 @@ noted below).
   bound on that comparison.
 - **No confidence anywhere hosted.** Logprobs were never requested, so calibration exists
   only for the three local arms that supply a probability.
-- **Nemenyi above k=25 prints no pairwise verdict.** Four of five experiments have 26–28
-  arms. This is deliberate — the table stops at 25 and guessing is worse — but it means
-  those experiments have no critical-difference line. The Holm tests in `family_test.py`
-  are unaffected and carry every separation claim in the reports.
+- ~~**Nemenyi above k=25 prints no pairwise verdict.**~~ **CLOSED 2026-09-30.** This
+  entry said the gap was deliberate because "the table stops at 25 and guessing is
+  worse". Guessing is worse; stopping was not the only alternative. The critical values
+  are a one-dimensional integral over the studentised range, about thirty lines of
+  stdlib — [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) computes
+  them, reproduces all 24 of Demsar's published values to within 0.0007, and
+  `test_nemenyi_table_is_computed_not_copied` asserts both that and that the table
+  shipped in `leaderboard.py` is what the computation gives. All five experiments now
+  carry a critical-difference line. Found by external review, who also supplied the k=26
+  to k=30 values independently — they match the computation to four decimals.
 
 ## Reproducibility, and what a clone still needs
 
@@ -87,12 +150,46 @@ than edited, because rewriting a field inside a finished run would leave
 `fingerprint.hash` describing bytes that no longer exist. REPORT_SUMMARIZATION §3.6's
 n=20 half therefore cannot be recomputed from this repo.
 
+## What the automated checks do NOT cover
+
+`make ci` verifies 33 report claims, 37 model facts, every arm row in every leaderboard
+table and code block, every relative link and anchor, and that each checker still fails
+on the defect it exists to catch. The gaps below are known and are the ones a reviewer
+should spend time on.
+
+- **Numbers in PROSE are unchecked.** The arm-row checker reads markdown table rows and
+  fenced code blocks. A figure inside a sentence — *"`span_marker` scored 0.7674"* — is
+  invisible to it, and that is how several stale numbers survived two review rounds.
+
+  Not fixed, and the reason is measured: the obvious rule (any 4-decimal number within
+  60 characters of an arm name on the same line) produces **18 false positives on the
+  current, correct repo**. `anthropic_l shows 0.6897` is that arm's *cost* sitting next
+  to its name; `openai_m shows 0.4693` is a different statistic entirely. A check that
+  cries wolf on correct text gets muted, and this repo already learned that the
+  expensive way. Covering prose properly means the reports interpolating from a
+  structured figures block rather than restating numbers — a real change, not a
+  tightening.
+
+- **Exec summaries, READMEs, handovers and KNOWN_ISSUES itself** are outside the
+  arm-row scan entirely; only the four experiment reports are in it.
+
+- **Deleting evidence passes.** Removing a committed run, a rescored run, or one
+  `predictions.jsonl` does not fail anything: V7 checks the git index rather than the
+  working tree, V1 validates `data/runs` only, and the arm-row check silently skips
+  arms it cannot find.
+
+- **No committed run's `scorer_sha256` is compared to the current code**, so changing a
+  scorer constant moves the hash and nothing notices that the runs were scored with
+  something else.
+
+---
+
 ## Judgement calls a reviewer may disagree with
 
 These are decisions, not oversights. Argue with them by all means.
 
 1. **Costs are what the provider billed** (`usage.cost`), not a price table. The table was
-   wrong per arm by 0.67×–3.21× because an alias is not a price.
+   wrong per arm by 0.67×–3.76× because an alias is not a price.
 2. **The `nothing` / `random` / `constant` arms are calibration checks first**, baselines
    second. A floor whose score is predictable is how you find a scorer bug.
 3. **Label noise is kept, degenerate items are filtered.** A mislabelled item still poses
@@ -119,10 +216,31 @@ hardcoded an absolute path and read zero files while reporting green.
 | `test_retrieval_scorer.py`, `test_ner_parser.py`, `test_extraction_scorer.py` | the per-item scoring conventions, in both directions |
 | `self_test.py` | resume durability, fingerprint reference coverage, metric-kind verdicts, tie-correct Spearman, rescore refusing an absent reference set |
 
-**Both round-1 parser fixes change zero recorded numbers, and that is measured, not
-assumed** — so a second round need not re-derive it. The reviewer's hypothesis was that
-the NER JSON parser explained part of `glm_l`'s 46 unreadable items. Re-parsing every
-stored output with the fixed parser leaves it at **46 → 46**, and **0 of 760** retrieval
-outputs parse differently under the fixed `parse_ranking`. The fixes are still right —
-they close real input shapes — but no figure in any report moves because of them, and
-`glm_l`'s 46 unreadable items are the model's behaviour, not the parser's.
+**The round-1 parser fixes changed zero recorded numbers. The round-2 ones changed
+four arms in each of two experiments, and the round-1 result is exactly why that is
+worth stating carefully.** After round 1 I measured that re-parsing every stored output
+left `glm_l` at 46 → 46 unreadable and 0 of 760 retrieval outputs parsing differently,
+and reported that the parsers were settled. They were not; the round-1 fixes were.
+
+Round 2 found the deeper bug in both parsers — the array matcher, not the wrappers:
+
+| | before | after |
+|---|---|---|
+| NER `glm_l` f1 | 0.5269 | **0.5662** (46 unreadable → 32) |
+| NER `llama_l` f1 | 0.5911 | **0.5990** |
+| NER `llama_m` f1 | 0.5704 | **0.5740** |
+| NER `deepseek_m` f1 | 0.6122 | **0.6148** |
+| SciFact `qwen_s` nDCG@10 | 0.7338 | **0.7183** |
+
+*This table listed `llama_l` (0.7281 → 0.6864) and `llama_s` (0.7172 → 0.7129) until
+2026-09-30. Both were artifacts of the round-2 fix itself: its new comma path let the
+line parser accept `[8925851` and `21884449]` as document ids out of a reply that had
+opened with an array and then corrected itself in prose. With the parser tightened,
+both arms return to their original scores and only `qwen_s` moves. Found by external
+review — the round-3 reviewers measured the like-for-like `llama_l` delta at 0.0126,
+inside noise.*
+
+The lesson I take from the pair: "I re-ran the fixed parser over the stored outputs and
+nothing moved" proves the fix I just made was inert. It says nothing about whether the
+parser is correct, because it only exercises the inputs the fix was aimed at. The round-2
+findings came from reading what the rejected outputs actually contained.

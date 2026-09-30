@@ -24,11 +24,11 @@
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **476 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
+| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **499 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
 | **Self-host · open-weight LLM, absolute** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B / ~52 GB**. **0.6733** — **0.0941 worse** than a model **109× smaller**. The clearest ML-beats-LLM result in the set. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model.** At 52 GB native it fits with room to spare — **the absolute open-weight winner here is already the practical one.** |
-| **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 476 MB tagger.** |
-| **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 476 MB model. |
+| **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 499 MB tagger.** |
+| **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 499 MB model. |
 | **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
 | **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
@@ -56,10 +56,10 @@ from 64 GB to unlimited.
 1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
    field of 0.524–0.686. Holm step-down over a family of 26 declared in advance:
    **separated from 26 of 26**. Neither classification corpus produced this — AG News gave
-   a leader tied with five others, DBpedia a group of ten.
+   a leader tied with nine others, DBpedia a group of ten.
 
 2. **And behind it, the familiar tie.** The best hosted arm, `openai_m` at 0.6864,
-   separates from only **19 of 26**. The eight it cannot separate from span
+   separates from only **19 of 26**. The seven it cannot separate from span
    `gemma_m` at **$0.0088** to `anthropic_l` at **$0.6897** — a **78× price range** buying
    nothing measurable. DBpedia's figure was 115×. Two unrelated tasks, the same shape.
 
@@ -108,7 +108,7 @@ where an arm that invents entities is caught, and they fix the floor.
 
 | Arm | What it is | Weights |
 |---|---|---|
-| `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, **fine-tuned on Few-NERD's training split**, predicts the 66 fine types mapped down to 8 | 476 MB |
+| `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, **fine-tuned on Few-NERD's training split**, predicts the 66 fine types mapped down to 8 | 499 MB |
 | `gliner` | `urchade/gliner_medium-v2.1`, zero-shot, **caller supplies the label set**, threshold 0.5 (library default, untuned) | 745 MB |
 | 24 hosted | 8 vendors × {small, medium, large}, one prompt, temperature 0 | — |
 | `capitalized` | every capitalised run, minus a stoplist written from English orthography | — |
@@ -172,7 +172,7 @@ reported; the mean is the ranking metric.
 
 | arm | f1 | untyped f1 | parsed | lat/item | cost |
 |---|---|---|---|---|---|
-| **span_marker** | **0.7674** | 0.8370 | 1.000 | 0.76 s | **$0** |
+| **span_marker** | 0.7674 | 0.8370 | 1.000 | 0.76 s | **$0** |
 | openai_m | 0.6864 | 0.7783 | 1.000 | 1.60 s | $0.6507 |
 | anthropic_l | 0.6798 | 0.7820 | 1.000 | 2.76 s | $0.6897 |
 | gemma_m | 0.6733 | 0.7750 | 1.000 | 3.05 s | $0.0088 |
@@ -182,19 +182,19 @@ reported; the mean is the ranking metric.
 | qwen_m | 0.6548 | 0.7525 | 1.000 | 2.24 s | $0.0396 |
 | gemma_l | 0.6481 | 0.7689 | 1.000 | 2.91 s | $0.0134 |
 | qwen_l | 0.6240 | 0.7283 | 1.000 | 1.67 s | $0.0722 |
-| deepseek_m | 0.6122 | 0.7233 | 1.000 | 1.23 s | $0.0200 |
+| deepseek_m | 0.6148 | 0.7265 | 1.000 | 1.23 s | $0.0200 |
+| llama_l | 0.5990 | 0.7146 | 0.996 | 4.80 s | $0.0176 |
 | openai_s | 0.5948 | 0.6855 | 1.000 | 1.21 s | $0.0784 |
 | glm_m | 0.5939 | 0.7151 | 1.000 | 3.66 s | $0.0445 |
 | mistral_m | 0.5914 | 0.6870 | 1.000 | 0.79 s | $0.0462 |
-| llama_l | 0.5911 | 0.7067 | 0.986 | 4.80 s | $0.0176 |
 | deepseek_l | 0.5872 | 0.6940 | 1.000 | 3.73 s | $0.0853 |
 | anthropic_s | 0.5843 | 0.7279 | 1.000 | 1.34 s | $0.1552 |
 | deepseek_s | 0.5756 | 0.6996 | 1.000 | 2.28 s | $0.0091 |
-| llama_m | 0.5704 | 0.6733 | 0.943 | 5.40 s | $0.0194 |
+| llama_m | 0.5740 | 0.6769 | 0.954 | 5.40 s | $0.0194 |
 | llama_s | 0.5686 | 0.6812 | 0.993 | 2.64 s | $0.0103 |
+| glm_l | 0.5662 | 0.6493 | 0.886 | 3.01 s | $0.1023 |
 | glm_s | 0.5529 | 0.6863 | 1.000 | 2.11 s | $0.0194 |
 | gemma_s | 0.5500 | 0.6758 | 1.000 | 5.94 s | $0.0093 |
-| glm_l | 0.5269 | 0.6065 | **0.836** | 3.01 s | $0.1023 |
 | mistral_s | 0.5243 | 0.6446 | 1.000 | 2.06 s | $0.0076 |
 | gliner | 0.4540 | 0.5522 | 1.000 | **0.17 s** | **$0** |
 | capitalized | 0.1913 | 0.6191 | 1.000 | ~0 | $0 |
@@ -222,12 +222,12 @@ Every other example in this repo produced a *group* at the top. This one produce
 separated from 19 of 26; ahead on the point estimate against 25 of 26
 
   NOT separated:
-    gemma_l      +0.0383  p = 0.0084   ($0.0080)
-    qwen_m       +0.0316  p = 0.0218   ($0.0248)
-    qwen_s       +0.0214  p = 0.1484   ($0.0061)
-    anthropic_m  +0.0204  p = 0.1668   ($0.4269)
-    openai_l     +0.0148  p = 0.2495   ($0.2411)
-    gemma_m      +0.0131  p = 0.4310   ($0.0057)
+    gemma_l      +0.0383  p = 0.0084   ($0.0134)
+    qwen_m       +0.0316  p = 0.0218   ($0.0396)
+    qwen_s       +0.0214  p = 0.1484   ($0.0157)
+    anthropic_m  +0.0204  p = 0.1668   ($0.2846)
+    openai_l     +0.0148  p = 0.2495   ($0.1715)
+    gemma_m      +0.0131  p = 0.4310   ($0.0088)
     anthropic_l  +0.0066  p = 0.6664   ($0.6897)
 ```
 
@@ -345,7 +345,7 @@ it spent the entire budget reasoning aloud about which benchmark it was being ev
 > No, FIGER has 112 types. Hmm, it could be from BBN? No."*
 
 ...and never answered. Its mean output is 136 tokens against `glm_m`'s 59, and **`glm_m`
-outscores `glm_l` 0.5939 to 0.5269** — the larger model in the same family loses to the
+outscores `glm_l` 0.5939 to 0.5662** — the larger model in the same family loses to the
 smaller one by talking itself out of an answer.
 
 The budget was not tuned after seeing this, because that would be tuning on the measurement
@@ -363,19 +363,27 @@ the dev slice sampled its truncation rate at 5.4% and the measurement slice foun
 
 ```
 global test (permutation on within-item ranks): p = 0.0002 -> an arm effect exists
-Nemenyi critical difference: NOT AVAILABLE for k=27 arms — the tabulated
-studentised range stops at k=25.   observed rank span = 13.94
+Nemenyi critical difference = 2.77 rank positions; observed span = 13.95
+pairs distinguishable: 149 of 351
 
-  fn_span_marker_n200_v1   avg rank 8.61   P(1st) = 1.00
+  fn_span_marker_n200_v1   avg rank 8.64   P(1st) = 1.00
 ```
 
-> **Corrected 2026-09-29.** This block previously read *"critical difference = 2.74;
-> pairs distinguishable: 156 of 351"*. Both came from silently reusing the k=25 critical
-> value for a 27-arm field, which is too small — so the CD was understated and more pairs
-> were called distinguishable than the test supports (~153 at an interpolated k=27). The
-> tool now declines to print a pairwise verdict above its table rather than guessing one.
-> **The global test is unaffected**, and so is every claim in this report: the separation
-> results come from `family_test.py`'s Holm step-down, which does not use this table.
+> **Twice corrected, and the second correction is the interesting one.** This block first
+> read *"critical difference = 2.74; pairs distinguishable: 156 of 351"*, from silently
+> reusing the k=25 critical value for a 27-arm field — too small, so the CD was
+> understated and more pairs called distinguishable than the test supports. Round 2 made
+> the tool refuse above k=25 and this block printed NOT AVAILABLE. A round-3 reviewer
+> pointed out the values are about thirty lines of stdlib, which they are:
+> [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) solves the
+> studentised-range integral and reproduces all 24 of Demsar's published values to
+> within 0.0007.
+>
+> Computed for k=27 the CD is **2.77** and **149 of 351** pairs separate — against the
+> 2.74 and 156 first published. So the original was biased in exactly the direction
+> stated, by seven pairs. **The global test is unaffected**, and so is every separation
+> claim here: those come from `family_test.py`'s Holm step-down, which never used this
+> table.
 
 This is the direct opposite of the summarisation result, where BART's 0.0737 lead at n=20
 collapsed to 0.00008 at n=200. A lead can be an artifact of a small slice; this one is not,
@@ -415,8 +423,14 @@ See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
 look.** `span_marker` wins outright and separates from all 26. But decompose it:
 
 - ~57% of the margin is one type whose definition exists only inside this corpus.
-- ~7% of the margin (0.0059 of 0.0876 vs the nearest hosted arm) is agreeing with
-  annotation the rest of the field rejects.
+- ~7% of the margin (0.0059 of **0.0810** vs the nearest hosted arm, `openai_m` at
+  0.6864) is agreeing with annotation the rest of the field rejects.
+
+  *The denominator read 0.0876 until 2026-09-30, from before the NER rescoring; the
+  margin is 0.0810 now and the share is 7% either way. Round 3 reported this share as
+  38% and I could not reproduce that from any pairing of the committed numbers —
+  0.0059 is 7.3% of 0.0810 and 6.7% of 0.0876. Flagged rather than silently kept: if
+  38% comes from a different decomposition, it is worth seeing.*
 - On the type with a corpus-independent meaning, it loses.
 
 So the defensible claim is: **if your labels are a fixed in-house taxonomy and you can
@@ -425,7 +439,7 @@ That is a real and useful claim — it is the podcast-product case. The claim it
 support is that the small model is better at named-entity recognition in general.
 
 **The hosted field is a commodity at the top.** Eight arms, 78× price spread, no
-resolvable difference. `gemma_m` at $0.0057 is inside the top group; `anthropic_l` at
+resolvable difference. `gemma_m` at $0.0088 is inside the top group; `anthropic_l` at
 $0.6897 is too. Buying the expensive one bought 3.05 s/item of latency and nothing else
 measurable.
 
@@ -434,8 +448,8 @@ and untyped orderings is **0.955** over 27 arms, same leader, so it is not an al
 leaderboard. What it does is split each arm's error into detection and labelling.
 `anthropic_s` is typed 0.5843 / untyped 0.7279 (`type_penalty` 0.1436) and rises six places
 on the untyped view — a labelling problem. `openai_s` is 0.5948 / 0.6855 and *falls* seven
-places — it is typing well what little it finds. `glm_l` is 0.5269 / 0.6065 (penalty
-0.0796): not a labelling problem at all, a *not answering* problem.
+places — it is typing well what little it finds. `glm_l` is 0.5662 / 0.6493 (penalty
+0.0831): not a labelling problem at all, a *not answering* problem.
 
 ---
 
@@ -466,7 +480,48 @@ list. On the 12% of items whose gold is also empty, the empty-empty convention p
 non-answer the **full 1.0**.
 
 `glm_l` collected six of them. It was worth **+0.0214 f1** — 0.5484 as first measured,
-**0.5269** corrected. It reordered nothing, but it is the number in this report.
+**0.5269** after that correction. It reordered nothing.
+
+### And then the parser was refusing answers that were there
+
+A second external review found the JSON parser's array matcher was `\[.*\]` with
+DOTALL — **greedy**, so it spanned from the first `[` in a reply to the last `]`
+anywhere in it. Two real answers died that way:
+
+- `[{...}] See [1]` became one span covering both brackets and the prose between them.
+  Not JSON, so a correct answer scored zero.
+- `llama_l` emitted a malformed array, wrote *"Here is the correct output:"*, then a
+  valid one. The greedy match swallowed both and parsed neither.
+
+Balanced spans are now scanned left to right and the first that reads as entities wins.
+**20 of the 68 items this experiment had scored unreadable were readable all along.**
+
+| arm | f1 before | f1 after | unreadable before | after |
+|---|---|---|---|---|
+| `glm_l` | 0.5269 | **0.5662** | 46 | **32** |
+| `llama_l` | 0.5911 | **0.5990** | 4 | **1** |
+| `llama_m` | 0.5704 | **0.5740** | 16 | **13** |
+| `deepseek_m` | 0.6122 | **0.6148** | 0 | 0 |
+
+`deepseek_m` moved without any item changing readability: it had answered `[[{...}]]`,
+doubly wrapped, and the old code dropped the inner list as a non-object and returned an
+**empty set** — scoring six found entities as *"correctly found nothing."*
+
+**My first version of the fix broke two answers to fix the others**, and only a
+before/after comparison of every arm caught it. Requiring *every* element of an array to
+be entity-shaped rejected `llama_s`'s otherwise-valid list that carried one stray bare
+string, and refused `deepseek_m`'s double wrap outright. The rule is now *at least one*
+entity-shaped element — enough to reject `[1]` from "See [1]", which is the case the
+shape test exists for, without demanding tidiness from an answer that has entities in it.
+
+**What is still refused, and should be:** prose, and arrays cut off mid-object. `glm_l`
+runs out of tokens on `[{"text": "Corfu International` with no closing bracket. There is
+no answer there, and mining one out of an explanation would be inventing it. 32 of its
+280 items are still unreadable and that is the model's behaviour, not the parser's.
+
+**The earlier claim that "both parser fixes change zero recorded numbers" was about the
+ROUND-1 fixes and remains true of them.** This is a different bug, found later, and it
+moves four arms.
 
 **No fingerprint could have caught it.** `normalizer_sha256` covered `normalize` and nothing
 else, on the reasoning that a normaliser has the most room to move a score. The reasoning
@@ -527,7 +582,7 @@ This section is deliberately as detailed as the results.
 - **One pass per arm, temperature 0.** No variance estimate over repeated sampling. Every
   interval here is over *items*, not over *runs*.
 - **The upper bound in §3.6 is an upper bound.** It is not an estimate of performance
-  against clean annotation, and the 26 spans were found by the field's own agreement, which
+  against clean annotation, and the 34 spans were found by the field's own agreement, which
   is not an independent judge.
 - **`span_marker`'s fine→coarse mapping is asserted, not verified against a spec.** Few-NERD
   fine labels are literally `coarse-detail`, so the mapping is deterministic, but no test
@@ -578,7 +633,7 @@ config can state in advance.
 
 The provider reports what it actually charged, per call, in `usage.cost`. That was in
 every stored run all along and nothing read it. Measured across all four examples, the
-price table was wrong **per arm by 0.67× to 3.21×, in both directions**.
+price table was wrong **per arm by 0.67× to 3.76×, in both directions**.
 
 **The error is not uniform, and that is what makes it matter.** Arms served by a single
 provider — the Anthropic models, notably — match the table exactly. The cheap,

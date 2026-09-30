@@ -102,11 +102,43 @@ def _prompt_sha256(params: Dict[str, Any]) -> str:
 
 # ── parsing a model's answer into a set ──────────────────────────────────────
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.S)
-_ARRAY = re.compile(r"\[.*\]", re.S)
 _TRAILING_COMMA = re.compile(r",\s*([\]}])")
 #: An unquoted object key, as emitted by llama_m. Anchored on the preceding brace or
 #: comma so it cannot touch text INSIDE a quoted string value.
 _BARE_KEY = re.compile(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:")
+
+
+def _balanced_arrays(body: str) -> List[str]:
+    """Every top-level bracket-balanced span in `body`, left to right.
+
+    Replaces a greedy `\\[.*\\]` that spanned from the first "[" to the last "]" in the
+    whole reply, which turned `[{...}] See [1]` into one unparseable blob. Nesting is
+    counted rather than matched by regex, because an entity list is not a regular
+    language and pretending otherwise is what produced the bug.
+
+    An unterminated "[" ends the scan: a reply cut off mid-array has no further
+    candidates, and that is the truncation case the parser must keep refusing.
+    """
+    out: List[str] = []
+    i = 0
+    while True:
+        start = body.find("[", i)
+        if start == -1:
+            return out
+        depth = 0
+        end = None
+        for j in range(start, len(body)):
+            if body[j] == "[":
+                depth += 1
+            elif body[j] == "]":
+                depth -= 1
+                if depth == 0:
+                    end = j + 1
+                    break
+        if end is None:
+            return out
+        out.append(body[start:end])
+        i = end
 
 
 def _parse_entities(text: str) -> Optional[List[dict]]:
@@ -127,20 +159,37 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
     fenced = _FENCE.search(body)
     if fenced:
         body = fenced.group(1).strip()
-    # EXTRACT THE ARRAY WHEREVER IT IS, including when the text STARTS with one.
+    # EVERY BALANCED ARRAY IS A CANDIDATE, IN ORDER, AND THE FIRST THAT READS AS
+    # ENTITIES WINS.
     #
-    # This used to run only when the body did not start with "[", so a valid list
-    # followed by any prose -- `[{...}]\n\nI hope this helps!` -- was handed to
-    # json.loads whole and failed. A correct answer with a courtesy sentence after it
-    # scored zero, and that may be part of what the NER report counted as "unreadable".
-    # Found by review.
-    found = _ARRAY.search(body)
-    if found:
-        body = found.group(0)
-    elif not body.lstrip().startswith("{"):
-        # Not an array anywhere and not a bare object either: there is nothing here to
-        # read as a set. A bare object falls through and is handled below as a
-        # one-element set.
+    # `_ARRAY` was `\[.*\]` with DOTALL -- greedy, so it spanned from the first "["
+    # to the LAST "]" in the whole reply. Two real failures followed from that:
+    #
+    #   `[{...}] See [1]`      one match covering both brackets and the prose between
+    #                          them, which is not JSON, so a correct answer scored zero.
+    #   llama_l self-correcting  it emitted a malformed array, wrote "Here is the
+    #                          correct output:", then a VALID one. The greedy match
+    #                          swallowed both and parsed neither.
+    #
+    # Scanning balanced arrays left to right and taking the first that PARSES handles
+    # both without guessing: the courtesy-sentence case is satisfied by the first array,
+    # and the self-correction case falls through the broken one to the good one.
+    #
+    # THE SHAPE TEST IS LOAD-BEARING, not tidiness. "See [1]" yields the perfectly valid
+    # JSON `[1]`, and the loop below drops non-dict items -- so it would arrive as an
+    # EMPTY set and be scored as "correctly found nothing", which on this corpus is a
+    # free 1.0 on the 15% of items whose gold is empty. That is the exact bug this
+    # example already shipped once. An array counts only if it is empty or every element
+    # is an object with a "text" key.
+    #
+    # What is still NOT repaired: prose, and arrays truncated mid-object. glm_l writes
+    # 2,300-token essays and runs out of tokens with `[{"text": "Corfu International` and
+    # no closing bracket. There is no answer there to recover, and inventing one would be
+    # mining entities out of an explanation.
+    candidates = _balanced_arrays(body)
+    if not candidates and not body.lstrip().startswith("{"):
+        # Not an array anywhere and not a bare object either: nothing here to read as a
+        # set. A bare object falls through and is handled below as a one-element set.
         return None
     # Repairs are tried in order, each strictly more forgiving than the last, and every
     # one of them fixes a failure OBSERVED on the dev slice rather than an imagined one:
@@ -153,13 +202,33 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
     # What is NOT repaired: prose. glm_l writes 2,300-token essays reasoning aloud and
     # never emits an array at all. There is nothing there to parse, and a "repair" that
     # dug entities out of an explanation would be inventing answers the model never gave.
-    for candidate in (body,
-                      _TRAILING_COMMA.sub(r"\1", body),
-                      _BARE_KEY.sub(r'\1"\2":', _TRAILING_COMMA.sub(r"\1", body))):
+    for body in (candidates or [body]):
+      for candidate in (body,
+                        _TRAILING_COMMA.sub(r"\1", body),
+                        _BARE_KEY.sub(r'\1"\2":', _TRAILING_COMMA.sub(r"\1", body))):
         try:
             parsed = json.loads(candidate)
         except ValueError:
             continue
+        # A DOUBLY-WRAPPED ARRAY IS STILL ONE ARRAY. deepseek_m answered
+        # `[[{...}, {...}]]`. Both the old code and my first version of this shape test
+        # got it wrong in different ways -- the old one dropped the inner list as a
+        # non-object and returned an EMPTY set, scoring six found entities as "found
+        # nothing"; the shape test then refused it outright. Unwrap and read it.
+        while (isinstance(parsed, list) and len(parsed) == 1
+               and isinstance(parsed[0], list)):
+            parsed = parsed[0]
+        # ENTITY-SHAPED, OR KEEP LOOKING -- see the note above on "See [1]".
+        #
+        # AT LEAST ONE entity-shaped element, not all of them. Requiring all was my
+        # first attempt and it broke two answers that were perfectly readable: llama_s
+        # emitted a valid list with one stray bare string among the objects, which the
+        # item loop below already drops. The point of this test is to reject an array
+        # that contains NO entities at all -- `[1]` from "See [1]" -- not to demand
+        # tidiness from one that does.
+        if isinstance(parsed, list) and parsed and not any(
+                isinstance(e, dict) and "text" in e for e in parsed):
+            break
         # A BARE OBJECT IS A ONE-ELEMENT SET. deepseek_s answered
         # `{"text": "p", "type": "other"}` with no enclosing array -- a well-formed,
         # readable answer that the old code threw away because it required a list.
@@ -188,11 +257,22 @@ def _parser_sha256() -> str:
     `getsource` returns only the `def` block, so editing `_BARE_KEY` -- which is what
     decides whether llama_m's unquoted-key output parses at all -- changed every score
     and left this hash identical. Found by review, not by us.
+
+    AND THE SAME BUG CAME BACK THROUGH THE FIX FOR IT. Round 2 moved the array
+    extraction out of `_parse_entities` into `_balanced_arrays`, and did not add it
+    here. Gutting `_balanced_arrays` entirely -- returning [] for every input, so no
+    answer parses -- left this digest byte-identical. The hash covered a regex that
+    round 2 had made dead (`_ARRAY`, still defined and hashed and used nowhere) and not
+    the function that replaced it. Found by external review in round 3.
+
+    The lesson is narrower than "hash everything": a hash over a NAMED LIST of
+    functions silently stops covering the code when the code is refactored, and nothing
+    about the refactor looks like it touches provenance.
     """
     from codehash import code_digest  # noqa: PLC0415
 
-    return code_digest(_parse_entities, consts={
-        "_FENCE": _FENCE, "_ARRAY": _ARRAY,
+    return code_digest(_parse_entities, _balanced_arrays, consts={
+        "_FENCE": _FENCE,
         "_TRAILING_COMMA": _TRAILING_COMMA, "_BARE_KEY": _BARE_KEY})
 
 

@@ -46,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+        "sha256": "1d5c72b2deccad1e2e18d8071363001ee6af3c63f8dab419f567b765aa24f51c"
       },
       "harness": {
         "commit": "b3cc5d861cf2",
@@ -104,6 +104,7 @@
     "precision": "quality",
     "reasoning_tokens": "descriptive",
     "recall": "quality",
+    "resumed": "descriptive",
     "tp": "descriptive",
     "truncated": "descriptive",
     "type_penalty": "descriptive",
@@ -143,42 +144,42 @@
     "Wafer": 1
   },
   "reference_tier": "gold",
-  "rescored_at": "2026-09-28T14:34:01Z",
+  "rescored_at": "2026-09-29T17:02:47Z",
   "rescored_from": "fn_deepseek_m_n200_v1_20260928T093838Z",
   "rescored_with": {
     "adapter": "examples/ner-few-nerd/adapter.py",
     "scorer": {
-      "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
-      "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
-      "scorer_sha256": "fa44fe291ad128ab1633f2e07aa84d2dcb06d2226a58b697b621992ef98c2d78"
+      "normalizer_sha256": "10c4df840844e0c3e74965e43ae9cd4d91e8922d594abeff7ec23dfc19094cf2",
+      "parser_sha256": "1a4878aa7ac9a63b315b30ce19bc21390d60601dc5151ab57c7527de6ffc1e20",
+      "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e"
     },
-    "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+    "sha256": "1d5c72b2deccad1e2e18d8071363001ee6af3c63f8dab419f567b765aa24f51c"
   },
   "run_id": "fn_deepseek_m_n200_v1_20260928T093838Z",
   "scores": {
     "cost_usd": 4.58482e-05,
-    "f1": 0.6121666416,
-    "fn": 0.8892857143,
-    "fp": 1.5178571429,
+    "f1": 0.6147640442,
+    "fn": 0.875,
+    "fp": 1.525,
     "latency_ms": 1228.7152892857,
     "n_gold": 2.7357142857,
-    "n_predicted": 3.3642857143,
+    "n_predicted": 3.3857142857,
     "parsed": 1.0,
-    "precision": 0.5781106988,
+    "precision": 0.5804916512,
     "reasoning_tokens": 0.0,
-    "recall": 0.6784934807,
+    "recall": 0.6813506236,
     "tokens_in": 114.4285714286,
     "tokens_out": 57.3678571429,
     "total_cost_usd": 0.0128375,
     "total_tokens_in": 32040.0,
     "total_tokens_out": 16063.0,
-    "tp": 1.8464285714,
+    "tp": 1.8607142857,
     "truncated": 0.0,
-    "type_penalty": 0.1110955937,
-    "untyped_f1": 0.7232622353,
-    "untyped_fn": 0.475,
-    "untyped_fp": 1.1035714286,
-    "untyped_tp": 2.2607142857
+    "type_penalty": 0.1117449443,
+    "untyped_f1": 0.7265089885,
+    "untyped_fn": 0.4571428571,
+    "untyped_fp": 1.1071428571,
+    "untyped_tp": 2.2785714286
   },
   "warmup_ms": 1292.833
 }

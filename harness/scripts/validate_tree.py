@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -224,6 +225,58 @@ def v6_baselines() -> None:
     check(not broken, "V6 every baseline's source run still exists", f"{len(broken)} broken")
 
 
+def v7_committed_runs_are_readable() -> None:
+    """A run in the repo must carry `metrics.json`. Outputs alone are not a run.
+
+    144 directories were committed as outputs ONLY -- 2,880 files of CNN/DailyMail
+    paraphrases with nothing to say which arm produced them, on which dataset, under
+    which fingerprint. No tool here can read them: `rescore`, `leaderboard`,
+    `compare_runs` and every report script key off `metrics.json` and skip a directory
+    without one.
+
+    The cause was two rules interacting. Those dev runs are excluded BY NAME because
+    they record an absolute username path; the exclusion named `metrics.json` and
+    `predictions.jsonl`, and a later force-include of `outputs/**` reached underneath
+    it. All of the copyright exposure and none of the reproducibility benefit.
+
+    Checked against the INDEX rather than the working tree: an in-progress run on disk
+    is fine and expected, a committed one is not.
+    """
+    tracked = subprocess.run(
+        ["git", "ls-files", "data/runs"], cwd=ROOT, capture_output=True, text=True,
+    ).stdout.split()
+    have: dict[str, set] = {}
+    for f in tracked:
+        parts = f.split("/")
+        if len(parts) >= 4:                      # data/runs/<id>/<file...>
+            have.setdefault(parts[2], set()).add(parts[3])
+    bad = sorted(r for r, files in have.items() if "metrics.json" not in files)
+
+    # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. `data/runs-rescored`,
+    # `-reparsed`, `-pair` and `-repeats` are all committed and all cited by reports,
+    # and nothing validated them at all. Found by external review.
+    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats"):
+        base = ROOT / "data" / extra
+        if not base.is_dir():
+            continue
+        tracked_x = subprocess.run(
+            ["git", "ls-files", f"data/{extra}"], cwd=ROOT, capture_output=True, text=True,
+        ).stdout.split()
+        seen: dict[str, set] = {}
+        for f in tracked_x:
+            parts = f.split("/")
+            if len(parts) >= 4:
+                seen.setdefault(parts[2], set()).add(parts[3])
+        bad += [f"{extra}/{r}" for r, files in sorted(seen.items())
+                if "metrics.json" not in files]
+    for x in bad[:10]:
+        print(f"       {x}")
+    if len(bad) > 10:
+        print(f"       ... and {len(bad) - 10} more")
+    check(not bad, "V7 every committed run has metrics.json",
+          f"{len(bad)} run(s) committed as outputs only")
+
+
 def main() -> int:
     # `--help` prints help. It used to fall through and run the whole validation, which
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
@@ -233,7 +286,8 @@ def main() -> int:
         print(__doc__)
         return 0
     print(f"eval tree: {ROOT / 'data'}\n")
-    for fn in (v1_schemas, v2_dataset_ids, v3_provenance, v4_materialized, v5_duplicate_scores, v6_baselines):
+    for fn in (v1_schemas, v2_dataset_ids, v3_provenance, v4_materialized,
+               v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

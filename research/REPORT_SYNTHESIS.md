@@ -2,6 +2,9 @@
 
 **Five tasks · four metric shapes · 127 measured arms · $12.01 billed · one harness**
 
+*$12.01 is the 127 arms under `harness/data/runs/`. Including the four paired runs
+behind the registered prediction and the three repeat runs, the repo has spent $13.04.*
+
 Seven findings that hold across every experiment (§1–§7), and what they imply for
 **quality vs cost vs latency** in production (§8).
 
@@ -50,7 +53,9 @@ your own machines is either first or statistically tied with first.
 **And hardware buys almost nothing.** Of the 14 open-weight arms, several are cluster-scale —
 cluster models, not workstation ones. But capping the budget costs almost no quality:
 **four of five ≤128 GB answers equal the unlimited-hardware answer, and four of five
-≤64 GB answers equal the ≤128 GB one.** Going from a 765 GB model to a 35 GB one costs
+≤64 GB answers equal the ≤128 GB one** — SciFact is the exception, losing **0.0074**
+(`glm_s` 0.7437 → `gemma_m` 0.7363, a gap its own test cannot resolve). Going from a
+510 GB model to a 35 GB one costs
 **0.0078 on one task and nothing on the other four.**
 
 The counter-argument is measured too: one hosted model covers all five tasks at the 70th
@@ -90,7 +95,7 @@ Three more numbers that travel:
 - **The cheapest arm you cannot statistically separate from the best is 8×–143× cheaper
   than the dearest**, in four of five experiments.
 - **Cost does not buy speed.** log(cost) vs latency correlates at **r = −0.30 to +0.20** —
-  uncorrelated, negative twice. Free local models run 44×–766× faster on classification
+  uncorrelated, negative twice. Free local models run 61×–1,078× faster on classification
   and embedding, and *slower* on generation.
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
   classification against **3,926 for retrieval reranking** — a 38× difference that no
@@ -140,8 +145,8 @@ Sorting all ten local arms by how much task-specific training they had produces 
 | training exposure | arms | rank among all arms | vs the best **paid** arm |
 |---|---|---|---|
 | **Fine-tuned on this dataset** | `span_marker`, `bert_mini`, `bart_l` | **1st, 1st, 1st** | **+0.0810, +0.0350, +0.0001** |
-| Trained for the task *type* | `e5_base`, `bge_small` | 9th, 11th of 17 | −0.0246, −0.0340 — **not separated** |
-| General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 17 | −0.0794, −0.0904 |
+| Trained for the task *type* | `e5_base`, `bge_small` | 8th, 11th of 19 | −0.0246, −0.0340 — **not separated** |
+| General-purpose embeddings | `mpnet`, `minilm` | 15th, 16th of 19 | −0.0794, −0.0904 |
 | **Zero-shot** | `bart_mnli` ×2, `gliner` | **25th, 25th, 26th — last** | **−0.2100, −0.2324, −0.3643** |
 
 **Every model fine-tuned on its dataset ranked first. Every zero-shot model ranked last or
@@ -161,7 +166,7 @@ the entire spread of the 23 hosted arms on that task.
 | AG News | **0.9450**, $0, **7 ms** | 0.9100, **$351/mo**, 1.92 s |
 | summarisation | **0.3461**, $0, 11.0 s | 0.3460, **$191/mo**, 1.60 s |
 
-Better quality, zero inference cost, and **44×–766× lower latency** on the two
+Better quality, zero inference cost, and **61×–1,078× lower latency** on the two
 classification-shaped tasks. On summarisation the quality is a tie and the local model is
 *slower*, because generation on a CPU is genuinely expensive — so the win there is cost
 only.
@@ -198,13 +203,28 @@ self-hostable; it does not mean unconditionally reusable.
 
 | experiment | best open-weight | best proprietary | delta | separated? |
 |---|---|---|---|---|
-| Summarisation · CNN/DM | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | **yes — open wins** |
-| Retrieval · SciFact | `glm_s` 0.7437 | `qwen_s` 0.7338 | **+0.0100** | no |
+| Summarisation · CNN/DM | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | no |
+| Retrieval · SciFact | `glm_s` 0.7437 | `qwen_s` 0.7183 | **+0.0254** | no |
 | Classification · DBpedia | `glm_m` 0.9857 | `qwen_m` 0.9929 | −0.0071 | no |
 | Extraction · Few-NERD | `gemma_m` 0.6733 | `openai_m` 0.6864 | −0.0131 | no |
 | Classification · AG News | `llama_m` 0.8800 | `anthropic_m` 0.9100 | −0.0300 | no |
 
-**A proprietary model never separated from the best open-weight model. Not once in five.**
+**A proprietary model never separated from the best open-weight model. Not once in five —
+and now neither did open-weight, in the one row where it appeared to.**
+
+*Two corrections to this table, 2026-09-30, both found by external review.*
+
+*The summarisation row read **"yes — open wins"**. That rested on an UNCORRECTED pair
+test of a pair nobody registered in advance — the winner's curse the rest of this repo
+is built to avoid. Under Holm over `deepseek_m`'s declared family it is **p = 0.0070
+against a 0.0063 threshold: not separated.** The point estimate still favours the
+open-weight model by 0.0192; it is simply not a separation, and calling it one was
+picking the comparison after seeing the leaderboard.*
+
+*The SciFact row named `glm_m` as "best proprietary". **GLM is open-weight** — MIT, and
+this document's own tier table two sections above says so. The genuine best proprietary
+reranker is `qwen_s` at 0.7183, a gap of 0.0254 that its own test also cannot resolve
+(p = 0.0283 against a 0.0050 threshold).*
 Open weights won outright on summarisation, led without separation on SciFact, and trailed
 by 0.007–0.030 without separation on the other three.
 
@@ -223,8 +243,8 @@ machine it demands. They are not close in size.
 | experiment | small ML | size | score | best open-weight LLM | size | score | verdict |
 |---|---|---|---|---|---|---|---|
 | Classification · AG News | `bert_mini` | **44 MB** | **0.9450** | Llama-3.3-70B | ~141 GB | 0.8800 | ML ahead by 0.0650 at 1/3,205 the size — **not separated under Holm** (p = 0.0136 against a 0.0083 threshold) |
-| Extraction · Few-NERD | `span_marker` | **476 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
-| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, ~765 GB checkpoint | 0.3460 | **tie** |
+| Extraction · Few-NERD | `span_marker` | **499 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/109** |
+| Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, 510 GB checkpoint | 0.3460 | **tie** |
 | Retrieval · SciFact | `e5_base` | **438 MB** | 0.7191 | GLM-4.5-Air | ~221 GB | **0.7437** | LLM wins by 0.0246, **not separated** |
 | Classification · DBpedia | *blocked* | — | — | GLM-4.6 | ~714 GB | **0.9857** | **LLM by default** — the ML arm would not load |
 
@@ -237,12 +257,25 @@ margin is not statistically separated, and the *best* configuration uses **both*
 Two practical consequences a DGX owner should weigh:
 
 - **Several of these "self-hostable" LLMs are cluster-scale, and the published
-  parameter counts understate them.** DeepSeek-V4.1-Flash is advertised as 552B backbone
-  parameters; its checkpoint totals ~765 GB, because a 196B Engram memory ships with it
-  and the headline count excludes it. GLM-4.6 is ~714 GB. Whether either fits a given
-  node depends on what must stay GPU-resident — a question about serving strategy that
-  a parameter count cannot answer and **this report does not attempt to.** The small ML
-  models fit in RAM on a laptop, which needs no such caveat.
+  parameter counts understate them — but not as badly as this report first said.**
+  DeepSeek-V4.1-Flash is advertised as 552B backbone parameters; its checkpoint is
+  **510 GB**, because a 196B Engram memory ships with it and the headline count excludes
+  it. GLM-4.6 is 714 GB. Whether either fits a given node depends on what must stay
+  GPU-resident — a question about serving strategy that a parameter count cannot answer
+  and **this report does not attempt to.** The small ML models fit in RAM on a laptop,
+  which needs no such caveat.
+
+  *This report said ~765 GB until 2026-09-29, and that number was never measured.* It
+  came from multiplying HuggingFace's per-dtype **element** counts by one byte for the
+  763B elements tagged `I8`. Those tensors are packed at roughly four bits: 763.2B
+  parameters occupy 510.3 GB across 48 safetensors shards, which is **0.67 bytes per
+  parameter**. The same mistake inflated DeepSeek-V4-Pro (1,602 → 865 GB) and
+  DeepSeek-V4-Flash (292 → 160 GB); the other 20 models in the capture are unaffected,
+  their derived and measured sizes agreeing to within 3%. The conclusion does not move —
+  510 GB is still far beyond one 128 GB box — but the figure was wrong by half again,
+  and it was wrong because it was computed rather than read. Found by external review;
+  the evidence capture now records measured bytes and `check_model_facts.py` reads the
+  claim out of this file rather than out of its own source.
 - **Concurrency is where the size gap really lands.** A 44 MB classifier at 7 ms/item
   saturates a CPU core and scales by forking; a 70B model occupies most of a GPU and
   scales by buying more of them. The scores above are per-item quality, and they say
@@ -258,7 +291,7 @@ blocked rather than beaten.
 ### What you would actually install on a 128 GB machine
 
 "Open-weight" and "runnable" are not the same thing. Of the 14 open-weight arms here,
-**four exceed 700 GB** at native precision and one is 3.2 TB — those are cluster models,
+**five exceed 700 GB** at native precision and the largest is **1.5 TB** (GLM-5) — those are cluster models,
 not something you put on a workstation. So the practical question is: *what is the best
 open-weight model that fits the box I have?*
 
@@ -275,15 +308,15 @@ here only if its weights fit in **85% of nominal memory**.
 | Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B**, native 52 GB | **0.9857** | **same**, native 52 GB | **0.9857** |
 | Extraction · Few-NERD | Gemma-4-26B | 52 GB | 0.6733 | **same**, native | **0.6733** | **same**, native | **0.6733** |
 | Retrieval · SciFact | GLM-4.5-Air | 221 GB | 0.7437 | **same**, int4 55 GB | **0.7437** | Gemma-4-26B, native 52 GB | 0.7363 |
-| Summarisation · CNN/DM | DeepSeek-V4.1 | 765 GB | 0.3460 | Llama-3.3-70B, int8 70 GB | 0.3382 | **same**, int4 35 GB | 0.3382 |
+| Summarisation · CNN/DM | DeepSeek-V4.1 | 510 GB | 0.3460 | Llama-3.3-70B, int8 70 GB | 0.3382 | **same**, int4 35 GB | 0.3382 |
 
 **Hardware buys almost nothing here.** Four of five 128 GB answers equal the
 unlimited-hardware answer, and **four of five 64 GB answers equal the 128 GB one.** Only
 SciFact loses anything by halving the budget — 0.0074, which its own separation test
 cannot resolve. Only summarisation loses anything by capping the budget at all — 0.0078,
-about a tenth of the spread between the best and worst hosted arm on that task.
+about **18%** of the spread between the best and worst hosted arm on that task (0.0431).
 
-Going from a 765 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
+Going from a 510 GB cluster model to a 35 GB one costs **0.0078 on one task and nothing on
 the other four**.
 
 **But the 64 GB column leans on int4 twice**, and that is where the caveat below bites
@@ -303,11 +336,11 @@ ones whose numbers here you can trust without re-measuring.
 | if your task is | install |
 |---|---|
 | classification | **`bert_mini`-style fine-tune** (44 MB) if you can label; else **Gemma-4-26B** (52 GB) |
-| entity extraction | **SpanMarker fine-tune** (476 MB). No open-weight LLM here came close |
+| entity extraction | **SpanMarker fine-tune** (499 MB). No open-weight LLM here came close |
 | summarisation | **BART-large-CNN** (1.6 GB) if the domain is stable; else **Llama-3.3-70B int8** (70 GB) |
 | retrieval | **e5-base** (438 MB) alone, and add **GLM-4.5-Air int4** (55 GB) only if you need the last 0.07 |
 
-Three of those four are under 2 GB and need no GPU at all.
+All four are under 2 GB and need no GPU at all.
 
 ### Every experiment has a $0 answer, if you own hardware
 
@@ -344,7 +377,7 @@ At 1M items/month, summed across the whole tier:
 
 For someone with a DGX, tier 2 collapses into tier 1 economically: **the marginal cost of
 an open-weight LLM becomes electricity, and the quality question stops being a cost
-question at all.** The only arms whose price is unavoidable are the eleven that never
+question at all.** The only arms whose price is unavoidable are the ten that never
 statistically beat an open-weight alternative here.
 
 What self-hosting costs instead — and this report measures none of it — is the hardware,
@@ -402,10 +435,10 @@ compromise — it is the only thing that works.
 | experiment | dearest paid arm | cost | its rank |
 |---|---|---|---|
 | Summarisation · CNN/DM | `anthropic_l` | $1.9652 | **16 of 25** |
-| Classification · AG News | `anthropic_l` | $0.1750 | 3 of 26 |
+| Classification · AG News | `anthropic_l` | $0.1750 | 3 of 28 |
 | Classification · DBpedia | `anthropic_l` | $0.3784 | 2 of 25 |
 | Extraction · Few-NERD | `anthropic_l` | $0.6897 | 3 of 25 |
-| Retrieval · SciFact | `glm_m` | $0.4576 | 2 of 17 |
+| Retrieval · SciFact | `glm_m` | $0.4576 | 2 of 19 |
 
 **But the naive version of this claim is false, and worth killing.** "Price buys nothing"
 is not supported: the dearest arm beats the *cheapest* arm in 4 of 5 experiments. Price is
@@ -426,7 +459,7 @@ it actually *separates* from, under Holm step-down at α = 0.05:
 | Extraction · Few-NERD | `span_marker` | 26 of 26 | **26 of 26** (100%) | a real podium |
 | Classification · AG News | `bert_mini` | 27 of 27 | 18 of 27 (67%) | a group of 9 |
 | Summarisation · CNN/DM | `bart_l` | 25 of 25 | 12 of 25 (48%) | a group of 13 |
-| Retrieval · SciFact | `glm_s` | 18 of 18 | 6 of 18 (33%) | a group of 12 |
+| Retrieval · SciFact | `glm_s` | 18 of 18 | 7 of 18 (39%) | a group of 11 |
 | Classification · DBpedia | `qwen_m` | 26 of 26 | 8 of 26 (31%) | a group of 18 |
 
 **Four of five leaderboards have a top group the data cannot order.** Reading rank 1 as
@@ -439,10 +472,10 @@ and "distinguishable from a third of it" is the single most repeated result here
 
 | experiment | best free arm | rank | margin over the best **paid** arm |
 |---|---|---|---|
-| Extraction · Few-NERD | `span_marker`, 476 MB | **1 of 25** | +0.0810 over `openai_m` |
-| Classification · AG News | `bert_mini`, 44 MB | **1 of 26** | +0.0350 over `anthropic_m` |
+| Extraction · Few-NERD | `span_marker`, 499 MB | **1 of 25** | +0.0810 over `openai_m` |
+| Classification · AG News | `bert_mini`, 44 MB | **1 of 28** | +0.0350 over `anthropic_m` |
 | Summarisation · CNN/DM | `bart_l`, 1.6 GB | **1 of 25** | **+0.0001** over `deepseek_m` |
-| Retrieval · SciFact | `e5_base`, 438 MB | 9 of 17 | −0.0246 vs `glm_s`, **not separated** |
+| Retrieval · SciFact | `e5_base`, 438 MB | 8 of 19 | −0.0246 vs `glm_s`, **not separated** |
 | Classification · DBpedia | `bart_mnli` (zero-shot) | 25 of 25 | −0.3643 |
 
 Read the third row before the first two. **`bart_l` "wins" summarisation by 0.0001** — it
@@ -522,7 +555,7 @@ whose gold is probably wrong. Independent models do not agree on a mistake.
 
 ### 6. The instrument was broken before the models got interesting — every time
 
-*Sources: the Corrections section of each report, and [`NOTES.md`](NOTES.md), 56 entries*
+*Sources: the Corrections section of each report, and [`NOTES.md`](NOTES.md), 58 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -535,7 +568,7 @@ would have:
 | Extraction · Few-NERD | an unreadable answer scored **1.0** on empty-gold items | +0.0214 f1 to one arm |
 | Extraction · Few-NERD | `normalizer_sha256` covered the normaliser, not the scorer | a scorer change was invisible in the fingerprint |
 | Retrieval · SciFact | the adapter never disabled reasoning, unlike the other three | one arm went **0.6124 → 0.6991** once fixed |
-| all | cost computed from a price table, not what was billed | wrong per arm by 0.67×–3.21× |
+| all | cost computed from a price table, not what was billed | wrong per arm by 0.67×–3.76× |
 | all | Spearman had no tie correction; ranks broke ties **alphabetically** | ρ measured the alphabet on saturated tasks |
 
 Three of these — the parser, the unparsed-as-empty rule, the reasoning flag — moved a
@@ -589,7 +622,7 @@ A log-linear fit over the paid arms in each experiment — quality against `log1
 | experiment | arms | quality per 10× cost | as % of the best arm | correlation |
 |---|---|---|---|---|
 | Extraction · Few-NERD | 23 | +0.0405 | **+5.9%** | r = 0.49 |
-| Retrieval · SciFact | 12 | +0.0212 | +2.8% | r = 0.34 |
+| Retrieval · SciFact | 12 | +0.0200 | +2.7% | r = 0.32 |
 | Classification · AG News | 24 | +0.0214 | +2.3% | r = 0.63 |
 | Classification · DBpedia | 24 | +0.0094 | +0.9% | r = 0.40 |
 | Summarisation · CNN/DM | 24 | −0.0013 | **−0.4%** | r = −0.07 |
@@ -598,8 +631,11 @@ A log-linear fit over the paid arms in each experiment — quality against `log1
 summarisation the slope is *negative* and the correlation is zero — across 24 arms and a
 143× price range, cost carried no information about quality at all.
 
-Even the best case is a bad trade at scale: Few-NERD's +5.9% per 10× means going from
-$27/month to $2,463/month (a 91× step) buys about 11 points of F1 — and a **free** local
+Even the best case is a bad trade at scale: Few-NERD's +5.9% per 10× predicts that
+going from $27/month to $2,463/month (a 90× step) buys about **8 points** of F1. The
+two arms at those ends — `mistral_s` at $0.0076 and `anthropic_l` at $0.6897 — actually
+differ by **15.6 points**, so the regression understates this particular pair by half;
+it is a fit across twelve arms, not a prediction about two. Either way a **free** local
 model beats the top of that range by 11.4%.
 
 ### The same picture at production scale
@@ -643,7 +679,7 @@ instructive ones:
 
 | experiment | best free arm | quality | rank | best paid arm | quality | $/month | verdict |
 |---|---|---|---|---|---|---|---|
-| Extraction · Few-NERD | `span_marker` 476 MB | 0.7674 | **1** | `openai_m` | 0.6864 | $2,324 | **free wins +11.8%** |
+| Extraction · Few-NERD | `span_marker` 499 MB | 0.7674 | **1** | `openai_m` | 0.6864 | $2,324 | **free wins +11.8%** |
 | Classification · AG News | `bert_mini` 44 MB | 0.9450 | **1** | `anthropic_m` | 0.9100 | $351 | **free wins +3.8%** |
 | Summarisation · CNN/DM | `bart_l` 1.6 GB | 0.3461 | **1** | `deepseek_m` | 0.3460 | $191 | free wins +0.0% *(a tie)* |
 | Retrieval · SciFact | `e5_base` 438 MB | 0.7191 | 9 | `glm_s` | 0.7437 | $711 | paid wins +3.4%, **not separated** |
@@ -673,7 +709,7 @@ task" looks like: not a win, not a rout, and cheap enough that $711/month for +3
 real decision rather than an obvious one.
 
 **And free is not only cheaper, it is faster.** `bert_mini` answers in 7 ms against
-1.92 s for the best paid arm on the same task — 192× — and `e5_base` in 0.06 s against
+1.92 s for the best paid arm on the same task — **270×** — and `e5_base` in 0.06 s against
 3.12 s. The exception is `bart_l` at 11.01 s — 23rd slowest of 25, though not last: two hosted
 arms (`mistral_l` 11.04 s and `qwen_s` 25.04 s) are slower still. It is a 1.6 GB seq2seq
 model generating on a CPU. Free buys latency on *classification and embedding*, and costs
@@ -746,7 +782,7 @@ Ordered by what they are worth, not by how obvious they are.
    architectural, and no model choice could recover it.
 2. **If you can label a few thousand examples, fine-tune a small model.** It won outright
    in three of five and tied in a fourth — at **$0/month against up to $9,826/month**, and
-   44×–766× lower latency. This is the single biggest lever in the table.
+   61×–1,078× lower latency. This is the single biggest lever in the table.
 3. **Never buy the most expensive arm.** Five for five it was not the best, and in three
    experiments it was *worse* than free while costing $875–$9,826/month.
 4. **Pick the cheapest arm your test cannot separate from the leader.** That is 8×–143×
@@ -781,8 +817,8 @@ something other than the leaderboard.
   config scored 0.6691 and 0.6617, because OpenRouter routes across providers.
 - **24 hosted arms, one snapshot in time, no verifiable identity.** A provider can change
   weights behind an alias; runs record `identity_declared: true`, not proof.
-- **Five of the 24 arms never ran on SciFact** (the frontier tier, $31.40 against that
-  sweep's $2.45), so §1 and §2 are weaker there than elsewhere. One NER arm and several
+- **Five of the 24 arms never ran on SciFact** (the frontier tier, ≈$12 against that
+  sweep's $1.94 billed), so §1 and §2 are weaker there than elsewhere. One NER arm and several
   local ML arms are also unrun — see the handovers in this directory.
 - **Nothing here measures factual accuracy, safety, or instruction-following.** ROUGE is
   n-gram overlap; accuracy is label match. A confident, fluent, wrong answer scores well on
@@ -824,4 +860,4 @@ python scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct --mat
 
 Terms, models, datasets and tests are defined in
 [`../docs/REFERENCE.md`](../docs/REFERENCE.md). The append-only journal of how each finding
-arrived — including the ones that were retracted — is [`NOTES.md`](NOTES.md), 56 entries.
+arrived — including the ones that were retracted — is [`NOTES.md`](NOTES.md), 58 entries.

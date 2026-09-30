@@ -28,6 +28,38 @@ check("trailing comma", _parse_entities('[{"text":"X","type":"person"},]') == [{
 # must NOT invent
 check("prose -> None", _parse_entities("Let me analyze this sentence. The entity is X, a person.") is None)
 check("empty string -> None", _parse_entities("") is None)
+
+# THE GREEDY ARRAY BUG. `\[.*\]` with DOTALL spanned the first "[" to the LAST "]",
+# so a valid answer followed by any later bracket became one unparseable blob.
+check("a valid array followed by a bracketed citation",
+      _parse_entities('[{"text":"X","type":"person"}] See [1]')
+      == [{"text": "X", "type": "person"}])
+check("a valid array between two brackets",
+      _parse_entities('Refs [2]: [{"text":"X","type":"person"}]')
+      == [{"text": "X", "type": "person"}])
+
+# SELF-CORRECTION. llama_l emitted a malformed array, then "the correct output:", then
+# a valid one. The first candidate must fall through to the second, not swallow both.
+check("a broken array followed by a good one",
+      _parse_entities('[\n {"text":"A","type":"person"},\n "text":"B"\n} ] '
+                      'is wrong. Correct:\n[{"text":"A","type":"person"}]')
+      == [{"text": "A", "type": "person"}])
+
+# THE SHAPE TEST. "See [1]" is valid JSON and yields [1]; the item loop drops non-dicts,
+# so without a shape test it would arrive as an EMPTY set -- scored as "correctly found
+# nothing", a free 1.0 on the 15% of items whose gold is empty. That is the bug this
+# example already shipped once, arriving by a different road.
+check("a bracketed citation alone is NOT an empty answer",
+      _parse_entities("I could not find entities. See [1].") is None)
+check("a list of non-objects is not an entity set",
+      _parse_entities('[1, 2, 3]') is None)
+check("an explicit empty array is still an empty answer, not None",
+      _parse_entities("[]") == [])
+
+# TRUNCATION STAYS UNREADABLE. glm_l ran out of tokens mid-object; there is no answer
+# there, and a repair that invented one would be mining prose for entities.
+check("an array cut off mid-object -> None",
+      _parse_entities('Here goes:\n[\n  {"text": "Corfu International') is None)
 check("refusal text -> None", _parse_entities("You didn't provide the sentence.") is None)
 # the repair must not corrupt a value containing a colon
 r3 = _parse_entities('[{"text": "Trip: The Movie", "type": "art"}]')

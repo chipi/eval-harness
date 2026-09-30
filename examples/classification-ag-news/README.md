@@ -97,8 +97,8 @@ $PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n
 The hosted arms need a LiteLLM proxy; copy `../../harness/.env.example` to `.env` and
 point it at yours. The four free arms need nothing, and two of them need no model either.
 
-**Cost.** A 200-item hosted arm estimates at ~$0.022 upper bound, so all 24 come to well
-under a dollar — two orders of magnitude cheaper than the summarisation sweep, because the
+**Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 28 come
+to **$0.58** — well under a dollar — two orders of magnitude cheaper than the summarisation sweep, because the
 answer is one word. That is why no arm is selected on its dev score: selecting would save
 nothing and buy a bias.
 
@@ -161,7 +161,7 @@ summarisation metric could have asked.
 
 | arm | what it is | cost |
 | --- | --- | --- |
-| 24 hosted | 8 vendors × small/mid/large, same aliases and prices as the summarisation example | ~$0.022 per 200 |
+| 24 hosted | 8 vendors × small/mid/large, same aliases and prices as the summarisation example | $0.0014–$0.1750 per 200, billed |
 | `bert_mini` | 44MB BERT fine-tuned on AG News | 0 |
 | `bart_mnli` | `bart-large-mnli`, zero-shot via NLI, no task fine-tune | 0 |
 | `keyword` | ~20 hand-written regex rules, first match wins, default World | 0 |

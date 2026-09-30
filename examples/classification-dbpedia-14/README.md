@@ -74,15 +74,15 @@ $PY scripts/family_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 \
      --against _n200_v1 --metric correct
 ```
 
-The full 27-arm sweep is roughly **$1.25**, dominated by the two most expensive arms —
+The full 27-arm sweep is **$1.17 as billed**, dominated by the two most expensive arms —
 which the result says you do not need.
 
 ---
 
 ## What this example shows that AG News could not
 
-**A 126× price difference buys nothing measurable.** `qwen_m` leads at 0.9929 for
-$0.0089; `anthropic_l` is one item behind at 0.9893 for $0.378. Holm over a family of 26
+**A 133× price difference buys nothing measurable.** `qwen_m` leads at 0.9929 for
+**$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**. Holm over a family of 26
 declared in advance: the leader is ahead of 26 of 26 and **separated from only 8**. The
 top ten arms are one group.
 

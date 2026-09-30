@@ -42,10 +42,19 @@ THREE THINGS THAT LOOK LIKE LENIENCY AND ARE ACTUALLY REWARDS FOR BAD BEHAVIOUR
      and that is a 1-item list padded, not a 10-item list of which 9 are wrong.
 
 nDCG'S GAIN FUNCTION IS DECLARED EVEN THOUGH IT DOES NOT MATTER HERE
-  `gain = 2**rel - 1`, matching `pytrec_eval`/BEIR. On SciFact every relevance grade is 1,
-  where `2**1 - 1 == 1` and this is indistinguishable from linear gain. It is written down
-  because the next corpus may be graded, and a metric that silently changes meaning
-  between two datasets is worse than one that is merely wrong.
+  `gain = 2**rel - 1`, which is the exponential-gain convention `pytrec_eval` and BEIR
+  also use. On SciFact every relevance grade is 1, where `2**1 - 1 == 1` and this is
+  indistinguishable from linear gain. It is written down because the next corpus may be
+  graded, and a metric that silently changes meaning between two datasets is worse than
+  one that is merely wrong.
+
+  THE WORD "MATCHING" WAS DOING MORE WORK THAN IT HAD EARNED. This said the gain
+  function "matches pytrec_eval/BEIR", which a reader can take as *this implementation
+  agrees with theirs*, and nothing here has ever been run against either. What is true
+  is narrower: the same GAIN CONVENTION, chosen deliberately, with the discount and the
+  ideal-ranking construction implemented here and not cross-checked against a reference
+  implementation. Doing that cross-check is worth a future session; claiming it in a
+  docstring is not the same thing. Found by external review.
 """
 
 from __future__ import annotations
@@ -66,6 +75,18 @@ from codehash import code_digest
 #: the delimiter AND trailing space, so a bare numeric id is never mistaken for
 #: numbering -- see parse_ranking.
 _LIST_PREFIX = re.compile(r"^(?:\d{1,3}[.)]\s+|[-*\u2022]\s+)")
+
+#: How much text may sit BEFORE a JSON array and still count as a wrapper rather than
+#: prose. See `parse_ranking`: measured on sf_qwen_s, the wrapper case is 0 characters
+#: (150 of 200 replies) and the prose case starts at 140, so anything in between
+#: separates them. 64 is chosen inside that gap, wide enough for "Here are the results:"
+#: and far below the shortest real prose reply.
+_WRAPPER_MAX = 64
+#: A sentence that has ENDED means the model was talking, not labelling.
+_SENTENCE_END = re.compile(r"[.!?](?:\s|$)")
+#: What a document id may look like on the line path. Anything with a bracket, a quote
+#: or a space in it is a fragment of prose, not an id -- see `parse_ranking`.
+_ID_TOKEN = re.compile(r"^[\w.\-]+$")
 
 NDCG_AT = 10
 RECALL_AT = (10, 100)
@@ -97,7 +118,10 @@ def scorer_sha256() -> str:
     """
     return code_digest(normalize_id, dedupe, dcg, score_ranking, parse_ranking,
                        consts={"NDCG_AT": NDCG_AT, "RECALL_AT": RECALL_AT,
-                               "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX})
+                               "MRR_AT": MRR_AT, "_LIST_PREFIX": _LIST_PREFIX,
+                               "_WRAPPER_MAX": _WRAPPER_MAX,
+                               "_SENTENCE_END": _SENTENCE_END,
+                               "_ID_TOKEN": _ID_TOKEN})
 
 
 def dedupe(ranking: Sequence[str]) -> tuple[List[str], int]:
@@ -205,12 +229,37 @@ def parse_ranking(text: str) -> Optional[List[str]]:
             inner = body[start + 3:end]
             body = inner.split("\n", 1)[1] if inner.lstrip().startswith("json") else inner
             body = body.strip()
-    # The array may be ANYWHERE in the body, not only at the start. Requiring it at the
-    # start sent "Here are the results:\n[...]" down the line-splitting path below, which
-    # cheerfully returned the literal string '["a","b"]' as a single document id. Caught
-    # by the test suite before an arm ran, which is the point of writing it first.
+    # The array may sit behind a WRAPPER ("Here are the results:") but not behind PROSE.
+    #
+    # This used to accept the first "[" anywhere in the body, and that is how a model
+    # reasoning aloud got scored as if it had answered. A reply like
+    #
+    #   "The claim states that rapamycin decreases ... the most relevant is [4983]. The
+    #    evidence in that abstract ..."
+    #
+    # parsed as the one-document ranking ["4983"] -- a confident, plausible, wrong
+    # answer -- instead of being refused as unreadable. On sf_qwen_s it hit 50 of 200
+    # items, nearly all of them replies the token limit cut off mid-reasoning.
+    #
+    # The two cases separate cleanly and the threshold is measured, not guessed: of 200
+    # replies, 150 put the array at character 0, and the 50 with anything before it have
+    # at least 140 characters of it. No reply in the corpus has a short lead-in, so the
+    # "Here are the results:" case the previous version was protecting never actually
+    # occurred -- but it is cheap to keep allowing, so a lead-in is accepted while it is
+    # short AND contains no finished sentence.
     opened = body.find("[")
     if opened != -1:
+        lead = body[:opened].strip()
+        if len(lead) > _WRAPPER_MAX or _SENTENCE_END.search(lead):
+            return None
+        # THE ARRAY MUST BEGIN A LINE, or sit behind a lead-in that ends in a colon.
+        # Without this, "See [4983]" and "The most relevant document is [4983], because
+        # ..." both parse as a one-document ranking: the lead is short and has no
+        # finished sentence, so the two earlier guards let them through. An answer is
+        # a list; a sentence that happens to cite one id is not.
+        same_line = body[:opened].rsplit("\n", 1)[-1].strip()
+        if same_line and not same_line.endswith(":"):
+            return None
         depth, cut = 0, None
         for i in range(opened, len(body)):
             if body[i] == "[":
@@ -227,6 +276,21 @@ def parse_ranking(text: str) -> Optional[List[str]]:
                 val = None
             if isinstance(val, list):
                 return [normalize_id(v) for v in val if normalize_id(v)]
+        # A LEADING ARRAY THAT WILL NOT PARSE IS A REFUSAL, NOT A HINT.
+        #
+        # Falling through to the line path here is what produced the worst number in
+        # this example. llama_l opens with a real array and then corrects itself in
+        # prose -- "..., 4459491 is removed and [30813140, ..." -- so json.loads fails,
+        # the line path splits the line on commas, and tokens like "[8925851" and
+        # "21884449]" were accepted as document ids because they contain no space. 25
+        # of 200 items on the 2026-09-29 llama_l run harvested fragments that way.
+        #
+        # Those bracket tokens are never real ids, so they counted as hallucinations
+        # and the harvested partial ranking scored BELOW the BM25 fallback the pipeline
+        # is supposed to use when a reply is unreadable -- 0.6386 against 0.7155 on the
+        # same bytes. The arm was punished for the parser's guess. Found by external
+        # review.
+        return None
     # One id per line: what a model produces when told "just list them".
     #
     # THE BULLET STRIPPER MUST NOT EAT THE ID. This used to be
@@ -238,11 +302,26 @@ def parse_ranking(text: str) -> Optional[List[str]]:
     # A numbering prefix is now matched as a PREFIX -- digits followed by a delimiter
     # and whitespace, or a bullet followed by whitespace -- so "1. 4983923" loses the
     # "1. " and a bare "4983923" loses nothing.
+    #
+    # COMMA-SEPARATED IDS ON ONE LINE are a ranking too. "4983, 13734012" used to be
+    # rejected whole, because the line contains a space -- so a model that answered in
+    # the most natural non-JSON format scored as unreadable. Each comma-separated part
+    # must still look like an id, so a prose line ("The claim is X, which implies Y")
+    # is rejected exactly as before: its parts contain spaces.
     ids = []
     for raw in body.splitlines():
         ln = _LIST_PREFIX.sub("", raw.strip(), count=1).strip()
-        if ln and " " not in ln and len(ln) <= 64:
-            ids.append(ln)
+        if not ln:
+            continue
+        # Trailing commas are dropped rather than failing the line: "4983," used to
+        # split to ["4983", ""], the empty part failed the all() below, and the whole
+        # line was thrown away -- so "4983,\n13734012,\n999" parsed as ["999"].
+        parts = [x.strip() for x in ln.split(",")] if "," in ln else [ln]
+        parts = [x for x in parts if x]
+        # `_ID_TOKEN`, not just "no spaces". A bracket or a quote in a token means the
+        # line is prose that happens to lack a space, not a list of ids.
+        if parts and all(_ID_TOKEN.match(x) and len(x) <= 64 for x in parts):
+            ids.extend(parts)
     return ids or None
 
 

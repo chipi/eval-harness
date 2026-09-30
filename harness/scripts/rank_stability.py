@@ -36,7 +36,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, read_json  # noqa: E402
+from _common import RUNS, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 
 def load(dataset_id: str, metric: str, match: str | None):
@@ -145,6 +145,9 @@ def main() -> int:
     ap.add_argument("--draws", type=int, default=400)
     ap.add_argument("--seed", type=int, default=20260926)
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     M = load(args.dataset_id, args.metric, args.match)
     arms = sorted(M)

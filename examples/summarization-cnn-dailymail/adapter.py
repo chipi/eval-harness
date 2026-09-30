@@ -508,7 +508,10 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             "identity_declared": False,
             "revision_source": "not-a-model",
             # The code IS the system under test for this arm, so it is what gets hashed.
-            "code_sha256": hashlib.sha256(inspect.getsource(_lead_k).encode()).hexdigest(),
+            # `_SENT` decides what counts as a sentence, so it decides what lead-3
+            # returns as surely as the function body does. Hashing only the source
+            # left it outside the fingerprint. Found by external review.
+            "code_sha256": code_digest(_lead_k, consts={"_SENT": _SENT}),
         }
     if provider == "hf_local":
         from hf_identity import hf_model_fingerprint  # noqa: PLC0415
@@ -626,6 +629,8 @@ def _format_flags(output: str) -> Dict[str, float]:
 
 
 
+
+from codehash import code_digest  # noqa: E402
 
 _SENT = re.compile(r"(?<=[.!?])[\"\')\]]*\s+")
 

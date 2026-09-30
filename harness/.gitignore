@@ -47,6 +47,23 @@ data/runs/*/*
 !data/runs/*/outputs/**
 !data/runs/README.md
 
+# ...but NOT these two, which exist for crash recovery and are redundant once a run
+# exits cleanly:
+#   _rows.jsonl  the per-item rows, appended during the pass so a crash leaves them.
+#                predictions.jsonl is the same data, written on a clean exit.
+#   run.json     the run's identity, written before the first item so a crashed run
+#                can still say which arm produced its outputs. metrics.json carries
+#                the same fields and more.
+# Committing either would duplicate every prediction row for no reader.
+data/runs/*/outputs/_rows.jsonl
+data/runs/*/run.json
+
+# And the temp files `write_text_atomic` creates next to their target. A crash between
+# mkstemp and os.replace leaves one behind, and `!data/runs/*/outputs/**` above would
+# otherwise commit it. Found by external review.
+data/runs/*/outputs/*.tmp
+data/runs/*/outputs/.*.tmp
+
 # EXCEPT the 72 summarisation DEV runs (cnn_dailymail_20, three repeats each). They
 # predate `_portable_id` and record an absolute adapter path containing a username and
 # a former project name. They are excluded rather than edited: rewriting a field inside
@@ -55,10 +72,17 @@ data/runs/*/*
 # the file. No MEASUREMENT run is affected; every number in the reports comes from the
 # n=200/280 runs, which are committed. Regenerate these with
 #   make experiment-run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
-data/runs/cnn_*_v1_2026092[56]T*_r[0-9]/metrics.json
-data/runs/cnn_*_v1_2026092[56]T*_r[0-9]/predictions.jsonl
-data/runs/cnn_*_v2_2026092[56]T*_r[0-9]/metrics.json
-data/runs/cnn_*_v2_2026092[56]T*_r[0-9]/predictions.jsonl
+#
+# THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
+# dev runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
+# their outputs behind that exclusion -- so 144 of these directories were committed as
+# outputs ONLY: 2,880 files of CNN/DailyMail paraphrases with no metrics.json to say what
+# they are, which no tool in this repo can read. All of the copyright exposure of the
+# summarisation outputs and none of the reproducibility benefit, which is the worst of
+# both trades. Found by external review; the exclusion is now written per DIRECTORY so a
+# future force-include cannot slip underneath it again.
+data/runs/cnn_*_v[12]_2026092[56]T*_r[0-9]/
+data/runs/cnn_*_v[12]_2026092[56]T*_r[0-9]/**
 # The ONE worked example that ships, so a fresh checkout sees a walked loop instead of an
 # empty directory: sources -> dataset -> reference -> run -> baseline. It is also what keeps
 # the tree self-consistent — data/baselines/ is committed and V6 requires each baseline's
@@ -120,18 +144,80 @@ data/references/silver/few_nerd_*/
 # the uniform instrument that report states, and data/runs still holds the pre-fix
 # glm_l. Scores and per-item rows are therefore committed here too, 8.7 MB, on the same
 # terms as data/runs -- no outputs, no article text, no home paths.
+
+# EVERY OTHER runs directory stays out, BY DEFAULT RATHER THAN BY NAME. Smoke passes,
+# tuning sweeps, superseded runs, self-test fixtures, one-off scopes: working
+# artifacts, not the record.
+#
+# This used to list them one per line, which is default-ALLOW wearing a deny's clothes:
+# any directory nobody thought to add was tracked. `data/runs-resumesrc/` -- a fixture
+# a self-test creates and deletes -- was committed that way, 7 files of it, because it
+# happened to exist when someone ran `git add -A`. I then did the same thing to myself
+# while fixing it, sweeping an in-progress re-run into a commit. Found by external
+# review.
+#
+# So: deny the whole shape FIRST, then name the two that genuinely ship. Order is the
+# whole trick: in gitignore the LAST matching rule wins, so the re-allows have to sit
+# below the deny. My first version put them above it, which left the deny winning --
+# the two directories stayed tracked only because git ignores nothing already tracked,
+# and adding any NEW file to either (this README, for one) silently failed.
+data/runs-*/
+# `!data/runs-superseded/README.md` used to sit here and did nothing: git does
+# not descend into an excluded DIRECTORY, so a negation for a file inside one is
+# inert. Re-allow the directory first, then exclude its contents. Found by
+# external review.
+!data/runs-superseded/
+data/runs-superseded/*
+!data/runs-superseded/README.md
+
+# --- re-allowed, and only these ---------------------------------------------------
+
+# data/runs-repeats/ — second runs of an arm already measured. They live apart from
+# data/runs because two runs sharing a config_id make every loader pick one by
+# filesystem order: `check_report_claims` answered 29/29 on APFS and 28/29 on ext4 off
+# exactly that, and `leaderboard` silently printed the MEAN of the two as though it
+# were a measurement. Kept, because they are the only evidence this repo has about
+# between-run variance. Found by external review.
+!data/runs-repeats/
+data/runs-repeats/*/*
+!data/runs-repeats/*/metrics.json
+!data/runs-repeats/*/predictions.jsonl
+!data/runs-repeats/*/outputs
+!data/runs-repeats/*/outputs/**
+!data/runs-repeats/README.md
+
+
+# data/runs-reparsed/ — the SciFact rankings rebuilt from each run's stored LLM reply
+# with the corrected parser. `rescore` cannot produce these: this adapter parses at
+# CALL time and writes the resulting ranking as its output, so the parser bug is baked
+# into every stored output and recomputing scores from them changes nothing. Committed
+# because REPORT_RETRIEVAL's §3.1 table quotes these figures, and round 2's H5 was
+# exactly a headline number with no committed run behind it.
+!data/runs-reparsed/
+data/runs-reparsed/*/*
+!data/runs-reparsed/*/metrics.json
+!data/runs-reparsed/*/predictions.jsonl
+!data/runs-reparsed/README.md
+
+!data/runs-rescored/
 data/runs-rescored/*/outputs/
 data/runs-rescored/*/*
 !data/runs-rescored/*/metrics.json
 !data/runs-rescored/*/predictions.jsonl
+!data/runs-rescored/README.md
 
-# Every OTHER runs directory stays out: smoke passes, tuning sweeps, the superseded
-# runs, the first-stage pair. They are working artifacts, not the record.
-data/runs-smoke*/
-data/runs-tune*/
-data/runs-pair/
-data/runs-superseded/
-!data/runs-superseded/README.md
+# EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
+# behind the pre-registered prediction -- the single most-advertised result in this
+# repo, that swapping only the first stage would move the pipeline from 0.74 to
+# 0.786-0.797, which came back at 0.7891. I filed it under "the first-stage pair" as
+# scratch and ignored the whole directory, so the one number a reader is most likely to
+# want to check was the one number with no committed evidence. Found by external review.
+!data/runs-pair/
+data/runs-pair/*/*
+!data/runs-pair/*/metrics.json
+!data/runs-pair/*/predictions.jsonl
+!data/runs-pair/*/outputs
+!data/runs-pair/*/outputs/**
 
 # Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
 # same reason, plus one the last sweep learned the hard way -- an untracked directory under

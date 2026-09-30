@@ -41,7 +41,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import REFERENCES, RUNS, SOURCES, die, read_json, ROOT  # noqa: E402
+from _common import REFERENCES, RUNS, SOURCES, die, read_json, ROOT, warn_on_ambiguous_runs  # noqa: E402
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding
@@ -193,6 +193,9 @@ def main() -> int:
     ap.add_argument("--miss-threshold", type=float, default=0.8,
                     help="flag items missed by at least this share of learned arms")
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     gold = gold_labels(args.dataset_id)
     labels = sorted(set(gold.values()))

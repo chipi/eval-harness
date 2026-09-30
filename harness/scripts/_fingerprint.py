@@ -189,7 +189,14 @@ def build_fingerprint(
         # v2 adds data.references_sha256. A v1 fingerprint cannot be compared to a v2
         # one on the hash alone, because v2 hashes strictly more -- the version says so
         # rather than leaving a reader to discover it from a mismatch.
-        "version": 2,
+        # VERSION 3 as of 2026-09-30. v2 added `data.references_sha256`; v3 changed
+        # what that digest covers -- every file in the reference directory, not just
+        # `*.txt`, so a silver set's manifest.json (which records WHICH MODEL authored
+        # it) is inside the hash. A v2 and a v3 digest over the same directory differ
+        # whenever a non-.txt file is present, so they are not comparable and the
+        # version must say so. Left at 2 when the rule changed; found by external
+        # review.
+        "version": 3,
         "instrument": {
             "harness": _harness_identity(root),
             "adapter": _adapter_identity(adapter_path, adapter_id),
@@ -232,8 +239,15 @@ def _references_digest(root: Path, reference_id: Optional[str]) -> Optional[str]
     ref_dir = root / "data" / "references" / reference_id
     if not ref_dir.is_dir():
         return None
+    # EVERY FILE, not just *.txt. A silver reference directory also carries
+    # manifest.json, which records WHICH MODEL authored those references and whether
+    # its provenance is complete -- and this hashed only the texts, so that record
+    # could change without the fingerprint moving. For a reference tier whose whole
+    # caveat is "these were written by a model, and which model matters", leaving the
+    # statement of which model outside the hash is the wrong half to omit. Found by
+    # external review.
     h = hashlib.sha256()
-    for f in sorted(ref_dir.glob("*.txt")):
+    for f in sorted(x for x in ref_dir.iterdir() if x.is_file()):
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(f.read_bytes())

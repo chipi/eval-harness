@@ -11,19 +11,31 @@ of 18, not 23, because of this.
 
 | arm | model | input $/Mtok | est. cost at 200 queries |
 |---|---|---|---|
-| `sf_anthropic_s_n200_v1` | `eval-claude-haiku` | 1.00 | $2.41 |
-| `sf_openai_m_n200_v1` | `eval-gpt-55` | 1.25 | $3.40 |
-| `sf_openai_l_n200_v1` | `eval-gpt-6sol` | 2.50 | $6.29 |
-| `sf_anthropic_m_n200_v1` | `eval-claude-sonnet` | 3.00 | $7.23 |
-| `sf_anthropic_l_n200_v1` | `eval-opus-5` | 5.00 | **$12.05** |
-| | | | **$31.40 total** |
+| `sf_anthropic_s_n200_v1` | `eval-claude-haiku` | 1.00 | $0.94 |
+| `sf_openai_m_n200_v1` | `eval-gpt-55` | 1.25 | $1.29 |
+| `sf_openai_l_n200_v1` | `eval-gpt-6sol` | 2.50 | $2.28 |
+| `sf_anthropic_m_n200_v1` | `eval-claude-sonnet` | 3.00 | $2.82 |
+| `sf_anthropic_l_n200_v1` | `eval-opus-5` | 5.00 | **$4.71** |
+| | | | **≈$12 total, and see the range below** |
 
-Costs are *enforced* (this repo's price table × the measured 2.41 proxy multiplier).
+**These figures were $31.40 until 2026-09-29 and that was wrong.** They came from the
+price table multiplied by a "2.41 proxy multiplier" whose derivation I cannot
+reconstruct and which does not survive checking. Recomputed from the token volumes
+actually measured on the 14 reranking arms that ran — median **786,331 input and 30,944
+output tokens per arm** — times each model's published rate, the five come to **$12.04**,
+not $31.40. The old number was 2.6× too high.
 
-**The entire 19-arm sweep that WAS run cost $2.45.** These five cost 12.8× the rest of the
-experiment put together, because a reranking prompt carries 20 full abstracts — 3,926
-input tokens per query against 125 for the NER example — and these five are priced 6–100×
-above the arms that were run.
+**And $12.04 is itself a price-table figure, which this repo has now measured to be
+wrong per arm by 0.67× to 3.76×.** The honest statement is that these five arms would
+cost on the order of **$12, and somewhere between about $8 and $45** depending on how
+the provider actually routes and bills them. If the exact figure matters to the
+decision, the decision needs a measurement, not a better estimate.
+
+**The 19-arm sweep that WAS run cost $1.94 as billed** ($1.04 by the same price table —
+the sweep is one of the places the table understates most, at 1.69×). So these five
+would cost roughly 5× the rest of the experiment put together, not 12.8×, because a
+reranking prompt carries 20 full abstracts — 3,926 input tokens per query against 125
+for the NER example — and these five are priced 6–100× above the arms that were run.
 
 The cut was **"every arm under $0.60/Mtok input"**: price-ordered, declared before any
 result was read, and applied to the whole tier rather than to individual models. It is not
@@ -31,10 +43,10 @@ a selection on outcome.
 
 ## What this costs the report
 
-**The 12-way tie in §3.2 is a tie among cheap and free models.** The report cannot say
+**The top tie in §3.2 (12–13 arms) is a tie among cheap and free models.** The report cannot say
 whether a frontier model is a better reranker, and says so. That is the single largest
 open question in the example: every hosted arm measured lands in 0.7017–0.7437 across a
-3.6× price range, and whether a 100× price step breaks that pattern is exactly what these
+7.6× billed price range, and whether a 100× price step breaks that pattern is exactly what these
 five would answer.
 
 The prior from three other examples is that it would not — summarisation had the dearest
@@ -55,7 +67,7 @@ done
 ```
 
 Cheapest-first is deliberate: if `anthropic_s` lands inside the existing tie group, the
-remaining four are buying a negative result at $29, and that is worth knowing before
+remaining four are buying a negative result at about $11, and that is worth knowing before
 spending it.
 
 ## What must be recomputed afterwards

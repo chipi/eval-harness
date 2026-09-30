@@ -144,6 +144,50 @@ A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran.
 For anything you intend to promote, commit first and re-run.
 
+### When a run dies partway: `--resume`
+
+A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
+`EVAL_MAX_COST_USD` cap — leaves its finished items on disk. Outputs are written
+**as each item is produced**, so what you already paid for survives.
+
+```bash
+make experiment-run CONFIG=data/configs/arm_a.yaml ARGS="--resume arm_a_v1_20260929T101500Z"
+```
+
+The run id is the directory under `data/runs/`, and the cost cap prints the exact
+command when it stops you. A resumed pass **re-reads every finished output and scores
+it again**, rather than skipping it — so the new run is complete, not a fragment — and
+calls the model only for the items that are missing.
+
+Three things worth knowing:
+
+- **It costs nothing to replay.** Items read from disk make no API call, and the cost
+  cap cannot stop them, because they spend nothing.
+- **A replayed item keeps what was measured for it** — cost, tokens, latency and
+  `_meta` all carry over from the pass that produced it, and every replayed row is
+  flagged `resumed: 1` so you can separate them. It reports what the *results* cost,
+  not what this pass cost.
+
+  *This was false for a crash until 2026-09-30, which is the only case resume is for.*
+  The carried values were read from `predictions.jsonl`, which is written **after** the
+  pass returns — so a crashed run had none and every replayed row came back with
+  `latency_ms: None, cost_usd: None`. Rows are now appended to
+  `outputs/_rows.jsonl` as each item completes. Found by external review.
+- **You cannot resume from a different arm, or from one that cannot be identified.**
+  The source's `config_id` and `dataset_id` are checked against the config you are
+  launching and a mismatch is refused. Identity comes from `run.json`, written **before
+  the first item** precisely so a crashed run can still answer the question — until
+  2026-09-30 it came from `metrics.json`, which a crashed run does not have, so the
+  check could only warn and `arm_a --resume <crashed arm_b run>` exited 0 having
+  recorded arm_a with arm_b's answers.
+
+  A directory with neither file is refused outright. `--resume-unverified` overrides
+  that, for runs made before `run.json` existed; it will record another arm's answers
+  under your config if you are wrong about whose outputs those are.
+
+Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
+results, `1` nothing was measured at all.
+
 ---
 
 ## 7. Compare, with the noise floor you measured
@@ -161,6 +205,35 @@ spread is **noise**, and the tool says so. Without `NOISE=` it nags, because a
 delta judged against nothing is not evidence.
 
 It refuses outright if the two runs used different `dataset_id`s.
+
+---
+
+## 7b. The analysis tools, none of which this runbook used to name
+
+Sections 0–7 walk one arm from data to comparison. Everything that turns a pile of runs
+into a *finding* is a separate verb, and this runbook listed none of them — so the tools
+that produced every number in `research/` were discoverable only by reading the
+Makefile. Found by external review.
+
+| verb | answers |
+|---|---|
+| `make leaderboard DATASET_ID=…` | how do all the arms rank, on every metric at once |
+| `make family-test DATASET_ID=… A=… AGAINST=…` | is arm A separated from a **pre-declared family**, Holm step-down. This is what every separation claim in the reports rests on |
+| `make pair-test DATASET_ID=… A=… B=…` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
+| `make holdout DATASET_ID=… EXCLUDE_DATASET=…` | does the result survive on the items the dev slice never contained |
+| `make rank-stability DATASET_ID=…` | how many items before the ordering stops moving — measured, not assumed from a power table |
+| `make bootstrap-test DATASET_ID=…` | a percentile interval for a corpus-level metric that has no per-item value |
+| `make rescore DATASET_ID=…` | recompute every score from stored outputs under the current scorer. **$0, no API calls** |
+| `make cost-report DATASET_ID=…` | what each arm actually cost, from the provider's bill rather than a price table |
+| `make silver-calibrate DATASET_ID=…` | does a model-authored reference rank arms the way the trusted one does |
+
+Two that are easy to reach for and wrong:
+
+- **`pair-test` on a pair you chose after seeing the leaderboard** is the winner's
+  curse with extra steps. If you did not name the pair in advance, use `family-test`.
+- **`leaderboard` as a ranking.** It sorts; it does not separate. Four of the five
+  experiments here have a top group its own tests cannot tell apart, and the table
+  still prints them 1, 2, 3.
 
 ---
 

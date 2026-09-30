@@ -44,6 +44,11 @@ AN UNREADABLE ANSWER IS NOT AN EMPTY ONE, AND THE FIRST VERSION OF THIS FILE CON
   "It matches FIGER? No, FIGER has 112 types" -- ran out of tokens, emitted no array,
   and scored 1.0, because the sentence ("Epsilon Centauri is a relatively young star")
   has no entities. Six of its 46 unreadable items were free 1.0s, worth +0.0214 f1.
+  (46 was the count under the parser of the day. A later fix to the array matcher --
+  greedy `[.*]`, which swallowed `[{...}] See [1]` whole -- showed 14 of those 46 were
+  readable all along, so the arm now sits at 32 unreadable and f1 0.5662. The scoring
+  convention described here is unaffected: an answer that cannot be read still scores
+  zero, whatever the gold is.)
 
   So `parsed` is a required part of the call now. An unreadable answer scores zero on
   every quality metric whatever the gold is, and is counted as missing every gold member.

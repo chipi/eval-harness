@@ -17,7 +17,7 @@ learn about this harness. The harness calls you.
 Copy this directory into your project as `eval/`:
 
 ```bash
-cp -r eval-harness /path/to/your-project/eval
+cp -r eval-harness/harness /path/to/your-project/eval
 cd /path/to/your-project/eval
 make demo        # proves the plumbing, no API key
 ```
@@ -155,7 +155,7 @@ can extend later without re-authoring what you have.
 ## The first hour, concretely
 
 ```bash
-cp -r eval-harness your-project/eval && cd your-project/eval
+cp -r eval-harness/harness your-project/eval && cd your-project/eval
 make demo                                     # plumbing works
 
 cp ../some/real/items/* data/sources/         # your data

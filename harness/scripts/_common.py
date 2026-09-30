@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, List
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -101,9 +103,38 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def write_json(path: Path, obj: Any) -> None:
+def write_text_atomic(path: Path, text: str) -> None:
+    """Write via a temp file in the same directory, then rename.
+
+    `write_text` truncates the target and then writes into it, so a crash, a full disk
+    or a kill signal partway leaves a SHORT FILE where a complete one should be. That
+    matters here more than in most places, because `--resume` treats the presence of
+    an output file as proof the item is done: a half-written output is replayed as if
+    it were the model's answer, and scored. The failure looks like a bad answer rather
+    than a broken file.
+
+    `os.replace` is atomic on POSIX and on Windows, so a reader sees either the old
+    file or the whole new one and never a partial. The temp file is created in the
+    same directory because rename is only atomic within a filesystem.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def write_json(path: Path, obj: Any) -> None:
+    write_text_atomic(path, json.dumps(obj, indent=2, sort_keys=True) + "\n")
 
 
 def build_info() -> Dict[str, Any]:
@@ -267,3 +298,102 @@ def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, 
     if extra_kinds:
         kinds.update(extra_kinds)
     return kinds
+
+class AmbiguousRuns(Exception):
+    """Two runs claim the same config_id and nothing says which one to read."""
+
+
+def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
+                strip: str = "") -> Dict[str, List[Path]]:
+    """config_id -> the run directories that produced it, deterministically ordered.
+
+    WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
+
+    Five places in `check_report_claims.py` globbed for a run and took whichever came
+    back -- three took the last hit, two the first, and one of them had a different
+    exclusion rule from the others. That is fine while every config_id is unique. Three
+    SciFact arms were re-run, so three were not, and the checker's answer then depended
+    on the order the filesystem returned directories in: green on APFS, red on ext4.
+    `make ci` was reported green for a week on the only machine anyone had run it on.
+
+    REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes `<id>_r1.._r3`, all one measurement
+    of one arm, and averaging them is the point. Those come back together. Anything
+    ELSE sharing a config_id is two different measurement occasions wearing one name,
+    and this raises rather than picking one, because there is no correct pick.
+    """
+    groups: Dict[str, List[Path]] = {}
+    for mj in sorted(base.glob("*/metrics.json")):
+        try:
+            m = json.loads(mj.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if m.get("dataset_id") != dataset_id:
+            continue
+        cid = m.get("config_id")
+        if not cid or (prefix and not cid.startswith(prefix)):
+            continue
+        key = cid[len(prefix):] if prefix else cid
+        if strip and key.endswith(strip):
+            key = key[: -len(strip)]
+        groups.setdefault(key, []).append(mj.parent)
+
+    for key, dirs in groups.items():
+        if len(dirs) < 2:
+            continue
+        # A repeat set: every directory is "<something>_rN" off the same stem.
+        stems = {re.sub(r"_r\d+$", "", d.name) for d in dirs}
+        if len(stems) == 1 and all(re.search(r"_r\d+$", d.name) for d in dirs):
+            continue
+        raise AmbiguousRuns(
+            f"{len(dirs)} runs under {base.name}/ claim config_id {key!r} on "
+            f"{dataset_id}: {sorted(d.name for d in dirs)}.\n"
+            f"  These are different measurement occasions sharing one name, so any "
+            f"tool reading them picks one by filesystem order.\n"
+            f"  Move the ones that are not the record out of this directory "
+            f"(data/runs-repeats/ is where the SciFact re-runs live)."
+        )
+    return {k: sorted(v) for k, v in sorted(groups.items())}
+
+def warn_on_ambiguous_runs(base: Path, dataset_id: Optional[str] = None,
+                           label: str = "") -> int:
+    """Say loudly when two runs share a config_id for reasons other than --repeat.
+
+    Every loader in this repo groups runs by `config_id` and then averages or picks --
+    `leaderboard` printed `sf_llama_l_n200_v1 runs=2 0.683350`, the mean of 0.7281 and
+    0.6386, a number in no run and no report; `pair_test`, `family_test`,
+    `rank_stability` and `holdout_significance` averaged per item across both; the
+    report scripts silently took whichever the filesystem returned last. None of it
+    said anything. Found by external review.
+
+    `runs_by_arm` RAISES on this, which is right for a checker and wrong for a
+    leaderboard someone is reading interactively. This warns instead and returns the
+    count, so the number on screen is still explained.
+
+    A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
+    ambiguous; averaging those is the point.
+    """
+    groups: Dict[str, List[str]] = {}
+    for mj in sorted(base.glob("*/metrics.json")):
+        try:
+            m = json.loads(mj.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if dataset_id and m.get("dataset_id") != dataset_id:
+            continue
+        if m.get("config_id"):
+            groups.setdefault(m["config_id"], []).append(mj.parent.name)
+    bad = []
+    for cid, names in sorted(groups.items()):
+        if len(names) < 2:
+            continue
+        stems = {re.sub(r"_r\d+$", "", n) for n in names}
+        if len(stems) == 1 and all(re.search(r"_r\d+$", n) for n in names):
+            continue
+        bad.append((cid, sorted(names)))
+    for cid, names in bad:
+        print(f"  WARNING: {len(names)} runs claim config_id {cid!r}"
+              f"{' in ' + label if label else ''} — {', '.join(names)}.")
+        print(f"           They are averaged together below. If they are different "
+              f"measurement occasions, move all but one out of {base.name}/.")
+    return len(bad)
+

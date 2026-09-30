@@ -30,6 +30,8 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (  # noqa: E402
+    ROOT,
+    warn_on_ambiguous_runs,
     RUNS,
     classify_metrics,
     die,
@@ -83,11 +85,25 @@ def _stored_decimals(values: List[float]) -> int:
             best = max(best, len(t.split(".")[1].rstrip("0")))
     return best
 
-_NEMENYI_Q05 = {  # Demsar 2006, alpha = 0.05: studentised range / sqrt(2)
-    2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850, 7: 2.949, 8: 3.031, 9: 3.102,
-    10: 3.164, 11: 3.219, 12: 3.268, 13: 3.313, 14: 3.354, 15: 3.391, 16: 3.426,
-    17: 3.458, 18: 3.489, 19: 3.517, 20: 3.544, 21: 3.569, 22: 3.593, 23: 3.616,
-    24: 3.637, 25: 3.658,
+_NEMENYI_Q05 = {
+    # alpha = 0.05, nu = infinity: the studentised range divided by sqrt(2).
+    #
+    # COMPUTED, NOT TRANSCRIBED -- see scripts/nemenyi_table.py, which solves
+    #   P(R <= q) = k * INTEGRAL phi(z) [Phi(z) - Phi(z-q)]^(k-1) dz  =  1 - alpha
+    # by Simpson plus bisection, in stdlib. It reproduces all 24 values Demsar (2006)
+    # publishes for k = 2..25 to within 0.0007, which is below the precision Demsar
+    # prints, and `test_nemenyi_table` asserts that every time.
+    #
+    # It used to stop at 25 and this file REFUSED to print a critical difference above
+    # that, rather than reuse a smaller k's value and understate the CD. The refusal
+    # was right; the scope was not. Four of five experiments here have 26-28 arms, so
+    # four of five had no pairwise verdict at all -- over roughly thirty lines of
+    # arithmetic. Found by external review.
+    2: 1.9600, 3: 2.3437, 4: 2.5690, 5: 2.7278, 6: 2.8497, 7: 2.9483, 8: 3.0309, 9: 3.1017,
+    10: 3.1637, 11: 3.2187, 12: 3.2680, 13: 3.3127, 14: 3.3536, 15: 3.3912, 16: 3.4260, 17: 3.4584,
+    18: 3.4887, 19: 3.5171, 20: 3.5438, 21: 3.5690, 22: 3.5929, 23: 3.6156, 24: 3.6373, 25: 3.6579,
+    26: 3.6776, 27: 3.6964, 28: 3.7145, 29: 3.7319, 30: 3.7486, 31: 3.7647, 32: 3.7802, 33: 3.7952,
+    34: 3.8097, 35: 3.8237, 36: 3.8373, 37: 3.8504, 38: 3.8632, 39: 3.8756, 40: 3.8876,
 }
 
 
@@ -312,6 +328,44 @@ def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str],
         print(f"    dominated (worse on all three than some other arm): {', '.join(beaten)}")
 
 
+_ADAPTER_KINDS_CACHE: Dict[str, Dict[str, str]] = {}
+
+
+def _adapter_kinds(adapter_spec: str) -> Dict[str, str]:
+    """`METRIC_KINDS` as the adapter declares them TODAY, or {} if it cannot be imported.
+
+    Same shape as `classification_report._label_parser`, and for the same reason: a run
+    freezes what was declared when it was measured, and the current adapter is the
+    authority on what its metrics mean. Returning {} on any failure is deliberate --
+    a machine without the example's venv falls back to the run's own declaration, which
+    is the previous behaviour, rather than losing the table.
+    """
+    if adapter_spec in _ADAPTER_KINDS_CACHE:
+        return _ADAPTER_KINDS_CACHE[adapter_spec]
+    out: Dict[str, str] = {}
+    try:
+        cand = None
+        for base in (ROOT, ROOT.parent):
+            c = Path(adapter_spec) if Path(adapter_spec).is_absolute() else base / adapter_spec
+            if c.is_file():
+                cand = c
+                break
+        if cand is not None:
+            import importlib.util  # noqa: PLC0415
+
+            spec = importlib.util.spec_from_file_location(f"lbkinds_{cand.stem}", cand)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = mod
+            spec.loader.exec_module(mod)
+            kinds = getattr(mod, "METRIC_KINDS", None)
+            if isinstance(kinds, dict):
+                out = dict(kinds)
+    except Exception:  # noqa: BLE001 — an un-importable adapter is a fallback, not a crash
+        out = {}
+    _ADAPTER_KINDS_CACHE[adapter_spec] = out
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
@@ -341,6 +395,7 @@ def main() -> int:
                 by_config[d["config_id"]].append(d)
                 run_dirs[id(d)] = run
 
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"
@@ -353,9 +408,47 @@ def main() -> int:
     # this the sort key falls to whatever sorts first among the unclassified, which ranked
     # a ten-model sweep by `compression` — a length ratio — and called it quality.
     declared: dict[str, str] = {}
+    disagree: dict[str, set] = {}
     for runs in by_config.values():
         for r in runs:
-            declared.update(r.get("metric_kinds") or {})
+            for k, v in (r.get("metric_kinds") or {}).items():
+                if k in declared and declared[k] != v:
+                    disagree.setdefault(k, {declared[k]}).add(v)
+                declared[k] = v
+
+    # THE ADAPTER'S CURRENT DECLARATION WINS OVER THE RUNS'. A run freezes the metric
+    # kinds that were declared when it was measured, and this used to merge those and
+    # stop -- so fixing a misdeclared metric in the adapter changed nothing on any
+    # leaderboard built from runs that predate the fix. `llm_named_unknown` counts
+    # document ids a reranker INVENTED; undeclared, it landed in the quality columns
+    # where higher reads as better, so an arm that hallucinated more looked improved.
+    # It was corrected in the adapter and kept showing as quality here, because 19
+    # committed SciFact runs still carry the old declaration.
+    #
+    # The runs remain the fallback for an adapter that cannot be imported (a missing
+    # dependency, a moved file), which is why they are read first and overridden second
+    # rather than skipped.
+    for runs in by_config.values():
+        for r in runs:
+            spec = r.get("adapter")
+            if not spec:
+                continue
+            try:
+                current = _adapter_kinds(spec)
+            except Exception:  # noqa: BLE001 — a stale adapter must not break the table
+                continue
+            for k, v in (current or {}).items():
+                if k in declared and declared[k] != v:
+                    disagree.pop(k, None)  # the adapter settles it; not a conflict
+                declared[k] = v
+
+    # Two runs of the same metric declaring different kinds is a real disagreement and
+    # used to be resolved by dict ordering -- silently, by whichever run happened to be
+    # read last. Say so instead.
+    for k, vs in sorted(disagree.items()):
+        print(f"  WARNING: runs disagree on metric kind for {k!r}: {sorted(vs)} — "
+              f"no adapter could be imported to settle it")
+
     kinds = classify_metrics(declared)
     quality = [
         k for k in all_keys

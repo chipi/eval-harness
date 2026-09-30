@@ -12,6 +12,7 @@ are tested rather than asserted in a README.
 from __future__ import annotations
 
 import json
+import re
 import pathlib
 import subprocess
 import sys
@@ -85,6 +86,14 @@ def test_score_handles_absent_reference() -> None:
 def test_compare_refuses_cross_dataset() -> None:
     r = run("scripts/compare_runs.py", "--baseline", "nope_a", "--candidate", "nope_b")
     check("compare: unknown run is an error", r.returncode != 0)
+
+
+#: Modules that belong to an EXAMPLE's venv, not to the harness. Only these justify
+#: skipping a checker: anything else missing is a broken import in our own code.
+_EXAMPLE_ONLY_MODULES = frozenset({
+    "rouge_score", "rank_bm25", "torch", "transformers", "span_marker", "gliner",
+    "sentence_transformers", "sklearn", "numpy", "datasets", "nltk",
+})
 
 
 def test_cli_help_works() -> None:
@@ -431,14 +440,34 @@ def test_example_scorer_suites_pass() -> None:
                             ("check_links.py", "markdown links and anchors"),
                             ("check_model_facts.py", "model facts vs the evidence capture")):
         path = HERE / script
+        # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
+        # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
+        # on reporting all-green over one fewer check. Found by external review.
         if not path.is_file():
+            check(f"{subject}: its checker exists", False, f"{script} is missing")
             continue
         r = run(f"scripts/{script}")
-        if r.returncode != 0 and "ModuleNotFoundError" in (r.stderr or ""):
-            print(f"  --   {subject}: skipped (example deps not on this interpreter)")
+        out = (r.stdout or "") + (r.stderr or "")
+        # THE SKIP IS FOR AN EXAMPLE'S DEPENDENCIES, NOT FOR ANY IMPORT ERROR. Matching
+        # bare "ModuleNotFoundError" meant a typo'd import inside a checker read as
+        # "this machine lacks rouge_score" and vanished from the run.
+        missing = re.search(r"No module named '([^']+)'", out)
+        if r.returncode != 0 and missing and missing.group(1) in _EXAMPLE_ONLY_MODULES:
+            print(f"  --   {subject}: skipped (needs {missing.group(1)}, an example "
+                  f"dependency not on this interpreter)")
             continue
-        check(f"{subject}: all assertions pass", r.returncode == 0,
-              (r.stdout or r.stderr or "").strip()[-160:])
+        # Show the FAIL lines, not the tail. The tail is the summary footer, so a
+        # second failure below the first was invisible.
+        fails = [ln for ln in out.splitlines() if "FAIL" in ln][:3]
+        detail = " | ".join(f.strip() for f in fails) or out.strip()[-160:]
+        check(f"{subject}: all assertions pass", r.returncode == 0, detail)
+        # AND THE EXIT CODE MUST AGREE WITH WHAT IT PRINTED. A checker that prints FAIL
+        # and exits 0 satisfied every guard here: `make` reads only the exit code and
+        # the guard read only that too. Changing one checker's final line to
+        # sys.exit(0) turned a red baseline green.
+        check(f"{subject}: exits non-zero if it printed FAIL",
+              not (any("FAIL" in ln for ln in out.splitlines()) and r.returncode == 0),
+              "printed FAIL and exited 0")
 
 
 def test_fingerprint_version_is_read_somewhere() -> None:
@@ -456,7 +485,9 @@ def test_fingerprint_version_is_read_somewhere() -> None:
     fp = build_fingerprint(root=HERE.parent, dataset={"dataset_id": "d", "items": []},
                            reference_id=None, reference_tier=None, config_id="c",
                            params={}, adapter_id="a", adapter_path=None)
-    check("new fingerprints are version 2", fp.get("version") == 2, str(fp.get("version")))
+    # v3 since 2026-09-30: the reference digest now covers every file in the directory,
+    # not just *.txt, so a v2 and a v3 hash over the same references can differ.
+    check("new fingerprints are version 3", fp.get("version") == 3, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
@@ -514,7 +545,14 @@ def test_fingerprint_covers_reference_bytes() -> None:
 
 
 def test_resume_scores_and_persists() -> None:
-    """A resumed run must SCORE its replayed items, and a crash must leave outputs.
+    """A resumed run must SCORE its replayed items, keep their measurements, refuse
+    another arm's, and leave outputs behind when it dies.
+
+    THE CRASH HERE IS SIMULATED -- files are deleted and the pass is resumed -- which
+    exercises the resume path but not the durability it depends on. The mtime assertion
+    below covers that separately: a version that gathered every output and wrote them
+    after the last item would satisfy the delete-and-resume test and still lose a whole
+    pass of paid work to a real crash.
 
     Both directions of a bug that cost paid data. `--resume` used to `continue` past
     scoring, so a fully-resumed run wrote zero prediction rows and empty scores while
@@ -536,6 +574,22 @@ def test_resume_scores_and_persists() -> None:
     outs = sorted((runs / src / "outputs").glob("*.txt"))
     check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
 
+    # THE PROPERTY A CRASH ACTUALLY DEPENDS ON: outputs are written AS THEY ARE
+    # PRODUCED, not gathered up at the end. The simulated crash below (deleting files
+    # and resuming) exercises the resume path but would pass just as happily against a
+    # version that wrote everything in one go after the last item -- which is the
+    # version that lost a whole pass of paid outputs.
+    #
+    # Checked by mtime, which is the observable this leaves behind: every output must
+    # predate metrics.json, and the first must predate the last, because they were
+    # written one at a time while the pass ran.
+    mj = runs / src / "metrics.json"
+    if len(outs) > 1 and mj.is_file():
+        t_out = sorted(f.stat().st_mtime for f in outs)
+        check("resume: outputs are written DURING the pass, not after it",
+              t_out[-1] <= mj.stat().st_mtime and t_out[0] <= t_out[-1],
+              f"last output {t_out[-1]:.3f}, metrics {mj.stat().st_mtime:.3f}")
+
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
     for f in outs[1:]:
         f.unlink()
@@ -549,7 +603,716 @@ def test_resume_scores_and_persists() -> None:
           f"{len(rows)} rows for {len(outs)} items")
     check("resume: replayed items are flagged",
           any('"resumed": 1' in l or '"resumed":1' in l for l in rows))
+
+    # A REPLAYED ITEM MUST KEEP WHAT WAS MEASURED FOR IT. Every field used to be None:
+    # a resumed run reported $0.03 for $0.05 of spend, and `_meta` -- llm_raw,
+    # first_stage, ranking for retrieval -- disappeared for exactly the items that were
+    # hardest to obtain, so a resumed retrieval or NER run could not be reported at all.
+    import json as _json  # noqa: PLC0415
+
+    src_rows = {}
+    for line in (runs / src / "predictions.jsonl").read_text().splitlines():
+        if line.strip():
+            r = _json.loads(line)
+            src_rows[r["item_id"]] = r
+    replayed = [_json.loads(l) for l in rows
+                if _json.loads(l).get("resumed") == 1.0]
+    check("resume: at least one item was actually replayed", bool(replayed),
+          f"{len(replayed)} replayed of {len(rows)}")
+    if replayed:
+        r = replayed[0]
+        o = src_rows.get(r["item_id"], {})
+        # Only assert on fields the original row actually had; the demo arm is free and
+        # local, so cost and tokens may legitimately be absent from BOTH.
+        carried = [k for k in ("cost_usd", "latency_ms", "tokens_in", "tokens_out")
+                   if o.get(k) is not None]
+        check("resume: a replayed item keeps the measurements from its original pass",
+              all(r.get(k) == o.get(k) for k in carried) if carried else True,
+              f"carried={carried} orig={[o.get(k) for k in carried]} "
+              f"now={[r.get(k) for k in carried]}")
+        if o.get("_meta"):
+            check("resume: and keeps its _meta",
+                  isinstance(r.get("_meta"), dict)
+                  and all(r["_meta"].get(k) == v for k, v in o["_meta"].items()),
+                  f"orig keys {sorted(o['_meta'])} now {sorted((r.get('_meta') or {}))}")
+
+    # THE ACTUAL CRASH SHAPE: outputs/ and run.json, no metrics.json, no
+    # predictions.jsonl -- because both are written only after the pass returns.
+    #
+    # Round 2 taught resume to carry each replayed item's cost, tokens and _meta
+    # forward FROM predictions.jsonl, which by construction does not exist in the one
+    # case resume is for. So the feature worked for a tidy re-run and not for a crash,
+    # and the mtime assertion above could not tell: it proves outputs are written
+    # during the pass, not that anything else is. Found by external review.
+    crash = runs / "crashed"
+    shutil.rmtree(crash, ignore_errors=True)
+    shutil.copytree(runs / src, crash)
+    (crash / "metrics.json").unlink(missing_ok=True)
+    (crash / "predictions.jsonl").unlink(missing_ok=True)
+    check("resume: a crashed run still carries its identity (run.json)",
+          (crash / "run.json").is_file(),
+          "run.json must be written before the first item, not after the pass")
+    check("resume: and its per-item rows (outputs/_rows.jsonl)",
+          (crash / "outputs" / "_rows.jsonl").is_file(),
+          "rows must be appended during the pass, not written at the end")
+
+    r3 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml",
+             "--resume", "crashed", env=env)
+    check("resume: an outputs-only crashed run resumes", r3.returncode == 0,
+          ((r3.stderr or "") + (r3.stdout or ""))[-200:])
+    newest = max((p for p in runs.iterdir() if p.is_dir() and p.name != "crashed"),
+                 key=lambda p: p.stat().st_mtime)
+    rows3 = [_json.loads(l) for l in
+             (newest / "predictions.jsonl").read_text().splitlines() if l.strip()]
+    replayed3 = [r for r in rows3 if r.get("resumed") == 1.0]
+    check("resume: after a CRASH, replayed rows still carry their measurements",
+          bool(replayed3) and all(r.get("latency_ms") is not None for r in replayed3),
+          f"{len(replayed3)} replayed; first = "
+          f"{ {k: replayed3[0].get(k) for k in ('latency_ms', 'cost_usd')} if replayed3 else None }")
+    shutil.rmtree(crash, ignore_errors=True)
+
+    # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
+    # outputs; nothing compared the arms, so one mistyped id replayed a different
+    # model's answers and recorded them under this one, with a valid fingerprint.
+    other = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml",
+                "--resume", src, env=env)
+    msg = (other.stderr or "") + (other.stdout or "")
+    check("resume: another arm's outputs are refused",
+          other.returncode != 0 and "another arm" in msg.lower(), msg[-200:])
+
+    # AND REFUSED EVEN WHEN THE SOURCE CANNOT BE IDENTIFIED. This used to WARN and
+    # continue, so `arm_a --resume <crashed arm_b run>` exited 0 having recorded arm_a
+    # with arm_b's answers.
+    anon = runs / "anonymous"
+    shutil.rmtree(anon, ignore_errors=True)
+    (anon / "outputs").mkdir(parents=True)
+    (anon / "outputs" / "item_01.txt").write_text("from who knows where")
+    r4 = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml",
+             "--resume", "anonymous", env=env)
+    m4 = (r4.stderr or "") + (r4.stdout or "")
+    check("resume: an unidentifiable source is refused, not warned about",
+          r4.returncode != 0 and "cannot be identified" in m4, m4[-200:])
+    r5 = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml",
+             "--resume", "anonymous", "--resume-unverified", env=env)
+    check("resume: ...unless --resume-unverified is passed explicitly",
+          r5.returncode == 0, ((r5.stderr or "") + (r5.stdout or ""))[-200:])
+    shutil.rmtree(anon, ignore_errors=True)
     shutil.rmtree(runs, ignore_errors=True)
+
+
+def test_writes_leave_no_partial_file() -> None:
+    """A failed write must leave the previous file intact, not a truncated one.
+
+    `write_text` truncates the target and then writes into it, so a crash, a full disk
+    or a kill partway leaves a SHORT file where a complete one should be. That matters
+    more here than in most places: `--resume` treats the presence of an output file as
+    proof the item is done, so a half-written output is replayed as the model's answer
+    and scored. The failure then looks like a bad answer rather than a broken file.
+
+    Simulated by making the encode fail mid-write, which is the observable shape of a
+    death during serialisation.
+    """
+    import tempfile as _tf  # noqa: PLC0415
+
+    sys.path.insert(0, str(HERE))
+    from _common import write_text_atomic  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        target = pathlib.Path(td) / "out.txt"
+        target.write_text("the original, complete content")
+
+        # WINDOW 1: death DURING the write. A lone surrogate cannot be encoded to
+        # utf-8, so the write raises partway -- the same shape as running out of disk.
+        try:
+            write_text_atomic(target, "good start \ud800 bad")
+        except Exception:  # noqa: BLE001 — what survives is the point, not what raised
+            pass
+        check("atomic write: a write that dies partway leaves the original intact",
+              target.read_text() == "the original, complete content",
+              f"file now: {target.read_text()[:60]!r}")
+
+        # WINDOW 2: death AFTER the temp file is complete, BEFORE the rename. This is
+        # the window the whole design exists for, and the only way to reach it is to
+        # make the rename itself fail.
+        import os as _os  # noqa: PLC0415
+
+        real_replace = _os.replace
+        _os.replace = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("killed"))
+        try:
+            write_text_atomic(target, "replacement")
+        except Exception:  # noqa: BLE001
+            pass
+        finally:
+            _os.replace = real_replace
+        check("atomic write: a death before the rename leaves the original intact",
+              target.read_text() == "the original, complete content",
+              f"file now: {target.read_text()[:60]!r}")
+
+        leftovers = [f.name for f in pathlib.Path(td).iterdir() if f.name != "out.txt"]
+        check("atomic write: and leaves no temp file behind", not leftovers,
+              str(leftovers))
+
+        write_text_atomic(target, "the new content")
+        check("atomic write: a successful write still replaces the file",
+              target.read_text() == "the new content", target.read_text()[:60])
+
+        # THE CONTRAST, so this test shows a difference rather than just asserting the
+        # new behaviour. `write_text` truncates first: the same failure destroys the
+        # file. Without this the test would pass against any implementation that
+        # happens to exist, including a broken one.
+        naive = pathlib.Path(td) / "naive.txt"
+        naive.write_text("the original, complete content")
+        try:
+            naive.write_text("good start \ud800 bad", encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            pass
+        check("atomic write: and the plain write_text it replaces DOES lose the file",
+              naive.read_text() != "the original, complete content",
+              f"write_text somehow preserved it: {naive.read_text()[:40]!r}")
+
+
+def test_rescore_rehashes_the_references_it_actually_read() -> None:
+    """A rescored run must not assert a reference hash over bytes it never read.
+
+    The fingerprint was copied wholesale from the source run, so
+    `data.references_sha256` described the reference files AS THEY WERE WHEN THAT RUN
+    EXECUTED -- while the scores beside it were computed against whatever is on disk
+    now. If the gold set changed in between, the rescored run made the one claim a
+    fingerprint exists to make, about the wrong bytes.
+
+    Built by injecting a reference hash that cannot match, which is what a changed gold
+    set looks like from here.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("fn_*")):
+        m = d / "metrics.json"
+        if m.is_file() and (d / "outputs").is_dir():
+            j = _json.loads(m.read_text())
+            if ((j.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
+                src = d
+                break
+    if src is None:
+        print("  --   rescore/refhash: skipped (no run with references on disk)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-refhash"
+    shutil.rmtree(runs, ignore_errors=True)
+    dst = runs / src.name
+    dst.mkdir(parents=True)
+    for n in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / n, dst / n)
+    shutil.copytree(src / "outputs", dst / "outputs")
+    j = _json.loads((dst / "metrics.json").read_text())
+    j["fingerprint"]["data"]["references_sha256"] = "0" * 64      # cannot match
+    (dst / "metrics.json").write_text(_json.dumps(j))
+
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    out = runs / "out"
+    r = run("scripts/rescore.py", "--dataset-id", str(j.get("dataset_id")),
+            "--out", str(out.relative_to(HERE.parent)), env=env)
+    mf = out / src.name / "metrics.json"
+    _out = (r.stderr or "") + (r.stdout or "")
+    if "NOT ONE of its" in _out or "reference files exists" in _out:
+        # A fresh clone has no corpus, so rescore refuses -- which is the behaviour a
+        # DIFFERENT test asserts. Skipping here is honest; calling it a failure would
+        # make `make ci` red in every clone for doing the right thing.
+        print("  --   rescore/refhash: skipped (references not fetched on this machine)")
+    elif r.returncode != 0 or not mf.is_file():
+        check("rescore: rehashing references did not break rescore", False, _out[-160:])
+    else:
+        data = _json.loads(mf.read_text())["fingerprint"]["data"]
+        check("rescore: references_sha256 is recomputed, not copied",
+              data.get("references_sha256") not in (None, "0" * 64),
+              f"got {str(data.get('references_sha256'))[:24]}")
+        check("rescore: and a changed gold set is flagged, not silently overwritten",
+              data.get("references_changed_since_measurement") is True
+              and data.get("references_sha256_at_measurement") == "0" * 64,
+              f"keys present: {sorted(k for k in data if 'reference' in k)}")
+    shutil.rmtree(runs, ignore_errors=True)
+
+
+def test_rescore_takes_source_path_from_the_dataset() -> None:
+    """`source_path` lives in the dataset. rescore was reading it off the prediction row.
+
+    No prediction row has ever carried one -- 0 of 20,001 across every committed run.
+    `dataset_create.py` writes it into the DATASET, and experiment_run, materialize,
+    reference_create and validate_tree all read it from there. rescore was the single
+    place looking in the wrong object, so its fallback to `<item_id>.txt` fired every
+    time and, on a dataset whose files are named anything else, the source text arrived
+    as None -- silently, because a scorer that wanted the source then measured nothing
+    instead of failing.
+
+    Round 1 reported this fixed. That commit added the lookup without checking the field
+    existed where it was being read from.
+
+    LATENT TODAY: all 12 datasets here name their files `<item_id>.txt`, so no recorded
+    number is affected. This test therefore MAKES a dataset where they differ -- pointing
+    two items at each other's source file -- and asserts the scores move. Against the old
+    code they do not move at all, because the dataset's `source_path` was never consulted.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    ds_file = HERE.parent / "data" / "datasets" / "cnn_dailymail_200.json"
+    mat = HERE.parent / "data" / "materialized" / "cnn_dailymail_200"
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("cnn_*_n200_v1_*")):
+        if (d / "metrics.json").is_file() and (d / "outputs").is_dir():
+            src = d
+            break
+    if src is None or not ds_file.is_file() or not mat.is_dir():
+        print("  --   rescore/source_path: skipped (corpus not fetched on this machine)")
+        return
+
+    tmp = HERE.parent / "data" / "runs-selftest-srcpath"
+    shutil.rmtree(tmp, ignore_errors=True)
+    dst = tmp / src.name
+    dst.mkdir(parents=True)
+    for n in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / n, dst / n)
+    shutil.copytree(src / "outputs", dst / "outputs")
+
+    env = {"EVAL_RUNS_DIR": str(tmp.relative_to(HERE.parent))}
+    base = run("scripts/rescore.py", "--dataset-id", "cnn_dailymail_200",
+               "--out", str((tmp / "out-base").relative_to(HERE.parent)), env=env)
+    if base.returncode != 0:
+        err = (base.stderr or "") + (base.stdout or "")
+        # A MISSING DEPENDENCY IS A SKIP; ANYTHING ELSE IS THE BUG. The summarisation
+        # scorer needs rouge_score, which lives in that example's venv, so running the
+        # suite on the harness venv legitimately cannot do this one.
+        #
+        # Every other failure is a real one, and this is where the worst of them
+        # surfaced: 24 committed cnn_dailymail_200 runs recorded their adapter as
+        # "summarization-cnn-dailymail/adapter.py" -- relative to the examples root,
+        # which rescore did not try -- so the entire summarisation sweep could not be
+        # rescored. It skipped here as "baseline rescore failed" and said nothing.
+        if "ModuleNotFoundError" in err or "No module named" in err:
+            print("  --   rescore/source_path: skipped (needs the example's venv)")
+        else:
+            lines = [l for l in err.splitlines() if l.strip()]
+            detail = next((l for l in lines if l.startswith(("ERROR", "Traceback"))
+                           or "Error" in l), lines[-1] if lines else "no output")
+            check("rescore: a committed run can be rescored at all", False, detail[:200])
+        shutil.rmtree(tmp, ignore_errors=True)
+        return
+
+    # Swap two items' source_path. The files still exist; each item now points at the
+    # other's text, so any scorer that reads the source must produce different numbers.
+    ds = _json.loads(ds_file.read_text())
+    items = [i for i in ds.get("items", []) if i.get("source_path")]
+    original = ds_file.read_text()
+    try:
+        items[0]["source_path"], items[1]["source_path"] = (
+            items[1]["source_path"], items[0]["source_path"])
+        ds_file.write_text(_json.dumps(ds))
+        swapped = run("scripts/rescore.py", "--dataset-id", "cnn_dailymail_200",
+                      "--out", str((tmp / "out-swap").relative_to(HERE.parent)), env=env)
+    finally:
+        ds_file.write_text(original)
+
+    def scores(where):
+        f = where / src.name / "metrics.json"
+        return _json.loads(f.read_text())["scores"] if f.is_file() else None
+
+    a, b = scores(tmp / "out-base"), scores(tmp / "out-swap")
+    if a is None or b is None:
+        print("  --   rescore/source_path: skipped (rescore produced no metrics)")
+    else:
+        check("rescore: the dataset's source_path is what selects the source text",
+              a != b, "swapping two items' source_path changed nothing — the dataset's "
+                      "source_path is being ignored")
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_a_run_that_measured_nothing_is_not_a_success() -> None:
+    """`EVAL_MAX_COST_USD=0` wrote an empty run and exited 0.
+
+    The directory looked like every other run -- metrics.json, predictions.jsonl,
+    outputs/ -- and held `"scores": {}` with zero prediction rows. A sweep script or CI
+    job saw exit 0 and moved on. Nothing was measured and nothing said so.
+
+    Partial results are still kept and the resume hint still prints; that was
+    deliberate. What changed is the exit code, because "the cap stopped me after 3 of
+    200 items" and "I measured 200 items" must not both be success. 1 = nothing
+    measured, 2 = stopped early with usable partial results, 0 = complete.
+    """
+    import shutil  # noqa: PLC0415
+
+    runs = HERE.parent / "data" / "runs-selftest-cap"
+    shutil.rmtree(runs, ignore_errors=True)
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+
+    # THE CONTROL RUNS FIRST, and decides whether this test can run at all. Ordering it
+    # after the capped run meant a clone -- where `smoke_v1` is not materialized,
+    # because data/materialized/ is regenerated rather than committed -- reached the
+    # assertions with nothing measured and FAILED on the control. A test that is green
+    # on the author's laptop and red in a fresh clone is the exact shape of bug this
+    # review found elsewhere, so it must skip honestly instead.
+    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    if r2.returncode != 0:
+        why = ((r2.stdout or "") + (r2.stderr or "")).strip().splitlines()
+        print(f"  --   cost cap: skipped (the demo arm cannot run here: "
+              f"{why[-1][:70] if why else 'no output'})")
+        shutil.rmtree(runs, ignore_errors=True)
+        return
+    check("cost cap: an uncapped run of the same arm still exits 0", True)
+    shutil.rmtree(runs, ignore_errors=True)
+
+    r = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml",
+            env={**env, "EVAL_MAX_COST_USD": "0"})
+    out = (r.stdout or "") + (r.stderr or "")
+    check("cost cap: a run that scored NO items exits non-zero",
+          r.returncode != 0, f"exit {r.returncode}")
+    check("cost cap: and says nothing was measured",
+          "scored NO items" in out or "Nothing was measured" in out, out[-160:])
+
+    shutil.rmtree(runs, ignore_errors=True)
+
+
+def test_adapter_declaration_beats_a_stale_run() -> None:
+    """A metric kind fixed in the adapter must take effect on runs measured before it.
+
+    `llm_named_unknown` counts document ids a reranker INVENTED. Undeclared, it fell
+    into the leaderboard's quality columns, where higher reads as better -- so an arm
+    that hallucinated more ids looked like it had improved. It was declared
+    `descriptive` in the adapter in round 1, and round 2 found it still showing as
+    quality, because the leaderboard merged the metric kinds recorded IN THE RUNS and
+    19 committed SciFact runs predate the fix.
+
+    A run freezes what was declared when it was measured. The adapter is the authority
+    on what its own metrics mean, so it now wins; runs remain the fallback for an
+    adapter that cannot be imported.
+
+    This builds a run that declares the WRONG kind and asserts the adapter overrides it,
+    which is the direction that was broken -- asserting the fixed state alone would pass
+    against the old code too.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    src = None
+    for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")):
+        if (d / "metrics.json").is_file() and (d / "predictions.jsonl").is_file():
+            m = _json.loads((d / "metrics.json").read_text())
+            if "llm_named_unknown" in (m.get("scores") or {}):
+                src = d
+                break
+    if src is None:
+        print("  --   metric kinds: skipped (no reranking run on disk)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-kinds"
+    shutil.rmtree(runs, ignore_errors=True)
+    dst = runs / src.name
+    dst.mkdir(parents=True)
+    for name in ("metrics.json", "predictions.jsonl"):
+        shutil.copy2(src / name, dst / name)
+    m = _json.loads((dst / "metrics.json").read_text())
+    m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"   # the stale state
+    (dst / "metrics.json").write_text(_json.dumps(m))
+
+    env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
+    r = run("scripts/leaderboard.py", "--dataset-id", str(m.get("dataset_id")), env=env)
+    # The COLUMN header, not the "ranked by: ndcg_10" caption above it -- both contain
+    # the metric name, and matching the caption made this fail for the wrong reason.
+    header = next((ln for ln in (r.stdout or "").splitlines()
+                   if "ndcg_10" in ln and ln.split()[:1] == ["arm"]), "")
+    cols = header.split()
+    ok = ("llm_named_unknown" in cols and "recall_100" in cols
+          and cols.index("llm_named_unknown") > cols.index("recall_100"))
+    check("metric kinds: the adapter's 'descriptive' overrides a run's stale 'quality'",
+          ok, f"columns: {cols[:14]}")
+    shutil.rmtree(runs, ignore_errors=True)
+
+
+def test_nemenyi_table_is_computed_not_copied() -> None:
+    """The critical values must be derivable, and must match the literature.
+
+    `leaderboard.py` carried 24 numbers transcribed from Demsar (2006) and refused to
+    print a critical difference above k = 25 rather than reuse a smaller k's value.
+    The refusal was right -- reusing one understates the CD and overstates how many
+    pairs differ -- but four of five experiments here have 26-28 arms, so four of five
+    had no pairwise verdict, over about thirty lines of arithmetic. Found by external
+    review.
+
+    They are computed now, so this asserts two things: the computation reproduces every
+    published value, and the table shipped in `leaderboard.py` is what the computation
+    produces. Either alone would be worth little -- the first without the second means
+    the shipped numbers could still be anything.
+    """
+    sys.path.insert(0, str(HERE))
+    from leaderboard import _NEMENYI_Q05  # noqa: PLC0415
+    from nemenyi_table import PUBLISHED, max_error_against_published, q_alpha  # noqa: PLC0415
+
+    err = max_error_against_published()
+    check("nemenyi: the computation reproduces Demsar's 24 values", err < 0.002,
+          f"worst disagreement {err:.4f}")
+
+    bad = [k for k, v in PUBLISHED.items() if abs(_NEMENYI_Q05.get(k, 0) - v) > 0.002]
+    check("nemenyi: and the shipped table agrees with the published one where it overlaps",
+          not bad, f"k={bad}")
+
+    # Spot-check the extension against the computation, not against itself.
+    ext = [k for k in (26, 27, 28) if k in _NEMENYI_Q05]
+    drift = [f"k={k}: table {_NEMENYI_Q05[k]:.4f} vs computed {q_alpha(k):.4f}"
+             for k in ext if abs(_NEMENYI_Q05[k] - q_alpha(k)) > 0.002]
+    check("nemenyi: the extension beyond k=25 is what the computation gives",
+          ext and not drift, "; ".join(drift) or "no k>25 entries shipped")
+
+    # And the covering assertion: every experiment here must now get a verdict.
+    check("nemenyi: the table covers every arm count this repo measures (<= 28)",
+          all(k in _NEMENYI_Q05 for k in range(2, 29)),
+          f"missing {[k for k in range(2, 29) if k not in _NEMENYI_Q05]}")
+
+
+def test_two_runs_sharing_a_config_id_are_refused() -> None:
+    """A second run of the same arm must stop the tools, not be picked by luck.
+
+    Three SciFact arms were re-run, so three config_ids existed twice in data/runs.
+    `check_report_claims.py` globbed for a run in five places -- three took the last
+    hit, two the first, and one had a different exclusion rule -- so its answer depended
+    on the order the filesystem returned directories in. 29/29 on APFS, 28/29 on ext4,
+    and the failure was real: two cost cells genuinely still held price-table figures.
+    `make ci` was called green for a week on the only machine anyone ran it on.
+
+    The re-runs now live in `data/runs-repeats/`. This asserts the tools refuse rather
+    than guess if that ever happens again.
+
+    `--repeat N` writes `<id>_r1.._rN`, which IS one arm measured N times and must keep
+    working; the second half of this test pins that, or the fix would forbid the
+    feature it was meant to protect.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    sys.path.insert(0, str(HERE))
+    from _common import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
+
+    src = next((d for d in sorted((HERE.parent / "data" / "runs").glob("sf_*"))
+                if (d / "metrics.json").is_file()), None)
+    if src is None:
+        print("  --   duplicate runs: skipped (no SciFact run on disk)")
+        return
+
+    runs = HERE.parent / "data" / "runs-selftest-dupe"
+    shutil.rmtree(runs, ignore_errors=True)
+    for name in (src.name, src.name.replace("2026", "2027", 1)):
+        d = runs / name
+        d.mkdir(parents=True)
+        for f in ("metrics.json", "predictions.jsonl"):
+            if (src / f).is_file():
+                shutil.copy2(src / f, d / f)
+
+    ds = _json.loads((src / "metrics.json").read_text())["dataset_id"]
+    raised = False
+    try:
+        runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
+    except AmbiguousRuns as exc:
+        raised = "claim config_id" in str(exc)
+    check("duplicate runs: two runs sharing a config_id are refused, not picked",
+          raised, "runs_by_arm returned a winner instead of raising")
+
+    # The control: a --repeat set shares a config_id BY DESIGN and must still load.
+    shutil.rmtree(runs, ignore_errors=True)
+    for i in (1, 2, 3):
+        d = runs / f"{src.name}_r{i}"
+        d.mkdir(parents=True)
+        for f in ("metrics.json", "predictions.jsonl"):
+            if (src / f).is_file():
+                shutil.copy2(src / f, d / f)
+    try:
+        got = runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
+        ok = sum(len(v) for v in got.values()) == 3
+    except AmbiguousRuns as exc:
+        ok, got = False, str(exc)
+    check("duplicate runs: but a --repeat set still loads as one arm", ok, str(got)[:150])
+    shutil.rmtree(runs, ignore_errors=True)
+
+
+def test_the_reports_separation_counts_are_real() -> None:
+    """A "separated from N of M" in a report must match what `family_test.py` says.
+
+    The third class round 2 named that nothing checked: "it also checks only single-run
+    primary metrics, so it wouldn't have caught any of the round-1 cost, ratio or
+    tie-count errors." Cost and ratios are now in `check_report_claims.py`. This is the
+    tie count, and it lives here rather than there because the permutation test takes
+    ~17s and that belongs in the test suite, not in a claims scan.
+
+    It was worth adding: REPORT_RETRIEVAL said "only 6 of 18 opponents ... the twelve it
+    cannot separate from", and the tool says 7 and 11 — on the corrected runs AND on
+    the originals. The number had been stale since before the parser bug, for unrelated
+    reasons, and nothing noticed.
+    """
+    import re as _re  # noqa: PLC0415
+
+    reparsed = HERE.parent / "data" / "runs-reparsed"
+    if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
+        print("  --   separation counts: skipped (no reparsed SciFact runs on disk)")
+        return
+
+    # Only the 2026-09-28 sweep: the re-runs duplicate arms and would double the family.
+    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        scope = pathlib.Path(td) / "runs"
+        scope.mkdir()
+        for d in reparsed.glob("sf_*_n200_v1_20260928*"):
+            shutil.copytree(d, scope / d.name)
+        r = run("scripts/family_test.py", "--dataset-id", "scifact_200",
+                "--a", "sf_glm_s_n200_v1", "--against", "_n200_v1",
+                "--metric", "ndcg_10", env={"EVAL_RUNS_DIR": str(scope)})
+
+    m = _re.search(r"separated from (\d+) of (\d+) opponents", r.stdout or "")
+    if not m:
+        check("separation counts: family_test produced a verdict", False,
+              ((r.stderr or "") + (r.stdout or ""))[-160:])
+        return
+    sep, fam = int(m.group(1)), int(m.group(2))
+    report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text()
+
+    # A RANGE IS AN ACCEPTABLE ANSWER, AND HERE IT IS THE HONEST ONE. This count is not
+    # stable: two arms sit on their Holm thresholds (gemma_s 0.0045 vs 0.0042,
+    # mistral_s 0.0055 vs 0.0045), so 20k permutations give 6 or 7 depending on the
+    # seed and 400k give 7. An earlier version of this test demanded one exact figure,
+    # which would have forced the report to publish a number more precise than the
+    # measurement -- exactly the error it exists to catch.
+    def _states(n: int) -> bool:
+        return (f"**{n} of {fam}**" in report
+                or any(f"**{lo}\u2013{hi} of {fam}**" in report
+                       for lo in range(n - 2, n + 1) for hi in range(n, n + 3)
+                       if lo <= n <= hi))
+
+    check(f"REPORT_RETRIEVAL states a separated count consistent with the tool's {sep}",
+          _states(sep),
+          f"the tool says {sep} of {fam}; the report states neither that nor a range "
+          f"containing it")
+    check(f"...and a tie group consistent with {fam - sep} of {fam}",
+          _states(fam - sep),
+          f"tie group should read {fam - sep} of {fam}, or a range containing it")
+    check("...and says the count sits on a boundary, since it does",
+          "boundary" in report.lower(),
+          "two arms sit on their Holm thresholds and the report does not say so")
+
+
+def test_the_checks_can_actually_fail() -> None:
+    """Every checker must FAIL on the defect it exists to catch. Not on an empty tree.
+
+    The first version of this test pointed three checkers at a directory containing
+    nothing and asserted a non-zero exit. Round 3 showed what that was worth:
+
+      - it covered 3 of 9 checkers, and only their missing-input path;
+      - `check_report_claims` did not even reach its own guard there -- the fixture had
+        no `research/`, so it died with FileNotFoundError and exited 1 for a reason
+        that has nothing to do with the check. Deleting its 0/0 guard would not have
+        been noticed;
+      - and a checker that prints FAIL and exits 0 satisfied all of it.
+
+    So this plants the REAL defect in the REAL tree, one at a time, restoring each
+    afterwards. A checker that cannot see a wrong number in the file it is pointed at
+    is not checking that file, whatever it prints.
+    """
+    import contextlib  # noqa: PLC0415
+
+    @contextlib.contextmanager
+    def planted(rel: str, old: str, new: str):
+        """Swap a string in a repo file, then put it back whatever happens."""
+        f = HERE.parents[1] / rel
+        before = f.read_text(encoding="utf-8")
+        if before.count(old) != 1:
+            yield False
+            return
+        try:
+            f.write_text(before.replace(old, new), encoding="utf-8")
+            yield True
+        finally:
+            f.write_text(before, encoding="utf-8")
+
+    #: (checker, label, file, the defect, what the string becomes)
+    DEFECTS = [
+        # A TABLE ROW, because prose is not covered -- see KNOWN_ISSUES. Pointing this
+        # at the same number in a sentence FAILS, and that failure is a true statement
+        # about the checker rather than a bug in this test.
+        ("check_report_claims.py", "a wrong number in a leaderboard row",
+         "research/REPORT_NER.md",
+         "| **span_marker** | 0.7674 | 0.8370 |",
+         "| **span_marker** | 0.9999 | 0.8370 |"),
+        ("check_links.py", "a link to a file that does not exist",
+         "research/KNOWN_ISSUES.md",
+         "# Known issues — read before reviewing",
+         "# Known issues — read before reviewing\n\n[x](./_no_such_file_.md)"),
+        ("check_terminology.py", "a non-canonical experiment label",
+         "docs/REFERENCE.md", "| Retrieval · SciFact |", "| Retrieval on SciFact |"),
+        ("check_model_facts.py", "a licence the evidence contradicts",
+         "docs/REFERENCE.md",
+         "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | MIT |",
+         "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | GPL-3.0 |"),
+    ]
+    for script, what, rel, old, new_text in DEFECTS:
+        if not (HERE / script).is_file():
+            check(f"checks can fail: {script} exists", False, "missing")
+            continue
+        with planted(rel, old, new_text) as ok:
+            if not ok:
+                print(f"  --   checks can fail: {script} skipped "
+                      f"({what!r} anchor not found in {rel})")
+                continue
+            r = run(f"scripts/{script}")
+            out = (r.stdout or "") + (r.stderr or "")
+            check(f"checks can fail: {script} catches {what}",
+                  r.returncode != 0, f"exit {r.returncode}")
+            # AND IT MUST FAIL FOR THE RIGHT REASON. Exiting 1 on a traceback is how
+            # the previous version of this test passed while proving nothing.
+            check(f"checks can fail: ...by failing, not by crashing ({script})",
+                  "Traceback" not in out, out.strip().splitlines()[-1][:120] if out.strip() else "")
+
+    # The no-input path is still worth pinning -- it is the original
+    # check_terminology bug -- but it is now one case among several, not the whole test.
+    import shutil  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        fake = pathlib.Path(td) / "repo" / "harness"
+        (fake / "data" / "runs").mkdir(parents=True)
+        (fake / "data" / "runs-rescored").mkdir(parents=True)
+        shutil.copytree(HERE, fake / "scripts")
+        r = subprocess.run([PY, str(fake / "scripts" / "check_terminology.py")],
+                           cwd=fake, capture_output=True, text=True)
+        check("checks can fail: check_terminology with no markdown exits non-zero",
+              r.returncode != 0, f"exit {r.returncode}")
+
+
+def test_promote_reads_its_reason_from_the_env() -> None:
+    """`--reason-from-env` must run. It raised NameError on every invocation.
+
+    Added in round 1 to close a backtick injection in `make run-promote`, and shipped
+    broken: `promote_baseline.py` called `os.environ.get` without importing `os`, so
+    the documented command in RUNBOOK:170 died with
+    `NameError: name 'os' is not defined` before doing anything at all.
+
+    It survived because the only test of this script was `--help`, which never reaches
+    the flag. A `--help` test proves a file parses; it proves nothing about the path a
+    user takes. Both assertions here reach line 48 and neither writes a baseline.
+    """
+    r = run("scripts/promote_baseline.py", "--reason-from-env", "--run", "nope",
+            env={"EVAL_PROMOTE_REASON": ""})
+    out = (r.stderr or "") + (r.stdout or "")
+    check("promote: an empty EVAL_PROMOTE_REASON is refused, not crashed",
+          r.returncode != 0 and "NameError" not in out, out[-160:])
+    # NOT just `"reason" in out`: the NameError traceback echoes the offending source
+    # line, which contains the word "reason", so that assertion passed against the
+    # broken code. It has to be the ERROR MESSAGE, and no traceback.
+    check("promote: and it says a reason is required",
+          "a reason is required" in out and "Traceback" not in out, out[-160:])
+
+    r = run("scripts/promote_baseline.py", "--reason-from-env", "--run",
+            "_no_such_run_selftest_", env={"EVAL_PROMOTE_REASON": "a reason"})
+    out = (r.stderr or "") + (r.stdout or "")
+    check("promote: with the env reason set it gets PAST the env read to the run lookup",
+          "NameError" not in out and "no run" in out.lower(), out[-160:])
 
 
 def test_rescore_refuses_a_missing_reference_set() -> None:
@@ -725,11 +1488,33 @@ def main() -> int:
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
         test_resume_scores_and_persists,
+        test_writes_leave_no_partial_file,
+        test_rescore_rehashes_the_references_it_actually_read,
+        test_rescore_takes_source_path_from_the_dataset,
+        test_a_run_that_measured_nothing_is_not_a_success,
+        test_adapter_declaration_beats_a_stale_run,
+        test_nemenyi_table_is_computed_not_copied,
+        test_two_runs_sharing_a_config_id_are_refused,
+        test_the_reports_separation_counts_are_real,
+        test_the_checks_can_actually_fail,
+        test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
     ):
-        fn()
+        # A TEST THAT RAISES MUST NOT HIDE THE ONES AFTER IT. `fn()` bare meant one
+        # ImportError -- from a helper that had been renamed, say -- aborted the suite
+        # at that point and every later test simply never ran, silently, while the
+        # output looked like a normal early exit. That is the same shape as every
+        # other "reported green for checking nothing" bug in this repo.
+        try:
+            fn()
+        except Exception as exc:  # noqa: BLE001 — a crashing test is a failing test
+            import traceback  # noqa: PLC0415
+
+            check(f"{fn.__name__} ran without raising", False,
+                  f"{type(exc).__name__}: {exc}")
+            traceback.print_exc()
     if failures:
         print(f"\n{len(failures)} FAILED: {', '.join(failures)}")
         return 1

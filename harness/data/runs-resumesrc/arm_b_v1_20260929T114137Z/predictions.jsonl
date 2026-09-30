@@ -1,5 +1,0 @@
-{"_meta": {"resumed_from_disk": true}, "item_id": "item_01", "output_words": 20.0, "overlap_f1": 0.264151, "resumed": 1.0}
-{"_meta": {"resumed_from_disk": true}, "item_id": "item_02", "output_words": 20.0, "overlap_f1": 0.217391, "resumed": 1.0}
-{"cost_usd": 0.0, "item_id": "item_03", "latency_ms": 0.027, "output_words": 20.0, "overlap_f1": 0.272727, "resumed": 0.0}
-{"cost_usd": 0.0, "item_id": "item_04", "latency_ms": 0.018, "output_words": 20.0, "overlap_f1": 0.333333, "resumed": 0.0}
-{"cost_usd": 0.0, "item_id": "item_05", "latency_ms": 0.012, "output_words": 6.0, "overlap_f1": 0.266667, "resumed": 0.0}

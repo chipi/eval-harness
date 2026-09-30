@@ -113,5 +113,64 @@ check("grade 0 is not found_any", r0["found_any"] == 0.0)
 r1 = score_ranking(["d1"], G0)
 check("the grade-1 doc still scores 1.0", r1["ndcg_10"] == 1.0 and r1["recall_10"] == 1.0)
 
+# PROSE IS NOT A RANKING. The parser used to take the first "[" anywhere in the body,
+# so a model reasoning aloud and mentioning one id in passing was scored as if it had
+# answered with a one-document ranking. On sf_qwen_s that hit 50 of 200 items, nearly
+# all replies the token limit cut off mid-sentence; llama_l lost 0.0417 nDCG to it.
+# The lead-in allowance is measured, not guessed: of 200 replies, 150 put the array at
+# character 0 and the 50 with anything before it had at least 140 characters of it.
+PROSE = ("The claim states that rapamycin decreases the concentration of "
+         "triacylglycerols in fruit flies. Looking at the candidates, the most relevant "
+         "is [4983]. The evidence in that abstract directly addresses it.")
+check("prose mentioning an id in passing -> None, not a 1-doc ranking",
+      parse_ranking(PROSE) is None)
+check("a finished sentence before the array is prose, however short",
+      parse_ranking("I checked. [a]") is None)
+check("a short wrapper with no finished sentence still parses",
+      parse_ranking("Here are the results:\n[\"a\",\"b\"]") == ["a", "b"])
+check("a bare single-id array is still a ranking",
+      parse_ranking("[6157837]") == ["6157837"])
+
+# COMMA-SEPARATED IDS ON ONE LINE. Rejected whole before, because the line has a space,
+# so the most natural non-JSON answer scored as unreadable.
+check("comma-separated ids parse", parse_ranking("4983, 13734012") == ["4983", "13734012"])
+check("comma-separated, no spaces", parse_ranking("4983,13734012") == ["4983", "13734012"])
+check("a numbered line of comma-separated ids",
+      parse_ranking("1. 4983, 13734012") == ["4983", "13734012"])
+check("a prose line with commas is still refused",
+      parse_ranking("The claim is X, which implies Y") is None)
+
+# A LEADING ARRAY THAT WILL NOT PARSE IS A REFUSAL, NOT A HINT. llama_l opens with a
+# real array and corrects itself in prose; json.loads fails, and the line path used to
+# split the line on commas and accept "[8925851" and "21884449]" as document ids --
+# 25 of 200 items on one run. The harvested ranking scored BELOW the BM25 fallback the
+# pipeline uses for an unreadable reply (0.6386 against 0.7155 on the same bytes), so
+# the arm was punished for the parser's guess.
+SELFCORRECT = ("[24737389, 8925851, 7487927, 4459491, 13717103, 30813140, 21884449, "
+               "4459491 is removed and  [30813140, 40078758]")
+check("a leading array that fails to parse -> None, not harvested fragments",
+      parse_ranking(SELFCORRECT) is None)
+check("a bracket-laden token is never an id",
+      parse_ranking("[8925851\n21884449]") is None)
+check("but a clean comma list on one line still parses",
+      parse_ranking("8925851, 21884449") == ["8925851", "21884449"])
+
+# TRAILING COMMAS. "4983," split to ["4983", ""], the empty part failed the all(), and
+# the whole line was discarded -- so this parsed as ["999"].
+check("trailing commas on separate lines",
+      parse_ranking("4983,\n13734012,\n999") == ["4983", "13734012", "999"])
+
+# AN ARRAY INSIDE A SENTENCE IS NOT A RANKING. The lead is short and unfinished, so the
+# wrapper and sentence-end guards both let these through.
+check("'See [4983]' is prose, not a one-document ranking",
+      parse_ranking("See [4983]") is None)
+check("an array with a trailing clause is prose",
+      parse_ranking("The most relevant document is [4983], because it shows the effect.")
+      is None)
+check("a lead-in ending in a colon on the SAME line still parses",
+      parse_ranking("Here you go: [\"a\",\"b\"]") == ["a", "b"])
+check("and an array that begins its own line still parses",
+      parse_ranking("Here are the results:\n[\"a\",\"b\"]") == ["a", "b"])
+
 print(f"\n{sum(1 for _, c in ok if c)}/{len(ok)} passed")
 sys.exit(0 if all(c for _, c in ok) else 1)

@@ -35,7 +35,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from _common import REFERENCES, RUNS, die, read_json  # noqa: E402
+from _common import REFERENCES, RUNS, die, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from retrieval import NDCG_AT, dcg, score_ranking  # noqa: E402
@@ -91,6 +91,9 @@ def main() -> int:
     ap.add_argument("--arm", help="print this arm's rank-movement detail")
     ap.add_argument("--top", type=int, default=10)
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     gold = qrels(args.dataset_id)
     R = runs(args.dataset_id, args.match)
