@@ -3,7 +3,7 @@
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
 better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-09-30, after **round 3** and the six local ML arms.
+Last updated 2026-09-30, after **round 4**, which reviewed the six local ML arms.
 
 ## What running the six local ML arms found (2026-09-30)
 
@@ -23,6 +23,38 @@ instrument and one about the block itself; re-timing and re-checking them surfac
 | **`precision` is a label, not a setting — and for `bart_s` it is wrong.** Every local config declares `precision: fp32`, and the fingerprint records it, but no adapter passes it to `from_pretrained`/`pipeline`, so each model runs in its stored dtype. That is fp32 for seven of the eight model-backed local arms of summarisation and classification (NER and retrieval not checked); `distilbart-cnn-6-6` is stored at fp16 and **ran at fp16** (measured on torch 2.14: `next(model.parameters()).dtype`). Its quality and latency are fp16 figures under an fp32 label. An earlier note said it "was upcast to fp32 at load", which was never measured | **Open.** The runs stand as what they are; the reports now say fp16. The fix is to apply `precision` as `torch_dtype` in the local adapters (or record the loaded dtype), which changes what `bart_s` computes, so it needs a new config version |
 | **Local-arm means include a first-call cost the warm-up does not absorb.** `warmup()` loads the model but runs no forward pass, so items 1–3 pay lazy initialisation — up to **24 s on one item** in the two `bert_base_fy` re-runs, which lifts their means from ~60 ms to 166–202 ms. The `latency_ms` column is a mean; `docs/REFERENCE.md` says it excludes warm-up, which is true of the model load only | **Open.** The same-machine table uses the median. The fix is one untimed forward pass in each local adapter's `warmup()` — a change to the instrument, so it waits for a config version |
 | `check_report_claims.py`'s Pareto check found hosted summarisation arms by excluding two names (`bart_l`, `lead3`); three more local arms would have been counted as hosted | **Fixed**: hosted = the run's recorded `provider` is `litellm` |
+
+## What round 4 says about round 3
+
+Round 4 reviewed the merged ML-arm work and the three rounds of fixes underneath it. It
+found **3 high, 5 medium, 5 low, and overturned one of round 3's own rulings.** All are
+closed; what follows is only the part a reviewer still needs.
+
+Two findings are worth carrying forward as a pattern, because they are the same pattern
+every round has found:
+
+- **A check that cannot fail.** R4-H1: the cost check skipped every arm whose recorded
+  cost already equalled its bill, on a comment that said "the table happens to be right"
+  — a statement about the *run*, never about the number in the report. Every arm measured
+  after the 2026-09-29 adapter fix was unchecked. R4-M1: the guard that exists to prove
+  checks can fail *skipped silently* when its anchor drifted, and exercised one defect
+  class per checker when the claims checker has five. Both were found by mutation, not
+  by reading.
+
+- **A correction that reaches the report and not the thing that generates it.** R4-M5:
+  `reparse.py`'s docstring still told the retracted three-arms story that its own fix
+  disproved. Fourth occurrence across four rounds.
+
+**I overturned round 3's ruling 2 wrongly, and that is on me.** Round 3 said Few-NERD's
+annotation share was 38%, not ~7%. I recorded it in `REPORT_NER.md` as a disagreement and
+wrote that I "could not reproduce 38% from any pairing of the committed numbers" — while
+lines 34, 82 and 323 of that same file said 38% and always had. Round 3 was pointing at
+an internal inconsistency in one document; I read it as an outside claim and disputed my
+own number. The arithmetic: the lead over `openai_m` is 0.0810 and falls to 0.0503 under
+the annotation bound, so 1 − 0.0503/0.0810 = 37.9%. The "~7%" divided `span_marker`'s own
+0.0060 gain by the margin, which is the wrong quantity — a margin moves by the
+*difference* between two arms' gains, and `openai_m` gains 0.0365. §4 now states 38% with
+both components shown and the disputing paragraph deleted.
 
 ## What round 3 says about round 2
 
@@ -176,30 +208,50 @@ table and code block, every relative link and anchor, and that each checker stil
 on the defect it exists to catch. The gaps below are known and are the ones a reviewer
 should spend time on.
 
-- **Numbers in PROSE are unchecked.** The arm-row checker reads markdown table rows and
-  fenced code blocks. A figure inside a sentence — *"`span_marker` scored 0.7674"* — is
-  invisible to it, and that is how several stale numbers survived two review rounds.
+- **Numbers in PROSE are only NARROWLY checked.** The arm-row checker reads markdown
+  table rows and fenced code blocks; a figure inside a sentence was invisible to it, and
+  that is how several stale numbers survived three review rounds.
 
-  Not fixed, and the reason is measured: the obvious rule (any 4-decimal number within
-  60 characters of an arm name on the same line) produces **18 false positives on the
-  current, correct repo**. `anthropic_l shows 0.6897` is that arm's *cost* sitting next
-  to its name; `openai_m shows 0.4693` is a different statistic entirely. A check that
-  cries wolf on correct text gets muted, and this repo already learned that the
-  expensive way. Covering prose properly means the reports interpolating from a
-  structured figures block rather than restating numbers — a real change, not a
-  tightening.
+  A narrow slice is now covered: a 4-decimal number that follows an arm name
+  *immediately*, through one of four connectives — `` `span_marker` scored 0.7674 ``,
+  `(0.7674)`, `at 0.7674`, `— 0.7674`. Measured over all four reports: **5 true, 0
+  false**.
+
+  The **general** case is still open, and the reason is measured too. The obvious rule
+  (any 4-decimal number within 60 characters of an arm name on the same line) produces
+  **21 false positives on the current, correct repo**: `anthropic_l shows 0.6897` is that
+  arm's *cost* beside its name, `openai_m shows 0.4693` a different statistic entirely. A
+  check that cries wolf on correct text gets muted, and this repo learned that the
+  expensive way. So a figure that names its arm three words earlier, or sits in a
+  sentence that mentions two arms, is still unchecked. Covering prose properly means the
+  reports interpolating from a structured figures block rather than restating numbers — a
+  real change, not a tightening.
 
 - **Exec summaries, READMEs, handovers and KNOWN_ISSUES itself** are outside the
-  arm-row scan entirely; only the four experiment reports are in it.
+  arm-row scan entirely; only the four experiment reports are in it. This file's own
+  numbers are checked by nothing.
 
-- **Deleting evidence passes.** Removing a committed run, a rescored run, or one
-  `predictions.jsonl` does not fail anything: V7 checks the git index rather than the
-  working tree, V1 validates `data/runs` only, and the arm-row check silently skips
-  arms it cannot find.
+- **Deleting evidence is now caught, at the level of a file.** V9 fails when any run file
+  git tracks is absent from disk, and when `runs-reparsed`, `runs-rescored`, `runs-pair`
+  or `runs-repeats` falls below its floor. Verified by reproducing round 4's own
+  mutation: `rm -rf data/runs/sf_mpnet_*` now reports 202 missing files where it
+  previously left `make ci` green.
 
-- **No committed run's `scorer_sha256` is compared to the current code**, so changing a
-  scorer constant moves the hash and nothing notices that the runs were scored with
-  something else.
+  What V9 does **not** catch: a run deleted from disk *and* from the index in one commit,
+  and a floor lowered in the same change that empties a directory. Both are visible in a
+  diff and neither is caught by a check.
+
+- **Scorer drift is now caught for DERIVED runs only.** V10 imports each scorer and
+  compares its hash to what every run in `runs-reparsed` and `runs-rescored` claims —
+  those two directories exist to be re-derivable, so a run there naming a scorer that is
+  not in the tree is a failure. Verified by mutating `_ARTICLES` in `extraction.py` (27
+  of 27 rescored runs go red) and `_ID_TOKEN` in `retrieval.py` (19 of 19 reparsed).
+
+  For `data/runs` it is a **note, never a gate** — a measurement run legitimately carries
+  the hash it was measured with, and all 27 NER runs predate the current parser. What V10
+  does not cover: classification and summarisation record no comparable scorer hash, so
+  only the NER and retrieval scorers are watched; and it compares hashes, which tells you
+  the code moved, not whether the stored numbers would change.
 
 ---
 

@@ -457,6 +457,51 @@ for _rep in [r for r in REPORT_DATASETS if r != "REPORT_SYNTHESIS.md"]:
     check(f"...including {_rep} ({_n} rows)", _n > 0,
           "no arm row in this report was checked against a run")
 
+# ---- AND A NARROW SLICE OF PROSE -------------------------------------------------
+#
+# Numbers in sentences were the one surface nothing reached, and they are how several
+# stale figures survived three rounds. The obvious rule -- any 4-decimal number near an
+# arm name -- measured 17 true against 21 FALSE positives, because `anthropic_l ...
+# 0.6897` is that arm's cost sitting beside its name. A check that cries wolf gets
+# muted, so that version was deliberately not shipped.
+#
+# This is the narrow form an external reviewer proposed and measured: the number must
+# follow the arm name IMMEDIATELY, through one of four connectives. Re-measured here
+# over all four reports: 5 true, 0 false. It would have caught drift shaped like
+# "`span_marker` scored 0.7674".
+_PROSE = re.compile(r"`([a-z0-9_]+)`\s*(?:\(|at |scored |\u2014\s*)\*{0,2}(0\.[0-9]{4})\*{0,2}")
+_prose_bad, _prose_checked = [], 0
+for _rep, _dss in REPORT_DATASETS.items():
+    if _rep == "REPORT_SYNTHESIS.md":
+        continue                       # keyed by experiment, and spans five datasets
+    _lines = (ROOT / "research" / _rep).read_text().splitlines()
+    for _ds in _dss:
+        _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
+        _vals = {}
+        for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
+            _v = (json.load(open(_dirs[0] / "metrics.json")).get("scores") or {}).get(_metric)
+            if _v is not None:
+                _vals[_arm] = _v
+        _fenced = False
+        for _i, _line in enumerate(_lines, 1):
+            if _line.startswith("```"):
+                _fenced = not _fenced
+                continue
+            if _fenced or _line.lstrip().startswith("|"):
+                continue               # tables and code blocks have their own scans
+            for _m in _PROSE.finditer(_line):
+                _arm, _got = _m.group(1), float(_m.group(2))
+                if _arm not in _vals or abs(_got - _vals[_arm]) > 0.5:
+                    continue           # not this metric; do not guess
+                _prose_checked += 1
+                if abs(_got - _vals[_arm]) > 0.0002:
+                    _prose_bad.append(f"{_rep}:{_i}: {_arm} reads {_got:.4f}, "
+                                      f"the run says {_vals[_arm]:.4f}")
+check("prose figures that name an arm match the run", not _prose_bad,
+      "; ".join(_prose_bad[:4]))
+check("and prose figures were actually found to check", _prose_checked >= 4,
+      f"only {_prose_checked} matched")
+
 # ---- RATIOS AND COUNTS, the other two classes nothing checked -------------------
 #
 # Round 2: "it also checks only single-run primary metrics, so it wouldn't have caught

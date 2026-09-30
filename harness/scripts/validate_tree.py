@@ -13,6 +13,10 @@ Each check exists because its absence let a real defect through somewhere:
                      per-item results on the same dataset. Agreeing MEANS are not
                      suspicious on a discrete metric; agreeing per item is
   V6  baselines      a baseline pointing at a run that no longer exists
+  V7  readable       a committed run with no metrics.json
+  V8  config_ids     two run directories claiming the same (dataset_id, config_id)
+  V9  present        a committed run deleted from disk, or a directory below its floor
+  V10 scorer drift   a DERIVED run naming a scorer that is not the code in this tree
 
 Exit 1 on any failure, so it can gate.
 
@@ -277,6 +281,144 @@ def v7_committed_runs_are_readable() -> None:
           f"{len(bad)} run(s) committed as outputs only")
 
 
+def v9_no_committed_evidence_is_missing() -> None:
+    """Every run git has must still be on disk, with its files. Deleting evidence passed.
+
+    V7 reads the git INDEX, V1 validates `data/runs` only, and the arm-row check skips
+    arms it cannot find -- so `rm -rf data/runs/sf_mpnet_*` left `make ci` green and
+    43/43 claims verified. A repo whose argument is "check the instrument" could lose a
+    quarter of its evidence without a single red line. Found by external review.
+
+    Floors as well as presence: a directory could be emptied one run at a time and each
+    individual absence explained away.
+    """
+    #: What each committed runs directory must contain. Raising one of these is a
+    #: deliberate edit; lowering one should need an argument.
+    FLOORS = {"runs-reparsed": 19, "runs-rescored": 27, "runs-pair": 4, "runs-repeats": 3}
+
+    tracked = subprocess.run(
+        ["git", "ls-files", "data/runs", "data/runs-rescored", "data/runs-reparsed",
+         "data/runs-pair", "data/runs-repeats"],
+        cwd=ROOT, capture_output=True, text=True,
+    ).stdout.split()
+    missing, incomplete = [], []
+    seen: dict = {}
+    for f in tracked:
+        parts = f.split("/")
+        if len(parts) < 4:
+            continue
+        run_dir = ROOT / parts[0] / parts[1] / parts[2]
+        seen.setdefault(f"{parts[1]}/{parts[2]}", set()).add(parts[3])
+        if not (ROOT / f).exists():
+            missing.append(f)
+    for key, files in sorted(seen.items()):
+        if "metrics.json" not in files:
+            continue                       # V7's business, not this one
+        if "predictions.jsonl" not in files:
+            incomplete.append(f"{key} has no predictions.jsonl")
+    for x in (missing[:5] + incomplete[:5]):
+        print(f"       {x}")
+    if len(missing) > 5:
+        print(f"       ... and {len(missing) - 5} more missing files")
+    check(not missing and not incomplete,
+          "V9 every committed run file is present on disk",
+          f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete")
+
+    short = []
+    for name, floor in sorted(FLOORS.items()):
+        base = ROOT / "data" / name
+        n = len([d for d in base.glob("*/metrics.json")]) if base.is_dir() else 0
+        if n < floor:
+            short.append(f"{name}: {n} runs, expected at least {floor}")
+    for x in short:
+        print(f"       {x}")
+    check(not short, "V9 each committed runs directory meets its floor",
+          "; ".join(short))
+
+
+def v10_derived_runs_carry_the_current_scorer() -> None:
+    """A run that CLAIMS to be a product of the current code must carry its hashes.
+
+    `runs-rescored` and `runs-reparsed` exist to be re-derivable for $0, and each run in
+    them records the scorer it was derived with -- `rescored_with.scorer`,
+    `reparsed_with.scorer_sha256`. Nothing ever compared those to the code in the tree.
+    So a change to `_shared/extraction.py` or `_shared/retrieval.py` moved the hash and
+    left every stored figure attributed to a scorer that no longer exists, with `make ci`
+    green: a reader who reran the tool and got different numbers had no way to tell
+    whether the tool or the stored copy was stale. Found by external review.
+
+    `data/runs` is a NOTE, never a failure. Those runs legitimately carry the hash they
+    were measured with -- recording it is the entire point -- so drift there is expected
+    and only worth saying out loud.
+
+    An adapter whose dependencies are absent is a named skip, printed, not silence: a
+    check that vanishes when an import fails is a check that cannot fail.
+    """
+    #: (directory, glob, where the run states its hash, module to import it from).
+    #: `scorer_id()` is the no-network, no-params entry point the rescorer uses; the
+    #: three directories do NOT state the same thing in the same place, and pretending
+    #: they did is how a check ends up reading a key nothing writes and passing on zero
+    #: rows. `data/runs` predates `scorer_sha256` and carries `parser_sha256` instead,
+    #: under `system_under_test.model` — so that is what is compared there.
+    SOURCES = (
+        ("runs-rescored", "*", ("rescored_with", "scorer", "scorer_sha256"),
+         "examples/ner-few-nerd", "adapter", "scorer_id", "scorer_sha256"),
+        ("runs-reparsed", "*", ("reparsed_with", "scorer_sha256"),
+         "examples/_shared", "retrieval", "scorer_sha256", None),
+        ("runs", "fn_*", ("fingerprint", "system_under_test", "model", "parser_sha256"),
+         "examples/ner-few-nerd", "adapter", "scorer_id", "parser_sha256"),
+    )
+
+    def _dig(d, path):
+        for k in path:
+            if not isinstance(d, dict):
+                return None
+            d = d.get(k)
+        return d if isinstance(d, str) else None
+
+    for directory, pat, path, modpath, modname, fn, key in SOURCES:
+        base = ROOT / "data" / directory
+        if not base.is_dir():
+            continue
+        sys.path.insert(0, str(ROOT.parent / modpath))
+        try:
+            mod = __import__(modname)
+            got = getattr(mod, fn)()
+            current = got[key] if key else got
+        except Exception as exc:  # noqa: BLE001 — an absent example dep is a named skip
+            print(f"  skip V10 {directory}: {modname}.{fn} not importable "
+                  f"({type(exc).__name__}: {str(exc)[:60]})")
+            continue
+        checked, stale = 0, []
+        for mj in sorted(base.glob(f"{pat}/metrics.json")):
+            recorded = _dig(read_json(mj), path)
+            if not recorded:
+                continue
+            checked += 1
+            if recorded != current:
+                stale.append(f"{mj.parent.name} {recorded[:12]}")
+        if not checked:
+            print(f"  skip V10 {directory}: no run records a scorer hash at "
+                  f"{'.'.join(path)}")
+            continue
+        label = f"V10 {directory}: scorer hash matches the code ({checked} run(s))"
+        if directory == "runs":
+            # Measurement runs SHOULD carry the hash of their own day. A note, not a gate.
+            if stale:
+                notes.append(f"{len(stale)} of {checked} run(s) in data/runs were "
+                             f"measured with a scorer that is not the current one "
+                             f"(expected; the hash is the record) — "
+                             f"current {current[:12]}")
+            print(f"  ok   {label} — {checked - len(stale)} current, "
+                  f"{len(stale)} historical")
+            continue
+        for x in stale[:5]:
+            print(f"       {x} != {current[:12]}")
+        check(not stale, label,
+              f"{len(stale)} of {checked} derived run(s) name a scorer that is not the "
+              f"code in this tree — regenerate them")
+
+
 def v8_no_duplicate_config_ids() -> None:
     """No two run directories may claim the same (dataset_id, config_id).
 
@@ -349,7 +491,9 @@ def main() -> int:
     print(f"eval tree: {ROOT / 'data'}\n")
     for fn in (v1_schemas, v2_dataset_ids, v3_provenance, v4_materialized,
                v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable,
-               v8_no_duplicate_config_ids):
+               v8_no_duplicate_config_ids,
+               v9_no_committed_evidence_is_missing,
+               v10_derived_runs_carry_the_current_scorer):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

@@ -1370,6 +1370,19 @@ def test_the_checks_can_actually_fail() -> None:
          "research/REPORT_SUMMARIZATION.md",
          "| **8 of 24** | three arms' quality",
          "| **5 of 24** | three arms' quality"),
+        # V10 GUARDS CODE, NOT A REPORT, so the defect is planted in the scorer. It
+        # must be a constant `code_digest` actually covers: appending an unreferenced
+        # name to the file changes nothing and V10 stays green, correctly. The first
+        # version of this guard used exactly that mutation, saw three green lines, and
+        # would have shipped a V10 that could not fail if the probe had not been run.
+        ("validate_tree.py", "a SCORER CHANGE the rescored runs predate",
+         "examples/_shared/extraction.py",
+         '_ARTICLES = ("the ", "a ", "an ")',
+         '_ARTICLES = ("z ", "the ", "a ", "an ")'),
+        ("validate_tree.py", "a PARSER CHANGE the reparsed runs predate",
+         "examples/_shared/retrieval.py",
+         '_ID_TOKEN = re.compile(r"^[\\w.\\-]+$")',
+         '_ID_TOKEN = re.compile(r"^[Z\\w.\\-]+$")'),
     ]
     for script, what, rel, old, new_text in DEFECTS:
         if not (HERE / script).is_file():
