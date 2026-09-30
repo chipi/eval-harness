@@ -63,6 +63,11 @@ except ImportError:  # pragma: no cover
 
 
 
+# Row keys the core writes itself, as opposed to the scorer's or the adapter's `extra`.
+_CORE_ROW_KEYS = frozenset({"item_id", "resumed", "latency_ms", "tokens_in", "tokens_out",
+                            "cost_usd"})
+
+
 class _Resumed:
     """Stands in for an adapter's `Result` when an item is replayed from disk.
 
@@ -103,7 +108,17 @@ class _Resumed:
         self.latency_ms = prior.get("latency_ms")
         self.tokens_in = prior.get("tokens_in")
         self.tokens_out = prior.get("tokens_out")
-        self.extra: Dict[str, float] = {}
+        # The adapter's own call-time numbers -- `input_truncated`, `truncated`,
+        # `reasoning_tokens`, `llm_parsed` -- ride in `Result.extra`, and used to be
+        # dropped here. The aggregate averages only the rows that carry a key, so a
+        # resumed `bart_s` reported input_truncated 0.75: 3 of the 4 items computed
+        # fresh, against a true 46 of 200. Carried as every numeric key of the prior row
+        # that the core does not own; `one_pass` then lets the scorer's fresh values win.
+        self.extra: Dict[str, float] = {
+            k: float(v) for k, v in prior.items()
+            if not k.startswith("_") and k not in _CORE_ROW_KEYS
+            and isinstance(v, (int, float)) and not isinstance(v, bool)
+        }
         self.meta: Dict[str, Any] = dict(prior.get("_meta") or {})
         self.meta["resumed_from_disk"] = True
 
@@ -398,7 +413,10 @@ def one_pass(
             v = getattr(res, field_name)
             if v is not None:
                 row[field_name] = float(v)
-        row.update({k: float(v) for k, v in res.extra.items()})
+        # A replayed item's carried extras include its OLD scores; the scorer just
+        # recomputed those against the current code, so the fresh value wins.
+        row.update({k: float(v) for k, v in res.extra.items()
+                    if not (resumed and k in scored)})
         # Raw provider metadata rides along under a `_`-prefixed key. Everything
         # `_`-prefixed is excluded from the aggregation below, so an adapter can record
         # a nested dict (a usage object, a finish_reason) without the mean-of-every-key

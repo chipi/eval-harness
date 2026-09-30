@@ -44,13 +44,18 @@ used first-k and was nested but *not representative* — `keyword` scored 0.35 o
 
 The same 24 hosted arms plus `keyword` and `constant`, for comparability.
 
-**The ML arm could not run**, and that is a reported gap rather than a footnote:
+**The ML arm could not run on the machine this was written on**, and for three days that
+was a reported gap rather than a footnote:
 [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14)
 ships a pickle checkpoint, which `transformers` refuses below torch 2.6
-([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)). So **this example
-cannot answer the ML-vs-LLM question its twin answers** — see
+([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and x86_64 macOS has
+no torch above 2.2.2 — see
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
 absence is precisely why the NER example was built with a *matched pair* of local arms.
+**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, tied with
+the top group (p = 0.62 against the leader), label order confirmed by a diagonal confusion
+matrix. The ML-vs-LLM question is now answered here too, and the answer differs from AG
+News's: a tie, at $0.
 
 `bart_mnli` did run, and its calibration is the interesting result: confidence 0.317
 against accuracy 0.629, an ECE of 0.311 — badly underconfident, because zero-shot NLI
@@ -64,18 +69,21 @@ regime with measurement.
 
 What differs is **what the criteria can do**:
 
-- **Accuracy stops discriminating.** The leader separated from only 8 of 26 opponents; the
-  top ten are one group across a 115× price range.
+- **Accuracy stops discriminating.** The leader separated from only 8 of 27 opponents (8 of
+  26 before the fine-tuned arm); the top eleven are one group across a 115× price range,
+  and the fine-tuned arm is inside it.
 - **So the label-noise pass becomes the main instrument, not a diagnostic.** On a saturated
   task the field's consensus errors *are* the ceiling. Fourteen arms reported byte-identical
   accuracy, macro-F1 **and** worst class — traced to one item: *"Dukart's Canal"*, gold
   `NaturalPlace`, which 20 of 24 arms called `MeanOfTransportation`. It is a man-made
   waterway built to move coal. The models are right and the ontology's label is the odd one
   out.
-- **And rank-stability stops being readable.** With 19.8 of 27 arms tied at n=10, Spearman's
-  ρ was correlating *arm names*. That is what drove the `arms tied 1st` column into the
-  tool, and later the tie-correct ρ. Requiring a unique winner, **400 of 400 draws are
-  undecided at every n tested** — the corpus has no winner to agree about.
+- **And rank-stability stops being readable.** With 19.8 of 27 arms tied at n=10 (19.9 of
+  28 with the fine-tuned arm), Spearman's ρ was correlating *arm names*. That is what drove
+  the `arms tied 1st` column into the tool, and later the tie-correct ρ. Requiring a unique
+  winner, **354–399 of 400 draws are undecided at every n tested** (400 of 400 before the
+  fine-tuned arm broke a few ties), and in every decided draw the two halves crown different
+  arms — the corpus has no winner to agree about.
 
 **The transferable lesson:** on a saturated benchmark, the headline metric is the least
 informative number on the page, and a ranking computed from it is mostly an artifact of
@@ -91,8 +99,9 @@ CC-BY-SA 3.0 + GFDL. Ontology and abstracts from
 [Zhang, Zhao & LeCun (2015)](https://arxiv.org/abs/1509.01626). Not redistributed.
 
 **Models** — [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli)
-([zero-shot NLI](https://arxiv.org/abs/1909.00161)). Blocked:
-[`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14).
+([zero-shot NLI](https://arxiv.org/abs/1909.00161)) ·
+[`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14)
+(fine-tuned; needs torch ≥ 2.6).
 Hosted models in [`docs/REFERENCE.md`](../../docs/REFERENCE.md#hosted--24-arms-8-vendors--3-price-tiers).
 
 **Method** — Holm (1979), *A Simple Sequentially Rejective Multiple Test Procedure*, Scand. J. Statist. 6(2):65–70;
@@ -100,6 +109,6 @@ Hosted models in [`docs/REFERENCE.md`](../../docs/REFERENCE.md#hosted--24-arms-8
 [Guo et al. (2017)](https://arxiv.org/abs/1706.04599) for calibration.
 
 **Software** — [transformers](https://github.com/huggingface/transformers) 4.55.4 ·
-[torch](https://github.com/pytorch/pytorch) 2.2.2 ·
+[torch](https://github.com/pytorch/pytorch) 2.2.2 on x86_64 macOS, 2.14.0 elsewhere (the fine-tuned arm ran on 2.14.0) ·
 [scikit-learn](https://scikit-learn.org/) 1.9.1 ·
 [LiteLLM](https://github.com/BerriAI/litellm) · [uv](https://github.com/astral-sh/uv).

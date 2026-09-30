@@ -192,16 +192,22 @@ change is detectable.
 | `mpnet` | [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) | 438 MB | `e8c3b32edf54` | The larger general encoder. Same recipe as MiniLM, so the pair isolates **size** |
 | `bge_small` | [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) | 133 MB | `5c38ec7c405e` | Trained **for retrieval**, with an asymmetric query instruction. Pairs with MiniLM to isolate **training objective** |
 | `e5_base` | [`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2) | 438 MB | `f52bf8ec8c71` | Retrieval-trained, asymmetric on **both** sides (`query: ` / `passage: `) |
+| `bart_m` | [`sshleifer/distilbart-cnn-12-6`](https://huggingface.co/sshleifer/distilbart-cnn-12-6) | 1.2 GB | `a4f8f3ea906e` | BART-large-CNN distilled to 12 encoder / 6 decoder layers |
+| `bart_s` | [`sshleifer/distilbart-cnn-6-6`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | 460 MB | `d2fde4ca965b` | Distilled to 6 / 6 layers |
+| `bart_l_xsum` | [`facebook/bart-large-xsum`](https://huggingface.co/facebook/bart-large-xsum) | 1.6 GB | `2179ab81d3f1` | BART-large fine-tuned on **XSum** — same task, another corpus. The out-of-distribution control for `bart_l` |
+| `bert_base_ta` | [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | 438 MB | `fe417ad660b1` | BERT-base fine-tuned on AG News (TextAttack; card reports 0.9514) |
+| `bert_base_fy` (AG) | [`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | 438 MB | `c14e3b32fe1f` | BERT-base fine-tuned on AG News by a second author — a check on the first |
+| `bert_base_fy` (DBpedia) | [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14) | 438 MB | `1fbfc3deaa28` | BERT-base fine-tuned on DBpedia-14 |
 
-**Blocked — checkpoints this machine cannot load.** Below torch 2.6 `transformers` refuses
-to `torch.load` a pickle ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)),
-and there is no Intel-Mac torch wheel above 2.2.2. These ship no `safetensors`:
-[`sshleifer/distilbart-cnn-12-6`](https://huggingface.co/sshleifer/distilbart-cnn-12-6),
-[`sshleifer/distilbart-cnn-6-6`](https://huggingface.co/sshleifer/distilbart-cnn-6-6),
-[`facebook/bart-large-xsum`](https://huggingface.co/facebook/bart-large-xsum),
-[`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news),
-[`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news),
-[`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14).
+**The last six need torch ≥ 2.6**, and ran on 2026-09-30 on Linux. Their `main` branches
+ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` below torch 2.6
+([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)); x86_64 macOS has no
+torch above 2.2.2. The revisions above are the `main` commits the runs loaded — read from
+the local cache, because these runs' fingerprints record `revision: null` (see
+[`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)). **Each also has a safetensors conversion
+PR on the Hub** — `refs/pr/29` (12-6), `refs/pr/2` (6-6), `refs/pr/9` (xsum) and `refs/pr/1`
+for the three BERTs — which loads on torch 2.2.2 and, checked for the DBpedia model,
+predicts identically.
 
 ### Non-model arms
 

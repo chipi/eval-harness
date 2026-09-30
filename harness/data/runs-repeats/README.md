@@ -35,3 +35,18 @@ the new comma path. Round 3 measured the like-for-like delta at **0.0126**. See
 
 These runs were made from a dirty tree, so their fingerprints do not identify the code
 that produced them. `runs-list` marks them.
+
+## `cnn_bart_s_n200_v1_20260930T085713Z` — a local arm, run twice
+
+The first run of `bart_s` (2026-09-30). A background job was killed at item 196 of 200
+and the run was finished with `--resume`; it is marked `dirty` only because the previous
+run's directory was untracked in the same tree. A clean re-run is the record in
+`data/runs/`.
+
+**Two things it is evidence for.** First, local generation is deterministic here: the two
+runs produced **200 of 200 byte-identical outputs** — beam search, CPU, fp32 — against
+13–78 of 200 for hosted arms at temperature 0. Second, it is the run that exposed the
+resume bug: its `input_truncated` reads **0.75**, averaged over only the 4 items computed
+fresh, because resume did not carry adapter `extra` metrics onto replayed rows. The true
+value — 46 of 200 articles over the 1,024-token window, in the clean run — is 0.23. Fixed;
+see `KNOWN_ISSUES.md`.

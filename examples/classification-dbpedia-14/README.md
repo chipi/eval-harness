@@ -12,9 +12,9 @@ conclusion the pair does.
 | --- | --- | --- |
 | classes | 4 | 14 |
 | hosted field | 0.835 – 0.910 | 0.939 – 0.993 |
-| fine-tuned ML arm | beat all 24 | none exists that loads |
+| fine-tuned ML arm | beat all 24 | **0.9857 — tied with the top group, not above it** (needs torch ≥ 2.6) |
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
-| outcome | a winner | a group of ten |
+| outcome | a winner | a group of eleven |
 
 ---
 
@@ -96,9 +96,13 @@ quirks, not of which classifies better.
 needed `_parse_label`; here it is worth 8.6 points to `glm_l`, 4.3 to `gemma_s`. And the
 first unparseable answers in either example appear here — including one empty response.
 
-**No fine-tuned ML arm runs on x86_64 macOS.** Every credible DBpedia-14 fine-tune on the
-Hub ships `pytorch_model.bin` without safetensors; they predate safetensors becoming
-default. The comparison AG News answered is, here, on a branch waiting for other hardware.
+**The fine-tuned ML arm needs torch ≥ 2.6, so it does not run on x86_64 macOS.** Every
+credible DBpedia-14 fine-tune on the Hub ships `pytorch_model.bin` without safetensors;
+they predate safetensors becoming default, and `transformers` refuses a pickle below torch
+2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch 2.14 and it runs
+unmodified. Measured 2026-09-30: **0.9857 at $0, 87 ms/item on CPU — statistically tied
+with the $0.0143 leader (p = 0.62), not above it.** AG News's "fine-tune beats paying" does
+not carry over to a saturated task; "fine-tune costs nothing" does.
 
 ---
 

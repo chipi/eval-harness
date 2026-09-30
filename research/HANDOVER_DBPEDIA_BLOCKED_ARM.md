@@ -1,5 +1,17 @@
 # Handover — the DBpedia arm that cannot run on x86_64 macOS
 
+> **Resolved 2026-09-30.** `db_bert_base_fy_n200_v1` ran on Linux (torch 2.14.0, clean
+> tree at `4068ea23`, config unchanged): **0.9857**, $0, 87 ms/item. Label order confirmed
+> — 276 of 280 on the diagonal, no off-diagonal band. Against the leader `qwen_m`: −0.0071,
+> p = 0.62, **not separated**; from its own side separated from 5 of 27. That is the first
+> of the two outcomes below — *it lands ~0.99 and does not separate from the top group* —
+> so the AG News finding does not generalise to a saturated task. Of the three items the
+> whole field disputes it gets one "right" (Dukart's Canal as `NaturalPlace`), which is the
+> ontology-quirk effect this handover predicted, not skill. Written up in
+> [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.2. The dev-slice config
+> (`arm_bert_base_fy.yaml`, n=56) was not run: no dev-slice run exists for any other arm to
+> compare it with. The rest of this file is the state as of 2026-09-27.
+
 State as of 2026-09-27. Branch `classification-dbpedia-blocked-arms`, branched from
 `classification-dbpedia`. Two configs (both slices), dry-run clean, not runnable here.
 

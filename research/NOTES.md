@@ -2266,3 +2266,71 @@ Fixed: the 31 cells now carry the bill; `rescore.py` recomputes `cost_usd` from
 `_meta.usage.cost` instead of carrying the estimate forward; `scripts/cost_report.py`
 prints billed against recorded for any dataset, and lists separately the runs with no
 bill, so a total is never half-measured without saying so.
+
+### 2026-09-30 · 59 — The six arms nobody could run, and what they were hiding
+
+Six local checkpoints — `bart_m`, `bart_s`, `bart_l_xsum`, `db_bert_base_fy`,
+`ag_bert_base_fy`, `ag_bert_base_ta` — had been written, dry-run and parked for three days
+because they ship pickles and the Intel Mac has no torch above 2.2.2. They ran on Linux
+(torch 2.14.0, CPU, clean trees at `798c6305` and `4068ea23`, configs unchanged).
+
+**The priors, and how they did.**
+
+```
+arm                 prior                           got        verdict
+db_bert_base_fy     top 3 of 28, >= 0.98            0.9857     tied 3rd-7th; inside the top group, not above it
+ag_bert_base_fy/ta  near bert_mini's 0.9450         0.95/0.96  held; ta is the new leader, not separated from bert_mini
+cnn_bart_m / _s     below bart_l's 0.3461           0.3367/0.3276  held, in size order
+cnn_bart_l_xsum     well below                      0.2071     held -- last of 29, below lead3
+```
+
+Every prior held in direction. The one that matters did not hold in *kind*: DBpedia's
+fine-tune was expected to win because AG News's did, and it ties. The DBpedia handover had
+named that outcome in advance — "lands ~0.99 and does not separate from the top group" —
+as the one meaning the AG News finding does not generalise to a saturated task.
+
+**What the AG News arms showed that `bert_mini` alone could not.** Three independent
+fine-tunes now take 1st–3rd. Asking where their lead comes from: 17 items are called wrong
+by at least 80% of the 24 hosted arms, and the fine-tunes agree with the gold on 12–14 of
+them where `anthropic_l` agrees on none. That is nearly the whole lead. Reading the 17,
+about half follow a convention a trained model learns — business news about technology
+companies filed under Sci/Tech — and half are mislabels, Olympic results filed as World.
+The report had said *part* of `bert_mini`'s lead *may* be label-learning; with three arms
+it is a measurement. The cut on "the other 183 items" reverses the order, but that cut is
+chosen by the hosted arms' own errors and I have said so wherever it appears.
+
+**What the summarisation arms showed.** Distillation costs no separable quality and halves
+latency. And the XSum control — same BART-large, trained on another corpus's summaries —
+finishes below LEAD-3. `bart_l`'s tie with the frontier was always caveated as house style;
+it is now a measured matched pair, 1st against 29th. It cannot separate style from decode
+length (62/11 against 142/56 tokens), and the report says so.
+
+**Five things about the instrument, found by running it.**
+
+1. *The lock did not deliver what the handover promised.* `torch>=2.2` off Intel Mac let
+   uv's universal resolver pick 2.2.2 for every platform in four of five examples. A
+   `--dry-run` sync caught it before anything ran. Pinned `>=2.6`.
+2. *The second run on a machine is always dirty.* The first run's directory is untracked,
+   and any untracked file marks the tree dirty. Worked around with `EVAL_RUNS_DIR` outside
+   the tree; the harness fix is still open.
+3. *Resume dropped `Result.extra`.* A background job was killed at item 196 of 200; the
+   resumed run reported `input_truncated` 0.75 because only the 4 fresh rows carried the
+   key. The true value is 0.23. Every existing resume test passed because the demo adapter
+   emits no `extra` — a check that could not fail for this bug. Fixed, with a fixture
+   adapter that does.
+4. *Fingerprints lost the revision.* `transformers` fetched each Hub safetensors
+   conversion PR in the background, leaving two snapshots, and the resolver declined to
+   choose. The `main` commits are recorded in REFERENCE by hand.
+5. *The block was never necessary.* Those same conversion PRs load on torch 2.2.2 —
+   verified: `main` fails with the CVE, `refs/pr/1` loads and predicts identically on 40
+   of 40 items. Three days of "cannot run on this machine" were one `revision:` line away.
+
+**And one number that could not be re-derived.** The pilot ρ values for AG News and
+DBpedia (0.852, 0.728) come from dev runs that were never committed; recomputing from the
+committed runs gives 0.677 and 0.757. The finding they support survives on committed data,
+but the figures themselves cannot be checked here, and both reports now say that.
+
+**A local arm cannot disagree with itself.** The killed-and-resumed `bart_s` and the clean
+re-run produced 200 of 200 byte-identical outputs. The hosted arms at temperature 0 repeat
+13–78 of 200. That contrast is the one piece of run-to-run evidence this repo has for the
+local side, and it is zero.

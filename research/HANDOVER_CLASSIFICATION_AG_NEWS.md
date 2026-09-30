@@ -1,5 +1,12 @@
 # Handover — the AG News classification example
 
+> **Update 2026-09-30:** the two bert-base fine-tunes this file lists as blocked have run —
+> 0.9600 and 0.9500, taking 1st and 2nd from `bert_mini`, which is now 3rd and not
+> separated from either. The in-distribution caveat below is now quantified: the
+> fine-tuned lead lives in 17 items the hosted field disputes. See
+> [`HANDOVER_CLASSIFICATION_BLOCKED_ARMS.md`](HANDOVER_CLASSIFICATION_BLOCKED_ARMS.md).
+> The rest is as of 2026-09-27.
+
 State as of 2026-09-27. Facts, numbers and locations. This is the second worked example;
 the summarisation study it reuses the harness from is in [`HANDOVER.md`](HANDOVER.md) and
 [`HANDOVER_ML_ARMS.md`](HANDOVER_ML_ARMS.md).

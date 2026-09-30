@@ -1,5 +1,19 @@
 # Handover — the two AG News arms that cannot run on x86_64 macOS
 
+> **Resolved 2026-09-30.** Both ran on Linux (torch 2.14.0, configs unchanged):
+> `bert_base_ta` **0.9600** — the new leader, consistent with textattack's published
+> 0.9514 — and `bert_base_fy` **0.9500**. Label order confirmed: both confusion matrices are
+> diagonal, so `[World, Sports, Business, Sci/Tech]` is right for both checkpoints and no
+> rotation was needed. The two agree on 192 of 200 labels. The question below — floor or
+> ceiling? — answers "close to the ceiling": the 44 MB model is 0.015 behind, not
+> separated. The family test changed as this file warned it could, and in the direction
+> that looks like a paradox: `bert_mini`'s separation count *fell*, 18 of 27 → 16 of 29,
+> because two more arms tightened every Holm threshold. And together the three fine-tunes
+> made the label-noise effect measurable: their lead sits almost entirely in 17 items the
+> hosted field disputes. See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.1,
+> §3.4. The n=20 dev configs were not run — no dev-slice run exists for any other arm to
+> compare with. The rest of this file is as of 2026-09-27.
+
 State as of 2026-09-27. Branch `classification-ag-news-blocked-arms`, branched from
 `classification-ag-news`. Four configs, all dry-run clean, none runnable here.
 

@@ -257,4 +257,7 @@ exists, so you cannot check which author you got.
   deliberate: the same experiment measures how fast *your* machine is at *this* task.
 - ~~**No local model arm yet.**~~ **Built.** `bart_l` (BART fine-tuned on this corpus,
   1.6 GB) and `lead3` are measured, and `bart_l` ties the best hosted arm to 0.0001.
-  This bullet outlived the work it described.
+  This bullet outlived the work it described. Since 2026-09-30 three more local arms
+  have run (they need torch ≥ 2.6): two distillations, `bart_m` 0.3367 and `bart_s`
+  0.3276, neither separated from `bart_l`; and `bart_l_xsum` — the same architecture
+  trained on XSum — last of 29 at 0.2071, below `lead3`.

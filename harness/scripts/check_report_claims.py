@@ -455,11 +455,12 @@ def _arm_costs(prefix, dataset_id):
 #: (label, prefix, dataset, cheapest tied arm, the synthesis table row that states it)
 CHEAPNESS = [
     ("Summarisation cheapest-tied vs dearest", "cnn_", "cnn_dailymail_200",
-     "deepseek_s", "| Summarisation · CNN/DM | 13 arms |"),
+     "deepseek_s", "| Summarisation · CNN/DM | 15 arms (13 paid) |"),
     ("DBpedia cheapest-tied vs dearest", "db_", "dbpedia_280",
-     "gemma_m", "| Classification · DBpedia | 18 arms |"),
+     "gemma_m", "| Classification · DBpedia | 19 arms (18 paid) |"),
+    # Was gemma_s / 9 arms around bert_mini. The bert-base leader ties with one paid arm.
     ("AG News cheapest-tied vs dearest", "ag_", "ag_news_200",
-     "gemma_s", "| Classification · AG News | 9 arms |"),
+     "anthropic_m", "| Classification · AG News | 3 arms (1 paid) |"),
 ]
 # THE CLAIMED RATIO IS READ OUT OF THE REPORT, NOT OUT OF THIS FILE.
 #
@@ -523,8 +524,13 @@ for f in _glob.glob(str(DATA / "cnn_*" / "metrics.json")):
         continue
     arm = m["config_id"].replace("cnn_", "").replace("_n200_v1", "")
     sc = m.get("scores") or {}
+    # Hosted = what the run says it called, not a list of names to leave out. The list
+    # was ("bart_l", "lead3"); three more local arms arrived and every one of them would
+    # have been counted as hosted.
+    if (m.get("params") or {}).get("provider") != "litellm":
+        continue
     _cnn_q[arm] = (sc.get("coverage", 0), CNN.get(arm, 0), sc.get("latency_ms", 0))
-_hosted = {k: v for k, v in _cnn_q.items() if k not in ("bart_l", "lead3")}
+_hosted = dict(_cnn_q)
 _front = [a for a in _hosted if not any(
     b != a and _hosted[b][0] >= _hosted[a][0] and _hosted[b][1] <= _hosted[a][1]
     and _hosted[b][2] <= _hosted[a][2]

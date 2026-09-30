@@ -1,0 +1,142 @@
+{
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "798c63055ec154fc3fb8f193dabef739d7ff611d",
+    "source": "git"
+  },
+  "config_id": "cnn_bart_s_n200_v1",
+  "created_at": "2026-09-30T09:29:44Z",
+  "dataset_id": "cnn_dailymail_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_bart_s_n200_v1",
+      "params": {
+        "device": "cpu",
+        "early_stopping": true,
+        "family": "bart",
+        "length_penalty": 2.0,
+        "max_length": 142,
+        "min_length": 56,
+        "model": "sshleifer/distilbart-cnn-6-6",
+        "no_repeat_ngram_size": 3,
+        "num_beams": 4,
+        "precision": "fp32",
+        "price_tier": "free",
+        "provider": "hf_local"
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "hash": "5d173772e1bb231453cbf5efa6cd898c19e964f8ded98d086cb8da28d86c2d5f",
+    "host": {
+      "cpu_count": 4,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "9085b6648c69a89688c4797492703f83901c3a9e31150f8970ba5a511eef8289"
+      },
+      "harness": {
+        "commit": "798c63055ec1",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "device": "cpu",
+        "id": "sshleifer/distilbart-cnn-6-6",
+        "identity_declared": true,
+        "precision": "fp32",
+        "revision": null,
+        "revision_source": "unavailable"
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "compression": "descriptive",
+    "concision": "quality",
+    "coverage": "quality",
+    "fmt_bullets": "descriptive",
+    "fmt_label": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_narration": "descriptive",
+    "fmt_overlong": "descriptive",
+    "fmt_paragraphs": "descriptive",
+    "grounding": "quality",
+    "input_truncated": "descriptive",
+    "length_vs_reference": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "reference_words": "descriptive",
+    "resumed": "descriptive",
+    "rouge1": "quality",
+    "rougeLsum": "quality",
+    "summary_words": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "device": "cpu",
+    "early_stopping": true,
+    "family": "bart",
+    "length_penalty": 2.0,
+    "max_length": 142,
+    "min_length": 56,
+    "model": "sshleifer/distilbart-cnn-6-6",
+    "no_repeat_ngram_size": 3,
+    "num_beams": 4,
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "primary_metric": "coverage",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "cnn_bart_s_n200_v1_20260930T091438Z",
+  "scores": {
+    "compression": 0.136119,
+    "concision": 0.259861,
+    "cost_usd": 0.0,
+    "coverage": 0.327565,
+    "fmt_bullets": 0.0,
+    "fmt_label": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_narration": 0.005,
+    "fmt_overlong": 0.0,
+    "fmt_paragraphs": 0.0,
+    "grounding": 0.877349,
+    "input_truncated": 0.23,
+    "latency_ms": 4484.184625,
+    "length_vs_reference": 1.613455,
+    "reference_words": 34.735,
+    "resumed": 0.0,
+    "rouge1": 0.341809,
+    "rougeLsum": 0.311126,
+    "summary_words": 51.745,
+    "tokens_in": 697.25,
+    "tokens_out": 64.15,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 139450.0,
+    "total_tokens_out": 12830.0
+  },
+  "warmup_ms": 7122.803
+}

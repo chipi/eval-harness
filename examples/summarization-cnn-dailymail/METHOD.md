@@ -39,12 +39,15 @@ reuse article sentences nearly verbatim. A model that copies scores well. That i
 | [`bart_l`](https://huggingface.co/facebook/bart-large-cnn) | Fine-tuned **on this exact dataset**. The in-distribution ceiling — what a small model does when it has seen the training split. |
 | `lead3` | The first three sentences. **Not a joke baseline.** On CNN/DailyMail it is famously hard to beat, and an LLM that does not clear it has not earned its inference cost. |
 
-**Blocked, and why it matters:** `distilbart-cnn-12-6`, `distilbart-cnn-6-6` and
-`bart-large-xsum` ship pickle checkpoints, which `transformers` refuses to `torch.load`
-below torch 2.6 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and
-there is no Intel-Mac torch wheel above 2.2.2. Their absence removes the *distilled* size
-tier and the *out-of-distribution* (XSum-trained) comparison — see
-[`HANDOVER_ML_ARMS.md`](../../research/HANDOVER_ML_ARMS.md).
+| [`bart_m`](https://huggingface.co/sshleifer/distilbart-cnn-12-6), [`bart_s`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | `bart_l` distilled (306M params fp32; 230M stored fp16). The **size** axis inside one model family: does distillation cost quality? (No separable loss; half the latency.) |
+| [`bart_l_xsum`](https://huggingface.co/facebook/bart-large-xsum) | Same architecture as `bart_l`, fine-tuned on **XSum**. The **out-of-distribution** control: is `bart_l` good at summarising, or at CNN/DailyMail? (Last of 29, below `lead3`.) |
+
+**Why those three needed another machine:** they ship pickle checkpoints on `main`, which
+`transformers` refuses to `torch.load` below torch 2.6
+([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and there is no
+Intel-Mac torch wheel above 2.2.2 — see
+[`HANDOVER_ML_ARMS.md`](../../research/HANDOVER_ML_ARMS.md). They ran on Linux with torch
+2.14.0 on 2026-09-30, configs unchanged.
 
 ## Why these success criteria
 

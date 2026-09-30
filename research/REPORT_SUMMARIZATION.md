@@ -3,7 +3,14 @@
 **Dataset** `cnn_dailymail_200` · 200 articles · human-written gold references
 **Arms** 24 hosted models, 8 vendors, 3 price tiers each
 **Design** 1 pass per arm · 4,800 calls · **$5.74 billed** ($4.93 by the price table — see Correction) · identical prompt, temperature 0, reasoning off
-**Date** 2026-09-26 · **Harness** `examples/eval-harness` · **Journal** [`NOTES.md`](NOTES.md)
+**Date** 2026-09-26; three local BART arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 56, 59
+
+> **Updated 2026-09-30 with the three local arms that could not run on the original
+> machine** — two distilled BARTs (`bart_m`, `bart_s`) and BART fine-tuned on XSum
+> (`bart_l_xsum`), all pickle checkpoints that need torch ≥ 2.6. The field is now 29.
+> They answer the two questions `bart_l` left open: distillation halves the latency with no
+> separable loss, and the same architecture trained on a *different* corpus's house style
+> finishes last — below LEAD-3. Old figures are named where they changed.
 
 > **This report was re-measured at n=200 on 2026-09-26.** It previously covered
 > `cnn_dailymail_20` — 20 articles, 3 repeats, $1.45 — and several of its headline claims
@@ -24,16 +31,16 @@
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. |
+| **Self-host · small ML** | **`bart_l`** — BART-large-CNN, fine-tuned on this corpus, MIT, **1.6 GB**, runs on CPU. **0.3461 — wins outright.** Costs 11.0 s/item on CPU. **Or its distillation `bart_m`** (1.2 GB): **0.3367, 5.1 s/item — half the latency, not separated from `bart_l`** (p = 0.16). |
 | **Self-host · open-weight LLM, absolute** | **`deepseek_m`** — DeepSeek-V4.1-Flash, MIT, **552B backbone params** — but **510 GB of weights in the published checkpoint** (measured: 48 safetensors shards), because the card's headline count excludes a 196B Engram memory that ships with it. **0.3460** — statistically identical to the 1.6 GB model. Whether it fits one node depends on whether the Engram memory must be GPU-resident; **this report does not know, and no longer claims it cannot fit.** |
 | **Self-host · open-weight LLM, ≤128 GB** | **`llama_m`** — Llama-3.3-70B at **int8, ~70 GB**. **0.3382**, costing **0.0078** against a 510 GB model. Native-precision alternative: `mistral_s` (24B, 48 GB) at 0.3255. |
 | **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB** — 0.3382, **no further loss on paper**. If you would rather not quantise that far: `mistral_s` at 48 GB native, 0.3255. |
 | **Deploy — rented API** | **`deepseek_m`** at **$191/month per 1M items**, 0.3460 — **0.0001** behind, and 7× faster per item. It is *also* MIT open-weight, so this row is a latency choice, not a licensing one. |
-| **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **16th of 25** and is 8.9% below free. |
+| **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **18th of 29** (16th of 25 before the distilled arms, both of which beat it) and is 8.9% below free. |
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
-| **How many arms are really tied at the top?** | **13 of 25.** The cheapest of them is 143× cheaper than the dearest. |
+| **How many arms are really tied at the top?** | **15 of the 28 others** — 13 paid arms and both distilled BARTs (was 13 of 25). The cheapest paid one is 143× cheaper than the dearest. |
 | **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
-| **Fine-tune or pay?** | **Cost only.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free — but it is *slower* (11.0 s vs 1.6 s), because generation on a CPU is expensive. |
+| **Fine-tune or pay?** | **Cost only — and only if it is fine-tuned on text like yours.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free, but *slower* (11.0 s vs 1.6 s); distilled, 5.1 s. The control is decisive: **the same architecture fine-tuned on XSum scores 0.2071 — last of 29, below LEAD-3**. What `bart_l` has is this corpus's house style, not summarisation. |
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
@@ -50,7 +57,9 @@ that matches it — DeepSeek-V4.1-Flash — is **510 GB**, a cluster model. This
 experiment where capping your hardware costs quality: the best arm that fits 128 GB is
 Llama-3.3-70B at int8, **0.3382**, giving up **0.0078**. It is also the one where the free
 model is *slower* than renting (11.0 s vs 1.6 s per item), because generation on a CPU is
-genuinely expensive.
+genuinely expensive. Distillation narrows that without a measurable cost: `bart_m`
+(1.2 GB) at **5.1 s** and 0.3367, `bart_s` (460 MB) at **4.5 s** and 0.3276, neither
+separated from `bart_l` under Holm.
 
 **The expensive arms do not earn their price, and this is now the firmest result here.**
 `deepseek_m` at **$0.0381** per 200 articles beats `anthropic_l` at **$1.9652** — 52×
@@ -69,9 +78,21 @@ answer it.
 All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place;
 $0.0381 buys 1st.**
 
-**Seventeen of 24 arms are off the table entirely**, with no statistics required: each is
-beaten by some other arm on quality *and* cost *and* speed at once. Seven remain on the
-frontier. That is the most directly actionable output here.
+**Sixteen of the 24 hosted arms are off the table entirely**, with no statistics required:
+each is beaten by some other hosted arm on quality *and* billed cost *and* speed at once.
+Eight remain on the frontier (§3.4; this said seventeen and seven, on the price-table cost
+axis, until the bill replaced it). That is the most directly actionable output here.
+
+**The XSum control settles what `bart_l` is good at.** `bart_l_xsum` is the same
+BART-large architecture fine-tuned on XSum, whose references are single-sentence summaries
+of BBC articles. Scored against CNN/DailyMail's references it finishes **last of 29 at
+0.2071** — separated from all 28 other arms, below even LEAD-3's copy-the-first-three-
+sentences (0.2718). Its outputs are 21 words against a 35-word reference, and its grounding
+falls from `bart_l`'s 0.884 into the LLM range (0.422). **`bart_l`'s tie with the frontier is
+a tie in CNN/DailyMail's house style, learned from its training split** — which the
+report's caveat always said, and which is now measured rather than argued. (Its decode
+length differs too — XSum's 62/11 tokens against 142/56 — so this control does not
+separate *style* from *length*; a sixth arm would.)
 
 **Resolution improved tenfold, and it was not enough to rank.** Pairs separated on
 `coverage` went from **1 of 276** at n=20 to **34 of 276** at n=200 (25 on the held-out
@@ -80,11 +101,12 @@ printing a smooth 1-to-24 ordering is still asserting hundreds of comparisons it
 support.
 
 *Both figures are over the **24 hosted arms** this section was computed on. The field
-is now 26 — `bart_l` and `lead3` were added later — and over all 26 the critical
-difference is **2.81** with **54 of 325** pairs separating. Until 2026-09-30 this note
-said k=26 could not be given a CD at all, because the studentised-range table stopped
-at 25; it is now computed rather than transcribed. The 2.57 figures above remain those
-of the original 24, reproducible with the command in §2.*
+is now 29 — `bart_l` and `lead3` were added later, the three other BARTs on 2026-09-30 —
+and over all 29 the critical difference is **3.18** with **80 of 406** pairs separating
+(71 of 406 on the held-out 180). At k=26 it was 2.81 and 54 of 325; before that the CD
+could not be given at all, because the studentised-range table stopped at 25 — it is now
+computed rather than transcribed. The 2.57 figures above remain those of the original
+24, reproducible with the command in §2.*
 
 **The n=20 ranking largely did not survive.** Spearman between the two orderings of the
 same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthropic_m` fell
@@ -92,8 +114,8 @@ same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthrop
 substantially by luck.
 
 **And ten times the data does not stabilise a ladder.** Two *independent* 100-article
-evals of these arms agree at only ρ = 0.80 and crown the same winner 1% of the time; at
-20 articles it is ρ = 0.42 and 14%. What is stable is membership, not order —
+evals of these arms agree at only ρ = 0.79 and crown the same winner 1% of the time; at
+20 articles it is ρ = 0.44 and 11% (29 arms; at 26 arms it was 0.80/1% and 0.42/14%). What is stable is membership, not order —
 `deepseek_m` has P(top 5) = 1.00, `llama_l` 0.95, `llama_m` 0.90, and everything from 13th
 down has P(top 5) = 0.00.
 
@@ -256,6 +278,28 @@ rank in the earlier 20-article run, over the same 24 arms.
 
 Spearman between the n=20 and n=200 orderings: **+0.667**.
 
+**The five local arms**, all $0 and run on CPU. `bart_l` and `lead3` since 2026-09-26; the
+other three on 2026-09-30, on Linux, because their checkpoints are pickles that need torch
+≥ 2.6. Rank is among all 29.
+
+| arm | coverage | concision | rougeLsum | rouge1 | grounding | words | ms | rank |
+|---|---|---|---|---|---|---|---|---|
+| bart_l | **0.3461** | 0.2608 | 0.3161 | 0.3477 | 0.884 | 51 | 11010 | 1 |
+| bart_m | 0.3367 | 0.2578 | 0.3153 | 0.3457 | 0.853 | 55 | 5062 | 5 |
+| bart_s | 0.3276 | 0.2599 | 0.3111 | 0.3418 | 0.877 | 52 | 4484 | 10 |
+| lead3 | 0.2718 | 0.2145 | 0.2701 | 0.3020 | 1.000 | 62 | 0 | 28 |
+| bart_l_xsum | 0.2071 | **0.3120** | 0.2458 | 0.2836 | 0.422 | 21 | 4621 | 29 |
+
+`bart_m` is distilbart-cnn-12-6 (12 encoder / 6 decoder layers, 1.2 GB) and `bart_s`
+distilbart-cnn-6-6 (460 MB) — both distilled from `bart_l`, so they sit below it as they
+should, in the order their size predicts. Their grounding stays in `bart_l`'s range
+(0.85–0.88) against 0.25–0.43 for the hosted field. `bart_l_xsum`'s concision is the best
+in the table only because concision rewards brevity and XSum writes one sentence.
+
+A local arm cannot be run twice and differ: a second run of `bart_s` on the same machine
+produced **200 of 200 outputs byte-identical** (`data/runs-repeats/`). The hosted arms at
+temperature 0 repeat 13–78 of 200 (§3.3 and the retrieval study).
+
 ### 3.1 Is the ordering real?
 
 Friedman-style permutation test on within-item ranks, with a Nemenyi critical difference
@@ -291,6 +335,17 @@ Membership is far better determined than order. From 2,000 item-resamples:
 
 `deepseek_m` is in the top five in every resample. Which of the six *is* first is not a
 claim this data supports.
+
+**Over all 29 arms** (k=29: CD 3.18, 80 of 406 pairs): `bart_l` P(1st) 0.45 and
+`deepseek_m` 0.41 — the same coin flip — with `bart_m` P(top 5) 0.57. Family tests, Holm
+over the 28 others on `coverage`:
+
+| arm | separated from | ahead on the point estimate | against `bart_l` |
+|---|---|---|---|
+| `bart_l` | 13 of 28 (was 12 of 25) | 28 of 28 | — |
+| `bart_m` | 4 of 28 | 24 of 28 | −0.0095, p = 0.17 |
+| `bart_s` | 2 of 28 — only `lead3` and `bart_l_xsum` | 19 of 28 | −0.0186, p = 0.017 (threshold 0.0020) |
+| `bart_l_xsum` | **28 of 28, all from below** | 0 of 28 | −0.1390, p = 0.0000 |
 
 ### 3.1b Decision questions, asked one at a time
 
@@ -333,6 +388,11 @@ is expected when the article pool widens.)
 article-outputs byte-identical across three repeats, and 12 of 24 arms with none at all.
 Nothing in this run contradicts that; nothing in it confirms it either.
 
+**The local contrast was measured.** `bart_s` ran twice on the same machine (the first run
+is kept in `data/runs-repeats/`): **200 of 200 outputs byte-identical**, beam search on a
+CPU at fp32. Run-to-run variance for a local arm here is zero; for a hosted one it is not,
+and no test in this report sees it (every separation test is over items within one run).
+
 ### 3.4 Pareto frontier (coverage / cost / latency)
 
 **8 of 24 arms**: `deepseek_m`, `deepseek_s`, `gemma_m`, `glm_s`, `llama_m`, `llama_s`,
@@ -343,6 +403,12 @@ some other arm — off the table at any budget, with no statistics required.
 `gemma_m` and `deepseek_s` join the frontier and `mistral_s` leaves it — the ranking by
 cost changes because the price table was wrong per arm by 0.67× to 3.76×, not by a
 constant.*
+
+**The five local arms are left out on purpose.** At $0 an arm can only be dominated by
+another free arm, so every local arm that is not beaten by a *faster, better* local arm is
+on the frontier by construction, not by merit. Over all 29 the frontier adds `bart_l`,
+`bart_m`, `bart_s` and `lead3` — each fastest-for-its-quality among the free — and still
+excludes `bart_l_xsum`, which `bart_s` beats on quality and speed.
 
 At n=20 the frontier held 10 arms. The three that dropped off did so because more data
 moved their quality estimate, not because their cost or latency changed — a reminder that
@@ -372,19 +438,21 @@ Measured from these runs at no extra cost: draw two **disjoint** subsets of *n* 
 rank the arms independently in each, and correlate the two orderings. Neither half is
 treated as truth.
 
-**Re-measured 2026-09-29 over the 26-arm field.** The table first published here described
-24 arms, before the ML work added `bart_l` and `lead3`; the numbers below supersede it, and
-the difference is almost entirely one arm — see the note after the table.
+**Re-measured 2026-09-30 over the 29-arm field.** The table first published here described
+24 arms, then 26 once `bart_l` and `lead3` arrived; the three BARTs added on 2026-09-30
+move it again, a little. The 26-arm figures are kept beside the new ones.
 
-| items per half | ρ(half A, half B) | 5th pct | P(both crown the same arm) | median rank move |
-|---|---|---|---|---|
-| 10 | 0.278 | −0.028 | 0.12 | 4.63 |
-| 20 | **0.416** | 0.155 | **0.14** | 3.69 |
-| 50 | 0.643 | 0.463 | 0.17 | 2.42 |
-| 100 | **0.799** | 0.690 | **0.01** | 1.45 |
+| items per half | ρ(half A, half B) | 5th pct | P(both crown the same arm) | median rank move | *26 arms: ρ / P(same)* |
+|---|---|---|---|---|---|
+| 10 | 0.336 | 0.033 | 0.08 | 4.84 | *0.278 / 0.12* |
+| 20 | **0.443** | 0.191 | **0.11** | 3.91 | *0.416 / 0.14* |
+| 50 | 0.640 | 0.452 | 0.12 | 2.67 | *0.643 / 0.17* |
+| 100 | **0.793** | 0.689 | **0.01** | 1.63 | *0.799 / 0.01* |
 
 At 20 articles — the size of the original experiment — two independent evals of these arms
-agree at ρ = 0.42. At 100 they still disagree at ρ = 0.80.
+agree at ρ = 0.44. At 100 they still disagree at ρ = 0.79. The three new arms nudge ρ up
+at small n (two of them sit at the extremes, which is easy to agree about) and leave the
+winner question exactly where `bart_l` left it.
 
 ### P(same winner) went from 0.58 to 0.01, and that is a result rather than a regression
 
@@ -421,6 +489,16 @@ work. This is not a small-sample complaint that more data fixes at the margin �
 shape of the task. Ten times the articles moved `coverage` from 1 separated pair to 34, and
 still left the top six mutually indistinguishable.
 
+**The winning free model is a specialist in this corpus, and the evidence is now a
+control rather than a caveat.** Three BARTs trained on CNN/DailyMail finish 1st, 5th and
+10th of 29 in the order of their size; one BART trained on XSum finishes 29th, below the
+LEAD-3 baseline. Same architecture, same decoding machinery, same $0. The variable is
+which corpus's references the model learned to imitate — and single-reference ROUGE
+against *this* corpus rewards imitating this corpus. That makes the production advice
+sharper, not weaker: fine-tune on summaries that look like the ones you want, and a 1 GB
+model on a CPU ties the frontier; fine-tune on anyone else's and it loses to copying the
+first three sentences.
+
 **Discriminating power is not informativeness.** Ranked by pairs separated:
 `summary_words` (208) > `grounding` (172) > `concision` (146) > `rouge1` (97) >
 `rougeLsum` (95) > `coverage` (34). That is almost exactly the order of how much each
@@ -441,7 +519,7 @@ cost *and* speed simultaneously. No statistics are required for that, and it ans
 question a team actually has — not "which is best" but "which are not worth considering".
 
 **A ladder needs more data than a decision, and possibly more than exists.** §3.6 measures
-it: two independent 100-article evals of these arms still disagree at ρ = 0.80. The gap
+it: two independent 100-article evals of these arms still disagree at ρ = 0.79. The gap
 between 1st and 3rd here is 0.0078 coverage; between 2nd and 3rd, 0.0005. Closing the
 latter needs a sample in the six figures. The correct output is therefore a *set* — the
 six arms with P(top 5) ≥ 0.47 — not a podium.
@@ -474,7 +552,7 @@ dearest, which is worth noticing before paying for either.
 - **Which model is best.** 34 of 276 pairs separate on the primary facet, and none of them
   are inside the top six. The output is a set, not a winner.
 - **Whether the ordering would hold on another 200 articles.** Measured, and it largely
-  would not: two independent 100-article evals agree at rho = 0.80 (section 3.6).
+  would not: two independent 100-article evals agree at rho = 0.79 (section 3.6).
 - **Anything about model size.** The tier axis is price, and confounds generation.
 - **Whether abstractive outputs are accurate.** No metric here detects fabrication;
   `grounding` measures extractiveness and cannot distinguish paraphrase from invention.
@@ -484,9 +562,14 @@ dearest, which is worth noticing before paying for either.
   upstream provider on the day.
 - **Anything comparable to published ROUGE.** `rougeLsum` here uses a local sentence
   splitter rather than NLTK's, and `grounding`/`concision`/`coverage` are ours.
-- **ML versus LLM.** The classical-baseline arm this example is named for is not built.
-- **Within-arm variance.** This run is r=1; the determinism figures are from the earlier
-  r=3 sweep and were not re-measured.
+- **Whether `bart_l`'s lead is style or length.** The XSum control fails for two reasons
+  at once — it was trained on BBC single-sentence summaries *and* it decodes at 62/11
+  tokens against 142/56. An arm at CNN/DailyMail decode lengths would separate them; it
+  was not run. (This bullet used to read "ML versus LLM: not built" — five local arms have
+  since run, so the comparison exists; what it cannot yet say is *why* the specialist wins.)
+- **Within-arm variance for the hosted arms.** This run is r=1; the determinism figures are
+  from the earlier r=3 sweep and were not re-measured. For the local arms it was: 200 of
+  200 byte-identical across two runs of `bart_s`.
 
 ---
 
@@ -551,7 +634,16 @@ make leaderboard DATASET_ID=cnn_dailymail_200
 make holdout   DATASET_ID=cnn_dailymail_200 EXCLUDE=cnn_dailymail_20
 make pair-test DATASET_ID=cnn_dailymail_200 A=cnn_deepseek_m_n200_v1 B=cnn_anthropic_l_n200_v1 FAMILY=4
 python scripts/rank_stability.py --dataset-id cnn_dailymail_200
+
+# the local arms (bart_m, bart_s, bart_l_xsum need torch >= 2.6: uv sync --extra local)
+python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_n200_v1 --against _n200_v1 --metric coverage
+python scripts/family_test.py --dataset-id cnn_dailymail_200 --a cnn_bart_l_xsum_n200_v1 --against _n200_v1 --metric coverage
 ```
+
+The three 2026-09-30 BART arms load `main`'s `pytorch_model.bin`; each checkpoint also has
+a safetensors conversion PR on the Hub (distilbart-cnn-12-6 `refs/pr/29`, -6-6 `refs/pr/2`,
+bart-large-xsum `refs/pr/9`) that loads on torch 2.2.2 — see
+[`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
 No `rescore` step is needed here. It was, for the n=20 sweep: scores were written rounded
 to 6 decimals, which cannot tell a genuine tie from a rounding artifact, and the tie

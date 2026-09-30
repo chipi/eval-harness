@@ -1,5 +1,10 @@
 # Handover — the DBpedia-14 classification example
 
+> **Update 2026-09-30:** the fine-tuned arm this file calls "could not be run" has run —
+> 0.9857, tied with the top group, not above it. See
+> [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](HANDOVER_DBPEDIA_BLOCKED_ARM.md) and
+> [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.2. The rest is as of 2026-09-27.
+
 State as of 2026-09-27. Branch `classification-dbpedia`. This is the second classification
 example and it exists to be the OPPOSITE regime from the first — read it beside
 [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](HANDOVER_CLASSIFICATION_AG_NEWS.md), because

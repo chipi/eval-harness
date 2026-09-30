@@ -90,12 +90,17 @@ corpus, and each exists because it breaks something the previous one did not.
 They exist to show the harness doing something real, and because the results make the point
 better than documentation can:
 
-- **Summarisation.** The dearest arm, at **52× the price** of the cheapest, ranks **16th of
-  25**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.80**
-  — at 20 articles, **ρ = 0.42**.
-- **Classification.** A 44MB fine-tuned model beat 24 frontier LLMs on AG News. On DBpedia
-  a **115× price difference** bought nothing measurable, and the top ten arms are separated
-  by four items — three of which the entire field disputes because the gold label is wrong.
+- **Summarisation.** The dearest arm, at **52× the price** of the cheapest, ranks **18th of
+  29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**
+  — at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus ties the best LLM for $0;
+  the same BART fine-tuned on XSum finishes **last**, below copying the first three
+  sentences.
+- **Classification.** Three small fine-tuned models took the top three places on AG News
+  from 24 frontier LLMs — and their lead turns out to live almost entirely in 17 items
+  whose gold labels the whole LLM field disputes. On DBpedia a **115× price difference**
+  bought nothing measurable, and the fine-tuned model bought a tie, not a win: the top
+  eleven arms are separated by four items, three of which the field disputes because the
+  gold label is wrong.
 - **Extraction.** A 476MB span tagger separated from **all 26** opponents — but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.

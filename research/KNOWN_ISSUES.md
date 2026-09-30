@@ -3,7 +3,23 @@
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
 better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-09-30, after **round 3**.
+Last updated 2026-09-30, after **round 3** and the six local ML arms.
+
+## What running the six local ML arms found (2026-09-30)
+
+The six checkpoints that needed torch ≥ 2.6 ran on Linux (results in the classification
+and summarisation reports; journal entry 59). Running them surfaced four things about the
+instrument and one about the block itself.
+
+| finding | status |
+|---|---|
+| **The lock did not deliver torch ≥ 2.6 on Linux.** `torch>=2.2` off Intel Mac let uv's universal resolver settle on one torch for every platform, and in four of five examples it chose 2.2.2 — the version that blocks these checkpoints. Only summarisation's lock had forked to 2.14, by chance. `RUN_THE_BLOCKED_ML_ARMS.md` said "the lock resolves 2.14 on Linux", true for 3 of the 6 arms | **Fixed** (`4068ea23`): `torch>=2.6` off Intel Mac in all five examples; Intel Mac still 2.2.2, every other platform 2.14.0, no other package moved |
+| **Every run after the first on a machine is recorded `dirty: true`.** Earlier run directories under `data/runs/` are untracked files, and `build_info` treats any `git status --porcelain` output as dirt — so "commit before you run" really means "commit after every run". The code was byte-identical to the recorded commit | **Open.** Workaround used: `EVAL_RUNS_DIR` outside the git tree, then copy the finished runs in. The fix is to ignore untracked files under `data/runs*/` in the dirty check |
+| **Resume dropped the adapter's own metrics.** `Result.extra` — `input_truncated`, `truncated`, `reasoning_tokens` — was not carried onto replayed rows, and the aggregate averages only rows that carry a key, so a resumed `bart_s` reported `input_truncated` 0.75 (3 of the 4 fresh items) against a true 0.23. The demo adapter emits no `extra`, which is why every resume test passed | **Fixed**, with a fixture-adapter test that fails when the fix is reverted. The affected run is kept only as a repeat (`data/runs-repeats/`) |
+| **Fingerprints record `revision: null` and no `weight_files` for 5 of the 6.** `transformers` loaded `main`'s pickle and fetched the Hub's safetensors conversion PR in the background, so the cache holds two snapshots and `hf_identity.resolved_revision` refuses to pick one | **Open.** The `main` commits each run loaded are in [`docs/REFERENCE.md`](../docs/REFERENCE.md), read from the cache. The durable fix is `revision:` pinned in every local config — round 1's L9 |
+| **The block was avoidable.** Every one of the six has a safetensors conversion PR on the Hub (`refs/pr/1`, `/2`, `/9`, `/29`). Verified on torch 2.2.2+cpu: loading from `main` fails with the CVE refusal; loading `refs/pr/1` succeeds and predicts identically to the torch-2.14 run on 40 of 40 items checked. Pinning `revision:` to the conversion PR would have run these on the original Intel Mac | **Open by decision.** The configs were not changed, so the committed runs stay identifiable as runs of `main`'s pickle. A future config version can pin the PR |
+| **The published pilot ρ for AG News (0.852) and DBpedia (0.728) cannot be re-derived from committed data.** They came from dev-slice runs that were never committed. Ranking the dev items inside the committed full runs gives 0.677 and 0.757, with a 10- to 13-way tie at the top of the dev slice | **Open.** Stated in both reports; the "pilot picked the wrong winner" finding rests on the committed runs and stands |
+| `check_report_claims.py`'s Pareto check found hosted summarisation arms by excluding two names (`bart_l`, `lead3`); three more local arms would have been counted as hosted | **Fixed**: hosted = the run's recorded `provider` is `litellm` |
 
 ## What round 3 says about round 2
 
@@ -73,7 +89,7 @@ of us thought to check.
 |---|---|---|
 | **`fn_mistral_l_n200_v1`** never ran | every "of 26" in REPORT_NER is a family of 26, not 27 | `mistral-large-2512` is rate-limited upstream on OpenRouter's shared pool; 3 items in 7 minutes. [Handover](HANDOVER_NER_BLOCKED_ARM.md) |
 | **5 frontier SciFact rerankers** never ran | the top tie (12–13 arms) is a tie among *cheap* models; the report cannot say whether a frontier model reranks better | ≈$12 (price-table; $8–$45 once the 0.67×–3.76× billing spread is allowed for) against that sweep's $1.94 billed. Was stated as $31.40 until 2026-09-29, on a multiplier that did not survive checking. [Handover](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md) |
-| **6 local ML checkpoints** never ran | DBpedia has no fine-tuned local arm at all, so it cannot answer the fine-tune-vs-pay question its twin answers | pickle checkpoints need torch ≥ 2.6; no Intel-Mac wheel above 2.2.2. [Run them](RUN_THE_BLOCKED_ML_ARMS.md) |
+| ~~**6 local ML checkpoints** never ran~~ | **Ran 2026-09-30.** DBpedia's fine-tune ties the top group (not above it); AG News gained two fine-tunes that took 1st and 2nd; the XSum control finished last of 29 | pickle checkpoints needed torch ≥ 2.6, run on Linux. See the section at the top of this file |
 | **No quantised arm was measured** | §0's ≤64 GB column assumes int8/int4 preserve quality. int8 usually does, int4 often does not | would need a local serving stack |
 | **No throughput measured anywhere** | every latency figure is per-item at concurrency 1. A 44 MB model and a 70B model scale completely differently and nothing here says how | out of scope as built |
 

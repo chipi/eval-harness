@@ -53,6 +53,7 @@ that discreteness broke three things the continuous summarisation metric never t
 |---|---|
 | 24 hosted LLMs | The same 24 as every other example, so a difference between examples is the **task**. |
 | [`bert_mini`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | **44 MB**, fine-tuned on AG News. The in-distribution specialist — and the arm that beat all 24. |
+| [`bert_base_ta`](https://huggingface.co/textattack/bert-base-uncased-ag-news), [`bert_base_fy`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | **438 MB** each, two independent BERT-base fine-tunes on AG News. They ask whether 44 MB was a floor or a ceiling (it was close to the ceiling: 0.9450 vs 0.9600, not separated), and check each other (192 of 200 labels agree). Needed torch ≥ 2.6; ran 2026-09-30. Together with `bert_mini` they made the label-convention effect measurable — see the report's §3.4. |
 | [`bart_mnli`](https://huggingface.co/facebook/bart-large-mnli) | Zero-shot via [NLI entailment](https://arxiv.org/abs/1909.00161). The **matched control**: same "small model" class, but never trained on this task. Without it, `bert_mini` winning would confound *small* with *trained on this*. |
 | `keyword` | ~20 hand-written regex rules. Establishes what rules alone are worth before any model is credited. |
 | `constant` | Always one class. Must score ≈0.25 — a **calibration check on the scorer**, not a baseline. |
@@ -95,14 +96,15 @@ redistributed.
 ([BERT](https://arxiv.org/abs/1810.04805)) ·
 [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli)
 ([BART](https://arxiv.org/abs/1910.13461);
-[zero-shot via NLI](https://arxiv.org/abs/1909.00161)). Blocked checkpoints:
+[zero-shot via NLI](https://arxiv.org/abs/1909.00161)) ·
 [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news),
-[`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news).
+[`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news)
+(pickle checkpoints; need torch ≥ 2.6).
 Hosted models in [`docs/REFERENCE.md`](../../docs/REFERENCE.md#hosted--24-arms-8-vendors--3-price-tiers).
 
 **Method** — calibration/ECE from [Guo et al. (2017)](https://arxiv.org/abs/1706.04599).
 
 **Software** — [transformers](https://github.com/huggingface/transformers) 4.55.4 ·
-[torch](https://github.com/pytorch/pytorch) 2.2.2 ·
+[torch](https://github.com/pytorch/pytorch) 2.2.2 on x86_64 macOS, 2.14.0 elsewhere (the bert-base arms ran on 2.14.0) ·
 [scikit-learn](https://scikit-learn.org/) 1.9.1 ·
 [LiteLLM](https://github.com/BerriAI/litellm) · [uv](https://github.com/astral-sh/uv).

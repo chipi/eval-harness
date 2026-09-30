@@ -671,6 +671,59 @@ def test_resume_scores_and_persists() -> None:
           f"{ {k: replayed3[0].get(k) for k in ('latency_ms', 'cost_usd')} if replayed3 else None }")
     shutil.rmtree(crash, ignore_errors=True)
 
+    # AND THE ADAPTER'S OWN CALL-TIME NUMBERS MUST BE CARRIED TOO. `Result.extra` --
+    # `input_truncated`, `truncated`, `reasoning_tokens` -- was dropped on replay, and
+    # the aggregate averages only the rows that carry a key, so a resumed summariser
+    # reported input_truncated 0.75 (3 of the 4 fresh items) against a true 0.23.
+    # The demo adapter emits no `extra`, which is why every assertion above passed:
+    # this uses a fixture adapter that does.
+    fx = runs / "fixture"
+    fx.mkdir(parents=True, exist_ok=True)
+    (fx / "fx_adapter.py").write_text(
+        "from dataclasses import dataclass, field\n"
+        "from typing import Any, Dict, Optional\n"
+        "PRIMARY_METRIC = 'words'\n"
+        "METRIC_KINDS = {'words': 'quality', 'call_flag': 'descriptive'}\n"
+        "@dataclass\n"
+        "class Result:\n"
+        "    output: str\n"
+        "    cost_usd: Optional[float] = 0.0\n"
+        "    latency_ms: Optional[float] = None\n"
+        "    tokens_in: Optional[int] = None\n"
+        "    tokens_out: Optional[int] = None\n"
+        "    extra: Dict[str, float] = field(default_factory=dict)\n"
+        "    meta: Dict[str, Any] = field(default_factory=dict)\n"
+        "def call_system(text, params):\n"
+        "    return Result(output=text[:60], extra={'call_flag': 1.0})\n"
+        "def score(output, reference):\n"
+        "    return {'words': float(len(output.split()))}\n"
+    )
+    (fx / "arm_fx.yaml").write_text(
+        "config_id: fx_extra_v1\ndataset_id: smoke_v1\nadapter: fx_adapter.py\n"
+        "params:\n  provider: fixture\n"
+    )
+    cfg_fx = str((fx / "arm_fx.yaml").relative_to(HERE.parent))
+    rf = run("scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_src", env=env)
+    if rf.returncode != 0:
+        check("resume: the extra-carrying fixture arm runs", False,
+              ((rf.stderr or "") + (rf.stdout or ""))[-200:])
+    else:
+        fx_outs = sorted((runs / "fx_src" / "outputs").glob("*.txt"))
+        for f in fx_outs[1:]:
+            f.unlink()
+        (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
+        (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
+        rr = run("scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_res",
+                 "--resume", "fx_src", env=env)
+        fx_rows = [_json.loads(l) for l in
+                   (runs / "fx_res" / "predictions.jsonl").read_text().splitlines()
+                   if l.strip()] if rr.returncode == 0 else []
+        fx_rep = [r for r in fx_rows if r.get("resumed") == 1.0]
+        check("resume: replayed rows keep the adapter's extra metrics",
+              bool(fx_rep) and all(r.get("call_flag") == 1.0 for r in fx_rep),
+              f"{len(fx_rep)} replayed; call_flag on them = "
+              f"{[r.get('call_flag') for r in fx_rep][:5]}")
+
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.

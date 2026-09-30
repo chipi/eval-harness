@@ -1,8 +1,24 @@
 # Run the 6 blocked ML arms — copy/paste
 
+> **Done 2026-09-30** — all six ran on Linux; results in REPORT_CLASSIFICATION and
+> REPORT_SUMMARIZATION, the account in NOTES entry 59. Kept as the recipe for a re-run.
+> Three corrections to the first version of this file, all found by following it:
+>
+> - "The lock already resolves torch 2.14 on Linux" was true for summarisation only; the
+>   two classification locks resolved **2.2.2** everywhere. Fixed in `4068ea23` (the local
+>   extra now says `torch>=2.6` off Intel Mac, in all five examples).
+> - `dataset_create` **refuses** on a committed dataset (exit 1, nothing written) — it is
+>   dropped below. `materialize` alone verifies a fresh fetch against the frozen hashes.
+> - Run with `EVAL_RUNS_DIR` **outside the git tree**, or every run after the first is
+>   recorded `dirty` (the earlier run directories are untracked files). Copy the finished
+>   runs into `harness/data/runs/` afterwards, without `run.json` and `outputs/_rows.jsonl`.
+>
+> And a shortcut nobody took: each checkpoint has a safetensors conversion PR on the Hub
+> that loads on torch 2.2.2 — see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+
 These six need **torch ≥ 2.6**, which has no Intel-Mac wheel. On Linux or Apple Silicon
-the lock already resolves torch 2.14 by platform marker — **no code changes, no config
-edits.** Just clone, sync, fetch, run.
+the lock resolves torch 2.14 by platform marker — **no code changes, no config edits.**
+Just clone, sync, fetch, run.
 
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness
@@ -20,7 +36,7 @@ uv run fetch.py --n 200
 
 cd ../../harness
 PY=../examples/summarization-cnn-dailymail/.venv/bin/python
-$PY scripts/dataset_create.py --dataset-id cnn_dailymail_200 --source-dir data/sources/cnn_dailymail_200
+# (dataset_create skipped: cnn_dailymail_200 is committed, and it refuses)
 $PY scripts/materialize.py --dataset-id cnn_dailymail_200
 
 for a in bart_m bart_s bart_l_xsum; do
@@ -37,7 +53,7 @@ uv run fetch.py --n 200
 
 cd ../../harness
 PY=../examples/classification-ag-news/.venv/bin/python
-$PY scripts/dataset_create.py --dataset-id ag_news_200 --source-dir data/sources/ag_news_200
+# (dataset_create skipped: ag_news_200 is committed, and it refuses)
 $PY scripts/materialize.py --dataset-id ag_news_200
 
 for a in bert_base_fy bert_base_ta; do
@@ -54,7 +70,7 @@ uv run fetch.py --n 280
 
 cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
-$PY scripts/dataset_create.py --dataset-id dbpedia_280 --source-dir data/sources/dbpedia_280
+# (dataset_create skipped: dbpedia_280 is committed, and it refuses)
 $PY scripts/materialize.py --dataset-id dbpedia_280
 $PY scripts/experiment_run.py --config ../examples/classification-dbpedia-14/configs/arm_bert_base_fy_n200.yaml
 ```

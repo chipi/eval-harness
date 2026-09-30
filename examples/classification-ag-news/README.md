@@ -1,8 +1,15 @@
 # Classifying news, 24 models and four things that are not models
 
 One task — put a news article into one of four topics — measured across 24 hosted models
-from 8 vendors, a fine-tuned 44MB classifier, a zero-shot NLI model, a hand-written rule
-set, and a constant.
+from 8 vendors, three fine-tuned classifiers (44 MB and 2 × 438 MB), a zero-shot NLI
+model, a hand-written rule set, and a constant.
+
+> **Result, updated 2026-09-30:** the three fine-tunes take 1st–3rd (`bert_base_ta` 0.9600,
+> `bert_base_fy` 0.9500, `bert_mini` 0.9450) against a hosted field of 0.835–0.910 — and
+> nearly the whole lead sits in 17 items whose gold labels the hosted field disputes. See
+> [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md) §3.1 and §3.4. The
+> two bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves it everywhere but
+> x86_64 macOS).
 
 It is the second worked example for [`../../harness`](../../harness), and it exists
 because classification breaks things the summarisation example never touched. The
@@ -163,6 +170,8 @@ summarisation metric could have asked.
 | --- | --- | --- |
 | 24 hosted | 8 vendors × small/mid/large, same aliases and prices as the summarisation example | $0.0014–$0.1750 per 200, billed |
 | `bert_mini` | 44MB BERT fine-tuned on AG News | 0 |
+| `bert_base_ta` | 438MB BERT-base fine-tuned on AG News (TextAttack) — needs torch ≥ 2.6 | 0 |
+| `bert_base_fy` | 438MB BERT-base fine-tuned on AG News (fabriceyhc) — needs torch ≥ 2.6 | 0 |
 | `bart_mnli` | `bart-large-mnli`, zero-shot via NLI, no task fine-tune | 0 |
 | `keyword` | ~20 hand-written regex rules, first match wins, default World | 0 |
 | `constant` | always answers World | 0 |

@@ -45,26 +45,35 @@ three times in five, and the scoring code moved single arms further than most mo
 did.
 
 It also answers the deployment question directly. **Every experiment has a $0 answer**:
-a model fine-tuned on its dataset ranked first in 3 of 3, a proprietary model never
-separated from the best open-weight one in any of the five, and **a 64 GB machine reaches
-the same answer as unlimited hardware on four of the five tasks**. Three of the four
-task-specific winners are under 2 GB and need no GPU.
+the best model fine-tuned on each dataset ranked first or tied for first in 4 of 4, a
+proprietary model never separated from the best open-weight one in any of the five, and
+**a 64 GB machine reaches the same answer as unlimited hardware on four of the five
+tasks**. Every task-specific winner is under 2 GB and needs no GPU.
 
 ## What each one actually found
 
 ### Summarisation — price does not predict quality
 24 hosted models over 200 news articles. The dearest arm, at **52× the price** of the
 cheapest, ranks **15th of 24**. Two *independent* 100-article evals of the same models
-agree at only **ρ = 0.80**, and at 20 articles at **ρ = 0.42**.
+agree at only **ρ = 0.79**, and at 20 articles at **ρ = 0.44** (29 arms).
 
 Later, ML arms were added and BART took the lead — by **0.00008** over the best LLM across
 200 articles. Its lead at n=20 had been 0.0737. That is the cleanest winner's-curse
 demonstration in the repo, and it turns up twice: in the leaderboard, and in
 `P(both halves crown the same arm)` collapsing to 0.01.
 
-### AG News — a small model wins, on a task with headroom
-A 44MB fine-tuned classifier scored **0.9450** against a hosted field of 0.835–0.910, and
-was ahead of all 24. It separated from 18 of 27 — **a group, not a podium**.
+Then the control: the same BART fine-tuned on **XSum** instead of CNN/DailyMail finishes
+**last of 29** — below LEAD-3. BART's tie with the frontier is this corpus's house style,
+learned. Its distillations keep most of it at half the latency (`bart_m` 0.3367 at 5.1 s,
+not separated from `bart_l`).
+
+### AG News — small models win, on a task with headroom — by learning its labels
+Three fine-tuned classifiers take the top three places: `bert_base_ta` **0.9600**,
+`bert_base_fy` 0.9500, the 44 MB `bert_mini` 0.9450, against a hosted field of
+0.835–0.910. The leader separates from 26 of 29. But nearly the whole lead sits in **17
+items the hosted field disputes** — the fine-tunes agree with the gold on 12–14 of them,
+the best LLM on none. Half of those follow a learnable AG News convention, half are plain
+mislabels: what fine-tuning bought here is the corpus's labelling.
 
 The example also found that **the scoring code is a bigger lever than the model choice for
 some arms**: the label parser is worth 8.6 accuracy points to `glm_l`, wider than the gap
@@ -72,8 +81,10 @@ separating most of the field.
 
 ### DBpedia-14 — the same experiment, the opposite regime
 Deliberately paired with AG News, and **they should not be read one at a time.** Here the
-task is saturated: the leader separated from only **8 of 26**, and the top ten arms are one
-group across a **115× price range**.
+task is saturated: the leader separated from only **8 of 27**, and the top eleven arms are
+one group across a **115× price range**. The fine-tuned classifier — blocked for three days
+by a pickle checkpoint, run on 2026-09-30 — lands *inside* that group at 0.9857, $0:
+where there is no headroom, training buys a tie, not a win.
 
 Both corpora carry systematic label noise, and on DBpedia it is the size of the signal —
 the top ten are separated by four items, three of which the entire field disputes because
@@ -110,8 +121,8 @@ varying.** Every example produced a tie group spanning a large price range:
 | | tie at the top | price span |
 |---|---|---|
 | summarisation | dearest arm ranks 15th of 24 | 52× |
-| AG News | leader tied with 9 | — |
-| DBpedia | a group of 10 | 115× |
+| AG News | leader tied with 3 — two other fine-tunes and one paid arm | 2.5× |
+| DBpedia | a group of 11, one of them free | 115× |
 | Few-NERD | 8 hosted arms | 78× |
 | SciFact | 12 arms, **2 of them free** | 7.6× billed, among cheap arms |
 
@@ -143,9 +154,9 @@ cost this repo four reports' worth of corrections.
 ## Unfinished work
 
 Every example has a handover for what was not run and why, in
-[`../research/`](../research): blocked ML arms needing a machine that can load pickle
-checkpoints, one NER arm rate-limited upstream, and five frontier rerankers that cost
-About $12 against the retrieval sweep's $1.94 billed.
+[`../research/`](../research): one NER arm rate-limited upstream, and five frontier
+rerankers that cost about $12 against the retrieval sweep's $1.94 billed. The six local ML
+arms that needed a machine able to load pickle checkpoints ran on 2026-09-30.
 
 ---
 
