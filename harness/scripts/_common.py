@@ -353,3 +353,47 @@ def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
             f"(data/runs-repeats/ is where the SciFact re-runs live)."
         )
     return {k: sorted(v) for k, v in sorted(groups.items())}
+
+def warn_on_ambiguous_runs(base: Path, dataset_id: Optional[str] = None,
+                           label: str = "") -> int:
+    """Say loudly when two runs share a config_id for reasons other than --repeat.
+
+    Every loader in this repo groups runs by `config_id` and then averages or picks --
+    `leaderboard` printed `sf_llama_l_n200_v1 runs=2 0.683350`, the mean of 0.7281 and
+    0.6386, a number in no run and no report; `pair_test`, `family_test`,
+    `rank_stability` and `holdout_significance` averaged per item across both; the
+    report scripts silently took whichever the filesystem returned last. None of it
+    said anything. Found by external review.
+
+    `runs_by_arm` RAISES on this, which is right for a checker and wrong for a
+    leaderboard someone is reading interactively. This warns instead and returns the
+    count, so the number on screen is still explained.
+
+    A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
+    ambiguous; averaging those is the point.
+    """
+    groups: Dict[str, List[str]] = {}
+    for mj in sorted(base.glob("*/metrics.json")):
+        try:
+            m = json.loads(mj.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if dataset_id and m.get("dataset_id") != dataset_id:
+            continue
+        if m.get("config_id"):
+            groups.setdefault(m["config_id"], []).append(mj.parent.name)
+    bad = []
+    for cid, names in sorted(groups.items()):
+        if len(names) < 2:
+            continue
+        stems = {re.sub(r"_r\d+$", "", n) for n in names}
+        if len(stems) == 1 and all(re.search(r"_r\d+$", n) for n in names):
+            continue
+        bad.append((cid, sorted(names)))
+    for cid, names in bad:
+        print(f"  WARNING: {len(names)} runs claim config_id {cid!r}"
+              f"{' in ' + label if label else ''} — {', '.join(names)}.")
+        print(f"           They are averaged together below. If they are different "
+              f"measurement occasions, move all but one out of {base.name}/.")
+    return len(bad)
+

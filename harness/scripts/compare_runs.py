@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import RUNS, die, is_descriptive, read_json, verdict_for  # noqa: E402
+from _common import RUNS, die, is_descriptive, read_json, verdict_for, ROOT  # noqa: E402
 
 
 
@@ -42,7 +42,9 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
     # version field nothing reads is decoration.
     if fa and fb and fa.get("version") != fb.get("version"):
         print(f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs "
-              f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not, so\n"
+              f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not;\n"
+              f"  v3 widens that to every file in the reference directory, not just\n"
+              f"  *.txt, so\n"
               "  the two hashes cannot be compared directly — the field-by-field list\n"
               "  below is the comparison that still means something. Re-run the older\n"
               "  arm to put both on the same version.")
@@ -124,7 +126,32 @@ def main() -> int:
     # built-in table, which knows the bundled adapter's metrics and nothing else -- so
     # every example's own metrics were judged "better"/"worse" by sign alone. An arm
     # that hallucinated more document ids was reported as improved.
+    # THE ADAPTER'S CURRENT DECLARATION WINS, as it does in `leaderboard`. A run
+    # freezes the metric kinds declared when it was measured, so fixing a misdeclared
+    # metric changed nothing for any comparison of runs made before the fix. Round 2
+    # fixed this in leaderboard.py and not here. Found by external review.
     kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
+    for run in (a, b):
+        spec = run.get("adapter")
+        if not spec:
+            continue
+        for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
+            cand = Path(spec) if Path(spec).is_absolute() else base / spec
+            if not cand.is_file():
+                continue
+            try:
+                import importlib.util  # noqa: PLC0415
+
+                ms = importlib.util.spec_from_file_location(f"cmpkinds_{cand.stem}", cand)
+                mod = importlib.util.module_from_spec(ms)
+                sys.modules[ms.name] = mod
+                ms.loader.exec_module(mod)
+                cur = getattr(mod, "METRIC_KINDS", None)
+                if isinstance(cur, dict):
+                    kinds.update(cur)
+            except Exception:  # noqa: BLE001 — a stale adapter must not break a compare
+                pass
+            break
 
     worth = 0
     for k in keys:

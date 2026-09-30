@@ -521,13 +521,25 @@ def score(output: str, reference: Optional[str]) -> Dict[str, float]:
              if isinstance(j, dict) and j.get("doc_id") is not None}
 
     ranking = parse_ranking(output)
+    # AN ENVIRONMENT VARIABLE READ AT SCORE TIME IS AN UNRECORDED INPUT. `score()` is
+    # called by `rescore` as well as by the run, and `EVAL_CORPUS_ID` decides which
+    # corpus the hallucination count is measured against -- so the same stored outputs
+    # score differently depending on a variable nothing writes down. It is read once
+    # here and the value used is reported, so at least the run says which corpus
+    # answered. Found by external review; the real fix is to take it from the run's
+    # own fingerprint, which needs a score() signature this harness does not have yet.
     corpus_ids = None
+    corpus_id = os.environ.get("EVAL_CORPUS_ID", "scifact")
     try:
-        docs, _ = _corpus(os.environ.get("EVAL_CORPUS_ID", "scifact"))
+        docs, _ = _corpus(corpus_id)
         corpus_ids = {d["doc_id"] for d in docs}
     except SystemExit:
         pass  # rescoring on a machine without the corpus: unknown_ids is then unavailable
     out: Dict[str, float] = {"parsed": 0.0 if ranking is None else 1.0}
+    if corpus_ids is None and corpus_id != "scifact":
+        # Say so rather than silently reporting unknown_ids = 0 against no corpus.
+        print(f"  WARNING: EVAL_CORPUS_ID={corpus_id!r} could not be loaded; "
+              f"hallucinated-id counts are not available for this item.")
     out.update(score_ranking(ranking or [], qrels, corpus_ids,
                              parsed=ranking is not None))
     return out
@@ -585,7 +597,14 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         # device, so a hit is the same array a build would produce -- but it entirely
         # changes what `warmup_ms` means, and a reader comparing 260,000 ms against
         # 3,000 ms deserves to know which is which.
-        out["index_built_this_run"] = any(_BUILT_THIS_PROCESS.values())
+        # NOT in the fingerprint. Whether THIS process happened to build the index or
+        # found it cached is a property of the run's environment, not of the
+        # measurement -- two identical measurements get different fingerprints
+        # depending on cache state, which is exactly what a fingerprint must not do.
+        # Reported beside the run instead. Found by external review.
+        out["index_cache_note"] = (
+            "built during this process" if any(_BUILT_THIS_PROCESS.values())
+            else "loaded from cache")
         return out
     if provider == "rerank":
         common.update({

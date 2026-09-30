@@ -41,7 +41,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, RUNS, SOURCES, read_json  # noqa: E402
+from _common import DATA, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
 
 
@@ -81,6 +81,9 @@ def main() -> int:
     ap.add_argument("--alpha", type=float, default=0.05)
     ap.add_argument("--seed", type=int, default=20260926)
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     # EVAL_RUNS_DIR, same as every other script. Without this, running these two
     # under a non-default runs directory silently read data/runs instead -- so a

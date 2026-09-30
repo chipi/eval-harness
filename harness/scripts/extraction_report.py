@@ -58,7 +58,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from _common import REFERENCES, RUNS, SOURCES, die, read_json  # noqa: E402
+from _common import REFERENCES, RUNS, SOURCES, die, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from extraction import as_members, match_one_to_one, normalize  # noqa: E402
@@ -305,6 +305,9 @@ def main() -> int:
                     help="share of learned arms that must agree (default: 0.8)")
     ap.add_argument("--top", type=int, default=10, help="rows per consensus section")
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     gold = gold_sets(args.dataset_id)
     preds = predictions(args.dataset_id, args.match)

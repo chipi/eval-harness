@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import REFERENCES, RUNS, ROOT, die, read_json  # noqa: E402
+from _common import REFERENCES, RUNS, ROOT, die, read_json, warn_on_ambiguous_runs  # noqa: E402
 from experiment_run import load_adapter, _score_wants_source  # noqa: E402
 
 
@@ -109,6 +109,9 @@ def main() -> int:
     ap.add_argument("--group-by", default="family",
                     help="params key for the sibling-bias report; '' to skip")
     args = ap.parse_args()
+    # Two runs sharing a config_id are averaged together below without
+    # saying so. See _common.warn_on_ambiguous_runs.
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     refs_side = _collect(args.dataset_id, args.ref_match)
     arms_side = _collect(args.dataset_id, args.arm_match)

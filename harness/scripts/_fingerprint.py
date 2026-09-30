@@ -189,7 +189,14 @@ def build_fingerprint(
         # v2 adds data.references_sha256. A v1 fingerprint cannot be compared to a v2
         # one on the hash alone, because v2 hashes strictly more -- the version says so
         # rather than leaving a reader to discover it from a mismatch.
-        "version": 2,
+        # VERSION 3 as of 2026-09-30. v2 added `data.references_sha256`; v3 changed
+        # what that digest covers -- every file in the reference directory, not just
+        # `*.txt`, so a silver set's manifest.json (which records WHICH MODEL authored
+        # it) is inside the hash. A v2 and a v3 digest over the same directory differ
+        # whenever a non-.txt file is present, so they are not comparable and the
+        # version must say so. Left at 2 when the rule changed; found by external
+        # review.
+        "version": 3,
         "instrument": {
             "harness": _harness_identity(root),
             "adapter": _adapter_identity(adapter_path, adapter_id),

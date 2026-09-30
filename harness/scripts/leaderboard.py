@@ -31,6 +31,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (  # noqa: E402
     ROOT,
+    warn_on_ambiguous_runs,
     RUNS,
     classify_metrics,
     die,
@@ -394,6 +395,7 @@ def main() -> int:
                 by_config[d["config_id"]].append(d)
                 run_dirs[id(d)] = run
 
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"

@@ -42,10 +42,19 @@ THREE THINGS THAT LOOK LIKE LENIENCY AND ARE ACTUALLY REWARDS FOR BAD BEHAVIOUR
      and that is a 1-item list padded, not a 10-item list of which 9 are wrong.
 
 nDCG'S GAIN FUNCTION IS DECLARED EVEN THOUGH IT DOES NOT MATTER HERE
-  `gain = 2**rel - 1`, matching `pytrec_eval`/BEIR. On SciFact every relevance grade is 1,
-  where `2**1 - 1 == 1` and this is indistinguishable from linear gain. It is written down
-  because the next corpus may be graded, and a metric that silently changes meaning
-  between two datasets is worse than one that is merely wrong.
+  `gain = 2**rel - 1`, which is the exponential-gain convention `pytrec_eval` and BEIR
+  also use. On SciFact every relevance grade is 1, where `2**1 - 1 == 1` and this is
+  indistinguishable from linear gain. It is written down because the next corpus may be
+  graded, and a metric that silently changes meaning between two datasets is worse than
+  one that is merely wrong.
+
+  THE WORD "MATCHING" WAS DOING MORE WORK THAN IT HAD EARNED. This said the gain
+  function "matches pytrec_eval/BEIR", which a reader can take as *this implementation
+  agrees with theirs*, and nothing here has ever been run against either. What is true
+  is narrower: the same GAIN CONVENTION, chosen deliberately, with the discount and the
+  ideal-ranking construction implemented here and not cross-checked against a reference
+  implementation. Doing that cross-check is worth a future session; claiming it in a
+  docstring is not the same thing. Found by external review.
 """
 
 from __future__ import annotations

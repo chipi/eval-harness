@@ -485,7 +485,9 @@ def test_fingerprint_version_is_read_somewhere() -> None:
     fp = build_fingerprint(root=HERE.parent, dataset={"dataset_id": "d", "items": []},
                            reference_id=None, reference_tier=None, config_id="c",
                            params={}, adapter_id="a", adapter_path=None)
-    check("new fingerprints are version 2", fp.get("version") == 2, str(fp.get("version")))
+    # v3 since 2026-09-30: the reference digest now covers every file in the directory,
+    # not just *.txt, so a v2 and a v3 hash over the same references can differ.
+    check("new fingerprints are version 3", fp.get("version") == 3, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
