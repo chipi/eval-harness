@@ -84,11 +84,25 @@ def _stored_decimals(values: List[float]) -> int:
             best = max(best, len(t.split(".")[1].rstrip("0")))
     return best
 
-_NEMENYI_Q05 = {  # Demsar 2006, alpha = 0.05: studentised range / sqrt(2)
-    2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850, 7: 2.949, 8: 3.031, 9: 3.102,
-    10: 3.164, 11: 3.219, 12: 3.268, 13: 3.313, 14: 3.354, 15: 3.391, 16: 3.426,
-    17: 3.458, 18: 3.489, 19: 3.517, 20: 3.544, 21: 3.569, 22: 3.593, 23: 3.616,
-    24: 3.637, 25: 3.658,
+_NEMENYI_Q05 = {
+    # alpha = 0.05, nu = infinity: the studentised range divided by sqrt(2).
+    #
+    # COMPUTED, NOT TRANSCRIBED -- see scripts/nemenyi_table.py, which solves
+    #   P(R <= q) = k * INTEGRAL phi(z) [Phi(z) - Phi(z-q)]^(k-1) dz  =  1 - alpha
+    # by Simpson plus bisection, in stdlib. It reproduces all 24 values Demsar (2006)
+    # publishes for k = 2..25 to within 0.0007, which is below the precision Demsar
+    # prints, and `test_nemenyi_table` asserts that every time.
+    #
+    # It used to stop at 25 and this file REFUSED to print a critical difference above
+    # that, rather than reuse a smaller k's value and understate the CD. The refusal
+    # was right; the scope was not. Four of five experiments here have 26-28 arms, so
+    # four of five had no pairwise verdict at all -- over roughly thirty lines of
+    # arithmetic. Found by external review.
+    2: 1.9600, 3: 2.3437, 4: 2.5690, 5: 2.7278, 6: 2.8497, 7: 2.9483, 8: 3.0309, 9: 3.1017,
+    10: 3.1637, 11: 3.2187, 12: 3.2680, 13: 3.3127, 14: 3.3536, 15: 3.3912, 16: 3.4260, 17: 3.4584,
+    18: 3.4887, 19: 3.5171, 20: 3.5438, 21: 3.5690, 22: 3.5929, 23: 3.6156, 24: 3.6373, 25: 3.6579,
+    26: 3.6776, 27: 3.6964, 28: 3.7145, 29: 3.7319, 30: 3.7486, 31: 3.7647, 32: 3.7802, 33: 3.7952,
+    34: 3.8097, 35: 3.8237, 36: 3.8373, 37: 3.8504, 38: 3.8632, 39: 3.8756, 40: 3.8876,
 }
 
 

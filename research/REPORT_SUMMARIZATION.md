@@ -80,10 +80,11 @@ printing a smooth 1-to-24 ordering is still asserting hundreds of comparisons it
 support.
 
 *Both figures are over the **24 hosted arms** this section was computed on. The field
-is now 26 — `bart_l` and `lead3` were added later — and at k=26 `leaderboard.py`
-refuses to give a critical difference at all, because its studentised-range table stops
-at k=25. These numbers are reproducible only by restricting to the original 24, which
-is what the command in §2 does. Nothing here is recomputed over 26.*
+is now 26 — `bart_l` and `lead3` were added later — and over all 26 the critical
+difference is **2.81** with **54 of 325** pairs separating. Until 2026-09-30 this note
+said k=26 could not be given a CD at all, because the studentised-range table stopped
+at 25; it is now computed rather than transcribed. The 2.57 figures above remain those
+of the original 24, reproducible with the command in §2.*
 
 **The n=20 ranking largely did not survive.** Spearman between the two orderings of the
 same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthropic_m` fell

@@ -363,19 +363,27 @@ the dev slice sampled its truncation rate at 5.4% and the measurement slice foun
 
 ```
 global test (permutation on within-item ranks): p = 0.0002 -> an arm effect exists
-Nemenyi critical difference: NOT AVAILABLE for k=27 arms — the tabulated
-studentised range stops at k=25.   observed rank span = 13.94
+Nemenyi critical difference = 2.77 rank positions; observed span = 13.95
+pairs distinguishable: 149 of 351
 
-  fn_span_marker_n200_v1   avg rank 8.61   P(1st) = 1.00
+  fn_span_marker_n200_v1   avg rank 8.64   P(1st) = 1.00
 ```
 
-> **Corrected 2026-09-29.** This block previously read *"critical difference = 2.74;
-> pairs distinguishable: 156 of 351"*. Both came from silently reusing the k=25 critical
-> value for a 27-arm field, which is too small — so the CD was understated and more pairs
-> were called distinguishable than the test supports (~153 at an interpolated k=27). The
-> tool now declines to print a pairwise verdict above its table rather than guessing one.
-> **The global test is unaffected**, and so is every claim in this report: the separation
-> results come from `family_test.py`'s Holm step-down, which does not use this table.
+> **Twice corrected, and the second correction is the interesting one.** This block first
+> read *"critical difference = 2.74; pairs distinguishable: 156 of 351"*, from silently
+> reusing the k=25 critical value for a 27-arm field — too small, so the CD was
+> understated and more pairs called distinguishable than the test supports. Round 2 made
+> the tool refuse above k=25 and this block printed NOT AVAILABLE. A round-3 reviewer
+> pointed out the values are about thirty lines of stdlib, which they are:
+> [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) solves the
+> studentised-range integral and reproduces all 24 of Demsar's published values to
+> within 0.0007.
+>
+> Computed for k=27 the CD is **2.77** and **149 of 351** pairs separate — against the
+> 2.74 and 156 first published. So the original was biased in exactly the direction
+> stated, by seven pairs. **The global test is unaffected**, and so is every separation
+> claim here: those come from `family_test.py`'s Holm step-down, which never used this
+> table.
 
 This is the direct opposite of the summarisation result, where BART's 0.0737 lead at n=20
 collapsed to 0.00008 at n=200. A lead can be an artifact of a small slice; this one is not,

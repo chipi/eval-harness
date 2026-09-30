@@ -169,19 +169,20 @@ deepseek_l           0.8700    0.8681   0.0114     ─────────�
                                                    constant           0.2500   0
 ```
 
-**Is the ordering real?** `p = 0.0002` — an effect exists. **The pairwise counts this
-paragraph used to give have been withdrawn.**
+**Is the ordering real?** `p = 0.0002`, **Nemenyi CD 3.06** rank positions,
+**33 of 378** pairs distinguishable, observed span 9.73.
 
-It said "Nemenyi CD 3.01, 34 of 378 pairs distinguishable, 29 of 378 on the held-out
-180". AG News has **28 arms**, and the tabulated studentised range this repo carries
-stops at k=25. The tool that produced 3.01 reused a smaller k's value, which — in its
-own words now — *"would understate the critical difference and overstate how many pairs
-differ"*. So the number was biased toward claiming significance, which is the direction
-that flatters a leaderboard.
-
-`leaderboard.py` now refuses rather than guessing, and there is no honest CD to put
-here. What survives untouched is the **Holm family test below**, which never used a
-studentised range and carries every separation claim in this report.
+*This number has been wrong, then absent, and is now computed — the sequence is worth
+recording. It first read "CD 3.01, 34 of 378", produced by silently reusing the k=25
+critical value for a 28-arm field, which understates the CD and overstates how many
+pairs differ. Round 2 made the tool refuse above k=25 and I withdrew the counts as
+unrecoverable. A round-3 reviewer observed that the values are about thirty lines of
+stdlib. They are: [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py)
+solves the studentised-range integral and reproduces all 24 of Demsar's published
+values to within 0.0007. The correct k=28 figure is **3.06**, against the 3.01 first
+published — so the original was biased in the direction I said, by about the amount I
+could not then quantify. "Unrecoverable" was a statement about my effort, not about the
+mathematics.*
 
 **Pre-registered family test** (`bert_mini` vs all others, Holm over m=27 named before the
 p-values were read): ahead on the point estimate against **27 of 27**, separated from
@@ -213,11 +214,13 @@ anthropic_s          0.9786    0.9782    0.0536    deepseek_s         0.9429    
                                                    constant           0.0714    0
 ```
 
-`p = 0.0002` — an effect exists. **The pairwise counts are withdrawn for the same
-reason as AG News above:** DBpedia has 27 arms, the table stops at 25, and the
-"CD 2.45, 74 of 351 pairs distinguishable" this paragraph used to give came from
-reusing a smaller k — biased toward finding more pairs significant than the data
-supports. The Holm family test below is unaffected.
+`p = 0.0002`, **CD 2.48**, **74 of 351** pairs distinguishable, observed span 12.44.
+Holdout on the 224 items outside the dev slice: identical, 74 of 351.
+
+*Was "CD 2.45, 74 of 351" from a reused k=25 value, then withdrawn, now computed for
+k=27. The CD moves by 0.03 and the pair count not at all — but a figure that happens to
+land close is not the same as a figure that was right, and there was no way to know
+which it was without computing it.*
 
 **Pre-registered family test** (`qwen_m`, Holm over m=26): ahead against **26 of 26**,
 separated from **8**. Against `anthropic_l`: delta **+0.0036** — one item in 280 — at

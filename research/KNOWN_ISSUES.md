@@ -62,10 +62,16 @@ of us thought to check.
   bound on that comparison.
 - **No confidence anywhere hosted.** Logprobs were never requested, so calibration exists
   only for the three local arms that supply a probability.
-- **Nemenyi above k=25 prints no pairwise verdict.** Four of five experiments have 26–28
-  arms. This is deliberate — the table stops at 25 and guessing is worse — but it means
-  those experiments have no critical-difference line. The Holm tests in `family_test.py`
-  are unaffected and carry every separation claim in the reports.
+- ~~**Nemenyi above k=25 prints no pairwise verdict.**~~ **CLOSED 2026-09-30.** This
+  entry said the gap was deliberate because "the table stops at 25 and guessing is
+  worse". Guessing is worse; stopping was not the only alternative. The critical values
+  are a one-dimensional integral over the studentised range, about thirty lines of
+  stdlib — [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) computes
+  them, reproduces all 24 of Demsar's published values to within 0.0007, and
+  `test_nemenyi_table_is_computed_not_copied` asserts both that and that the table
+  shipped in `leaderboard.py` is what the computation gives. All five experiments now
+  carry a critical-difference line. Found by external review, who also supplied the k=26
+  to k=30 values independently — they match the computation to four decimals.
 
 ## Reproducibility, and what a clone still needs
 

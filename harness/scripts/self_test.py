@@ -944,6 +944,46 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_nemenyi_table_is_computed_not_copied() -> None:
+    """The critical values must be derivable, and must match the literature.
+
+    `leaderboard.py` carried 24 numbers transcribed from Demsar (2006) and refused to
+    print a critical difference above k = 25 rather than reuse a smaller k's value.
+    The refusal was right -- reusing one understates the CD and overstates how many
+    pairs differ -- but four of five experiments here have 26-28 arms, so four of five
+    had no pairwise verdict, over about thirty lines of arithmetic. Found by external
+    review.
+
+    They are computed now, so this asserts two things: the computation reproduces every
+    published value, and the table shipped in `leaderboard.py` is what the computation
+    produces. Either alone would be worth little -- the first without the second means
+    the shipped numbers could still be anything.
+    """
+    sys.path.insert(0, str(HERE))
+    from leaderboard import _NEMENYI_Q05  # noqa: PLC0415
+    from nemenyi_table import PUBLISHED, max_error_against_published, q_alpha  # noqa: PLC0415
+
+    err = max_error_against_published()
+    check("nemenyi: the computation reproduces Demsar's 24 values", err < 0.002,
+          f"worst disagreement {err:.4f}")
+
+    bad = [k for k, v in PUBLISHED.items() if abs(_NEMENYI_Q05.get(k, 0) - v) > 0.002]
+    check("nemenyi: and the shipped table agrees with the published one where it overlaps",
+          not bad, f"k={bad}")
+
+    # Spot-check the extension against the computation, not against itself.
+    ext = [k for k in (26, 27, 28) if k in _NEMENYI_Q05]
+    drift = [f"k={k}: table {_NEMENYI_Q05[k]:.4f} vs computed {q_alpha(k):.4f}"
+             for k in ext if abs(_NEMENYI_Q05[k] - q_alpha(k)) > 0.002]
+    check("nemenyi: the extension beyond k=25 is what the computation gives",
+          ext and not drift, "; ".join(drift) or "no k>25 entries shipped")
+
+    # And the covering assertion: every experiment here must now get a verdict.
+    check("nemenyi: the table covers every arm count this repo measures (<= 28)",
+          all(k in _NEMENYI_Q05 for k in range(2, 29)),
+          f"missing {[k for k in range(2, 29) if k not in _NEMENYI_Q05]}")
+
+
 def test_two_runs_sharing_a_config_id_are_refused() -> None:
     """A second run of the same arm must stop the tools, not be picked by luck.
 
@@ -1331,6 +1371,7 @@ def main() -> int:
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
+        test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_config_id_are_refused,
         test_the_reports_separation_counts_are_real,
         test_the_checks_can_actually_fail,
