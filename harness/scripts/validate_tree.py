@@ -294,11 +294,17 @@ def v9_no_committed_evidence_is_missing() -> None:
     """
     #: What each committed runs directory must contain. Raising one of these is a
     #: deliberate edit; lowering one should need an argument.
-    FLOORS = {"runs-reparsed": 19, "runs-rescored": 27, "runs-pair": 4, "runs-repeats": 3}
+    #: `runs-linux` is here because it was NOT, and nothing else reached it either: the
+    #: re-timed latency figures in three reports come out of it, six documents cite it,
+    #: and `grep -n runs-linux scripts/*.py` returned nothing. Deleting the directory
+    #: that nine published latency numbers rest on passed every check. Found reviewing
+    #: the merged ML-arm work, which is the same defect round 4 found one directory over.
+    FLOORS = {"runs-reparsed": 19, "runs-rescored": 27, "runs-pair": 4, "runs-repeats": 3,
+              "runs-linux": 9}
 
     tracked = subprocess.run(
         ["git", "ls-files", "data/runs", "data/runs-rescored", "data/runs-reparsed",
-         "data/runs-pair", "data/runs-repeats"],
+         "data/runs-pair", "data/runs-repeats", "data/runs-linux"],
         cwd=ROOT, capture_output=True, text=True,
     ).stdout.split()
     missing, incomplete = [], []

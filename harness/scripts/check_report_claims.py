@@ -13,6 +13,7 @@ Each entry is (report, label, claimed value, run, metric). A claim that drifts f
 here rather than in a reader's head.
 """
 import json
+import statistics
 import re
 import glob
 import sys
@@ -695,6 +696,78 @@ if len(_hosted) == 24:
 else:
     missing += 1
     print(f"  --   Pareto frontier: {len(_hosted)} hosted arms, not 24 — skipped")
+
+# ---- THE RE-TIMED LATENCY TABLE ------------------------------------------------
+#
+# `data/runs-linux/` holds the one-machine re-timing that three reports quote, and
+# reviewing the merged ML-arm work found NOTHING read it -- `grep -n runs-linux
+# scripts/*.py` returned nothing at all. Nine published figures, six documents citing
+# the directory, zero checks. It is the same defect round 4 found one directory over,
+# so it is closed the same way: the medians are recomputed here, and V9 now refuses to
+# let the directory be deleted.
+#
+# MEDIANS, not means: a local arm's first one to three items pay a one-off
+# initialisation the warm-up does not absorb, which is why the reports quote medians.
+_LINUX = ROOT / "harness" / "data" / "runs-linux"
+#: (config_id, the report that quotes it, the unit, decimals). The figure itself is
+#: DERIVED from the runs and then looked for in the report -- it is deliberately not
+#: written here. A literal here would make this check compare the runs to the checker,
+#: which is round-3 M9: the check passes while the report says something else. I made
+#: exactly that mistake once already in this file's ratio checks.
+_LATENCY = [
+    ("cnn_bart_l_n200_v1",      "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
+    ("cnn_bart_m_n200_v1",      "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
+    ("cnn_bart_s_n200_v1",      "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
+    ("ag_bert_base_ta_n200_v1", "REPORT_CLASSIFICATION.md", "ms",   1.0, 0),
+    ("ag_bert_base_fy_n200_v1", "REPORT_CLASSIFICATION.md", "ms",   1.0, 0),
+    ("ag_bert_mini_n200_v1",    "REPORT_CLASSIFICATION.md", "ms",   1.0, 1),
+]
+if not _LINUX.is_dir():
+    missing += 1
+    print("  --   re-timed latency: data/runs-linux is absent — skipped")
+else:
+    _medians = {}
+    for _d in sorted(_LINUX.glob("*/predictions.jsonl")):
+        _cid = json.load(open(_d.parent / "metrics.json")).get("config_id")
+        _lat = [json.loads(_l)["latency_ms"] for _l in
+                _d.read_text().splitlines() if _l.strip()]
+        if _lat:
+            _medians[_cid] = statistics.median(_lat)
+    for _cid, _rep, _unit, _div, _places in _LATENCY:
+        if _cid not in _medians:
+            missing += 1
+            print(f"  --   re-timed latency {_cid}: not in runs-linux — skipped")
+            continue
+        _want = f"{_medians[_cid] / _div:.{_places}f}"
+        _text = (ROOT / "research" / _rep).read_text()
+        # ONLY the lines that cite `runs-linux`, for every unit. Searching the whole
+        # file made this an EXISTENCE check: planting "9.9 s" on the line that cites
+        # the directory still passed, because an unrelated sentence elsewhere also
+        # says 6.3 s. A check that passes when the sentence it is about is wrong is
+        # not a check. (The copies of these figures in prose that does NOT cite the
+        # directory remain unchecked -- KNOWN_ISSUES says so.)
+        # PARAGRAPHS that cite `runs-linux`, not lines. Scoping to the line was too
+        # tight the other way: the summarisation sentence wraps, and `bart_s`'s 3.4 s
+        # sits on the continuation line while `runs-linux` sits on the first. Scoping
+        # to the whole file was too loose -- it made this an EXISTENCE check that
+        # passed with "9.9 s" planted on the citing line, because an unrelated
+        # sentence elsewhere also says 6.3 s. The paragraph is the sentence's actual
+        # extent. (Copies of these figures in prose that does NOT cite the directory
+        # stay unchecked; KNOWN_ISSUES says so.)
+        _near = "\n\n".join(_p for _p in _text.split("\n\n") if "runs-linux" in _p)
+        check(f"re-timed latency: {_rep} states {_want} {_unit} for {_cid}",
+              re.search(rf"(?<![\d.]){re.escape(_want)}(?![\d])", _near) is not None,
+              f"the runs-linux median is {_want} {_unit}; the report does not say it")
+    # And the two RATIOS the summarisation report draws from the same table, likewise
+    # derived here and then looked for in the prose.
+    if {"cnn_bart_l_n200_v1", "cnn_bart_m_n200_v1", "cnn_bart_s_n200_v1"} <= set(_medians):
+        _bl = _medians["cnn_bart_l_n200_v1"]
+        _sum = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+        for _cid, _name in (("cnn_bart_m_n200_v1", "bart_m"), ("cnn_bart_s_n200_v1", "bart_s")):
+            _got = f"{_medians[_cid] / _bl:.2f}"
+            check(f"re-timed latency: the report states {_name} at {_got}x bart_l",
+                  f"{_got}\u00d7" in _sum,
+                  f"one-machine ratio is {_got}x; the report does not state it")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

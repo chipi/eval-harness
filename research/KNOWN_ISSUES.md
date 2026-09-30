@@ -56,6 +56,35 @@ the annotation bound, so 1 − 0.0503/0.0810 = 37.9%. The "~7%" divided `span_ma
 *difference* between two arms' gains, and `openai_m` gains 0.0365. §4 now states 38% with
 both components shown and the disputing paragraph deleted.
 
+## What reviewing the merged ML-arm work found (2026-09-30)
+
+Round 4 reviewed that work and so did I, separately, on its own terms. Every latency
+figure it publishes was recomputed from the committed evidence and every one holds —
+`bart_l` 6.3 s, `bart_m` 4.1 s, `bart_s` 3.4 s, `bert_base_ta`/`bert_base_fy`/`bert_mini`
+49/55/4.3 ms, the 0.66× and 0.54× ratios, and the two figures KNOWN_ISSUES quotes for the
+contaminated run (recorded mean 4,484 ms, own median 3,683 ms). The arithmetic behind
+"1.7× faster" is 10,723.7 / 6,257.3 = 1.714.
+
+One finding, and it is the same shape as the one round 4 found one directory over:
+
+- **`data/runs-linux/` was cited by six documents and read by no script.** `grep -n
+  runs-linux harness/scripts/*.py Makefile` returned nothing. It was not in V9's tracked
+  list, not in V9's floors, and not in any claims family — the arm-row scan reads
+  leaderboards, and these are a latency table. Nine published numbers rested on a
+  directory that could be deleted with `make ci` still green.
+
+  **Fixed.** V9 now tracks it with a floor of 9, and eight claims recompute the medians
+  from the runs and then look for each figure in the report that quotes it. The figure is
+  derived, never written in the checker — a literal there would compare the runs to the
+  checker rather than to the report, which is round 3's M9 and a mistake I had already
+  made once in this file's ratio checks.
+
+  Getting the SCOPE right took three attempts, and the first two each passed a planted
+  defect: whole-file scope passed "9.9 s" on the citing line, because an unrelated
+  sentence repeats 6.3 s; line scope then missed a wrong figure on a wrapped continuation
+  line. The paragraph is the sentence's actual extent. A row in
+  `test_the_checks_can_actually_fail` now plants exactly that continuation-line case.
+
 ## What round 3 says about round 2
 
 Round 2's 32 findings were all addressed. Round 3 — four reviewers, fresh clones, Linux
@@ -230,6 +259,11 @@ should spend time on.
 - **Exec summaries, READMEs, handovers and KNOWN_ISSUES itself** are outside the
   arm-row scan entirely; only the four experiment reports are in it. This file's own
   numbers are checked by nothing.
+
+- **The re-timed latency figures are checked only where they cite their source.** The
+  eight new claims read the paragraph that names `data/runs-linux/`. The same numbers
+  appear elsewhere — the summarisation exec summary says "6.3 s on a 4-core Linux box"
+  without citing the directory — and those copies are unchecked.
 
 - **Deleting evidence is now caught, at the level of a file.** V9 fails when any run file
   git tracks is absent from disk, and when `runs-reparsed`, `runs-rescored`, `runs-pair`

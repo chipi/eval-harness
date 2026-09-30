@@ -1379,6 +1379,15 @@ def test_the_checks_can_actually_fail() -> None:
          "examples/_shared/extraction.py",
          '_ARTICLES = ("the ", "a ", "an ")',
          '_ARTICLES = ("z ", "the ", "a ", "an ")'),
+        # The sixth claims family, added reviewing the merged ML-arm work. The plant is
+        # on a WRAPPED continuation line on purpose: the first version of this check
+        # scoped to the line citing `runs-linux` and missed exactly this, and the
+        # version before that scoped to the whole file and missed a wrong figure on the
+        # citing line itself, because an unrelated sentence repeats the number.
+        ("check_report_claims.py", "a wrong RE-TIMED LATENCY in prose",
+         "research/REPORT_SUMMARIZATION.md",
+         "and `bart_s` (460 MB, 0.3276) **3.4 s**",
+         "and `bart_s` (460 MB, 0.3276) **1.1 s**"),
         ("validate_tree.py", "a PARSER CHANGE the reparsed runs predate",
          "examples/_shared/retrieval.py",
          '_ID_TOKEN = re.compile(r"^[\\w.\\-]+$")',
