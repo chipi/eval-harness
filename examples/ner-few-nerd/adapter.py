@@ -102,7 +102,6 @@ def _prompt_sha256(params: Dict[str, Any]) -> str:
 
 # ── parsing a model's answer into a set ──────────────────────────────────────
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.S)
-_ARRAY = re.compile(r"\[.*\]", re.S)
 _TRAILING_COMMA = re.compile(r",\s*([\]}])")
 #: An unquoted object key, as emitted by llama_m. Anchored on the preceding brace or
 #: comma so it cannot touch text INSIDE a quoted string value.
@@ -258,11 +257,22 @@ def _parser_sha256() -> str:
     `getsource` returns only the `def` block, so editing `_BARE_KEY` -- which is what
     decides whether llama_m's unquoted-key output parses at all -- changed every score
     and left this hash identical. Found by review, not by us.
+
+    AND THE SAME BUG CAME BACK THROUGH THE FIX FOR IT. Round 2 moved the array
+    extraction out of `_parse_entities` into `_balanced_arrays`, and did not add it
+    here. Gutting `_balanced_arrays` entirely -- returning [] for every input, so no
+    answer parses -- left this digest byte-identical. The hash covered a regex that
+    round 2 had made dead (`_ARRAY`, still defined and hashed and used nowhere) and not
+    the function that replaced it. Found by external review in round 3.
+
+    The lesson is narrower than "hash everything": a hash over a NAMED LIST of
+    functions silently stops covering the code when the code is refactored, and nothing
+    about the refactor looks like it touches provenance.
     """
     from codehash import code_digest  # noqa: PLC0415
 
-    return code_digest(_parse_entities, consts={
-        "_FENCE": _FENCE, "_ARRAY": _ARRAY,
+    return code_digest(_parse_entities, _balanced_arrays, consts={
+        "_FENCE": _FENCE,
         "_TRAILING_COMMA": _TRAILING_COMMA, "_BARE_KEY": _BARE_KEY})
 
 

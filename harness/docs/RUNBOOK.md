@@ -167,10 +167,23 @@ Three things worth knowing:
   `_meta` all carry over from the pass that produced it, and every replayed row is
   flagged `resumed: 1` so you can separate them. It reports what the *results* cost,
   not what this pass cost.
-- **You cannot resume from a different arm.** The source run's `config_id` and
-  `dataset_id` are checked against the config you are launching, and a mismatch is
-  refused. Without that check one mistyped run id would replay another model's answers
-  and record them under this one, with a valid fingerprint.
+
+  *This was false for a crash until 2026-09-30, which is the only case resume is for.*
+  The carried values were read from `predictions.jsonl`, which is written **after** the
+  pass returns — so a crashed run had none and every replayed row came back with
+  `latency_ms: None, cost_usd: None`. Rows are now appended to
+  `outputs/_rows.jsonl` as each item completes. Found by external review.
+- **You cannot resume from a different arm, or from one that cannot be identified.**
+  The source's `config_id` and `dataset_id` are checked against the config you are
+  launching and a mismatch is refused. Identity comes from `run.json`, written **before
+  the first item** precisely so a crashed run can still answer the question — until
+  2026-09-30 it came from `metrics.json`, which a crashed run does not have, so the
+  check could only warn and `arm_a --resume <crashed arm_b run>` exited 0 having
+  recorded arm_a with arm_b's answers.
+
+  A directory with neither file is refused outright. `--resume-unverified` overrides
+  that, for runs made before `run.json` existed; it will record another arm's answers
+  under your config if you are wrong about whose outputs those are.
 
 Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
 results, `1` nothing was measured at all.

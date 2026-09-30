@@ -605,6 +605,41 @@ def test_resume_scores_and_persists() -> None:
                   and all(r["_meta"].get(k) == v for k, v in o["_meta"].items()),
                   f"orig keys {sorted(o['_meta'])} now {sorted((r.get('_meta') or {}))}")
 
+    # THE ACTUAL CRASH SHAPE: outputs/ and run.json, no metrics.json, no
+    # predictions.jsonl -- because both are written only after the pass returns.
+    #
+    # Round 2 taught resume to carry each replayed item's cost, tokens and _meta
+    # forward FROM predictions.jsonl, which by construction does not exist in the one
+    # case resume is for. So the feature worked for a tidy re-run and not for a crash,
+    # and the mtime assertion above could not tell: it proves outputs are written
+    # during the pass, not that anything else is. Found by external review.
+    crash = runs / "crashed"
+    shutil.rmtree(crash, ignore_errors=True)
+    shutil.copytree(runs / src, crash)
+    (crash / "metrics.json").unlink(missing_ok=True)
+    (crash / "predictions.jsonl").unlink(missing_ok=True)
+    check("resume: a crashed run still carries its identity (run.json)",
+          (crash / "run.json").is_file(),
+          "run.json must be written before the first item, not after the pass")
+    check("resume: and its per-item rows (outputs/_rows.jsonl)",
+          (crash / "outputs" / "_rows.jsonl").is_file(),
+          "rows must be appended during the pass, not written at the end")
+
+    r3 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml",
+             "--resume", "crashed", env=env)
+    check("resume: an outputs-only crashed run resumes", r3.returncode == 0,
+          ((r3.stderr or "") + (r3.stdout or ""))[-200:])
+    newest = max((p for p in runs.iterdir() if p.is_dir() and p.name != "crashed"),
+                 key=lambda p: p.stat().st_mtime)
+    rows3 = [_json.loads(l) for l in
+             (newest / "predictions.jsonl").read_text().splitlines() if l.strip()]
+    replayed3 = [r for r in rows3 if r.get("resumed") == 1.0]
+    check("resume: after a CRASH, replayed rows still carry their measurements",
+          bool(replayed3) and all(r.get("latency_ms") is not None for r in replayed3),
+          f"{len(replayed3)} replayed; first = "
+          f"{ {k: replayed3[0].get(k) for k in ('latency_ms', 'cost_usd')} if replayed3 else None }")
+    shutil.rmtree(crash, ignore_errors=True)
+
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.
@@ -613,6 +648,24 @@ def test_resume_scores_and_persists() -> None:
     msg = (other.stderr or "") + (other.stdout or "")
     check("resume: another arm's outputs are refused",
           other.returncode != 0 and "another arm" in msg.lower(), msg[-200:])
+
+    # AND REFUSED EVEN WHEN THE SOURCE CANNOT BE IDENTIFIED. This used to WARN and
+    # continue, so `arm_a --resume <crashed arm_b run>` exited 0 having recorded arm_a
+    # with arm_b's answers.
+    anon = runs / "anonymous"
+    shutil.rmtree(anon, ignore_errors=True)
+    (anon / "outputs").mkdir(parents=True)
+    (anon / "outputs" / "item_01.txt").write_text("from who knows where")
+    r4 = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml",
+             "--resume", "anonymous", env=env)
+    m4 = (r4.stderr or "") + (r4.stdout or "")
+    check("resume: an unidentifiable source is refused, not warned about",
+          r4.returncode != 0 and "cannot be identified" in m4, m4[-200:])
+    r5 = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml",
+             "--resume", "anonymous", "--resume-unverified", env=env)
+    check("resume: ...unless --resume-unverified is passed explicitly",
+          r5.returncode == 0, ((r5.stderr or "") + (r5.stdout or ""))[-200:])
+    shutil.rmtree(anon, ignore_errors=True)
     shutil.rmtree(runs, ignore_errors=True)
 
 

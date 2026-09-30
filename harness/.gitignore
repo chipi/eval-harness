@@ -47,6 +47,23 @@ data/runs/*/*
 !data/runs/*/outputs/**
 !data/runs/README.md
 
+# ...but NOT these two, which exist for crash recovery and are redundant once a run
+# exits cleanly:
+#   _rows.jsonl  the per-item rows, appended during the pass so a crash leaves them.
+#                predictions.jsonl is the same data, written on a clean exit.
+#   run.json     the run's identity, written before the first item so a crashed run
+#                can still say which arm produced its outputs. metrics.json carries
+#                the same fields and more.
+# Committing either would duplicate every prediction row for no reader.
+data/runs/*/outputs/_rows.jsonl
+data/runs/*/run.json
+
+# And the temp files `write_text_atomic` creates next to their target. A crash between
+# mkstemp and os.replace leaves one behind, and `!data/runs/*/outputs/**` above would
+# otherwise commit it. Found by external review.
+data/runs/*/outputs/*.tmp
+data/runs/*/outputs/.*.tmp
+
 # EXCEPT the 72 summarisation DEV runs (cnn_dailymail_20, three repeats each). They
 # predate `_portable_id` and record an absolute adapter path containing a username and
 # a former project name. They are excluded rather than edited: rewriting a field inside
