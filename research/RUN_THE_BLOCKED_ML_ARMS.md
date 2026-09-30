@@ -70,19 +70,35 @@ set — and AG News's near-identical setup predicts it will land near the top.
 
 ```bash
 cd harness
-python scripts/leaderboard.py --dataset-id dbpedia_280        # and the other two
+make ci                                                   # must be green before you commit
+python scripts/leaderboard.py --dataset-id dbpedia_280    # and the other two
+python scripts/cost_report.py --dataset-id dbpedia_280    # $0 for these, but it proves the arm is local
 git add data/runs && git commit -m "ML arms from a torch>=2.6 machine" && git push
 ```
 
-Or just send me `harness/data/runs/<arm>_*/` for each — `metrics.json` and
-`predictions.jsonl` are all that's needed.
+`metrics.json`, `predictions.jsonl` and `outputs/` are committed; `run.json` and
+`outputs/_rows.jsonl` are crash-recovery files and are gitignored. Or just send the
+`harness/data/runs/<arm>_*/` directories.
+
+**Three things that will bite, all found in review:**
+
+- **Do not run an arm that already has a run** unless you move the old one out of
+  `data/runs/` first. Two runs sharing a `config_id` are averaged together by every
+  loader; `runs_by_arm` now raises and the loaders warn, but the cleanest answer is one
+  run per arm in that directory. Second runs belong in `data/runs-repeats/`.
+- **Commit before you run.** `runs-list` marks runs made from a dirty tree with `*`;
+  their `build.ref` does not identify the code that produced them, and they are not
+  promotable.
+- **If a run dies partway**, `--resume <run_id>` replays what is on disk and pays only
+  for what is missing. It refuses if the source is a different arm or cannot be
+  identified. `--resume` and `--repeat` are mutually exclusive.
 
 ## What to expect, so a surprise is noticed
 
 | arm | prediction | based on |
 |---|---|---|
-| `db_bert_base_fy` | **top 3 of 26**, ≥0.98 | `bert_mini` won AG News outright |
-| `ag_bert_base_fy` / `_ta` | near `bert_mini`'s **0.9450** | same architecture, same task |
+| `db_bert_base_fy` | **top 3 of 28**, ≥0.98 | `bert_mini` won AG News outright, and DBpedia is the more saturated corpus |
+| `ag_bert_base_fy` / `_ta` | near `bert_mini`'s **0.9450** | same architecture, same task. Note `bert_mini` leads AG News but is **not separated** from the nine arms behind it (p = 0.0136 vs a 0.0083 Holm threshold), so landing inside that group is the expected result, not a null one |
 | `cnn_bart_m` / `_s` | **below** `bart_l`'s 0.3461 | distilled from it |
 | `cnn_bart_l_xsum` | **well below** — XSum trains one-sentence summaries | out of distribution |
 
