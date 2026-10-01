@@ -1,0 +1,8 @@
+```json
+[
+    {
+        "text": "Hawai ` i",
+        "type": "location"
+    }
+]
+```

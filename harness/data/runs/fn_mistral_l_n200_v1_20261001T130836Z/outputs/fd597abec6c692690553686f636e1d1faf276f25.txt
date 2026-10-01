@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "Multi-Purpose Bayonet",
+        "type": "product"
+    },
+    {
+        "text": "program",
+        "type": "other"
+    }
+]
+```

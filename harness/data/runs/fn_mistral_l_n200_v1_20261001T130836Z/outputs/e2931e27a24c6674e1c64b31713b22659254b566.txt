@@ -1,0 +1,6 @@
+```json
+[
+    {"text": "Sonic R", "type": "product"},
+    {"text": "Mario Kart", "type": "product"}
+]
+```

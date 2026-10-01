@@ -1,0 +1,8 @@
+```json
+[
+    {
+        "text": "Hitler",
+        "type": "person"
+    }
+]
+```

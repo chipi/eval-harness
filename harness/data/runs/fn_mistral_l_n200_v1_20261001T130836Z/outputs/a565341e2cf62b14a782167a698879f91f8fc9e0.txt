@@ -1,0 +1,9 @@
+```json
+[
+    {"text": "November 6", "type": "event"},
+    {"text": "1894", "type": "other"},
+    {"text": "Fly", "type": "person"},
+    {"text": "Cochise County", "type": "location"},
+    {"text": "January 1897", "type": "other"}
+]
+```

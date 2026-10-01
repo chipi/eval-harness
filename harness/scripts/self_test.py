@@ -11,6 +11,8 @@ are tested rather than asserted in a README.
 
 from __future__ import annotations
 
+import atexit
+import signal
 import json
 import re
 import pathlib
@@ -1110,6 +1112,85 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_a_rescored_run_carries_the_current_parse() -> None:
+    """A rescored run's `_meta.predicted` must be what the CURRENT parser produces.
+
+    `rescore.py` carried the whole `_meta` blob verbatim -- its rule is "carry only
+    things that describe the call", and `_meta` passes that on `k.startswith("_")`
+    alone. But `_meta.predicted` is the PARSER'S output, and `extraction_report.py`
+    reads exactly that field and recomputes from it, so after the round-4 parser fix
+    §3.6 was computed on pre-fix parses for four arms: `glm_l` recomputed to 0.5269
+    against its own run's 0.5662, identically in both trees.
+
+    This compares every rescored run's stored score to a score recomputed from the parse
+    its own `_meta` carries. They must agree, or the two halves of the run describe
+    different code. Found while folding in `fn_mistral_l`; it is the fifth instance of a
+    correction reaching the reports and not the thing that generates them.
+    """
+    import json as _json  # noqa: PLC0415
+
+    base = HERE.parent / "data" / "runs-rescored"
+    gold_dir = HERE.parent / "data" / "references" / "gold" / "few_nerd_280"
+    if not base.is_dir() or not gold_dir.is_dir() or not any(gold_dir.glob("*.txt")):
+        print("  --   rescored parse: the gold corpus is absent — skipped")
+        return
+    sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
+    try:
+        from extraction import as_members, match_one_to_one  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        print(f"  --   rescored parse: extraction not importable ({type(exc).__name__})")
+        return
+    gold = {f.stem: _json.loads(f.read_text(encoding="utf-8"))
+            for f in gold_dir.glob("*.txt")}
+
+    def mean_item_f1(by_item):
+        tot = n = 0
+        for item, g in gold.items():
+            if item not in by_item:
+                continue
+            n += 1
+            pred = by_item[item]
+            if pred is None:
+                continue
+            gm, pm = as_members(g, True), as_members(pred, True)
+            if not gm and not pm:
+                tot += 1.0
+                continue
+            hit = match_one_to_one(pm, gm)
+            prec = hit / len(pm) if pm else 0.0
+            rec = hit / len(gm) if gm else 0.0
+            if prec + rec:
+                tot += 2 * prec * rec / (prec + rec)
+        return tot / n if n else None
+
+    checked, stale = 0, []
+    for mj in sorted(base.glob("fn_*/metrics.json")):
+        m = _json.loads(mj.read_text(encoding="utf-8"))
+        if m.get("dataset_id") != "few_nerd_280":
+            continue
+        pj = mj.parent / "predictions.jsonl"
+        if not pj.is_file():
+            continue
+        rows = [_json.loads(x) for x in pj.read_text(encoding="utf-8").splitlines()
+                if x.strip()]
+        if not rows or "predicted" not in (rows[0].get("_meta") or {}):
+            continue
+        got = mean_item_f1({r["item_id"]: (r.get("_meta") or {}).get("predicted")
+                            for r in rows})
+        if got is None:
+            continue
+        checked += 1
+        want = m["scores"]["f1"]
+        if abs(got - want) > 0.0002:
+            stale.append(f"{m['config_id']}: stored {want:.4f}, its own _meta parses "
+                         f"to {got:.4f}")
+    if not checked:
+        print("  --   rescored parse: no run records _meta.predicted — skipped")
+        return
+    check(f"a rescored run's _meta carries the CURRENT parse ({checked} arm(s))",
+          not stale, "; ".join(stale[:3]))
+
+
 def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     """V8 and V9 are the two gates the planted-string guard cannot reach.
 
@@ -1131,7 +1212,12 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
 
     # V8: a second directory with the same config_id, in the sixth committed directory.
     dup = linux / (src.name + "b")
+    # A leftover from an interrupted earlier run would make copytree raise, and the
+    # suite would die here rather than report anything. Clear it, then register the
+    # copy so a kill cannot leave it behind again.
+    shutil.rmtree(dup, ignore_errors=True)
     shutil.copytree(src, dup)
+    _TEMP_DIRS.add(dup)
     try:
         r = run("scripts/validate_tree.py")
         out = (r.stdout or "") + (r.stderr or "")
@@ -1143,10 +1229,12 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
               r2.returncode != 0, f"exit {r2.returncode}")
     finally:
         shutil.rmtree(dup, ignore_errors=True)
+        _TEMP_DIRS.discard(dup)
 
     # V9: the rows gone, the file still tracked and present.
     pj = src / "predictions.jsonl"
     before = pj.read_text(encoding="utf-8")
+    _PLANTS[pj] = before
     try:
         pj.write_text("", encoding="utf-8")
         r = run("scripts/validate_tree.py")
@@ -1161,6 +1249,7 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
               r.returncode != 0 and "prediction rows" in out, f"exit {r.returncode}")
     finally:
         pj.write_text(before, encoding="utf-8")
+        _PLANTS.pop(pj, None)
 
 
 def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
@@ -1378,6 +1467,47 @@ def test_the_reports_separation_counts_are_real() -> None:
           "two arms sit on their Holm thresholds and the report does not say so")
 
 
+#: Files a `planted()` block has mutated and not yet restored. A kill skips `finally`,
+#: so this is the only thing standing between an interrupted `make ci` and a working
+#: tree with a fabricated number in it.
+_PLANTS: dict = {}
+
+#: Directories a test has copied into the repo and not yet removed. See _restore_plants.
+_TEMP_DIRS: set = set()
+
+
+def _restore_plants(*_args) -> None:
+    import shutil as _shutil  # noqa: PLC0415
+
+    for f, text in list(_PLANTS.items()):
+        try:
+            f.write_text(text, encoding="utf-8")
+        except OSError:
+            pass
+        _PLANTS.pop(f, None)
+    # Directories a test COPIED into the tree. The V8 case copies a run directory to
+    # create a duplicate config_id; a killed run left
+    # `runs-linux/cnn_bart_s_..._Zb` behind, which then made the next `make ci` die
+    # with FileExistsError instead of running. Same defect as the plants, different
+    # shape, so it lives in the same registry.
+    for d in list(_TEMP_DIRS):
+        try:
+            _shutil.rmtree(d, ignore_errors=True)
+        except OSError:
+            pass
+        _TEMP_DIRS.discard(d)
+    if _args:                       # reached via a signal: do not swallow it
+        sys.exit(130)
+
+
+atexit.register(_restore_plants)
+for _sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+    try:
+        signal.signal(_sig, _restore_plants)
+    except (OSError, ValueError):   # not every signal is settable everywhere
+        pass
+
+
 def test_the_checks_can_actually_fail() -> None:
     """Every checker must FAIL on the defect it exists to catch. Not on an empty tree.
 
@@ -1399,7 +1529,20 @@ def test_the_checks_can_actually_fail() -> None:
 
     @contextlib.contextmanager
     def planted(rel: str, old: str, new: str):
-        """Swap a string in a repo file, then put it back whatever happens."""
+        """Swap a string in a repo file, then put it back whatever happens.
+
+        "WHATEVER HAPPENS" USED TO MEAN "UNLESS THE PROCESS IS KILLED". `try/finally`
+        does not run on SIGTERM or SIGKILL, so a `make ci` stopped part-way left the
+        planted defect in the working tree -- and a planted defect looks exactly like a
+        wrong number someone committed. It happened: a run killed inside the tie-group
+        row left `18 arms (17 paid)` in REPORT_SYNTHESIS.md, and `git status` showed it
+        among 40 legitimately modified files. I nearly committed it.
+
+        So every plant now also registers for restore at interpreter exit and on the
+        two signals a terminal sends, and the registry is restored even if the test
+        itself dies. A test that can corrupt the repo it is testing is worse than no
+        test.
+        """
         f = HERE.parents[1] / rel
         before = f.read_text(encoding="utf-8")
         if before.count(old) != 1:
@@ -1413,11 +1556,13 @@ def test_the_checks_can_actually_fail() -> None:
                   f"{before.count(old)} matches for {old[:60]!r} — update the anchor")
             yield False
             return
+        _PLANTS[f] = before
         try:
             f.write_text(before.replace(old, new), encoding="utf-8")
             yield True
         finally:
             f.write_text(before, encoding="utf-8")
+            _PLANTS.pop(f, None)
 
     #: (checker, label, file, the defect, what the string becomes)
     DEFECTS = [
@@ -1759,6 +1904,7 @@ def main() -> int:
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
+        test_a_rescored_run_carries_the_current_parse,
         test_v8_and_v9_go_red_on_a_copied_or_gutted_run,
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,

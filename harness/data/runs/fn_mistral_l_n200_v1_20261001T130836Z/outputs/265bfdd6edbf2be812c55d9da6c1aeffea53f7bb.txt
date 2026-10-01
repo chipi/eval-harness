@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "Larry Flynt",
+        "type": "person"
+    },
+    {
+        "text": "religious institutions",
+        "type": "organization"
+    }
+]
+```

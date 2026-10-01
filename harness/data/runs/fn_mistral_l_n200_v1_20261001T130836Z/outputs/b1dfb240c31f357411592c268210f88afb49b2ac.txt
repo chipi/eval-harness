@@ -1,0 +1,9 @@
+```json
+[
+    {"text": "Löyöp", "type": "location"},
+    {"text": "Lehalurup", "type": "location"},
+    "Ureparapara Island", "type": "location"},
+    {"text": "Banks Islands", "type": "location"},
+    {"text": "Vanuatu", "type": "location"}
+]
+```

@@ -39,7 +39,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "4e83f7fc8e346af5035508a379c7581e66571c35b0f344a8a637ef219f0900a6"
+        "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
       },
       "harness": {
         "commit": "b3cc5d861cf2",
@@ -109,7 +109,7 @@
   "primary_metric": "f1",
   "providers_seen": {},
   "reference_tier": "gold",
-  "rescored_at": "2026-09-30T17:37:48Z",
+  "rescored_at": "2026-10-01T16:13:40Z",
   "rescored_from": "fn_capitalized_n200_v1_20260928T070754Z",
   "rescored_with": {
     "adapter": "examples/ner-few-nerd/adapter.py",
@@ -118,7 +118,7 @@
       "parser_sha256": "6eafd853f71aa3c730b434e2eeb48737efe4827572c66d2dc1c6298a1991dd1d",
       "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e"
     },
-    "sha256": "4e83f7fc8e346af5035508a379c7581e66571c35b0f344a8a637ef219f0900a6"
+    "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
   },
   "run_id": "fn_capitalized_n200_v1_20260928T070754Z",
   "scores": {

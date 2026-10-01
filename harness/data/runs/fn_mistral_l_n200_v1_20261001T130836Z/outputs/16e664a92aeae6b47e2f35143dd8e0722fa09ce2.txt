@@ -1,0 +1,8 @@
+```json
+[
+    {
+        "text": "the dam",
+        "type": "building"
+    }
+]
+```

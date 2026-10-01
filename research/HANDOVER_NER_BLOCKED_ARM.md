@@ -1,6 +1,24 @@
 # Handover — the one Few-NERD arm that was not measured
 
-**Status** 27 of 28 measurement arms complete. `fn_mistral_l_n200_v1` was not run.
+**Status** ~~27 of 28 measurement arms complete.~~ **CLOSED 2026-10-01 — all 28 are
+complete.** `fn_mistral_l_n200_v1` measured **f1 0.5979**, parsed 279/280, $0.0419,
+`providers_seen {Mistral: 280}`, fingerprint `dirty: false`. It ranks **13th of 28**,
+inside the band this document predicted (0.591–0.594), slightly above it.
+
+The retry was the whole fix, as this document said it would be: ~2 h 20 m at ~2
+items/minute against the 11 hours the original rate implied. **The 429s never stopped**
+— the proxy logged 70–134 per 10 minutes for the entire run — so the retry ladder
+absorbed them rather than the upstream limit lifting. No BYOK key was needed.
+
+Everything in "How to finish it" below was done, and it surfaced one defect of its own:
+`rescore.py` carried `_meta.predicted` verbatim because `_meta` starts with an
+underscore, so `extraction_report.py` — which reads exactly that field — was recomputing
+§3.6 from the PRE-FIX parse for the four arms the round-4 parser fix moved. `glm_l` read
+0.5269 against its own run's 0.5662, identically in both trees. Fixed at the source with
+an adapter `reparse_meta()` hook. The 34 type disagreements and the 38% annotation bound
+were NOT affected: `span_marker` and `openai_m` both parse identically before and after.
+
+The rest of this document is kept as the record of why it was blocked.
 **Date** 2026-09-28
 **Branch** `ner-few-nerd`
 **Report** [`REPORT_NER.md`](REPORT_NER.md) — every "of 26" in it is a family of 26, not 27,

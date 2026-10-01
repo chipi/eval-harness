@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "T-bone",
+        "type": "product"
+    },
+    {
+        "text": "sirloin",
+        "type": "product"
+    }
+]
+```

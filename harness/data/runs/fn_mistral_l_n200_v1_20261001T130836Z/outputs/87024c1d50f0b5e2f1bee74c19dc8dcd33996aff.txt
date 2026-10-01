@@ -1,0 +1,8 @@
+```json
+[
+    {"text": "West", "type": "other"},
+    {"text": "German", "type": "location"},
+    {"text": "World War II", "type": "event"},
+    {"text": "Battle of the Atlantic", "type": "event"}
+]
+```

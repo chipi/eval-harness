@@ -1,0 +1,16 @@
+```json
+[
+    {
+        "text": "small bowel",
+        "type": "other"
+    },
+    {
+        "text": "stomach",
+        "type": "other"
+    },
+    {
+        "text": "pancreas",
+        "type": "other"
+    }
+]
+```

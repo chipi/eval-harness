@@ -24,6 +24,7 @@ inventing them.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import shutil
 import sys
@@ -187,6 +188,31 @@ def main() -> int:
                 # computed.
                 if k in CARRY or k in extra_keys or k.startswith("_"):
                     row[k] = v
+
+            # ...EXCEPT THE PARTS OF `_meta` THE PARSER PRODUCED.
+            #
+            # The rule above is "carry only things that describe the call", and `_meta`
+            # passes it on `k.startswith("_")` alone. But `_meta.predicted` is the
+            # PARSER'S OUTPUT, not a property of the call, so a rescored run carried new
+            # scores beside the old parse -- and `extraction_report.py` reads exactly
+            # that field. §3.6's consensus analysis and the annotation bound were
+            # computed on pre-fix parses for the four arms the round-4 parser fix moved:
+            # `glm_l` reported 0.5269 against its own run's 0.5662, in BOTH trees,
+            # because the stale field is identical in both.
+            #
+            # An adapter that stores parser output in `_meta` declares how to rebuild
+            # it. One that does not is not asked to.
+            _mod = inspect.getmodule(score)
+            if hasattr(_mod, "reparse_meta") and isinstance(row.get("_meta"), dict):
+                try:
+                    fresh = _mod.reparse_meta(output)
+                except Exception as exc:  # noqa: BLE001
+                    die(f"{d.name}: the adapter's reparse_meta() raised on item "
+                        f"{item_id}: {type(exc).__name__}: {exc}\n"
+                        f"  A rescored run must not carry a parse the current parser "
+                        f"did not produce, so this is a failure rather than a carry.")
+                if isinstance(fresh, dict):
+                    row["_meta"] = {**row["_meta"], **fresh}
 
             # COST IS RECOMPUTED FROM THE BILL, NOT CARRIED.
             #

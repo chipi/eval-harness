@@ -1,0 +1,6 @@
+```json
+[
+    {"text": "Mayor Tiangco", "type": "person"},
+    {"text": "Lone District", "type": "location"}
+]
+```

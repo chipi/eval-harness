@@ -1,0 +1,11 @@
+```json
+[
+    {"text": "Real Live Roadrunning", "type": "product"},
+    {"text": "Mark Knopfler", "type": "person"},
+    {"text": "Emmylou Harris", "type": "person"},
+    {"text": "Mercury Records", "type": "organization"},
+    {"text": "Universal Music", "type": "organization"},
+    {"text": "Warner Bros. Records", "type": "organization"},
+    {"text": "United States", "type": "location"}
+]
+```

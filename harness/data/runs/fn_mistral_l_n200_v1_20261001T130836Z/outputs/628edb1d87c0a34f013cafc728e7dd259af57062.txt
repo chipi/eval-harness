@@ -1,0 +1,8 @@
+```json
+[
+    {"text": "Drake Bulldogs", "type": "organization"},
+    {"text": "Drake University", "type": "organization"},
+    {"text": "NCAA Division I FCS", "type": "organization"},
+    {"text": "2020–21", "type": "event"}
+]
+```

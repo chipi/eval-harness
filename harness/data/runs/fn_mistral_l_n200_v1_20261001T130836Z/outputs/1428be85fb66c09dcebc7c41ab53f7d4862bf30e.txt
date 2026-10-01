@@ -1,0 +1,8 @@
+```json
+[
+    {
+        "text": "By Your Side",
+        "type": "product"
+    }
+]
+```

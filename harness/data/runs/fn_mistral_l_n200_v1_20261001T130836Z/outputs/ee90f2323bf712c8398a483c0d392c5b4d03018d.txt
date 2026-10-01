@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "Rockpalast",
+        "type": "event"
+    },
+    {
+        "text": "Rock am Ring",
+        "type": "location"
+    }
+]
+```

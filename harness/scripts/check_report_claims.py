@@ -46,6 +46,9 @@ CLAIMS = [
     ("NER span_marker f1",        RESCORED, "fn_span_marker_n200_v1", "f1",        0.7674),
     ("NER openai_m f1",           RESCORED, "fn_openai_m_n200_v1",    "f1",        0.6864),
     ("NER gliner f1",             RESCORED, "fn_gliner_n200_v1",      "f1",        0.4540),
+    # The arm that was blocked for five review rounds, measured 2026-10-01. Pinned
+    # because adding it moved every Holm threshold in the NER family from 26 to 27.
+    ("NER mistral_l f1",          RESCORED, "fn_mistral_l_n200_v1",   "f1",        0.5979),
     ("NER capitalized typed",     RESCORED, "fn_capitalized_n200_v1", "f1",        0.1913),
     ("NER capitalized untyped",   RESCORED, "fn_capitalized_n200_v1", "untyped_f1",0.6191),
     ("NER nothing = the floor",   RESCORED, "fn_nothing_n200_v1",     "f1",        0.1250),

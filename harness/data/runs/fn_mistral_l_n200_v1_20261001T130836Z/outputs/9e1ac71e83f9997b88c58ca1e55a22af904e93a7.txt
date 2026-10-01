@@ -1,0 +1,10 @@
+```json
+[
+    {"text": "69-01 35th Road", "type": "location"},
+    {"text": "65-10 35th Avenue", "type": "location"},
+    {"text": "65th Street", "type": "location"},
+    {"text": "35th Avenue", "type": "location"},
+    {"text": "69th Street", "type": "location"},
+    {"text": "35th Road", "type": "location"}
+]
+```

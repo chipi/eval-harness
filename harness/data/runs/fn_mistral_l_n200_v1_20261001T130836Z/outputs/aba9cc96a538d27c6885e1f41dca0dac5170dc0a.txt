@@ -1,0 +1,7 @@
+```json
+[
+    {"text": "Delacôte", "type": "person"},
+    {"text": "Cambridge Science Centre", "type": "organization"},
+    {"text": "Cambridge", "type": "location"}
+]
+```

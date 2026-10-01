@@ -1,0 +1,16 @@
+```json
+[
+    {
+        "text": "Bahraini dinar",
+        "type": "product"
+    },
+    {
+        "text": "Gulf rupee",
+        "type": "product"
+    },
+    {
+        "text": "Bahraini",
+        "type": "location"
+    }
+]
+```

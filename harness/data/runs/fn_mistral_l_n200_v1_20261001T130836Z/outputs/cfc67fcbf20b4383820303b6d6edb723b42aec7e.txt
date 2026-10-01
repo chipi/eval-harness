@@ -1,0 +1,7 @@
+```json
+[
+    {"text": "Maple Blues Awards", "type": "event"},
+    {"text": "Toronto Blues Society", "type": "organization"},
+    {"text": "1997", "type": "other"}
+]
+```

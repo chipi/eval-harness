@@ -1,0 +1,20 @@
+```json
+[
+    {
+        "text": "The Chronicle of Fredegar",
+        "type": "art"
+    },
+    {
+        "text": "Fredegar",
+        "type": "person"
+    },
+    {
+        "text": "Merovech",
+        "type": "person"
+    },
+    {
+        "text": "Chlodio",
+        "type": "person"
+    }
+]
+```

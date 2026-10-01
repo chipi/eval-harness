@@ -1,0 +1,8 @@
+```json
+[
+    {
+        "text": "Magazines",
+        "type": "product"
+    }
+]
+```

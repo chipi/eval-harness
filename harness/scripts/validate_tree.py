@@ -299,7 +299,7 @@ def v9_no_committed_evidence_is_missing() -> None:
     #: and `grep -n runs-linux scripts/*.py` returned nothing. Deleting the directory
     #: that nine published latency numbers rest on passed every check. Found reviewing
     #: the merged ML-arm work, which is the same defect round 4 found one directory over.
-    FLOORS = {"runs-reparsed": 19, "runs-rescored": 27, "runs-pair": 4, "runs-repeats": 3,
+    FLOORS = {"runs-reparsed": 19, "runs-rescored": 28, "runs-pair": 4, "runs-repeats": 3,
               "runs-linux": 9}
 
     tracked = subprocess.run(

@@ -1,0 +1,179 @@
+{
+  "adapter": "examples/ner-few-nerd/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "c40064265b6a2a0265df3f3dfa75e02d8c51bca9",
+    "source": "git"
+  },
+  "config_id": "fn_mistral_l_n200_v1",
+  "created_at": "2026-10-01T14:21:01Z",
+  "dataset_id": "few_nerd_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "fn_mistral_l_n200_v1",
+      "params": {
+        "family": "mistral",
+        "max_tokens": 600,
+        "model": "eval-mistral-large",
+        "price_tier": "large",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.6,
+        "usd_per_mtok_out": 1.8
+      }
+    },
+    "data": {
+      "dataset_id": "few_nerd_280",
+      "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
+      "n_items": 280,
+      "reference_id": "gold/few_nerd_280",
+      "reference_tier": "gold",
+      "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see rescored_with",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+      },
+      "harness": {
+        "commit": "c40064265b6a",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-mistral-large",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "eval-mistral-large",
+        "id_source": "alias-unresolved",
+        "identity_declared": true,
+        "labels": [
+          "art",
+          "building",
+          "event",
+          "location",
+          "organization",
+          "other",
+          "person",
+          "product"
+        ],
+        "max_tokens": 600,
+        "normalizer_sha256": "10c4df840844e0c3e74965e43ae9cd4d91e8922d594abeff7ec23dfc19094cf2",
+        "parser_sha256": "6eafd853f71aa3c730b434e2eeb48737efe4827572c66d2dc1c6298a1991dd1d",
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "unavailable",
+        "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e",
+        "temperature": 0.0
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "resumed": "descriptive",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "n_items": 280,
+  "params": {
+    "family": "mistral",
+    "max_tokens": 600,
+    "model": "eval-mistral-large",
+    "price_tier": "large",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.6,
+    "usd_per_mtok_out": 1.8
+  },
+  "primary_metric": "f1",
+  "providers_seen": {
+    "Mistral": 280
+  },
+  "reference_tier": "gold",
+  "rescore_dropped_metrics": [
+    "untyped_tp"
+  ],
+  "rescored_at": "2026-10-01T16:13:58Z",
+  "rescored_from": "fn_mistral_l_n200_v1_20261001T130836Z",
+  "rescored_with": {
+    "adapter": "examples/ner-few-nerd/adapter.py",
+    "scorer": {
+      "normalizer_sha256": "10c4df840844e0c3e74965e43ae9cd4d91e8922d594abeff7ec23dfc19094cf2",
+      "parser_sha256": "6eafd853f71aa3c730b434e2eeb48737efe4827572c66d2dc1c6298a1991dd1d",
+      "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e"
+    },
+    "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+  },
+  "run_id": "fn_mistral_l_n200_v1_20261001T130836Z",
+  "scores": {
+    "cost_usd": 0.0001495089,
+    "f1": 0.5978758761,
+    "fn": 0.8535714286,
+    "fp": 1.2107142857,
+    "latency_ms": 10247.1173178571,
+    "n_gold": 2.7357142857,
+    "n_predicted": 3.0928571429,
+    "parsed": 0.9964285714,
+    "precision": 0.5871066087,
+    "reasoning_tokens": 0.0,
+    "recall": 0.629814724,
+    "tokens_in": 114.1535714286,
+    "tokens_out": 61.6214285714,
+    "total_cost_usd": 0.0418625,
+    "total_tokens_in": 31963.0,
+    "total_tokens_out": 17254.0,
+    "tp": 1.8821428571,
+    "truncated": 0.0,
+    "type_penalty": 0.0967290275,
+    "untyped_f1": 0.6946049036,
+    "untyped_fn": 0.5464285714,
+    "untyped_fp": 0.9035714286,
+    "untyped_tp": 2.1892857143
+  },
+  "warmup_ms": 32402.438
+}

@@ -1,0 +1,10 @@
+```json
+[
+    {"text": "Apple", "type": "organization"},
+    {"text": "Mac Mini", "type": "product"},
+    {"text": "M1", "type": "product"},
+    {"text": "MacBook Air", "type": "product"},
+    {"text": "13-inch MacBook Pro", "type": "product"},
+    {"text": "Apple silicon", "type": "product"}
+]
+```

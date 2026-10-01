@@ -1,0 +1,20 @@
+```json
+[
+    {
+        "text": "SS Divisions",
+        "type": "organization"
+    },
+    {
+        "text": "Germany",
+        "type": "location"
+    },
+    {
+        "text": "Operation Spring Awakening",
+        "type": "event"
+    },
+    {
+        "text": "Frühlingserwachsen",
+        "type": "event"
+    }
+]
+```

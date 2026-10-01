@@ -1,0 +1,20 @@
+```json
+[
+    {
+        "text": "Flying Tigers",
+        "type": "organization"
+    },
+    {
+        "text": "USS `` Belleau Wood ``",
+        "type": "building"
+    },
+    {
+        "text": "Hurricane Iniki",
+        "type": "event"
+    },
+    {
+        "text": "Kauai",
+        "type": "location"
+    }
+]
+```

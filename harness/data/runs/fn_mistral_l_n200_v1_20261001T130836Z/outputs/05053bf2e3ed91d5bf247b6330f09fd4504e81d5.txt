@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "GDR",
+        "type": "organization"
+    },
+    {
+        "text": "West Germany",
+        "type": "location"
+    }
+]
+```

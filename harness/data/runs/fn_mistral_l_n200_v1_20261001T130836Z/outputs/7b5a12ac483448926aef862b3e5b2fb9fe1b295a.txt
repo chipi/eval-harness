@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "Margarita",
+        "type": "person"
+    },
+    {
+        "text": "Spanish",
+        "type": "location"
+    }
+]
+```

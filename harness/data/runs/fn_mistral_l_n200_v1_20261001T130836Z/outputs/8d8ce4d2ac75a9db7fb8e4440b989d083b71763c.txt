@@ -1,0 +1,8 @@
+```json
+[
+    {"text": "Knowles", "type": "person"},
+    {"text": "Harvard", "type": "organization"},
+    {"text": "U.S. Army Air Service", "type": "organization"},
+    {"text": "April 1917", "type": "other"}
+]
+```

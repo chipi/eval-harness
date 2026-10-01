@@ -24,7 +24,7 @@
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **499 MB**, CPU, 0.76 s/item. **0.7674 — separated from 26 of 26**, the only unambiguous winner in this repo. |
+| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **499 MB**, CPU, 0.76 s/item. **0.7674 — separated from 27 of 27**, the only unambiguous winner in this repo. |
 | **Self-host · open-weight LLM, absolute** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B / ~52 GB**. **0.6733** — **0.0941 worse** than a model **109× smaller**. The clearest ML-beats-LLM result in the set. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model.** At 52 GB native it fits with room to spare — **the absolute open-weight winner here is already the practical one.** |
 | **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 499 MB tagger.** |
@@ -54,12 +54,12 @@ nothing here: 52 GB fits a 64 GB box natively, and the answer is the same at eve
 from 64 GB to unlimited.
 
 1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
-   field of 0.524–0.686. Holm step-down over a family of 26 declared in advance:
-   **separated from 26 of 26**. Neither classification corpus produced this — AG News gave
+   field of 0.524–0.686. Holm step-down over a family of 27 declared in advance:
+   **separated from 27 of 27**. Neither classification corpus produced this — AG News gave
    a leader tied with nine others, DBpedia a group of ten.
 
 2. **And behind it, the familiar tie.** The best hosted arm, `openai_m` at 0.6864,
-   separates from only **19 of 26**. The seven it cannot separate from span
+   separates from only **20 of 27**. The seven it cannot separate from span
    `gemma_m` at **$0.0088** to `anthropic_l` at **$0.6897** — a **78× price range** buying
    nothing measurable. DBpedia's figure was 115×. Two unrelated tasks, the same shape.
 
@@ -183,6 +183,7 @@ reported; the mean is the ranking metric.
 | gemma_l | 0.6481 | 0.7689 | 1.000 | 2.91 s | $0.0134 |
 | qwen_l | 0.6240 | 0.7283 | 1.000 | 1.67 s | $0.0722 |
 | deepseek_m | 0.6148 | 0.7265 | 1.000 | 1.23 s | $0.0200 |
+| mistral_l | 0.5979 | 0.6946 | 0.996 | 10.25 s | $0.0419 |
 | llama_l | 0.5990 | 0.7146 | 0.996 | 4.80 s | $0.0176 |
 | openai_s | 0.5948 | 0.6855 | 1.000 | 1.21 s | $0.0784 |
 | glm_m | 0.5939 | 0.7151 | 1.000 | 3.66 s | $0.0445 |
@@ -200,15 +201,14 @@ reported; the mean is the ranking metric.
 | capitalized | 0.1913 | 0.6191 | 1.000 | ~0 | $0 |
 | nothing | 0.1250 | 0.1250 | 1.000 | ~0 | $0 |
 
-`mistral_l` is **not in this table** and was not measured — see §7.
 
 ### 3.2 The only unambiguous winner this repo has produced
 
-`span_marker` vs a family of 26 declared before any p-value was read, Holm step-down at
+`span_marker` vs a family of 27 declared before any p-value was read, Holm step-down at
 α = 0.05, sign-flip permutation on paired per-item F1:
 
 ```
-separated from 26 of 26 opponents; ahead on the point estimate against 26 of 26
+separated from 27 of 27 opponents; ahead on the point estimate against 27 of 27
 closest opponent: openai_m  delta +0.0810  wins 86/280  p = 0.0001  thresh 0.0500
 ```
 
@@ -219,14 +219,14 @@ Every other example in this repo produced a *group* at the top. This one produce
 `openai_m` vs the same family:
 
 ```
-separated from 19 of 26; ahead on the point estimate against 25 of 26
+separated from 20 of 27; ahead on the point estimate against 26 of 27
 
   NOT separated:
     gemma_l      +0.0383  p = 0.0084   ($0.0134)
-    qwen_m       +0.0316  p = 0.0218   ($0.0396)
-    qwen_s       +0.0214  p = 0.1484   ($0.0157)
+    qwen_m       +0.0316  p = 0.0244   ($0.0396)
+    qwen_s       +0.0214  p = 0.1481   ($0.0157)
     anthropic_m  +0.0204  p = 0.1668   ($0.2846)
-    openai_l     +0.0148  p = 0.2495   ($0.1715)
+    openai_l     +0.0148  p = 0.2492   ($0.1715)
     gemma_m      +0.0131  p = 0.4310   ($0.0088)
     anthropic_l  +0.0066  p = 0.6664   ($0.6897)
 ```
@@ -278,7 +278,7 @@ answer, because neither had a matched zero-shot control. `gliner` is that contro
 
 ### 3.6 Annotation noise, and an upper bound on what it costs
 
-34 of 768 gold entities (4.4%) carry a coarse type that ≥80% of the 25 learned arms
+34 of 768 gold entities (4.4%) carry a coarse type that ≥80% of the 26 learned arms
 unanimously reject:
 
 ```
@@ -353,20 +353,20 @@ set. It is reported as a property of the arm.
 
 ### 3.8 The dev slice predicted the ranking, and the winner held
 
-Spearman ρ between the 56-item dev slice and the 280-item measurement slice, 27 arms:
-**0.895**. Dev leader and measurement leader are the same arm.
+Spearman ρ between the 56-item dev slice and the 280-item measurement slice, 28 arms:
+**0.903**. Dev leader and measurement leader are the same arm.
 
-Mean |rank move| 2.37 positions; **max 12** — `glm_l`, rank 11 → 23, for the reason in §3.7:
+Mean |rank move| 2.36 positions; **max 11** — `glm_l`, rank 11 → 22, for the reason in §3.7:
 the dev slice sampled its truncation rate at 5.4% and the measurement slice found 16.4%.
 
 **No winner's curse.** On the 224 items the dev slice never contained:
 
 ```
 global test (permutation on within-item ranks): p = 0.0002 -> an arm effect exists
-Nemenyi critical difference = 2.77 rank positions; observed span = 13.95
-pairs distinguishable: 149 of 351
+Nemenyi critical difference = 2.89 rank positions; observed span = 14.44
+pairs distinguishable: 152 of 378
 
-  fn_span_marker_n200_v1   avg rank 8.64   P(1st) = 1.00
+  fn_span_marker_n200_v1   avg rank 8.98   P(1st) = 1.00
 ```
 
 > **Twice corrected, and the second correction is the interesting one.** This block first
@@ -393,10 +393,10 @@ and the same machinery says so in both directions.
 
 ```
  n per half   rho(A,B)   5th pct   P(same winner)   median |rank move|   arms tied 1st
-         10      0.540     0.247             0.32                 3.23             1.0
-         20      0.684     0.474             0.57                 2.49             1.0
-         50      0.827     0.721             0.87                 1.70             1.0
-        100      0.891     0.837             1.00                 1.12             1.0
+         10      0.524     0.261             0.33                 3.46             1.0
+         20      0.662     0.441             0.57                 2.67             1.0
+         50      0.811     0.698             0.87                 1.83             1.0
+        100      0.878     0.823             1.00                 1.17             1.0
 ```
 
 Monotone in every column — which DBpedia's was not. There, P(same winner) *fell* from 0.94
@@ -451,7 +451,7 @@ $0.6897 is too. Buying the expensive one bought 3.05 s/item of latency and nothi
 measurable.
 
 **`untyped_f1` barely reorders anything but explains a lot.** Spearman between the typed
-and untyped orderings is **0.955** over 27 arms, same leader, so it is not an alternative
+and untyped orderings is **0.955** over 28 arms, same leader, so it is not an alternative
 leaderboard. What it does is split each arm's error into detection and labelling.
 `anthropic_s` is typed 0.5843 / untyped 0.7279 (`type_penalty` 0.1436) and rises six places
 on the untyped view — a labelling problem. `openai_s` is 0.5948 / 0.6855 and *falls* seven
@@ -563,14 +563,22 @@ arm had an unreadable item with empty gold).
 
 This section is deliberately as detailed as the results.
 
-- **`mistral_l` was never measured on the 280-item slice.** `mistralai/mistral-large-2512`
-  is rate-limited upstream on OpenRouter's shared pool
-  (`limit_source: upstream_provider_shared_pool`); litellm burns 6 internal retries per
-  call before returning 429. Measured rate: **3 items in 7 minutes**, ~11 hours for the arm.
-  Its **dev** score on 56 items is **0.6005** (parsed 1.000) and is *not* comparable to the
-  table in §3.1. Every "26 of 26" and "19 of 26" in this report is out of a family of 26,
-  not 27, for this reason. Resume with:
-  `EVAL_RUNS_DIR=data/runs python scripts/experiment_run.py --config ../examples/ner-few-nerd/configs/arm_mistral_l_n200.yaml`
+- ~~**`mistral_l` was never measured on the 280-item slice.**~~ **MEASURED 2026-10-01.**
+  It had been blocked for five review rounds: `mistralai/mistral-large-2512` is
+  rate-limited upstream on OpenRouter's shared pool
+  (`limit_source: upstream_provider_shared_pool`), litellm burns 6 internal retries per
+  call before returning 429, and the measured rate was **3 items in 7 minutes** — about
+  11 hours for the arm. Retried when the pool was quieter and it completed in ~2 h 20 m
+  at ~2 items/minute; the 429s never stopped (the proxy logged 70–134 per 10 minutes
+  throughout) and the retry ladder absorbed them, so this is "retried hard enough", not
+  "the limit lifted". **f1 0.5979**, parsed 279/280, $0.0419, `providers_seen`
+  `{Mistral: 280}`, fingerprint `dirty: false`.
+
+  It lands **13th of 28**, inside the `mistral_m` / `glm_m` / `llama_l` band the handover
+  predicted (0.591–0.594), slightly above it. The family is now **27**, so every Holm
+  threshold in §3.2 and §3.3 is stricter than it was: `span_marker` still separates from
+  **27 of 27** and `openai_m` from **20 of 27**, the same seven arms unseparated.
+  Its **dev** score on 56 items was **0.6005**; the measurement is 0.5979, a 0.0026 move.
 - **No confidence/calibration analysis.** Hosted arms have no `confidence`: logprobs were
   never requested. The classification report's calibration section has no counterpart here.
 - **Boundary errors are not separated from detection errors.** A prediction that overlaps a

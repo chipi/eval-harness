@@ -1,0 +1,7 @@
+```json
+[
+    {"text": "Sealey", "type": "person"},
+    {"text": "Coventry City", "type": "organization"},
+    {"text": "Queens Park Rangers", "type": "organization"}
+]
+```

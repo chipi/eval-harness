@@ -547,6 +547,28 @@ def score(output: str, reference: Optional[str], source: Optional[str] = None) -
     return out
 
 
+def reparse_meta(output: str) -> Dict[str, Any]:
+    """The parser-derived parts of `_meta`, recomputed from the stored text.
+
+    `_meta.predicted` is the entity list the parser extracted. `rescore.py` carried the
+    whole `_meta` blob verbatim -- its rule is "carry only things that describe the
+    call", and `_meta` starts with an underscore, so it was treated as call description
+    throughout. `predicted` is not: it is the PARSER'S OUTPUT, and after a parser fix a
+    rescored run carried new scores beside the old parse.
+
+    `extraction_report.py` reads exactly that field and recomputes from it, so §3.6's
+    consensus analysis and the annotation-bound table were computed on pre-fix parses
+    for the four arms the round-4 fix moved -- `glm_l` showed 0.5269 where its own run
+    says 0.5662. Found while folding in `fn_mistral_l`; it is the fifth instance of a
+    correction reaching the reports and not the thing that generates them.
+
+    Returning this from the adapter rather than exposing the parser keeps the contract
+    one-way: the adapter says what its stored `_meta` should now contain, and `rescore`
+    does not need to know what a parse looks like.
+    """
+    return {"predicted": _parse_entities(output)}
+
+
 def scorer_id() -> Dict[str, str]:
     """The hashes that identify the SCORING RULE, with no params and no network.
 

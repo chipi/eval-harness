@@ -56,6 +56,45 @@ the annotation bound, so 1 − 0.0503/0.0810 = 37.9%. The "~7%" divided `span_ma
 *difference* between two arms' gains, and `openai_m` gains 0.0365. §4 now states 38% with
 both components shown and the disputing paragraph deleted.
 
+## Closing the blocked NER arm found a fifth stale-parse bug (2026-10-01)
+
+`fn_mistral_l` was measured after five rounds of being blocked (above). Folding it in
+surfaced one defect, and it is the same class as round 4's M5 and round 5's M3 — the
+fifth instance across six rounds:
+
+**`rescore.py` carried `_meta.predicted` verbatim.** Its rule is "carry only things that
+describe the call", and `_meta` passes that test on `k.startswith("_")` alone — but
+`_meta.predicted` is the PARSER'S output, not a property of the call. So a rescored run
+carried new scores beside the old parse, and `extraction_report.py` reads exactly that
+field and recomputes from it. §3.6's consensus analysis was therefore computed on
+pre-fix parses for the four arms the round-4 parser fix moved:
+
+| arm | its own rescored f1 | what §3.6 recomputed |
+|---|---|---|
+| `glm_l` | 0.5662 | **0.5269** |
+| `llama_l` | 0.5990 | 0.5911 |
+| `llama_m` | 0.5740 | 0.5704 |
+| `deepseek_m` | 0.6148 | 0.6122 |
+
+Identical in both trees, because the stale field is identical in both — which is what
+made it invisible: pointing the tool at the rescored directory changed nothing.
+
+**Not affected:** `span_marker` and `openai_m` parse identically before and after, so the
+34 unanimous type disagreements and the **38% annotation bound stand unchanged** (0.0810
+→ 0.0503 under the bound, 1 − 0.0503/0.0810 = 37.9%). That matters because 38% is the
+figure I got wrong in round 4.
+
+Fixed at the source: the adapter declares `reparse_meta()` and `rescore.py` refreshes the
+parser-derived parts of `_meta` from it, failing loudly if the hook raises. All 28 arms
+now agree between their stored score and the parse their own `_meta` carries; before the
+fix, 4 did not.
+
+**One thing I nearly got wrong.** Recomputing §3.8's Spearman I got 0.972 against the
+report's 0.895 and was about to call the report stale. `spearman()` in this repo takes
+RANKS — "Pearson correlation OF THE RANKS" — and I passed raw f1, so I had computed
+Pearson of the values. Passing ranks reproduces 0.895 exactly, along with the mean rank
+move and the max in the same sentence. The report was right and my check was wrong.
+
 ## What round 5 says about round 4 (2026-10-01)
 
 Round 5 ran on a fresh ext4 Linux clone and confirmed the setup claim there: V1–V10
@@ -197,7 +236,7 @@ of us thought to check.
 
 | gap | consequence | why |
 |---|---|---|
-| **`fn_mistral_l_n200_v1`** never ran | every "of 26" in REPORT_NER is a family of 26, not 27 | `mistral-large-2512` is rate-limited upstream on OpenRouter's shared pool; 3 items in 7 minutes. [Handover](HANDOVER_NER_BLOCKED_ARM.md) |
+| ~~**`fn_mistral_l_n200_v1`** never ran~~ | **Ran 2026-10-01.** f1 **0.5979**, 13th of 28; the NER family is now 27, every Holm threshold is stricter, and `span_marker` still separates from 27 of 27 | Blocked five review rounds by an upstream rate limit on OpenRouter's shared pool (3 items in 7 min). Retrying when the pool was quieter finished it in ~2 h 20 m — the 429s never stopped, the retry ladder absorbed them. [Handover](HANDOVER_NER_BLOCKED_ARM.md) |
 | **5 frontier SciFact rerankers** never ran | the top tie (12–13 arms) is a tie among *cheap* models; the report cannot say whether a frontier model reranks better | ≈$12 (price-table; $8–$45 once the 0.67×–3.76× billing spread is allowed for) against that sweep's $1.94 billed. Was stated as $31.40 until 2026-09-29, on a multiplier that did not survive checking. [Handover](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md) |
 | ~~**6 local ML checkpoints** never ran~~ | **Ran 2026-09-30.** DBpedia's fine-tune ties the top group (not above it); AG News gained two fine-tunes that took 1st and 2nd; the XSum control finished last of 29 | pickle checkpoints needed torch ≥ 2.6, run on Linux. See the section at the top of this file |
 | **No quantised arm was measured** | §0's ≤64 GB column assumes int8/int4 preserve quality. int8 usually does, int4 often does not | would need a local serving stack |

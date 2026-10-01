@@ -1,0 +1,12 @@
+```json
+[
+    {
+        "text": "Lehman",
+        "type": "person"
+    },
+    {
+        "text": "UCLA Medical Center",
+        "type": "building"
+    }
+]
+```
