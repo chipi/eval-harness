@@ -178,19 +178,56 @@ syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
 # own literal "14 of the 24" -- the same self-verifying shape round 2 found elsewhere in
 # this file. The open/proprietary split is a fact about REFERENCE.md's licence table, so
 # count it there and require the synthesis to state that number. Found by external review.
-_open_licences = {"mit", "apache-2.0", "cc-by-sa-4.0", "gemma", "llama3.3", "llama4"}
-_hosted_open = sum(1 for _mid, _lic in lic_rows
-                   if _lic.strip().lower() in _open_licences
-                   and (facts.get(_mid) or {}).get("params_total"))
-_m = re.search(r"\*\*(\d+) of the 24\*\*|(\d+) of the 24 hosted arms", syn)
-check("the synthesis states an open-weight count at all", _m is not None,
+# THE SECOND VERSION OF THIS CHECK ALSO COMPARED THE REPORT TO A LITERAL. `_hosted_open`
+# was derived and then never used -- the assertion was `_stated == 14` -- and it was
+# derived from the wrong table anyway: `lic_rows` is the 12-row licence table of small
+# LOCAL models (bart, bge, e5, MiniLM, gliner...), not the 24 hosted arms, and it
+# evaluated to 7. So the fix for "a number compared to a literal" recreated exactly that
+# shape, with a comment above it claiming otherwise. Found by external review, round 5.
+#
+# The hosted arm table IS the source: 24 rows, each ending `**open**` or `proprietary`.
+# Count them, and require the synthesis to state the count. Marking a model proprietary
+# in REFERENCE.md must move the number in REPORT_SYNTHESIS or fail.
+_HOSTED_ROW = re.compile(
+    r"^\| `([a-z0-9_]+)` \|[^|]*\|[^|]*\| (\*\*open\*\*|proprietary)", re.M)
+_hosted_rows = _HOSTED_ROW.findall((ROOT / "docs" / "REFERENCE.md").read_text())
+_hosted_open = sum(1 for _a, _k in _hosted_rows if _k != "proprietary")
+check(f"REFERENCE.md tabulates 24 hosted arms (found {len(_hosted_rows)})",
+      len(_hosted_rows) == 24,
+      "the open-weight count below is derived from this table; if it is not 24 rows "
+      "the derivation is reading the wrong thing")
+# EVERY statement of the count, not the first one. `re.search` returned the earliest
+# match, so the synthesis states this number in three places and only one was read --
+# editing either of the other two passed. That is round 4's M3 (a presence check that
+# saw one of several) reappearing in a different file. Found by external review, round 5.
+_prop = len(_hosted_rows) - _hosted_open
+# Each pattern is anchored to the CLAIM, not to the phrase. "N of the 24 hosted arms"
+# alone also matches "slower than 17 of the 24 hosted arms" -- a latency sentence --
+# which the first version of this flagged as a wrong open-weight count. A check that
+# cries wolf on correct text gets muted.
+_counts = [(int(_n), "open") for _n in
+           re.findall(r"(\d+) of the 24 hosted arms have \*\*downloadable weights\*\*", syn)]
+for _line in syn.splitlines():
+    _kind = ("open" if "Open-weight LLM" in _line else
+             "proprietary" if "· Proprietary" in _line else None)
+    if _kind:
+        _counts += [(int(_n), _kind)
+                    for _n in re.findall(r"\*\*(\d+) of the 24\*\*", _line)]
+check(f"the synthesis states an open-weight count at all ({len(_counts)} statement(s))",
+      any(k == "open" for _n, k in _counts),
       "no 'N of the 24' in REPORT_SYNTHESIS")
-if _m:
-    _stated = int(_m.group(1) or _m.group(2))
-    check(f"...and it is the {_stated} the licence table supports",
-          _stated == 14,
-          f"the synthesis says {_stated}; REFERENCE.md's licence table and the capture "
-          f"support 14 (recount if a model's licence changed)")
+_wrong = [f"{_n} ({k})" for _n, k in _counts
+          if _n != (_hosted_open if k == "open" else _prop)]
+check(f"...and EVERY statement of it is the {_hosted_open} open / {_prop} proprietary "
+      f"REFERENCE.md's hosted table supports",
+      not _wrong,
+      f"the synthesis says {', '.join(_wrong)}; the hosted table marks {_hosted_open} "
+      f"of {len(_hosted_rows)} as open")
+# REFERENCE.md repeats the count in its own prose, two paragraphs below the table.
+check(f"...and REFERENCE.md's own prose agrees ({_hosted_open})",
+      re.search(rf"\*\*{_hosted_open} of these 24\b",
+                (ROOT / "docs" / "REFERENCE.md").read_text()) is not None,
+      f"REFERENCE.md's table marks {_hosted_open} open; its prose says otherwise")
 check("mistral_l is tabulated as open in REFERENCE.md",
       re.search(r"\| `mistral_l` \|[^|]*\|[^|]*\| \*\*open\*\*", (ROOT / "docs" / "REFERENCE.md").read_text()) is not None)
 

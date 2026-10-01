@@ -222,10 +222,18 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
             elif abs(_v - _rec) < 0.0002:
                 _stale_cost.append(f"{_rep}: {_arm} shows ${_v:.4f} (price table); "
                                    f"billed ${_bil:.4f}")
-            elif _v > 0 and abs(_v - _bil) / max(_bil, 1e-9) > 0.02:
+            elif _v > 0:
                 # NEITHER the bill nor the price table. This used to pass: the check
                 # only recognised the one wrong value it knew about, so a cost that was
                 # simply made up sailed through. Found by external review.
+                #
+                # AND THE 2% TOLERANCE THAT USED TO GUARD THIS BRANCH LEFT A SILENT
+                # BAND. The three bands were "within $0.0002 of the bill" (counted),
+                # "equals the price table" (flagged) and "more than 2% off" (flagged) --
+                # so $0.1421 written as $0.1445, 1.7% off, was neither counted nor
+                # flagged. It did not fail and it did not count towards the floor that
+                # proves this scan looked at anything. A cost cell is a transcription
+                # of a number we hold; there is no tolerance to spend. Round 5, R5-L3.
                 _stale_cost.append(f"{_rep}: {_arm} shows ${_v:.4f}, which is neither "
                                    f"the bill (${_bil:.4f}) nor the price table "
                                    f"(${_rec:.4f})")
@@ -470,7 +478,32 @@ for _rep in [r for r in REPORT_DATASETS if r != "REPORT_SYNTHESIS.md"]:
 # follow the arm name IMMEDIATELY, through one of four connectives. Re-measured here
 # over all four reports: 5 true, 0 false. It would have caught drift shaped like
 # "`span_marker` scored 0.7674".
-_PROSE = re.compile(r"`([a-z0-9_]+)`\s*(?:\(|at |scored |\u2014\s*)\*{0,2}(0\.[0-9]{4})\*{0,2}")
+# WIDENED IN ROUND 5, by measurement, and one proposed widening was REJECTED by the
+# same measurement. The narrow rule matched 5 of the 57 arm-adjacent figures, and an
+# external review named three shapes it misses. Measured on this tree:
+#
+#   rule                                          checked   false positives
+#   narrow (the round-4 rule)                        5            0
+#   + parenthetical prefix, + table CELLS            7            0   <- shipped
+#   + `**` as a connective                           9            1
+#   naive "within 60 characters of an arm name"     38           21
+#
+# So `bart_m` (1.2 GB, 0.3367) and the exec-summary cells are now read, and
+# `bert_base_ta` **0.9600 is still not: admitting bold-as-connective also admits
+# `qwen_s` **0.7799**, which is a headroom figure and 0.06 from that arm's ndcg_10, so
+# the "same metric" filter cannot exclude it. One false positive on a correct tree is
+# how a check gets muted, and this repo has paid for that lesson once.
+#
+# TABLE ROWS ARE SCANNED PER CELL, not per row. Scanning the row let a tier row's AG
+# News cell supply numbers for the DBpedia arm named in the next cell -- 3 of the 4
+# false positives the first attempt produced. A cell is the unit the sentence is in.
+#
+# The `$` lookbehind is load-bearing: `anthropic_l at **$0.6897**` is that arm's COST
+# beside its name, 0.0099 from its f1, which the "same metric" filter does not exclude.
+_PROSE = re.compile(
+    r"`([a-z0-9_]+)`\s*"
+    r"(?:\((?:[^)]*?,\s*)?|at |scored |\u2014\s*)"
+    r"\*{0,2}(?<![$\d.])(0\.[0-9]{4})\*{0,2}")
 _prose_bad, _prose_checked = [], 0
 for _rep, _dss in REPORT_DATASETS.items():
     if _rep == "REPORT_SYNTHESIS.md":
@@ -488,8 +521,31 @@ for _rep, _dss in REPORT_DATASETS.items():
             if _line.startswith("```"):
                 _fenced = not _fenced
                 continue
-            if _fenced or _line.lstrip().startswith("|"):
-                continue               # tables and code blocks have their own scans
+            if _fenced:
+                continue               # code blocks have their own scan
+            if _line.lstrip().startswith("|"):
+                # EXEC-SUMMARY ROWS. The leaderboard scan reads the big per-arm tables,
+                # keyed on the arm being the row's first cell. An exec-summary row's
+                # first cell is a TIER ("**Self-host · small ML**") and the arm is
+                # named inside the prose cell beside it, so 23 such rows across the
+                # four reports were read by nothing. Here the arm is taken from
+                # anywhere in the row and every 4-dp number in it is compared, under
+                # the same "within 0.5 of the primary metric" rule the code-block scan
+                # uses. Round 5, R5-M6.
+                _cells = _line.split("|")
+                if len(_cells) < 3 or _i > 60:
+                    continue           # exec summaries live at the top of a report
+                for _cell in _cells:
+                    for _m in _PROSE.finditer(_cell):
+                        _arm, _got = _m.group(1), float(_m.group(2))
+                        if _arm not in _vals or abs(_got - _vals[_arm]) > 0.5:
+                            continue   # not this metric; do not guess
+                        _prose_checked += 1
+                        if abs(_got - _vals[_arm]) > 0.0002:
+                            _prose_bad.append(
+                                f"{_rep}:{_i}: exec summary, {_arm} reads {_got:.4f}, "
+                                f"the run says {_vals[_arm]:.4f}")
+                continue
             for _m in _PROSE.finditer(_line):
                 _arm, _got = _m.group(1), float(_m.group(2))
                 if _arm not in _vals or abs(_got - _vals[_arm]) > 0.5:
@@ -500,7 +556,8 @@ for _rep, _dss in REPORT_DATASETS.items():
                                       f"the run says {_vals[_arm]:.4f}")
 check("prose figures that name an arm match the run", not _prose_bad,
       "; ".join(_prose_bad[:4]))
-check("and prose figures were actually found to check", _prose_checked >= 4,
+check(f"and prose figures were actually found to check ({_prose_checked})",
+      _prose_checked >= 7,
       f"only {_prose_checked} matched")
 
 # ---- RATIOS AND COUNTS, the other two classes nothing checked -------------------
@@ -714,26 +771,43 @@ _LINUX = ROOT / "harness" / "data" / "runs-linux"
 #: written here. A literal here would make this check compare the runs to the checker,
 #: which is round-3 M9: the check passes while the report says something else. I made
 #: exactly that mistake once already in this file's ratio checks.
+#: ...plus the arm as the reports name it, so each figure is sought in the paragraph
+#: that is ABOUT that arm. Joining every citing paragraph made this an existence check
+#: again, one scope wider: a figure was accepted if it appeared in any of them. It is
+#: not exploitable on this tree -- each figure occurs in exactly one citing paragraph
+#: per report -- but it becomes so the day a second paragraph repeats a number, which
+#: is a check that works until it matters. Round 5, R5-L4.
 _LATENCY = [
-    ("cnn_bart_l_n200_v1",      "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
-    ("cnn_bart_m_n200_v1",      "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
-    ("cnn_bart_s_n200_v1",      "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
-    ("ag_bert_base_ta_n200_v1", "REPORT_CLASSIFICATION.md", "ms",   1.0, 0),
-    ("ag_bert_base_fy_n200_v1", "REPORT_CLASSIFICATION.md", "ms",   1.0, 0),
-    ("ag_bert_mini_n200_v1",    "REPORT_CLASSIFICATION.md", "ms",   1.0, 1),
+    ("cnn_bart_l_n200_v1",  "bart_l",  "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
+    ("cnn_bart_m_n200_v1",  "bart_m",  "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
+    ("cnn_bart_s_n200_v1",  "bart_s",  "REPORT_SUMMARIZATION.md", "s",  1000.0, 1),
+    ("ag_bert_base_ta_n200_v1", "bert_base_ta", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
+    ("ag_bert_base_fy_n200_v1", "bert_base_fy", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
+    ("ag_bert_mini_n200_v1",    "bert_mini",    "REPORT_CLASSIFICATION.md", "ms", 1.0, 1),
 ]
 if not _LINUX.is_dir():
     missing += 1
     print("  --   re-timed latency: data/runs-linux is absent — skipped")
 else:
-    _medians = {}
+    # LAST WRITE WINS WAS THE BUG. This built `_medians[config_id]` over a sorted glob,
+    # so a second run of one arm overwrote the first or did not, purely by how the two
+    # directory names sorted -- the round-3 ext4 defect, which `runs_by_arm` exists to
+    # refuse. V8 now also covers `runs-linux`, and this refuses independently, because
+    # a checker that silently picks one of two measurements is the thing being fixed.
+    _medians, _dupes = {}, []
     for _d in sorted(_LINUX.glob("*/predictions.jsonl")):
         _cid = json.load(open(_d.parent / "metrics.json")).get("config_id")
         _lat = [json.loads(_l)["latency_ms"] for _l in
                 _d.read_text().splitlines() if _l.strip()]
-        if _lat:
-            _medians[_cid] = statistics.median(_lat)
-    for _cid, _rep, _unit, _div, _places in _LATENCY:
+        if not _lat:
+            continue
+        if _cid in _medians:
+            _dupes.append(_cid)
+        _medians[_cid] = statistics.median(_lat)
+    check("runs-linux names each arm once (the medians depend on it)", not _dupes,
+          f"{sorted(set(_dupes))} appear(s) twice — the median read below is whichever "
+          f"directory sorted last")
+    for _cid, _arm, _rep, _unit, _div, _places in _LATENCY:
         if _cid not in _medians:
             missing += 1
             print(f"  --   re-timed latency {_cid}: not in runs-linux — skipped")
@@ -754,10 +828,52 @@ else:
         # sentence elsewhere also says 6.3 s. The paragraph is the sentence's actual
         # extent. (Copies of these figures in prose that does NOT cite the directory
         # stay unchecked; KNOWN_ISSUES says so.)
-        _near = "\n\n".join(_p for _p in _text.split("\n\n") if "runs-linux" in _p)
+        _paras = [_p for _p in _text.split("\n\n")
+                  if "runs-linux" in _p and f"`{_arm}`" in _p]
+        if not _paras:
+            missing += 1
+            print(f"  --   re-timed latency {_cid}: no paragraph of {_rep} cites "
+                  f"runs-linux AND names `{_arm}` — skipped")
+            continue
+        _near = "\n\n".join(_paras)
         check(f"re-timed latency: {_rep} states {_want} {_unit} for {_cid}",
               re.search(rf"(?<![\d.]){re.escape(_want)}(?![\d])", _near) is not None,
               f"the runs-linux median is {_want} {_unit}; the report does not say it")
+    # THE THREE CROSS-MACHINE FIGURES. The commit that added `runs-linux` listed nine
+    # published numbers and checked six plus two ratios; these three were stated and
+    # checked by nothing, and all three were falsifiable with 53/53 still printing.
+    # They compare `data/runs` (the 12-core Mac) to `runs-linux` (the 4-core Linux
+    # box), so they are derived from BOTH trees. Found by external review, round 5.
+    _mac = {}
+    for _d in sorted(DATA.glob("cnn_bart_*/predictions.jsonl")):
+        _cid = json.load(open(_d.parent / "metrics.json")).get("config_id")
+        _lat = [json.loads(_l)["latency_ms"] for _l in
+                _d.read_text().splitlines() if _l.strip()]
+        if _lat:
+            _mac[_cid] = (statistics.fmean(_lat), statistics.median(_lat))
+    if "cnn_bart_l_n200_v1" in _mac and "cnn_bart_l_n200_v1" in _medians:
+        _ratio = _mac["cnn_bart_l_n200_v1"][1] / _medians["cnn_bart_l_n200_v1"]
+        _r = f"{_ratio:.1f}"
+        for _rep in ("REPORT_SUMMARIZATION.md", "REPORT_SYNTHESIS.md"):
+            _t = (ROOT / "research" / _rep).read_text()
+            check(f"cross-machine: {_rep} says the Linux box ran bart_l {_r}x faster",
+                  re.search(rf"{re.escape(_r)}\u00d7 (?:\*)?faster", _t) is not None,
+                  f"median/median is {_mac['cnn_bart_l_n200_v1'][1]:.1f} / "
+                  f"{_medians['cnn_bart_l_n200_v1']:.1f} = {_r}x; the report says "
+                  f"something else")
+    if "cnn_bart_s_n200_v1" in _mac:
+        _mean, _med = _mac["cnn_bart_s_n200_v1"]
+        _summ = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+        check(f"contaminated run: the report states bart_s's recorded mean "
+              f"{_mean:.0f} ms",
+              re.search(rf"(?<![\d,]){_mean:.0f}(?![\d])", _summ) is not None,
+              f"data/runs cnn_bart_s mean is {_mean:.1f} ms; the report does not say it")
+        _mfmt = f"{_med:,.0f}"
+        check(f"contaminated run: the report states its own median {_mfmt} ms",
+              _mfmt in _summ,
+              f"data/runs cnn_bart_s median is {_med:.1f} ms; the report does not "
+              f"say it")
+
     # And the two RATIOS the summarisation report draws from the same table, likewise
     # derived here and then looked for in the prose.
     if {"cnn_bart_l_n200_v1", "cnn_bart_m_n200_v1", "cnn_bart_s_n200_v1"} <= set(_medians):
@@ -768,6 +884,66 @@ else:
             check(f"re-timed latency: the report states {_name} at {_got}x bart_l",
                   f"{_got}\u00d7" in _sum,
                   f"one-machine ratio is {_got}x; the report does not state it")
+
+# ---- THE CONVERSION-PR EVIDENCE ------------------------------------------------
+#
+# `docs/evidence/conversion_pr_check.json` backs "byte-identical outputs on every item
+# for all three" and the 5-of-6 story in two reports and KNOWN_ISSUES. Nothing read it:
+# `grep -rn conversion_pr_check harness/scripts` returned nothing, and setting the first
+# `byte_identical` from 200 to 150 left every check green. Found by external review,
+# round 5. Each assertion below is DERIVED from the capture and then looked for in the
+# report, never compared to a literal here.
+_CPR = ROOT / "docs" / "evidence" / "conversion_pr_check.json"
+if not _CPR.is_file():
+    missing += 1
+    print("  --   conversion PRs: the capture is absent — skipped")
+else:
+    _cpr = json.loads(_CPR.read_text())
+    _arms = _cpr.get("arms") or {}
+    _repro = {k: v for k, v in _arms.items() if v.get("error") is None}
+    _failed = {k: v for k, v in _arms.items() if v.get("error") is not None}
+    check(f"conversion PRs: the capture covers the 6 blocked arms "
+          f"(found {len(_arms)})", len(_arms) == 6,
+          "the reports' '5 of 6' is counted from this file")
+    # Every arm the capture says reproduced must have done so on EVERY item it checked.
+    _part = [f"{k}: {v.get('byte_identical')}/{v.get('items_checked')}"
+             for k, v in sorted(_repro.items())
+             if v.get("byte_identical") != v.get("items_checked")]
+    check(f"conversion PRs: all {len(_repro)} loadable arms are byte-identical on "
+          f"every item checked", not _part, "; ".join(_part))
+    # ...and the one that did not load is the one the reports name, for the reason
+    # they give.
+    check("conversion PRs: exactly one arm failed to load, and it is bart_s",
+          sorted(_failed) == ["cnn_bart_s_n200_v1"],
+          f"the capture says {sorted(_failed)}; the reports say bart_s alone")
+    _bs = _arms.get("cnn_bart_s_n200_v1") or {}
+    check("conversion PRs: bart_s failed on fp16 LayerNorm, as the reports state",
+          "LayerNormKernelImpl" in str(_bs.get("error")) and
+          _bs.get("loaded_dtype") == "torch.float16",
+          f"capture says dtype={_bs.get('loaded_dtype')} error={str(_bs.get('error'))[:60]}")
+    # The three classification arms: the report says byte-identical on EVERY item, and
+    # the item counts must be the whole run, not a sample.
+    _cls = {k: v for k, v in _repro.items() if k.startswith(("ag_", "db_"))}
+    _full = all(v.get("items_checked") == (280 if k.startswith("db_") else 200)
+                for k, v in _cls.items())
+    check(f"conversion PRs: the {len(_cls)} classification arms were checked on every "
+          f"item of their run, not a sample", len(_cls) == 3 and _full,
+          f"{ {k: v.get('items_checked') for k, v in sorted(_cls.items())} }")
+    # And the reports must state the figure the capture supports.
+    _n_bart = sorted({v.get("items_checked") for k, v in _repro.items()
+                      if k.startswith("cnn_")})
+    if len(_n_bart) == 1:
+        _summ = (ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text()
+        check(f"conversion PRs: REPORT_SUMMARIZATION states {_n_bart[0]} of "
+              f"{_n_bart[0]} items for the BART arms",
+              f"{_n_bart[0]} of {_n_bart[0]} items" in _summ,
+              f"the capture checked {_n_bart[0]} items per BART arm")
+    # The torch version the whole story rests on.
+    _ki = (ROOT / "research" / "KNOWN_ISSUES.md").read_text()
+    _tv = str(_cpr.get("torch", "")).split("+")[0]
+    check(f"conversion PRs: the capture ran on torch {_tv}, as the reports say",
+          _tv and f"torch {_tv}" in _ki,
+          f"the capture says torch {_cpr.get('torch')}; KNOWN_ISSUES says otherwise")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

@@ -1110,6 +1110,94 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
+def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
+    """V8 and V9 are the two gates the planted-string guard cannot reach.
+
+    `DEFECTS` swaps a string in a file. V8 fires on a DIRECTORY that duplicates a
+    config_id and V9 on a run whose rows are gone, so neither has ever been exercised
+    by the guard that exists to prove checks can fail -- and round 5 found a hole in
+    each: `runs-linux` was outside V8's list, and V9 read presence while a truncated
+    `predictions.jsonl` left `make ci` green and 53/53 printing.
+
+    `runs-linux` is the directory used here on purpose. It is the one that was missing.
+    """
+    import shutil  # noqa: PLC0415
+
+    linux = HERE.parent / "data" / "runs-linux"
+    src = next(iter(sorted(linux.glob("cnn_bart_s_*/"))), None)
+    if src is None:
+        print("  --   V8/V9: data/runs-linux/cnn_bart_s_* absent — skipped")
+        return
+
+    # V8: a second directory with the same config_id, in the sixth committed directory.
+    dup = linux / (src.name + "b")
+    shutil.copytree(src, dup)
+    try:
+        r = run("scripts/validate_tree.py")
+        out = (r.stdout or "") + (r.stderr or "")
+        check("V8 refuses a duplicate config_id in runs-linux",
+              r.returncode != 0 and "FAIL V8" in out,
+              f"exit {r.returncode}")
+        r2 = run("scripts/check_report_claims.py")
+        check("...and the latency medians refuse it too, whichever name sorts last",
+              r2.returncode != 0, f"exit {r2.returncode}")
+    finally:
+        shutil.rmtree(dup, ignore_errors=True)
+
+    # V9: the rows gone, the file still tracked and present.
+    pj = src / "predictions.jsonl"
+    before = pj.read_text(encoding="utf-8")
+    try:
+        pj.write_text("", encoding="utf-8")
+        r = run("scripts/validate_tree.py")
+        out = (r.stdout or "") + (r.stderr or "")
+        check("V9 refuses a run whose predictions.jsonl is empty",
+              r.returncode != 0 and "is empty" in out, f"exit {r.returncode}")
+        # ...and a PARTIAL one, which is the shape a crash leaves behind.
+        pj.write_text("".join(before.splitlines(keepends=True)[:-3]), encoding="utf-8")
+        r = run("scripts/validate_tree.py")
+        out = (r.stdout or "") + (r.stderr or "")
+        check("V9 refuses a run with fewer rows than its own n_items",
+              r.returncode != 0 and "prediction rows" in out, f"exit {r.returncode}")
+    finally:
+        pj.write_text(before, encoding="utf-8")
+
+
+def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
+    """Stripping the provenance field must FAIL, not skip.
+
+    V10 printed `skip` and passed when no run recorded the hash it reads, so deleting
+    `rescored_with` from all 27 rescored runs left VALIDATION PASSED -- the check
+    vanishing at exactly the moment its subject disappeared, which is what its own
+    docstring said a check must never do. Found by external review, round 5.
+    """
+    import json as _json  # noqa: PLC0415
+
+    base = HERE.parent / "data" / "runs-rescored"
+    mjs = sorted(base.glob("*/metrics.json"))
+    if not mjs:
+        print("  --   V10 provenance: no rescored runs — skipped")
+        return
+    before = {f: f.read_text(encoding="utf-8") for f in mjs}
+    try:
+        for f in mjs:
+            m = _json.loads(before[f])
+            m.pop("rescored_with", None)
+            f.write_text(_json.dumps(m, indent=2, sort_keys=True) + "\n",
+                         encoding="utf-8")
+        r = run("scripts/validate_tree.py")
+        out = (r.stdout or "") + (r.stderr or "")
+        check("V10 fails when a derived run states no scorer at all",
+              r.returncode != 0 and "every run states its scorer" in out,
+              f"exit {r.returncode}")
+        check("...and says so rather than printing a skip",
+              "skip V10 runs-rescored" not in out,
+              "it still skips")
+    finally:
+        for f, text in before.items():
+            f.write_text(text, encoding="utf-8")
+
+
 def test_nemenyi_table_is_computed_not_copied() -> None:
     """The critical values must be derivable, and must match the literature.
 
@@ -1375,6 +1463,42 @@ def test_the_checks_can_actually_fail() -> None:
         # name to the file changes nothing and V10 stays green, correctly. The first
         # version of this guard used exactly that mutation, saw three green lines, and
         # would have shipped a V10 that could not fail if the probe had not been run.
+        # ROUND 5: the guard exercised six of the claim families and two scorers, and
+        # the families it did NOT exercise are where round 5's findings were. One row
+        # per family is the rule; these are the families that had none.
+        ("check_report_claims.py", "a wrong figure in PROSE",
+         "research/REPORT_NER.md",
+         "`span_marker` scored **0.7674**", "`span_marker` scored **0.9999**"),
+        ("check_report_claims.py", "a wrong TIE GROUP size",
+         "research/REPORT_SYNTHESIS.md",
+         "| Classification · DBpedia | 19 arms (18 paid)",
+         "| Classification · DBpedia | 18 arms (17 paid)"),
+        # The band between "equals the bill" and "2% off" used to be silent, so this
+        # plant is deliberately a NEAR miss (1.7%), not an obvious one.
+        ("check_report_claims.py", "a cost cell 1.7% off the bill",
+         "research/REPORT_RETRIEVAL.md",
+         "| 0.7364 | 0.8 s | $0.1421 |", "| 0.7364 | 0.8 s | $0.1445 |"),
+        ("check_report_claims.py", "a wrong CROSS-MACHINE ratio",
+         "research/REPORT_SUMMARIZATION.md",
+         "ran `bart_l` itself 1.7\u00d7 faster", "ran `bart_l` itself 2.7\u00d7 faster"),
+        ("check_report_claims.py", "a falsified CONVERSION-PR result",
+         "docs/evidence/conversion_pr_check.json",
+         '"recorded_run": "ag_bert_base_ta_n200_v1_20260930T094555Z",\n'
+         '      "loaded_dtype": null,\n      "byte_identical": 200,',
+         '"recorded_run": "ag_bert_base_ta_n200_v1_20260930T094555Z",\n'
+         '      "loaded_dtype": null,\n      "byte_identical": 150,'),
+        ("check_model_facts.py", "an OPEN-WEIGHT count the licence table contradicts",
+         "research/REPORT_SYNTHESIS.md",
+         "**14 of the 24** \u2014 DeepSeek", "**13 of the 24** \u2014 DeepSeek"),
+        # V10 AGAINST THE PARSER, not the set scorer. The two rows below plant in
+        # `_shared/extraction.py` and `_shared/retrieval.py`; neither touches the NER
+        # PARSER, which is the component every round's bugs have been in and which V10
+        # was blind to until round 5 said so. A guard that plants only where the check
+        # already looks proves nothing about where it does not.
+        ("validate_tree.py", "a NER PARSER change the rescored runs predate",
+         "examples/ner-few-nerd/adapter.py",
+         '_BARE_KEY = re.compile(r"([{,]\\s*)',
+         '_BARE_KEY = re.compile(r"(?:ZZ)?([{,]\\s*)'),
         ("validate_tree.py", "a SCORER CHANGE the rescored runs predate",
          "examples/_shared/extraction.py",
          '_ARTICLES = ("the ", "a ", "an ")',
@@ -1635,6 +1759,8 @@ def main() -> int:
         test_rescore_takes_source_path_from_the_dataset,
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
+        test_v8_and_v9_go_red_on_a_copied_or_gutted_run,
+        test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_config_id_are_refused,
         test_the_reports_separation_counts_are_real,

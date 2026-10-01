@@ -3,7 +3,7 @@
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
 better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-09-30, after **round 4**, which reviewed the six local ML arms.
+Last updated 2026-10-01, after **round 5** (a fresh Linux clone on ext4).
 
 ## What running the six local ML arms found (2026-09-30)
 
@@ -55,6 +55,52 @@ the annotation bound, so 1 − 0.0503/0.0810 = 37.9%. The "~7%" divided `span_ma
 0.0060 gain by the margin, which is the wrong quantity — a margin moves by the
 *difference* between two arms' gains, and `openai_m` gains 0.0365. §4 now states 38% with
 both components shown and the disputing paragraph deleted.
+
+## What round 5 says about round 4 (2026-10-01)
+
+Round 5 ran on a fresh ext4 Linux clone and confirmed the setup claim there: V1–V10
+PASSED, 53/53 claims, 37/37 model facts, `ci: green`, exit 0, and with the corpora present
+both corpus-dependent self-tests run. It found **2 high, 6 medium, 4 low**, every one
+reproduced, and all are now closed.
+
+**Both high findings were in the gate I had just added to catch unfailable checks.**
+
+- **V10 compared one hash of three.** A rescored run records `scorer_sha256`,
+  `normalizer_sha256` *and* `parser_sha256`; V10 read only the first, which is the set-F1
+  rule in `extraction.py`. So changing the NER **parser** left V10 green — and the parser
+  produced every number in `runs-rescored`, its bugs are what rounds 2, 3 and 4 all found,
+  and it changed in the very commit V10 shipped in. My can-fail guard planted `_ARTICLES`,
+  a constant of the *set scorer*, so it proved V10 could see `extraction.py` and nothing
+  at all about the parser. **A guard that plants only where the check already looks proves
+  nothing about where it does not.** Every key the run states is now compared, and
+  `_BARE_KEY` is a guard row.
+
+- **V10 skipped and passed when its input was gone.** Deleting `rescored_with` from all 27
+  runs printed `skip V10 …` and `VALIDATION PASSED` — the check vanishing at the moment
+  its subject disappeared, which its own docstring said a check must never do. A derived
+  run that states no provenance is now a failure.
+
+The other findings, and what each is an instance of:
+
+| finding | class |
+|---|---|
+| R5-M1: the R4-L5 fix *derived* a number and then asserted `_stated == 14` — and derived it from the wrong table (the 12 local models, giving 7) under a comment saying it was derived | the fix recreating the defect it removed |
+| R5-M1b (found while fixing it): the count is stated in three places and `re.search` read the first, so editing either other one passed | round 4's M3, in a different file |
+| R5-M2: `runs-linux` was outside V8, and the latency medians were last-write-wins over a sorted glob | round 3's ext4 defect, in the sixth directory |
+| R5-M3: the 21st-item fix reached the parser and the scores, not the three sentences counting them (`20 of the 68` → 21, `glm_l` 46 → **31** not 32) | round 4's M5 |
+| R5-M4: three of the nine numbers the previous commit said it closed had no claim at all (`1.7×`, `4,484 ms`, `3,683 ms`) | a coverage claim wider than the coverage |
+| R5-M5: the guard exercised six claim families and two scorers, and the families it skipped are where round 5's findings were | a guard with gaps where the findings are |
+| R5-M6: prose covered 5 of 57 arm-adjacent figures; 23 exec-summary rows were skipped as tables | a documented gap, now narrower |
+| R5-L1: `conversion_pr_check.json` backs claims in two reports and was read by nothing | evidence with no checker |
+| R5-L2: V9 checked presence; a 0-byte `predictions.jsonl` passed and 53/53 printed | presence is not content |
+| R5-L3: a cost cell 1.7% off the bill was neither counted nor flagged — the band between "within $0.0002" and "more than 2% off" was silent | a tolerance nobody needed |
+| R5-L4: the latency scope joined *every* paragraph citing `runs-linux`, so a figure was accepted if it appeared in any of them | an existence check one scope wider |
+
+Two of round 5's suggested widenings were **measured and one was rejected.** The prose
+rule now reads table cells and parenthetical prefixes: 7 figures checked, 0 false
+positives. Admitting `**` as a connective would reach 9 — and admits `` `qwen_s`
+**0.7799** ``, a headroom figure 0.06 from that arm's ndcg_10, which the same-metric
+filter cannot exclude. One false positive on a correct tree is how a check gets muted.
 
 ## What reviewing the merged ML-arm work found (2026-09-30)
 
@@ -232,60 +278,75 @@ n=20 half therefore cannot be recomputed from this repo.
 
 ## What the automated checks do NOT cover
 
-`make ci` verifies 33 report claims, 37 model facts, every arm row in every leaderboard
+`make ci` verifies 65 report claims, 39 model facts, every arm row in every leaderboard
 table and code block, every relative link and anchor, and that each checker still fails
-on the defect it exists to catch. The gaps below are known and are the ones a reviewer
-should spend time on.
+on the defect it exists to catch — 21 planted defects across 11 claim families, 3
+scorers, V8, V9 and V10. The gaps below are known and are the ones a reviewer should
+spend time on.
 
-- **Numbers in PROSE are only NARROWLY checked.** The arm-row checker reads markdown
-  table rows and fenced code blocks; a figure inside a sentence was invisible to it, and
-  that is how several stale numbers survived three review rounds.
+- **Numbers in PROSE are only NARROWLY checked, and the boundary is measured.** A
+  4-decimal number is checked when it follows an arm name immediately, through one of
+  four connectives — `` `span_marker` scored 0.7674 ``, `(0.7674)`, `at 0.7674`,
+  `— 0.7674` — optionally after a parenthetical that says something else first
+  (`` `bart_m` (1.2 GB, 0.3367) ``), in prose or in a table **cell**.
 
-  A narrow slice is now covered: a 4-decimal number that follows an arm name
-  *immediately*, through one of four connectives — `` `span_marker` scored 0.7674 ``,
-  `(0.7674)`, `at 0.7674`, `— 0.7674`. Measured over all four reports: **5 true, 0
-  false**.
+  | rule | figures checked | false positives on this correct tree |
+  |---|---|---|
+  | the round-4 rule | 5 | 0 |
+  | + parenthetical prefix, + table cells | **7** | **0** ← shipped |
+  | + `**` as a connective | 9 | 1 |
+  | naive: within 60 characters of an arm name | 38 | 21 |
 
-  The **general** case is still open, and the reason is measured too. The obvious rule
-  (any 4-decimal number within 60 characters of an arm name on the same line) produces
-  **21 false positives on the current, correct repo**: `anthropic_l shows 0.6897` is that
-  arm's *cost* beside its name, `openai_m shows 0.4693` a different statistic entirely. A
-  check that cries wolf on correct text gets muted, and this repo learned that the
-  expensive way. So a figure that names its arm three words earlier, or sits in a
-  sentence that mentions two arms, is still unchecked. Covering prose properly means the
-  reports interpolating from a structured figures block rather than restating numbers — a
-  real change, not a tightening.
+  57 arm-adjacent figures exist, so **7 of 57 are checked**. What is still unchecked: a
+  figure whose arm is named three words earlier (`` **`bert_base_ta`** — … **0.9600** ``),
+  a sentence mentioning two arms, and anything where bold opens before the number.
+  Admitting bold-as-connective would reach 9 and admits `` `qwen_s` **0.7799** ``, a
+  headroom figure 0.06 from that arm's ndcg_10, which the same-metric filter cannot
+  exclude. One false positive on a correct tree is how a check gets muted, and this repo
+  has paid for that lesson. Covering prose properly means the reports interpolating from
+  a structured figures block rather than restating numbers — a real change, not a
+  tightening.
 
-- **Exec summaries, READMEs, handovers and KNOWN_ISSUES itself** are outside the
-  arm-row scan entirely; only the four experiment reports are in it. This file's own
-  numbers are checked by nothing.
+- **READMEs, handovers and KNOWN_ISSUES itself** are outside every scan; only the four
+  experiment reports and REPORT_SYNTHESIS are read. **This file's own numbers are checked
+  by nothing**, and round 5 found two stale ones in it (`33 claims`, and `→ 32` where the
+  run says 31). Exec-summary rows ARE now read, per cell, but only 2 of their ~23 rows
+  state a figure in a shape the rule reaches.
 
-- **The re-timed latency figures are checked only where they cite their source.** The
-  eight new claims read the paragraph that names `data/runs-linux/`. The same numbers
-  appear elsewhere — the summarisation exec summary says "6.3 s on a 4-core Linux box"
-  without citing the directory — and those copies are unchecked.
+- **The re-timed latency figures are checked only where they cite their source.** Each of
+  the eight claims reads the paragraph that both names `data/runs-linux/` and names the
+  arm. The same numbers appear elsewhere — the summarisation exec summary says "6.3 s on
+  a 4-core Linux box" without citing the directory — and those copies are unchecked.
 
-- **Deleting evidence is now caught, at the level of a file.** V9 fails when any run file
-  git tracks is absent from disk, and when `runs-reparsed`, `runs-rescored`, `runs-pair`
-  or `runs-repeats` falls below its floor. Verified by reproducing round 4's own
-  mutation: `rm -rf data/runs/sf_mpnet_*` now reports 202 missing files where it
-  previously left `make ci` green.
+- **Deleting or gutting evidence is caught; rewriting history is not.** V9 fails when a
+  tracked run file is absent, when a `predictions.jsonl` is empty, when its row count
+  disagrees with the run's own `n_items`, and when any of the six committed runs
+  directories falls below its floor.
 
   What V9 does **not** catch: a run deleted from disk *and* from the index in one commit,
-  and a floor lowered in the same change that empties a directory. Both are visible in a
-  diff and neither is caught by a check.
+  a floor lowered in the same change that empties a directory, and rows that are present
+  but altered — V9 counts them, it does not hash them. All three are visible in a diff
+  and none is caught by a check.
 
-- **Scorer drift is now caught for DERIVED runs only.** V10 imports each scorer and
-  compares its hash to what every run in `runs-reparsed` and `runs-rescored` claims —
-  those two directories exist to be re-derivable, so a run there naming a scorer that is
-  not in the tree is a failure. Verified by mutating `_ARTICLES` in `extraction.py` (27
-  of 27 rescored runs go red) and `_ID_TOKEN` in `retrieval.py` (19 of 19 reparsed).
+- **Scorer drift is caught for DERIVED runs, across every hash they state.** V10 imports
+  each scorer and compares every key a run records — `scorer_sha256`,
+  `normalizer_sha256`, `parser_sha256` — to the code in the tree. Verified by mutating
+  `_ARTICLES` and `_BARE_KEY` in the NER adapter and `_ID_TOKEN` in `retrieval.py`; each
+  turns 27 of 27 or 19 of 19 red, and none fires for another's file. A derived run that
+  states no hash is a failure, not a skip.
 
   For `data/runs` it is a **note, never a gate** — a measurement run legitimately carries
-  the hash it was measured with, and all 27 NER runs predate the current parser. What V10
-  does not cover: classification and summarisation record no comparable scorer hash, so
-  only the NER and retrieval scorers are watched; and it compares hashes, which tells you
-  the code moved, not whether the stored numbers would change.
+  the hash it was measured with. What V10 does not cover: classification and summarisation
+  record no comparable scorer hash, so only the NER and retrieval scorers are watched; and
+  it compares hashes, which tells you the code moved, not whether the stored numbers would
+  change.
+
+- **`bart_s` "ran at fp16" is stated and cannot be verified from the repo.** It is in
+  REPORT_SUMMARIZATION and in this file, measured once on torch 2.14
+  (`next(model.parameters()).dtype`), and recorded nowhere in the run — whose fingerprint
+  says `precision: fp32`, which is the bug. Checking it needs a torch run, so no claim
+  pins it. The conversion-PR capture now IS pinned (7 claims), but it too was produced by
+  a torch run no checker can repeat.
 
 ---
 
@@ -331,7 +392,7 @@ Round 2 found the deeper bug in both parsers — the array matcher, not the wrap
 
 | | before | after |
 |---|---|---|
-| NER `glm_l` f1 | 0.5269 | **0.5662** (46 unreadable → 32) |
+| NER `glm_l` f1 | 0.5269 | **0.5662** (46 unreadable → 31) |
 | NER `llama_l` f1 | 0.5911 | **0.5990** |
 | NER `llama_m` f1 | 0.5704 | **0.5740** |
 | NER `deepseek_m` f1 | 0.6122 | **0.6148** |

@@ -501,11 +501,11 @@ anywhere in it. Two real answers died that way:
   valid one. The greedy match swallowed both and parsed neither.
 
 Balanced spans are now scanned left to right and the first that reads as entities wins.
-**20 of the 68 items this experiment had scored unreadable were readable all along.**
+**21 of the 68 items this experiment had scored unreadable were readable all along.**
 
 | arm | f1 before | f1 after | unreadable before | after |
 |---|---|---|---|---|
-| `glm_l` | 0.5269 | **0.5662** | 46 | **32** |
+| `glm_l` | 0.5269 | **0.5662** | 46 | **31** |
 | `llama_l` | 0.5911 | **0.5990** | 4 | **1** |
 | `llama_m` | 0.5704 | **0.5740** | 16 | **13** |
 | `deepseek_m` | 0.6122 | **0.6148** | 0 | 0 |

@@ -317,17 +317,39 @@ def v9_no_committed_evidence_is_missing() -> None:
         seen.setdefault(f"{parts[1]}/{parts[2]}", set()).add(parts[3])
         if not (ROOT / f).exists():
             missing.append(f)
+    # PRESENCE IS NOT CONTENT. `: > predictions.jsonl` left the file tracked, present
+    # and zero bytes, and V9 said "every committed run file is present on disk" while
+    # the arm-row scan read `metrics.json` and reported 53/53. The evidence a run IS is
+    # its rows; a run whose rows are gone is deleted whatever the directory listing
+    # says. Found by external review, round 5.
     for key, files in sorted(seen.items()):
         if "metrics.json" not in files:
             continue                       # V7's business, not this one
         if "predictions.jsonl" not in files:
             incomplete.append(f"{key} has no predictions.jsonl")
+            continue
+        _pj = ROOT / "data" / key / "predictions.jsonl"
+        _mj = ROOT / "data" / key / "metrics.json"
+        if not _pj.is_file() or not _mj.is_file():
+            continue                       # already counted as missing above
+        try:
+            _rows = sum(1 for _l in _pj.read_text(encoding="utf-8").splitlines()
+                        if _l.strip())
+            _want = int(read_json(_mj).get("n_items") or 0)
+        except (OSError, ValueError, TypeError):
+            incomplete.append(f"{key} predictions.jsonl is unreadable")
+            continue
+        if _rows == 0:
+            incomplete.append(f"{key} predictions.jsonl is empty")
+        elif _want and _rows != _want:
+            incomplete.append(f"{key} has {_rows} prediction rows, "
+                              f"metrics.json says n_items={_want}")
     for x in (missing[:5] + incomplete[:5]):
         print(f"       {x}")
     if len(missing) > 5:
         print(f"       ... and {len(missing) - 5} more missing files")
     check(not missing and not incomplete,
-          "V9 every committed run file is present on disk",
+          "V9 every committed run file is on disk, with its rows",
           f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete")
 
     short = []
@@ -343,36 +365,47 @@ def v9_no_committed_evidence_is_missing() -> None:
 
 
 def v10_derived_runs_carry_the_current_scorer() -> None:
-    """A run that CLAIMS to be a product of the current code must carry its hashes.
+    """A run that CLAIMS to be a product of the current code must carry ALL its hashes.
 
     `runs-rescored` and `runs-reparsed` exist to be re-derivable for $0, and each run in
-    them records the scorer it was derived with -- `rescored_with.scorer`,
-    `reparsed_with.scorer_sha256`. Nothing ever compared those to the code in the tree.
-    So a change to `_shared/extraction.py` or `_shared/retrieval.py` moved the hash and
-    left every stored figure attributed to a scorer that no longer exists, with `make ci`
-    green: a reader who reran the tool and got different numbers had no way to tell
-    whether the tool or the stored copy was stale. Found by external review.
+    them records the scorer it was derived with. Nothing ever compared those to the code
+    in the tree, so a change to `_shared/extraction.py` or `_shared/retrieval.py` left
+    every stored figure attributed to a scorer that no longer exists, with `make ci`
+    green.
+
+    THE FIRST VERSION OF THIS CHECK COMPARED ONE HASH OF THREE. A rescored run records
+    `scorer_sha256`, `normalizer_sha256` AND `parser_sha256`; V10 read only the first,
+    which is `extraction.scorer_sha256` -- the set-F1 rule. So changing the NER PARSER
+    left V10 green, and the parser is the component that produced every number in
+    `runs-rescored`, the component whose bugs rounds 2, 3 and 4 all found, and the
+    component that changed in the very commit V10 shipped in. The can-fail guard planted
+    `_ARTICLES`, a constant of the set scorer, so it proved V10 could see `extraction.py`
+    and nothing whatever about the parser. Every key the run stores is now compared.
+    Found by external review, round 5.
+
+    AN ABSENT FIELD IS A FAILURE HERE, NOT A SKIP. It used to print `skip` and pass, so
+    deleting `rescored_with` from all 27 runs left VALIDATION PASSED -- the check
+    vanishing exactly when the thing it reads is gone, which is what its own docstring
+    said it must not do. A derived directory with runs in it must state its provenance.
+    Only `data/runs` may be silent. Also round 5.
 
     `data/runs` is a NOTE, never a failure. Those runs legitimately carry the hash they
-    were measured with -- recording it is the entire point -- so drift there is expected
-    and only worth saying out loud.
+    were measured with -- recording it is the entire point.
 
-    An adapter whose dependencies are absent is a named skip, printed, not silence: a
-    check that vanishes when an import fails is a check that cannot fail.
+    An adapter whose dependencies are absent is a named skip, printed, not silence.
     """
-    #: (directory, glob, where the run states its hash, module to import it from).
-    #: `scorer_id()` is the no-network, no-params entry point the rescorer uses; the
-    #: three directories do NOT state the same thing in the same place, and pretending
-    #: they did is how a check ends up reading a key nothing writes and passing on zero
-    #: rows. `data/runs` predates `scorer_sha256` and carries `parser_sha256` instead,
-    #: under `system_under_test.model` — so that is what is compared there.
+    #: (directory, glob, where the run states its hashes, module, callable).
+    #: The callable returns either a str (one hash) or a dict of named hashes, and
+    #: EVERY key of that dict is compared -- naming one key here is how the parser went
+    #: unwatched. `data/runs` predates `scorer_sha256` and states `parser_sha256` alone,
+    #: under `system_under_test.model`, so that is what is compared there.
     SOURCES = (
-        ("runs-rescored", "*", ("rescored_with", "scorer", "scorer_sha256"),
-         "examples/ner-few-nerd", "adapter", "scorer_id", "scorer_sha256"),
+        ("runs-rescored", "*", ("rescored_with", "scorer"),
+         "examples/ner-few-nerd", "adapter", "scorer_id"),
         ("runs-reparsed", "*", ("reparsed_with", "scorer_sha256"),
-         "examples/_shared", "retrieval", "scorer_sha256", None),
+         "examples/_shared", "retrieval", "scorer_sha256"),
         ("runs", "fn_*", ("fingerprint", "system_under_test", "model", "parser_sha256"),
-         "examples/ner-few-nerd", "adapter", "scorer_id", "parser_sha256"),
+         "examples/ner-few-nerd", "adapter", "scorer_id"),
     )
 
     def _dig(d, path):
@@ -380,49 +413,78 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             if not isinstance(d, dict):
                 return None
             d = d.get(k)
-        return d if isinstance(d, str) else None
+        return d
 
-    for directory, pat, path, modpath, modname, fn, key in SOURCES:
+    for directory, pat, path, modpath, modname, fn in SOURCES:
         base = ROOT / "data" / directory
         if not base.is_dir():
+            continue
+        runs = sorted(base.glob(f"{pat}/metrics.json"))
+        if not runs:
             continue
         sys.path.insert(0, str(ROOT.parent / modpath))
         try:
             mod = __import__(modname)
-            got = getattr(mod, fn)()
-            current = got[key] if key else got
+            current = getattr(mod, fn)()
         except Exception as exc:  # noqa: BLE001 — an absent example dep is a named skip
             print(f"  skip V10 {directory}: {modname}.{fn} not importable "
                   f"({type(exc).__name__}: {str(exc)[:60]})")
             continue
-        checked, stale = 0, []
-        for mj in sorted(base.glob(f"{pat}/metrics.json")):
-            recorded = _dig(read_json(mj), path)
-            if not recorded:
+        # A str at the end of `path` is one hash; a dict is a set of named ones. When
+        # the run states a dict, compare every key it and the code have in common --
+        # and refuse if they have none, because that is the same blindness by another
+        # route.
+        if isinstance(current, dict) and path[-1] in current:
+            current = {path[-1]: current[path[-1]]}   # the run names ONE of them
+        checked, stale, silent, keys = 0, [], [], set()
+        for mj in runs:
+            rec = _dig(read_json(mj), path)
+            if rec is None:
+                silent.append(mj.parent.name)
                 continue
             checked += 1
-            if recorded != current:
-                stale.append(f"{mj.parent.name} {recorded[:12]}")
-        if not checked:
-            print(f"  skip V10 {directory}: no run records a scorer hash at "
-                  f"{'.'.join(path)}")
-            continue
-        label = f"V10 {directory}: scorer hash matches the code ({checked} run(s))"
+            if isinstance(rec, str):
+                pairs = {path[-1]: rec}
+                want = current if isinstance(current, str) else current.get(path[-1])
+                want = {path[-1]: want}
+            else:
+                pairs = {k: v for k, v in rec.items() if isinstance(v, str)}
+                want = current if isinstance(current, dict) else {}
+            shared = sorted(set(pairs) & set(want))
+            keys.update(shared)
+            if not shared:
+                silent.append(f"{mj.parent.name} (states {sorted(pairs)}, code offers "
+                              f"{sorted(want)})")
+                continue
+            for k in shared:
+                if pairs[k] != want[k]:
+                    stale.append(f"{mj.parent.name} {k} {pairs[k][:12]}")
+        label = (f"V10 {directory}: {', '.join(sorted(keys))} match the code "
+                 f"({checked} run(s))" if keys
+                 else f"V10 {directory}: a scorer hash was compared at all")
+
         if directory == "runs":
             # Measurement runs SHOULD carry the hash of their own day. A note, not a gate.
             if stale:
                 notes.append(f"{len(stale)} of {checked} run(s) in data/runs were "
                              f"measured with a scorer that is not the current one "
-                             f"(expected; the hash is the record) — "
-                             f"current {current[:12]}")
+                             f"(expected; the hash is the record)")
             print(f"  ok   {label} — {checked - len(stale)} current, "
                   f"{len(stale)} historical")
             continue
+
+        # A DERIVED RUN THAT STATES NOTHING IS A FAILURE. Skipping here is how the
+        # check disappears at the moment it matters.
+        for x in silent[:5]:
+            print(f"       {x} states no hash at {'.'.join(path)}")
+        check(not silent, f"V10 {directory}: every run states its scorer",
+              f"{len(silent)} of {len(runs)} run(s) record nothing at "
+              f"{'.'.join(path)} — a derived run must say what derived it")
         for x in stale[:5]:
-            print(f"       {x} != {current[:12]}")
-        check(not stale, label,
-              f"{len(stale)} of {checked} derived run(s) name a scorer that is not the "
-              f"code in this tree — regenerate them")
+            print(f"       {x} != the code")
+        check(not stale and checked > 0, label,
+              f"{len(stale)} mismatch(es) over {checked} derived run(s)"
+              if stale else "no run was compared at all")
 
 
 def v8_no_duplicate_config_ids() -> None:
@@ -446,7 +508,12 @@ def v8_no_duplicate_config_ids() -> None:
 
     #: The directories whose runs back a report. Scratch dirs (runs-smoke, runs-tune,
     #: runs-superseded) are gitignored working artifacts where repeats are normal.
-    COMMITTED = ("runs", "runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats")
+    # `runs-linux` was omitted when it was added, so the sixth committed directory was
+    # the one place a duplicate config_id could still land -- and the latency claims read
+    # it by filesystem order, so a duplicate changed the answer depending on how the
+    # names sorted. That is the round-3 ext4 defect in the sixth directory. Round 5.
+    COMMITTED = ("runs", "runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats",
+                 "runs-linux")
     #: One documented exception. `demo_v1` on `smoke_v1` is the bundled demo, run many
     #: times by `make demo` and by the self-test; smoke_v1 is not an experiment and no
     #: report cites it. Named here rather than scoped away silently, so that adding a
