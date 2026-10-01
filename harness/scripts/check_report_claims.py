@@ -888,6 +888,45 @@ else:
                   f"{_got}\u00d7" in _sum,
                   f"one-machine ratio is {_got}x; the report does not state it")
 
+# ---- THE SYNTHESIS HEADLINE: ARM COUNT AND BILLED TOTAL ------------------------
+#
+# "133 measured arms · $12.01 billed" went stale the moment `fn_mistral_l` landed, and
+# nothing noticed -- 66/66 claims passed with the headline wrong, because no check
+# counted the runs. It is the first line of the top-level report. Both figures are
+# derived here and then looked for in the document, so adding or removing any arm
+# fails until the headline is updated.
+_FIVE = ("cnn_dailymail_200", "ag_news_200", "dbpedia_280", "few_nerd_280", "scifact_200")
+_arm_n, _billed = 0, 0.0
+for _d in sorted(DATA.glob("*/metrics.json")):
+    if json.load(open(_d)).get("dataset_id") not in _FIVE:
+        continue
+    _arm_n += 1
+    _billed += _billed_of(_d.parent)
+_syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
+# EVERY statement of each, not the first. The synthesis says "N measured arms" twice --
+# the headline and the executive summary -- and an `in` test passed with the headline
+# reverted because the other copy still matched. That is the existence-check defect
+# round 5 found in the latency scope and the open-weight count, for the third time.
+_stated_arms = [int(_x) for _x in re.findall(r"(\d+) measured arms", _syn)]
+_wrong_arms = [_x for _x in _stated_arms if _x != _arm_n]
+check(f"the synthesis states {_arm_n} measured arms, everywhere it says so "
+      f"({len(_stated_arms)} place(s))",
+      bool(_stated_arms) and not _wrong_arms,
+      f"data/runs holds {_arm_n} arms across the five measurement slices; the "
+      f"synthesis says {_wrong_arms or 'nothing'}")
+# ANCHORED TO THE CLAIM, not the phrase. A bare "$N billed" also matches "that
+# sweep's $1.94 billed" -- a true sentence about SciFact alone -- which the first
+# version flagged as a wrong repo total. A check that cries wolf on correct text gets
+# muted. These are the two places the synthesis states the REPO-WIDE bill.
+_stated_bill = (re.findall(r"\$([0-9]+\.[0-9]{2}) billed \u00b7 one harness", _syn)
+                + re.findall(r"\*\$([0-9]+\.[0-9]{2}) is the \d+ arms", _syn))
+_wrong_bill = [_x for _x in _stated_bill if abs(float(_x) - _billed) > 0.005]
+check(f"...and ${_billed:.2f} billed, everywhere it says so "
+      f"({len(_stated_bill)} place(s))",
+      bool(_stated_bill) and not _wrong_bill,
+      f"the provider bill over those arms sums to ${_billed:.2f}; the synthesis says "
+      f"{_wrong_bill or 'nothing'}")
+
 # ---- THE CONVERSION-PR EVIDENCE ------------------------------------------------
 #
 # `docs/evidence/conversion_pr_check.json` backs "byte-identical outputs on every item

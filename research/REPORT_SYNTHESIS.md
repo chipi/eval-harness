@@ -1,10 +1,11 @@
 # What five experiments agree on
 
-**Five tasks · four metric shapes · 133 measured arms · $12.01 billed · one harness**
+**Five tasks · four metric shapes · 134 measured arms · $12.05 billed · one harness**
 
-*$12.01 is the 133 arms under `harness/data/runs/` — 127 until 2026-09-30, when six local
-arms that need torch ≥ 2.6 were run at $0. Including the four paired runs behind the
-registered prediction and the three hosted repeat runs, the repo has spent $13.04.*
+*$12.05 is the 134 arms under `harness/data/runs/` — 127 until 2026-09-30, when six local
+arms that need torch ≥ 2.6 were run at $0, and 133 until 2026-10-01, when `fn_mistral_l`
+finally got past its upstream rate limit for $0.0419. Including the four paired runs behind
+the registered prediction and the three hosted repeat runs, the repo has spent $13.08.*
 
 > **Updated 2026-09-30 with the six local arms that could not run on the original machine.**
 > They changed two headline claims. "Every model fine-tuned on its dataset ranked first"
@@ -35,7 +36,7 @@ Reproduction commands are in §8.
 
 ## Executive summary
 
-**Across five tasks and 133 measured arms: the most expensive model was never the best,
+**Across five tasks and 134 measured arms: the most expensive model was never the best,
 four of five leaderboard tops are statistical ties, a small model fine-tuned on your data
 ranked first in three experiments and third-equal — not separable from the leader — in the
 fourth, always at $0, a 10× cost increase bought
