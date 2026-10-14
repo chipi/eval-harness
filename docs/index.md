@@ -1,20 +1,34 @@
-# eval-harness documentation
+<div class="eh-kicker">Documentation <span>· eval-harness</span></div>
 
-The reference for the harness and the five experiments behind
-[the findings site](https://chipi.github.io/eval-harness/).
+# How it was measured, and how to check it.
 
-| page | what it answers |
-|---|---|
-| [Reproduce it](REPRODUCE.md) | Rerun any experiment and check its findings: five levels, from recomputing every number ($0) to rerunning every model with one key, and adding your own. |
-| [Protocol](PROTOCOL.md) | What each experiment measured, on which data and metric, and how that relates to the field's standard protocol — with a calibration row per experiment. |
-| [Reference](REFERENCE.md) | Every metric, model, dataset and statistical test, with sources. |
-| [Concepts](../harness/docs/CONCEPTS.md) | The ideas the harness is built on: frozen datasets, fingerprints, paired tests. |
-| [Runbook](../harness/docs/RUNBOOK.md) | How to run it: datasets, experiments, the analysis scripts. |
-| [Integration](../harness/docs/INTEGRATION.md) | How to drop the harness into another project. |
-| [Evidence](evidence/README.md) | Captured external facts — model sizes and licences, calibration results — checkable offline. |
-| [Papers](papers/README.md) | The papers the work cites. |
+The reference behind [the findings](https://chipi.github.io/eval-harness/): what each
+experiment measured, every metric, model and test with its source, how the harness
+works — and how to rerun all of it yourself.
 
-The experiment reports themselves live in the repository's
+<div class="eh-cards" markdown>
+
+[<span class="n">01</span><b>Reproduce it</b><span class="d">Rerun any experiment and check its findings — from recomputing every number for $0 to rerunning every model with one key, and adding your own.</span>](REPRODUCE.md)
+
+[<span class="n">02</span><b>Protocol</b><span class="d">What each experiment measured, on which data and metric, and how that relates to the field's standard — with a calibration row each.</span>](PROTOCOL.md)
+
+[<span class="n">03</span><b>Reference</b><span class="d">Every metric, model, dataset and statistical test, with sources and licences.</span>](REFERENCE.md)
+
+[<span class="n">04</span><b>Concepts</b><span class="d">The ideas the harness is built on: frozen datasets, fingerprints, paired tests.</span>](../harness/docs/CONCEPTS.md)
+
+[<span class="n">05</span><b>Runbook</b><span class="d">How to run it: datasets, experiments, the analysis scripts.</span>](../harness/docs/RUNBOOK.md)
+
+[<span class="n">06</span><b>Integration</b><span class="d">Drop the harness into another project: one adapter, four functions.</span>](../harness/docs/INTEGRATION.md)
+
+[<span class="n">07</span><b>Evidence</b><span class="d">Captured external facts — model sizes, licences, calibration results — checkable offline.</span>](evidence/README.md)
+
+[<span class="n">08</span><b>Papers</b><span class="d">The papers the work cites, and what each is cited for.</span>](papers/README.md)
+
+</div>
+
+The experiment reports live in the repository's
 [`research/`](https://github.com/chipi/eval-harness/tree/main/research) directory, and
-the lab notebook — handovers, review rounds, the journal — in
+the lab notebook — handovers, review rounds, the journal, every correction — in
 [`research/internal/`](https://github.com/chipi/eval-harness/tree/main/research/internal).
+
+[← Back to the findings](https://chipi.github.io/eval-harness/){ .eh-back }
