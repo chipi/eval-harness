@@ -1,5 +1,11 @@
 # eval-harness
 
+> **The findings, for people:** [**chipi.github.io/eval-harness**](https://chipi.github.io/eval-harness/)
+> — 24 LLMs, small fine-tuned models and baselines on five public benchmarks. The most
+> expensive model never won; four of five leaderboard tops are statistical ties; and every
+> instrument is calibrated against the published literature. The site is generated from
+> the runs in this repository (`site/`), so every number on it is checked.
+
 A drop-in evaluation harness. Freeze a dataset, run your system against it, and get an
 answer to the question most leaderboards skip: **is this ordering real, or did I just
 draw a lucky sample?**
@@ -59,14 +65,13 @@ make leaderboard DATASET_ID=my_v1
 ```
 harness/     the harness. Liftable into another project as-is.
 examples/    worked examples, each with its own uv environment
-research/    reports, handovers, and an append-only journal of how each example went
+research/    the five experiment reports and the synthesis; research/internal/ is the lab
+             notebook — handovers, review rounds and an append-only journal
+site/        the public site, generated from the runs (make site; checked by make ci)
+docs/        PROTOCOL.md (what each experiment measured), REFERENCE.md, evidence/
 ```
 
 ## The worked examples
-
-**[`research/KNOWN_ISSUES.md`](research/internal/KNOWN_ISSUES.md)** — what is open, what was
-never measured, and which calls are judgement rather than oversight. Read this first if
-you are reviewing.
 
 **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)** — what all five
 experiments agree on, and where that contradicts how leaderboards are usually read:
@@ -75,6 +80,8 @@ experiment has an answer you can run on your own 64 GB machine for $0**.
 
 Full index, with what each one found and what it broke: **[`examples/README.md`](examples/README.md)**.
 Every metric, model, dataset and statistical test explained and linked to source: **[`docs/REFERENCE.md`](docs/REFERENCE.md)**.
+What each experiment measured, on which data, against which published baseline: **[`docs/PROTOCOL.md`](docs/PROTOCOL.md)**.
+Reviewing? Start with what is open and known: **[`research/internal/KNOWN_ISSUES.md`](research/internal/KNOWN_ISSUES.md)**.
 
 Five tasks, four metric shapes, one harness. Each ships a download recipe rather than a
 corpus, and each exists because it breaks something the previous one did not.

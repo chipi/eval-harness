@@ -282,14 +282,14 @@ def page(title: str, desc: str, body: str, depth: int = 0) -> str:
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html"><i></i>eval-harness</a>
-  <nav class="nav"><a href="{up}index.html#findings">Findings</a><a href="{up}index.html#trust">Trust</a><a href="{up}index.html#experiments" class="hide-sm">Experiments</a><a href="{REPO}">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="{up}index.html#findings">Findings</a><a href="{up}index.html#trust">Trust</a><a href="{up}index.html#experiments" class="hide-sm">Experiments</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>
-  <div><a href="{REPO}">github.com/chipi/eval-harness</a></div>
+  <div><a href="{up}docs/">Documentation</a> · <a href="{REPO}">github.com/chipi/eval-harness</a></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 {JS}
@@ -408,7 +408,8 @@ def landing(f: dict) -> str:
     </div>
     <div class="btns" style="margin-top:0;align-content:start">
       <a class="btn primary" href="{BLOB}/research/REPORT_SYNTHESIS.md">Read the synthesis report</a>
-      <a class="btn" href="{BLOB}/docs/PROTOCOL.md">The protocol</a>
+      <a class="btn" href="docs/PROTOCOL/">The protocol</a>
+      <a class="btn" href="docs/">Full documentation</a>
       <a class="btn" href="{REPO}">The repository</a>
     </div>
   </div>
@@ -429,9 +430,25 @@ CARD = {
 
 
 # ── experiment pages ────────────────────────────────────────────────────────
+def require(cond: bool, claim: str) -> None:
+    """A structural claim written into the copy must hold in the data, or the build stops."""
+    if not cond:
+        raise SystemExit(f"site copy claims something the data no longer supports: {claim}")
+
+
 def findings_for(x: dict, f: dict) -> list:
     rep = f'research/{x["report"]}'
     d, t, b = x["dearest"], x["top"], x["best_hosted"]
+    s = x["slug"]
+    require(s != "summarization" or (t["arm"] == "bart_l" and b["arm"] in x["tied"]),
+            "summarisation: bart_l first and tied with the best hosted arm")
+    require(s != "ag-news" or all(a["kind"] == "local" for a in x["arms"][:3]),
+            "AG News: the top three are local fine-tunes")
+    require(s != "dbpedia" or ("bert_base_fy" in x["tied"] and x["n_tied"] == 19),
+            "DBpedia: a group of nineteen including the fine-tune")
+    require(s != "few-nerd" or x["n_tied"] == 0, "Few-NERD: span_marker separated from all")
+    require(s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
+            "SciFact: twelve tied, including e5_base")
     common = [(f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
                f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
                + (f"The cheapest model statistically tied with the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."

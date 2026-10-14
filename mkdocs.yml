@@ -1,0 +1,74 @@
+# The documentation site, published under the main site at /docs/.
+#
+#   pip install mkdocs-material && mkdocs build --strict      # -> build/docs-site/
+#
+# Sources: docs/ (PROTOCOL, REFERENCE, evidence, papers) plus harness/docs/ (concepts,
+# runbook, integration), which site/mkdocs_hooks.py adds without moving them. Links that
+# leave the documentation -- to the reports, the harness code, a PDF or a JSON capture --
+# are rewritten to GitHub, so nothing third-party is republished and nothing breaks.
+site_name: eval-harness · documentation
+site_url: https://chipi.github.io/eval-harness/docs/
+site_description: Protocol, reference and harness documentation for eval-harness.
+repo_url: https://github.com/chipi/eval-harness
+repo_name: chipi/eval-harness
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: build/docs-site
+strict: true
+
+exclude_docs: |
+  *.pdf
+  *.py
+  *.sh
+  *.json
+  calibration/
+
+hooks:
+  - site/mkdocs_hooks.py
+
+nav:
+  - Home: index.md
+  - Protocol: PROTOCOL.md
+  - Reference: REFERENCE.md
+  - The harness:
+      - Concepts: harness/CONCEPTS.md
+      - Runbook: harness/RUNBOOK.md
+      - Integration: harness/INTEGRATION.md
+  - Evidence: evidence/README.md
+  - Papers:
+      - Index: papers/README.md
+      - Attribution: papers/ATTRIBUTION.md
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - scheme: slate
+      primary: black
+      accent: lime
+      toggle: { icon: material/weather-sunny, name: Light mode }
+    - scheme: default
+      primary: black
+      accent: lime
+      toggle: { icon: material/weather-night, name: Dark mode }
+  font: false
+
+extra:
+  homepage: https://chipi.github.io/eval-harness/
+
+markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
+  - md_in_html
+  - footnotes
+  - toc: { permalink: true }
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.details

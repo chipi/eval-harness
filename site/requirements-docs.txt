@@ -1,0 +1,4 @@
+# The documentation site (mkdocs.yml). Pinned below MkDocs 2.0, which removes the plugin
+# and theme system Material depends on.
+mkdocs>=1.6,<2
+mkdocs-material==9.7.7
