@@ -40,6 +40,15 @@ make install
 make demo          # the whole loop on bundled synthetic data — no API key, no network
 ```
 
+## Influences
+
+The approach builds on **Chip Huyen's books**, *AI Engineering* (O'Reilly, 2025) and
+*Designing Machine Learning Systems* (O'Reilly, 2022): evaluation as engineering work on
+your own data, a private leaderboard rather than a public one, the dataset as a design
+decision, every experiment tracked and versioned. This repository adds a tool that
+enforces that framing and five experiments that test it. Idea by idea, with chapters, and
+the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
+
 ## What it is for
 
 A drop-in evaluation harness. Freeze a dataset, run your system against it, and get an

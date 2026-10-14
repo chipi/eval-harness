@@ -231,19 +231,20 @@ def method_page(H, f: dict) -> str:
 </div></section>
 
 <section class="block"><div class="wrap">
-  <div class="eyebrow"><span class="num">07</span>The field</div>
-  <h2>None of this is new. Doing it every time is.</h2>
+  <div class="eyebrow"><span class="num">07</span>Standing on</div>
+  <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
     <div class="prose">
-      <p>These habits are the ordinary discipline of experimental science and of machine-learning engineering in production — written down, then enforced by a tool so they survive a deadline. If you want the longer argument, start here:</p>
+      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and five experiments that show what skipping it costs.</p>
+      <p>The idea-by-idea mapping, with chapters, is in <a href="docs/INFLUENCES/">Influences</a>.</p>
     </div>
     <ul class="reading">
-      <li><b>Chip Huyen — <i>Designing Machine Learning Systems</i></b> (O'Reilly, 2022). Sampling, labelling and distribution shift: why the dataset is a design decision, not a given.</li>
-      <li><b>Chip Huyen — <i>AI Engineering</i></b> (O'Reilly, 2025). Evaluating foundation-model applications, and evaluation-driven development: decide what good means before you build.</li>
-      <li><b>Martin Zinkevich — <i>Rules of Machine Learning</i></b> (Google). Design and implement your metrics first; keep the first model simple and the pipeline honest.</li>
-      <li><b>Breck et al. — <i>The ML Test Score</i></b> (2017). A rubric of tests for data, models and infrastructure: production readiness as something you can score.</li>
-      <li><b>Bernardi et al. — <i>150 Successful Machine Learning Models</i></b> (KDD 2019, Booking.com). Offline gains do not automatically become real ones; measure the decision you care about.</li>
-      <li>More, curated: <a href="https://huyenchip.com/mlops/">huyenchip.com/mlops</a></li>
+      <li><b>Chip Huyen — <i>AI Engineering</i></b> (O'Reilly, 2025). Ch. 3–4: why public benchmarks rarely pick the model for your application, private leaderboards, AI judges as subjective evaluation to be checked against exact and human evaluation. Ch. 8: dataset engineering — quality, coverage, quantity.</li>
+      <li><b>Chip Huyen — <i>Designing Machine Learning Systems</i></b> (O'Reilly, 2022). Ch. 4: sampling and labelling. Ch. 6: baselines, experiment tracking and versioning. Ch. 8: distribution shift.</li>
+      <li><b>Martin Zinkevich — <i>Rules of Machine Learning</i></b> (Google). Design and implement your metrics first.</li>
+      <li><b>Breck et al. — <i>The ML Test Score</i></b> (2017). Tests for data, models and infrastructure.</li>
+      <li><b>Bernardi et al. — <i>150 Successful Machine Learning Models</i></b> (KDD 2019, Booking.com). Offline gains do not automatically become real ones.</li>
+      <li>More, curated by Chip Huyen: <a href="https://huyenchip.com/mlops/">huyenchip.com/mlops</a></li>
     </ul>
   </div>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="index.html#findings">Back to the findings</a></div>
@@ -356,7 +357,7 @@ def use_page(H, f: dict) -> str:
 <section class="block" id="patterns"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Patterns</div>
   <h2>Your question is probably one of these.</h2>
-  <p class="lede">Each maps to an experiment in this repository you can copy — its adapter, its configs, its scorer — and change the data.</p>
+  <p class="lede">Each maps to an experiment in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
   <div class="patterns">{cards}</div>
 </div></section>
 
@@ -429,7 +430,7 @@ def landing_teaser(H, f: dict) -> str:
 <section class="block" id="method"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>The method</div>
   <h2>These answers took a method, not a model.</h2>
-  <p class="lede">Nothing here needed special access or a big budget. It took six habits — each learned by getting something wrong first — and a harness that enforces them. They work on any problem you can put into a dataset.</p>
+  <p class="lede">Nothing here needed special access or a big budget. It took six habits — each learned by getting something wrong first — and a harness that enforces them. They work on any problem you can put into a dataset. The framing builds on Chip Huyen's <i>AI Engineering</i> and <i>Designing Machine Learning Systems</i>.</p>
   <div class="habits">{habits}</div>
   <div class="btns"><a class="btn primary" href="method.html">Read the method</a><a class="btn" href="use.html">Use it on your problem</a></div>
 </div></section>

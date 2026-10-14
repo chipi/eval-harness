@@ -24,7 +24,9 @@ works — and how to rerun all of it yourself.
 
 [<span class="n">07</span><b>Evidence</b><span class="d">Captured external facts — model sizes, licences, calibration results — checkable offline.</span>](evidence/README.md)
 
-[<span class="n">08</span><b>Papers</b><span class="d">The papers the work cites, and what each is cited for.</span>](papers/README.md)
+[<span class="n">08</span><b>Influences</b><span class="d">The approach builds on Chip Huyen's books — idea by idea, with chapters, and the statistics it also stands on.</span>](INFLUENCES.md)
+
+[<span class="n">09</span><b>Papers</b><span class="d">The papers the work cites, and what each is cited for.</span>](papers/README.md)
 
 </div>
 
