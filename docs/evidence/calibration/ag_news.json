@@ -1,0 +1,30 @@
+{
+  "what": "fine-tuned arms on the full fancyzhx/ag_news test split, this repo's adapter and configs",
+  "split_rows": 7600,
+  "arms": {
+    "bert_mini": {
+      "n": 7600,
+      "value": 0.9338,
+      "ci95": 0.0056,
+      "published": 0.9339,
+      "source": "model card, HF-verified test accuracy",
+      "verdict": "consistent"
+    },
+    "bert_base_ta": {
+      "n": 7600,
+      "value": 0.9514,
+      "ci95": 0.0048,
+      "published": 0.9514,
+      "source": "model card, 'eval set accuracy' (0.951447 = 7,231/7,600, i.e. the test split)",
+      "verdict": "consistent"
+    },
+    "bert_base_fy": {
+      "n": 7600,
+      "value": 0.9375,
+      "ci95": 0.0054,
+      "published": 0.9375,
+      "source": "model card, 'evaluation set' accuracy",
+      "verdict": "consistent"
+    }
+  }
+}

@@ -1,9 +1,10 @@
 # Evaluation report — 24 LLMs and two NER models on Few-NERD
 
 **Dataset** `few_nerd_280` · 280 Wikipedia-derived sentences · 768 gold entities · 8 coarse types
+**Protocol** supervised test split, 280 of 37,648 sentences, seeded · metric is ours (mean per-sentence F1, coarse types, string match); standard micro-F1 in §2 · calibration: `span_marker`, standard fine-type micro-F1, 0.7047 vs 0.7040 published — [docs/PROTOCOL.md](../docs/PROTOCOL.md#extraction--few-nerd)
 **Arms** 24 hosted models (8 vendors × 3 price tiers) · 1 fine-tuned span tagger · 1 zero-shot span tagger · 2 non-learned baselines
 **Design** 1 pass per arm · identical prompt, temperature 0, reasoning off, `max_tokens` 600 · **$2.57 billed** ($2.05 by the price table — see Correction)
-**Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
+**Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md)
 
 > **The third metric shape.** Summarisation compares one text to one text and scores
 > continuously. Classification compares one label to one label and scores 0 or 1.
@@ -161,8 +162,25 @@ untyped 0.6191, typed **0.1913** — it finds spans well and types them almost a
 
 An item has its own gold set, so its F1 is well defined and the mean of those is an honest
 per-item metric — which means the sign-flip permutation test works directly and no
-bootstrap is needed. Corpus micro-F1 pools every tp/fp/fn into one figure. Both are
-reported; the mean is the ranking metric.
+bootstrap is needed. Corpus micro-F1 pools every tp/fp/fn into one figure. The mean is
+the ranking metric; this sentence used to say "both are reported" and no micro-F1 figure
+appeared anywhere. They do now
+(`EVAL_RUNS_DIR=data/runs-rescored scripts/extraction_report.py --dataset-id few_nerd_280`):
+
+| arm | mean F1 (ranking) | corpus micro-F1 | micro P | micro R |
+|---|---|---|---|---|
+| `span_marker` | 0.7674 | **0.7951** | 0.7875 | 0.8029 |
+| `openai_m` | 0.6864 | 0.7006 | 0.6760 | 0.7272 |
+| `anthropic_l` | 0.6798 | 0.7038 | 0.6763 | 0.7337 |
+| `gemma_m` | 0.6733 | 0.6921 | 0.6749 | 0.7102 |
+| `gliner` | 0.4540 | 0.5189 | 0.4795 | 0.5653 |
+
+The winner and the gap behind it hold under both; `anthropic_l` and `openai_m` swap
+places, inside a difference no test separates. **Neither figure is comparable to published
+Few-NERD results**, which are entity-level micro-F1 over the 66 *fine* types on exact token
+spans; ours are 8 coarse types matched on normalised strings. The comparable number is the
+calibration row: `span_marker` scored the standard way on 2,000 seeded test sentences,
+**0.7047** against the 0.7040 its model card publishes (`docs/PROTOCOL.md`).
 
 ---
 
@@ -183,8 +201,8 @@ reported; the mean is the ranking metric.
 | gemma_l | 0.6481 | 0.7689 | 1.000 | 2.91 s | $0.0134 |
 | qwen_l | 0.6240 | 0.7283 | 1.000 | 1.67 s | $0.0722 |
 | deepseek_m | 0.6148 | 0.7265 | 1.000 | 1.23 s | $0.0200 |
-| mistral_l | 0.5979 | 0.6946 | 0.996 | 10.25 s | $0.0419 |
 | llama_l | 0.5990 | 0.7146 | 0.996 | 4.80 s | $0.0176 |
+| mistral_l | 0.5979 | 0.6946 | 0.996 | 10.25 s | $0.0419 |
 | openai_s | 0.5948 | 0.6855 | 1.000 | 1.21 s | $0.0784 |
 | glm_m | 0.5939 | 0.7151 | 1.000 | 3.66 s | $0.0445 |
 | mistral_m | 0.5914 | 0.6870 | 1.000 | 0.79 s | $0.0462 |
@@ -615,7 +633,7 @@ This section is deliberately as detailed as the results.
 ```bash
 python examples/ner-few-nerd/fetch.py --n 280
 cd harness
-make dataset-create DATASET_ID=few_nerd_280 ARGS='--source-dir data/sources/few_nerd_280'
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 make dataset-materialize DATASET_ID=few_nerd_280
 
 for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do

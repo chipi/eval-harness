@@ -222,6 +222,13 @@ class ClassificationTask:
         self._pipe_key = key
         return self._pipe
 
+    def loaded_model(self, params: Dict[str, Any]) -> Any:
+        """The pipeline warm-up loaded for THIS arm, or None -- for the fingerprint."""
+        want = (params.get("model"), params.get("revision"), params.get("device"))
+        if self._pipe is not None and self._pipe_key and self._pipe_key[:3] == want:
+            return self._pipe
+        return None
+
     def encoder_window(self) -> Optional[int]:
         """The loaded model's input ceiling, from the MODEL config, not the tokenizer.
 

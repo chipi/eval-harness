@@ -33,8 +33,7 @@ That writes texts into `../../harness/data/sources/ag_news_<n>/` and their label
 
 ```bash
 cd ../../harness
-PYTHON=../examples/classification-ag-news/.venv/bin/python make dataset-create \
-    DATASET_ID=ag_news_200 ARGS='--source-dir data/sources/ag_news_200'
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 PYTHON=../examples/classification-ag-news/.venv/bin/python make dataset-materialize \
     DATASET_ID=ag_news_200
 ```

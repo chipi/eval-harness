@@ -1,9 +1,10 @@
 # Evaluation report — BM25, four dense retrievers and twelve LLM rerankers on SciFact
 
 **Dataset** `scifact_200` · 200 scientific claims · a **5,183-document corpus** · 227 relevance judgments
+**Protocol** 200 of 300 test queries, seeded, full corpus · nDCG@10, the BEIR standard · calibration: BM25 on all 300 queries, 0.6523 vs BEIR's 0.665 — [docs/PROTOCOL.md](../docs/PROTOCOL.md#retrieval--scifact)
 **Arms** BM25 · 4 sentence-transformer bi-encoders · 12 hosted LLMs reranking BM25's top-20 · 2 floors
 **Design** 1 pass per arm · temperature 0, reasoning off, `max_tokens` 700 · rerank depth 20 · **$1.94 billed**
-**Date** 2026-09-29 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
+**Date** 2026-09-29 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md)
 **Costs** are what the provider billed (`usage.cost`), not this repo's price table — see §7
 
 > **The fourth metric shape, and the first where POSITION carries meaning.** Summarisation
@@ -97,7 +98,7 @@ resolve.
 | Corpus | BEIR SciFact, **5,183 abstracts**, CC BY-SA 4.0, `corpus_sha256` `297643e2d005` |
 | Queries | 200 test claims, seeded random, `items_sha256` frozen |
 | Dev slice | 40 claims, a strict **prefix** of the same permutation — nested |
-| Judgments | 234 over 200 queries: 184 queries have 1 relevant doc, 9 have 2, 4 have 3, 2 have 4, 1 has 5 |
+| Judgments | 227 over 200 queries: 184 queries have 1 relevant doc, 9 have 2, 4 have 3, 2 have 4, 1 has 5 |
 | Relevance | **binary** — every qrels score is 1 |
 | Reachability | every judged document is in the corpus, so recall@all = 1.0 is attainable |
 
@@ -380,7 +381,7 @@ Money spent on a better reranker there buys almost
 nothing; money spent on the retriever raises the cap itself.
 
 **The tie is the recurring result across all four examples in this repo.** Summarisation:
-the dearest arm ranked 15th of 24. AG News: a leader tied with nine. DBpedia: a group of
+the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with nine. DBpedia: a group of
 ten across a 115× price range. NER: eight hosted arms across 78×. Here: twelve, two of
 which are free. Four unrelated tasks, the same shape — at the top of a field, price stops
 predicting quality well before quality stops varying.
@@ -451,7 +452,7 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
   "everything under $0.60/Mtok input", price-ordered and declared before any result was
   read. **So this report says nothing about whether a frontier model is a better
   reranker**, and the top tie (12–13 arms) is a tie among cheap models plus two free ones. See
-  [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
+  [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers
   that charge differently. Measured across all four examples the table was wrong **per arm
@@ -492,7 +493,7 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
 python examples/retrieval-scifact/fetch.py --n 200
 python examples/retrieval-scifact/fetch.py --n 40 --skip-corpus
 cd harness
-make dataset-create DATASET_ID=scifact_200 ARGS='--source-dir data/sources/scifact_200'
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 make dataset-materialize DATASET_ID=scifact_200
 
 for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do

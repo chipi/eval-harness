@@ -1,0 +1,13 @@
+{
+  "what": "this repo's BM25 arm (rank_bm25, one field, no stemming) on all 300 BeIR/scifact test queries, full 5,183-doc corpus",
+  "arms": {
+    "bm25": {
+      "n": 300,
+      "value": 0.6523,
+      "ci95": 0.0453,
+      "published": 0.665,
+      "source": "Thakur et al. 2021, BEIR, Table 2 (BM25, SciFact, nDCG@10)",
+      "verdict": "consistent"
+    }
+  }
+}

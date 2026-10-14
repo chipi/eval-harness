@@ -1,5 +1,11 @@
 # eval-harness
 
+> **The findings, for people:** [**chipi.github.io/eval-harness**](https://chipi.github.io/eval-harness/)
+> — 24 LLMs, small fine-tuned models and baselines on five public benchmarks. The most
+> expensive model never won; four of five leaderboard tops are statistical ties; and every
+> instrument is calibrated against the published literature. The site is generated from
+> the runs in this repository (`site/`), so every number on it is checked.
+
 A drop-in evaluation harness. Freeze a dataset, run your system against it, and get an
 answer to the question most leaderboards skip: **is this ordering real, or did I just
 draw a lucky sample?**
@@ -59,14 +65,13 @@ make leaderboard DATASET_ID=my_v1
 ```
 harness/     the harness. Liftable into another project as-is.
 examples/    worked examples, each with its own uv environment
-research/    reports, handovers, and an append-only journal of how each example went
+research/    the five experiment reports and the synthesis; research/internal/ is the lab
+             notebook — handovers, review rounds and an append-only journal
+site/        the public site, generated from the runs (make site; checked by make ci)
+docs/        PROTOCOL.md (what each experiment measured), REFERENCE.md, evidence/
 ```
 
 ## The worked examples
-
-**[`research/KNOWN_ISSUES.md`](research/KNOWN_ISSUES.md)** — what is open, what was
-never measured, and which calls are judgement rather than oversight. Read this first if
-you are reviewing.
 
 **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)** — what all five
 experiments agree on, and where that contradicts how leaderboards are usually read:
@@ -75,6 +80,8 @@ experiment has an answer you can run on your own 64 GB machine for $0**.
 
 Full index, with what each one found and what it broke: **[`examples/README.md`](examples/README.md)**.
 Every metric, model, dataset and statistical test explained and linked to source: **[`docs/REFERENCE.md`](docs/REFERENCE.md)**.
+What each experiment measured, on which data, against which published baseline: **[`docs/PROTOCOL.md`](docs/PROTOCOL.md)**.
+Reviewing? Start with what is open and known: **[`research/internal/KNOWN_ISSUES.md`](research/internal/KNOWN_ISSUES.md)**.
 
 Five tasks, four metric shapes, one harness. Each ships a download recipe rather than a
 corpus, and each exists because it breaks something the previous one did not.
@@ -94,7 +101,9 @@ better than documentation can:
   29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**
   — at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus ties the best LLM for $0;
   the same BART fine-tuned on XSum finishes **last**, below copying the first three
-  sentences.
+  sentences. *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
+  the local models keep every verdict; the paid ones were not re-run
+  ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 - **Classification.** Three small fine-tuned models took the top three places on AG News
   from 24 frontier LLMs — and their lead turns out to live almost entirely in 17 items
   whose gold labels nearly the whole LLM field disputes (8 a labelling convention, 7
@@ -102,14 +111,14 @@ better than documentation can:
   bought nothing measurable, and the fine-tuned model bought a tie, not a win: the top
   eleven arms are separated by four items, three of which the field disputes because the
   gold label is wrong.
-- **Extraction.** A 476MB span tagger separated from **all 26** opponents — but **57%** of
+- **Extraction.** A 499 MB span tagger separated from **all 27** opponents — but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
 - **Retrieval.** Twelve LLM rerankers tie with each other *and with two free local
   encoders*. A prediction registered before the arm existed — that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**.
 
-`research/NOTES.md` is the append-only journal, corrections included — findings have been
+`research/internal/NOTES.md` is the append-only journal, corrections included — findings have been
 retracted along the way, several caused by bugs in this harness's own scorer. The
 retraction rate is itself a result: it measures how much of a first-pass eval is instrument
 rather than signal.

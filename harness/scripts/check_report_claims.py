@@ -71,6 +71,13 @@ CLAIMS = [
     ("Summarisation bart_m",      DATA,     "cnn_bart_m_n200_v1",      "coverage", 0.3367),
     ("Summarisation bart_s",      DATA,     "cnn_bart_s_n200_v1",      "coverage", 0.3276),
     ("Summarisation bart_l_xsum", DATA,     "cnn_bart_l_xsum_n200_v1", "coverage", 0.2071),
+    # The DailyMail slice (2026-10-14): the summarisation sample was all CNN, so the five
+    # local arms re-ran on 200 DailyMail articles. REPORT_SUMMARIZATION §3.7 quotes these.
+    ("DailyMail bart_l",          DATA,     "cnn_bart_l_dm200_v1",      "coverage", 0.4430),
+    ("DailyMail bart_m",          DATA,     "cnn_bart_m_dm200_v1",      "coverage", 0.4430),
+    ("DailyMail bart_s",          DATA,     "cnn_bart_s_dm200_v1",      "coverage", 0.4039),
+    ("DailyMail lead3",           DATA,     "cnn_lead3_dm200_v1",       "coverage", 0.3697),
+    ("DailyMail bart_l_xsum",     DATA,     "cnn_bart_l_xsum_dm200_v1", "coverage", 0.1522),
 ]
 
 #: Which report states each CLAIM. A claim here is a copy of a number in a report, and a
@@ -981,11 +988,53 @@ else:
               f"{_n_bart[0]} of {_n_bart[0]} items" in _summ,
               f"the capture checked {_n_bart[0]} items per BART arm")
     # The torch version the whole story rests on.
-    _ki = (ROOT / "research" / "KNOWN_ISSUES.md").read_text()
+    _ki = (ROOT / "research" / "internal" / "KNOWN_ISSUES.md").read_text()
     _tv = str(_cpr.get("torch", "")).split("+")[0]
     check(f"conversion PRs: the capture ran on torch {_tv}, as the reports say",
           _tv and f"torch {_tv}" in _ki,
           f"the capture says torch {_cpr.get('torch')}; KNOWN_ISSUES says otherwise")
+
+# ---- CALIBRATION ROWS: THE INSTRUMENT AGAINST THE LITERATURE -------------------
+#
+# Each example's `calibrate.py` runs one known model or baseline on the benchmark's full
+# test set (or a large seeded sample) and writes docs/evidence/calibration/<exp>.json.
+# docs/PROTOCOL.md quotes every one of those figures. Derived from the capture and looked
+# for in the page, so a re-calibration that moves a number fails until the page follows.
+# A MISSING CAPTURE IS A FAILURE, not a skip: these files are committed, and a check that
+# vanishes when its evidence does is the defect round 5 found in V10.
+_CAL = ROOT / "docs" / "evidence" / "calibration"
+_proto = (ROOT / "docs" / "PROTOCOL.md").read_text() if (ROOT / "docs" / "PROTOCOL.md").is_file() else ""
+_rows = [ln for ln in _proto.splitlines() if ln.startswith("|")]
+for _exp in ("summarization", "ag_news", "dbpedia", "few_nerd", "scifact"):
+    _f = _CAL / f"{_exp}.json"
+    if not _f.is_file():
+        check(f"calibration {_exp}: the capture exists", False,
+              f"{_f.relative_to(ROOT)} is missing; PROTOCOL.md quotes it")
+        continue
+    _c = json.loads(_f.read_text())
+    if _exp == "summarization":
+        _ft, _pub = _c["full_test"], _c["published"]["lead3"]
+        _want = [f"{_ft['rouge1']:.2f}", f"{_ft['rouge2']:.2f}",
+                 f"{_pub['rouge1']:.2f}", f"{_pub['rouge2']:.2f}"]
+        _miss = [w for w in _want if w not in _proto]
+        check(f"calibration summarization: PROTOCOL.md states LEAD-3 R1/R2 "
+              f"{_want[0]}/{_want[1]} vs published {_want[2]}/{_want[3]}",
+              not _miss, f"not found in PROTOCOL.md: {_miss}")
+        continue
+    for _arm, _r in (_c.get("arms") or {}).items():
+        _v = f"{_r['value']:.4f}"
+        _p = _r["published"]
+        _pubs = {f"{_p:.4f}", f"{_p:.3f}"}
+        _row = next((ln for ln in _rows if _v in ln), None)
+        _ok = _row is not None and any(p in _row for p in _pubs)
+        if _ok and _r.get("verdict") == "differs":
+            # A calibration that disagrees with the literature is a finding; the row that
+            # quotes it must say so rather than present it as agreement.
+            _ok = "differs" in _row
+        check(f"calibration {_exp}/{_arm}: PROTOCOL.md states {_v} vs {_p} "
+              f"({_r.get('verdict')}) in one row",
+              _ok, f"no PROTOCOL.md table row carries both {_v} and the published {_p}"
+                   + (" and the word 'differs'" if _r.get("verdict") == "differs" else ""))
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

@@ -35,8 +35,7 @@ Texts land in `../../harness/data/sources/few_nerd_<n>/`, gold in
 
 ```bash
 cd ../../harness
-PYTHON=../examples/ner-few-nerd/.venv/bin/python make dataset-create \
-    DATASET_ID=few_nerd_280 ARGS='--source-dir data/sources/few_nerd_280'
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 PYTHON=../examples/ner-few-nerd/.venv/bin/python make dataset-materialize DATASET_ID=few_nerd_280
 ```
 
@@ -78,7 +77,7 @@ that relevance is what this example gives up to keep the licence clean.
 ## Run it
 
 ```bash
-cd harness
+cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
 for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
   ../examples/ner-few-nerd/.venv/bin/python scripts/experiment_run.py --config "$f"
 done
@@ -168,7 +167,7 @@ as `person`, a football league as an `event`, a diuretic as `other`.
 
 | Arm | What it is | Why it is here |
 |---|---|---|
-| `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, 476MB, **fine-tuned on this corpus** | the in-distribution ceiling |
+| `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, 499 MB, **fine-tuned on this corpus** | the in-distribution ceiling |
 | `gliner` | `urchade/gliner_medium-v2.1`, 745MB, zero-shot, **caller supplies the labels** | the matched control: same class, never trained here |
 | 24 hosted | 8 vendors × 3 price tiers, one prompt, temperature 0, `max_tokens` 600 | the field |
 | `capitalized` | every capitalised run minus an orthography stoplist | finds spans, cannot type them |
@@ -189,8 +188,8 @@ differing in exactly one variable: exposure to Few-NERD's training split.
 Full write-up: [`../../research/REPORT_NER.md`](../../research/REPORT_NER.md).
 
 ```
-span_marker   0.7674   $0        separated from 26 of 26 under Holm
-openai_m      0.6864   $0.6507   best hosted; separated from only 19 of 26
+span_marker   0.7674   $0        separated from 27 of 27 under Holm
+openai_m      0.6864   $0.6507   best hosted; separated from only 20 of 27
 gemma_m       0.6733   $0.0088   inside the top group, 78x cheaper than anthropic_l
 gliner        0.4540   $0        same model class, no training-split exposure
 capitalized   0.1913   $0

@@ -255,7 +255,22 @@ check: validate test
 	@echo ""
 	@echo "check: tree valid, self-tests pass"
 
-ci: check
+# THE SITE IS GENERATED FROM THE RUNS. A stale site/public -- a run added, a report
+# figure changed, the build script edited without rebuilding -- fails here, so the public
+# front door can never quietly disagree with the data. Rebuild with `make site`.
+site:
+	$(PYTHON) ../site/build.py
+
+site-check:
+	$(PYTHON) ../site/build.py --check
+
+# The documentation site (published at /docs/ beside the findings site). Needs
+# `pip install -r ../site/requirements-docs.txt`; not part of `make ci`, which must run
+# without it, but the Pages workflow builds it in strict mode on every deploy.
+docs:
+	cd .. && mkdocs build --strict
+
+ci: check site-check
 	@echo "ci: green"
 
 # The judge panel: promote -> judge -> aggregate -> report over candidate runs.

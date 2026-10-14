@@ -1,0 +1,14 @@
+{
+  "what": "bert_base_fy on a seeded sample of fancyzhx/dbpedia_14 test, this repo's adapter and config",
+  "sample": "56 random 100-row pages of 70000, seed 20261014",
+  "arms": {
+    "bert_base_fy": {
+      "n": 5600,
+      "value": 0.9879,
+      "ci95": 0.0029,
+      "published": 0.9903,
+      "source": "model card, 'evaluation set' accuracy",
+      "verdict": "consistent"
+    }
+  }
+}

@@ -54,8 +54,9 @@ tasks**. Every task-specific winner is under 2 GB and needs no GPU.
 ## What each one actually found
 
 ### Summarisation — price does not predict quality
-24 hosted models over 200 news articles. The dearest arm, at **52× the price** of the
-cheapest, ranks **15th of 24**. Two *independent* 100-article evals of the same models
+24 hosted models over 200 news articles — **all of them CNN's** (the first 200 test rows; the
+benchmark is 91% DailyMail). The dearest arm, at **52× the price** of the
+cheapest, ranks **18th of 29** (15th of the 24 hosted). Two *independent* 100-article evals of the same models
 agree at only **ρ = 0.79**, and at 20 articles at **ρ = 0.44** (29 arms).
 
 Later, ML arms were added and BART took the lead — by **0.00008** over the best LLM across
@@ -67,6 +68,11 @@ Then the control: the same BART fine-tuned on **XSum** instead of CNN/DailyMail 
 **last of 29** — below LEAD-3. BART's tie with the frontier is this corpus's house style,
 learned. Its distillations keep most of it at 1.5–1.8× the speed on the same machine (`bart_m`
 0.3367 at 4.1 s against `bart_l`'s 6.3 s, not separated from `bart_l`).
+
+On 200 DailyMail articles drawn at random, the five local arms keep every verdict they
+had on CNN — the fine-tune still beats LEAD-3 by +0.07, the XSum control is still last.
+The hosted arms were not re-run there, so the price findings are about CNN's articles
+([REPORT_SUMMARIZATION §3.7](../research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 
 ### AG News — small models win, on a task with headroom — by learning its labels
 Three fine-tuned classifiers take the top three places: `bert_base_ta` **0.9600**,
@@ -94,8 +100,8 @@ the top eleven are separated by four items, three of which 24–25 of the 26 lea
 dispute because the gold label is wrong.
 
 ### Few-NERD — task-specific training, isolated
-A 476MB span tagger fine-tuned on the corpus beat all 24 LLMs and separated from **26 of
-26** — the only unambiguous winner in the repo. But **57% of its margin is one entity
+A 499 MB span tagger fine-tuned on the corpus beat all 24 LLMs and separated from **27 of
+27** — the only unambiguous winner in the repo. But **57% of its margin is one entity
 type**, `other`, whose membership you cannot infer from the label because it is a
 convention of that corpus. On `person` — the one type that means the same thing everywhere
 — a frontier LLM beats it.
@@ -123,14 +129,14 @@ varying.** Every example produced a tie group spanning a large price range:
 
 | | tie at the top | price span |
 |---|---|---|
-| summarisation | dearest arm ranks 15th of 24 | 52× |
+| summarisation | dearest arm ranks 18th of 29 | 52× |
 | AG News | leader tied with 3 — two other fine-tunes and one paid arm | 2.5× |
 | DBpedia | a group of 11, one of them free | 115× |
 | Few-NERD | 8 hosted arms | 78× |
 | SciFact | 12 arms, **2 of them free** | 7.6× billed, among cheap arms |
 
 And every example found something wrong with the instrument before it found anything about
-the models. The append-only journal, [`../research/NOTES.md`](../research/NOTES.md), is the
+the models. The append-only journal, [`../research/NOTES.md`](../research/internal/NOTES.md), is the
 record of that — including the retractions.
 
 ---
@@ -157,9 +163,10 @@ cost this repo four reports' worth of corrections.
 ## Unfinished work
 
 Every example has a handover for what was not run and why, in
-[`../research/`](../research): one NER arm rate-limited upstream, and five frontier
-rerankers that cost about $12 against the retrieval sweep's $1.94 billed. The six local ML
-arms that needed a machine able to load pickle checkpoints ran on 2026-09-30.
+[`../research/`](../research). What remains is five frontier rerankers on SciFact, about
+$12 against the retrieval sweep's $1.94 billed, and the four hosted summarisation arms on
+the DailyMail slice. The rate-limited NER arm ran on 2026-10-01, and the six local ML arms
+that needed a machine able to load pickle checkpoints ran on 2026-09-30.
 
 ---
 
@@ -173,6 +180,10 @@ Every cited paper's redistribution licence is recorded in
 [`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the twelve that
 permit mirroring. All citations were verified by fetching them and comparing titles.
 
-**Nothing is redistributed here** — no corpus, no model weights, no papers, no provider output. Each
-example ships a download recipe, and dataset identity travels as a content hash
-(`items_sha256`, `corpus_sha256`) recorded inside every run.
+**No corpus, model weights or papers are redistributed here.** Each example ships a
+download recipe, and dataset identity travels as a content hash (`items_sha256`,
+`corpus_sha256`) recorded inside every run. **The models' outputs are committed** — every
+run's `predictions.jsonl` and `outputs/` — because they are the evidence every score is
+recomputed from (`make rescore`). For summarisation that means model-written summaries of
+the CNN/DailyMail articles, which quote and paraphrase them; the corpus is Apache-2.0 per
+its dataset card.

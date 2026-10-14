@@ -1,0 +1,50 @@
+{
+  "what": "lead3 (this repo's _lead_k) on abisee/cnn_dailymail 3.0.0 test, rouge_score F1 x100, use_stemmer=True",
+  "split_rows": 11490,
+  "full_test": {
+    "n": 11490,
+    "rouge1": 39.94,
+    "rouge1_ci95": 0.22,
+    "rouge2": 17.37,
+    "rouge2_ci95": 0.21
+  },
+  "by_outlet": {
+    "cnn": {
+      "n": 1089,
+      "rouge1": 29.59,
+      "rouge1_ci95": 0.69,
+      "rouge2": 11.22,
+      "rouge2_ci95": 0.59
+    },
+    "dailymail": {
+      "n": 10401,
+      "rouge1": 41.02,
+      "rouge1_ci95": 0.22,
+      "rouge2": 18.02,
+      "rouge2_ci95": 0.22
+    }
+  },
+  "committed_slices": {
+    "cnn_dailymail_200": {
+      "n": 200,
+      "rouge1": 30.2,
+      "rouge1_ci95": 1.61,
+      "rouge2": 12.14,
+      "rouge2_ci95": 1.43
+    },
+    "cnn_dailymail_dm200": {
+      "n": 200,
+      "rouge1": 42.2,
+      "rouge1_ci95": 1.57,
+      "rouge2": 18.69,
+      "rouge2_ci95": 1.58
+    }
+  },
+  "published": {
+    "lead3": {
+      "rouge1": 40.34,
+      "rouge2": 17.7,
+      "source": "See et al. 2017, 'Get To The Point', Table 1 (lead-3 baseline, non-anonymised)"
+    }
+  }
+}

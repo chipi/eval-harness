@@ -1,5 +1,9 @@
 # Running the three blocked ML arms on another machine
 
+> **Scope note, 2026-10-14.** Every summarisation result below was measured on
+> `cnn_dailymail_200`, which is the first 200 test rows — all CNN's articles, while the
+> benchmark is 91% DailyMail. See REPORT_SUMMARIZATION's scope correction and §3.7.
+
 > **Done 2026-09-30.** All three ran on Linux (torch 2.14.0, clean tree, configs
 > unchanged): `bart_m` **0.3367** (5.1 s/item), `bart_s` **0.3276** (4.5 s/item — slowed by other work
 > on the same CPU; 3.4 s idle), `bart_l` 6.3 s on the same machine (`harness/data/runs-linux/`),
@@ -15,8 +19,9 @@
 > 35-word reference (`length_vs_reference` 0.66), so its last place mixes training
 > distribution with length exactly as warned. Results:
 > [`REPORT_SUMMARIZATION.md`](../../research/REPORT_SUMMARIZATION.md). Two traps found on
-> the way are in [`KNOWN_ISSUES.md`](../../research/KNOWN_ISSUES.md): runs after the first
-> on a machine are marked dirty unless `EVAL_RUNS_DIR` points outside the tree, and each
+> the way are in [`KNOWN_ISSUES.md`](../../research/internal/KNOWN_ISSUES.md): runs after the first
+> on a machine were marked dirty unless `EVAL_RUNS_DIR` pointed outside the tree (fixed
+> 2026-10-14), and each
 > checkpoint has a safetensors conversion PR, and two of these three (`bart_m`,
 > `bart_l_xsum`) reproduce the recorded outputs on torch 2.2.2, the original Mac's torch;
 > `bart_s`'s is fp16 and does not run there.

@@ -1,9 +1,25 @@
 # Evaluation report — 24 LLMs on news summarisation
 
-**Dataset** `cnn_dailymail_200` · 200 articles · human-written gold references
+**Dataset** `cnn_dailymail_200` · 200 articles — **all from CNN** (the first 200 test rows; the test split is 91% DailyMail) · human-written gold references
 **Arms** 24 hosted models, 8 vendors, 3 price tiers each
+**Protocol** test split, first 200 rows (all CNN) · metric `coverage` is ours; ROUGE-1/2/L F1 reported beside it · calibration: LEAD-3 on the full test set, ROUGE-1 39.94 vs 40.34 published — [docs/PROTOCOL.md](../docs/PROTOCOL.md#summarisation--cnndailymail)
 **Design** 1 pass per arm · 4,800 calls · **$5.74 billed** ($4.93 by the price table — see Correction) · identical prompt, temperature 0, reasoning off
-**Date** 2026-09-26; three local BART arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 56, 59
+**Date** 2026-09-26; three local BART arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md) entries 56, 59
+
+> **Scope correction, 2026-10-14 — read this first.** Every result in this report was
+> measured on the first 200 rows of the CNN/DailyMail test split, and the split puts CNN's
+> articles first: all 200 rows are **CNN's** (196 with CNN's own dateline, 4 partner pieces CNN
+> republished), while the test split as a whole is 1,093 CNN and 10,397 DailyMail. So the findings below are findings about
+> **CNN-style news**, not about CNN/DailyMail. It was caught by comparing a baseline with
+> the literature for the first time: this repo's LEAD-3 scores ROUGE-1 **39.94** on the full
+> 11,490-article test set (published: 40.34), but 30.20 on this slice, because CNN
+> articles are harder to summarise from their lead (29.59) than DailyMail ones (41.02)
+> (`docs/evidence/calibration/summarization.json`). The scorer is right; the sample was
+> not representative. A seeded random **DailyMail slice** (`cnn_dailymail_dm200`) tests
+> whether the conclusions travel (§3.7): **among the five local arms every comparison
+> transfers** — the fine-tune beats LEAD-3 by the same margin, the XSum control still
+> finishes last, distillation still costs nothing measurable. **Every comparison
+> involving a paid model is untested outside CNN.**
 
 > **Updated 2026-09-30 with the three local arms that could not run on the original
 > machine** — two distilled BARTs (`bart_m`, `bart_s`) and BART fine-tuned on XSum
@@ -40,6 +56,7 @@
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
 | **How many arms are really tied at the top?** | **15 of the 28 others** — 13 paid arms and both distilled BARTs (was 13 of 25). The cheapest paid one is 143× cheaper than the dearest. |
 | **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
+| **Does it hold outside CNN?** | **For the local arms, yes; for the paid ones, unknown.** On 200 DailyMail articles the five local arms keep every verdict they had on CNN: `bart_l` beats LEAD-3 by +0.073 (CNN +0.074), `bart_m` ties `bart_l`, the XSum control is last (§3.7). The hosted arms were not re-run, so the price verdicts above are CNN-only. |
 | **Fine-tune or pay?** | **Cost only — and only if it is fine-tuned on text like yours.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free, but *slower* (11.0 s vs 1.6 s, both timed from the Mac); distilled, 1.5–1.8× faster than `bart_l` on one machine. The control is decisive: **the same architecture fine-tuned on XSum scores 0.2071 — last of 29, below LEAD-3**. What `bart_l` has is this corpus's house style, not summarisation. |
 
 *Cross-cutting context for all five experiments:
@@ -75,7 +92,7 @@ answer it.
 | `deepseek_m` > `openai_l` (11.4×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
 | `deepseek_s` > `qwen_m` (control) | +0.0255, p=0.0000 | +0.0208, p=0.0003 |
 
-All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place;
+All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place among the 24 hosted arms;
 $0.0381 buys 1st.**
 
 **Sixteen of the 24 hosted arms are off the table entirely**, with no statistics required:
@@ -152,8 +169,12 @@ wire summary.* One prompt, 119 bytes, stored once in `prompt.txt`, its sha256 re
 every run's fingerprint. Not prompt optimisation — a per-model prompt would make the
 comparison meaningless.
 
-**Corpus.** `abisee/cnn_dailymail`, Apache-2.0 per its dataset card, 200 articles from the
-test split, mean 555 words. References are the `highlights` written by the journalists who
+**Corpus.** `abisee/cnn_dailymail` (config 1.0.0; the same articles as 3.0.0, which the
+literature uses), Apache-2.0 per its dataset card, the **first** 200 articles of the
+11,490-article test split, mean 555 words. Because the split puts CNN's articles first, that
+is **all CNN** (196 with CNN's dateline, 4 partner pieces CNN republished) — not a sample of
+the benchmark, a sample of its
+CNN portion, which is 9% of the split. Read every figure below with that scope; §3.7 measures the other outlet. References are the `highlights` written by the journalists who
 filed each article — genuinely human-authored, mean 34.7 words. The corpus is never
 committed; the repo ships a download recipe (`fetch.py`, stdlib only). `fetch.py` pages
 from offset 0, so the earlier 20-article slice is a **subset** of these 200 — verified, 20
@@ -301,6 +322,25 @@ pay a one-off initialisation cost that the warm-up does not absorb. † The reco
 `bart_s` mean is inflated by analysis work I ran on the same CPU during the run; its own
 median was 3,683 ms. On one machine `bart_m` takes 0.66× `bart_l`'s time and `bart_s`
 0.54×.*
+
+**The winner depends on the metric, and the standard ones say so.** Scored with standard
+ROUGE F1 (`rouge_score`, stemmed — what the literature reports), the 29 arms order
+differently from `coverage`:
+
+| arm | `coverage` (rank) | ROUGE-1 F1 (rank) | ROUGE-2 F1 (rank) |
+|---|---|---|---|
+| `llama_l` | 0.3387 (3) | **36.36 (1)** | 13.20 (4) |
+| `deepseek_m` | 0.3460 (2) | 36.12 (3) | 12.99 (5) |
+| `bart_l` | **0.3461 (1)** | 34.77 (12) | 14.24 (3) |
+| `bart_m` | 0.3367 (5) | 34.57 (14) | **14.41 (1)** |
+| `bart_s` | 0.3276 (10) | 34.18 (16) | 14.26 (2) |
+| `lead3` | 0.2718 (28) | 30.20 (28) | 12.14 (7) |
+
+On bigrams the three CNN-trained BARTs take the top three places; on unigrams the LLMs
+lead and `bart_l` is 12th. "`bart_l` wins outright" is true of `coverage` and of ROUGE-2,
+not of ROUGE-1 — consistent with what BART learned being CNN's *phrasing*, which bigrams
+reward and unigrams barely see. None of these absolute figures is comparable to published
+ROUGE, which is computed on the full test set (§5).
 
 `bart_m` is distilbart-cnn-12-6 (12 encoder / 6 decoder layers, 1.2 GB) and `bart_s`
 distilbart-cnn-6-6 (460 MB, stored and **run** at fp16, although its config declares
@@ -508,6 +548,54 @@ nothing. A tie count cannot catch that; only the separation test in §3.2 can.
 This is the most transferable result in the report: it is about evaluation rather than
 about 24 models, and it does not go stale when the models change.
 
+### 3.7 Does it hold outside CNN? The DailyMail slice
+
+Every result above was measured on CNN's articles alone (§1). To test whether the
+conclusions travel, `cnn_dailymail_dm200` draws **200 DailyMail articles at random** (seed
+20261014) from the same test split — none carries a CNN or CNN-partner dateline — and the
+five local arms re-ran on it with their parameters unchanged. All five runs are clean
+(`build.dirty: false`, commit `a81669ca`) and committed as
+`harness/data/runs/cnn_*_dm200_v1_*`.
+
+| arm | `coverage`, CNN | `coverage`, DailyMail | ROUGE-1 / 2 F1, DailyMail | words, DailyMail |
+|---|---|---|---|---|
+| `bart_l` | 0.3461 | **0.4430** | 46.16 / 23.18 | 67 |
+| `bart_m` | 0.3367 | **0.4430** | 46.95 / 24.09 | 76 |
+| `bart_s` | 0.3276 | 0.4039 | 44.78 / 22.03 | 54 |
+| `lead3` | 0.2718 | 0.3697 | 42.20 / 18.69 | 77 |
+| `bart_l_xsum` | 0.2071 | 0.1522 | 24.72 / 7.04 | 20 |
+
+Every arm scores higher on DailyMail except the XSum control — DailyMail's highlights are
+longer (57 words against 35) and its leads more extractable. The question is whether the
+*comparisons* hold, so the same family test was run on both slices over the same five
+arms (Holm, `bart_l` against the other four, sign-flip, 20,000 permutations):
+
+| `bart_l` vs | CNN | DailyMail |
+|---|---|---|
+| `bart_l_xsum` | +0.1390, separated | **+0.2908**, separated |
+| `lead3` | +0.0743, separated | **+0.0733**, separated |
+| `bart_s` | +0.0186, separated (p = 0.017) | **+0.0391**, separated |
+| `bart_m` | +0.0095, not separated (p = 0.16) | **+0.0000**, not separated (p = 1.00) |
+
+**Among the local arms, every verdict transfers.** The fine-tune beats LEAD-3 by the same
+margin on both outlets (+0.074 and +0.073); the XSum control fails harder on DailyMail;
+distilling to `bart_m` costs nothing measurable on either; `bart_s` gives up twice as much
+on DailyMail as on CNN. *(The CNN column is a five-arm family, so its thresholds are looser
+than §3.1's 28-arm family, where `bart_s` is not separated.)*
+
+**What this does not test: the hosted arms.** Whether `bart_l` still ties `deepseek_m`,
+whether 15 arms still tie at the top, whether the dearest arm still trails — every
+comparison involving a paid model — is unmeasured outside CNN. Configs for the four
+hosted arms in the CNN top six are committed beside the local ones
+(`configs/arm_{deepseek_m,llama_l,llama_m,llama_s}_dm200.yaml`); they need an
+OpenAI-compatible endpoint, which the environment that ran this slice did not have.
+
+**And a calibration aside.** `bart_l` is the published `facebook/bart-large-cnn`, reported
+at ROUGE-1 44.16 on the full test set. Weighting this repo's two slices by the split's
+outlet mix (9.5% CNN, 90.5% DailyMail) estimates **45.1** — consistent, given a different
+ROUGE implementation and 400 articles rather than 11,490. The instrument agrees with the
+literature on the model as well as on LEAD-3.
+
 ## 4. Discussion
 
 **The experiment's resolution is set by the corpus, not the models.** With 67.8% of
@@ -583,12 +671,17 @@ dearest, which is worth noticing before paying for either.
 - **Anything about model size.** The tier axis is price, and confounds generation.
 - **Whether abstractive outputs are accurate.** No metric here detects fabrication;
   `grounding` measures extractiveness and cannot distinguish paraphrase from invention.
-- **How these models rank with reasoning enabled**, on a different prompt, on longer
-  inputs, or on any other corpus.
+- **How the hosted models rank on anything but CNN's articles.** The DailyMail slice
+  (§3.7) re-ran the five local arms only. Nor with reasoning enabled, on a different
+  prompt, on longer inputs, or on any other corpus.
 - **How fast the models are.** Latency is a property of this machine, this proxy and the
   upstream provider on the day.
-- **Anything comparable to published ROUGE.** `rougeLsum` here uses a local sentence
-  splitter rather than NLTK's, and `grounding`/`concision`/`coverage` are ours.
+- **Anything comparable to published ROUGE, on the committed slice.** Published figures
+  are over the full test set, which is 91% DailyMail; this slice is all CNN, and CNN
+  articles score ~11 ROUGE-1 lower. The scorer is not the gap: LEAD-3 over the full test
+  set scores 39.94 here against 40.34 published, and `bart_l`'s outlet-weighted estimate
+  is 45.1 against 44.16 (§3.7). `grounding`, `concision` and `coverage` are this repo's own
+  and comparable to nothing published.
 - **Whether `bart_l`'s lead is style or length.** The XSum control fails for two reasons
   at once — it was trained on BBC single-sentence summaries *and* it decodes at 62/11
   tokens against 142/56. An arm at CNN/DailyMail decode lengths would separate them; it
@@ -650,11 +743,12 @@ cd examples/summarization-cnn-dailymail
 uv sync
 uv run fetch.py --n 200
 
-cd harness
+cd ../../harness
 cp .env.example .env                      # point at a proxy
-make dataset-create      DATASET_ID=cnn_dailymail_200 ARGS='--source-dir data/sources/cnn_dailymail_200'
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 make dataset-materialize DATASET_ID=cnn_dailymail_200
-make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*_n200.yaml" REPEAT=1
+make sweep PYTHON=../examples/summarization-cnn-dailymail/.venv/bin/python \
+     CONFIGS="../examples/summarization-cnn-dailymail/configs/arm_*_n200.yaml" REPEAT=1
 make leaderboard DATASET_ID=cnn_dailymail_200
 
 # the two questions the leaderboard cannot answer on its own
@@ -672,7 +766,7 @@ a safetensors conversion PR on the Hub (distilbart-cnn-12-6 `refs/pr/29`, -6-6 `
 bart-large-xsum `refs/pr/9`). On torch 2.2.2 the `bart_m` and `bart_l_xsum` PRs reproduce the
 recorded outputs on 20 of 20 items checked; the `bart_s` PR does not run, because it is
 fp16 and torch 2.2.2 has no fp16 LayerNorm on CPU (`docs/evidence/conversion_pr_check.py`) — see
-[`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+[`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md).
 
 No `rescore` step is needed here. It was, for the n=20 sweep: scores were written rounded
 to 6 decimals, which cannot tell a genuine tie from a rounding artifact, and the tie

@@ -326,6 +326,77 @@ def test_fingerprint_does_not_invent_a_revision() -> None:
           none_hook == {"identity_declared": False})
 
 
+def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
+    """A previous run's directory is not code; a changed file anywhere still is.
+
+    Every run after the first on a machine was recorded `dirty: true`, because the first
+    run's directory was an untracked file. The rule is narrow on purpose: only UNTRACKED
+    paths under data/runs* are ignored.
+    """
+    sys.path.insert(0, str(HERE))
+    from _fingerprint import filter_dirt
+
+    d = "harness/data/"
+    check("dirty: an untracked run directory is not dirt",
+          filter_dirt("?? harness/data/runs/demo_v1_20260929T110901Z_r1/", d) == [])
+    check("dirty: nor one in another runs directory",
+          filter_dirt("?? harness/data/runs-linux/cnn_bart_s_n200_v1_X/", d) == [])
+    check("dirty: a MODIFIED committed run still is",
+          len(filter_dirt(" M harness/data/runs/x/metrics.json", d)) == 1)
+    check("dirty: an untracked file outside the runs directories still is",
+          len(filter_dirt("?? harness/scripts/new_scorer.py\n?? harness/data/datasets/x.json",
+                          d)) == 2)
+    check("dirty: a modified script beside an untracked run is still dirty",
+          filter_dirt("?? harness/data/runs/r/\n M harness/scripts/_common.py", d)
+          == [" M harness/scripts/_common.py"])
+    check("dirty: unknown layout ignores nothing",
+          len(filter_dirt("?? harness/data/runs/r/", None)) == 1)
+
+
+def test_fingerprint_records_what_was_loaded() -> None:
+    """The loaded model's commit and dtype reach the fingerprint, and a label that was
+    not applied is flagged. `bart_s` ran at fp16 under `precision: fp32` and its run
+    could not show it; five checkpoints recorded `revision: null`."""
+    sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
+    from hf_identity import hf_model_fingerprint, loaded_identity
+
+    class _P:
+        dtype = "torch.float16"
+
+    class _Cfg:
+        _commit_hash = "a" * 40
+
+    class _Model:
+        config = _Cfg()
+
+        def parameters(self):
+            yield _P()
+
+    class _Pipe:                      # a transformers pipeline: .model + .tokenizer
+        tokenizer = object()
+        model = _Model()
+
+    got = loaded_identity(_Pipe())
+    check("loaded identity: dtype read from the loaded model",
+          got.get("loaded_dtype") == "float16", str(got))
+    check("loaded identity: commit read from the loaded config",
+          got.get("loaded_revision") == "a" * 40, str(got))
+    fp = hf_model_fingerprint("nobody/not-in-any-cache-r6", precision="fp32",
+                              loaded_model=_Pipe())
+    check("hf fingerprint: an ambiguous cache falls back to the loaded commit",
+          fp["revision"] == "a" * 40 and fp["revision_source"] == "loaded-model", str(fp))
+    check("hf fingerprint: fp32 declared, fp16 loaded -> precision_not_applied",
+          fp.get("precision_not_applied") is True, str(fp))
+    ok = hf_model_fingerprint("nobody/not-in-any-cache-r6", precision="fp16",
+                              loaded_model=_Pipe())
+    check("hf fingerprint: a label that matches is not flagged",
+          "precision_not_applied" not in ok, str(ok))
+    bare = hf_model_fingerprint("nobody/not-in-any-cache-r6", precision="fp32")
+    check("hf fingerprint: with no loaded model nothing is invented",
+          bare["revision"] is None and bare["revision_source"] == "unavailable"
+          and "loaded_dtype" not in bare, str(bare))
+
+
 def test_a_broken_fingerprint_hook_does_not_kill_the_run() -> None:
     """Fingerprinting describes a run; it is not a precondition for one."""
     sys.path.insert(0, str(HERE))
@@ -1574,7 +1645,7 @@ def test_the_checks_can_actually_fail() -> None:
          "| **span_marker** | 0.7674 | 0.8370 |",
          "| **span_marker** | 0.9999 | 0.8370 |"),
         ("check_links.py", "a link to a file that does not exist",
-         "research/KNOWN_ISSUES.md",
+         "research/internal/KNOWN_ISSUES.md",
          "# Known issues — read before reviewing",
          "# Known issues — read before reviewing\n\n[x](./_no_such_file_.md)"),
         ("check_terminology.py", "a non-canonical experiment label",
@@ -1891,6 +1962,8 @@ def main() -> int:
         test_fingerprint_core_imports_no_ml_framework,
         test_fingerprint_reports_library_versions_without_importing_them,
         test_fingerprint_does_not_invent_a_revision,
+        test_untracked_run_output_does_not_make_the_tree_dirty,
+        test_fingerprint_records_what_was_loaded,
         test_a_broken_fingerprint_hook_does_not_kill_the_run,
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,

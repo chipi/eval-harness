@@ -21,6 +21,28 @@ WHY THE REFERENCE IS GOLD
   a silver reference with a model, because its placeholder items have no human summary to
   use. Here there is one.
 
+THE DEFAULT SLICE IS THE FIRST N ROWS, AND THEY ARE ALMOST ALL CNN
+  The test split puts CNN's articles first (1,093 of 11,490), DailyMail after. So
+  `--n 200` -- the slice every committed run measured -- is all CNN (196 with CNN's
+  dateline, 4 partner pieces CNN republished),
+  while the test split as a whole is mostly DailyMail. Measured 2026-10-14: lead-3
+  scores ROUGE-1 0.30 on that slice and about 0.40 on DailyMail articles, which is why
+  this repo's absolute ROUGE sat ~0.09 below published numbers and nobody noticed.
+
+  The default is unchanged, so the committed slice still reproduces byte for byte.
+  `--draw random --seed S` draws uniformly from the whole split instead, and
+  `--source dailymail|cnn` restricts the draw to one outlet:
+
+      python examples/summarization-cnn-dailymail/fetch.py --n 200 \
+          --draw random --seed 20261014 --source dailymail --dataset-id cnn_dailymail_dm200
+
+  A random draw reads the whole split (~115 pages) once, because a uniform sample
+  cannot be taken from a prefix. Source is inferred from the dateline: CNN articles
+  open with a parenthesised dateline ("(CNN)", or a partner's for pieces CNN
+  republished); DailyMail articles never do. Checked against the published split
+  counts: 1,093 CNN and 10,397 DailyMail. The script prints the composition so the
+  inference is visible, not assumed.
+
 NOTHING IS COMMITTED
   The fetched slice is gitignored. Redistributing a third-party corpus is a licence
   question nobody should inherit by cloning a repo, so each example downloads its own.
@@ -30,7 +52,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
+import re
+import shutil
 import sys
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -47,28 +73,66 @@ CONFIG = "1.0.0"
 PAGE = 100
 
 
-def fetch_rows(n: int, split: str) -> list[dict]:
-    """`n` rows from the datasets-server, paged."""
-    rows: list[dict] = []
-    while len(rows) < n:
-        want = min(PAGE, n - len(rows))
-        query = urllib.parse.urlencode(
-            {"dataset": DATASET, "config": CONFIG, "split": split,
-             "offset": len(rows), "length": want}
-        )
+def _page(split: str, offset: int, length: int) -> list[dict]:
+    """One page of rows. Retried: the datasets-server returns transient 502s."""
+    query = urllib.parse.urlencode(
+        {"dataset": DATASET, "config": CONFIG, "split": split,
+         "offset": offset, "length": length}
+    )
+    last: Exception | None = None
+    for attempt in range(6):
         try:
             with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
-                payload = json.loads(resp.read())
-        except Exception as exc:  # noqa: BLE001 - one message, not a traceback
-            sys.exit(
-                f"could not reach the datasets-server: {type(exc).__name__}: {exc}\n"
-                "  it is an HTTPS API; check connectivity, then retry."
-            )
-        page = payload.get("rows") or []
+                return [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
+        except Exception as exc:  # noqa: BLE001 - retried, then one message
+            last = exc
+            time.sleep(2 * (attempt + 1))
+    sys.exit(
+        f"could not reach the datasets-server: {type(last).__name__}: {last}\n"
+        "  it is an HTTPS API; check connectivity, then retry."
+    )
+
+
+def fetch_rows(n: int, split: str) -> list[dict]:
+    """The first `n` rows of the split, paged."""
+    rows: list[dict] = []
+    while len(rows) < n:
+        page = _page(split, len(rows), min(PAGE, n - len(rows)))
         if not page:
             break  # the split ran out before n — say so below rather than loop forever
-        rows.extend(r["row"] for r in page)
+        rows.extend(page)
     return rows[:n]
+
+
+def source_of(row: dict) -> str:
+    """'cnn' or 'dailymail', from the dateline. The dataset has no source field.
+
+    CNN's articles carry "(CNN)" in their dateline ("Washington (CNN) --"); partner pieces
+    CNN republished open with the partner's instead -- "(The Hollywood Reporter)",
+    "(Billboard)". DailyMail articles do neither. The first version tested for "(CNN)" alone and counted
+    1,067 CNN rows against the published 1,093, putting CNN's partner pieces into the
+    DailyMail pool; three landed in the first draw of the DailyMail slice.
+    """
+    a = row["article"]
+    return ("cnn" if "(CNN)" in a[:300] or re.match(r"\s*\([^)]{2,40}\)", a)
+            else "dailymail")
+
+
+def fetch_random(n: int, split: str, seed: int, source: str) -> list[dict]:
+    """`n` rows drawn uniformly (seeded) from the whole split, optionally one outlet."""
+    rows: list[dict] = []
+    while True:
+        page = _page(split, len(rows), PAGE)
+        if not page:
+            break
+        rows.extend(page)
+    by = {"cnn": 0, "dailymail": 0}
+    for r in rows:
+        by[source_of(r)] += 1
+    print(f"  split {split}: {len(rows)} rows — {by['cnn']} CNN, {by['dailymail']} DailyMail")
+    pool = [r for r in rows if source in ("any", source_of(r))]
+    pick = sorted(random.Random(seed).sample(range(len(pool)), min(n, len(pool))))
+    return [pool[i] for i in pick]
 
 
 def main() -> int:
@@ -77,6 +141,12 @@ def main() -> int:
     ap.add_argument("--split", default="test", help="dataset split (default: test)")
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: cnn_dailymail_<n>)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
+    ap.add_argument("--draw", choices=("head", "random"), default="head",
+                    help="head = the first n rows (default; the committed slice); "
+                         "random = a seeded uniform draw from the whole split")
+    ap.add_argument("--seed", type=int, default=20261014, help="seed for --draw random")
+    ap.add_argument("--source", choices=("any", "cnn", "dailymail"), default="any",
+                    help="restrict --draw random to one outlet")
     args = ap.parse_args()
 
     dataset_id = args.dataset_id or f"cnn_dailymail_{args.n}"
@@ -87,12 +157,24 @@ def main() -> int:
         print(f"{sources} already exists — pass --force to refetch")
         return 0
 
-    rows = fetch_rows(args.n, args.split)
+    if args.draw == "head" and args.source != "any":
+        sys.exit("--source needs --draw random: the first n rows are whatever the split "
+                 "starts with")
+    rows = (fetch_rows(args.n, args.split) if args.draw == "head"
+            else fetch_random(args.n, args.split, args.seed, args.source))
+    cnn = sum(source_of(r) == "cnn" for r in rows)
+    print(f"  slice: {cnn} CNN, {len(rows) - cnn} DailyMail")
     if len(rows) < args.n:
         print(f"  NOTE: asked for {args.n}, the split gave {len(rows)}")
     if not rows:
         sys.exit("no rows returned — nothing written")
 
+    # --force REPLACES the slice. It used to write into the existing directories, so a
+    # redraw left the previous draw's files beside the new ones (584 files after three
+    # draws of 200) and `dataset-create` would have frozen all of them.
+    for d in (sources, golds):
+        if d.exists():
+            shutil.rmtree(d)
     sources.mkdir(parents=True, exist_ok=True)
     golds.mkdir(parents=True, exist_ok=True)
     for row in rows:

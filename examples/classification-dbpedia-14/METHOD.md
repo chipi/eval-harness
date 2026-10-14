@@ -50,7 +50,7 @@ was a reported gap rather than a footnote:
 ships a pickle checkpoint, which `transformers` refuses below torch 2.6
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and x86_64 macOS has
 no torch above 2.2.2 — see
-[`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
+[`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/internal/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
 absence is precisely why the NER example was built with a *matched pair* of local arms.
 **It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, tied with
 the top group (p = 0.62 against the leader), label order confirmed by a diagonal confusion

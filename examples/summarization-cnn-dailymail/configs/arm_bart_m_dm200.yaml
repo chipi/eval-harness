@@ -1,0 +1,25 @@
+# cnn_bart_m on the DAILYMAIL slice — identical to arm_bart_m_n200.yaml except the dataset.
+#
+# WHY: the committed cnn_dailymail_200 slice is the first 200 rows of the test split,
+# which are all CNN (196 with CNN's dateline, 4 partner pieces); the split is ~91%
+# DailyMail. This slice is 200
+# DailyMail articles drawn at random (seed 20261014) from the same test split, so the
+# question "do the summarisation conclusions hold outside CNN?" has data. Same params,
+# same prompt, same scorer; read alongside, never pooled with, the CNN slice. Full
+# rationale: examples/summarization-cnn-dailymail/fetch.py and REPORT_SUMMARIZATION.md.
+config_id: cnn_bart_m_dm200_v1
+dataset_id: cnn_dailymail_dm200
+adapter: ../adapter.py
+params:
+  provider: hf_local
+  model: sshleifer/distilbart-cnn-12-6
+  family: bart
+  price_tier: free
+  device: cpu
+  precision: fp32
+  max_length: 142
+  min_length: 56
+  num_beams: 4
+  length_penalty: 2.0
+  no_repeat_ngram_size: 3
+  early_stopping: true

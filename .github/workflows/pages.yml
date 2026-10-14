@@ -1,0 +1,65 @@
+# Publish the public site to GitHub Pages:
+#
+#   /        site/public      the findings site, generated from the runs by `make site`
+#   /docs/   mkdocs.yml       the documentation (docs/ + harness/docs/), built here
+#
+# The findings site is built and committed, and `make ci` fails if it is stale, so this
+# workflow only copies it; no corpora, weights or API keys are needed. The docs are built
+# here in strict mode, so a broken link fails the deploy instead of shipping.
+#
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions".
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/**"
+      - "harness/docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: site/requirements-docs.txt
+      - name: Build the documentation
+        run: |
+          pip install -r site/requirements-docs.txt
+          mkdocs build --strict
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp -r site/public/. _site/
+          cp -r build/docs-site _site/docs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

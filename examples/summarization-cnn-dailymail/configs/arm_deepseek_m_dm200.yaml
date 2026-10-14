@@ -1,0 +1,24 @@
+# cnn_deepseek_m on the DAILYMAIL slice — identical to arm_deepseek_m_n200.yaml except the dataset.
+#
+# WHY: the committed cnn_dailymail_200 slice is the first 200 rows of the test split,
+# which are all CNN (196 with CNN's dateline, 4 partner pieces); the split is ~91%
+# DailyMail. This slice is 200
+# DailyMail articles drawn at random (seed 20261014) from the same test split, so the
+# question "do the summarisation conclusions hold outside CNN?" has data. Same params,
+# same prompt, same scorer; read alongside, never pooled with, the CNN slice. Full
+# rationale: examples/summarization-cnn-dailymail/fetch.py and REPORT_SUMMARIZATION.md.
+config_id: cnn_deepseek_m_dm200_v1
+dataset_id: cnn_dailymail_dm200
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-deepseek-41flash
+  family: deepseek
+  price_tier: mid
+  temperature: 0.0
+  prompt_file: prompt.txt
+  reasoning:
+    enabled: false
+  max_tokens: 1200
+  usd_per_mtok_in: 0.15
+  usd_per_mtok_out: 0.5

@@ -25,7 +25,11 @@ not itself in question.
   can make claims the others qualify.
 - **Apache-2.0.** The cleanest licence of the five corpora here.
 - **It is the standard.** Nearly every summarisation paper reports on it, so an absolute
-  number here is checkable against the literature.
+  number here is checkable against the literature — on the protocol the literature uses.
+  The committed 200-article slice is not that protocol: it is the first 200 test rows,
+  all of them CNN's, and CNN articles score ~11 ROUGE-1 below DailyMail ones. The check
+  itself is `calibrate.py`: LEAD-3 on the full 11,490-article test set, ROUGE-1 39.94
+  against a published 40.34 (`docs/evidence/calibration/summarization.json`).
 
 **What it gives up:** CNN/DailyMail is famously *extractive-biased* — the highlights often
 reuse article sentences nearly verbatim. A model that copies scores well. That is why
@@ -46,7 +50,7 @@ reuse article sentences nearly verbatim. A model that copies scores well. That i
 `transformers` refuses to `torch.load` below torch 2.6
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and there is no
 Intel-Mac torch wheel above 2.2.2 — see
-[`HANDOVER_ML_ARMS.md`](../../research/HANDOVER_ML_ARMS.md). They ran on Linux with torch
+[`HANDOVER_ML_ARMS.md`](../../research/internal/HANDOVER_ML_ARMS.md). They ran on Linux with torch
 2.14.0 on 2026-09-30, configs unchanged.
 
 ## Why these success criteria

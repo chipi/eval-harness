@@ -6,7 +6,7 @@ from 8 vendors, on three axes at once: **quality, cost and wall-clock speed**.
 It is a worked example for [`../../harness`](../../harness), and it is also a record
 of what a small eval can and cannot tell you. Most of what is interesting here was found
 by *disbelieving the first answer*: several headline findings in
-[`../EVAL_NOTES.md`](../../research/NOTES.md) were retracted after the numbers were checked
+[`research/NOTES.md`](../../research/internal/NOTES.md) were retracted after the numbers were checked
 properly, including one caused by a one-line bug in this example's own scorer.
 
 ---
@@ -31,6 +31,20 @@ option among the usual summarisation benchmarks — and it is the most-cited bas
 published ROUGE numbers exist to sanity-check ours against. That is the point of using a
 standard set rather than inventing data: somebody else's baseline is a check on your
 instrument.
+
+**Which articles.** `--n` takes the *first* n rows of the test split, and the split is
+CNN-first, so `cnn_dailymail_200` is **all CNN** (196 with CNN's dateline, 4 partner pieces) while the split is
+91% DailyMail. Every committed summarisation result is therefore about CNN-style news. The
+sanity check above was finally run on 2026-10-14 and is what showed it: LEAD-3 scores
+ROUGE-1 39.94 on the full test set (published 40.34) but 30.20 on the CNN slice
+(`calibrate.py`, `docs/evidence/calibration/summarization.json`). For a sample of the
+whole benchmark, draw at random:
+
+```bash
+uv run fetch.py --n 200 --draw random --seed 20261014                    # both outlets
+uv run fetch.py --n 200 --draw random --seed 20261014 --source dailymail \
+    --dataset-id cnn_dailymail_dm200                                     # the DailyMail slice
+```
 
 **Why the references are gold.** `highlights` are written by the journalists who filed
 the article. Human-authored, so `references/gold/`. Most evals never get this, which is
@@ -125,70 +139,58 @@ deliberately:
 - **`concision`** — precision over the whole output. Padding is punished here exactly as
   raw recall rewards it.
 
-ρ(coverage, concision) = **+0.25** — related but far from the same ordering, which is the
-point of carrying both. Which one you want is a product decision the eval refuses to make
-for you. `PRIMARY_METRIC = "coverage"`; pass `--sort concision` for the other view.
+ρ(coverage, concision) = **+0.36** (+0.25 at n=20) — related but far from the same
+ordering, which is the point of carrying both. Which one you want is a product decision the
+eval refuses to make for you. `PRIMARY_METRIC = "coverage"`; pass `--sort concision` for the
+other view.
 
-**Neither is length-neutral, and `coverage` is not the length-controlled one.** ρ(words,
-coverage) = +0.28 against ρ(words, rougeLsum) = −0.30: the same magnitude, opposite sign.
-Worse, the clip only binds above the reference length — **205 of 1440 outputs (14%) are
-shorter than the reference and are never clipped at all**, up to 37% for one arm. So
-"judged on the same budget" holds for the verbose arms and not for the terse ones.
-Coverage earns its place by being the interpretable question ("did the summary carry the
-story"), not by being bias-free.
+**Neither is length-neutral, though `coverage` comes closest.** At n=200, ρ(words,
+coverage) = +0.07 against ρ(words, rougeLsum) = −0.31 and ρ(words, concision) = −0.84. The
+clip only binds above the reference length — **577 of 4,800 outputs (12.0%) are shorter
+than the reference and are never clipped at all** — so "judged on the same budget" holds
+for the verbose arms and not for the terse ones. Coverage earns its place by being the
+interpretable question ("did the summary carry the story"), not by being bias-free.
 
 `grounding` (share of summary bigrams present in the article) rides along as a third
 facet: high means extractive and safe, low means abstractive — which is either a good
 paraphrase or a fabrication, and this cannot tell them apart. Read it beside ROUGE, never
-instead of it. It is not length-neutral either (ρ = +0.25), and the output says so.
+instead of it. It is not length-neutral either (ρ = +0.12).
 
 **Format compliance is computed, not eyeballed** — `fmt_narration`, `fmt_label`,
 `fmt_markdown`, `fmt_bullets`, `fmt_paragraphs`, `fmt_overlong`, on every output. This
-exists because five outputs were once read by hand and 1440 declared clean; computing it
-over all of them finds **77 of 1440** hit at least one flag — including four where a model
-wrote its reasoning out in the open and scored 0.10 for it.
+exists because five outputs were once read by hand and declared clean; computing it over
+all of them finds **262 of 4,800 (5.5%)** hit at least one flag — including outputs where a
+model wrote its reasoning out in the open.
 
-## What 20 articles actually showed
+## What 200 articles showed
 
-- **Which article you drew matters ~28× more than which model wrote the summary.** Of the
-  variance in `coverage`, **73% is between articles and 2.6% between arms.** This is why
-  the comparison is paired — ranking arms *within* each article removes the article term,
-  though ~24% of interaction and repeat variance remains after it.
-- **Temperature 0 is not deterministic.** Only **9.8%** of outputs were byte-identical
-  across three repeats; **12 of 24 arms produced zero identical outputs**. `REPEAT=3` is
-  not caution here, it is the minimum.
-- **Price buys very little on this task.** At n=200 the dearest arm (`anthropic_l`,
-  **$1.9652** billed) costs **143×** the cheapest paid arm (`deepseek_s`, $0.0137) and
-  ranks **16th of 26** on coverage. The Pareto frontier keeps **8 of 24** hosted arms;
-  the other 16 are beaten on quality *and* cost *and* speed simultaneously.
+All on the committed slice — which is **CNN's articles only** (see *Get the data*). A
+DailyMail slice (`cnn_dailymail_dm200`) re-ran the five local arms: every comparison
+among them held, the XSum control is still last, and the hosted arms were not re-run
+([report §3.7](../../research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 
-  > Three rounds of review have each moved a number in this bullet. It first read
-  > *"202× the cheapest, ranks 9th of 24, frontier keeps 10 of 24"* — all n=20 pilot
-  > figures. Round 2 corrected the frontier to 7 of 24 on price-table costs; round 3
-  > pointed out the cost axis should be the bill, which makes it **8 of 24**
-  > (`gemma_m` and `deepseek_s` join, `mistral_s` leaves). The price ratio and the rank
-  > are recomputed here from the bill and the full 26-arm field.
+- **Which article you drew matters ~68× more than which model wrote the summary.** Of the
+  variance in `coverage`, **67.8% is between articles and 1.0% between arms.** This is why
+  the comparison is paired — ranking arms *within* each article removes the article term.
+- **Temperature 0 is not deterministic.** In the earlier three-repeat sweep (n=20), only
+  **9.8%** of outputs were byte-identical across repeats and **12 of 24 arms produced zero
+  identical outputs**.
+- **Price buys very little on this task.** The dearest arm (`anthropic_l`, **$1.9652**
+  billed) costs **143×** the cheapest paid arm (`deepseek_s`, $0.0137) and ranks **18th of
+  29** on coverage (15th of the 24 hosted). The Pareto frontier keeps **8 of 24** hosted
+  arms; the other 16 are beaten on quality *and* cost *and* speed simultaneously. (The n=20
+  pilot's figures for this bullet were wrong in three ways; the report's §6 lists them.)
 - **A model-authored reference is biased, not just noisy.** See below.
 
-The leaderboard says all of this itself, and refuses to present an ordering its own data
-cannot support:
+**Few specific comparisons survive.** At n=200, **34 of 276** hosted pairs separate on
+`coverage` after correcting for 276 comparisons (1 of 276 at n=20). The top six cannot be
+told apart, and a leaderboard that printed a confident 1-to-24 ordering from this data
+would be overstating it.
 
-```
-IS THE ORDERING REAL?   metric=coverage  k=24 arms  N=20 items
-  global test (permutation on within-item ranks): p = 0.0054 -> an arm effect exists
-  Nemenyi critical difference = 8.13 rank positions; observed span = 8.57
-  pairs distinguishable: 1 of 276
-```
-
-One pair out of 276 — `deepseek_s` over `qwen_m`. An effect exists; almost no *specific*
-claim about which model beats which survives accounting for 276 comparisons. A leaderboard
-that printed a confident 1-to-24 ordering from this data would be lying, and most do.
-
-**`concision` separates 33 pairs, and that is mostly not what it looks like.** Of those 33,
-**27 are pairs that output length alone also separates, with the shorter arm winning, and
-0 go the other way.** Concision is precision, ρ(words) = −0.73, so it is largely detecting
-*writes short* rather than *writes well*. A facet that resolves many pairs is not thereby
-the more informative one, and this is the example's own instrument teaching that.
+**Beware the metric that separates most.** Ranked by pairs distinguished —
+`summary_words` 208, `grounding` 172, `concision` 146, `rouge1` 97, `rougeLsum` 95,
+`coverage` 34 — the order is almost exactly how much each measure depends on output
+length. A facet that resolves many pairs is not thereby the more informative one.
 
 ## Can you trust a model-written reference?
 
@@ -247,7 +249,7 @@ exists, so you cannot check which author you got.
 
 - **200 articles, not 20.** This section said "everything above rests on a 20-article
   sample" long after the n=200 sweep replaced it. The dev slice is 20; every number
-  above is n=200.
+  above is n=200 unless it says n=20.
 - **One reference per article.** ROUGE against a single human summary is a weak proxy; two
   valid summaries can share few n-grams.
 - **`grounding` is ours**, ~20 lines, not a standard metric and not comparable to any
