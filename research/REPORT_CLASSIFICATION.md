@@ -4,7 +4,7 @@
 **Protocol** test splits, 200 of 7,600 and 280 of 70,000 · accuracy, the standard metric · calibration: the fine-tunes on the full test set match their model cards (0.9338 / 0.9514 / 0.9375; DBpedia 0.9879 vs 0.9903) — [docs/PROTOCOL.md](../docs/PROTOCOL.md#classification--ag-news)
 **Arms** 24 hosted models (8 vendors × 3 price tiers), plus fine-tuned classifiers (three on AG News, one on DBpedia), a zero-shot NLI model, ~20 regex rules and a constant
 **Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.49 and $1.00 by the price table — see Correction)
-**Date** 2026-09-28; the three bert-base arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 47–50, 59
+**Date** 2026-09-28; the three bert-base arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md) entries 47–50, 59
 
 > **Updated 2026-09-30 with the three fine-tuned arms that could not run on the original
 > machine** (`ag_bert_base_ta`, `ag_bert_base_fy`, `db_bert_base_fy` — pickle checkpoints,
@@ -415,7 +415,7 @@ trained on *your* labels, reproducing your conventions is the whole point, so th
 production advice stands. As a claim that a 44 MB model understands news better than a
 frontier LLM, it does not.
 
-This is the in-distribution caveat [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](HANDOVER_CLASSIFICATION_AG_NEWS.md)
+This is the in-distribution caveat [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](internal/HANDOVER_CLASSIFICATION_AG_NEWS.md)
 was corrected to state, now with a number on it. `bert_mini` alone could not show it
 clearly — it was one arm; three independent fine-tunes agreeing with the gold where 24
 LLMs agree with each other is a pattern.
@@ -569,8 +569,8 @@ the same way — which, for a model trained on your own labels, is your data.
 **The AG News result was published before the label-noise diagnostic existed.** Its
 handover reported 0.9450 with an in-distribution caveat and no mention of label noise.
 The ranking stands; the interpretation was corrected in place with the old reading named
-rather than replaced. See [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](HANDOVER_CLASSIFICATION_AG_NEWS.md)
-and [`NOTES.md`](NOTES.md) entry 48.
+rather than replaced. See [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](internal/HANDOVER_CLASSIFICATION_AG_NEWS.md)
+and [`NOTES.md`](internal/NOTES.md) entry 48.
 
 **`parser_sha256` was described as unexercised machinery** in the first classification
 commit, when 3 of 24 arms had been tried. It is worth 8.6 points to one arm. Entry 47.
@@ -615,7 +615,7 @@ $PY scripts/holdout_significance.py --dataset-id ag_news_200 --exclude-dataset a
 The three bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves 2.14 everywhere
 except x86_64 macOS). Their checkpoints ship only a pickle on `main`; each also has a
 safetensors conversion PR on the Hub (`refs/pr/1`), which loads on torch 2.2.2 and gives
-byte-identical outputs on every item for all three (`docs/evidence/conversion_pr_check.py`) — see [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+byte-identical outputs on every item for all three (`docs/evidence/conversion_pr_check.py`) — see [`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md).
 
 The `ag_news_200` and `dbpedia_280` runs are committed (metrics, predictions and
 outputs, since 2026-09-29), so these commands run against the same bytes the report was

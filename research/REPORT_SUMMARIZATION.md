@@ -4,7 +4,7 @@
 **Arms** 24 hosted models, 8 vendors, 3 price tiers each
 **Protocol** test split, first 200 rows (all CNN) · metric `coverage` is ours; ROUGE-1/2/L F1 reported beside it · calibration: LEAD-3 on the full test set, ROUGE-1 39.94 vs 40.34 published — [docs/PROTOCOL.md](../docs/PROTOCOL.md#summarisation--cnndailymail)
 **Design** 1 pass per arm · 4,800 calls · **$5.74 billed** ($4.93 by the price table — see Correction) · identical prompt, temperature 0, reasoning off
-**Date** 2026-09-26; three local BART arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 56, 59
+**Date** 2026-09-26; three local BART arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md) entries 56, 59
 
 > **Scope correction, 2026-10-14 — read this first.** Every result in this report was
 > measured on the first 200 rows of the CNN/DailyMail test split, and the split puts CNN's
@@ -766,7 +766,7 @@ a safetensors conversion PR on the Hub (distilbart-cnn-12-6 `refs/pr/29`, -6-6 `
 bart-large-xsum `refs/pr/9`). On torch 2.2.2 the `bart_m` and `bart_l_xsum` PRs reproduce the
 recorded outputs on 20 of 20 items checked; the `bart_s` PR does not run, because it is
 fp16 and torch 2.2.2 has no fp16 LayerNorm on CPU (`docs/evidence/conversion_pr_check.py`) — see
-[`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+[`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md).
 
 No `rescore` step is needed here. It was, for the n=20 sweep: scores were written rounded
 to 6 decimals, which cannot tell a genuine tie from a rounding artifact, and the tie

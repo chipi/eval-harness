@@ -136,7 +136,7 @@ varying.** Every example produced a tie group spanning a large price range:
 | SciFact | 12 arms, **2 of them free** | 7.6× billed, among cheap arms |
 
 And every example found something wrong with the instrument before it found anything about
-the models. The append-only journal, [`../research/NOTES.md`](../research/NOTES.md), is the
+the models. The append-only journal, [`../research/NOTES.md`](../research/internal/NOTES.md), is the
 record of that — including the retractions.
 
 ---

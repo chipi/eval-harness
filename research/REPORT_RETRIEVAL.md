@@ -4,7 +4,7 @@
 **Protocol** 200 of 300 test queries, seeded, full corpus · nDCG@10, the BEIR standard · calibration: BM25 on all 300 queries, 0.6523 vs BEIR's 0.665 — [docs/PROTOCOL.md](../docs/PROTOCOL.md#retrieval--scifact)
 **Arms** BM25 · 4 sentence-transformer bi-encoders · 12 hosted LLMs reranking BM25's top-20 · 2 floors
 **Design** 1 pass per arm · temperature 0, reasoning off, `max_tokens` 700 · rerank depth 20 · **$1.94 billed**
-**Date** 2026-09-29 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
+**Date** 2026-09-29 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md)
 **Costs** are what the provider billed (`usage.cost`), not this repo's price table — see §7
 
 > **The fourth metric shape, and the first where POSITION carries meaning.** Summarisation
@@ -452,7 +452,7 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
   "everything under $0.60/Mtok input", price-ordered and declared before any result was
   read. **So this report says nothing about whether a frontier model is a better
   reranker**, and the top tie (12–13 arms) is a tie among cheap models plus two free ones. See
-  [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
+  [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers
   that charge differently. Measured across all four examples the table was wrong **per arm

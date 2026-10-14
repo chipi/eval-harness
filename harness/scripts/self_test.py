@@ -1645,7 +1645,7 @@ def test_the_checks_can_actually_fail() -> None:
          "| **span_marker** | 0.7674 | 0.8370 |",
          "| **span_marker** | 0.9999 | 0.8370 |"),
         ("check_links.py", "a link to a file that does not exist",
-         "research/KNOWN_ISSUES.md",
+         "research/internal/KNOWN_ISSUES.md",
          "# Known issues — read before reviewing",
          "# Known issues — read before reviewing\n\n[x](./_no_such_file_.md)"),
         ("check_terminology.py", "a non-canonical experiment label",

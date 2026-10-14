@@ -48,7 +48,7 @@ local = [
     "transformers>=4.40,<4.56",
     #
     # A NOTE ON WHAT THIS CAP DOES NOT BUY, because an earlier version of this comment
-    # claimed it did. `research/HANDOVER.md` records the pickle restriction as arriving in
+    # claimed it did. `research/internal/HANDOVER.md` records the pickle restriction as arriving in
     # transformers 4.56; it is present in 4.55.4, and pinning below 4.56 does NOT unblock
     # .bin-only checkpoints:
     #

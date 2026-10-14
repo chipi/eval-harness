@@ -2,7 +2,7 @@
 
 **Status** 19 of 24 standard arms measured. Five were never run, by decision, not failure.
 **Date** 2026-09-29 · **Branch** `retrieval-scifact`
-**Report** [`REPORT_RETRIEVAL.md`](REPORT_RETRIEVAL.md) — every "of 18" in it is a family
+**Report** [`REPORT_RETRIEVAL.md`](../REPORT_RETRIEVAL.md) — every "of 18" in it is a family
 of 18, not 23, because of this.
 
 ---

@@ -96,7 +96,7 @@ than one that is merely wrong.
 | metric | kind | what it is |
 |---|---|---|
 | `cost_usd` | descriptive | **What the provider billed** (`usage.cost`), not a price table. See [REPORT_RETRIEVAL §7](../research/REPORT_RETRIEVAL.md) for why that distinction cost four reports a correction. |
-| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see `harness/data/runs-linux/`. |
+| `latency_ms` | descriptive | Per item, **excluding** warm-up. Index builds and model loads are reported separately as `warmup_ms`. A local arm's first one to three items still pay a one-off initialisation cost the load does not cover, so prefer the median for local arms ([`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). Figures from different machines are not comparable: see `harness/data/runs-linux/`. |
 | `truncated` | descriptive | The provider stopped at `max_tokens`. Distinguishes "the model is bad" from "the budget was too small". |
 | `reasoning_tokens` | descriptive | Tokens spent on hidden reasoning. All examples run `reasoning: {enabled: false}`; this verifies it took. |
 
@@ -181,7 +181,7 @@ Every one is loaded from [HuggingFace](https://huggingface.co/). For the first t
 commit SHA and `model.safetensors` byte size are recorded in the run fingerprint, so a
 silent upstream change is detectable. **For five of the last six they are not** (all but
 `bert_base_ta`): their runs record `revision: null` and no weight files (two snapshots in the cache — see
-[`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)), so the revisions below were read from
+[`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)), so the revisions below were read from
 the cache by hand and are a record, not a fingerprint.
 
 | arm | model | size | revision | what it is |
@@ -207,7 +207,7 @@ ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` belo
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)); x86_64 macOS has no
 torch above 2.2.2. The revisions above are the `main` commits the runs loaded — read from
 the local cache, because these runs' fingerprints record `revision: null` (see
-[`KNOWN_ISSUES.md`](../research/KNOWN_ISSUES.md)). **Each also has a safetensors conversion
+[`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)). **Each also has a safetensors conversion
 PR on the Hub** — `refs/pr/29` (12-6), `refs/pr/2` (6-6), `refs/pr/9` (xsum) and `refs/pr/1`
 for the three BERTs. On torch 2.2.2, through each arm's own adapter
 ([`evidence/conversion_pr_check.py`](evidence/conversion_pr_check.py), results in
@@ -279,7 +279,7 @@ values — and permutation assumes only exchangeability under the null.
 - [BEIR](https://arxiv.org/abs/2104.08663) — the benchmark design this repo's retrieval example borrows from
 - [HELM](https://crfm.stanford.edu/helm/) — multi-metric, multi-scenario LLM evaluation at scale
 - [*A Careful Examination of Large Language Model Performance on Grade School Arithmetic*](https://arxiv.org/abs/2405.00332) — builds a fresh GSM8k-equivalent to measure how much of a benchmark score is overfitting to the benchmark. The reason this repo freezes slices and records `items_sha256`
-- [`../research/NOTES.md`](../research/NOTES.md) — this repo's own append-only journal, including every retraction
+- [`../research/NOTES.md`](../research/internal/NOTES.md) — this repo's own append-only journal, including every retraction
 
 ---
 

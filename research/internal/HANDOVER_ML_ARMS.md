@@ -18,7 +18,7 @@
 State as of 2026-09-26. Facts, numbers and locations. This covers the session that added
 the first non-LLM arms to the summarisation example; the 24-arm LLM study it extends is in
 [`HANDOVER.md`](HANDOVER.md), with reasoning in [`NOTES.md`](NOTES.md) and results in
-[`REPORT_SUMMARIZATION.md`](REPORT_SUMMARIZATION.md).
+[`REPORT_SUMMARIZATION.md`](../REPORT_SUMMARIZATION.md).
 
 ## Repo state
 
@@ -169,7 +169,7 @@ items of `cnn_deepseek_m_n200_v1` reproduces the stored metrics exactly, max abs
 ship `pytorch_model.bin` without safetensors; `transformers` refuses `torch.load` below
 torch 2.6 (CVE-2025-32434); torch has no Intel-Mac wheel above 2.2.2.
 
-Procedure for a machine that can: [`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md).
+Procedure for a machine that can: [`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md).
 No code changes are needed there — the lock resolves torch 2.14.0 for every platform except
 x86_64 macOS, by marker.
 

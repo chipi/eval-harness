@@ -6,11 +6,11 @@
 
 **Scope: the summarisation example only.** Four more experiments landed after this was
 written — classification (AG News, DBpedia), NER (Few-NERD) and retrieval (SciFact).
-For the whole repo start at [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md); each experiment
+For the whole repo start at [`REPORT_SYNTHESIS.md`](../REPORT_SYNTHESIS.md); each experiment
 has its own `REPORT_*.md` and `examples/*/METHOD.md`.
 
 Facts and locations only; reasoning is in [`NOTES.md`](NOTES.md), results in
-[`REPORT_SUMMARIZATION.md`](REPORT_SUMMARIZATION.md), forward plan in
+[`REPORT_SUMMARIZATION.md`](../REPORT_SUMMARIZATION.md), forward plan in
 [`PLAN.md`](PLAN.md), open items in [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
 ## Repo state

@@ -10,7 +10,7 @@
 > that looks like a paradox: `bert_mini`'s separation count *fell*, 18 of 27 → 16 of 29,
 > because two more arms tightened every Holm threshold. And together the three fine-tunes
 > made the label-noise effect measurable: their lead sits almost entirely in 17 items the
-> hosted field disputes. See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.1,
+> hosted field disputes. See [`REPORT_CLASSIFICATION.md`](../REPORT_CLASSIFICATION.md) §3.1,
 > §3.4. The n=20 dev configs were not run — no dev-slice run exists for any other arm to
 > compare with. The rest of this file is as of 2026-09-27.
 
@@ -29,7 +29,7 @@ pickle below torch 2.6 (CVE-2025-32434), and PyTorch publishes no Intel-Mac whee
 
 Identical to the summarisation example's distilbart situation. The procedure, the machine
 requirements and the corpus-integrity check are all in
-[`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md)
+[`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md)
 — read it, then substitute the commands below.
 
 **Nothing in the adapter or the configs needs changing.** The example's `uv.lock` resolves

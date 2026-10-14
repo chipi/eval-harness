@@ -50,7 +50,7 @@ reuse article sentences nearly verbatim. A model that copies scores well. That i
 `transformers` refuses to `torch.load` below torch 2.6
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and there is no
 Intel-Mac torch wheel above 2.2.2 — see
-[`HANDOVER_ML_ARMS.md`](../../research/HANDOVER_ML_ARMS.md). They ran on Linux with torch
+[`HANDOVER_ML_ARMS.md`](../../research/internal/HANDOVER_ML_ARMS.md). They ran on Linux with torch
 2.14.0 on 2026-09-30, configs unchanged.
 
 ## Why these success criteria

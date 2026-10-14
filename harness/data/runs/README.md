@@ -47,7 +47,7 @@ metrics at the stored precision.
 **Cost, both readings.** 8.3 MB as content; 128 MB as disk, since 32,710 files of a few
 hundred bytes each sit in 4 KB blocks. A whole clone is 30 MB downloaded, 228 MB on disk.
 One `outputs.jsonl` per run would make that ~47 MB and 143 files, and is the better
-layout — open, and recorded in `research/KNOWN_ISSUES.md`.
+layout — open, and recorded in `research/internal/KNOWN_ISSUES.md`.
 
 **Checked before committing: `predictions.jsonl` carries no article text.** `_meta` holds
 provider metadata, a predicted label, a list of document ids, or Few-NERD entity spans

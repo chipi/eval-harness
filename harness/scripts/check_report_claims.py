@@ -988,7 +988,7 @@ else:
               f"{_n_bart[0]} of {_n_bart[0]} items" in _summ,
               f"the capture checked {_n_bart[0]} items per BART arm")
     # The torch version the whole story rests on.
-    _ki = (ROOT / "research" / "KNOWN_ISSUES.md").read_text()
+    _ki = (ROOT / "research" / "internal" / "KNOWN_ISSUES.md").read_text()
     _tv = str(_cpr.get("torch", "")).split("+")[0]
     check(f"conversion PRs: the capture ran on torch {_tv}, as the reports say",
           _tv and f"torch {_tv}" in _ki,

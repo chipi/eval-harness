@@ -597,7 +597,7 @@ runs were never committed — so ρ cannot be extended to the new arms, and the 
 DBpedia values cannot be re-derived from this repository. Recomputing the dev ranking from
 the dev items inside the committed full runs gives 0.677 and 0.757 instead, with a 10- to
 13-way tie at the top of the dev slice; see
-[`KNOWN_ISSUES.md`](KNOWN_ISSUES.md). The last two columns are from committed runs.*
+[`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md). The last two columns are from committed runs.*
 
 **ρ between 0.72 and 0.90 in every case — and the pilot picked the wrong winner in three of
 five.** On SciFact it picked the tenth-best of nineteen.
@@ -641,7 +641,7 @@ under-counts label errors — and a leaderboard that includes them over-counts t
 
 ### 6. The instrument was broken before the models got interesting — every time
 
-*Sources: the Corrections section of each report, and [`NOTES.md`](NOTES.md), 59 entries*
+*Sources: the Corrections section of each report, and [`NOTES.md`](internal/NOTES.md), 59 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -983,4 +983,4 @@ python scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct --mat
 
 Terms, models, datasets and tests are defined in
 [`../docs/REFERENCE.md`](../docs/REFERENCE.md). The append-only journal of how each finding
-arrived — including the ones that were retracted — is [`NOTES.md`](NOTES.md), 59 entries.
+arrived — including the ones that were retracted — is [`NOTES.md`](internal/NOTES.md), 59 entries.

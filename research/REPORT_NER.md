@@ -4,7 +4,7 @@
 **Protocol** supervised test split, 280 of 37,648 sentences, seeded · metric is ours (mean per-sentence F1, coarse types, string match); standard micro-F1 in §2 · calibration: `span_marker`, standard fine-type micro-F1, 0.7047 vs 0.7040 published — [docs/PROTOCOL.md](../docs/PROTOCOL.md#extraction--few-nerd)
 **Arms** 24 hosted models (8 vendors × 3 price tiers) · 1 fine-tuned span tagger · 1 zero-shot span tagger · 2 non-learned baselines
 **Design** 1 pass per arm · identical prompt, temperature 0, reasoning off, `max_tokens` 600 · **$2.57 billed** ($2.05 by the price table — see Correction)
-**Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md)
+**Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md)
 
 > **The third metric shape.** Summarisation compares one text to one text and scores
 > continuously. Classification compares one label to one label and scores 0 or 1.

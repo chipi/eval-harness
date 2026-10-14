@@ -19,7 +19,7 @@
 > 35-word reference (`length_vs_reference` 0.66), so its last place mixes training
 > distribution with length exactly as warned. Results:
 > [`REPORT_SUMMARIZATION.md`](../../research/REPORT_SUMMARIZATION.md). Two traps found on
-> the way are in [`KNOWN_ISSUES.md`](../../research/KNOWN_ISSUES.md): runs after the first
+> the way are in [`KNOWN_ISSUES.md`](../../research/internal/KNOWN_ISSUES.md): runs after the first
 > on a machine were marked dirty unless `EVAL_RUNS_DIR` pointed outside the tree (fixed
 > 2026-10-14), and each
 > checkpoint has a safetensors conversion PR, and two of these three (`bart_m`,

@@ -64,7 +64,7 @@ research/    reports, handovers, and an append-only journal of how each example 
 
 ## The worked examples
 
-**[`research/KNOWN_ISSUES.md`](research/KNOWN_ISSUES.md)** — what is open, what was
+**[`research/KNOWN_ISSUES.md`](research/internal/KNOWN_ISSUES.md)** — what is open, what was
 never measured, and which calls are judgement rather than oversight. Read this first if
 you are reviewing.
 
@@ -111,7 +111,7 @@ better than documentation can:
   encoders*. A prediction registered before the arm existed — that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**.
 
-`research/NOTES.md` is the append-only journal, corrections included — findings have been
+`research/internal/NOTES.md` is the append-only journal, corrections included — findings have been
 retracted along the way, several caused by bugs in this harness's own scorer. The
 retraction rate is itself a result: it measures how much of a first-pass eval is instrument
 rather than signal.

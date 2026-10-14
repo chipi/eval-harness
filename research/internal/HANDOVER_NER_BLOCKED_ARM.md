@@ -21,7 +21,7 @@ were NOT affected: `span_marker` and `openai_m` both parse identically before an
 The rest of this document is kept as the record of why it was blocked.
 **Date** 2026-09-28
 **Branch** `ner-few-nerd`
-**Report** [`REPORT_NER.md`](REPORT_NER.md) — every "of 26" in it is a family of 26, not 27,
+**Report** [`REPORT_NER.md`](../REPORT_NER.md) — every "of 26" in it is a family of 26, not 27,
 because of this.
 
 ---

@@ -132,4 +132,4 @@ run, not that the prior was interesting.
 
 Full background: [`HANDOVER_ML_ARMS.md`](HANDOVER_ML_ARMS.md) ·
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](HANDOVER_DBPEDIA_BLOCKED_ARM.md) ·
-[`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md)
+[`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md)

@@ -8,7 +8,7 @@
 > so the AG News finding does not generalise to a saturated task. Of the three items the
 > whole field disputes it gets one "right" (Dukart's Canal as `NaturalPlace`), which is the
 > ontology-quirk effect this handover predicted, not skill. Written up in
-> [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.2. The dev-slice config
+> [`REPORT_CLASSIFICATION.md`](../REPORT_CLASSIFICATION.md) §3.2. The dev-slice config
 > (`arm_bert_base_fy.yaml`, n=56) was not run: no dev-slice run exists for any other arm to
 > compare it with. The rest of this file is the state as of 2026-09-27.
 
@@ -42,7 +42,7 @@ not one unlucky checkpoint; it is the whole cohort for this dataset.
 `transformers` refuses `torch.load` below torch 2.6 (CVE-2025-32434), and PyTorch
 publishes no Intel-Mac wheel above 2.2.2, so the condition cannot be met. Machine
 requirements and the corpus-integrity check are in
-[`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md).
+[`../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md`](../../examples/summarization-cnn-dailymail/RUNNING_THE_ML_ARMS.md).
 
 Nothing in the adapter or configs needs changing: the example's `uv.lock` resolves torch
 2.14.0 for every platform except x86_64 macOS, by marker.

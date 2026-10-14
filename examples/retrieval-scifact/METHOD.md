@@ -93,7 +93,7 @@ would have cost **about $12** against this sweep's **$1.94 billed**. The consequ
 plainly in the report: the top tie (12–13 arms, the count on a Holm boundary) is a tie
 among *cheap* models, and this example
 **cannot say whether a frontier model reranks better**. See
-[`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](../../research/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
+[`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](../../research/internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 
 ## Why these success criteria
 

@@ -6,7 +6,7 @@ from 8 vendors, on three axes at once: **quality, cost and wall-clock speed**.
 It is a worked example for [`../../harness`](../../harness), and it is also a record
 of what a small eval can and cannot tell you. Most of what is interesting here was found
 by *disbelieving the first answer*: several headline findings in
-[`research/NOTES.md`](../../research/NOTES.md) were retracted after the numbers were checked
+[`research/NOTES.md`](../../research/internal/NOTES.md) were retracted after the numbers were checked
 properly, including one caused by a one-line bug in this example's own scorer.
 
 ---
