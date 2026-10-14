@@ -159,7 +159,8 @@ _BUILT_THIS_PROCESS: Dict[str, bool] = {}
 
 
 def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
-                 doc_prefix: str = ""):
+                 doc_prefix: str = "", revision: Optional[str] = None,
+                 precision: Optional[str] = None):
     """Embed the corpus, or load the embeddings computed for this exact configuration.
 
     doc_prefix IS PART OF THE KEY, in memory and on disk. e5 is trained with "passage: "
@@ -174,7 +175,11 @@ def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
     """
     import numpy as np  # noqa: PLC0415
 
-    key = f"dense:{corpus_id}:{model_id}:{device}:{doc_prefix}"
+    # Revision and a non-default precision are part of the key when declared: embeddings
+    # from other weights, or another dtype, are another index. Absent, the key is what it
+    # always was, so existing caches stay valid for unpinned fp32 arms.
+    extra = "".join(f":{v}" for v in (revision, precision) if v and v != "fp32")
+    key = f"dense:{corpus_id}:{model_id}:{device}:{doc_prefix}{extra}"
     if key in _INDEX:
         return _INDEX[key]
 
@@ -183,10 +188,14 @@ def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
     docs, csha = _corpus(corpus_id)
     ids = [d["doc_id"] for d in docs]
     stamp = hashlib.sha256(
-        f"{csha}|{model_id}|{doc_prefix}|{device}".encode()).hexdigest()[:24]
+        f"{csha}|{model_id}|{doc_prefix}|{device}{extra}".encode()).hexdigest()[:24]
     cache = ROOT / "data" / "corpora" / corpus_id / ".index" / f"{stamp}.npy"
 
-    model = SentenceTransformer(model_id, device=device)
+    from hf_identity import apply_precision  # noqa: PLC0415
+
+    model = apply_precision(
+        SentenceTransformer(model_id, device=device,
+                            **({"revision": revision} if revision else {})), precision)
     if cache.is_file():
         emb = np.load(cache)
         if emb.shape[0] == len(ids):
@@ -223,7 +232,7 @@ def _dense(query: str, params: Dict[str, Any]) -> Result:
     model, emb, ids = _dense_index(
         params.get("corpus_id", "scifact"), params["model"],
         str(params.get("device", "cpu")), int(params.get("encode_batch", 64)),
-        str(params.get("doc_prefix", "")))
+        str(params.get("doc_prefix", "")), params.get("revision"), params.get("precision"))
     k = int(params.get("top_k", DEFAULT_TOP_K))
     # QUERY PREFIXES ARE PART OF THE MODEL, NOT A STYLE CHOICE. e5 and bge checkpoints are
     # trained with an asymmetric instruction ("query: " / "Represent this sentence...")
@@ -485,7 +494,11 @@ def warmup(params: Dict[str, Any]) -> None:
     if provider == "dense":
         _dense_index(corpus_id, params["model"], str(params.get("device", "cpu")),
                      int(params.get("encode_batch", 64)),
-                     str(params.get("doc_prefix", "")))
+                     str(params.get("doc_prefix", "")), params.get("revision"),
+                     params.get("precision"))
+        # One untimed query: with the index loaded from cache, nothing above runs the
+        # model, so the first item would pay its lazy initialisation.
+        _dense("warm up", params)
     if provider == "rerank":
         _litellm("Reply with the single character: 1", {**params, "max_tokens": 8})
     if _BUILT_THIS_PROCESS:

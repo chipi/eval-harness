@@ -338,11 +338,15 @@ def _gliner(text: str, params: Dict[str, Any]) -> Result:
     the model has still never seen this dataset.
     """
     global _MODEL, _MODEL_KEY
-    key = ("gliner", params.get("model"))
+    key = ("gliner", params.get("model"), params.get("revision"), params.get("precision"))
     if _MODEL is None or _MODEL_KEY != key:
         from gliner import GLiNER  # noqa: PLC0415
+        from hf_identity import apply_precision  # noqa: PLC0415
 
-        _MODEL = GLiNER.from_pretrained(params["model"])
+        # The revision was never passed on, so a pinned config still downloaded `main`.
+        rev = {"revision": params["revision"]} if params.get("revision") else {}
+        _MODEL = apply_precision(GLiNER.from_pretrained(params["model"], **rev),
+                                 params.get("precision"))
         _MODEL_KEY = key
     threshold = float(params.get("threshold", 0.5))
     found = [{"text": e["text"], "type": e["label"]}
@@ -359,11 +363,14 @@ def _span_marker(text: str, params: Dict[str, Any]) -> Result:
     is in the fingerprint: getting it wrong would silently retype every prediction.
     """
     global _MODEL, _MODEL_KEY
-    key = ("span_marker", params.get("model"))
+    key = ("span_marker", params.get("model"), params.get("revision"), params.get("precision"))
     if _MODEL is None or _MODEL_KEY != key:
+        from hf_identity import apply_precision  # noqa: PLC0415
         from span_marker import SpanMarkerModel  # noqa: PLC0415
 
-        _MODEL = SpanMarkerModel.from_pretrained(params["model"])
+        rev = {"revision": params["revision"]} if params.get("revision") else {}
+        _MODEL = apply_precision(SpanMarkerModel.from_pretrained(params["model"], **rev),
+                                 params.get("precision"))
         _MODEL_KEY = key
     found = []
     for e in _MODEL.predict(text):

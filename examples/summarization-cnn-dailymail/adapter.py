@@ -105,6 +105,7 @@ def _local_pipeline(params: Dict[str, Any]) -> Any:
     key = (params.get("model"), params.get("revision"), params.get("device"))
     if _PIPE is not None and _PIPE_KEY == key:
         return _PIPE
+    from hf_identity import apply_precision  # noqa: PLC0415
     from transformers import pipeline  # noqa: PLC0415 - only when an arm asks
 
     kwargs: Dict[str, Any] = {"model": params["model"]}
@@ -112,7 +113,7 @@ def _local_pipeline(params: Dict[str, Any]) -> Any:
         kwargs["revision"] = params["revision"]
     if params.get("device"):
         kwargs["device"] = params["device"]
-    _PIPE = pipeline("summarization", **kwargs)
+    _PIPE = apply_precision(pipeline("summarization", **kwargs), params.get("precision"))
     # TEACH THE TOKENIZER ITS OWN LIMIT. `truncation=True` truncates to the TOKENIZER's
     # model_max_length, and bart-large-cnn's tokenizer_config.json does not set one -- so
     # it reports HuggingFace's VERY_LARGE_INTEGER sentinel (~1e30) and "truncate" becomes a
@@ -408,6 +409,11 @@ def warmup(params: Dict[str, Any]) -> None:
     provider = params.get("provider", "litellm")
     if provider == "hf_local":
         _local_pipeline(params)
+        # ONE UNTIMED FORWARD PASS. Loading is not the whole first-call cost: kernels,
+        # caches and lazy initialisation are paid by the first inference, which used to be
+        # item 1 -- up to 24 s on one item, lifting an arm's mean latency several-fold.
+        _hf_local("The council met on Tuesday. It approved the budget. Work starts in May.",
+                  params)
     elif provider == "litellm":
         _litellm("Warm up.", {**params, "max_tokens": 1})
     # `lead_k` deliberately falls through with nothing to do: no weights to load, no

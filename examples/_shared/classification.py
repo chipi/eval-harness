@@ -211,6 +211,7 @@ class ClassificationTask:
         key = (params.get("model"), params.get("revision"), params.get("device"), task)
         if self._pipe is not None and self._pipe_key == key:
             return self._pipe
+        from hf_identity import apply_precision  # noqa: PLC0415
         from transformers import pipeline  # noqa: PLC0415 - only when an arm asks
 
         kwargs: Dict[str, Any] = {"model": params["model"]}
@@ -218,7 +219,7 @@ class ClassificationTask:
             kwargs["revision"] = params["revision"]
         if params.get("device"):
             kwargs["device"] = params["device"]
-        self._pipe = pipeline(task, **kwargs)
+        self._pipe = apply_precision(pipeline(task, **kwargs), params.get("precision"))
         self._pipe_key = key
         return self._pipe
 
@@ -363,8 +364,12 @@ class ClassificationTask:
         provider = params.get("provider", "litellm")
         if provider == "hf_local":
             self._local_pipeline(params, "text-classification")
+            # One untimed forward pass: the first inference pays lazy initialisation, which
+            # used to land on item 1 (up to 24 s for one item in the bert_base_fy re-runs).
+            self.hf_local("Stocks rose after the central bank held rates.", params)
         elif provider == "hf_zeroshot":
             self._local_pipeline(params, "zero-shot-classification")
+            self.hf_zeroshot("Stocks rose after the central bank held rates.", params)
         elif provider == "litellm":
             self.litellm("Warm up.", {**params, "max_tokens": 1})
         # `keyword` and `constant` have nothing to warm: no weights, no endpoint. An
