@@ -2402,3 +2402,55 @@ measured. The other seven model arms here are stored, and ran, at fp32.
 - The checker gained two things: a check that each claimed figure appears in its report,
   and a recomputation of each tie group from the leader's family test — which, mutated to
   AG News's old "9 arms, `gemma_s`", fails as it should.
+
+### 2026-10-14 · 61 — The first time the instrument met the literature
+
+Two hundred automated checks verify this repo against itself. None of them asked whether
+a known model scores here what its authors say it scores. Asked once, the question found
+the largest error in the repo in an afternoon.
+
+**The summarisation sample was all CNN.** `fetch.py --n 200` takes the first 200 rows of
+the test split. The split puts CNN's 1,093 articles first and DailyMail's 10,397 after,
+so every committed summarisation result is about CNN's news. LEAD-3 scores ROUGE-1 30.20
+on that slice and 39.94 on the full test set (published: 40.34). CNN articles score 29.6,
+DailyMail ones 41.0. The repo's absolute ROUGE had sat ~0.09 below the literature for two
+weeks, and nobody had asked why.
+
+**Does it change the conclusions?** A seeded DailyMail slice (200 articles) re-ran the
+five local arms. Among them every verdict transferred: `bart_l` beats LEAD-3 by +0.073
+(+0.074 on CNN), `bart_m` ties `bart_l`, and the XSum control is last by a wider margin.
+The hosted arms could not be re-run, because this environment has no API endpoint. So
+every summarisation price verdict is now explicitly scoped to CNN.
+
+**The instrument itself is sound.** Each experiment got a calibration row, and all
+seven figures agree with the published value:
+- AG News, full test set: `bert_mini` 0.9338 vs 0.9339, `bert_base_ta` 0.9514 vs 0.9514,
+  `bert_base_fy` 0.9375 vs 0.9375;
+- DBpedia `bert_base_fy`: 0.9879 vs 0.9903;
+- Few-NERD `span_marker` (standard micro-F1): 0.7047 vs 0.7040;
+- SciFact BM25 (all 300 queries): 0.6523 vs 0.665;
+- LEAD-3: as above.
+
+For `bart_l` itself, weighting the two slices by the split's outlet mix gives ROUGE-1
+45.1 against a published 44.16. So the defect was the sample, not the scorer.
+
+**AG News has the same "first n" shape.** Checked against a seeded random draw:
+`bert_mini` scores 0.945 on our slice and 0.940 on the random one. No material bias.
+
+**Two of my own bugs, caught before anything was pushed.**
+- The source rule tested for "(CNN)" alone. That misses partner pieces CNN republished
+  (The Hollywood Reporter, Billboard), and three of them landed in the first DailyMail
+  draw.
+- `--force` wrote beside the previous draw instead of replacing it, leaving 584 files
+  after three draws.
+
+Both are fixed. The slice was redrawn and its runs redone from a clean clone.
+
+**A metric dependence the reports had not stated.** On standard ROUGE F1, the three
+CNN-trained BARTs take the top three places on ROUGE-2, while on ROUGE-1 the LLMs lead
+and `bart_l` is 12th. "`bart_l` wins outright" is true of `coverage` and of ROUGE-2 only.
+The report now says so.
+
+**The lesson is the one this journal keeps relearning, one level up.** Every check here
+compares the repo with itself. The cheapest check that compares it with the world,
+one baseline against one published number, had never been run.

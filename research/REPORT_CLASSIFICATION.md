@@ -1,6 +1,7 @@
 # Evaluation report — 24 LLMs, four fine-tuned classifiers and a regex on two classification tasks
 
 **Datasets** `ag_news_200` · 200 news snippets · 4 classes — and `dbpedia_280` · 280 Wikipedia abstracts · 14 classes
+**Protocol** test splits, 200 of 7,600 and 280 of 70,000 · accuracy, the standard metric · calibration: the fine-tunes on the full test set match their model cards (0.9338 / 0.9514 / 0.9375; DBpedia 0.9879 vs 0.9903) — [docs/PROTOCOL.md](../docs/PROTOCOL.md#classification--ag-news)
 **Arms** 24 hosted models (8 vendors × 3 price tiers), plus fine-tuned classifiers (three on AG News, one on DBpedia), a zero-shot NLI model, ~20 regex rules and a constant
 **Design** 1 pass per arm · identical prompt, temperature 0, reasoning off · **$0.58 and $1.17 billed** ($0.49 and $1.00 by the price table — see Correction)
 **Date** 2026-09-28; the three bert-base arms added 2026-09-30 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](NOTES.md) entries 47–50, 59
@@ -40,9 +41,9 @@
 | **Arms tied at the top?** | **3 of the 29 others** — two fine-tunes and `anthropic_m` (was 9 of 26 around `bert_mini`) | **19 of the 27 others** (was 18 of 26 before the fine-tuned arm joined, and it joined the tie) — the ranking is mostly noise |
 | **What limits the score?** | **the annotation, more than it looked.** 17 items are disputed by ≥80% of the hosted field; the fine-tunes agree with the gold on 12–14 of them, the best hosted arms on 0–3. (The 17 are selected by the hosted arms' own errors — §3.4 on what that does and does not show.) | **the annotation.** Top eleven separated by 4 items, 3 disputed by 24–25 of the 26 learned arms (the dissenter on one is the arm trained on DBpedia) |
 | **Is a pilot enough?** | No — ρ = 0.852* and it picked `anthropic_l`, truly **5th of 30** (3rd before the bert-base arms) | No — ρ = 0.728*, picked `anthropic_l`, truly 2nd |
+| **Fine-tune or pay?** | **Fine-tune — for this corpus's labels.** Three independent fine-tunes take 1st, 2nd and 3rd of 30 at $0. What they learned is partly AG News's labelling convention (§3.4): on your own data that is exactly what you want; as evidence that a small model "understands news" better than an LLM, it is not. | **Fine-tune for cost, not for quality.** Measured 2026-09-30: the fine-tuned arm scores **0.9857**, statistically tied with the $51/mo leader (−0.0071, 1 item won against 3 lost, p = 0.62) at **$0**. On a saturated task training buys a free seat in the top group, not a lead. The prior from AG News — that it would win — **did not hold.** |
 
 \* From dev-slice runs that were never committed; the committed runs give 0.677 and 0.757 (§5). The pick and its true rank are from committed runs.
-| **Fine-tune or pay?** | **Fine-tune — for this corpus's labels.** Three independent fine-tunes take 1st, 2nd and 3rd of 30 at $0. What they learned is partly AG News's labelling convention (§3.4): on your own data that is exactly what you want; as evidence that a small model "understands news" better than an LLM, it is not. | **Fine-tune for cost, not for quality.** Measured 2026-09-30: the fine-tuned arm scores **0.9857**, statistically tied with the $51/mo leader (−0.0071, 1 item won against 3 lost, p = 0.62) at **$0**. On a saturated task training buys a free seat in the top group, not a lead. The prior from AG News — that it would win — **did not hold.** |
 
 **Read the two together or not at all.** They were chosen before any result was seen to
 sit in opposite regimes; either alone supports whichever conclusion it happens to produce.
@@ -618,8 +619,8 @@ byte-identical outputs on every item for all three (`docs/evidence/conversion_pr
 
 The `ag_news_200` and `dbpedia_280` runs are committed (metrics, predictions and
 outputs, since 2026-09-29), so these commands run against the same bytes the report was
-written from. The corpora are not committed — rebuild them with each example's seeded
-`fetch.py` first, or `rescore.py` refuses. The datasets are frozen by `items_sha256`, and
+written from. The corpora are not committed — rebuild them with each example's
+`fetch.py` first (DBpedia's is seeded; AG News's takes the first 50 per class, deterministic without a seed), or `rescore.py` refuses. The datasets are frozen by `items_sha256`, and
 `make dataset-materialize` verifies a refetch against them.
 
 ---

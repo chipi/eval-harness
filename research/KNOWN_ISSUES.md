@@ -3,7 +3,22 @@
 Everything here is **open and known**. Re-finding it costs a reviewer time that would be
 better spent on what is not on this list. Fixes are in the git log, not here.
 
-Last updated 2026-10-01, after **round 5** (a fresh Linux clone on ext4).
+Last updated 2026-10-14, after the first calibration against the literature.
+
+## What calibrating against the literature found (2026-10-14)
+
+Until now nothing compared a known model with its published value on the protocol the
+field uses; every check verified the repo against itself. Each example now has a
+`calibrate.py` that runs one known model or baseline on the full test set (or a large
+seeded sample) and writes `docs/evidence/calibration/<exp>.json`; `docs/PROTOCOL.md`
+quotes the results and `check_report_claims.py` pins them.
+
+| finding | status |
+|---|---|
+| **The summarisation sample is all CNN.** `fetch.py --n 200` takes the first 200 test rows, and the split puts CNN's 1,093 articles (of 11,490) first. So every summarisation result is about CNN-style news, not CNN/DailyMail. LEAD-3 scores ROUGE-1 30.20 on the slice and 39.94 on the full test set (published 40.34): CNN articles 29.59, DailyMail 41.02. The repo's absolute ROUGE had sat ~0.09 below published values and nobody had asked why | **Scoped, partly measured.** Every report states the scope. A seeded DailyMail slice (`cnn_dailymail_dm200`) re-ran the five local arms. The four hosted arms in the CNN top six have configs on it but need an API endpoint this environment did not have, so whether the *paid* comparisons transfer is unmeasured |
+| **The instrument itself is sound.** Seven calibration figures across all five experiments, all consistent with the published value: LEAD-3 R1 39.94 vs 40.34; `bert_mini` 0.9338 vs 0.9339, `bert_base_ta` 0.9514 vs 0.9514, `bert_base_fy` 0.9375 vs 0.9375 (AG News, full test); DBpedia `bert_base_fy` 0.9879 vs 0.9903 (5,600 seeded); Few-NERD `span_marker` 0.7047 vs 0.7040 (standard micro-F1, 2,000 seeded); SciFact BM25 0.6523 vs 0.665 (all 300 queries) | **Checked**, 7 claims |
+| **AG News's unseeded "first 50 per class" slice** has the same shape as the CNN slice. Checked for order bias: `bert_mini` 0.9450 on the slice vs 0.9400 on a seeded random class-balanced 200 (±0.033); `keyword` 0.670 vs 0.605 (±0.065) | **No material bias**; stated in PROTOCOL.md |
+| Few-NERD's primary metric (mean per-sentence coarse F1, string-matched) and summarisation's (`coverage`) are this repo's own; no published number is comparable to them | **By design**, now stated per experiment in PROTOCOL.md, with the standard metric used for calibration |
 
 ## What running the six local ML arms found (2026-09-30)
 

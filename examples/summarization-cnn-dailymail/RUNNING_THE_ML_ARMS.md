@@ -1,5 +1,9 @@
 # Running the three blocked ML arms on another machine
 
+> **Scope note, 2026-10-14.** Every summarisation result below was measured on
+> `cnn_dailymail_200`, which is the first 200 test rows — all CNN's articles, while the
+> benchmark is 91% DailyMail. See REPORT_SUMMARIZATION's scope correction and §3.7.
+
 > **Done 2026-09-30.** All three ran on Linux (torch 2.14.0, clean tree, configs
 > unchanged): `bart_m` **0.3367** (5.1 s/item), `bart_s` **0.3276** (4.5 s/item — slowed by other work
 > on the same CPU; 3.4 s idle), `bart_l` 6.3 s on the same machine (`harness/data/runs-linux/`),

@@ -22,8 +22,9 @@ WHY THE REFERENCE IS GOLD
   use. Here there is one.
 
 THE DEFAULT SLICE IS THE FIRST N ROWS, AND THEY ARE ALMOST ALL CNN
-  The test split puts CNN's articles first (1,067 of 11,490), DailyMail after. So
-  `--n 200` -- the slice every committed run measured -- is 196 CNN articles of 200,
+  The test split puts CNN's articles first (1,093 of 11,490), DailyMail after. So
+  `--n 200` -- the slice every committed run measured -- is all CNN (196 with CNN's
+  dateline, 4 partner pieces CNN republished),
   while the test split as a whole is mostly DailyMail. Measured 2026-10-14: lead-3
   scores ROUGE-1 0.30 on that slice and about 0.40 on DailyMail articles, which is why
   this repo's absolute ROUGE sat ~0.09 below published numbers and nobody noticed.

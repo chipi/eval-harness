@@ -1,5 +1,9 @@
 # Handover — the ML arms
 
+> **Scope note, 2026-10-14.** Every summarisation result below was measured on
+> `cnn_dailymail_200`, which is the first 200 test rows — all CNN's articles, while the
+> benchmark is 91% DailyMail. See REPORT_SUMMARIZATION's scope correction and §3.7.
+
 > **Update 2026-09-30 — the three blocked arms ran** (Linux, torch 2.14.0, configs
 > unchanged): `bart_m` 0.3367 (5th of 29), `bart_s` 0.3276 (10th) — 4.1 s and 3.4 s/item
 > against `bart_l`'s 6.3 s, all re-timed on one Linux machine (`harness/data/runs-linux/`;

@@ -25,7 +25,11 @@ not itself in question.
   can make claims the others qualify.
 - **Apache-2.0.** The cleanest licence of the five corpora here.
 - **It is the standard.** Nearly every summarisation paper reports on it, so an absolute
-  number here is checkable against the literature.
+  number here is checkable against the literature — on the protocol the literature uses.
+  The committed 200-article slice is not that protocol: it is the first 200 test rows,
+  all of them CNN's, and CNN articles score ~11 ROUGE-1 below DailyMail ones. The check
+  itself is `calibrate.py`: LEAD-3 on the full 11,490-article test set, ROUGE-1 39.94
+  against a published 40.34 (`docs/evidence/calibration/summarization.json`).
 
 **What it gives up:** CNN/DailyMail is famously *extractive-biased* — the highlights often
 reuse article sentences nearly verbatim. A model that copies scores well. That is why

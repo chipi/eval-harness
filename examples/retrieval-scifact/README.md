@@ -21,6 +21,10 @@ cd examples/retrieval-scifact
 uv sync --extra local          # --extra local pulls sentence-transformers; plain `uv sync` does not
 uv run fetch.py --n 200        # queries + qrels + the WHOLE corpus (~2 min)
 uv run fetch.py --n 40 --skip-corpus   # dev slice, a strict PREFIX of the 200
+
+cd ../../harness
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
+PYTHON=../examples/retrieval-scifact/.venv/bin/python make dataset-materialize DATASET_ID=scifact_200
 ```
 
 The fetcher writes **three** things, and the third is new to this repo:
@@ -57,7 +61,7 @@ every parameter. Nothing else would tell them apart, and the corpus is where the
 ## Run it
 
 ```bash
-cd harness
+cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
 for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
   ../examples/retrieval-scifact/.venv/bin/python scripts/experiment_run.py --config "$f"
 done

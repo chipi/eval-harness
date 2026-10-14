@@ -1,0 +1,18 @@
+{
+  "what": "span_marker, entity-level micro-F1 on 66 fine types, exact token spans, on a seeded sample of the Few-NERD supervised test split",
+  "sample": "20 random 100-row pages of 37648, seed 20261014",
+  "arms": {
+    "span_marker": {
+      "n_sentences": 2000,
+      "value": 0.7047,
+      "ci95": 0.0161,
+      "ci95_bounds": [
+        0.6891,
+        0.7212
+      ],
+      "published": 0.704,
+      "source": "model card (model-index F1, few-nerd fine-grained, split listed as 'eval')",
+      "verdict": "consistent"
+    }
+  }
+}

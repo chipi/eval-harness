@@ -1,7 +1,8 @@
 # cnn_bart_l on the DAILYMAIL slice — identical to arm_bart_l_n200.yaml except the dataset.
 #
 # WHY: the committed cnn_dailymail_200 slice is the first 200 rows of the test split,
-# which are 196 CNN articles of 200; the split is ~91% DailyMail. This slice is 200
+# which are all CNN (196 with CNN's dateline, 4 partner pieces); the split is ~91%
+# DailyMail. This slice is 200
 # DailyMail articles drawn at random (seed 20261014) from the same test split, so the
 # question "do the summarisation conclusions hold outside CNN?" has data. Same params,
 # same prompt, same scorer; read alongside, never pooled with, the CNN slice. Full

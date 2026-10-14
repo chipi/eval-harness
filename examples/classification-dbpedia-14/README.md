@@ -31,8 +31,7 @@ Then freeze them:
 
 ```bash
 cd ../../harness
-PYTHON=../examples/classification-dbpedia-14/.venv/bin/python make dataset-create \
-    DATASET_ID=dbpedia_280 ARGS='--source-dir data/sources/dbpedia_280'
+# The dataset file is committed and frozen; materialize checks the fetched bytes against it.
 PYTHON=../examples/classification-dbpedia-14/.venv/bin/python make dataset-materialize \
     DATASET_ID=dbpedia_280
 ```
@@ -110,4 +109,6 @@ not carry over to a saturated task; "fine-tune costs nothing" does.
 
 ## Results
 
-See [`../../research/HANDOVER_CLASSIFICATION_DBPEDIA.md`](../../research/HANDOVER_CLASSIFICATION_DBPEDIA.md).
+Full write-up: [`../../research/REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md)
+(§3.2 for DBpedia). The protocol and the calibration row are in
+[`../../docs/PROTOCOL.md`](../../docs/PROTOCOL.md#classification--dbpedia-14).

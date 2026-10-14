@@ -14,6 +14,19 @@ the registered prediction and the three hosted repeat runs, the repo has spent $
 > News the fine-tuned lead is now measured as mostly agreement with disputed gold labels.
 > No conclusion about price reversed.
 
+> **Scope correction, 2026-10-14.** The summarisation experiment's 200 articles are the
+> first 200 rows of the CNN/DailyMail test split, and the split puts CNN's articles first: they
+> are **all CNN articles**, while the split is 91% DailyMail. Every summarisation figure
+> below is therefore about CNN-style news. Found by the first calibration against the
+> literature (LEAD-3 on the full test set: ROUGE-1 39.94 here, 40.34 published; 30.20 on
+> the slice). A seeded DailyMail slice tested whether the conclusions travel
+> ([REPORT_SUMMARIZATION §3.7](REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)):
+> among the five local arms **every comparison transfers**, including the house-style
+> control (BART on XSum still last). The hosted arms were not re-run, so **the
+> summarisation price verdicts below are CNN-only**. Every other experiment was
+> calibrated the same way and needed no correction: all seven calibration figures agree
+> with the published values ([`docs/PROTOCOL.md`](../docs/PROTOCOL.md)).
+
 Seven findings that hold across every experiment (§1–§7), and what they imply for
 **quality vs cost vs latency** in production (§8).
 
@@ -23,7 +36,7 @@ several findings only became visible once there were five corpora to compare.
 
 | | task | metric shape | report |
 |---|---|---|---|
-| CNN/DailyMail | summarise a news article | continuous (ROUGE) | [REPORT_SUMMARIZATION](REPORT_SUMMARIZATION.md) |
+| CNN/DailyMail | summarise a news article (**all 200 from CNN**) | continuous (ROUGE) | [REPORT_SUMMARIZATION](REPORT_SUMMARIZATION.md) |
 | AG News | 4-way topic label | binary per item | [REPORT_CLASSIFICATION](REPORT_CLASSIFICATION.md) |
 | DBpedia-14 | 14-way ontology label | binary, **saturated** | [REPORT_CLASSIFICATION](REPORT_CLASSIFICATION.md) |
 | Few-NERD | entities + types | set vs set | [REPORT_NER](REPORT_NER.md) |
@@ -57,7 +70,7 @@ AG News what that exposure buys is largely the corpus's own labelling (§0).
 **And "paying" splits in two.** 14 of the 24 hosted arms have **downloadable weights** and
 could run on hardware you own — renting them was a convenience. Head to head, **a
 proprietary model never separated from the best open-weight model in any of the five
-experiments**, and open weights won outright on one. At 1M items/month that tier is
+experiments**, and open weights did not separate from proprietary either, in any. At 1M items/month that tier is
 **$14,868** rented and **$0 self-hosted**; the 10 genuinely proprietary arms have no floor
 below **$39,809**.
 
@@ -263,8 +276,9 @@ picking the comparison after seeing the leaderboard.*
 this document's own tier table two sections above says so. The genuine best proprietary
 reranker is `qwen_s` at 0.7183, a gap of 0.0254 that its own test also cannot resolve
 (p = 0.0283 against a 0.0050 threshold).*
-Open weights won outright on summarisation, led without separation on SciFact, and trailed
-by 0.007–0.030 without separation on the other three.
+Open weights led without separation on summarisation and SciFact, and trailed by
+0.007–0.030 without separation on the other three. (This line said "won outright on
+summarisation" after the correction above had retracted exactly that.)
 
 "Not separated at n=200" is not "equal" — AG News's 0.0300 gap would likely resolve with
 more items, and the honest reading is that **proprietary may hold a small real edge on
@@ -503,7 +517,7 @@ it actually *separates* from, under Holm step-down at α = 0.05:
 
 | experiment | winner | ahead of | separated from | |
 |---|---|---|---|---|
-| Extraction · Few-NERD | `span_marker` | 26 of 26 | **26 of 26** (100%) | a real podium |
+| Extraction · Few-NERD | `span_marker` | 27 of 27 | **27 of 27** (100%) | a real podium |
 | Classification · AG News | `bert_base_ta` | 29 of 29 | 26 of 29 (90%) | a group of 3 |
 | Summarisation · CNN/DM | `bart_l` | 28 of 28 | 13 of 28 (46%) | a group of 15 |
 | Retrieval · SciFact | `glm_s` | 18 of 18 | 7 of 18 (39%) | a group of 11 |
@@ -904,6 +918,12 @@ something other than the leaderboard.
 
 ## What this cannot say
 
+- **The summarisation sample is CNN, not CNN/DailyMail.** All 200 of its articles are
+  CNN's; the test split is 91% DailyMail. The DailyMail slice
+  ([REPORT_SUMMARIZATION §3.7](REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice))
+  re-ran the five local arms, and every one of their comparisons held; the hosted arms
+  could not be re-run from the environment that found it, so whether the *paid*
+  comparisons travel is measured for none of them.
 - **Five tasks, all English, all text.** No multilingual, multimodal, long-context,
   agentic or generative-quality task. The tie-at-the-top result may be a property of
   *saturated-ish academic benchmarks* rather than of frontier models.
@@ -917,9 +937,9 @@ something other than the leaderboard.
 - **24 hosted arms, one snapshot in time, no verifiable identity.** A provider can change
   weights behind an alias; runs record `identity_declared: true`, not proof.
 - **Five of the 24 arms never ran on SciFact** (the frontier tier, ≈$12 against that
-  sweep's $1.94 billed), so §1 and §2 are weaker there than elsewhere. One NER arm is also
-  unrun — see the handovers in this directory. The six local ML arms that were unrun until
-  2026-09-30 have all run.
+  sweep's $1.94 billed), so §1 and §2 are weaker there than elsewhere. The NER arm that was
+  rate-limited (`fn_mistral_l`) ran on 2026-10-01, and the six local ML arms that were
+  unrun until 2026-09-30 have all run.
 - **Each fine-tuned arm is one checkpoint.** DBpedia's tie and AG News's win are each a
   statement about one or three public fine-tunes, not about fine-tuning in general, and
   every one of them was tested on the distribution it was trained on.

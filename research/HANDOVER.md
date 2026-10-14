@@ -1,5 +1,9 @@
 # Handover — eval harness and the summarisation example
 
+> **Scope note, 2026-10-14.** Every summarisation result below was measured on
+> `cnn_dailymail_200`, which is the first 200 test rows — all CNN's articles, while the
+> benchmark is 91% DailyMail. See REPORT_SUMMARIZATION's scope correction and §3.7.
+
 **Scope: the summarisation example only.** Four more experiments landed after this was
 written — classification (AG News, DBpedia), NER (Few-NERD) and retrieval (SciFact).
 For the whole repo start at [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md); each experiment

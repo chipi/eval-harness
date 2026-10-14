@@ -94,7 +94,9 @@ better than documentation can:
   29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**
   — at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus ties the best LLM for $0;
   the same BART fine-tuned on XSum finishes **last**, below copying the first three
-  sentences.
+  sentences. *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
+  the local models keep every verdict; the paid ones were not re-run
+  ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 - **Classification.** Three small fine-tuned models took the top three places on AG News
   from 24 frontier LLMs — and their lead turns out to live almost entirely in 17 items
   whose gold labels nearly the whole LLM field disputes (8 a labelling convention, 7
@@ -102,7 +104,7 @@ better than documentation can:
   bought nothing measurable, and the fine-tuned model bought a tie, not a win: the top
   eleven arms are separated by four items, three of which the field disputes because the
   gold label is wrong.
-- **Extraction.** A 476MB span tagger separated from **all 26** opponents — but **57%** of
+- **Extraction.** A 499 MB span tagger separated from **all 27** opponents — but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
 - **Retrieval.** Twelve LLM rerankers tie with each other *and with two free local

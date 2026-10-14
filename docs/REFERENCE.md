@@ -242,7 +242,7 @@ your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 
 | Dataset | Source | Licence | Used for |
 |---|---|---|---|
-| CNN/DailyMail | [`abisee/cnn_dailymail`](https://huggingface.co/datasets/abisee/cnn_dailymail) | Apache-2.0 | 200 news articles + human highlights. Corpus from [Hermann et al. 2015](https://arxiv.org/abs/1506.03340); adapted for summarisation by [Nallapati et al. 2016](https://arxiv.org/abs/1602.06023) |
+| CNN/DailyMail | [`abisee/cnn_dailymail`](https://huggingface.co/datasets/abisee/cnn_dailymail) | Apache-2.0 | `cnn_dailymail_200`: the first 200 test articles — **all from CNN** (the split puts CNN's 9% first; 91% of it is DailyMail). `cnn_dailymail_dm200`: 200 DailyMail test articles, seeded random. Human highlights as gold. Corpus from [Hermann et al. 2015](https://arxiv.org/abs/1506.03340); adapted for summarisation by [Nallapati et al. 2016](https://arxiv.org/abs/1602.06023) |
 | AG News | [`fancyzhx/ag_news`](https://huggingface.co/datasets/fancyzhx/ag_news) | **`unknown`** on the card; the corpus description says non-commercial research use | 200 snippets, 4 topics ([paper](https://arxiv.org/abs/1509.01626)) |
 | DBpedia-14 | [`fancyzhx/dbpedia_14`](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | 280 abstracts, 14 ontology classes |
 | Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
