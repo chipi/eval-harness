@@ -248,6 +248,22 @@ $0.0185 per 1,000 items</title></circle><circle cx="732.4" cy="52.3" r="11" clas
   <ol class="findings"><li><div><h3>No winner: a group of nineteen.</h3><p>qwen_m leads at 0.9929, statistically tied with 19 others, including the free fine-tune.</p></div></li><li><div><h3>The dearest model finished 2nd of 28.</h3><p>anthropic_l billed $0.3784 for 280 items. The cheapest model statistically tied with the leader, gemma_m, cost 116× less.</p></div></li><li><div><h3>The benchmark is saturated, and the gold is sometimes wrong.</h3><p>Three items are disputed by 24 to 25 of 26 arms, and reading them, the gold label is the error.</p></div></li></ol>
 </div></section>
 
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The 4 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$1.17</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/classification-dbpedia-14">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP=dbpedia
+<span class="p">$ </span>make data      EXP=dbpedia
+<span class="p">$ </span>make reproduce EXP=dbpedia LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP=dbpedia LEVEL=hosted
+<span class="p">$ </span>make compare   EXP=dbpedia</pre>
+  </div>
+</div></section>
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>

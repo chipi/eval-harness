@@ -308,6 +308,8 @@ def landing(f: dict) -> str:
     ties = sum(x["n_tied"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
     hosted_n = max(x["n_hosted"] for x in exps)
+    local_n = sum(x["n_arms"] - x["n_hosted"] for x in exps)
+    billed_all = f'{f["total_billed"]:.2f}'
 
     strips = "".join(f'<figure class="reveal" style="margin-bottom:10px">{strip(x)}</figure>' for x in exps)
     tie_rows = "".join(
@@ -398,19 +400,33 @@ def landing(f: dict) -> str:
   <div class="cards">{cards}</div>
 </div></section>
 
-<section class="block"><div class="wrap">
-  <div class="eyebrow"><span class="num">06</span>Open</div>
-  <h2>Built to be checked.</h2>
+<section class="block" id="reproduce"><div class="wrap">
+  <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
+  <h2>Built to be checked — by you.</h2>
+  <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Five levels of checking, each optional, each a few commands.</p>
   <div class="cols">
-    <div class="prose">
-      <p>The harness, every run, every model output and every analysis script are in the repository. Datasets are frozen by content hash, so a rerun that saw different data says so. Each experiment's protocol — split, sample, seed, metric and how it relates to the field's — is on <a href="{BLOB}/docs/PROTOCOL.md">one page</a>.</p>
-      <p>The work was reviewed in five adversarial rounds, and every correction is kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
-    </div>
-    <div class="btns" style="margin-top:0;align-content:start">
-      <a class="btn primary" href="{BLOB}/research/REPORT_SYNTHESIS.md">Read the synthesis report</a>
-      <a class="btn" href="docs/PROTOCOL/">The protocol</a>
-      <a class="btn" href="docs/">Full documentation</a>
-      <a class="btn" href="{REPO}">The repository</a>
+    <ol class="ladder">
+      <li><span class="lvl">00</span><div><h3>Verify</h3><p>Every number in every report, recomputed from the committed predictions.</p></div><span class="cost">$0 · one command</span></li>
+      <li><span class="lvl">01</span><div><h3>Data</h3><p>Fetch the public benchmarks and hash-check every item against what was measured.</p></div><span class="cost">$0</span></li>
+      <li><span class="lvl">02</span><div><h3>Local</h3><p>Rerun the {local_n} free arms — local models and baselines — on your CPU, pinned to the same weights.</p></div><span class="cost">$0 · CPU hours</span></li>
+      <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the {hosted_n} LLMs with one OpenRouter key. The test: does every separation still hold?</p></div><span class="cost">${billed_all} billed, all five</span></li>
+      <li><span class="lvl">04</span><div><h3>Extend</h3><p>Add a model of your own and test it against the whole committed field.</p></div><span class="cost">one config</span></li>
+    </ol>
+    <div>
+<pre class="term"><span class="c"># every number, from the committed runs</span>
+<span class="p">$ </span>make verify
+<span class="c"># rerun an experiment and check its findings</span>
+<span class="p">$ </span>make plan      EXP=scifact
+<span class="p">$ </span>make data      EXP=scifact
+<span class="p">$ </span>make reproduce EXP=scifact LEVEL=local
+<span class="p">$ </span>make compare   EXP=scifact</pre>
+      <div class="btns">
+        <a class="btn primary" href="docs/REPRODUCE/">Reproduce it — the guide</a>
+        <a class="btn" href="{BLOB}/research/REPORT_SYNTHESIS.md">The synthesis report</a>
+        <a class="btn" href="docs/PROTOCOL/">The protocol</a>
+        <a class="btn" href="docs/">Full documentation</a>
+      </div>
+      <p class="note" style="margin-top:32px">Reviewed in five adversarial rounds, every correction kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
     </div>
   </div>
 </div></section>
@@ -518,6 +534,7 @@ def experiment_page(x: dict, f: dict) -> str:
     ]
     facts_html = "".join(f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>' for k, v in facts)
     finds = "".join(f'<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>' for h, p in findings_for(x, f))
+    free = x["n_arms"] - x["n_hosted"]
     extra = ""
     if x["slug"] == "summarization":
         extra = f"""<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
@@ -543,7 +560,23 @@ def experiment_page(x: dict, f: dict) -> str:
   <h2>What this experiment found.</h2>
   <ol class="findings">{finds}</ol>
 </div></section>
-{extra}"""
+{extra}
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">{"05" if extra else "04"}</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The {free} free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The {x["n_hosted"]} hosted arms billed <strong>${x["billed_total"]:.2f}</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="{REPO}/tree/main/examples/{x["example"]}">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP={x["slug"]}
+<span class="p">$ </span>make data      EXP={x["slug"]}
+<span class="p">$ </span>make reproduce EXP={x["slug"]} LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP={x["slug"]} LEVEL=hosted
+<span class="p">$ </span>make compare   EXP={x["slug"]}</pre>
+  </div>
+</div></section>"""
     return page(f'{x["task"]} · {x["bench"]} — eval-harness', CARD[x["slug"]], body, depth=1)
 
 

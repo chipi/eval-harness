@@ -28,6 +28,7 @@ hooks:
 
 nav:
   - Home: index.md
+  - Reproduce it: REPRODUCE.md
   - Protocol: PROTOCOL.md
   - Reference: REFERENCE.md
   - The harness:

@@ -1947,6 +1947,119 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
               "FAIL V5" in r.stdout, r.stdout[-200:])
 
 
+def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
+    """examples/models.json, litellm.config.yaml and experiments.json are what a stranger's
+    rerun is built from. Each is a copy of something else -- configs, the proxy, committed
+    runs -- and a copy that drifts sends a rerun to the wrong model or the wrong record."""
+    import json  # noqa: PLC0415
+
+    import yaml  # noqa: PLC0415
+
+    ex = ROOT.parent / "examples"
+    table = json.loads((ex / "models.json").read_text())["aliases"]
+    used = set()
+    for cfg in ex.glob("*/configs/*.yaml"):
+        model = ((yaml.safe_load(cfg.read_text()) or {}).get("params") or {}).get("model", "")
+        if str(model).startswith("eval-"):
+            used.add(model)
+    check("models.json: every alias a config uses is mapped", not used - set(table),
+          f"unmapped: {sorted(used - set(table))}")
+    check("models.json: maps no alias that no config uses", not set(table) - used,
+          f"unused: {sorted(set(table) - used)}")
+    proxy = {m["model_name"]: m["litellm_params"]["model"] for m in
+             yaml.safe_load((ex / "litellm.config.yaml").read_text())["model_list"]}
+    check("litellm.config.yaml serves exactly models.json", proxy == table)
+    wrong = []
+    for d in ("runs", "runs-rescored", "runs-reparsed"):
+        for f in (ROOT / "data" / d).glob("*/metrics.json"):
+            m = json.loads(f.read_text())
+            sut = ((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}
+            if sut.get("id_source") == "proxy-model-info" and sut.get("id") != table.get(sut.get("alias")):
+                wrong.append(f.parent.name)
+    check("models.json: agrees with every upstream id a committed run resolved", not wrong,
+          f"{wrong[:3]}")
+
+    reg = json.loads((ex / "experiments.json").read_text())["experiments"]
+    sys.path.insert(0, str(ex))
+    import reproduce  # noqa: PLC0415
+
+    for e in reg:
+        arms = reproduce.committed(e)
+        cfg_ids = set(reproduce.configs(e))
+        check(f"experiments.json {e['slug']}: has committed runs and its leader among them",
+              bool(arms) and e["leader"] in arms, f"{len(arms)} arms")
+        missing = sorted(a for a, v in arms.items() if v["cid"] not in cfg_ids)
+        check(f"experiments.json {e['slug']}: every measured arm has a config to rerun it",
+              not missing, f"no config for {missing}")
+        unknown = [d for d in e["datasets"] if not (ROOT / "data" / "datasets" / f"{d}.json").is_file()]
+        check(f"experiments.json {e['slug']}: every dataset it fetches is frozen", not unknown,
+              f"{unknown}")
+        local = [a for a, v in arms.items() if v["kind"] == "local" and "/" in str(v["model"])]
+        unpinned = [a for a in local if not arms[a]["revision"]]
+        check(f"experiments.json {e['slug']}: every local model is pinned in local_models.json",
+              not unpinned, f"{unpinned}")
+
+    # The pins must be what was measured: every revision a committed run recorded, and the
+    # revision REFERENCE.md cites.
+    import re  # noqa: PLC0415
+
+    pins = json.loads((ex / "local_models.json").read_text())["revisions"]
+    clash = []
+    for d in ("runs", "runs-rescored", "runs-reparsed", "runs-linux"):
+        for f in (ROOT / "data" / d).glob("*/metrics.json"):
+            sut = ((json.loads(f.read_text()).get("fingerprint") or {}).get("system_under_test")
+                   or {}).get("model") or {}
+            if sut.get("revision_source") in ("hf-snapshot", "loaded-model"):
+                got = sut.get("loaded_revision") or sut.get("revision")
+                if sut.get("id") in pins and pins[sut["id"]] != got:
+                    clash.append(f"{f.parent.name}: {got[:12]}")
+    check("local_models.json: agrees with every revision a committed run recorded", not clash,
+          f"{clash[:3]}")
+    ref = (ROOT.parent / "docs" / "REFERENCE.md").read_text()
+    off = [k for k, v in pins.items()
+           if v[:12] not in re.findall(r"\[`" + re.escape(k) + r"`\]\([^)]*\) \| [^|]*\| `([0-9a-f]{12})`", ref)]
+    check("local_models.json: agrees with the revisions REFERENCE.md cites", not off, f"{off}")
+
+
+def test_the_gateway_routes_as_documented() -> None:
+    """Proxy when configured, else OpenRouter with one key, else a refusal naming both."""
+    import os  # noqa: PLC0415
+
+    sys.path.insert(0, str(ROOT.parent / "examples" / "_shared"))
+    import gateway  # noqa: PLC0415
+
+    keys = ("LITELLM_BASE_URL", "LITELLM_API_KEY", "OPENROUTER_API_KEY")
+    saved = {k: os.environ.pop(k, None) for k in keys}
+    try:
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        r = gateway.route({"model": "eval-claude-haiku"})
+        check("gateway: OpenRouter key alone -> direct, alias mapped",
+              r["mode"] == "direct" and r["model"] == "anthropic/claude-haiku-4.5")
+        check("gateway: direct asks OpenRouter for billed cost",
+              gateway.extra_body({}, r).get("usage") == {"include": True})
+        check("gateway: an OpenRouter id passes through for your own arm",
+              gateway.route({"model": "vendor/my-model"})["model"] == "vendor/my-model")
+        os.environ["LITELLM_BASE_URL"] = "http://127.0.0.1:9"
+        os.environ["LITELLM_API_KEY"] = "sk-test"
+        r = gateway.route({"model": "eval-claude-haiku"})
+        check("gateway: a configured proxy wins, and keeps the alias",
+              r["mode"] == "proxy" and r["model"] == "eval-claude-haiku")
+        for k in keys:
+            os.environ.pop(k, None)
+        try:
+            gateway.route({"model": "eval-claude-haiku"})
+            refused = ""
+        except SystemExit as exc:
+            refused = str(exc)
+        check("gateway: no route is refused, naming both ways to fix it",
+              "OPENROUTER_API_KEY" in refused and "LITELLM_BASE_URL" in refused)
+    finally:
+        for k, v in saved.items():
+            os.environ.pop(k, None)
+            if v is not None:
+                os.environ[k] = v
+
+
 def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
@@ -1988,6 +2101,8 @@ def main() -> int:
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
+        test_the_reproduction_tables_agree_with_the_configs_and_runs,
+        test_the_gateway_routes_as_documented,
     ):
         # A TEST THAT RAISES MUST NOT HIDE THE ONES AFTER IT. `fn()` bare meant one
         # ImportError -- from a helper that had been renamed, say -- aborted the suite

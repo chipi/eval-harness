@@ -1,17 +1,37 @@
 # eval-harness
 
-> **The findings, for people:** [**chipi.github.io/eval-harness**](https://chipi.github.io/eval-harness/)
-> — 24 LLMs, small fine-tuned models and baselines on five public benchmarks. The most
-> expensive model never won; four of five leaderboard tops are statistical ties; and every
-> instrument is calibrated against the published literature. The site is generated from
-> the runs in this repository (`site/`), so every number on it is checked.
+Twenty-four LLMs, small fine-tuned models and baselines, measured on five public
+benchmarks by a harness built to ask one question most leaderboards skip: **is this
+ordering real, or a lucky sample?** The most expensive model never won; four of five
+leaderboard tops are statistical ties; and every instrument is calibrated against the
+published literature.
 
-A drop-in evaluation harness. Freeze a dataset, run your system against it, and get an
-answer to the question most leaderboards skip: **is this ordering real, or did I just
-draw a lucky sample?**
+**Start where you are:**
 
-It is deliberately small. The harness imports nothing domain-specific; everything about
-your system lives in one file — `adapter.py`, with four functions.
+| you want to | go to |
+|---|---|
+| **read what was found** | **[chipi.github.io/eval-harness](https://chipi.github.io/eval-harness/)** — the findings, for people; generated from the runs in this repository, so every number on it is checked |
+| **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md) — five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
+| **measure your own system** | [the harness](#what-it-is-for), below — freeze a dataset, write one adapter, get answers that survive being asked again |
+| **read the full documentation** | [chipi.github.io/eval-harness/docs](https://chipi.github.io/eval-harness/docs/) — protocol, reference, concepts, runbook |
+| **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
+
+### Check it yourself, in four commands
+
+```bash
+git clone https://github.com/chipi/eval-harness && cd eval-harness
+make verify                                  # every number in every report, from the committed runs ($0)
+make plan EXP=scifact LEVEL=local            # what a rerun involves, before anything is spent
+make data EXP=scifact && make reproduce EXP=scifact LEVEL=local && make compare EXP=scifact
+```
+
+`make compare` writes a replication card: each rerun arm against its committed run, and
+every committed separation and tie re-tested with your reruns in place. `make list` shows
+all six measurements and what each billed; `LEVEL=hosted` reruns the LLMs with one
+`OPENROUTER_API_KEY` in `harness/.env`. The full walkthrough, including what a rerun
+cannot reproduce and how to add a model of your own: **[docs/REPRODUCE.md](docs/REPRODUCE.md)**.
+
+### Or try the harness on its own
 
 ```bash
 cd harness
@@ -20,6 +40,11 @@ make demo          # the whole loop on bundled synthetic data — no API key, no
 ```
 
 ## What it is for
+
+A drop-in evaluation harness. Freeze a dataset, run your system against it, and get an
+answer to the question most leaderboards skip. It is deliberately small: the harness
+imports nothing domain-specific, and everything about your system lives in one file —
+`adapter.py`, with four functions.
 
 Most eval code answers "which scored highest". That is the easy half. The hard half is
 whether the answer survives being asked again, and this harness is built around that:
@@ -68,7 +93,9 @@ examples/    worked examples, each with its own uv environment
 research/    the five experiment reports and the synthesis; research/internal/ is the lab
              notebook — handovers, review rounds and an append-only journal
 site/        the public site, generated from the runs (make site; checked by make ci)
-docs/        PROTOCOL.md (what each experiment measured), REFERENCE.md, evidence/
+docs/        PROTOCOL.md (what each experiment measured), REPRODUCE.md, REFERENCE.md,
+             evidence/ — published as the documentation site by mkdocs.yml
+Makefile     verify / plan / data / reproduce / compare — the way in for a rerun
 ```
 
 ## The worked examples

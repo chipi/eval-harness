@@ -15,6 +15,16 @@ It is the second worked example for [`../../harness`](../../harness), and it exi
 because classification breaks things the summarisation example never touched. The
 interesting parts of this one are mostly about the instrument rather than the models.
 
+> **Rerun this experiment** from the repository root — `EXP=ag-news`:
+>
+> ```bash
+> make plan EXP=ag-news  &&  make data EXP=ag-news  &&  make reproduce EXP=ag-news  &&  make compare EXP=ag-news
+> ```
+>
+> `LEVEL=hosted` adds the LLM arms with one `OPENROUTER_API_KEY`. What each level checks and
+> what to expect: [`docs/REPRODUCE.md`](../../docs/REPRODUCE.md). The rest of this page is what
+> those commands do underneath, and why.
+
 ---
 
 ## Get the data
@@ -100,8 +110,8 @@ $PY scripts/classification_report.py --dataset-id ag_news_200
 $PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n200_v1
 ```
 
-The hosted arms need a LiteLLM proxy; copy `../../harness/.env.example` to `.env` and
-point it at yours. The four free arms need nothing, and two of them need no model either.
+The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy
+`.env.example`), or your own LiteLLM proxy. The four free arms need nothing, and two of them need no model either.
 
 **Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 28 come
 to **$0.58** — well under a dollar — two orders of magnitude cheaper than the summarisation sweep, because the

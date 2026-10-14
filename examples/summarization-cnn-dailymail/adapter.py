@@ -30,7 +30,6 @@ WHAT THE SCORERS ARE FOR
 
 from __future__ import annotations
 
-import os
 import random
 import re
 import sys
@@ -40,6 +39,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import gateway  # noqa: E402
 
 
 @dataclass
@@ -218,35 +218,10 @@ def _lead_k(text: str, params: Dict[str, Any]) -> Result:
 
 
 def _litellm(text: str, params: Dict[str, Any]) -> Result:
-    from openai import OpenAI  # noqa: PLC0415
-
-    base = (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-    if not base.startswith("http"):
-        raise SystemExit("LITELLM_BASE_URL is not set — copy .env.example to .env")
-    key_env = params.get("api_key_env", "LITELLM_API_KEY")
-    key = os.environ.get(key_env)
-    if not key:
-        raise SystemExit(f"{key_env} is not set")
-    client = OpenAI(api_key=key, base_url=f"{base}/v1")
-    # Provider-specific knobs go through extra_body, because the OpenAI client rejects
-    # anything it does not recognise. `reasoning` is the one that matters here: every arm
-    # declares `reasoning: {enabled: false}`, and building the request from a fixed list of
-    # fields DROPPED it — the configs said reasoning was off, the requests did not, and the
-    # numbers would have been reported as measuring a non-reasoning model.
-    extra_body: Dict[str, Any] = {}
-    for passthrough in ("reasoning", "reasoning_effort"):
-        if params.get(passthrough) is not None:
-            extra_body[passthrough] = params[passthrough]
-    # WHICH MACHINE RAN IT. For an open-weight model the host is part of the system under
-    # test -- two providers can serve the same weights at different quantisations, and a
-    # gateway load-balances between them without telling you. `provider_routing` is the
-    # policy we ASK for; the provider we actually GOT is recorded per call below. The key
-    # is not called `provider` because that name is already taken by this adapter's own
-    # backend selector (litellm / hf_local).
-    if params.get("provider_routing") is not None:
-        extra_body["provider"] = params["provider_routing"]
+    client, route = gateway.client(params)
+    extra_body = gateway.extra_body(params, route)
     resp = client.chat.completions.create(
-        model=params["model"],
+        model=route["model"],
         temperature=float(params.get("temperature", 0.0)),
         max_tokens=int(params.get("max_tokens", 200)),
         messages=[{"role": "user", "content": _prompt(params) + "\n\n" + text}],
@@ -445,42 +420,6 @@ def warmup(params: Dict[str, Any]) -> None:
 
 
 # ── fingerprint ──────────────────────────────────────────────────────────────
-_UPSTREAM_CACHE: Dict[str, Optional[str]] = {}
-
-
-def _resolve_upstream(alias: Optional[str]) -> Optional[str]:
-    """Ask the proxy what upstream model an alias points at, or None if it cannot say.
-
-    One HTTP call per process, cached. Returning None is a legitimate answer and is
-    recorded as such -- a proxy that is down must not cause the run to claim an identity
-    it did not verify, and must not kill a paid sweep either.
-    """
-    if not alias:
-        return None
-    if alias in _UPSTREAM_CACHE:
-        return _UPSTREAM_CACHE[alias]
-    resolved: Optional[str] = None
-    base = (os.environ.get("LITELLM_BASE_URL") or "").rstrip("/")
-    key = os.environ.get("LITELLM_API_KEY")
-    if base.startswith("http") and key:
-        import json as _json  # noqa: PLC0415
-        import urllib.request  # noqa: PLC0415
-
-        try:
-            req = urllib.request.Request(
-                base + "/model/info", headers={"Authorization": "Bearer " + key}
-            )
-            with urllib.request.urlopen(req, timeout=15) as fh:
-                for entry in (_json.load(fh).get("data") or []):
-                    if entry.get("model_name") == alias:
-                        resolved = (entry.get("litellm_params") or {}).get("model")
-                        break
-        except Exception:  # noqa: BLE001 -- provenance is best-effort, the run is not
-            resolved = None
-    _UPSTREAM_CACHE[alias] = resolved
-    return resolved
-
-
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     """What this arm's system under test IS. The core asks; it does not inspect.
 
@@ -534,17 +473,17 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     # resolved from the proxy and recorded as the identity; the alias is kept beside it
     # because it is what the config asked for.
     alias = params.get("model")
-    upstream = _resolve_upstream(alias)
+    upstream, id_source = gateway.resolve_upstream(alias)
     return {
         "id": upstream or alias,
         "alias": alias,
         # Never let an unresolved alias masquerade as a resolved identity: a reader must
         # be able to tell "this IS the upstream model" from "this is only what we asked
         # for and the proxy did not answer".
-        "id_source": "proxy-model-info" if upstream else "alias-unresolved",
+        "id_source": id_source,
         "revision": None,
         "revision_source": "api-model-string",
-        "endpoint": os.environ.get("LITELLM_BASE_URL"),
+        "endpoint": gateway.endpoint(),
         # The routing POLICY, which is knowable before the run and therefore belongs in
         # the fingerprint. Which provider actually answered is only knowable afterwards,
         # so it is recorded in the run as `providers_seen` instead -- asking for a thing

@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "The exact Hugging Face snapshot of every local model the measurements used. A rerun",
+    "pins to these (reproduce.py), because the example configs name a model, not a revision,",
+    "and a fresh machine would otherwise download whatever is served today.",
+    "",
+    "Taken from the snapshot each committed run recorded. Two runs predate that recording",
+    "(the fabriceyhc fine-tunes, revision 'unavailable' in their fingerprints); their entries",
+    "are the commit REFERENCE.md cites, which is also each repository's latest commit, unchanged",
+    "since 2021-09-21 -- so it is the only revision those runs could have downloaded.",
+    "`self_test` checks this table against every committed run and against REFERENCE.md."
+  ],
+  "revisions": {
+    "BAAI/bge-small-en-v1.5": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "fabriceyhc/bert-base-uncased-ag_news": "c14e3b32fe1f757639b9751bdff3ea3c8c3b4a6b",
+    "fabriceyhc/bert-base-uncased-dbpedia_14": "1fbfc3deaa280fcf16372746ca21363313357376",
+    "facebook/bart-large-cnn": "37f520fa929c961707657b28798b30c003dd100b",
+    "facebook/bart-large-mnli": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
+    "facebook/bart-large-xsum": "2179ab81d3f133e639f2957aec5380e9d56b2783",
+    "guishe/span-marker-generic-ner-v1-fewnerd-fine-super": "f836dfa9b6b0e6a6379607a8e35166103ac41aee",
+    "intfloat/e5-base-v2": "f52bf8ec8c7124536f0efb74aca902b2995e5bcd",
+    "mrm8488/bert-mini-finetuned-age_news-classification": "e94b474cce6f842ee5a90daa7352f5152fac4572",
+    "sentence-transformers/all-MiniLM-L6-v2": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "sentence-transformers/all-mpnet-base-v2": "e8c3b32edf5434bc2275fc9bab85f82640a19130",
+    "sshleifer/distilbart-cnn-12-6": "a4f8f3ea906ed274767e9906dbaede7531d660ff",
+    "sshleifer/distilbart-cnn-6-6": "d2fde4ca965ba893255479612e4b801aa6500029",
+    "textattack/bert-base-uncased-ag-news": "fe417ad660b1657142f66353a184dc0c7e6d2e48",
+    "urchade/gliner_medium-v2.1": "40ec419335d09393f298636f471328b722c6da9e"
+  }
+}

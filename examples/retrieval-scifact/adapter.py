@@ -55,6 +55,7 @@ from typing import Any, Dict, List, Optional, Tuple
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1] / "harness"
 sys.path.insert(0, str(HERE.parent / "_shared"))
+import gateway  # noqa: E402
 
 from retrieval import (  # noqa: E402
     METRIC_KINDS,
@@ -350,13 +351,7 @@ def _rerank(query: str, params: Dict[str, Any]) -> Result:
 
 
 def _litellm(user: str, params: Dict[str, Any]) -> Result:
-    from openai import OpenAI  # noqa: PLC0415
-
-    base = (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-    if not base:
-        raise SystemExit("LITELLM_BASE_URL is not set — copy .env.example to .env")
-    key = os.environ.get(params.get("api_key_env", "LITELLM_API_KEY"), "")
-    client = OpenAI(api_key=key, base_url=f"{base}/v1")
+    client, route = gateway.client(params)
 
     # REASONING IS PASSED THROUGH, AND THE OTHER THREE EXAMPLES ALREADY DID THIS.
     # I dropped it when writing this adapter, so these arms ran at the provider's default
@@ -368,15 +363,10 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
     # output budget (400, then 700 after I raised it) and returned message.content == ""
     # with finish_reason "length". The tokens went to hidden reasoning, so no budget would
     # ever have been enough. Same signature as glm_l in the NER example, different cause.
-    extra_body: Dict[str, Any] = {}
-    for passthrough in ("reasoning", "reasoning_effort"):
-        if params.get(passthrough) is not None:
-            extra_body[passthrough] = params[passthrough]
-    if params.get("provider_routing") is not None:
-        extra_body["provider"] = params["provider_routing"]
+    extra_body = gateway.extra_body(params, route)
 
     kwargs: Dict[str, Any] = {
-        "model": params["model"],
+        "model": route["model"],
         "messages": [{"role": "user", "content": user}],
         "temperature": float(params.get("temperature", 0.0)),
         "max_tokens": int(params.get("max_tokens", 400)),
@@ -615,9 +605,10 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             "first_stage_query_prefix": params.get("first_stage_query_prefix", ""),
             "first_stage_doc_prefix": params.get("first_stage_doc_prefix", ""),
             "alias": params.get("model"),
-            "id": params.get("model"),
+            "id": gateway.resolve_upstream(params.get("model"))[0] or params.get("model"),
+            "id_source": gateway.resolve_upstream(params.get("model"))[1],
             "identity_declared": True,
-            "endpoint": os.environ.get("LITELLM_BASE_URL"),
+            "endpoint": gateway.endpoint(),
             "max_tokens": int(params.get("max_tokens", 400)),
             "temperature": float(params.get("temperature", 0.0)),
             "reasoning": params.get("reasoning"),

@@ -2454,3 +2454,68 @@ The report now says so.
 **The lesson is the one this journal keeps relearning, one level up.** Every check here
 compares the repo with itself. The cheapest check that compares it with the world,
 one baseline against one published number, had never been run.
+
+### 2026-10-14 · 62 — A stranger followed the README
+
+I cloned the public repository fresh, with no venv and nothing from my own tree, and
+followed the README literally, as someone arriving from the site would.
+
+**What worked.** `make install` and `make demo` ran first time, and `make ci` passed on
+the fresh clone (14 minutes). Following the SciFact README, the data fetched and
+hash-checked, and BM25 reproduced exactly: 0.645085 against the committed 0.6451.
+
+**Where a stranger got stuck.**
+
+1. **The hosted arms could not run at all.** Every config calls an alias that only
+   resolves through my private LiteLLM proxy. The mapping existed as documentation, not
+   as anything runnable, and the error said only "LITELLM_BASE_URL is not set".
+2. **`.env.example` set `LITELLM_BASE_URL` by default.** A stranger who added just an
+   OpenRouter key would have been routed to a proxy that does not exist.
+3. **A rerun broke the tree.** It landed in `data/runs/` beside the committed run, and V8
+   failed.
+4. **Nothing showed the cost before spending.** The figures were already in the committed
+   runs.
+5. **The local configs named a model, not a revision.** A fresh machine downloads whatever
+   Hugging Face serves today. Two committed runs (the fabriceyhc fine-tunes) recorded no
+   revision at all.
+6. **No "reproduce" path existed anywhere.** The README was written for someone
+   integrating their own system. The summarisation README never even showed how to fetch
+   the 200-article slice the results use.
+7. **Small things.**
+   - Every fetcher's "Next:" line said `dataset-create`, which fails on a frozen dataset.
+   - `make demo` left untracked runs behind. That is where the stray `demo_v1` folders
+     came from.
+   - The NER and SciFact adapters never resolved an alias to its upstream model. NER's 24
+     hosted runs record `alias-unresolved`, and SciFact's 12 record no identity source.
+   - On Linux, `uv sync --extra local` installs the CUDA build of PyTorch, about 5 GB.
+
+**What was built.**
+
+- `examples/_shared/gateway.py`: one routing module for all five adapters. It uses your
+  proxy when one is configured; otherwise it sends requests to OpenRouter directly with
+  one key, mapped through `examples/models.json`.
+  - `examples/litellm.config.yaml` is the same table as a ready-to-run proxy config.
+  - A raw OpenRouter id passes straight through, so anyone can add a model of their own.
+- `examples/experiments.json`: one registry that `examples/reproduce.py` and the site
+  both read.
+- `make plan / data / reproduce / compare` from the repository root.
+  - Reruns go to the gitignored `runs-repro/`, never beside the committed runs.
+  - Each local arm is pinned to the snapshot in `examples/local_models.json`.
+  - Each hosted arm is capped at twice what it was billed.
+  - The replication card reports exact item agreement for local arms. For every arm, it
+    re-tests the leader's Holm family with the reruns substituted in.
+- `docs/REPRODUCE.md`; the README's top is now a "start where you are" table; there is a
+  "Reproduce it" section on the site and on each experiment page.
+- A `reproduce` workflow on every pull request:
+  - `make verify` from a clean checkout;
+  - the deterministic arms of three experiments rerun from freshly fetched data, which
+    must match exactly.
+
+**Results so far.** The AG News local field reproduced exactly on Linux against runs
+made on a Mac: all four ML models and both baselines, 200/200 items each. On a clean copy
+of the tree, so did LEAD-3, BM25 and the SciFact floors. Every committed verdict held in
+all three cards. The hosted arms have not been rerun; that needs a key and about $12.
+
+**The lesson.** Every reproducibility check here ran in the tree that made the results,
+so none of them could see the infrastructure that only that tree had. The cheapest check
+that compares the repo with a stranger's machine is a stranger's machine.

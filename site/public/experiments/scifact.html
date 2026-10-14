@@ -170,6 +170,22 @@ $0.4811 per 1,000 items</title></circle><circle cx="707.4" cy="55.1" r="11" clas
   <ol class="findings"><li><div><h3>LLM rerankers lead — inside a twelve-way tie.</h3><p>glm_s reranking BM25&#x27;s top 20 scores 0.7437 nDCG@10; 12 arms cannot be separated from it, including the free dense retriever e5_base.</p></div></li><li><div><h3>The dearest model finished 2nd of 19.</h3><p>glm_m billed $0.4576 for 200 items. The cheapest model statistically tied with the leader, deepseek_s, cost 7.6× less.</p></div></li><li><div><h3>The dev slice picked the wrong winner.</h3><p>Tuned on a 40-query dev slice, the leaderboard&#x27;s winner there was not the winner on the 160 queries it never saw.</p></div></li></ol>
 </div></section>
 
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The 7 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 12 hosted arms billed <strong>$1.94</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/retrieval-scifact">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP=scifact
+<span class="p">$ </span>make data      EXP=scifact
+<span class="p">$ </span>make reproduce EXP=scifact LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP=scifact LEVEL=hosted
+<span class="p">$ </span>make compare   EXP=scifact</pre>
+  </div>
+</div></section>
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>

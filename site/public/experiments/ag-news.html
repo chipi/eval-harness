@@ -260,6 +260,22 @@ $0.0127 per 1,000 items</title></circle><circle cx="954.1" cy="122.1" r="11" cla
   <ol class="findings"><li><div><h3>Three small fine-tuned classifiers take the top three places.</h3><p>bert_base_ta leads at 0.9600; the best hosted model, anthropic_m, scores 0.9100.</p></div></li><li><div><h3>The dearest model finished 5th of 30.</h3><p>anthropic_l billed $0.1750 for 200 items. The cheapest model statistically tied with the leader, anthropic_m, cost 2.5× less.</p></div></li><li><div><h3>Most of the lead is the dataset&#x27;s labelling convention.</h3><p>17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them.</p></div></li></ol>
 </div></section>
 
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The 6 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$0.58</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/classification-ag-news">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP=ag-news
+<span class="p">$ </span>make data      EXP=ag-news
+<span class="p">$ </span>make reproduce EXP=ag-news LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP=ag-news LEVEL=hosted
+<span class="p">$ </span>make compare   EXP=ag-news</pre>
+  </div>
+</div></section>
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>

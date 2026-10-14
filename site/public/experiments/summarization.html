@@ -282,6 +282,22 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="390" cy="358.2" r="6" class="dot k-local" data-tip="bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></figure></div></div></section>
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The 5 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$5.74</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/summarization-cnn-dailymail">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP=summarization
+<span class="p">$ </span>make data      EXP=summarization
+<span class="p">$ </span>make reproduce EXP=summarization LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP=summarization LEVEL=hosted
+<span class="p">$ </span>make compare   EXP=summarization</pre>
+  </div>
+</div></section>
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>

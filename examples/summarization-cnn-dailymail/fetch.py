@@ -192,8 +192,13 @@ def main() -> int:
     print(f"\n  Long inputs are the point: a {article_words:.0f}-word article is where a local")
     print("  model's context limit and an LLM's price per token both start to bite.")
     print("\nNext:")
-    print(f"  make dataset-create DATASET_ID={dataset_id} ARGS='--source-dir data/sources/{dataset_id}'")
-    print(f"  make dataset-materialize DATASET_ID={dataset_id}")
+    if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():
+        # Frozen and committed: check the fetched bytes against it, never re-create it.
+        print(f"  cd {ROOT} && make dataset-materialize DATASET_ID={dataset_id}")
+        print("  (or, from the repository root: make data EXP=<experiment> does all of this)")
+    else:
+        print(f"  make dataset-create DATASET_ID={dataset_id} ARGS='--source-dir data/sources/{dataset_id}'")
+        print(f"  make dataset-materialize DATASET_ID={dataset_id}")
     return 0
 
 

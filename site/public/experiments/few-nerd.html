@@ -248,6 +248,22 @@ $0.0273 per 1,000 items</title></circle><circle cx="803.7" cy="137.4" r="11" cla
   <ol class="findings"><li><div><h3>The only unambiguous winner in the repo.</h3><p>span_marker, fine-tuned on Few-NERD&#x27;s training split, scores 0.7674 and is separated from all 27 other arms.</p></div></li><li><div><h3>The dearest model finished 3rd of 28.</h3><p>anthropic_l billed $0.6897 for 280 items. No paid model is statistically tied with the leader.</p></div></li><li><div><h3>But its margin is partly the corpus&#x27;s own conventions.</h3><p>57% of its margin is one entity type, other, whose meaning exists only in this corpus, and 38% of its lead over the best hosted model is agreeing with annotation the rest of the field rejects.</p></div></li></ol>
 </div></section>
 
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The 4 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$2.61</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/ner-few-nerd">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP=few-nerd
+<span class="p">$ </span>make data      EXP=few-nerd
+<span class="p">$ </span>make reproduce EXP=few-nerd LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP=few-nerd LEVEL=hosted
+<span class="p">$ </span>make compare   EXP=few-nerd</pre>
+  </div>
+</div></section>
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>

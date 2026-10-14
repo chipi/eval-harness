@@ -26,12 +26,13 @@ from __future__ import annotations
 
 import hashlib
 import inspect
-import os
 import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+
+import gateway
 
 
 @dataclass
@@ -92,7 +93,6 @@ class ClassificationTask:
         self._prompt_cache: Dict[str, str] = {}
         self._pipe: Any = None
         self._pipe_key: Optional[tuple] = None
-        self._upstream_cache: Dict[str, Optional[str]] = {}
 
     # ── the prompt ───────────────────────────────────────────────────────────
     def prompt(self, params: Dict[str, Any]) -> str:
@@ -293,27 +293,13 @@ class ClassificationTask:
         response cut off at max_tokens scores like a bad model rather than a small budget,
         so `truncated` is a metric and not a log line.
         """
-        from openai import OpenAI  # noqa: PLC0415
+        client, route = gateway.client(params)
 
-        base = (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-        if not base.startswith("http"):
-            raise SystemExit("LITELLM_BASE_URL is not set — copy .env.example to .env")
-        key_env = params.get("api_key_env", "LITELLM_API_KEY")
-        key = os.environ.get(key_env)
-        if not key:
-            raise SystemExit(f"{key_env} is not set")
-        client = OpenAI(api_key=key, base_url=f"{base}/v1")
-
-        extra_body: Dict[str, Any] = {}
-        for passthrough in ("reasoning", "reasoning_effort"):
-            if params.get(passthrough) is not None:
-                extra_body[passthrough] = params[passthrough]
-        if params.get("provider_routing") is not None:
-            extra_body["provider"] = params["provider_routing"]
+        extra_body = gateway.extra_body(params, route)
 
         max_tokens = int(params.get("max_tokens", 200))
         resp = client.chat.completions.create(
-            model=params["model"],
+            model=route["model"],
             temperature=float(params.get("temperature", 0.0)),
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": self.prompt(params) + "\n\n" + text}],
@@ -387,33 +373,6 @@ class ClassificationTask:
         self.score(self.labels[0], self.labels[0], "a source text")
 
     # ── fingerprint ──────────────────────────────────────────────────────────
-    def _resolve_upstream(self, alias: Optional[str]) -> Optional[str]:
-        """What upstream model an alias points at, or None if the proxy cannot say."""
-        if not alias:
-            return None
-        if alias in self._upstream_cache:
-            return self._upstream_cache[alias]
-        resolved: Optional[str] = None
-        base = (os.environ.get("LITELLM_BASE_URL") or "").rstrip("/")
-        key = os.environ.get("LITELLM_API_KEY")
-        if base.startswith("http") and key:
-            import json as _json  # noqa: PLC0415
-            import urllib.request  # noqa: PLC0415
-
-            try:
-                req = urllib.request.Request(
-                    base + "/model/info", headers={"Authorization": "Bearer " + key}
-                )
-                with urllib.request.urlopen(req, timeout=15) as fh:
-                    for entry in (_json.load(fh).get("data") or []):
-                        if entry.get("model_name") == alias:
-                            resolved = (entry.get("litellm_params") or {}).get("model")
-                            break
-            except Exception:  # noqa: BLE001 -- provenance is best-effort, the run is not
-                resolved = None
-        self._upstream_cache[alias] = resolved
-        return resolved
-
     def fingerprint(self, params: Dict[str, Any], hf_fingerprint: Any = None) -> Dict[str, Any]:
         """What this arm's system under test IS.
 
@@ -452,14 +411,14 @@ class ClassificationTask:
                     "label": params.get("label"), **common}
 
         alias = params.get("model")
-        upstream = self._resolve_upstream(alias)
+        upstream, id_source = gateway.resolve_upstream(alias)
         return {
             "id": upstream or alias,
             "alias": alias,
-            "id_source": "proxy-model-info" if upstream else "alias-unresolved",
+            "id_source": id_source,
             "revision": None,
             "revision_source": "api-model-string",
-            "endpoint": os.environ.get("LITELLM_BASE_URL"),
+            "endpoint": gateway.endpoint(),
             "provider_routing": params.get("provider_routing"),
             "temperature": params.get("temperature"),
             "prompt_sha256": self.prompt_sha256(params),

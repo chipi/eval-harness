@@ -13,6 +13,16 @@ members and you have to decide which member matches which.
 
 Every interesting decision in this example is in that matching.
 
+> **Rerun this experiment** from the repository root — `EXP=few-nerd`:
+>
+> ```bash
+> make plan EXP=few-nerd  &&  make data EXP=few-nerd  &&  make reproduce EXP=few-nerd  &&  make compare EXP=few-nerd
+> ```
+>
+> `LEVEL=hosted` adds the LLM arms with one `OPENROUTER_API_KEY`. What each level checks and
+> what to expect: [`docs/REPRODUCE.md`](../../docs/REPRODUCE.md). The rest of this page is what
+> those commands do underneath, and why.
+
 ---
 
 ## Get the data
