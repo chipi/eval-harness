@@ -8,6 +8,8 @@ works — and how to rerun all of it yourself.
 
 <div class="eh-cards" markdown>
 
+[<span class="n">00</span><b>Use the harness</b><span class="d">Your first evaluation end to end, offline: freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline.</span>](GUIDE.md)
+
 [<span class="n">01</span><b>Reproduce it</b><span class="d">Rerun any experiment and check its findings — from recomputing every number for $0 to rerunning every model with one key, and adding your own.</span>](REPRODUCE.md)
 
 [<span class="n">02</span><b>Protocol</b><span class="d">What each experiment measured, on which data and metric, and how that relates to the field's standard — with a calibration row each.</span>](PROTOCOL.md)

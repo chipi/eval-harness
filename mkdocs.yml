@@ -30,6 +30,7 @@ hooks:
 nav:
   - Home: index.md
   - The findings ↗: https://chipi.github.io/eval-harness/
+  - Use the harness: GUIDE.md
   - Reproduce it: REPRODUCE.md
   - Protocol: PROTOCOL.md
   - Reference: REFERENCE.md

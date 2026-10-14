@@ -12,7 +12,7 @@ published literature.
 |---|---|
 | **read what was found** | **[chipi.github.io/eval-harness](https://chipi.github.io/eval-harness/)** — the findings, for people; generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md) — five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
-| **measure your own system** | [the harness](#what-it-is-for), below — freeze a dataset, write one adapter, get answers that survive being asked again |
+| **measure your own system** | [**Use the harness**](docs/GUIDE.md) — your first evaluation end to end in twenty minutes, offline: freeze a dataset, build a golden reference set, measure, compare, promote. [What the harness is](#what-it-is-for), below |
 | **read the full documentation** | [chipi.github.io/eval-harness/docs](https://chipi.github.io/eval-harness/docs/) — protocol, reference, concepts, runbook |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
 
@@ -71,7 +71,7 @@ make experiment-run     CONFIG=data/configs/arm_a.yaml
 make leaderboard DATASET_ID=my_v1
 ```
 
-`make help` lists every verb. Start with `harness/docs/INTEGRATION.md`, then
+`make help` lists every verb. Start with [`docs/GUIDE.md`](docs/GUIDE.md) (a worked example, offline), then `harness/docs/INTEGRATION.md` and
 `harness/docs/RUNBOOK.md`.
 
 ## Asking better questions of your results

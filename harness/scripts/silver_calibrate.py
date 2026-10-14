@@ -151,6 +151,13 @@ def main() -> int:
         metric = _adapter_primary_metric(adapter_path) or "overlap_f1"
 
     ref_id = args.reference_id
+    # GOLD WHEN IT EXISTS -- the rule every run follows (experiment_run._reference_for).
+    # The default used to be whichever reference the first run in glob order recorded, so a
+    # dataset whose early runs predate its gold set was "calibrated" against SILVER: a
+    # proxy measured against a proxy, printed as if against ground truth. Found by writing
+    # the tutorial (docs/GUIDE.md) and following it.
+    if not ref_id and (REFERENCES / "gold" / args.dataset_id).is_dir():
+        ref_id = f"gold/{args.dataset_id}"
     if not ref_id:
         for mp in glob.glob(str(RUNS / "*" / "metrics.json")):
             m = read_json(Path(mp))
@@ -161,6 +168,10 @@ def main() -> int:
     if not ref_id:
         die("no trusted reference found — this measures a proxy AGAINST ground truth, "
             "so there is nothing to calibrate without one")
+    if ref_id.startswith("silver/"):
+        print(f"  WARNING: the trusted reference is SILVER ({ref_id}). This compares one "
+              "proxy with another;\n           author gold for this dataset, or pass "
+              "--reference-id, for a calibration.")
     trusted = {os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8").strip()
                for f in glob.glob(str(REFERENCES / ref_id / "*.txt"))}
     mat = ROOT / "data/materialized" / args.dataset_id

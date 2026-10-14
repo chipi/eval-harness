@@ -150,7 +150,7 @@ silver-calibrate:
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(GROUP_BY),--group-by $(GROUP_BY),)
 
 rescore:
-	$(PYTHON) scripts/rescore.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) --out $(OUT)
+	$(PYTHON) scripts/rescore.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) --out $(OUT)
 	@echo ""
 	@echo "  EVAL_RUNS_DIR=$(OUT) make leaderboard DATASET_ID=$(DATASET_ID)"
 

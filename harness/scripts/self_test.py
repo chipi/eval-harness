@@ -1947,6 +1947,54 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
               "FAIL V5" in r.stdout, r.stdout[-200:])
 
 
+def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
+    """Gold that arrives after the runs: `rescore --reference-id` re-scores stored outputs
+    against it, and the run says which set it was measured on and which it is scored on.
+
+    Fixture: a committed demo run scored against silver/smoke_v1, re-scored against a
+    throwaway "gold" set made of that run's own outputs -- so the score must become 1.0,
+    which no copied or stale score could produce.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    base = HERE.parent / "data"
+    src = base / "runs" / "demo_v1_20260926T142947Z_r1"
+    check("rescore/reference-id: the committed fixture run exists", src.is_dir())
+    if not src.is_dir():
+        return
+    runs, gold = base / "runs-selftest-refid", base / "references" / "gold" / "selftest_refid"
+    for d in (runs, gold):
+        shutil.rmtree(d, ignore_errors=True)
+    try:
+        shutil.copytree(src, runs / src.name)
+        shutil.copytree(src / "outputs", gold)
+        out = runs / "out"
+        r = run("scripts/rescore.py", "--dataset-id", "smoke_v1", "--reference-id",
+                "gold/selftest_refid", "--out", str(out.relative_to(HERE.parent)),
+                env={"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))})
+        mf = out / src.name / "metrics.json"
+        if r.returncode != 0 or not mf.is_file():
+            check("rescore/reference-id: ran", False, ((r.stderr or "") + (r.stdout or ""))[-200:])
+            return
+        m = _json.loads(mf.read_text())
+        data = m["fingerprint"]["data"]
+        check("rescore/reference-id: scored against the new set (own outputs -> 1.0)",
+              abs(m["scores"].get("overlap_f1", 0) - 1.0) < 1e-9, str(m["scores"].get("overlap_f1")))
+        check("rescore/reference-id: the run now says gold, in both places",
+              m.get("reference_tier") == "gold" and data.get("reference_id") == "gold/selftest_refid"
+              and data.get("reference_tier") == "gold", f"{m.get('reference_tier')} {data.get('reference_id')}")
+        check("rescore/reference-id: and keeps what it was measured against",
+              data.get("reference_id_at_measurement") == "silver/smoke_v1")
+        bad = run("scripts/rescore.py", "--dataset-id", "smoke_v1", "--reference-id",
+                  "gold/no_such_set", "--out", str(out.relative_to(HERE.parent)),
+                  env={"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))})
+        check("rescore/reference-id: a missing set is refused", bad.returncode != 0)
+    finally:
+        for d in (runs, gold):
+            shutil.rmtree(d, ignore_errors=True)
+
+
 def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     """examples/models.json, litellm.config.yaml and experiments.json are what a stranger's
     rerun is built from. Each is a copy of something else -- configs, the proxy, committed
@@ -2101,6 +2149,7 @@ def main() -> int:
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
         test_v5_tells_a_tie_from_a_copy,
+        test_rescore_can_move_runs_onto_a_new_reference_set,
         test_the_reproduction_tables_agree_with_the_configs_and_runs,
         test_the_gateway_routes_as_documented,
     ):
