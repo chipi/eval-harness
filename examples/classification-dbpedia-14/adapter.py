@@ -155,5 +155,6 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             revision=params.get("revision"),
             device=str(params.get("device", "cpu")),
             precision=str(params.get("precision", "fp32")),
+            loaded_model=TASK.loaded_model(params),
         )
     return TASK.fingerprint(params, hf_fingerprint=hf)

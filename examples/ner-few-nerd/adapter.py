@@ -615,6 +615,7 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             revision=params.get("revision"),
             device=str(params.get("device", "cpu")),
             precision=str(params.get("precision", "fp32")),
+            loaded_model=_MODEL if _MODEL_KEY == (provider, params.get("model")) else None,
         )
         if provider == "gliner":
             # The threshold IS this arm's decision boundary: move it and precision and

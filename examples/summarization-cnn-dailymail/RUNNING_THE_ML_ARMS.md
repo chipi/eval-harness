@@ -16,7 +16,8 @@
 > distribution with length exactly as warned. Results:
 > [`REPORT_SUMMARIZATION.md`](../../research/REPORT_SUMMARIZATION.md). Two traps found on
 > the way are in [`KNOWN_ISSUES.md`](../../research/KNOWN_ISSUES.md): runs after the first
-> on a machine are marked dirty unless `EVAL_RUNS_DIR` points outside the tree, and each
+> on a machine were marked dirty unless `EVAL_RUNS_DIR` pointed outside the tree (fixed
+> 2026-10-14), and each
 > checkpoint has a safetensors conversion PR, and two of these three (`bart_m`,
 > `bart_l_xsum`) reproduce the recorded outputs on torch 2.2.2, the original Mac's torch;
 > `bart_s`'s is fp16 and does not run there.

@@ -12,6 +12,8 @@
 > - Run with `EVAL_RUNS_DIR` **outside the git tree**, or every run after the first is
 >   recorded `dirty` (the earlier run directories are untracked files). Copy the finished
 >   runs into `harness/data/runs/` afterwards, without `run.json` and `outputs/_rows.jsonl`.
+>   *(No longer needed from 2026-10-14: untracked run output no longer counts as dirt —
+>   see `KNOWN_ISSUES.md`.)*
 >
 > And a shortcut nobody took: each checkpoint has a safetensors conversion PR on the Hub,
 > and five of the six reproduce the recorded outputs on torch 2.2.2 (`bart_s`'s is fp16 and

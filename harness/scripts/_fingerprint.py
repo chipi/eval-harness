@@ -79,15 +79,54 @@ def _git(root: Path, *args: str) -> Optional[str]:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def filter_dirt(status: str, data_rel: Optional[str]) -> list:
+    """`git status --porcelain` lines that make a tree dirty, minus untracked run output.
+
+    EVERY RUN AFTER THE FIRST WAS RECORDED DIRTY. A finished run directory under
+    `data/runs*/` is an untracked file until someone commits it, and any untracked file
+    used to count -- so the second run on a machine always said `dirty: true` about code
+    byte-identical to the recorded commit, and "commit before you run" really meant
+    "commit after every run". All six local ML arms of 2026-09-30 needed
+    `EVAL_RUNS_DIR` pointed outside the tree to get an honest flag.
+
+    Run output is not code. An UNTRACKED path under `<data_rel>runs*` is ignored;
+    anything else still counts -- a modified tracked file anywhere (a committed run
+    included), and untracked files outside the runs directories, which could be code.
+    Pure, so the rule is tested without a git tree.
+    """
+    dirt = []
+    for line in (status or "").splitlines():
+        path = line[3:].strip().strip('"')
+        if (line.startswith("?? ") and data_rel and path.startswith(data_rel)
+                and path[len(data_rel):].startswith("runs")):
+            continue
+        dirt.append(line)
+    return dirt
+
+
+def tree_dirt(root: Path) -> Optional[list]:
+    """The lines that make `root`'s git tree dirty, or None when git cannot say."""
+    status = _git(root, "status", "--porcelain")
+    if status is None:
+        return None
+    top = _git(root, "rev-parse", "--show-toplevel")
+    try:
+        data_rel = (root / "data").resolve().relative_to(Path(top).resolve()).as_posix() + "/"
+    except (TypeError, ValueError):
+        data_rel = None
+    return filter_dirt(status, data_rel)
+
+
 def _harness_identity(root: Path) -> Dict[str, Any]:
     """The INSTRUMENT: this harness's own code state."""
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
-    status = _git(root, "status", "--porcelain")
+    dirt = tree_dirt(root)
     return {
         "commit": commit,
         # A dirty tree is not a version. Recorded rather than only refused, so a number
         # produced from one carries the caveat instead of implying reproducibility.
-        "dirty": bool(status) if status is not None else None,
+        # Untracked run output does not count (see filter_dirt).
+        "dirty": bool(dirt) if dirt is not None else None,
     }
 
 

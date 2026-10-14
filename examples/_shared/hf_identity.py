@@ -91,27 +91,86 @@ def _weights_sha256(files: list[Path]) -> Optional[str]:
     return h.hexdigest()
 
 
+#: The `precision` values configs declare, as the torch dtype each one means.
+_PRECISION_DTYPE = {"fp32": "float32", "fp16": "float16", "bf16": "bfloat16",
+                    "float32": "float32", "float16": "float16", "bfloat16": "bfloat16"}
+
+
+def loaded_identity(model: Any) -> Dict[str, Any]:
+    """What a LOADED model actually is: the commit it came from and the dtype it runs in.
+
+    The cache can say which snapshots exist; only the loaded object can say which one was
+    used. Five of the six checkpoints added on 2026-09-30 recorded `revision: null`
+    because a background safetensors conversion left two snapshots and the cache resolver
+    rightly declined to guess. transformers stamps the commit it loaded on the config
+    (`config._commit_hash`), so the answer was on the model all along.
+
+    The dtype is the same story. Configs declare `precision: fp32` and no adapter applies
+    it -- the model runs in whatever dtype it was STORED in -- so `distilbart-cnn-6-6`
+    ran at fp16 under an fp32 label, and nothing in its run could show that. Reading
+    `next(model.parameters()).dtype` makes the run say what it computed in.
+
+    Accepts a transformers pipeline, a PreTrainedModel, or any torch module that wraps
+    one (sentence-transformers, GLiNER, SpanMarker). Returns {} rather than guessing when
+    it cannot tell.
+    """
+    obj = getattr(model, "model", None) if hasattr(model, "tokenizer") else None
+    obj = obj if obj is not None else model
+    out: Dict[str, Any] = {}
+    try:
+        out["loaded_dtype"] = str(next(obj.parameters()).dtype).replace("torch.", "")
+    except Exception:  # noqa: BLE001 - not a torch module, or no parameters
+        pass
+    commit = getattr(getattr(obj, "config", None), "_commit_hash", None)
+    if not commit and hasattr(obj, "modules"):
+        # A wrapper (SentenceTransformer, GLiNER, SpanMarker) holds the transformers model
+        # one or more levels down; take the first config that knows its commit.
+        for m in obj.modules():
+            commit = getattr(getattr(m, "config", None), "_commit_hash", None)
+            if commit:
+                break
+    if commit:
+        out["loaded_revision"] = commit
+    return out
+
+
 def hf_model_fingerprint(
     model_id: str,
     *,
     revision: Optional[str] = None,
     device: Optional[str] = None,
     precision: Optional[str] = None,
+    loaded_model: Any = None,
 ) -> Dict[str, Any]:
     """The dict an adapter's `fingerprint()` should return for an HF model.
 
     `revision_source` says how the revision was determined, for whoever reads the run:
-    "hf-snapshot" when resolved from the cache, "unavailable" when it could not be — which
-    is recorded as such rather than filled in with something plausible.
+    "hf-snapshot" when resolved from the cache, "loaded-model" when the cache was
+    ambiguous but the loaded model states its commit, "unavailable" when neither could say
+    — which is recorded as such rather than filled in with something plausible.
+
+    Pass `loaded_model` (the object warm-up loaded) whenever there is one: it is the only
+    source of the dtype the arm actually computed in. The fingerprint is built after
+    warm-up, so an adapter that caches its model can hand it over.
     """
     resolved = resolved_revision(model_id, revision)
+    loaded = loaded_identity(loaded_model) if loaded_model is not None else {}
+    source = "hf-snapshot" if resolved else "unavailable"
+    if not resolved and loaded.get("loaded_revision"):
+        resolved, source = loaded["loaded_revision"], "loaded-model"
     out: Dict[str, Any] = {
         "id": model_id,
         "revision": resolved,
-        "revision_source": "hf-snapshot" if resolved else "unavailable",
+        "revision_source": source,
         "device": device,
         "precision": precision,
     }
+    out.update(loaded)
+    want = _PRECISION_DTYPE.get(str(precision or "").lower())
+    if want and loaded.get("loaded_dtype") and loaded["loaded_dtype"] != want:
+        # The label and the computation disagree. Say so in the fingerprint, where
+        # compare_runs and a reader will see it, instead of letting `precision` stand.
+        out["precision_not_applied"] = True
     if resolved:
         files = weight_files(model_id, resolved)
         # Names and sizes are free and catch a truncated download; the content hash is not.

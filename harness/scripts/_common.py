@@ -181,10 +181,14 @@ def build_info() -> Dict[str, Any]:
             return None
 
     ref = git("rev-parse", "HEAD")
-    status = git("status", "--porcelain")
+    # The same rule as the instrument's flag: untracked run output is not code, so a
+    # previous run's directory no longer marks the next run dirty. One rule, one place.
+    from _fingerprint import tree_dirt  # noqa: PLC0415
+
+    dirt = tree_dirt(ROOT)
     return {
         "ref": ref or "unknown",
-        "dirty": bool(status),
+        "dirty": bool(dirt),
         "source": "git",
     }
 

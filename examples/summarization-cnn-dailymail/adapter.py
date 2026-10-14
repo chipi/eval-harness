@@ -516,11 +516,15 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     if provider == "hf_local":
         from hf_identity import hf_model_fingerprint  # noqa: PLC0415
 
+        key = (params.get("model"), params.get("revision"), params.get("device"))
         return hf_model_fingerprint(
             params["model"],
             revision=params.get("revision"),
             device=str(params.get("device", "cpu")),
             precision=str(params.get("precision", "fp32")),
+            # Warm-up has already loaded it; hand it over so the run records the commit
+            # and dtype it actually computed with, not only what the config declared.
+            loaded_model=_PIPE if _PIPE_KEY == key else None,
         )
     # RESOLVE THE ALIAS. `params["model"]` is a name WE invented on our own proxy
     # ("eval-opus-5"). Recording it as the system under test meant the fingerprint stayed
