@@ -1,0 +1,105 @@
+# A LiteLLM proxy config serving every alias the example configs use.
+# Generated from models.json (the self-test checks they agree); edit that, not this.
+#
+#   pip install "litellm[proxy]"
+#   OPENROUTER_API_KEY=sk-or-... litellm --config examples/litellm.config.yaml --port 4001
+#
+# then in harness/.env:  LITELLM_BASE_URL=http://127.0.0.1:4001  and  LITELLM_API_KEY=<any non-empty string>
+# Without a proxy you need none of this: OPENROUTER_API_KEY alone takes the direct route.
+model_list:
+  - model_name: eval-claude-haiku
+    litellm_params:
+      model: openrouter/anthropic/claude-haiku-4.5
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-claude-sonnet
+    litellm_params:
+      model: openrouter/anthropic/claude-sonnet-5
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-deepseek-41flash
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4.1-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-deepseek-flash
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-deepseek-pro
+    litellm_params:
+      model: openrouter/deepseek/deepseek-v4-pro
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gemma-26b
+    litellm_params:
+      model: openrouter/google/gemma-4-26b-a4b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gemma-3-27b
+    litellm_params:
+      model: openrouter/google/gemma-3-27b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gemma-31b
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-glm-45-air
+    litellm_params:
+      model: openrouter/z-ai/glm-4.5-air
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-glm-46
+    litellm_params:
+      model: openrouter/z-ai/glm-4.6
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-glm-5
+    litellm_params:
+      model: openrouter/z-ai/glm-5
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gpt-55
+    litellm_params:
+      model: openrouter/openai/gpt-5.5
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gpt-6sol
+    litellm_params:
+      model: openrouter/openai/gpt-6-sol
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gpt-mini
+    litellm_params:
+      model: openrouter/openai/gpt-5.4-mini
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-llama-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-llama-maverick
+    litellm_params:
+      model: openrouter/meta-llama/llama-4-maverick
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-llama-scout
+    litellm_params:
+      model: openrouter/meta-llama/llama-4-scout
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-mistral-large
+    litellm_params:
+      model: openrouter/mistralai/mistral-large-2512
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-mistral-medium
+    litellm_params:
+      model: openrouter/mistralai/mistral-medium-3.1
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-mistral-small
+    litellm_params:
+      model: openrouter/mistralai/mistral-small-3.2-24b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-opus-5
+    litellm_params:
+      model: openrouter/anthropic/claude-opus-5
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-qwen-37plus
+    litellm_params:
+      model: openrouter/qwen/qwen3.7-plus
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-qwen-3max
+    litellm_params:
+      model: openrouter/qwen/qwen3-max
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-qwen-flash
+    litellm_params:
+      model: openrouter/qwen/qwen3.8-flash
+      api_key: os.environ/OPENROUTER_API_KEY

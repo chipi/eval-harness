@@ -9,6 +9,16 @@ by *disbelieving the first answer*: several headline findings in
 [`research/NOTES.md`](../../research/internal/NOTES.md) were retracted after the numbers were checked
 properly, including one caused by a one-line bug in this example's own scorer.
 
+> **Rerun this experiment** from the repository root — `EXP=summarization` / `EXP=summarization-dailymail`:
+>
+> ```bash
+> make plan EXP=summarization  &&  make data EXP=summarization  &&  make reproduce EXP=summarization  &&  make compare EXP=summarization
+> ```
+>
+> `LEVEL=hosted` adds the LLM arms with one `OPENROUTER_API_KEY`. What each level checks and
+> what to expect: [`docs/REPRODUCE.md`](../../docs/REPRODUCE.md). The rest of this page is what
+> those commands do underneath, and why.
+
 ---
 
 ## Get the data
@@ -19,11 +29,12 @@ download recipe, never the text.
 ```bash
 cd examples/summarization-cnn-dailymail
 uv sync                       # provisions its own Python 3.11 and deps
-uv run fetch.py --n 20        # ~1 second, stdlib only, no `datasets` library
+uv run fetch.py --n 200       # the measurement slice, cnn_dailymail_200 (~5 seconds)
+uv run fetch.py --n 20        # the dev slice, a strict prefix of the 200
 ```
 
-That writes 20 articles into `../../harness/data/sources/cnn_dailymail_20/` and their
-human-written highlights into `../../harness/data/references/gold/cnn_dailymail_20/`.
+That writes the articles into `../../harness/data/sources/cnn_dailymail_<n>/` and their
+human-written highlights into `../../harness/data/references/gold/cnn_dailymail_<n>/`.
 Both paths are gitignored.
 
 **Why this dataset.** `abisee/cnn_dailymail` is Apache-2.0 — the only clearly-licensed
@@ -53,7 +64,7 @@ what makes the silver experiment below possible.
 ## Run it
 
 ```bash
-cp ../../harness/.env.example ../../harness/.env      # point at your proxy
+cp ../../harness/.env.example ../../harness/.env      # OPENROUTER_API_KEY, or your proxy
 cd ../../harness
 
 make experiment-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s.yaml

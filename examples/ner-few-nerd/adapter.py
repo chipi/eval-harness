@@ -33,7 +33,6 @@ WHAT THIS TASK BREAKS THAT CLASSIFICATION DID NOT
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
 import time
@@ -44,6 +43,7 @@ from typing import Any, Dict, List, Optional
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 
+import gateway  # noqa: E402
 from extraction import (  # noqa: E402
     METRIC_KINDS,
     PRIMARY_METRIC,
@@ -338,11 +338,15 @@ def _gliner(text: str, params: Dict[str, Any]) -> Result:
     the model has still never seen this dataset.
     """
     global _MODEL, _MODEL_KEY
-    key = ("gliner", params.get("model"))
+    key = ("gliner", params.get("model"), params.get("revision"), params.get("precision"))
     if _MODEL is None or _MODEL_KEY != key:
         from gliner import GLiNER  # noqa: PLC0415
+        from hf_identity import apply_precision  # noqa: PLC0415
 
-        _MODEL = GLiNER.from_pretrained(params["model"])
+        # The revision was never passed on, so a pinned config still downloaded `main`.
+        rev = {"revision": params["revision"]} if params.get("revision") else {}
+        _MODEL = apply_precision(GLiNER.from_pretrained(params["model"], **rev),
+                                 params.get("precision"))
         _MODEL_KEY = key
     threshold = float(params.get("threshold", 0.5))
     found = [{"text": e["text"], "type": e["label"]}
@@ -359,11 +363,14 @@ def _span_marker(text: str, params: Dict[str, Any]) -> Result:
     is in the fingerprint: getting it wrong would silently retype every prediction.
     """
     global _MODEL, _MODEL_KEY
-    key = ("span_marker", params.get("model"))
+    key = ("span_marker", params.get("model"), params.get("revision"), params.get("precision"))
     if _MODEL is None or _MODEL_KEY != key:
+        from hf_identity import apply_precision  # noqa: PLC0415
         from span_marker import SpanMarkerModel  # noqa: PLC0415
 
-        _MODEL = SpanMarkerModel.from_pretrained(params["model"])
+        rev = {"revision": params["revision"]} if params.get("revision") else {}
+        _MODEL = apply_precision(SpanMarkerModel.from_pretrained(params["model"], **rev),
+                                 params.get("precision"))
         _MODEL_KEY = key
     found = []
     for e in _MODEL.predict(text):
@@ -374,27 +381,13 @@ def _span_marker(text: str, params: Dict[str, Any]) -> Result:
 
 
 def _litellm(text: str, params: Dict[str, Any]) -> Result:
-    from openai import OpenAI  # noqa: PLC0415
+    client, route = gateway.client(params)
 
-    base = (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-    if not base.startswith("http"):
-        raise SystemExit("LITELLM_BASE_URL is not set — copy .env.example to .env")
-    key_env = params.get("api_key_env", "LITELLM_API_KEY")
-    key = os.environ.get(key_env)
-    if not key:
-        raise SystemExit(f"{key_env} is not set")
-    client = OpenAI(api_key=key, base_url=f"{base}/v1")
-
-    extra_body: Dict[str, Any] = {}
-    for passthrough in ("reasoning", "reasoning_effort"):
-        if params.get(passthrough) is not None:
-            extra_body[passthrough] = params[passthrough]
-    if params.get("provider_routing") is not None:
-        extra_body["provider"] = params["provider_routing"]
+    extra_body = gateway.extra_body(params, route)
 
     max_tokens = int(params.get("max_tokens", 600))
     resp = client.chat.completions.create(
-        model=params["model"],
+        model=route["model"],
         temperature=float(params.get("temperature", 0.0)),
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": _prompt(params) + "\n\n" + text}],
@@ -637,11 +630,12 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
                 "label": params.get("label"), **common}
 
     alias = params.get("model")
+    upstream, id_source = gateway.resolve_upstream(alias)
     return {
-        "id": alias,
+        "id": upstream or alias,
         "alias": alias,
-        "id_source": "alias-unresolved",
-        "endpoint": os.environ.get("LITELLM_BASE_URL"),
+        "id_source": id_source,
+        "endpoint": gateway.endpoint(),
         "temperature": params.get("temperature"),
         "prompt_sha256": _prompt_sha256(params),
         "reasoning": params.get("reasoning"),

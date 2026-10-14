@@ -16,6 +16,16 @@ conclusion the pair does.
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
 | outcome | a winner | a group of eleven |
 
+> **Rerun this experiment** from the repository root — `EXP=dbpedia`:
+>
+> ```bash
+> make plan EXP=dbpedia  &&  make data EXP=dbpedia  &&  make reproduce EXP=dbpedia  &&  make compare EXP=dbpedia
+> ```
+>
+> `LEVEL=hosted` adds the LLM arms with one `OPENROUTER_API_KEY`. What each level checks and
+> what to expect: [`docs/REPRODUCE.md`](../../docs/REPRODUCE.md). The rest of this page is what
+> those commands do underneath, and why.
+
 ---
 
 ## Get the data

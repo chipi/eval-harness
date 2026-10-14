@@ -55,6 +55,7 @@ from typing import Any, Dict, List, Optional, Tuple
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1] / "harness"
 sys.path.insert(0, str(HERE.parent / "_shared"))
+import gateway  # noqa: E402
 
 from retrieval import (  # noqa: E402
     METRIC_KINDS,
@@ -158,7 +159,8 @@ _BUILT_THIS_PROCESS: Dict[str, bool] = {}
 
 
 def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
-                 doc_prefix: str = ""):
+                 doc_prefix: str = "", revision: Optional[str] = None,
+                 precision: Optional[str] = None):
     """Embed the corpus, or load the embeddings computed for this exact configuration.
 
     doc_prefix IS PART OF THE KEY, in memory and on disk. e5 is trained with "passage: "
@@ -173,7 +175,11 @@ def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
     """
     import numpy as np  # noqa: PLC0415
 
-    key = f"dense:{corpus_id}:{model_id}:{device}:{doc_prefix}"
+    # Revision and a non-default precision are part of the key when declared: embeddings
+    # from other weights, or another dtype, are another index. Absent, the key is what it
+    # always was, so existing caches stay valid for unpinned fp32 arms.
+    extra = "".join(f":{v}" for v in (revision, precision) if v and v != "fp32")
+    key = f"dense:{corpus_id}:{model_id}:{device}:{doc_prefix}{extra}"
     if key in _INDEX:
         return _INDEX[key]
 
@@ -182,10 +188,14 @@ def _dense_index(corpus_id: str, model_id: str, device: str, batch: int,
     docs, csha = _corpus(corpus_id)
     ids = [d["doc_id"] for d in docs]
     stamp = hashlib.sha256(
-        f"{csha}|{model_id}|{doc_prefix}|{device}".encode()).hexdigest()[:24]
+        f"{csha}|{model_id}|{doc_prefix}|{device}{extra}".encode()).hexdigest()[:24]
     cache = ROOT / "data" / "corpora" / corpus_id / ".index" / f"{stamp}.npy"
 
-    model = SentenceTransformer(model_id, device=device)
+    from hf_identity import apply_precision  # noqa: PLC0415
+
+    model = apply_precision(
+        SentenceTransformer(model_id, device=device,
+                            **({"revision": revision} if revision else {})), precision)
     if cache.is_file():
         emb = np.load(cache)
         if emb.shape[0] == len(ids):
@@ -222,7 +232,7 @@ def _dense(query: str, params: Dict[str, Any]) -> Result:
     model, emb, ids = _dense_index(
         params.get("corpus_id", "scifact"), params["model"],
         str(params.get("device", "cpu")), int(params.get("encode_batch", 64)),
-        str(params.get("doc_prefix", "")))
+        str(params.get("doc_prefix", "")), params.get("revision"), params.get("precision"))
     k = int(params.get("top_k", DEFAULT_TOP_K))
     # QUERY PREFIXES ARE PART OF THE MODEL, NOT A STYLE CHOICE. e5 and bge checkpoints are
     # trained with an asymmetric instruction ("query: " / "Represent this sentence...")
@@ -350,13 +360,7 @@ def _rerank(query: str, params: Dict[str, Any]) -> Result:
 
 
 def _litellm(user: str, params: Dict[str, Any]) -> Result:
-    from openai import OpenAI  # noqa: PLC0415
-
-    base = (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-    if not base:
-        raise SystemExit("LITELLM_BASE_URL is not set — copy .env.example to .env")
-    key = os.environ.get(params.get("api_key_env", "LITELLM_API_KEY"), "")
-    client = OpenAI(api_key=key, base_url=f"{base}/v1")
+    client, route = gateway.client(params)
 
     # REASONING IS PASSED THROUGH, AND THE OTHER THREE EXAMPLES ALREADY DID THIS.
     # I dropped it when writing this adapter, so these arms ran at the provider's default
@@ -368,15 +372,10 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
     # output budget (400, then 700 after I raised it) and returned message.content == ""
     # with finish_reason "length". The tokens went to hidden reasoning, so no budget would
     # ever have been enough. Same signature as glm_l in the NER example, different cause.
-    extra_body: Dict[str, Any] = {}
-    for passthrough in ("reasoning", "reasoning_effort"):
-        if params.get(passthrough) is not None:
-            extra_body[passthrough] = params[passthrough]
-    if params.get("provider_routing") is not None:
-        extra_body["provider"] = params["provider_routing"]
+    extra_body = gateway.extra_body(params, route)
 
     kwargs: Dict[str, Any] = {
-        "model": params["model"],
+        "model": route["model"],
         "messages": [{"role": "user", "content": user}],
         "temperature": float(params.get("temperature", 0.0)),
         "max_tokens": int(params.get("max_tokens", 400)),
@@ -495,7 +494,11 @@ def warmup(params: Dict[str, Any]) -> None:
     if provider == "dense":
         _dense_index(corpus_id, params["model"], str(params.get("device", "cpu")),
                      int(params.get("encode_batch", 64)),
-                     str(params.get("doc_prefix", "")))
+                     str(params.get("doc_prefix", "")), params.get("revision"),
+                     params.get("precision"))
+        # One untimed query: with the index loaded from cache, nothing above runs the
+        # model, so the first item would pay its lazy initialisation.
+        _dense("warm up", params)
     if provider == "rerank":
         _litellm("Reply with the single character: 1", {**params, "max_tokens": 8})
     if _BUILT_THIS_PROCESS:
@@ -615,9 +618,10 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             "first_stage_query_prefix": params.get("first_stage_query_prefix", ""),
             "first_stage_doc_prefix": params.get("first_stage_doc_prefix", ""),
             "alias": params.get("model"),
-            "id": params.get("model"),
+            "id": gateway.resolve_upstream(params.get("model"))[0] or params.get("model"),
+            "id_source": gateway.resolve_upstream(params.get("model"))[1],
             "identity_declared": True,
-            "endpoint": os.environ.get("LITELLM_BASE_URL"),
+            "endpoint": gateway.endpoint(),
             "max_tokens": int(params.get("max_tokens", 400)),
             "temperature": float(params.get("temperature", 0.0)),
             "reasoning": params.get("reasoning"),

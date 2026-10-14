@@ -1,0 +1,1 @@
+CSV export garbles accented names in Excel on Windows; PDF fine. Likely encoding. Needs clean export of 4,000 contacts this week.

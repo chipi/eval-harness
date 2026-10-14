@@ -21,30 +21,12 @@ ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 
-#: The five measurement slices. `base` is the directory the REPORT is computed from;
-#: billed cost always comes from data/runs, where the provider's response was recorded.
-EXPERIMENTS = [
-    {"slug": "summarization", "task": "Summarisation", "bench": "CNN/DailyMail",
-     "dataset": "cnn_dailymail_200", "prefix": "cnn_", "metric": "coverage",
-     "metric_label": "coverage", "base": "runs", "leader": "bart_l",
-     "report": "REPORT_SUMMARIZATION.md", "calibration": "summarization"},
-    {"slug": "ag-news", "task": "Classification", "bench": "AG News",
-     "dataset": "ag_news_200", "prefix": "ag_", "metric": "correct",
-     "metric_label": "accuracy", "base": "runs", "leader": "bert_base_ta",
-     "report": "REPORT_CLASSIFICATION.md", "calibration": "ag_news"},
-    {"slug": "dbpedia", "task": "Classification", "bench": "DBpedia-14",
-     "dataset": "dbpedia_280", "prefix": "db_", "metric": "correct",
-     "metric_label": "accuracy", "base": "runs", "leader": "qwen_m",
-     "report": "REPORT_CLASSIFICATION.md", "calibration": "dbpedia"},
-    {"slug": "few-nerd", "task": "Extraction", "bench": "Few-NERD",
-     "dataset": "few_nerd_280", "prefix": "fn_", "metric": "f1",
-     "metric_label": "F1", "base": "runs-rescored", "leader": "span_marker",
-     "report": "REPORT_NER.md", "calibration": "few_nerd"},
-    {"slug": "scifact", "task": "Retrieval", "bench": "SciFact",
-     "dataset": "scifact_200", "prefix": "sf_", "metric": "ndcg_10",
-     "metric_label": "nDCG@10", "base": "runs-reparsed", "leader": "glm_s",
-     "report": "REPORT_RETRIEVAL.md", "calibration": "scifact"},
-]
+#: The five measurement slices, from the registry `make reproduce` uses too -- so the site
+#: and a stranger's rerun cannot mean different experiments. `base` is the directory the
+#: REPORT is computed from; billed cost always comes from data/runs, where the provider's
+#: response was recorded.
+EXPERIMENTS = [e for e in json.loads((ROOT / "examples" / "experiments.json").read_text())
+               ["experiments"] if e.get("site")]
 
 #: Arms that are not models at all — calibration floors for the scorer.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k",

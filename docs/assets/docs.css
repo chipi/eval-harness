@@ -1,0 +1,156 @@
+/* The documentation, dressed like the findings site (site/assets/style.css): the same
+   tokens, type and hairlines, so /docs/ reads as part of the same publication rather
+   than a stock theme. Material's own variables are overridden; no external requests. */
+
+:root {
+  --eh-display: "Inter Tight", "Inter", "Helvetica Neue", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --eh-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --eh-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --md-text-font-family: var(--eh-text);
+  --md-code-font-family: var(--eh-mono);
+}
+
+[data-md-color-scheme="slate"] {
+  --eh-page: #0b0b0a; --eh-surface: #141413; --eh-surface-2: #1c1c1a;
+  --eh-ink: #f0efec; --eh-ink-2: #b9b7ad; --eh-muted: #7d7b74; --eh-hair: #2a2a27;
+  --eh-accent: #c8ff3d; --eh-accent-ink: #0b0b0a;
+  --md-hue: 60;
+}
+[data-md-color-scheme="default"] {
+  --eh-page: #f6f5f1; --eh-surface: #fcfcfb; --eh-surface-2: #efeee9;
+  --eh-ink: #0b0b0b; --eh-ink-2: #4a4945; --eh-muted: #7a7872; --eh-hair: #dddbd3;
+  --eh-accent: #3d5c00; --eh-accent-ink: #f6f5f1;
+}
+[data-md-color-scheme="slate"], [data-md-color-scheme="default"] {
+  --md-default-bg-color: var(--eh-page);
+  --md-default-fg-color: var(--eh-ink);
+  --md-default-fg-color--light: var(--eh-ink-2);
+  --md-default-fg-color--lighter: var(--eh-muted);
+  --md-default-fg-color--lightest: var(--eh-hair);
+  --md-primary-fg-color: var(--eh-page);
+  --md-primary-fg-color--light: var(--eh-surface);
+  --md-primary-fg-color--dark: var(--eh-page);
+  --md-primary-bg-color: var(--eh-ink);
+  --md-primary-bg-color--light: var(--eh-ink-2);
+  --md-accent-fg-color: var(--eh-accent);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--eh-accent) 12%, transparent);
+  --md-accent-bg-color: var(--eh-accent-ink);
+  --md-typeset-color: var(--eh-ink);
+  --md-typeset-a-color: var(--eh-ink);
+  --md-code-bg-color: var(--eh-surface);
+  --md-code-fg-color: var(--eh-ink);
+  --md-typeset-table-color: var(--eh-hair);
+  --md-typeset-mark-color: color-mix(in srgb, var(--eh-accent) 25%, transparent);
+  --md-footer-bg-color: var(--eh-page);
+  --md-footer-bg-color--dark: var(--eh-page);
+  --md-footer-fg-color: var(--eh-ink-2);
+  --md-footer-fg-color--light: var(--eh-muted);
+  --md-footer-fg-color--lighter: var(--eh-muted);
+  --md-admonition-bg-color: var(--eh-surface);
+  --md-shadow-z1: none; --md-shadow-z2: none; --md-shadow-z3: none;
+}
+
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+/* ── header: the site's bar ─────────────────────────────── */
+.md-header {
+  background: color-mix(in srgb, var(--eh-page) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--eh-hair);
+  box-shadow: none;
+}
+.md-header[data-md-state="shadow"], .md-header--shadow { box-shadow: none; }
+.md-header__title { font-family: var(--eh-mono); font-weight: 600; font-size: .7rem; letter-spacing: .04em; }
+.md-header__topic:first-child .md-ellipsis::before {
+  content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .5rem;
+  background: var(--eh-accent); border-radius: 2px; vertical-align: .05rem;
+}
+.md-header__button.md-logo { display: none; }
+.md-tabs { background: transparent; border-bottom: 1px solid var(--eh-hair); }
+.md-search__form { background: var(--eh-surface); border: 1px solid var(--eh-hair); border-radius: 999px; }
+.md-search__input::placeholder { color: var(--eh-muted); }
+
+/* ── navigation: mono labels, accent marker ─────────────── */
+.md-nav--primary > .md-nav__title { display: none; }
+.md-nav { font-size: .7rem; }
+.md-nav__title, .md-nav__item--section > .md-nav__link {
+  font: 500 .58rem/1.3 var(--eh-mono); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--eh-muted) !important;
+}
+.md-nav__link { color: var(--eh-ink-2); }
+.md-nav__link:hover, .md-nav__link:focus { color: var(--eh-ink); }
+.md-nav__link--active, .md-nav__item .md-nav__link--active {
+  color: var(--eh-ink); font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--eh-accent); padding-left: .5rem; margin-left: -.5rem;
+}
+.md-sidebar--secondary .md-nav__link--active { box-shadow: none; padding-left: 0; margin-left: 0; }
+
+/* ── type: the site's display headings ──────────────────── */
+.md-typeset { font-size: .82rem; line-height: 1.7; }
+.md-typeset h1, .md-typeset h2, .md-typeset h3, .md-typeset h4 {
+  font-family: var(--eh-display); color: var(--eh-ink); letter-spacing: -0.025em;
+}
+.md-typeset h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.02; margin: .4em 0 .5em; }
+.md-typeset h2 { font-size: 1.45rem; font-weight: 750; line-height: 1.15; margin-top: 2.4em;
+  padding-top: 1.2em; border-top: 1px solid var(--eh-hair); }
+.md-typeset h3 { font-size: 1.05rem; font-weight: 700; margin-top: 1.8em; }
+.md-typeset h1 + p { font-size: 1rem; color: var(--eh-ink-2); max-width: 62ch; }
+.md-typeset a {
+  text-decoration: underline; text-decoration-color: var(--eh-accent);
+  text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+.md-typeset a:hover { color: var(--eh-accent); }
+.md-typeset .headerlink { text-decoration: none; color: var(--eh-muted); }
+.md-typeset strong { color: var(--eh-ink); font-weight: 650; }
+
+/* ── code: the site's terminal ──────────────────────────── */
+.md-typeset code { border-radius: 4px; padding: .1em .35em; font-size: .82em; }
+.md-typeset pre > code { border: 1px solid var(--eh-hair); border-radius: 6px; padding: 1em 1.2em; }
+.md-typeset .highlight .c1, .md-typeset .highlight .c { color: var(--eh-muted); }
+
+/* ── tables: hairlines and mono headers ─────────────────── */
+.md-typeset table:not([class]) {
+  border: none; border-radius: 0; font-size: .74rem; box-shadow: none; background: transparent;
+}
+.md-typeset table:not([class]) th {
+  font: 500 .58rem/1.3 var(--eh-mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--eh-muted); background: transparent; border-bottom: 1px solid var(--eh-hair);
+  padding: .6em 1em .6em 0;
+}
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--eh-hair); padding: .8em 1em .8em 0; vertical-align: top;
+}
+.md-typeset table:not([class]) tr:hover { background: color-mix(in srgb, var(--eh-surface) 70%, transparent); }
+
+/* ── quotes and admonitions: the site's note ────────────── */
+.md-typeset blockquote {
+  border-left: 2px solid var(--eh-accent); color: var(--eh-ink-2); padding-left: 1.1em;
+}
+.md-typeset .admonition, .md-typeset details {
+  border: 1px solid var(--eh-hair); border-left: 2px solid var(--eh-accent);
+  border-radius: 0; box-shadow: none; font-size: .78rem;
+}
+
+/* ── the docs home: an editorial index ──────────────────── */
+.eh-kicker { font: 500 .6rem/1 var(--eh-mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--eh-accent); margin-bottom: 1rem; }
+.eh-kicker span { color: var(--eh-muted); }
+.md-typeset .eh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0; border-top: 1px solid var(--eh-hair); border-left: 1px solid var(--eh-hair); margin: 2rem 0; }
+.md-typeset .eh-cards > p { display: contents; }
+.md-typeset .eh-cards a {
+  display: block; padding: 1.2rem 1.2rem 1.4rem; text-decoration: none; color: var(--eh-ink);
+  border-right: 1px solid var(--eh-hair); border-bottom: 1px solid var(--eh-hair);
+  transition: background .15s;
+}
+.md-typeset .eh-cards a:hover { background: var(--eh-surface); color: var(--eh-ink); }
+.md-typeset .eh-cards .n { font: 500 .58rem/1 var(--eh-mono); letter-spacing: .12em; color: var(--eh-accent); }
+.md-typeset .eh-cards b { display: block; font: 750 1.05rem/1.2 var(--eh-display); letter-spacing: -0.02em;
+  margin: .7rem 0 .4rem; }
+.md-typeset .eh-cards span.d { display: block; color: var(--eh-ink-2); font-size: .74rem; line-height: 1.55; }
+.md-typeset .eh-back { font: 500 .62rem/1 var(--eh-mono); letter-spacing: .06em; text-decoration: none; }
+
+/* ── footer ─────────────────────────────────────────────── */
+.md-footer { border-top: 1px solid var(--eh-hair); }
+.md-footer__title { font-family: var(--eh-display); }
+.md-copyright { font: .6rem/1.4 var(--eh-mono); color: var(--eh-muted); }

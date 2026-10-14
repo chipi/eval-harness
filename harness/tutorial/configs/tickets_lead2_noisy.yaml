@@ -1,0 +1,8 @@
+# Arm "lead2_noisy": the same system, made non-deterministic (each word dropped with
+# probability 0.2) -- what a real model at temperature > 0, or a flaky pipeline, looks like.
+config_id: tickets_lead2_noisy_v1
+dataset_id: tickets_v1
+params:
+  provider: echo
+  sentences: 2
+  noise: 0.2

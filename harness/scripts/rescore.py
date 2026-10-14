@@ -57,10 +57,15 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only runs whose config_id contains this substring")
     ap.add_argument("--out", type=Path, default=ROOT / "data/runs-rescored")
+    ap.add_argument("--reference-id",
+                    help="score against THIS reference set (e.g. gold/my_v1) instead of the "
+                         "one each run recorded -- for when gold arrives after the runs")
     ap.add_argument("--config-dir", type=Path,
                     help="where to find the arm configs naming the adapter "
                          "(default: alongside each run's recorded adapter path)")
     args = ap.parse_args()
+    if args.reference_id and not (REFERENCES / args.reference_id).is_dir():
+        die(f"no reference set at data/references/{args.reference_id}")
 
     srcs = [
         d for d in (RUNS.iterdir() if RUNS.is_dir() else [])
@@ -139,6 +144,14 @@ def main() -> int:
         tier = m.get("reference_tier")
         ref_dir = (REFERENCES / m["fingerprint"]["data"]["reference_id"]) \
             if (m.get("fingerprint", {}).get("data", {}) or {}).get("reference_id") else None
+        # NEW REFERENCES, OLD OUTPUTS. The usual life of a golden dataset: runs are made
+        # against silver because nothing better exists, then a person writes or reviews
+        # gold. The outputs are the expensive part and do not change, so re-scoring them
+        # against gold is arithmetic, not a re-run. Without this the only way to a
+        # gold-scored leaderboard was to pay for every arm again.
+        if args.reference_id:
+            ref_dir = REFERENCES / args.reference_id
+            tier = args.reference_id.split("/", 1)[0]
 
         rows: List[Dict[str, Any]] = []
         refs_found = 0
@@ -287,6 +300,8 @@ def main() -> int:
             "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8")
         new = dict(m)
         new["scores"] = scores
+        if args.reference_id:
+            new["reference_tier"] = tier
         new["metric_kinds"] = _kinds(adapter_path) or m.get("metric_kinds") or {}
         new["primary_metric"] = _primary(adapter_path) or m.get("primary_metric")
         # Provenance of the RESCORE itself: which run it came from, and which scorer
@@ -327,6 +342,11 @@ def main() -> int:
             # beside it when the two differ, because "the gold set changed under us" is
             # a finding and not a detail. Found by external review.
             fp_data = fp.setdefault("data", {})
+            if args.reference_id and fp_data.get("reference_id") != args.reference_id:
+                fp_data["reference_id_at_measurement"] = fp_data.get("reference_id")
+                fp_data["reference_tier_at_measurement"] = fp_data.get("reference_tier")
+                fp_data["reference_id"] = args.reference_id
+                fp_data["reference_tier"] = tier
             actual_refs = _references_digest(ROOT, fp_data.get("reference_id"))
             prior_refs = fp_data.get("references_sha256")
             fp_data["references_sha256"] = actual_refs

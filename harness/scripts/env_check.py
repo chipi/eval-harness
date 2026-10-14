@@ -74,6 +74,14 @@ def main() -> int:
         print("  that is enough to prove the plumbing, not to evaluate a model.")
     any_key = any_key or proxy_ready
 
+    # Which route the worked examples' hosted arms will take (examples/_shared/gateway.py):
+    # the proxy when it is configured, else OpenRouter directly with one key.
+    orkey = os.environ.get("OPENROUTER_API_KEY", "")
+    route = ("proxy (your LiteLLM)" if base.startswith("http") and lkey else
+             "direct to OpenRouter (examples/models.json maps the aliases)"
+             if len(orkey) >= 20 else "NONE — hosted example arms will refuse to start")
+    print(f"\n  hosted example arms →  {route}")
+
     print("\nsystem under test")
     ref = os.environ.get("EVAL_BUILD_REF", "")
     print(f"  EVAL_BUILD_REF         {ref or '(unset — falls back to this tree’s git SHA)'}")

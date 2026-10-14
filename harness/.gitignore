@@ -268,3 +268,8 @@ data/references/silver/scifact_*/
 # the manifest that carries it is the one tracked file here.
 data/corpora/*
 !data/corpora/README.md
+
+# `make demo` writes three fresh runs on every invocation, so a newcomer's first command
+# left an untracked tree. The demo runs already committed stay tracked (ignore rules do not
+# apply to tracked files); new ones are scratch.
+data/runs/demo_v1_*/

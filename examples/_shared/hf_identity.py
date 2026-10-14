@@ -96,6 +96,28 @@ _PRECISION_DTYPE = {"fp32": "float32", "fp16": "float16", "bf16": "bfloat16",
                     "float32": "float32", "float16": "float16", "bfloat16": "bfloat16"}
 
 
+def apply_precision(model: Any, precision: Optional[str]) -> Any:
+    """Make the loaded model compute in the precision its config declares.
+
+    Until 2026-10-14 `precision` was a label: every local config said `fp32`, nothing passed
+    it on, and each model ran in the dtype it was STORED in -- `distilbart-cnn-6-6` at fp16.
+    Casting after load is exact for an upcast (every fp16 value is representable in fp32),
+    so this is the same computation as loading with `torch_dtype`, and one call covers a
+    pipeline, a PreTrainedModel or a wrapper (sentence-transformers, GLiNER, SpanMarker).
+    No declared precision leaves the model as stored. Returns the model.
+    """
+    want = _PRECISION_DTYPE.get(str(precision or "").lower())
+    if not want:
+        return model
+    import torch  # noqa: PLC0415 - only local arms get here
+
+    target = getattr(model, "model", None) if hasattr(model, "tokenizer") else None
+    target = target if target is not None else model
+    if hasattr(target, "to"):
+        target.to(getattr(torch, want))
+    return model
+
+
 def loaded_identity(model: Any) -> Dict[str, Any]:
     """What a LOADED model actually is: the commit it came from and the dtype it runs in.
 

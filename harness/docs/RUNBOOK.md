@@ -3,6 +3,10 @@
 Follow this top to bottom. It is the same path `make help` lists, with the
 reasoning attached. You should not need to open a script.
 
+New here? **[Use the harness](../../docs/GUIDE.md)** walks the whole path once on a
+bundled example, offline, with the real output of every command — including building a
+golden dataset. This page is the reference for each step.
+
 ---
 
 ## 0. Prove it works before you touch it
@@ -101,8 +105,14 @@ make reference-create DATASET_ID=my_v1 CONFIG=data/configs/best_model.yaml ARGS=
 
 That writes **silver** references — model-generated, therefore consistent
 rather than correct. Enough to rank arms against each other; not a claim about
-truth. Review some by hand and re-run with `TIER=gold` for the ones a human
-has actually checked.
+truth.
+
+**Gold** is what a person wrote or checked: one `<item_id>.txt` per item under
+`data/references/gold/<dataset_id>/` — write them, or review silver ones and keep the
+ones you would sign (`TIER=gold` authors straight into gold, for a system whose output you
+have reviewed). Gold always wins over silver for new runs. Runs made before the gold set
+existed are re-scored against it for $0:
+`make rescore DATASET_ID=my_v1 REFERENCE=gold/my_v1 OUT=data/runs-gold`.
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
@@ -142,7 +152,10 @@ make runs-list
 
 A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran.
-For anything you intend to promote, commit first and re-run.
+**Commit before you measure** — dataset, configs, references — so the runs you keep are
+clean the first time. Re-running an arm into `data/runs` after the fact leaves two
+measurements of one config, which `make validate` refuses (V8); explore in a scratch
+directory instead (`EVAL_RUNS_DIR=data/runs-scratch`).
 
 ### When a run dies partway: `--resume`
 
@@ -223,8 +236,8 @@ Makefile. Found by external review.
 | `make holdout DATASET_ID=… EXCLUDE_DATASET=…` | does the result survive on the items the dev slice never contained |
 | `make rank-stability DATASET_ID=…` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `make bootstrap-test DATASET_ID=…` | a percentile interval for a corpus-level metric that has no per-item value |
-| `make rescore DATASET_ID=…` | recompute every score from stored outputs under the current scorer. **$0, no API calls** |
-| `make cost-report DATASET_ID=…` | what each arm actually cost, from the provider's bill rather than a price table |
+| `make rescore DATASET_ID=…` | recompute every score from stored outputs under the current scorer — or, with `REFERENCE=gold/…`, against a reference set that arrived later. **$0, no API calls** |
+| `make cost-report` | what each arm actually cost, from the provider's bill rather than a price table |
 | `make silver-calibrate DATASET_ID=…` | does a model-authored reference rank arms the way the trusted one does |
 
 Two that are easy to reach for and wrong:

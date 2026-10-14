@@ -1,0 +1,6 @@
+# Arm "lead2": the candidate we hope is better -- two sentences instead of one.
+config_id: tickets_lead2_v1
+dataset_id: tickets_v1
+params:
+  provider: echo
+  sentences: 2

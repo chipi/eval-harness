@@ -9,6 +9,9 @@ gitignored.
 
 > ### Start here
 >
+> **To rerun any of these:** `make list`, then `make plan EXP=<experiment>` from the
+> repository root — the walkthrough is [`../docs/REPRODUCE.md`](../docs/REPRODUCE.md).
+>
 > **[`../docs/REFERENCE.md`](../docs/REFERENCE.md)** — the encyclopedia. Every metric
 > explained with a link to its paper, every model with a link to its weights, every
 > dataset with its licence, and every statistical test with the reason it was chosen.

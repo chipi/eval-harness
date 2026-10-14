@@ -129,8 +129,10 @@ normaliser deleted (the currency symbol `£`), which moved the floor by 1/280.
 ### Hosted — 24 arms, 8 vendors × 3 price tiers
 
 Every example runs the same 24, at temperature 0 with reasoning disabled, so a difference
-between examples is the **task** and not the configuration. Reached through a
-[LiteLLM](https://docs.litellm.ai/) proxy, which routes to [OpenRouter](https://openrouter.ai/).
+between examples is the **task** and not the configuration. Measured through a
+[LiteLLM](https://docs.litellm.ai/) proxy routing to [OpenRouter](https://openrouter.ai/); a
+rerun can go to OpenRouter directly with one key, through the same alias table
+(`examples/models.json`, [Reproduce it](REPRODUCE.md)).
 
 | arm | alias | upstream model | weights |
 |---|---|---|---|
