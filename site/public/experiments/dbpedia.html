@@ -20,7 +20,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html"><i></i>eval-harness</a>
-  <nav class="nav"><a href="../index.html#findings">Findings</a><a href="../index.html#trust">Trust</a><a href="../index.html#experiments" class="hide-sm">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html#findings">Findings</a><a href="../method.html">Method</a><a href="../use.html">Use it</a><a href="../index.html#experiments" class="hide-sm">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -248,7 +248,10 @@ $0.0185 per 1,000 items</title></circle><circle cx="732.4" cy="52.3" r="11" clas
   <ol class="findings"><li><div><h3>No winner: a group of nineteen.</h3><p>qwen_m leads at 0.9929, statistically tied with 19 others, including the free fine-tune.</p></div></li><li><div><h3>The dearest model finished 2nd of 28.</h3><p>anthropic_l billed $0.3784 for 280 items. The cheapest model statistically tied with the leader, gemma_m, cost 116× less.</p></div></li><li><div><h3>The benchmark is saturated, and the gold is sometimes wrong.</h3><p>Three items are disputed by 24 to 25 of 26 arms, and reading them, the gold label is the error.</p></div></li></ol>
 </div></section>
 
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Reproduce it</div>
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>
+  <div class="lesson"><h2>Tested, not read.</h2><p>19 arms cannot be separated from the leader. A saturated benchmark sorts; it does not rank — and the table still prints them first, second, third.</p><a class="btn" href="../method.html#tested">This habit, in the method →</a></div>
+</div></section>
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">

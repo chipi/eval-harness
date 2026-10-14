@@ -194,3 +194,96 @@ pre.term { background: var(--panel, rgba(127,127,127,.08)); border: 1px solid va
 pre.term .c { color: var(--muted); }
 pre.term .p { color: var(--accent); user-select: none; }
 @media (max-width: 600px) { .ladder li { grid-template-columns: 40px 1fr; } .ladder .cost { grid-column: 2; text-align: left; } }
+
+/* ── the lifecycle diagram ─────────────────────────────── */
+svg.lc { width: 100%; max-width: 320px; height: auto; display: block; overflow: visible; }
+.lc rect { fill: var(--surface); stroke: var(--hair); stroke-width: 1; transition: fill .25s, stroke .25s; }
+.lc .lc-label { font: 700 16px var(--display); fill: var(--ink); letter-spacing: -0.01em; }
+.lc .lc-sub { font: 500 10.5px var(--mono); fill: var(--muted); letter-spacing: .04em; }
+.lc .lc-num { font: 600 11px var(--mono); fill: var(--muted); }
+.lc .lc-edge { stroke: var(--axis); stroke-width: 1.5; fill: none; }
+.lc .lc-head { stroke: var(--axis); stroke-width: 1.5; fill: none; stroke-linecap: round; }
+.lc .lc-node.on rect { fill: color-mix(in srgb, var(--accent) 14%, var(--surface)); stroke: var(--accent); stroke-width: 1.5; }
+.lc .lc-node.on .lc-num { fill: var(--accent); }
+.lc a.lc-node { cursor: pointer; }
+.lc a.lc-node:focus { outline: none; }
+.lc a.lc-node:focus rect { stroke: var(--accent); stroke-width: 2; }
+
+/* ── method page ───────────────────────────────────────── */
+.toc { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 56px; border-top: 1px solid var(--hair); }
+.toc a { display: flex; gap: 12px; padding: 16px 16px 16px 0; border-bottom: 1px solid var(--hair); text-decoration: none; font-size: 16px; color: var(--ink-2); }
+.toc a span { font: 600 12px/1.9 var(--mono); color: var(--accent); }
+.toc a:hover { color: var(--ink); }
+@media (max-width: 760px) { .toc { grid-template-columns: 1fr; } }
+section.method { padding-top: 64px; }
+.method-grid { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: start; }
+.method-aside .sticky { position: sticky; top: 88px; }
+.aside-note { font-size: 13px; color: var(--muted); margin-top: 14px; max-width: 30ch; }
+.chapter { padding: 56px 0 72px; border-top: 1px solid var(--hair); scroll-margin-top: 72px; }
+.chapter:first-child { border-top: 0; padding-top: 8px; }
+.chapter h2 { font-size: clamp(34px, 4.6vw, 60px); line-height: 1; font-weight: 800; margin: 18px 0 26px; max-width: 18ch; }
+.habit { margin: 28px 0 22px; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--surface); font-size: 18px; line-height: 1.5; max-width: 66ch; }
+.habit b { display: block; font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+.tool { max-width: 66ch; }
+.tool .k { display: block; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.yours { margin: 22px 0 0; color: var(--ink); max-width: 66ch; }
+.yours b { font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-right: 8px; }
+.reading { list-style: none; margin: 0; padding: 0; }
+.reading li { padding: 16px 0; border-top: 1px solid var(--hair); color: var(--ink-2); font-size: 15px; }
+.reading li b { color: var(--ink); font-weight: 600; }
+@media (max-width: 900px) {
+  .method-grid { grid-template-columns: 1fr; gap: 24px; }
+  .method-aside .sticky { position: static; }
+  .method-aside svg.lc { max-width: 240px; }
+}
+
+/* ── use page ──────────────────────────────────────────── */
+.lc-explorer { display: grid; grid-template-columns: 320px 1fr; gap: 56px; align-items: start; }
+.lc-panel { padding: 22px 0; border-top: 1px solid var(--hair); }
+.lc-panel p { color: var(--ink-2); margin: 12px 0; max-width: 60ch; }
+.lc-where { font: 500 13px/1.5 var(--mono); color: var(--ink-2); margin-bottom: 14px; }
+.lc-where span { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 11px; margin-right: 6px; }
+.lc-more { display: inline-block; margin-top: 12px; font: 600 13px/1 var(--mono); text-decoration: none; color: var(--accent); }
+.lc-explorer.live .lc-panel { display: none; }
+.lc-explorer.live .lc-panel.on { display: block; border-top: 0; padding-top: 4px; position: sticky; top: 88px; }
+.lc-explorer.live .lc-panel.on .eyebrow { font-size: 14px; }
+@media (max-width: 900px) { .lc-explorer { grid-template-columns: 1fr; gap: 24px; } .lc-explorer.live .lc-panel.on { position: static; } }
+.patterns { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+.pattern { display: flex; flex-direction: column; gap: 12px; padding: 24px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); }
+.pattern .task { font: 500 11px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.pattern h3 { font-size: 23px; line-height: 1.1; font-weight: 800; }
+.pattern p { margin: 0; color: var(--ink-2); font-size: 15px; flex: 1; }
+.pattern .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font: 500 12px/1.4 var(--mono); color: var(--muted); border-top: 1px solid var(--hair); padding-top: 12px; }
+.pattern .meta a { color: var(--ink-2); text-decoration: none; }
+.pattern .meta a:hover { color: var(--accent); }
+.steps li > div { min-width: 0; }
+.steps pre.term { margin-top: 14px; }
+.steps p a { color: var(--accent); text-decoration: none; font: 600 13px var(--mono); margin-left: 4px; }
+.byo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--hair); }
+.byo-col { padding: 28px 28px 8px 0; }
+.byo-col + .byo-col { padding-left: 28px; border-left: 1px solid var(--hair); }
+.byo-col h3 { font-size: 24px; margin-bottom: 18px; }
+.byo-col ul { list-style: none; margin: 0; padding: 0; }
+.byo-col li { padding: 10px 0; border-top: 1px solid var(--hair); color: var(--ink-2); font-size: 15px; }
+.byo-col li b { color: var(--ink); }
+.byo-col.check li { padding-left: 28px; position: relative; }
+.byo-col.check li::before { content: ""; position: absolute; left: 0; top: 13px; width: 14px; height: 14px; border: 1.5px solid var(--accent); border-radius: 3px; }
+@media (max-width: 900px) { .byo { grid-template-columns: 1fr; } .byo-col + .byo-col { padding-left: 0; border-left: 0; border-top: 1px solid var(--hair); } }
+.doors .card { min-height: 240px; }
+
+/* ── landing teaser + experiment lesson ────────────────── */
+.habits { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--hair); border-left: 1px solid var(--hair); }
+.habit-card { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 28px; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); text-decoration: none; transition: background .15s; }
+.habit-card:hover { background: var(--surface); color: inherit; }
+.habit-card .n { font: 600 12px/1 var(--mono); color: var(--accent); }
+.habit-card b { font: 800 22px/1.1 var(--display); letter-spacing: -0.02em; color: var(--ink); }
+.habit-card span:last-child { color: var(--ink-2); font-size: 15px; }
+@media (max-width: 900px) { .habits { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .habits { grid-template-columns: 1fr; } }
+.lesson { max-width: 70ch; }
+.lesson h2 { font-size: clamp(32px, 4.4vw, 56px) !important; }
+.lesson p { font-size: 19px; color: var(--ink-2); margin: 0 0 8px; }
+.nav a, .brand { white-space: nowrap; }
+@media (max-width: 760px) { .nav { gap: 14px; } }
+@media (max-width: 420px) { .nav { gap: 10px; font-size: 12px; } .brand { gap: 7px; font-size: 13px; } }
+.method-grid > *, .lc-explorer > *, .cols > *, .byo > *, .findings li > * { min-width: 0; }

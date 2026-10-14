@@ -21,11 +21,13 @@ import re
 import shutil
 import sys
 import tempfile
+import types
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import figures  # noqa: E402
+import method  # noqa: E402
 
 ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
@@ -282,7 +284,7 @@ def page(title: str, desc: str, body: str, depth: int = 0) -> str:
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html"><i></i>eval-harness</a>
-  <nav class="nav"><a href="{up}index.html#findings">Findings</a><a href="{up}index.html#trust">Trust</a><a href="{up}index.html#experiments" class="hide-sm">Experiments</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="{up}index.html#findings">Findings</a><a href="{up}method.html">Method</a><a href="{up}use.html">Use it</a><a href="{up}index.html#experiments" class="hide-sm">Experiments</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -296,6 +298,10 @@ def page(title: str, desc: str, body: str, depth: int = 0) -> str:
 </body>
 </html>
 """
+
+
+#: The helpers method.py borrows, passed in rather than imported (no circular import).
+H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, REPO=REPO)
 
 
 # ── the landing page ────────────────────────────────────────────────────────
@@ -400,8 +406,9 @@ def landing(f: dict) -> str:
   <div class="cards">{cards}</div>
 </div></section>
 
+{method.landing_teaser(H, f)}
 <section class="block" id="reproduce"><div class="wrap">
-  <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
+  <div class="eyebrow"><span class="num">07</span>Reproduce it</div>
   <h2>Built to be checked — by you.</h2>
   <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Five levels of checking, each optional, each a few commands.</p>
   <div class="cols">
@@ -535,6 +542,7 @@ def experiment_page(x: dict, f: dict) -> str:
     facts_html = "".join(f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>' for k, v in facts)
     finds = "".join(f'<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>' for h, p in findings_for(x, f))
     free = x["n_arms"] - x["n_hosted"]
+    lesson = method.experiment_lesson(H, x)
     extra = ""
     if x["slug"] == "summarization":
         extra = f"""<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
@@ -561,7 +569,10 @@ def experiment_page(x: dict, f: dict) -> str:
   <ol class="findings">{finds}</ol>
 </div></section>
 {extra}
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">{"05" if extra else "04"}</span>Reproduce it</div>
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">{"05" if extra else "04"}</span>The method, here</div>
+  <div class="lesson"><h2>{e(lesson[1])}</h2><p>{lesson[2]}</p><a class="btn" href="../method.html#{lesson[0]}">This habit, in the method →</a></div>
+</div></section>
+<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">{"06" if extra else "05"}</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">
@@ -604,6 +615,8 @@ def build(out: Path) -> None:
     (out / "experiments").mkdir(parents=True)
     shutil.copytree(HERE / "assets", out / "assets")
     (out / "index.html").write_text(landing(f), encoding="utf-8")
+    (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
+    (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
     for x in f["experiments"]:
         (out / "experiments" / f'{x["slug"]}.html').write_text(experiment_page(x, f), encoding="utf-8")
     (out / ".nojekyll").write_text("")
