@@ -1,0 +1,23 @@
+# cnn_llama_s on the DAILYMAIL slice — identical to arm_llama_s_n200.yaml except the dataset.
+#
+# WHY: the committed cnn_dailymail_200 slice is the first 200 rows of the test split,
+# which are 196 CNN articles of 200; the split is ~91% DailyMail. This slice is 200
+# DailyMail articles drawn at random (seed 20261014) from the same test split, so the
+# question "do the summarisation conclusions hold outside CNN?" has data. Same params,
+# same prompt, same scorer; read alongside, never pooled with, the CNN slice. Full
+# rationale: examples/summarization-cnn-dailymail/fetch.py and REPORT_SUMMARIZATION.md.
+config_id: cnn_llama_s_dm200_v1
+dataset_id: cnn_dailymail_dm200
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-llama-scout
+  family: llama
+  price_tier: small
+  temperature: 0.0
+  prompt_file: prompt.txt
+  reasoning:
+    enabled: false
+  max_tokens: 1200
+  usd_per_mtok_in: 0.08
+  usd_per_mtok_out: 0.3
