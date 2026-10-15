@@ -54,8 +54,9 @@ prints cannot forge a pass. Code that calls `sys.exit` never reports one at all.
 1. **Extract.** Take the fenced code block that defines the function, else the first fenced
    block, else the whole reply. `code_found` records whether a block was fenced.
 2. **Sanitise.** Keep top-level imports, functions, classes and assignments, and drop example
-   calls and prints, as EvalPlus does. Code that isn't valid Python scores 0, with
-   `syntax_ok` 0.
+   calls and prints, as EvalPlus does. A reply cut off mid-line (a small model writing
+   test asserts until it runs out of tokens) keeps the complete code before the break, as
+   EvalPlus's sanitiser does. A reply with no runnable code scores 0, with `syntax_ok` 0.
 3. **Execute.** Run the base tests, then the plus tests only if base passed. A timeout
    scores 0 and is recorded in `timeout`, so a slow machine shows up instead of looking
    like wrong code.
