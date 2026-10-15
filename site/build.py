@@ -456,6 +456,42 @@ def home(f: dict) -> str:
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
         for n, t, d in ideas)
+    # Why it exists: the questions it was built to answer, each with what the harness gives
+    # and what the experiments found -- numbers computed, quoted prose checked by q().
+    why = [
+        ("Agentic AI can do months of work in days. How do I trust what it builds?",
+         "Frozen data, a fingerprint on every run, refusals when a comparison is unsound — so "
+         "an agent can iterate at full speed without a regression slipping through as progress.",
+         f"This project was built that way, with AI agents. A checker re-verifies "
+         f"{f['claims_checked']} claims against the runs on every commit, and the lab notebook "
+         "keeps every finding that had to be retracted along the way.",
+         f"{REPO}/tree/main/research/internal", "The lab notebook"),
+        ("Which model is best for what I need — not for someone else's benchmark?",
+         "Run five, ten or twenty-four models on your own frozen data and see quality, cost and "
+         "latency side by side, with a test that says whether the ranking is real.",
+         f"The most expensive model was not the best in {f['dearest_never_best']} of "
+         f"{len(exps)} experiments, and in {ties} of {len(exps)} first place was a statistical tie.",
+         "experiments.html", "The experiments"),
+        ("Do I need an LLM — or a GPU — at all?",
+         "Put a small classic model, or a plain baseline, in the same comparison as the LLMs: "
+         "same data, same scoring, same test.",
+         f"A free model that needs no GPU was first or tied for first in "
+         f"{f['local_first_or_tied']} of {len(exps)} — but only on text like the text it was "
+         "trained on.",
+         "experiments.html#experiments", "Per experiment"),
+        ("Own it or rent it?",
+         "Every cost is read off the provider's bill and set beside quality, so renting an API "
+         "can be weighed against running open weights on hardware you own.",
+         q("A proprietary model never separated from the best open-weight model in any of the "
+           "five experiments, and 64 GB of memory is enough to match the unlimited-hardware "
+           "answer on four of five tasks.", SYN),
+         f"{BLOB}/research/REPORT_SYNTHESIS.md", "The synthesis"),
+    ]
+    why_html = "".join(
+        f'<div class="why-q reveal"><span class="n">{i:02d}</span><h3>{e(qn)}</h3>'
+        f'<p><b>The harness</b>{e(gives)}</p><p><b>What it found</b>{found}</p>'
+        f'<a href="{href}">{e(label)} →</a></div>'
+        for i, (qn, gives, found, href, label) in enumerate(why, 1))
     cards = "".join(
         f'<a class="card reveal" href="experiments/{x["slug"]}.html"><div class="task">{e(x["task"])}</div>'
         f'<h3>{e(x["bench"])}</h3><p>{e(CARD[x["slug"]])}</p>'
@@ -469,8 +505,15 @@ def home(f: dict) -> str:
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
 </div></section>
 
+<section class="block" id="why"><div class="wrap">
+  <div class="eyebrow"><span class="num">01</span>Why it exists</div>
+  <h2>Four questions anyone building with AI ends up asking.</h2>
+  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. This harness exists to answer these on your own data — and the experiments are what it answered when pointed at 24 LLMs.</p>
+  <div class="why">{why_html}</div>
+</div></section>
+
 <section class="block" id="what"><div class="wrap">
-  <div class="eyebrow"><span class="num">01</span>What it does</div>
+  <div class="eyebrow"><span class="num">02</span>What it does</div>
   <h2>Four ideas, one adapter file.</h2>
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with four functions.</p>
   <div class="habits">{idea_html}</div>
@@ -490,7 +533,7 @@ def home(f: dict) -> str:
 </div></section>
 
 <section class="block" id="proof"><div class="wrap">
-  <div class="eyebrow"><span class="num">02</span>Pointed at {hosted_n} LLMs</div>
+  <div class="eyebrow"><span class="num">03</span>Pointed at {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
   <p class="lede">To show the harness doing something real, it measured {hosted_n} frontier and open-weight LLMs, small fine-tuned models and baselines on five public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
   <div class="stats">
@@ -503,7 +546,7 @@ def home(f: dict) -> str:
   <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
 </div></section>
 
-{method.landing_teaser(H, f, "03")}
+{method.landing_teaser(H, f, "04")}
 <section class="block"><div class="wrap">
   <p class="note"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>

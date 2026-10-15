@@ -16,6 +16,26 @@ something real, it measured 24 LLMs, small fine-tuned models and baselines on fi
 benchmarks. The most expensive model never won, and four of five leaderboard tops were
 statistical ties.
 
+### Why it exists
+
+It was built to answer four questions anyone building with AI ends up asking:
+
+1. **Agentic AI can do months of work in days. How do I trust what it builds?** Frozen
+   data, a fingerprint on every run and refusals when a comparison is unsound let an
+   agent iterate at full speed without a regression passing as progress. This project
+   was built that way, with AI agents, and a checker re-verifies the reports' claims
+   against the runs on every commit.
+2. **Which model is best for what *I* need, not for someone else's benchmark?** Run five,
+   ten or twenty-four models on your own frozen data and see quality, cost and latency
+   side by side, with a test that says whether the ranking is real.
+3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
+   in the same comparison, on the same data and scoring. Here a free model that needs no
+   GPU was first or tied for first in all five experiments, but only on text like the
+   text it was trained on.
+4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
+   quality. Here a proprietary model never separated from the best open-weight one, and
+   64 GB of memory matched the unlimited-hardware answer on four of five tasks.
+
 **Start where you are:**
 
 | you want to | go to |
