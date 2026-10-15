@@ -33,6 +33,11 @@ THE HONESTY CONDITION
 from __future__ import annotations
 
 import argparse
+import contextlib
+import hashlib
+import io
+import json
+import os
 import random
 import statistics
 import sys
@@ -67,7 +72,61 @@ def _sign_flip(deltas: list[float], permutations: int, rng: random.Random) -> fl
     return (hits + 1) / (permutations + 1)
 
 
+CACHE = Path(__file__).resolve().parents[1] / ".cache" / "family_test"
+
+
+def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
+    """Everything the answer depends on: this script and the two it imports, the exact
+    arguments, and the bytes of every run of this dataset (metrics.json + predictions.jsonl)
+    plus any --items / --exclude-dataset input. Change any of them and the key changes, so
+    a hit is the same computation, already done -- the test is seeded and deterministic."""
+    h = hashlib.sha256()
+    here = Path(__file__).resolve().parent
+    for f in ("family_test.py", "pair_test.py", "_common.py"):
+        h.update((here / f).read_bytes())
+    h.update("\0".join(argv + [str(RUNS)]).encode())
+    for d in sorted(runs_dir.glob("*")):
+        mj, pj = d / "metrics.json", d / "predictions.jsonl"
+        if mj.is_file() and read_json(mj).get("dataset_id") == args.dataset_id:
+            h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
+    if args.items:
+        h.update(args.items.read_bytes())
+    if args.exclude_dataset:
+        h.update("\0".join(sorted(p.name for p in (SOURCES / args.exclude_dataset).glob("*.txt"))).encode())
+    return h.hexdigest()
+
+
 def main() -> int:
+    """Run the family test, or replay its output when the exact same test has already run.
+
+    Each run is ~20,000 seeded permutations per opponent in pure Python (~18 s for a family
+    of 29), and the report checker, the self-test (which re-runs the checker once per
+    planted defect) and the site build ask the same questions dozens of times per `make
+    ci`. EVAL_NO_CACHE=1 forces a recomputation."""
+    args = _parser().parse_args()
+    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
+    use_cache = not os.environ.get("EVAL_NO_CACHE") and runs_dir.is_dir()
+    if use_cache:
+        hit = CACHE / f"{_cache_key(sys.argv[1:], runs_dir, args)}.json"
+        if hit.is_file():
+            c = json.loads(hit.read_text(encoding="utf-8"))
+            sys.stdout.write(c["stdout"])
+            sys.stderr.write(c["stderr"])
+            return c["rc"]
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        rc = _run(args)
+    sys.stdout.write(out.getvalue())
+    sys.stderr.write(err.getvalue())
+    if use_cache:
+        CACHE.mkdir(parents=True, exist_ok=True)
+        tmp = hit.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8")
+        tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
+    return rc
+
+
+def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
@@ -80,7 +139,10 @@ def main() -> int:
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument("--alpha", type=float, default=0.05)
     ap.add_argument("--seed", type=int, default=20260926)
-    args = ap.parse_args()
+    return ap
+
+
+def _run(args) -> int:
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)

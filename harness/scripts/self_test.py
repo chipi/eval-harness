@@ -2108,6 +2108,39 @@ def test_the_gateway_routes_as_documented() -> None:
                 os.environ[k] = v
 
 
+def test_family_test_cache_never_serves_a_stale_answer() -> None:
+    """The family test replays a stored answer when the identical test already ran (it
+    is seeded and deterministic, and `make ci` asks the same questions dozens of times).
+    A cache in a verification path is only safe if any change to its inputs misses it:
+    here a run's scores change after the answer was stored, and the second answer must
+    be the recomputed one, not the replay."""
+    import tempfile as _tf  # noqa: PLC0415
+
+    def write(root: Path, cid: str, scores: list[float]) -> None:
+        d = root / f"{cid}_20260101T000000Z"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "metrics.json").write_text(json.dumps({"config_id": cid, "dataset_id": "tds"}), encoding="utf-8")
+        (d / "predictions.jsonl").write_text(
+            "".join(json.dumps({"item_id": f"i{i}", "m": v}) + "\n" for i, v in enumerate(scores)),
+            encoding="utf-8")
+
+    with _tf.TemporaryDirectory() as td:
+        root = Path(td)
+        write(root, "a_x", [1, 1, 1, 1, 1, 1, 1, 1])
+        write(root, "b_x", [0, 0, 0, 0, 0, 0, 0, 0])
+        write(root, "c_x", [1, 1, 1, 1, 0, 1, 1, 1])
+        argv = ("scripts/family_test.py", "--dataset-id", "tds", "--a", "a_x", "--against", "_x",
+                "--metric", "m", "--runs-dir", str(root), "--permutations", "500")
+        first = run(*argv).stdout
+        again = run(*argv).stdout
+        check("family-test cache: a repeat replays the identical answer", first == again and "b_x" in first)
+        write(root, "b_x", [1, 1, 1, 1, 1, 1, 1, 0])  # the data moves under the stored answer
+        after = run(*argv).stdout
+        fresh = run(*argv, env={"EVAL_NO_CACHE": "1"}).stdout
+        check("family-test cache: changed scores miss the cache", after != first, after[-300:])
+        check("family-test cache: the answer after a change is the recomputed one", after == fresh)
+
+
 def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
@@ -2128,6 +2161,7 @@ def main() -> int:
         test_a_broken_fingerprint_hook_does_not_kill_the_run,
         test_fingerprint_hash_changes_when_anything_does,
         test_cli_help_works,
+        test_family_test_cache_never_serves_a_stale_answer,
         test_example_scorer_suites_pass,
         test_fingerprint_version_is_read_somewhere,
         test_verdict_honours_declared_kinds,
