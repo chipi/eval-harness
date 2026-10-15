@@ -1,0 +1,9 @@
+# A confound, not a judge: the summary's word count. Anything that rewards length agrees
+# with the experts exactly as well as this does.
+config_id: se_length_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: length
+  family: baseline
+  price_tier: free

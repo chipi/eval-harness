@@ -1,0 +1,20 @@
+# The llama_s judge on SummEval. Same model, tier, price and settings as the arm of the
+# same name in every other experiment here; only the task differs. It reads the article
+# and the 16 summaries (never the human references) and returns 1-5 scores per summary on
+# four dimensions as JSON (../prompt.txt, sha in the fingerprint). max_tokens 1500 covers
+# 64 numbers with room; `truncated` records any reply that hit it anyway.
+config_id: se_llama_s_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-llama-scout
+  family: llama
+  price_tier: small
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  usd_per_mtok_in: 0.08
+  usd_per_mtok_out: 0.3
+  prompt_file: prompt.txt
+  max_tokens: 1500

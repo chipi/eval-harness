@@ -1,0 +1,9 @@
+# ROUGE-2 F1 against each human reference, averaged.
+config_id: se_rouge2_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: rouge
+  metric: rouge2
+  family: rouge
+  price_tier: free
