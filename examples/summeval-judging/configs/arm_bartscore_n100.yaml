@@ -1,0 +1,12 @@
+# BARTScore (Yuan et al. 2021), source->hypothesis: mean log-probability of each summary
+# given the article under facebook/bart-large-cnn, pinned to the revision the summarisation
+# experiment measured. Local, CPU.
+config_id: se_bartscore_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: bartscore
+  model: facebook/bart-large-cnn
+  revision: 37f520fa929c961707657b28798b30c003dd100b
+  family: bart
+  price_tier: free

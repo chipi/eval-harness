@@ -91,6 +91,18 @@ On SciFact every judgment is binary, so this is indistinguishable from linear ga
 declared anyway, because a metric that silently changes meaning between corpora is worse
 than one that is merely wrong.
 
+### Judging (SummEval) — a rank correlation with experts
+
+| metric | what it measures |
+|---|---|
+| `tau` (**primary**) | Kendall's τ-b between the system's scores for an article's 16 summaries and the expert means, per dimension, averaged over coherence, consistency, fluency and relevance. τ-b corrects for ties on both sides, which matters because judges give integer scores and tie constantly. 1 = the experts' order, 0 = unrelated, −1 = reversed. Per article, so the paired tests apply |
+| `rho` | Spearman's ρ, the same way; reported because the literature (G-Eval, SummEval) reports both |
+| `tau_<dimension>`, `rho_<dimension>` | the same, one dimension at a time |
+| `parsed` *(descriptive)* | share of the four dimensions the reply returned as 16 numbers; a missing dimension scores 0 rather than being dropped |
+| `tie_rate` *(descriptive)* | share of the 120 summary pairs the system scored equal |
+
+Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here.
+
 ### Shared across all examples
 
 | metric | kind | what it is |
@@ -259,6 +271,7 @@ your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 | DBpedia-14 | [`fancyzhx/dbpedia_14`](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | 280 abstracts, 14 ontology classes |
 | Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
 | BEIR SciFact | [`BeIR/scifact`](https://huggingface.co/datasets/BeIR/scifact) + [`BeIR/scifact-qrels`](https://huggingface.co/datasets/BeIR/scifact-qrels) | CC BY-SA 4.0 | 200 claims over a 5,183-abstract corpus ([BEIR](https://arxiv.org/abs/2104.08663), [SciFact](https://aclanthology.org/2020.emnlp-main.609/)) |
+| SummEval | [`mteb/summeval`](https://huggingface.co/datasets/mteb/summeval) | MIT | `summeval_100`: all 100 annotated CNN/DailyMail test articles, 16 machine summaries each, 11 human references, expert scores (mean of 3) on coherence, consistency, fluency and relevance as gold ([Fabbri et al. 2021](https://arxiv.org/abs/2007.12626)) |
 
 > **Licence is a selection criterion here, not a footnote.** Few-NERD was chosen over
 > WNUT-2017 — which is closer to noisy podcast speech, the actual application — purely
