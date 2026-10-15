@@ -368,8 +368,18 @@ def _span_marker(text: str, params: Dict[str, Any]) -> Result:
         from hf_identity import apply_precision  # noqa: PLC0415
         from span_marker import SpanMarkerModel  # noqa: PLC0415
 
-        rev = {"revision": params["revision"]} if params.get("revision") else {}
-        _MODEL = apply_precision(SpanMarkerModel.from_pretrained(params["model"], **rev),
+        # PIN BY SNAPSHOT, NOT BY KWARG. SpanMarker forwards `revision=` to the loading of
+        # its underlying encoder -- a DIFFERENT Hub repository, where this repository's
+        # commit does not exist -- and the load then fails ("Unrecognized model in
+        # numind/generic-entity_recognition-v1"). Downloading the pinned snapshot and
+        # loading from its local path pins this model's own weights and leaves the
+        # encoder reference resolved exactly as it was for the committed run.
+        source = params["model"]
+        if params.get("revision"):
+            from huggingface_hub import snapshot_download  # noqa: PLC0415
+
+            source = snapshot_download(params["model"], revision=params["revision"])
+        _MODEL = apply_precision(SpanMarkerModel.from_pretrained(source),
                                  params.get("precision"))
         _MODEL_KEY = key
     found = []
