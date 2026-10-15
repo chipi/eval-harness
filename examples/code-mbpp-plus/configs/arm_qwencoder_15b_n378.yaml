@@ -1,0 +1,15 @@
+# Qwen2.5-Coder-1.5B-Instruct, local on CPU, greedy. The setup behind the Qwen2.5-Coder
+# technical report's MBPP+ number for this model (59.4; arXiv 2409.12186): EvalPlus's chat
+# prompt, its response prefix, temperature 0. Apache-2.0, safetensors, pinned revision.
+config_id: mb_qwencoder_15b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: local
+  model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+  revision: 2e1fd397ee46e1388853d2af2c993145b0f1098a
+  family: qwen-coder
+  price_tier: free
+  precision: fp32
+  max_new_tokens: 768
+  prompt_file: prompt.txt
