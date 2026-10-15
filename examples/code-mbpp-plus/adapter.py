@@ -52,11 +52,14 @@ import gateway  # noqa: E402
 import sandbox  # noqa: E402
 from codehash import code_digest  # noqa: E402
 
-#: Wall-clock limits per sandboxed execution. Set from canonical_check.py's timings on a
-#: 4-core CPU: the slowest canonical solution's plus suite takes a fraction of these, so a
-#: timeout is the code's doing, not the machine's.
+#: Wall-clock limits per sandboxed execution, set from canonical_check.py on a 4-core CPU.
+#: The slowest canonical solution (mbpp_599) takes 22.5 s for base and plus together, so
+#: the plus limit is 4x that, the same margin EvalPlus allows over the ground truth. A
+#: first version used 30 s, which a correct-but-slower solution, or a slower machine,
+#: could exceed; it was raised before any arm was scored. A timeout here means code far
+#: slower than the canonical solution, not a slow machine.
 BASE_TIMEOUT_S = 10.0
-PLUS_TIMEOUT_S = 30.0
+PLUS_TIMEOUT_S = 90.0
 
 #: EvalPlus's response prefix for instruct models (evalplus/provider/utility.py). The local
 #: arms continue from it, inside an open ```python fence; hosted arms cannot be prefilled
