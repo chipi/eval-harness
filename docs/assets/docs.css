@@ -61,9 +61,11 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 }
 .md-header[data-md-state="shadow"], .md-header--shadow { box-shadow: none; }
 .md-header__title { font-family: var(--eh-mono); font-weight: 600; font-size: .7rem; letter-spacing: .04em; }
+/* The project mark (icon.svg, as on the site) before the title; Material's own logo slot
+   stays hidden so the header shows it once. */
 .md-header__topic:first-child .md-ellipsis::before {
-  content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .5rem;
-  background: var(--eh-accent); border-radius: 2px; vertical-align: .05rem;
+  content: ""; display: inline-block; width: 1rem; height: 1rem; margin-right: .5rem;
+  background: url("icon.svg") center / contain no-repeat; vertical-align: -.25rem;
 }
 .md-header__button.md-logo { display: none; }
 .md-tabs { background: transparent; border-bottom: 1px solid var(--eh-hair); }

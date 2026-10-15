@@ -378,6 +378,16 @@ def analytics_tag() -> str:
     return f'<script defer src="{e(cfg["umami_src"])}" data-website-id="{e(cfg["website_id"])}"{domains}></script>'
 
 
+# The project mark: an estimate with its interval, held in a harness (site/assets/icon.svg).
+# Inline here so its colours follow the theme: the tile is the accent, the marks its ink.
+MARK = ('<svg class="mark" viewBox="0 0 64 64" aria-hidden="true">'
+        '<rect width="64" height="64" rx="14" class="mark-tile"/>'
+        '<g class="mark-ink" fill="none" stroke-linecap="round">'
+        '<path d="M20 14H12V50H20M44 14H52V50H44" stroke-width="6" stroke-linejoin="round"/>'
+        '<path d="M22 32H42" stroke-width="5"/></g>'
+        '<circle cx="32" cy="32" r="7" class="mark-dot"/></svg>')
+
+
 def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> str:
     up = "../" * depth
 
@@ -403,11 +413,13 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> st
 <meta name="color-scheme" content="dark light">
 {HEAD_JS}{analytics_tag()}
 <link rel="stylesheet" href="{up}assets/style.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23c8ff3d'/%3E%3C/svg%3E">
+<link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="{up}assets/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="{up}assets/apple-touch-icon.png">
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="brand" href="{up}index.html" aria-label="eval-harness home"><i></i><span>eval-harness</span></a>
+  <a class="brand" href="{up}index.html" aria-label="eval-harness home">{MARK}<span>eval-harness</span></a>
   <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>

@@ -56,7 +56,10 @@ a:hover { color: var(--accent); }
   background: color-mix(in srgb, var(--page) 78%, transparent); border-bottom: 1px solid var(--hair); }
 .bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; gap: 16px; }
 .brand { font: 600 14px/1 var(--mono); letter-spacing: .04em; text-decoration: none; display: flex; gap: 10px; align-items: center; }
-.brand i { width: 10px; height: 10px; background: var(--accent); display: inline-block; border-radius: 2px; }
+.brand .mark { width: 22px; height: 22px; flex: none; display: block; }
+.mark-tile { fill: var(--accent); }
+.mark-ink { stroke: var(--accent-ink); }
+.mark-dot { fill: var(--accent-ink); }
 .nav { display: flex; gap: 22px; font: 500 13px/1 var(--mono); letter-spacing: .03em; }
 .nav a { text-decoration: none; color: var(--ink-2); }
 .nav a:hover { color: var(--accent); }

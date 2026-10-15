@@ -1,3 +1,5 @@
+<img src="site/assets/icon.svg" alt="" width="64" height="64">
+
 # eval-harness
 
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)

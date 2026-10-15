@@ -48,6 +48,8 @@ nav:
 
 theme:
   name: material
+  logo: assets/icon.svg
+  favicon: assets/icon.svg
   features:
     - navigation.sections
     - navigation.top
