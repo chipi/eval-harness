@@ -1,0 +1,56 @@
+```python
+def text_match_three(text):
+    """
+    Write a function that matches a string that has an a followed by three 'b'.
+    
+    :param text: The input string to be matched.
+    :return: True if the string matches the pattern, False otherwise.
+    """
+    # Check if the string contains at least three 'b's
+    return 'b' in text and text.count('b') >= 3
+
+# Test cases to verify the correctness of the function
+assert not text_match_three("ac")
+assert text_match_three("abbb")
+assert text_match_three("abcabc")
+assert text_match_three("abbbbba")
+assert text_match_three("abbbbbbaa")
+assert text_match_three("abbbbbbaaaab")
+assert text_match_three("abbbbbbaaaabbb")
+assert text_match_three("abbbbbbaaaabbbba")
+assert text_match_three("abbbbbbaaaabbbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabb")
+assert text_match_three("abbbbbbaaaabbbbaaabbba")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text_match_three("abbbbbbaaaabbbbaaabbbaa")
+assert text

@@ -32,6 +32,7 @@ the datasets, so each one's licence follows its data:
 | **Classification · DBpedia** | one ontology label | no: a class word | CC-BY-SA 3.0 + GFDL |
 | **Extraction · Few-NERD** | a list of entity spans and types | short spans (names, places) quoted from the sentences | **CC BY-SA 4.0** |
 | **Retrieval · SciFact** | a ranked list of document ids | no: numeric ids | CC BY-SA 4.0 |
+| **Code · MBPP+** | the model's reply: a Python function, usually with prose around it | no dataset text beyond the function name; the code is the model's | Apache-2.0 (EvalPlus); the reply itself is the model's output, under its provider's terms |
 
 ## Each dataset
 
@@ -42,6 +43,7 @@ the datasets, so each one's licence follows its data:
 | [DBpedia-14](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | Attribute Wikipedia/DBpedia; anything you redistribute that contains its text is share-alike. |
 | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | CC BY-SA 4.0 | Attribute the authors; derived text you redistribute is share-alike (CC BY-SA 4.0). |
 | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | CC BY-SA 4.0 | The same: attribute, and share-alike for redistributed text. |
+| [MBPP+](https://huggingface.co/datasets/evalplus/mbppplus) | Apache-2.0 (built on MBPP, CC-BY-4.0) | Keep the attribution and licence notice when you redistribute the tasks or tests. |
 
 Licence was a selection criterion, not an afterthought: Few-NERD was chosen over a corpus
 closer to the original application because that one is licensed `other`. Sources, papers

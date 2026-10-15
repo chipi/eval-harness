@@ -1,0 +1,33 @@
+```python
+def newman_prime(n):
+    """
+    Find the nth newman–shanks–williams prime number.
+
+    Args:
+    n (int): The position of the prime number to find.
+
+    Returns:
+    int: The nth newman–shanks–williams prime number.
+    """
+    # Base cases
+    if n == 1:
+        return 2
+    elif n == 2:
+        return 3
+
+    # Initialize the first two newman–shanks–williams primes
+    a, b = 2, 3
+    count = 0
+
+    # Generate newman–shanks–williams primes until we find the nth one
+    while True:
+        c = a + b
+        a, b = b, c
+        count += 1
+        if count == n:
+            return c
+
+# Test the function with the provided test case
+assert newman_prime(3) == 7
+```
+

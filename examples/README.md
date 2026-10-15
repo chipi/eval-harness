@@ -34,6 +34,7 @@ gitignored.
 | [`classification-ag-news`](classification-ag-news) | 4-way topic label | one label vs one label, **0 or 1** | a discrete metric ties, and the duplicate-run check flagged honest ties as copies | [METHOD](classification-ag-news/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
 | [`classification-dbpedia-14`](classification-dbpedia-14) | 14-way ontology label | same, but **saturated** | rank-stability measured the alphabet when most arms tie | [METHOD](classification-dbpedia-14/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
 | [`ner-few-nerd`](ner-few-nerd) | named entities + types | **a set** vs a set, order irrelevant | an unreadable answer scored 1.0, and no fingerprint covered the scorer | [METHOD](ner-few-nerd/METHOD.md) | [report](../research/REPORT_NER.md) |
+| [`code-mbpp-plus`](code-mbpp-plus) | write a Python function that passes the tests | **source code**, scored by **running it** in a sandbox | the first experiment that executes model output; the referee is a test suite, not an annotator | [README](code-mbpp-plus/README.md) | in progress: sandbox and calibration done, most arms pending |
 | [`retrieval-scifact`](retrieval-scifact) | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | the corpus is not the items, so nothing in the fingerprint identified it | [METHOD](retrieval-scifact/METHOD.md) | [report](../research/REPORT_RETRIEVAL.md) |
 
 Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extraction.py`,

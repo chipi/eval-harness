@@ -1,0 +1,20 @@
+```python
+def find_solution(a, b, n):
+    # Iterate through possible values of x
+    for x in range(-n, n + 1):
+        # Calculate y using the equation ax + by = n
+        y = (n - a * x) / b
+        # Check if y is an integer
+        if y.is_integer():
+            return (x, int(y))
+    # If no solution is found, return None
+    return None
+
+# Test cases
+assert find_solution(2, 3, 7) == (2, 1)
+assert find_solution(1, 2, 5) == (1, 2)
+assert find_solution(0, 1, 0) == (0, 0)
+assert find_solution(5, 3, 10) == (5, 3)
+assert find_solution(1, 2, 1) == None
+```
+

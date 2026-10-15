@@ -1,0 +1,16 @@
+```python
+def return_sum(dict):
+    """
+    Write function to find the sum of all items in the given dictionary.
+    
+    :param dict: Dictionary containing key-value pairs
+    :return: Sum of all values in the dictionary
+    """
+    total = 0
+    for value in dict.values():
+        total += value
+    return total
+
+# Test cases
+assert return_sum({'a': 100, 'b':200, 'c':300}) == 600
+```

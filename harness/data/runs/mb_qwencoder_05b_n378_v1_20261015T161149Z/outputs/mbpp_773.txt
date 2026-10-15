@@ -1,0 +1,29 @@
+```python
+def occurance_substring(main_string, substring):
+    # Initialize variables to store the result
+    start = 0
+    end = 0
+    
+    # Loop through the main string to find all occurrences of the substring
+    while end < len(main_string):
+        # Find the next occurrence of the substring starting from the current end index
+        start = main_string.find(substring, start)
+        
+        # If the substring is found, update the end index
+        if start != -1:
+            end += 1
+        else:
+            break
+    
+    # Return the start and end indices of the first occurrence of the substring
+    return (substring, start, end)
+
+# Test cases to verify the correctness of the function
+assert occurance_substring('python programming, python language','python')==('python', 0, 6)
+assert occurance_substring('hello world, hello universe','hello')==('hello', 0, 5)
+assert occurance_substring('abcdefg', 'abc') == ('abc', 0, 3)
+assert occurance_substring('aaaaaaa', 'aa') == ('aaaaaaa', 0, 7)
+assert occurance_substring('abababab', 'aba') == ('aba', 0, 6)
+assert occurance_substring('abcde', 'f') == ('f', -1, -1)
+```
+

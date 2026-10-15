@@ -1,0 +1,58 @@
+```python
+def text_starta_endb(text):
+    # Check if the string starts with 'a' and ends with 'b'
+    return text.startswith('a') and text.endswith('b')
+
+# Test cases to verify the correctness of the function
+assert text_starta_endb("aabbbb") == True
+assert text_starta_endb("abba") == False
+assert text_starta_endb("abc") == False
+assert text_starta_endb("aabbcc") == True
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabbcc") == False
+assert text_starta_endb("aabb

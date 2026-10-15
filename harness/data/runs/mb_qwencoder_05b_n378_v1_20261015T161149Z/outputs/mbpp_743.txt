@@ -1,0 +1,20 @@
+```python
+def rotate_right(lst, n):
+    """
+    Rotate a given list by specified number of items to the right direction.
+    
+    :param lst: List of integers
+    :param n: Number of items to rotate to the right
+    :return: Rotated list
+    """
+    # Check if n is greater than the length of the list
+    if n > len(lst):
+        return lst
+    
+    # Perform the rotation
+    rotated_list = lst[-n:] + lst[:-n]
+    return rotated_list
+
+# Test cases
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+```

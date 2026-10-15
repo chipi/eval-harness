@@ -1,0 +1,22 @@
+```python
+def last_Digit_Factorial(n):
+    # Initialize the result to 1 (since 0! = 1)
+    result = 1
+    
+    # Loop through each number from 1 to n
+    for i in range(1, n + 1):
+        # Multiply the current result by i
+        result *= i
+    
+    # Return the last digit of the result
+    return result % 10
+
+# Test cases to verify the correctness of the function
+assert last_Digit_Factorial(4) == 4
+assert last_Digit_Factorial(5) == 25
+assert last_Digit_Factorial(6) == 36
+assert last_Digit_Factorial(7) == 49
+assert last_Digit_Factorial(8) == 64
+assert last_Digit_Factorial(9) == 81
+```
+

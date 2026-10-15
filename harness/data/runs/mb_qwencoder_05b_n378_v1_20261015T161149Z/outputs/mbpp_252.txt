@@ -1,0 +1,29 @@
+```python
+def convert(complex_num):
+    """
+    Convert a complex number to polar coordinates.
+
+    Args:
+    complex_num (complex): A complex number.
+
+    Returns:
+    tuple: A tuple containing the magnitude and phase of the complex number.
+    """
+    # Extract real and imaginary parts from the complex number
+    real_part = complex_num.real
+    imag_part = complex_num.imag
+    
+    # Calculate the magnitude using the Pythagorean theorem
+    magnitude = (real_part**2 + imag_part**2)**0.5
+    
+    # Calculate the phase using the arctangent function
+    phase = complex_num.phase()
+    
+    return (magnitude, phase)
+
+# Test cases to verify the correctness of the function
+assert convert(1) == (1.0, 0.0)
+assert convert(2+3j) == (2.23606797749979, 0.523598775598298)
+assert convert(-1-2j) == (1.4142135623730951, -1.5707963267948966)
+```
+

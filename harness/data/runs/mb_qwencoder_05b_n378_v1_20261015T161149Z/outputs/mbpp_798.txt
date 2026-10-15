@@ -1,0 +1,20 @@
+```python
+def _sum(arr):
+    """
+    Calculate the sum of an array.
+
+    Args:
+    arr (list): The input array.
+
+    Returns:
+    int: The sum of the array.
+    """
+    return sum(arr)
+
+# Test cases to verify the correctness of the function
+assert _sum([1, 2, 3]) == 6
+assert _sum([-1, -2, -3]) == -6
+assert _sum([0, 0, 0]) == 0
+assert _sum([]) == 0
+```
+

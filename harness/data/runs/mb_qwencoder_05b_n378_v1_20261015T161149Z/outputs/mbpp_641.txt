@@ -1,0 +1,14 @@
+```python
+def is_nonagonal(n):
+    """
+    Write a function to find the nth nonagonal number.
+    
+    :param n: The position of the nonagonal number to find.
+    :return: The nth nonagonal number.
+    """
+    return n * (n + 1) // 2
+
+# Test cases
+assert is_nonagonal(10) == 325
+```
+

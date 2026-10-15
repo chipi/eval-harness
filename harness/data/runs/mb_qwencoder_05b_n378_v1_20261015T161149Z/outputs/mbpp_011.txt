@@ -1,0 +1,15 @@
+```python
+def remove_Occ(s, c):
+    # Remove the first occurrence of the character
+    s = s.replace(c, "")
+    # Remove the last occurrence of the character
+    s = s.replace(c, "")
+    return s
+
+# Test cases to verify the correctness of the function
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("abcdefg", "b") == "acdefg"
+assert remove_Occ("aaaa", "a") == ""
+assert remove_Occ("ababab", "a") == "bb"
+```
+

@@ -1,0 +1,22 @@
+```python
+def remove_nested(tup):
+    # Initialize an empty list to store the result
+    result = []
+    
+    # Iterate over each element in the input tuple
+    for item in tup:
+        # Check if the item is a tuple
+        if isinstance(item, tuple):
+            # Recursively call the function on the nested tuple
+            result.extend(remove_nested(item))
+        else:
+            # If the item is not a tuple, add it to the result list
+            result.append(item)
+    
+    # Return the result list
+    return result
+
+# Test the function with the provided test case
+assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+```
+

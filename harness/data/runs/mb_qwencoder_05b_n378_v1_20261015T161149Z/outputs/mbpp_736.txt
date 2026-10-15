@@ -1,0 +1,23 @@
+```python
+def left_insertion(arr, x):
+    # Initialize the index to 0
+    i = 0
+    # Iterate through the array starting from the first element
+    while i < len(arr):
+        # If the current element is greater than or equal to x, return the current index
+        if arr[i] >= x:
+            return i
+        # Move to the next element
+        i += 1
+    # If no element is found greater than or equal to x, return the length of the array
+    return len(arr)
+
+# Test cases to verify the correctness of the function
+assert left_insertion([1,2,4,5],6) == 4
+assert left_insertion([1,2,4,5],3) == 1
+assert left_insertion([1,2,4,5],7) == 5
+assert left_insertion([1,2,4,5],0) == 0
+assert left_insertion([],5) == 0
+assert left_insertion([1],5) == 0
+```
+

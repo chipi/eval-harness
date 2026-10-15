@@ -1,0 +1,62 @@
+```python
+def is_decimal(s):
+    # Check if the string is a valid decimal number with a precision of 2
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+# Test cases to verify the correctness of the function
+assert is_decimal('123.11') == True
+assert is_decimal('123.12') == False
+assert is_decimal('123.13') == False
+assert is_decimal('123.14') == False
+assert is_decimal('123.15') == False
+assert is_decimal('123.16') == False
+assert is_decimal('123.17') == False
+assert is_decimal('123.18') == False
+assert is_decimal('123.19') == False
+assert is_decimal('123.20') == True
+assert is_decimal('123.21') == False
+assert is_decimal('123.22') == False
+assert is_decimal('123.23') == False
+assert is_decimal('123.24') == False
+assert is_decimal('123.25') == False
+assert is_decimal('123.26') == False
+assert is_decimal('123.27') == False
+assert is_decimal('123.28') == False
+assert is_decimal('123.29') == False
+assert is_decimal('123.30') == True
+assert is_decimal('123.31') == False
+assert is_decimal('123.32') == False
+assert is_decimal('123.33') == False
+assert is_decimal('123.34') == False
+assert is_decimal('123.35') == False
+assert is_decimal('123.36') == False
+assert is_decimal('123.37') == False
+assert is_decimal('123.38') == False
+assert is_decimal('123.39') == False
+assert is_decimal('123.40') == True
+assert is_decimal('123.41') == False
+assert is_decimal('123.42') == False
+assert is_decimal('123.43') == False
+assert is_decimal('123.44') == False
+assert is_decimal('123.45') == False
+assert is_decimal('123.46') == False
+assert is_decimal('123.47') == False
+assert is_decimal('123.48') == False
+assert is_decimal('123.49') == False
+assert is_decimal('123.50') == True
+assert is_decimal('123.51') == False
+assert is_decimal('123.52') == False
+assert is_decimal('123.53') == False
+assert is_decimal('123.54') == False
+assert is_decimal('123.55') == False
+assert is_decimal('123.56') == False
+assert is_decimal('123.57') == False
+assert is_decimal('123.58') == False
+assert is_decimal('123.59') == False
+assert is_decimal('123.60') == True
+assert is_decimal('123.61') == False
+assert

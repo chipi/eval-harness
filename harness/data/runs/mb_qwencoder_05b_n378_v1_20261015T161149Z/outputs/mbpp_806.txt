@@ -1,0 +1,26 @@
+```python
+def max_run_uppercase(s):
+    # Initialize variables to keep track of the maximum run of uppercase characters
+    max_run = 0
+    current_run = 0
+    
+    # Iterate through each character in the string
+    for char in s:
+        # If the character is uppercase, increment the current run
+        if char.isupper():
+            current_run += 1
+        else:
+            # If the character is not uppercase, update the maximum run
+            max_run = max(max_run, current_run)
+            # Reset the current run to 0
+            current_run = 0
+    
+    # After the loop, check the last run
+    max_run = max(max_run, current_run)
+    
+    return max_run
+
+# Test the function with the provided test case
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+```
+

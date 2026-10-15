@@ -1,0 +1,24 @@
+```python
+def count_same_pair(list1, list2):
+    """
+    The input is defined as two lists of the same length. Write a function to count indices where the lists have the same values.
+    
+    :param list1: First list of integers
+    :param list2: Second list of integers
+    :return: Number of indices where the lists have the same values
+    """
+    # Initialize a counter for matching pairs
+    matching_count = 0
+    
+    # Iterate over the first list
+    for i in range(len(list1)):
+        # Check if the current element in the first list matches the current element in the second list
+        if list1[i] == list2[i]:
+            matching_count += 1
+    
+    return matching_count
+
+# Test cases
+assert count_same_pair([1, 2, 3, 4, 5, 6, 7, 8],[2, 2, 3, 1, 2, 6, 7, 9]) == 4
+```
+

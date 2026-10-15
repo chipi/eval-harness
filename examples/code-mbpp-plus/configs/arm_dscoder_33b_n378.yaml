@@ -1,0 +1,19 @@
+# deepseek-coder-33b-instruct, local, greedy, EvalPlus's chat prompt and response prefix.
+# The Qwen2.5-Coder technical report (arXiv 2409.12186, Table 16) publishes MBPP+ 70.1
+# for this model under the same EvalPlus setup, so it is a calibration point.
+# Licence: DeepSeek License (commercial use allowed, with use-based restrictions). Safetensors, pinned revision, no remote code.
+# Sized for a big machine: bf16, and `device: auto` takes a CUDA GPU or Apple-silicon MPS
+# when there is one, else the CPU. The device actually used is in the run's fingerprint.
+config_id: mb_dscoder_33b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: local
+  model: deepseek-ai/deepseek-coder-33b-instruct
+  revision: 61dc97b922b13995e7f83b7c8397701dbf9cfd4c
+  family: deepseek-coder
+  price_tier: free
+  precision: bf16
+  device: auto
+  max_new_tokens: 768
+  prompt_file: prompt.txt

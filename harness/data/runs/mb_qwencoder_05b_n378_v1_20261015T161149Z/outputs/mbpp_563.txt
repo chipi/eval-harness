@@ -1,0 +1,30 @@
+```python
+def extract_values(s):
+    """
+    Extract values between quotation marks from a string.
+
+    :param s: A string containing multiple quoted values separated by commas.
+    :return: A list of extracted values.
+    """
+    # Split the input string by commas to get individual values
+    values = s.split(',')
+    
+    # Initialize an empty list to store the extracted values
+    extracted_values = []
+    
+    # Iterate over each value in the list
+    for value in values:
+        # Strip any leading or trailing whitespace from the value
+        value = value.strip()
+        
+        # Check if the value is not empty
+        if value:
+            # Append the value to the list
+            extracted_values.append(value)
+    
+    return extracted_values
+
+# Test the function with the provided test case
+assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+```
+

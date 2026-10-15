@@ -1,0 +1,64 @@
+```python
+def replace_blank(s, c):
+    """
+    Takes in a string and character, replaces blank spaces in the string with the character, and returns the string.
+    
+    :param s: The input string.
+    :param c: The character to replace blank spaces with.
+    :return: The modified string with blank spaces replaced.
+    """
+    return s.replace(" ", c)
+
+# Test cases
+assert replace_blank("hello people",'@')==("hello@people")
+assert replace_blank("hello world","*")==("hello*world")
+assert replace_blank("hello world","!")==("hello!world")
+assert replace_blank("hello world","?")==("hello?world")
+assert replace_blank("hello world","_")==("hello_world")
+assert replace_blank("hello world","-")==("hello-world")
+assert replace_blank("hello world","|")==("hello-world")
+assert replace_blank("hello world","\\")==("hello-world")
+assert replace_blank("hello world","/")==("hello-world")
+assert replace_blank("hello world","^")==("hello-world")
+assert replace_blank("hello world","$")==("hello-world")
+assert replace_blank("hello world","&")==("hello-world")
+assert replace_blank("hello world","*")==("hello*world")
+assert replace_blank("hello world","!")==("hello!world")
+assert replace_blank("hello world","?")==("hello?world")
+assert replace_blank("hello world","_")==("hello_world")
+assert replace_blank("hello world","-")==("hello-world")
+assert replace_blank("hello world","|")==("hello-world")
+assert replace_blank("hello world","\\")==("hello-world")
+assert replace_blank("hello world","/")==("hello-world")
+assert replace_blank("hello world","^")==("hello-world")
+assert replace_blank("hello world","$")==("hello-world")
+assert replace_blank("hello world","&")==("hello-world")
+assert replace_blank("hello world","*")==("hello*world")
+assert replace_blank("hello world","!")==("hello!world")
+assert replace_blank("hello world","?")==("hello?world")
+assert replace_blank("hello world","_")==("hello_world")
+assert replace_blank("hello world","-")==("hello-world")
+assert replace_blank("hello world","|")==("hello-world")
+assert replace_blank("hello world","\\")==("hello-world")
+assert replace_blank("hello world","/")==("hello-world")
+assert replace_blank("hello world","^")==("hello-world")
+assert replace_blank("hello world","$")==("hello-world")
+assert replace_blank("hello world","&")==("hello-world")
+assert replace_blank("hello world","*")==("hello*world")
+assert replace_blank("hello world","!")==("hello!world")
+assert replace_blank("hello world","?")==("hello?world")
+assert replace_blank("hello world","_")==("hello_world")
+assert replace_blank("hello world","-")==("hello-world")
+assert replace_blank("hello world","|")==("hello-world")
+assert replace_blank("hello world","\\")==("hello-world")
+assert replace_blank("hello world","/")==("hello-world")
+assert replace_blank("hello world","^")==("hello-world")
+assert replace_blank("hello world","$")==("hello-world")
+assert replace_blank("hello world","&")==("hello-world")
+assert replace_blank("hello world","*")==("hello*world")
+assert replace_blank("hello world","!")==("hello!world")
+assert replace_blank("hello world","?")==("hello?world")
+assert replace_blank("hello world","_")==("hello_world")
+assert replace_blank("hello world","-")==("hello-world")
+assert replace_blank("hello world","|")==("hello-world")
+assert replace_blank("hello world","\\

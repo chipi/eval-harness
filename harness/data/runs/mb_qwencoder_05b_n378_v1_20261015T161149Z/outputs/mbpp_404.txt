@@ -1,0 +1,22 @@
+```python
+def minimum(a, b):
+    """
+    Find the minimum of two numbers.
+
+    Parameters:
+    a (int): The first number.
+    b (int): The second number.
+
+    Returns:
+    int: The minimum of the two numbers.
+    """
+    return min(a, b)
+
+# Test cases to verify the correctness of the function
+assert minimum(1, 2) == 1
+assert minimum(5, 3) == 3
+assert minimum(-1, -5) == -5
+assert minimum(0, 0) == 0
+assert minimum(7, 8) == 7
+```
+

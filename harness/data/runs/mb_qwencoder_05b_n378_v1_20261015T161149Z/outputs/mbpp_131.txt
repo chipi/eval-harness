@@ -1,0 +1,30 @@
+```python
+def reverse_vowels(s):
+    # Define a set of vowels for easy checking
+    vowels = set('aeiouAEIOU')
+    
+    # Initialize an empty list to store the result
+    result = []
+    
+    # Iterate over each character in the input string
+    for char in s:
+        # Check if the character is a vowel
+        if char in vowels:
+            # Append the vowel to the result list in reverse order
+            result.append(vowels.pop())
+        else:
+            # If it's not a vowel, append it as is
+            result.append(char)
+    
+    # Join the list into a string and return it
+    return ''.join(result)
+
+# Test cases to verify the correctness of the function
+assert reverse_vowels("Python") == "Python"
+assert reverse_vowels("Hello World") == "olleH dlroW"
+assert reverse_vowels("abcdefg") == "abfedc"
+assert reverse_vowels("aBcDeFg") == "AbCdEfG"
+assert reverse_vowels("zbcd") == "zbcd"
+assert reverse_vowels("") == ""
+```
+

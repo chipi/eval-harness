@@ -1,0 +1,22 @@
+```python
+def max_aggregate(tuples_list):
+    # Initialize variables to store the maximum aggregate and the current sum
+    max_aggregate = float('-inf')
+    current_sum = 0
+    
+    # Iterate through each tuple in the list
+    for tup in tuples_list:
+        # Add the current element to the current sum
+        current_sum += tup[1]
+        
+        # Update the maximum aggregate if the current sum is greater
+        if current_sum > max_aggregate:
+            max_aggregate = current_sum
+    
+    # Return the maximum aggregate
+    return max_aggregate
+
+# Test the function with the provided test case
+assert max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]) == ('Juan Whelan', 212)
+```
+

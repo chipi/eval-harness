@@ -1,0 +1,23 @@
+```python
+def all_Characters_Same(s):
+    # Check if the length of the string is less than 2
+    if len(s) < 2:
+        return True
+    
+    # Iterate through the string and compare each character with the next one
+    for i in range(len(s) - 1):
+        if s[i] != s[i + 1]:
+            return False
+    
+    # If all characters are the same, return True
+    return True
+
+# Test cases to verify the correctness of the function
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("programming") == True
+assert all_Characters_Same("hello") == False
+assert all_Characters_Same("world") == True
+assert all_Characters_Same("a") == True
+assert all_Characters_Same("") == True
+```
+

@@ -1,0 +1,39 @@
+```python
+def ascii_value(char):
+    """
+    Write a function to find the ascii value of a character.
+    
+    :param char: The character whose ascii value is to be found.
+    :return: The ascii value of the character.
+    """
+    return ord(char)
+
+# Test cases to verify the correctness of the function
+assert ascii_value('A') == 65
+assert ascii_value('B') == 66
+assert ascii_value('C') == 67
+assert ascii_value('D') == 68
+assert ascii_value('E') == 69
+assert ascii_value('F') == 70
+assert ascii_value('G') == 71
+assert ascii_value('H') == 72
+assert ascii_value('I') == 73
+assert ascii_value('J') == 74
+assert ascii_value('K') == 75
+assert ascii_value('L') == 76
+assert ascii_value('M') == 77
+assert ascii_value('N') == 78
+assert ascii_value('O') == 79
+assert ascii_value('P') == 80
+assert ascii_value('Q') == 81
+assert ascii_value('R') == 82
+assert ascii_value('S') == 83
+assert ascii_value('T') == 84
+assert ascii_value('U') == 85
+assert ascii_value('V') == 86
+assert ascii_value('W') == 87
+assert ascii_value('X') == 88
+assert ascii_value('Y') == 89
+assert ascii_value('Z') == 90
+```
+

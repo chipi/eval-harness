@@ -1,0 +1,6 @@
+```python
+def add_dict_to_tuple(tup, dict):
+    # Add the dictionary to the tuple
+    return tup + (dict,)
+```
+

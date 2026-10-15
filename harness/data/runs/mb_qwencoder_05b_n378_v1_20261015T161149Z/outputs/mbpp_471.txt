@@ -1,0 +1,17 @@
+```python
+def find_remainder(arr, n):
+    # Initialize the product to 1 (since multiplying by 1 does not change the product)
+    product = 1
+    
+    # Iterate through each element in the array
+    for num in arr:
+        # Multiply the current product by the current number
+        product *= num
+    
+    # Return the product modulo n
+    return product % n
+
+# Test the function with the provided test case
+assert find_remainder([ 100, 10, 5, 25, 35, 14 ],11) == 9
+```
+

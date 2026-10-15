@@ -1,0 +1,16 @@
+```python
+def unique_product(numbers):
+    # Convert the list to a set to remove duplicates
+    unique_numbers = set(numbers)
+    
+    # Calculate the product of the unique numbers
+    product = 1
+    for number in unique_numbers:
+        product *= number
+    
+    return product
+
+# Test the function with the provided test case
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+```
+

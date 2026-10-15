@@ -1,0 +1,20 @@
+```python
+def tuple_to_int(tup):
+    # Initialize the result variable to 0
+    result = 0
+    
+    # Iterate over each element in the tuple
+    for num in tup:
+        # Add the current number to the result
+        result += num
+    
+    # Return the final result
+    return result
+
+# Test cases to verify the correctness of the function
+assert tuple_to_int((1, 2, 3)) == 123
+assert tuple_to_int((4, 5, 6)) == 210
+assert tuple_to_int((7, 8, 9)) == 270
+assert tuple_to_int((10, 11, 12)) == 360
+```
+

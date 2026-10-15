@@ -267,6 +267,12 @@ data/sources/scifact_*/
 data/references/gold/scifact_*/
 data/references/silver/scifact_*/
 
+# MBPP+ (EvalPlus). Apache-2.0, and still fetched, not committed: the tasks, tests and
+# canonical solutions are rebuilt by examples/code-mbpp-plus/fetch.py.
+data/sources/mbppplus_*/
+data/references/gold/mbppplus_*/
+data/references/silver/mbppplus_*/
+
 # ── the CORPUS, which is a new kind of thing in this tree ────────────────────
 # Retrieval is the first task here whose answer is not computable from the item alone. An
 # item is a QUERY; the documents it must find are a separate 5,183-abstract corpus that

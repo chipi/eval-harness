@@ -1,0 +1,45 @@
+{
+ "dataset_id": "mbppplus_378",
+ "tasks": 378,
+ "canonical_pass_plus": 378.0,
+ "canonical_failures": [],
+ "stub_passes_base": [],
+ "slowest_seconds": [
+  {
+   "item": "mbpp_599",
+   "seconds": 23.365
+  },
+  {
+   "item": "mbpp_255",
+   "seconds": 6.258
+  },
+  {
+   "item": "mbpp_603",
+   "seconds": 4.819
+  },
+  {
+   "item": "mbpp_392",
+   "seconds": 4.55
+  },
+  {
+   "item": "mbpp_271",
+   "seconds": 4.177
+  }
+ ],
+ "limits_s": {
+  "base": 10.0,
+  "plus": 90.0
+ },
+ "sandbox": "linux-namespaces",
+ "probe": {
+  "network": "error",
+  "write_home": "error",
+  "fork": "pass",
+  "runs_code": "pass",
+  "catches_wrong_code": "fail",
+  "timeout": "timeout"
+ },
+ "workers": 1,
+ "machine": "Linux x86_64, python 3.11.15",
+ "scorer_sha256": "4b639a9170d3c2a8819305375680b58f87bc2e0941b66101312b1f270a158444"
+}

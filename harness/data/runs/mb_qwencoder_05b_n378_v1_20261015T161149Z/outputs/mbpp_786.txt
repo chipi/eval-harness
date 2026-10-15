@@ -1,0 +1,19 @@
+```python
+def right_insertion(arr, x):
+    # Initialize the insertion point to the last index of the array
+    insertion_point = len(arr) - 1
+    
+    # Iterate from the end of the array to the beginning
+    while insertion_point >= 0 and arr[insertion_point] > x:
+        # Move the insertion point one position to the left
+        insertion_point -= 1
+    
+    # Insert the element at the found insertion point
+    arr.insert(insertion_point + 1, x)
+    
+    return insertion_point + 1
+
+# Test the function with the provided test case
+assert right_insertion([1,2,4,5],6)==4
+```
+

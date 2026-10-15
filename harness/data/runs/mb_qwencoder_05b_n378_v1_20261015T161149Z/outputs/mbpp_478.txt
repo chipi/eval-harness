@@ -1,0 +1,18 @@
+```python
+def remove_lowercase(s):
+    """
+    Remove lowercase substrings from a given string.
+
+    :param s: The input string from which lowercase substrings will be removed.
+    :return: A new string with all lowercase substrings removed.
+    """
+    # Use list comprehension to filter out lowercase substrings
+    return ''.join([char for char in s if not char.islower()])
+
+# Test cases to verify the correctness of the function
+assert remove_lowercase("PYTHon") == 'PYTH'
+assert remove_lowercase("HelloWorld") == "HllWrld"
+assert remove_lowercase("123abcABC") == "123abc"
+assert remove_lowercase("aBcDeFg") == "abCdEfG"
+```
+

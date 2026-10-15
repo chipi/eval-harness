@@ -1,0 +1,13 @@
+```python
+def even_bit_set_number(number):
+    # Set all even bits of the number using bitwise AND operation
+    return number & 0x55
+
+# Test cases to verify the correctness of the function
+assert even_bit_set_number(10) == 10
+assert even_bit_set_number(22) == 34
+assert even_bit_set_number(15) == 30
+assert even_bit_set_number(7) == 7
+assert even_bit_set_number(0) == 0
+```
+

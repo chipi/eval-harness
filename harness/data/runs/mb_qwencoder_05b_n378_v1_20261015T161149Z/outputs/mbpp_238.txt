@@ -1,0 +1,19 @@
+```python
+def number_of_substrings(s):
+    """
+    Write a python function to count the number of non-empty substrings of a given string.
+    
+    :param s: The input string
+    :return: The number of non-empty substrings
+    """
+    n = len(s)
+    count = 0
+    for i in range(n):
+        for j in range(i + 1, n + 1):
+            count += 1
+    return count
+
+# Test cases
+assert number_of_substrings("abc") == 6
+```
+

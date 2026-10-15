@@ -1,0 +1,30 @@
+```python
+def bell_Number(n):
+    """
+    Calculate the nth Bell number.
+
+    Args:
+    n (int): The position in the Bell sequence.
+
+    Returns:
+    int: The nth Bell number.
+    """
+    if n == 0:
+        return 1
+    elif n == 1:
+        return 1
+    else:
+        return bell_Number(n-1) + bell_Number(n-2)
+
+# Test cases
+assert bell_Number(2) == 2
+assert bell_Number(3) == 3
+assert bell_Number(4) == 5
+assert bell_Number(5) == 8
+assert bell_Number(6) == 15
+assert bell_Number(7) == 29
+assert bell_Number(8) == 56
+assert bell_Number(9) == 105
+assert bell_Number(10) == 176
+```
+

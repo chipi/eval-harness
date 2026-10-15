@@ -57,7 +57,7 @@ for f in files:
                     continue
                 cells += 1
                 if not v.startswith(("Summarisation ·","Classification ·",
-                                     "Extraction ·","Retrieval ·")):
+                                     "Extraction ·","Retrieval ·","Code ·")):
                     bad.append("%s:%d  %s" % (f.relative_to(root), i, v))
     if seen_here:
         with_table.append(f.relative_to(root))

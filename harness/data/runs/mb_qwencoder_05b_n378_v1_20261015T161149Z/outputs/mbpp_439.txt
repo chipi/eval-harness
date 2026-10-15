@@ -1,0 +1,13 @@
+```python
+def multiple_to_single(numbers):
+    """
+    Join a list of multiple integers into a single integer.
+
+    :param numbers: List of integers
+    :return: Single integer formed by concatenating all elements in the list
+    """
+    return int(''.join(map(str, numbers)))
+
+# Test cases to verify the correctness of the function
+assert multiple_to_single([11, 33, 50]) == 113350
+```

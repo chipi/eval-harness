@@ -1,0 +1,39 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    # Check if n is less than or equal to 0
+    if n <= 0:
+        return False
+    
+    # Initialize a variable to store the result
+    result = False
+    
+    # Iterate through possible powers of 2
+    for i in range(32):  # We only need to consider powers of 2 up to 31 (since 2^31 = 1048576)
+        power = 1 << i
+        if n >= power:
+            result = True
+            break
+    
+    return result
+
+# Test cases to verify the correctness of the function
+assert is_Sum_Of_Powers_Of_Two(10) == True
+assert is_Sum_Of_Powers_Of_Two(15) == False
+assert is_Sum_Of_Powers_Of_Two(16) == True
+assert is_Sum_Of_Powers_Of_Two(17) == False
+assert is_Sum_Of_Powers_Of_Two(18) == True
+assert is_Sum_Of_Powers_Of_Two(19) == False
+assert is_Sum_Of_Powers_Of_Two(20) == True
+assert is_Sum_Of_Powers_Of_Two(21) == False
+assert is_Sum_Of_Powers_Of_Two(22) == True
+assert is_Sum_Of_Powers_Of_Two(23) == False
+assert is_Sum_Of_Powers_Of_Two(24) == True
+assert is_Sum_Of_Powers_Of_Two(25) == False
+assert is_Sum_Of_Powers_Of_Two(26) == True
+assert is_Sum_Of_Powers_Of_Two(27) == False
+assert is_Sum_Of_Powers_Of_Two(28) == True
+assert is_Sum_Of_Powers_Of_Two(29) == False
+assert is_Sum_Of_Powers_Of_Two(30) == True
+assert is_Sum_Of_Powers_Of_Two(31) == False
+```
+

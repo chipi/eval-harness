@@ -1,0 +1,140 @@
+{
+  "adapter": "examples/code-mbpp-plus/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "07395dafa6371477234aff0b7379438699128283",
+    "source": "git"
+  },
+  "config_id": "mb_qwencoder_05b_n378_v1",
+  "created_at": "2026-10-15T16:28:36Z",
+  "dataset_id": "mbppplus_378",
+  "fingerprint": {
+    "arm": {
+      "config_id": "mb_qwencoder_05b_n378_v1",
+      "params": {
+        "family": "qwen-coder",
+        "max_new_tokens": 768,
+        "model": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+        "precision": "fp32",
+        "price_tier": "free",
+        "prompt_file": "prompt.txt",
+        "provider": "local",
+        "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25"
+      }
+    },
+    "data": {
+      "dataset_id": "mbppplus_378",
+      "items_sha256": "bdc8a93cb44edbfc172656c31d5d1fe6407e78e469861fe83177ccf40f5902ef",
+      "n_items": 378,
+      "reference_id": "gold/mbppplus_378",
+      "reference_tier": "gold",
+      "references_sha256": "28cb6d415d57f58fbfdb7d6618714ef489dba65dba08ea51c65de680ad8c37ec"
+    },
+    "hash": "00a0d6dace731b3550adf6913fc047e8c082babc047f2adfd2f14c5c4ada2e23",
+    "host": {
+      "cpu_count": 4,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/code-mbpp-plus/adapter.py",
+        "sha256": "2a8b00dd296d2f485e042ea2b9b1c94826dd44ee7ba801327a40f34753d666c6"
+      },
+      "harness": {
+        "commit": "07395dafa637",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "code_sha256": "be9fe5a900dd6f7514d44f5ccea74c7d558e5b9abfbadf691ab801b0338a6e20",
+        "decoding": "greedy",
+        "device": "cpu",
+        "id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+        "identity_declared": true,
+        "loaded_dtype": "float32",
+        "loaded_revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+        "max_new_tokens": 768,
+        "pin_satisfied": true,
+        "precision": "fp32",
+        "prompt_sha256": "65e89c87d749ee294ce4069d771f97c1fe99a6def34a59035b25a12fdcd33cdf",
+        "python": "3.11.15",
+        "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25",
+        "revision_source": "hf-snapshot",
+        "sandbox": "linux-namespaces",
+        "sandbox_probe": {
+          "catches_wrong_code": "fail",
+          "fork": "pass",
+          "network": "error",
+          "runs_code": "pass",
+          "timeout": "timeout",
+          "write_home": "error"
+        },
+        "scorer_sha256": "4b639a9170d3c2a8819305375680b58f87bc2e0941b66101312b1f270a158444",
+        "weight_files": [
+          "model.safetensors:988097824"
+        ]
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "code_found": "descriptive",
+    "pass_base": "quality",
+    "pass_plus": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "syntax_ok": "descriptive",
+    "timeout": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 378,
+  "params": {
+    "family": "qwen-coder",
+    "max_new_tokens": 768,
+    "model": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+    "precision": "fp32",
+    "price_tier": "free",
+    "prompt_file": "prompt.txt",
+    "provider": "local",
+    "revision": "ea3f2471cf1b1f0db85067f1ef93848e38e88c25"
+  },
+  "primary_metric": "pass_plus",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "resume": {
+    "carried_extra_keys": [
+      "truncated"
+    ],
+    "replayed_items": 348,
+    "replayed_without_recorded_extra": 0
+  },
+  "run_id": "mb_qwencoder_05b_n378_v1_20261015T161149Z",
+  "scores": {
+    "code_found": 1.0,
+    "cost_usd": 0.0,
+    "latency_ms": 19771.079542,
+    "pass_base": 0.513228,
+    "pass_plus": 0.441799,
+    "resumed": 0.920635,
+    "syntax_ok": 1.0,
+    "timeout": 0.005291,
+    "tokens_in": 124.433862,
+    "tokens_out": 211.02381,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 47036.0,
+    "total_tokens_out": 79767.0,
+    "truncated": 0.063492
+  },
+  "warmup_ms": 12614.414
+}

@@ -1,0 +1,25 @@
+```python
+def average_tuple(tuples):
+    # Initialize an empty list to store the average values
+    averages = []
+    
+    # Iterate over each tuple in the input tuple
+    for tup in tuples:
+        # Calculate the sum of all elements in the tuple
+        total_sum = sum(tup)
+        # Calculate the number of elements in the tuple
+        num_elements = len(tup)
+        
+        # Calculate the average by dividing the total sum by the number of elements
+        average = total_sum / num_elements
+        
+        # Append the average to the averages list
+        averages.append(average)
+    
+    # Return the list of averages
+    return averages
+
+# Test the function with the provided test case
+assert average_tuple(((10, 10, 10, 12), (30, 45, 56, 45), (81, 80, 39, 32), (1, 2, 3, 4))) == [30.5, 34.25, 27.0, 23.25]
+```
+

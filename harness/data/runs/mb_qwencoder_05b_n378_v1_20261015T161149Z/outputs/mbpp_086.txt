@@ -1,0 +1,17 @@
+```python
+def centered_hexagonal_number(n):
+    """
+    Write a function to find nth centered hexagonal number.
+    
+    Args:
+    n (int): The position of the centered hexagonal number to find.
+    
+    Returns:
+    int: The nth centered hexagonal number.
+    """
+    return n * (n + 1) // 2
+
+# Test cases to verify the correctness of the function
+assert centered_hexagonal_number(10) == 271
+```
+

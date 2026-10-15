@@ -1,0 +1,28 @@
+```python
+def is_polite(n):
+    """
+    Find nth polite number.
+    
+    Args:
+    n (int): The position of the polite number to find.
+    
+    Returns:
+    int: The nth polite number.
+    """
+    if n == 1:
+        return 1
+    
+    count = 0
+    num = 1
+    
+    while count < n:
+        if is_polite(num):
+            count += 1
+        num += 1
+    
+    return num - 1
+
+# Test cases
+assert is_polite(7) == 11
+```
+

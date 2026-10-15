@@ -1,0 +1,20 @@
+```python
+def next_Perfect_Square(n):
+    # Start from the next integer after n
+    i = n + 1
+    # While the square of i is less than or equal to n
+    while i * i <= n:
+        # Increment i by 1
+        i += 1
+    # Return the next perfect square greater than n
+    return i * i
+
+# Test cases to verify the correctness of the function
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(17) == 24
+assert next_Perfect_Square(18) == 20
+assert next_Perfect_Square(29) == 36
+assert next_Perfect_Square(1) == 2
+assert next_Perfect_Square(26) == 29
+```
+

@@ -1,0 +1,22 @@
+```python
+import math
+
+def angle_complex(real_part, imag_part):
+    """
+    Get the angle of a complex number.
+
+    Args:
+    real_part (float): The real part of the complex number.
+    imag_part (float): The imaginary part of the complex number.
+
+    Returns:
+    float: The angle of the complex number in radians.
+    """
+    # Calculate the angle using the arctan function
+    angle_radians = math.atan2(imag_part, real_part)
+    return angle_radians
+
+# Test cases
+assert math.isclose(angle_complex(0,1j), 1.5707963267948966, rel_tol=0.001)
+```
+

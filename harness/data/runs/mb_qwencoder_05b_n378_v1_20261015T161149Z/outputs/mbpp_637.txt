@@ -1,0 +1,31 @@
+```python
+def noprofit_noloss(amount, cost):
+    """
+    Check whether the given amount has no profit and no loss
+
+    :param amount: The total amount of money available
+    :param cost: The cost of the item
+    :return: True if the amount has no profit and no loss, False otherwise
+    """
+    # Calculate the profit
+    profit = amount - cost
+    
+    # Check if the profit is zero or negative
+    if profit == 0 or profit < 0:
+        return False
+    
+    # Check if the profit is positive
+    if profit > 0:
+        return True
+    
+    # If neither condition is met, it means there is no profit or loss
+    return False
+
+# Test cases
+assert noprofit_noloss(1500, 1200) == False
+assert noprofit_noloss(2000, 1800) == True
+assert noprofit_noloss(3000, 2000) == False
+assert noprofit_noloss(4000, 2500) == True
+assert noprofit_noloss(5000, 3000) == False
+```
+

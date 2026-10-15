@@ -1,0 +1,17 @@
+```python
+def sum_digits(n):
+    # Initialize the sum to 0
+    total = 0
+    
+    # Loop through each digit in the number
+    while n > 0:
+        # Add the last digit to the total
+        total += n % 10
+        # Remove the last digit from the number
+        n //= 10
+    
+    return total
+
+# Test the function with the provided test case
+assert sum_digits(345) == 12
+```
