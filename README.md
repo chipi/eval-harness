@@ -143,6 +143,7 @@ what all five agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTH
 | `classification-dbpedia-14` | 14-way ontology label | same, but saturated | same report |
 | `ner-few-nerd` | named entities + types | **a set**, matched one-to-one | [`REPORT_NER.md`](research/REPORT_NER.md) |
 | `retrieval-scifact` | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | [`REPORT_RETRIEVAL.md`](research/REPORT_RETRIEVAL.md) |
+| `summeval-judging` *(in progress)* | grade summaries the way experts do | **a vector of judgements**, scored by rank correlation | [`README`](examples/summeval-judging/README.md) |
 
 What they found, and what a plain leaderboard would have hidden:
 
