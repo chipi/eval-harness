@@ -32,15 +32,16 @@ nav:
   - The harness ↗: https://chipi.github.io/eval-harness/
   - The experiments ↗: https://chipi.github.io/eval-harness/experiments.html
   - Use the harness: GUIDE.md
-  - Reproduce it: REPRODUCE.md
-  - Protocol: PROTOCOL.md
-  - Reference: REFERENCE.md
-  - Influences: INFLUENCES.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
-      - Runbook: harness/RUNBOOK.md
       - Integration: harness/INTEGRATION.md
-  - Evidence: evidence/README.md
+      - Runbook: harness/RUNBOOK.md
+  - The experiments:
+      - Reproduce it: REPRODUCE.md
+      - Protocol: PROTOCOL.md
+      - Reference: REFERENCE.md
+      - Evidence: evidence/README.md
+  - Influences: INFLUENCES.md
   - Papers:
       - Index: papers/README.md
       - Attribution: papers/ATTRIBUTION.md
