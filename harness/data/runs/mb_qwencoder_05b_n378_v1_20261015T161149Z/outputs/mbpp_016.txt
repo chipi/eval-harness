@@ -1,0 +1,69 @@
+```python
+def text_lowercase_underscore(text):
+    """
+    Write a function to that returns true if the input string contains sequences of lowercase letters joined with an underscore and false otherwise.
+    
+    :param text: The input string to check.
+    :return: True if the string contains sequences of lowercase letters joined with an underscore, False otherwise.
+    """
+    # Split the string into words
+    words = text.split()
+    
+    # Iterate over each word
+    for word in words:
+        # Check if the word contains any lowercase letters
+        if any(char.islower() for char in word):
+            return True
+    
+    # If no lowercase letters are found, return False
+    return False
+
+# Test cases
+assert text_lowercase_underscore("aab_cbbbc") == True
+assert text_lowercase_underscore("hello_world") == False
+assert text_lowercase_underscore("abcdefg") == True
+assert text_lowercase_underscore("1234567890") == False
+assert text_lowercase_underscore("aAaaaBbCc") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("helloE") == False
+assert text_lowercase_underscore("woArBld") == True
+assert text_lowercase_underscore("aAaaaXa") == True
+assert text_lowercase_underscore("abAB") == True
+assert text_lowercase_underscore("abcCd") == True
+assert text_lowercase_underscore("

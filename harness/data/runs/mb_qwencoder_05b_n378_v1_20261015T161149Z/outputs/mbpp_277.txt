@@ -1,0 +1,14 @@
+```python
+def dict_filter(dictionary, n):
+    """
+    Takes in a dictionary and integer n and filters the dictionary to only include entries with values greater than or equal to n.
+    
+    :param dictionary: Dictionary to filter
+    :param n: Integer value to filter by
+    :return: Filtered dictionary
+    """
+    return {key: value for key, value in dictionary.items() if value >= n}
+
+# Test cases
+assert dict_filter({'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}, 170) == {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Pierre Cox': 190}
+```

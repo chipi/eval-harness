@@ -1,0 +1,14 @@
+```python
+def find_sum(nums):
+    # Create a set to store unique elements
+    unique_elements = set(nums)
+    
+    # Calculate the sum of unique elements
+    total_sum = sum(unique_elements)
+    
+    return total_sum
+
+# Test the function with the provided test case
+assert find_sum([1, 2, 3, 1, 1, 4, 5, 6]) == 21
+```
+

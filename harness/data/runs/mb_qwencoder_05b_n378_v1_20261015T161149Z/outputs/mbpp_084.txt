@@ -1,0 +1,23 @@
+```python
+def sequence(n):
+    """
+    Write a function to find the nth number in the newman conway sequence.
+    
+    :param n: The position in the sequence (1-based index)
+    :return: The nth number in the sequence
+    """
+    if n <= 0:
+        return None
+    elif n == 1:
+        return 1
+    else:
+        # Initialize the first two numbers of the sequence
+        a, b = 1, 1
+        # Calculate the nth number iteratively
+        for _ in range(2, n + 1):
+            a, b = b, a + b
+        return b
+
+# Test cases to verify the correctness of the function
+assert sequence(10) == 6
+```

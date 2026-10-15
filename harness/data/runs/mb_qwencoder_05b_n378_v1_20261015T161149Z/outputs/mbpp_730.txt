@@ -1,0 +1,24 @@
+```python
+def consecutive_duplicates(lst):
+    """
+    Remove consecutive duplicates of a given list.
+    
+    :param lst: List of integers
+    :return: A new list with consecutive duplicates removed
+    """
+    # Initialize an empty list to store unique elements
+    unique_lst = []
+    
+    # Iterate through each element in the input list
+    for num in lst:
+        # If the current element is not the same as the last element in the unique list
+        if num != unique_lst[-1]:
+            # Add the current element to the unique list
+            unique_lst.append(num)
+    
+    return unique_lst
+
+# Test the function with the provided test case
+assert consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4 ]) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4]
+```
+

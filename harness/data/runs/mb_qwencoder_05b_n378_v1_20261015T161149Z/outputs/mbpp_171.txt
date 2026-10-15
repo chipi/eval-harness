@@ -1,0 +1,20 @@
+```python
+def perimeter_pentagon(side_length):
+    """
+    Calculate the perimeter of a regular pentagon given its side length.
+
+    Parameters:
+    side_length (float): The length of the side of the pentagon.
+
+    Returns:
+    float: The perimeter of the pentagon.
+    """
+    # The perimeter of a regular pentagon is 5 times the length of one side
+    return 5 * side_length
+
+# Test cases to verify the correctness of the function
+assert perimeter_pentagon(5) == 25
+assert perimeter_pentagon(3) == 10
+assert perimeter_pentagon(7) == 35
+```
+

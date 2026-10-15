@@ -1,0 +1,30 @@
+```python
+def is_sublist(lst, sublst):
+    """
+    Check whether a list contains the given sublist or not.
+
+    :param lst: List of elements to search within.
+    :param sublst: Sublist to search for.
+    :return: True if sublst is a sublist of lst, False otherwise.
+    """
+    # Check if sublst is empty
+    if not sublst:
+        return True
+    
+    # Iterate through lst to check if sublst is a sublist
+    for i in range(len(lst)):
+        # Check if the current element matches the first element of sublst
+        if lst[i] == sublst[0]:
+            # Check if the rest of sublst matches the remaining elements of lst
+            if sublst[1:] == lst[i+1:]:
+                return True
+    return False
+
+# Test cases to verify the correctness of the function
+assert is_sublist([2,4,3,5,7],[3,7])==False
+assert is_sublist([1,2,3,4,5],[1,2,3,4,5])==True
+assert is_sublist([1,2,3,4,5],[6,7,8,9,10])==False
+assert is_sublist([],[1,2,3,4,5])==False
+assert is_sublist([1,2,3,4,5],[1,2,3,4,5,6,7,8,9,10])==True
+```
+

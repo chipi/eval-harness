@@ -1,0 +1,20 @@
+```python
+def test_duplicate(arr):
+    # Create a set to store unique elements
+    seen = set()
+    
+    # Iterate through each element in the array
+    for num in arr:
+        # Check if the number is already in the set
+        if num in seen:
+            return True  # Return True if a duplicate is found
+        else:
+            seen.add(num)  # Add the number to the set
+    
+    # If no duplicates are found, return False
+    return False
+
+# Test the function with the provided test case
+assert test_duplicate(([1,2,3,4,5])) == False
+```
+

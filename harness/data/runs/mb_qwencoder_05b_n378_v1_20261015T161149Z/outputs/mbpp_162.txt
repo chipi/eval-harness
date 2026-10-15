@@ -1,0 +1,19 @@
+```python
+def sum_series(n):
+    # Initialize the sum to 0
+    total_sum = 0
+    
+    # Iterate from 0 to n // 2
+    for i in range(n // 2):
+        # Calculate the sum (n - 2*i)
+        current_sum = n - 2 * i
+        
+        # Add the current sum to the total sum
+        total_sum += current_sum
+    
+    return total_sum
+
+# Test the function with the provided test case
+assert sum_series(6) == 12
+```
+

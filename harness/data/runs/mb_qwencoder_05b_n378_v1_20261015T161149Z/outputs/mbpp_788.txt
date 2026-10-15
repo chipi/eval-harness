@@ -1,0 +1,6 @@
+```python
+def new_tuple(strings, items):
+    # Create a tuple from the given strings and list
+    return tuple(strings) + (items,)
+```
+

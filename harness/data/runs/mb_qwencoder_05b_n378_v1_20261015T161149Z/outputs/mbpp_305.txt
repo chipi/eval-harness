@@ -1,0 +1,22 @@
+```python
+def start_withp(words):
+    """
+    Return two words from a list of words starting with letter 'p'.
+    
+    :param words: List of words to search through.
+    :return: A tuple containing the first word starting with 'p' and the second word starting with 'p'.
+    """
+    # Filter words starting with 'p'
+    filtered_words = [word for word in words if word.startswith('p')]
+    
+    # Check if there are at least two words starting with 'p'
+    if len(filtered_words) < 2:
+        raise ValueError("No words starting with 'p' found.")
+    
+    # Return the first two words
+    return filtered_words[0], filtered_words[1]
+
+# Test the function with the provided test case
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+```
+

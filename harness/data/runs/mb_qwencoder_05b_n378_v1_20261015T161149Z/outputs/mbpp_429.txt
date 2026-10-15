@@ -1,0 +1,27 @@
+```python
+def and_tuples(tuple1, tuple2):
+    """
+    Extracts the elementwise and tuples from the given two tuples.
+
+    Args:
+    tuple1 (tuple): The first tuple.
+    tuple2 (tuple): The second tuple.
+
+    Returns:
+    tuple: A tuple containing the element-wise and tuples from the input tuples.
+    """
+    # Extracting element-wise elements
+    elementwise = tuple(a * b for a, b in zip(tuple1, tuple2))
+    
+    # Extracting tuples
+    tuples = tuple((a, b) for a, b in zip(tuple1, tuple2))
+    
+    return elementwise, tuples
+
+# Test cases
+assert and_tuples((10, 4, 6, 9), (5, 2, 3, 3)) == (0, 0, 2, 1)
+assert and_tuples((1, 2, 3), (4, 5, 6)) == (4, 5, 6)
+assert and_tuples((7, 8, 9), (10, 11, 12)) == (7, 8, 9)
+assert and_tuples((0, 0, 0), (0, 0, 0)) == (0, 0, 0)
+```
+

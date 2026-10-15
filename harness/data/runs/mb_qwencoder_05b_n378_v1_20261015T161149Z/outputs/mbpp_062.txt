@@ -1,0 +1,17 @@
+```python
+def smallest_num(numbers):
+    # Initialize the smallest number with the first element of the list
+    smallest = numbers[0]
+    
+    # Iterate through each number in the list
+    for num in numbers:
+        # Update the smallest number if the current number is smaller
+        if num < smallest:
+            smallest = num
+    
+    return smallest
+
+# Test the function with the provided test case
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+```
+

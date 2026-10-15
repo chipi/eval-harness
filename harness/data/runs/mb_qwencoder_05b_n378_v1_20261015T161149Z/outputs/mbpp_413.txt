@@ -1,0 +1,27 @@
+```python
+def extract_nth_element(tuples_list, n):
+    """
+    Extracts the nth element from a given list of tuples.
+
+    :param tuples_list: List of tuples
+    :param n: Index of the element to extract
+    :return: The nth element as a list
+    """
+    # Check if the input is valid
+    if not isinstance(tuples_list, list) or not isinstance(n, int):
+        raise ValueError("Input must be a list and an integer.")
+    
+    # Check if the index is within the bounds of the list
+    if n < 0 or n >= len(tuples_list):
+        raise IndexError("Index out of range.")
+    
+    # Extract the nth element
+    return tuples_list[n]
+
+# Test cases
+assert extract_nth_element([('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)], 0) == ['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']
+assert extract_nth_element([('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)], 1) == ['Brady Kent']
+assert extract_nth_element([('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)], 2) == ['Wyatt Knott']
+assert extract_nth_element([('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)], 3) == ['Beau Turnbull']
+```
+

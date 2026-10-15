@@ -1,0 +1,24 @@
+```python
+def extract_singly(lst):
+    """
+    Flatten the list of lists into a single set of numbers.
+    
+    :param lst: List of lists to be flattened
+    :return: A set of numbers from the flattened list
+    """
+    # Use a set to store unique elements
+    unique_elements = set()
+    
+    # Iterate over each sublist in the list
+    for sublist in lst:
+        # Iterate over each element in the sublist
+        for element in sublist:
+            # Add the element to the set
+            unique_elements.add(element)
+    
+    return unique_elements
+
+# Test the function with the provided test case
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+```
+

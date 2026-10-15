@@ -1,0 +1,21 @@
+```python
+def find_Index(n):
+    # Initialize the smallest triangular number as 1
+    smallest_triangular_number = 1
+    
+    # Iterate through numbers starting from 1
+    for i in range(1, n + 1):
+        # Calculate the triangular number
+        triangular_number = i * (i + 1) // 2
+        
+        # Check if the triangular number is less than the smallest triangular number found so far
+        if triangular_number < smallest_triangular_number:
+            smallest_triangular_number = triangular_number
+    
+    # Return the index of the smallest triangular number
+    return smallest_triangular_number - 1
+
+# Test the function with the provided test case
+assert find_Index(2) == 4
+```
+

@@ -1,0 +1,62 @@
+```python
+def replace_char(s, old_char, new_char):
+    """
+    Replace characters in a string.
+
+    Args:
+    s (str): The original string.
+    old_char (str): The character to be replaced.
+    new_char (str): The character to replace with.
+
+    Returns:
+    str: The modified string with all occurrences of old_char replaced by new_char.
+    """
+    return s.replace(old_char, new_char)
+
+# Test cases
+assert replace_char("polygon",'y','l')==("pollgon")
+assert replace_char("hello",'o','a')=="hallo"
+assert replace_char("world",'w','x')=="world"
+assert replace_char("python",'p','t')=="thonpy"
+assert replace_char("programming",'g','m')=="programming"
+assert replace_char("data science",'s','d')=="datascience"
+assert replace_char("example","e","i")=="examplie"
+assert replace_char("algorithm","a","b")=="algorithm"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","d")=="challenged"
+assert replace_char("challenge","c","

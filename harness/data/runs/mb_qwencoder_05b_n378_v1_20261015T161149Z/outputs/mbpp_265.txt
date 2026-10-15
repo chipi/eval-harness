@@ -1,0 +1,18 @@
+```python
+def list_split(lst, n):
+    """
+    Takes in a list and an integer n and splits a list for every nth element, returning a list of the resulting lists.
+    
+    :param lst: List to be split
+    :param n: Number of elements to split the list into
+    :return: A list of lists containing every nth element from the original list
+    """
+    result = []
+    for i in range(0, len(lst), n):
+        result.append(lst[i:i+n])
+    return result
+
+# Test cases
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+```
+

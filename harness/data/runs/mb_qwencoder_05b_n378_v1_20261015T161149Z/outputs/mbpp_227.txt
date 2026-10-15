@@ -1,0 +1,23 @@
+```python
+def min_of_three(a, b, c):
+    """
+    Find minimum of three numbers.
+
+    Args:
+    a (int): The first number.
+    b (int): The second number.
+    c (int): The third number.
+
+    Returns:
+    int: The minimum of the three numbers.
+    """
+    return min(a, b, c)
+
+# Test cases
+assert min_of_three(10, 20, 0) == 0
+assert min_of_three(-5, -3, -7) == -7
+assert min_of_three(0, 0, 0) == 0
+assert min_of_three(100, 200, 300) == 100
+assert min_of_three(-10, -20, -30) == -30
+```
+

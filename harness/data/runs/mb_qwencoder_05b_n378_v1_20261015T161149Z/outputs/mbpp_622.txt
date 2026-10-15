@@ -1,0 +1,21 @@
+```python
+def get_median(list1, list2, n):
+    # Sort both lists
+    list1.sort()
+    list2.sort()
+    
+    # Calculate the median
+    mid1 = n // 2
+    mid2 = n // 2 + 1
+    
+    if n % 2 == 1:
+        # If odd, return the middle element
+        return list1[mid1]
+    else:
+        # If even, return the average of the two middle elements
+        return (list1[mid1] + list2[mid2]) / 2
+
+# Test the function with the provided test case
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+```
+

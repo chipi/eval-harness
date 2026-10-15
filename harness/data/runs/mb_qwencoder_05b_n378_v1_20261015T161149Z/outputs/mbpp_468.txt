@@ -1,0 +1,25 @@
+```python
+def max_product(nums):
+    # Initialize variables to store the maximum product and the minimum product
+    max_product = nums[0]
+    min_product = nums[0]
+    
+    # Iterate through the array starting from the second element
+    for num in nums[1:]:
+        # Update the maximum product if the current number is greater
+        if num > max_product:
+            max_product = num
+        
+        # Update the minimum product if the current number is less than the minimum product
+        if num < min_product:
+            min_product = num
+        
+        # Calculate the maximum product considering the current number
+        max_product = max(max_product, num * min_product)
+    
+    return max_product
+
+# Test the function with the provided test case
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+```
+

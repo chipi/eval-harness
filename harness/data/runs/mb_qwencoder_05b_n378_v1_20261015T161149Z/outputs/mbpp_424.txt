@@ -1,0 +1,25 @@
+```python
+def extract_rear(string_tuple):
+    """
+    Extract only the rear index element of each string in the given tuple.
+
+    :param string_tuple: A tuple containing strings
+    :return: A list of rear indices of each string
+    """
+    # Initialize an empty list to store the rear indices
+    rear_indices = []
+    
+    # Iterate over each string in the tuple
+    for i, string in enumerate(string_tuple):
+        # Get the length of the string
+        length = len(string)
+        
+        # Append the index of the last character of the string to the rear_indices list
+        rear_indices.append(length - 1)
+    
+    return rear_indices
+
+# Test the function with the provided test case
+assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+```
+

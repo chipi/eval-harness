@@ -63,6 +63,14 @@
      "metric": "tau", "metric_label": "Kendall tau vs experts", "base": "runs", "leader": "openai_l",
      "report": "REPORT_SUMMEVAL.md", "calibration": "summeval", "site": true,
      "fetch": [[]],
-     "datasets": ["summeval_100"]}
+     "datasets": ["summeval_100"]},
+    {"slug": "mbpp", "task": "Code", "bench": "MBPP+", "example": "code-mbpp-plus",
+     "extras": ["local"], "dataset": "mbppplus_378", "prefix": "mb_", "suffix": "_n378_v1",
+     "metric": "pass_plus", "metric_label": "pass@1, MBPP+ tests", "base": "runs",
+     "leader": "qwencoder_05b", "report": "../examples/code-mbpp-plus/README.md",
+     "calibration": "mbpp", "site": false,
+     "note": "in progress: 1 of 18 local arms measured (Qwen2.5-Coder-0.5B, 44.2 vs 43.7 published); the other local arms and the 24 hosted arms are not yet run",
+     "fetch": [[]],
+     "datasets": ["mbppplus_378"]}
   ]
 }

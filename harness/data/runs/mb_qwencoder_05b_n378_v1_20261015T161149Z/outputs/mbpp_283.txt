@@ -1,0 +1,33 @@
+```python
+def validate(number):
+    # Convert the number to a string to iterate over each digit
+    num_str = str(number)
+    
+    # Initialize a dictionary to store the frequency of each digit
+    digit_freq = {}
+    
+    # Iterate over each character in the string representation of the number
+    for char in num_str:
+        # Check if the character is a digit
+        if char.isdigit():
+            # Increment the frequency of the digit in the dictionary
+            digit_freq[char] = digit_freq.get(char, 0) + 1
+    
+    # Check if all frequencies are less than or equal to the digit itself
+    for freq in digit_freq.values():
+        if freq > freq:
+            return False
+    
+    # If all frequencies are valid, return True
+    return True
+
+# Test cases to verify the correctness of the function
+assert validate(1234) == True
+assert validate(1111) == True
+assert validate(9876) == True
+assert validate(12345) == False
+assert validate(11111) == False
+assert validate(987654321) == True
+assert validate(1234567890) == True
+assert validate(12345678901234567890) == True
+assert validate(123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567

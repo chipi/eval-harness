@@ -1,0 +1,18 @@
+```python
+def armstrong_number(number):
+    # Convert the number to a string to easily iterate over each digit
+    num_str = str(number)
+    
+    # Calculate the sum of the cubes of each digit
+    sum_of_cubes = sum(int(digit) ** 3 for digit in num_str)
+    
+    # Check if the sum of cubes is equal to the original number
+    return sum_of_cubes == number
+
+# Test cases to verify the correctness of the function
+assert armstrong_number(153) == True
+assert armstrong_number(370) == True
+assert armstrong_number(9474) == True
+assert armstrong_number(9475) == False
+```
+

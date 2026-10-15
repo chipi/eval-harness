@@ -1,0 +1,19 @@
+```python
+def odd_values_string(s):
+    # Initialize an empty list to store characters at even indices
+    result = []
+    
+    # Iterate over the string using a for loop
+    for i in range(len(s)):
+        # Check if the index is even
+        if i % 2 == 0:
+            # Append the character at the even index to the result list
+            result.append(s[i])
+    
+    # Join the list into a string and return it
+    return ''.join(result)
+
+# Test the function with the provided test case
+assert odd_values_string('abcdef') == 'ace'
+```
+

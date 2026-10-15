@@ -1,0 +1,14 @@
+```python
+def differ_At_One_Bit_Pos(num1, num2):
+    # XOR operation to find differing bits
+    result = num1 ^ num2
+    # Check if the result has only one bit set (i.e., 1)
+    return result & 1
+
+# Test cases to verify the correctness of the function
+assert differ_At_One_Bit_Pos(13, 9) == True
+assert differ_At_One_Bit_Pos(25, 26) == False
+assert differ_At_One_Bit_Pos(10, 11) == True
+assert differ_At_One_Bit_Pos(14, 15) == False
+```
+

@@ -1,0 +1,21 @@
+```python
+def check_none(test_tuple):
+    """
+    Check if the given tuple has any none value or not.
+
+    Args:
+    test_tuple (tuple): The tuple to check.
+
+    Returns:
+    bool: True if the tuple contains any none value, False otherwise.
+    """
+    # Check if there are any None values in the tuple
+    return any(value is None for value in test_tuple)
+
+# Test cases to verify the correctness of the function
+assert check_none((10, 4, 5, 6, None)) == True
+assert check_none((10, 4, 5, 6, 7)) == False
+assert check_none((None, None, None)) == True
+assert check_none((None, None, None, None)) == False
+```
+

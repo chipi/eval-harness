@@ -1,0 +1,16 @@
+```python
+def median_trapezium(a, b, c):
+    # Calculate the lengths of the sides of the trapezium
+    side1 = min(a, b)
+    side2 = max(a, c)
+    side3 = max(b, c)
+    
+    # Calculate the median length
+    median_length = (side1 + side2) / 2
+    
+    return median_length
+
+# Test the function with the provided test case
+assert median_trapezium(15, 25, 35) == 20
+```
+

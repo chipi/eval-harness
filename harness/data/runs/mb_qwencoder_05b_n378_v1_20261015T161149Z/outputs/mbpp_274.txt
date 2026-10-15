@@ -1,0 +1,46 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Calculate the sum of even index binomial coefficients for a given positive integer n.
+
+    Args:
+    n (int): A positive integer.
+
+    Returns:
+    int: The sum of even index binomial coefficients.
+    """
+    # Initialize the sum to 0
+    sum_even = 0
+    
+    # Iterate over the range from 1 to n
+    for i in range(1, n + 1):
+        # Check if the index is even
+        if i % 2 == 0:
+            # Add the binomial coefficient at the even index to the sum
+            sum_even += binomial_coefficient(i)
+    
+    return sum_even
+
+# Function to calculate binomial coefficient
+def binomial_coefficient(n):
+    """
+    Calculate the binomial coefficient C(n, k).
+
+    Args:
+    n (int): The number of elements in the binomial coefficient.
+    k (int): The exponent of the binomial coefficient.
+
+    Returns:
+    int: The binomial coefficient C(n, k).
+    """
+    if n < k:
+        return 0
+    elif n == k:
+        return 1
+    else:
+        return binomial_coefficient(n - 1, k - 1) + binomial_coefficient(n - 1, k)
+
+# Test the function with the provided test case
+assert even_binomial_Coeff_Sum(4) == 8
+```
+

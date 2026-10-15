@@ -1,0 +1,23 @@
+```python
+def Find_Min(lst):
+    # Initialize variables to store the minimum length and the sublist with this length
+    min_length = float('inf')
+    min_sublist = []
+    
+    # Iterate through each sublist in the list
+    for sublist in lst:
+        # Calculate the length of the current sublist
+        length = len(sublist)
+        
+        # Check if the current sublist has a smaller length than the previously found minimum
+        if length < min_length:
+            # Update the minimum length and the sublist with this length
+            min_length = length
+            min_sublist = sublist
+    
+    return min_sublist
+
+# Test the function with the provided test case
+assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+```
+

@@ -1,0 +1,23 @@
+```python
+def triangle_area(radius):
+    """
+    Write a python function to find the area of the largest triangle that can be inscribed in a semicircle with a given radius.
+    
+    :param radius: The radius of the semicircle.
+    :return: The area of the largest triangle that can be inscribed in the semicircle.
+    """
+    # Calculate the semi-perimeter of the semicircle
+    s = 2 * radius
+    
+    # Calculate the area of the triangle using Heron's formula
+    area = (s * (s - radius) * (s - radius)) ** 0.5
+    
+    return area
+
+# Test cases to verify the correctness of the function
+assert triangle_area(-1) == None
+assert triangle_area(5) == 10.0
+assert triangle_area(7) == 34.0
+assert triangle_area(10) == 156.0
+```
+

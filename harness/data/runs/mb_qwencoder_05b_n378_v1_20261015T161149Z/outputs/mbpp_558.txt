@@ -1,0 +1,24 @@
+```python
+def digit_distance_nums(num1, num2):
+    """
+    Calculate the sum of the absolute differences between two integers.
+
+    Args:
+    num1 (int): The first integer.
+    num2 (int): The second integer.
+
+    Returns:
+    int: The sum of the absolute differences between num1 and num2.
+    """
+    # Calculate the absolute difference between num1 and num2
+    diff = abs(num1 - num2)
+    return diff
+
+# Test cases to verify the correctness of the function
+assert digit_distance_nums(1, 2) == 1
+assert digit_distance_nums(4, 5) == 1
+assert digit_distance_nums(-10, 10) == 0
+assert digit_distance_nums(20, 30) == 10
+assert digit_distance_nums(100, 200) == 0
+```
+

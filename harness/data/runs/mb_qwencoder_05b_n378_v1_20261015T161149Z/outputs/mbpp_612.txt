@@ -1,0 +1,18 @@
+```python
+def merge(list_of_lists):
+    """
+    Takes a list of lists, where each sublist has two elements, and returns a list of two lists where the first list has the first element of each sublist and the second one has the second.
+    
+    :param list_of_lists: List of lists, where each sublist has two elements.
+    :return: A list of two lists where the first list has the first element of each sublist and the second one has the second.
+    """
+    merged_list = []
+    for sublist in list_of_lists:
+        merged_list.append(sublist[0])
+        merged_list.append(sublist[1])
+    return merged_list
+
+# Test cases to verify the correctness of the function
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+```
+

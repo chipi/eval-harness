@@ -1,0 +1,22 @@
+```python
+def area_tetrahedron(side_length):
+    """
+    Calculate the area of a tetrahedron.
+
+    Parameters:
+    side_length (float): The length of one side of the tetrahedron.
+
+    Returns:
+    float: The area of the tetrahedron.
+    """
+    # Calculate the semi-perimeter of the tetrahedron
+    s = (side_length + side_length + side_length) / 2
+    
+    # Calculate the area using Heron's formula
+    area = (s * (s - side_length) * (s - side_length) * (s - side_length))
+    
+    return area
+
+# Test cases to verify the correctness of the function
+assert area_tetrahedron(3) == 15.588457268119894
+```

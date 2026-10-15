@@ -1,0 +1,31 @@
+```python
+def check_Consecutive(lst):
+    # Check if the list has fewer than 2 elements
+    if len(lst) < 2:
+        return False
+    
+    # Iterate through the list and check for consecutive numbers
+    for i in range(len(lst) - 1):
+        if lst[i] + 1 == lst[i + 1]:
+            return True
+    
+    # If no consecutive numbers are found, return False
+    return False
+
+# Test cases to verify the correctness of the function
+assert check_Consecutive([1,2,3,4,5]) == True
+assert check_Consecutive([1,2,3,4,6]) == False
+assert check_Consecutive([10,20,30,40,50]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11]) == False
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]) == True
+assert check_Consecutive([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22

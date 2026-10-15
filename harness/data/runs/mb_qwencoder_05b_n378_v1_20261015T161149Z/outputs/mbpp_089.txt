@@ -1,0 +1,17 @@
+```python
+def closest_num(n):
+    # Initialize the smallest number as the largest possible integer
+    smallest = float('inf')
+    
+    # Iterate through the numbers from 1 to n-1
+    for i in range(1, n):
+        # Check if the current number is smaller than the smallest found so far
+        if i < smallest:
+            smallest = i
+    
+    return smallest
+
+# Test the function with the provided test case
+assert closest_num(11) == 10
+```
+

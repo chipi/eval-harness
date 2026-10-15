@@ -1,0 +1,20 @@
+```python
+def get_total_number_of_sequences(m, n):
+    # Initialize a list to store the number of sequences for each length
+    dp = [0] * (n + 1)
+    
+    # Base case: there's one sequence of length 1
+    dp[1] = 1
+    
+    # Fill the dp array
+    for i in range(2, n + 1):
+        # Each element can be any positive integer greater than or equal to twice the previous element but less than or equal to m
+        for j in range(2, i + 1):
+            dp[i] += dp[j - 1]
+    
+    return dp[n]
+
+# Test the function with the provided test case
+assert get_total_number_of_sequences(10, 4) == 4
+```
+

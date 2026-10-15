@@ -1,0 +1,13 @@
+```python
+def reverse_words(s):
+    # Split the string into words using space as the delimiter
+    words = s.split()
+    # Reverse the list of words
+    reversed_words = words[::-1]
+    # Join the reversed list of words back into a string with spaces
+    return ' '.join(reversed_words)
+
+# Test the function with the provided test case
+assert reverse_words("python program") == "program python"
+```
+

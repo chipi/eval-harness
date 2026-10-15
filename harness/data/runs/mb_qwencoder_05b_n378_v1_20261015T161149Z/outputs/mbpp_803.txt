@@ -1,0 +1,15 @@
+```python
+def is_perfect_square(n):
+    # Calculate the integer square root of n
+    sqrt_n = int(n**0.5)
+    
+    # Check if the square of the integer square root equals n
+    return sqrt_n * sqrt_n == n
+
+# Test cases to verify the correctness of the function
+assert not is_perfect_square(10)
+assert is_perfect_square(16)
+assert is_perfect_square(25)
+assert is_perfect_square(26)
+```
+

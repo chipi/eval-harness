@@ -1,0 +1,22 @@
+```python
+def common_in_nested_lists(nested_list):
+    # Initialize an empty set to store common elements
+    common_elements = set()
+    
+    # Iterate over each sublist in the nested list
+    for sublist in nested_list:
+        # Iterate over each element in the sublist
+        for element in sublist:
+            # Check if the element is already in the common_elements set
+            if element in common_elements:
+                continue
+            # Add the element to the common_elements set
+            common_elements.add(element)
+    
+    # Return the set of common elements
+    return common_elements
+
+# Test the function with the provided test case
+assert common_in_nested_lists([[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]]) == set([18, 12])
+```
+

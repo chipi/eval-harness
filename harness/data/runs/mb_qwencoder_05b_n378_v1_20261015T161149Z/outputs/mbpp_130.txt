@@ -1,0 +1,24 @@
+```python
+def max_occurrences(lst):
+    # Create a dictionary to count occurrences of each element in the list
+    count_dict = {}
+    
+    # Count the occurrences of each element in the list
+    for num in lst:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+    
+    # Find the maximum occurrence
+    max_occurrence = max(count_dict.values())
+    
+    # Find the element with the maximum occurrence
+    max_element = [num for num, freq in count_dict.items() if freq == max_occurrence][0]
+    
+    return max_element
+
+# Test the function with the provided test case
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])==2
+```
+

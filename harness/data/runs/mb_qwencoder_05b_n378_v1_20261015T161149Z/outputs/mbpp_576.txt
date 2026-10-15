@@ -1,0 +1,37 @@
+```python
+def is_Sub_Array(arr1, arr2):
+    """
+    Check whether a list is sublist of another or not.
+
+    :param arr1: List of integers
+    :param arr2: List of integers
+    :return: True if arr2 is a sublist of arr1, False otherwise
+    """
+    # Iterate through arr2 to check if it is a sublist of arr1
+    for i in range(len(arr2)):
+        # Check if the current element of arr2 is present in arr1
+        if arr2[i] in arr1:
+            # If found, move to the next element in arr2
+            continue
+        else:
+            # If not found, return False
+            return False
+    # If all elements of arr2 are found in arr1, return True
+    return True
+
+# Test cases to verify the correctness of the function
+assert is_Sub_Array([1,4,3,5],[1,2]) == False
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,6]) == False
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12,13]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12,13,14]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]) == True
+assert is_Sub_Array([1,4,3,5],[1,2,3,4,5,6,7,8,9,10,11,12

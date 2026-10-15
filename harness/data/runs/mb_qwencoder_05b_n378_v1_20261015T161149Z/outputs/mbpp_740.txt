@@ -1,0 +1,15 @@
+```python
+def tuple_to_dict(tup):
+    # Initialize an empty dictionary to store the key-value pairs
+    result = {}
+    
+    # Iterate over the tuple and add each element as a key and its value as the corresponding value
+    for i in range(len(tup)):
+        result[tup[i]] = tup[i + 1]
+    
+    return result
+
+# Test the function with the provided test case
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+```
+
