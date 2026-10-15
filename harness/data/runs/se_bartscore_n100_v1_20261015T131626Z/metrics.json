@@ -1,0 +1,125 @@
+{
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "aff6d81278578747f8d9b26c5d7f45a967351ee3",
+    "source": "git"
+  },
+  "config_id": "se_bartscore_n100_v1",
+  "created_at": "2026-10-15T13:42:43Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_bartscore_n100_v1",
+      "params": {
+        "family": "bart",
+        "model": "facebook/bart-large-cnn",
+        "price_tier": "free",
+        "provider": "bartscore",
+        "revision": "37f520fa929c961707657b28798b30c003dd100b"
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "hash": "26e2e1ab7358c34a613e59501f33e9c18bf1cddc2d369a433f63a32861f32876",
+    "host": {
+      "cpu_count": 4,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "e66dc38feb3e24674f62b48e61156d57a0d358f94bd718874849adb0a43c6537"
+      },
+      "harness": {
+        "commit": "aff6d8127857",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "code_sha256": "c9870253ba4088577992109d2c251e4ce2f3c711a9c6e88a8c0aa692ce93b723",
+        "device": "cpu",
+        "id": "facebook/bart-large-cnn",
+        "identity_declared": true,
+        "loaded_dtype": "float32",
+        "loaded_revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "pin_satisfied": true,
+        "precision": "fp32",
+        "revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "revision_source": "hf-snapshot",
+        "weight_files": [
+          "model.safetensors:1625222120"
+        ]
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "input_truncated": "descriptive",
+    "parsed": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "rho": "quality",
+    "rho_coherence": "quality",
+    "rho_consistency": "quality",
+    "rho_fluency": "quality",
+    "rho_relevance": "quality",
+    "tau": "quality",
+    "tau_coherence": "quality",
+    "tau_consistency": "quality",
+    "tau_fluency": "quality",
+    "tau_relevance": "quality",
+    "tie_rate": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 100,
+  "params": {
+    "family": "bart",
+    "model": "facebook/bart-large-cnn",
+    "price_tier": "free",
+    "provider": "bartscore",
+    "revision": "37f520fa929c961707657b28798b30c003dd100b"
+  },
+  "primary_metric": "tau",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "se_bartscore_n100_v1_20261015T131626Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "input_truncated": 0.0,
+    "latency_ms": 15662.27216,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "rho": 0.324612,
+    "rho_coherence": 0.492167,
+    "rho_consistency": 0.239636,
+    "rho_fluency": 0.242931,
+    "rho_relevance": 0.323714,
+    "tau": 0.256183,
+    "tau_coherence": 0.379881,
+    "tau_consistency": 0.19756,
+    "tau_fluency": 0.201115,
+    "tau_relevance": 0.246176,
+    "tie_rate": 0.005167,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": 10184.924
+}
