@@ -102,6 +102,16 @@ than one that is merely wrong.
 | `tie_rate` *(descriptive)* | share of the 120 summary pairs the system scored equal |
 
 Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here. UniEval on its own inputs, ρ 0.474 / τ 0.377 there; 0.467 / 0.372 here.
+### Code (MBPP+) — pass@1 by execution
+
+| `pass_plus` (**primary**) | 1 if the extracted function passes MBPP's original tests AND EvalPlus's extended tests, else 0, run in the sandbox (`examples/code-mbpp-plus/sandbox.py`). EvalPlus's "MBPP+" definition; the mean is pass@1 at temperature 0 |
+| `pass_base` | 1 if it passes MBPP's original tests. `pass_base − pass_plus` is how much weak tests flatter an arm |
+| `code_found` *(descriptive)* | the reply contained a fenced code block (else the whole reply was tried as code) |
+| `syntax_ok` *(descriptive)* | the extracted code parsed as Python; 0 means it never ran |
+| `timeout` *(descriptive)* | an execution hit the wall-clock limit (10 s base, 90 s plus: 4× the slowest canonical solution), scored 0 and counted separately from wrong answers |
+
+Instrument check: all 378 canonical solutions pass base and plus through the same path, and
+a stub returning `None` fails every task's base tests (`canonical_check.py`).
 
 ### Shared across all examples
 
@@ -291,6 +301,7 @@ your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 | AG News | [`fancyzhx/ag_news`](https://huggingface.co/datasets/fancyzhx/ag_news) | **`unknown`** on the card; the corpus description says non-commercial research use | 200 snippets, 4 topics ([paper](https://arxiv.org/abs/1509.01626)) |
 | DBpedia-14 | [`fancyzhx/dbpedia_14`](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | 280 abstracts, 14 ontology classes |
 | Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the first five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
+| MBPP+ | [`evalplus/mbppplus`](https://huggingface.co/datasets/evalplus/mbppplus) | Apache-2.0 (MBPP: CC-BY-4.0) | `mbppplus_378`: all 378 tasks, one instruction and one example assertion each; MBPP's tests and EvalPlus's extended tests as gold ([Austin et al. 2021](https://arxiv.org/abs/2108.07732), [Liu et al. 2023](https://arxiv.org/abs/2305.01210)) |
 | BEIR SciFact | [`BeIR/scifact`](https://huggingface.co/datasets/BeIR/scifact) + [`BeIR/scifact-qrels`](https://huggingface.co/datasets/BeIR/scifact-qrels) | CC BY-SA 4.0 | 200 claims over a 5,183-abstract corpus ([BEIR](https://arxiv.org/abs/2104.08663), [SciFact](https://aclanthology.org/2020.emnlp-main.609/)) |
 | SummEval | [`mteb/summeval`](https://huggingface.co/datasets/mteb/summeval) | MIT | `summeval_100`: all 100 annotated CNN/DailyMail test articles, 16 machine summaries each, 11 human references, expert scores (mean of 3) on coherence, consistency, fluency and relevance as gold ([Fabbri et al. 2021](https://arxiv.org/abs/2007.12626)) |
 
