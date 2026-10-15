@@ -86,9 +86,9 @@ It records the slowest execution, which is the evidence behind the timeouts in
 
 | arm | model | licence | runs on |
 |---|---|---|---|
-| `qwencoder_05b`, `_15b` | Qwen2.5-Coder-Instruct 0.5B, 1.5B | Apache-2.0 | 4-core CPU, fp32 |
-| `dscoder_13b` | DeepSeek-Coder-1.3B-Instruct | DeepSeek License | 4-core CPU, fp32 |
-| `yicoder_15b` | Yi-Coder-1.5B-Chat | Apache-2.0 | 4-core CPU, fp32 |
+| `qwencoder_05b`, `_15b` | Qwen2.5-Coder-Instruct 0.5B, 1.5B | Apache-2.0 | any CPU, fp32 |
+| `dscoder_13b` | DeepSeek-Coder-1.3B-Instruct | DeepSeek License | any CPU, fp32 |
+| `yicoder_15b` | Yi-Coder-1.5B-Chat | Apache-2.0 | any CPU, fp32 |
 | `qwencoder_3b` | Qwen2.5-Coder-3B-Instruct | **Qwen Research (non-commercial)** | big machine, bf16 |
 | `qwencoder_7b`, `_14b`, `_32b` | Qwen2.5-Coder-Instruct 7B, 14B, 32B | Apache-2.0 | big machine, bf16 |
 | `codeqwen15_7b` | CodeQwen1.5-7B-Chat | Tongyi Qianwen License | big machine, bf16 |
@@ -142,20 +142,26 @@ don't, its chat template is the first suspect.
 
 ## Running the local arms
 
-From `harness/`, after running `uv sync --extra local` in this example. These four are
-small enough for a 4-core CPU:
+From `harness/`, after running `uv sync --extra local` in this example.
+
+The four smallest fit a 4-core CPU in fp32, but slowly: on the 4-core machine this was
+built on, the 0.5B took about 25 s a task (about 2.5 hours for all 378), mostly because small
+models often keep writing test asserts until they hit the token limit. Only `qwencoder_05b`
+was run there, as the check that a second machine gets the same answer. The rest run on a
+big machine, where they take minutes:
 
 ```bash
-for a in qwencoder_05b qwencoder_15b dscoder_13b yicoder_15b; do
+for a in qwencoder_05b; do
   ../examples/code-mbpp-plus/.venv/bin/python scripts/experiment_run.py \
     --config ../examples/code-mbpp-plus/configs/arm_${a}_n378.yaml; done
 ```
 
-The rest need a big machine. Together they download about 330 GB of weights; the largest
-(34B) needs about 70 GB of memory in bf16:
+The big-machine loop downloads about 340 GB of weights in all. The largest (34B) needs
+about 70 GB of memory in bf16:
 
 ```bash
-for a in qwencoder_3b qwencoder_7b qwencoder_14b qwencoder_32b codeqwen15_7b \
+for a in qwencoder_15b dscoder_13b yicoder_15b \
+         qwencoder_3b qwencoder_7b qwencoder_14b qwencoder_32b codeqwen15_7b \
          dscoder_67b dscoder_33b dscoderv2_lite yicoder_9b starcoder2_15b \
          codellama_7b codellama_13b codellama_34b qwen3coder_30b; do
   ../examples/code-mbpp-plus/.venv/bin/python scripts/experiment_run.py \
