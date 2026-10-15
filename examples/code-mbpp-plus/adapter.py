@@ -17,7 +17,7 @@ WHAT THIS EXPERIMENT BREAKS THAT THE OTHER SIX DID NOT
 
 THE ARMS
   litellm   a hosted model, shown EvalPlus's instruct prompt (prompt.txt), temperature 0.
-  local     Qwen2.5-Coder-Instruct (0.5B, 1.5B) via transformers on CPU, greedy, with
+  local     Qwen2.5-Coder-Instruct (0.5B to 32B) via transformers, greedy, on CPU or a GPU, with
             EvalPlus's chat template and response prefix -- the setup behind the published
             numbers this experiment calibrates against.
 
@@ -199,11 +199,27 @@ def _litellm(text: str, params: Dict[str, Any]) -> Result:
 # ── the local arms ───────────────────────────────────────────────────────────
 _LM: Any = None
 _LM_KEY: Optional[tuple] = None
+_DEVICE: Optional[str] = None
+
+
+def _device(params: Dict[str, Any]) -> str:
+    """`device` from the config: cpu (the default), cuda, mps, or auto (cuda, then mps,
+    then cpu). Greedy decoding is deterministic per device, not across devices, so the
+    device used is recorded in the fingerprint, not assumed."""
+    import torch  # noqa: PLC0415
+
+    want = str(params.get("device") or "cpu").lower()
+    if want == "auto":
+        if torch.cuda.is_available():
+            return "cuda"
+        mps = getattr(torch.backends, "mps", None)
+        return "mps" if mps is not None and mps.is_available() else "cpu"
+    return want
 
 
 def _lm(params: Dict[str, Any]) -> Any:
-    global _LM, _LM_KEY
-    key = (params.get("model"), params.get("revision"), params.get("precision"))
+    global _LM, _LM_KEY, _DEVICE
+    key = (params.get("model"), params.get("revision"), params.get("precision"), params.get("device"))
     if _LM_KEY != key:
         import torch  # noqa: PLC0415
         from transformers import AutoModelForCausalLM, AutoTokenizer  # noqa: PLC0415
@@ -214,6 +230,8 @@ def _lm(params: Dict[str, Any]) -> Any:
         tok = AutoTokenizer.from_pretrained(params["model"], **kw)
         model = AutoModelForCausalLM.from_pretrained(params["model"], **kw).eval()
         apply_precision(model, params.get("precision"))
+        _DEVICE = _device(params)
+        model.to(_DEVICE)
         _LM, _LM_KEY = (tok, model), key
     return _LM
 
@@ -226,7 +244,7 @@ def _local(text: str, params: Dict[str, Any]) -> Result:
     tok, model = _lm(params)
     chat = [{"role": "user", "content": user_message(text, params)}]
     prompt = tok.apply_chat_template(chat, tokenize=False, add_generation_prompt=True) + RESPONSE_PREFIX
-    enc = tok(prompt, return_tensors="pt")
+    enc = tok(prompt, return_tensors="pt").to(model.device)
     max_new = int(params.get("max_new_tokens", 768))
     with torch.no_grad():
         out = model.generate(**enc, max_new_tokens=max_new, do_sample=False,
@@ -365,11 +383,12 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     if provider == "local":
         from hf_identity import hf_model_fingerprint  # noqa: PLC0415
 
-        key = (params.get("model"), params.get("revision"), params.get("precision"))
+        key = (params.get("model"), params.get("revision"), params.get("precision"), params.get("device"))
         fp = hf_model_fingerprint(params["model"], revision=params.get("revision"),
-                                  device="cpu", precision=params.get("precision"),
+                                  device=_DEVICE or str(params.get("device") or "cpu"),
+                                  precision=params.get("precision"),
                                   loaded_model=_LM[1] if _LM is not None and _LM_KEY == key else None)
-        fp.update({"code_sha256": code_digest(_local, _lm, consts={"RESPONSE_PREFIX": RESPONSE_PREFIX}),
+        fp.update({"code_sha256": code_digest(_local, _lm, _device, consts={"RESPONSE_PREFIX": RESPONSE_PREFIX}),
                    "prompt_sha256": _prompt_sha256(params), "decoding": "greedy",
                    "max_new_tokens": int(params.get("max_new_tokens", 768)), **_scorer_fp()})
         return fp

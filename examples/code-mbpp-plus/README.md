@@ -81,13 +81,38 @@ It records the slowest execution, which is the evidence behind the timeouts in
 | arm | what it is |
 |---|---|
 | 24 hosted models | the same 24 as every other experiment, shown EvalPlus's instruct prompt ([prompt.txt](prompt.txt)) at temperature 0 |
-| `qwencoder_05b`, `qwencoder_15b` | Qwen2.5-Coder-Instruct 0.5B and 1.5B (Apache-2.0), local on CPU, greedy, using EvalPlus's chat prompt and response prefix |
+| `qwencoder_05b` … `qwencoder_32b` | the whole Qwen2.5-Coder-Instruct family (0.5B, 1.5B, 3B, 7B, 14B, 32B), local, greedy, using EvalPlus's chat prompt and response prefix. 0.5B and 1.5B run in fp32 on a 4-core CPU; 3B and up run in bf16 with `device: auto` (a CUDA GPU or Apple-silicon MPS if there is one), sized for a 128 GB machine |
+
+Licences: Apache-2.0 for every size **except 3B**, which ships under the Qwen Research
+License (non-commercial research only). It is measured here for the size curve; don't
+deploy it commercially.
 
 ## Calibration
 
-The [Qwen2.5-Coder technical report](https://arxiv.org/abs/2409.12186) reports MBPP+ pass@1
-(EvalPlus, greedy) of **43.7** for the 0.5B-Instruct model and **59.4** for the 1.5B. Both
-are measured here, locally, on the same 378 tasks.
+The [Qwen2.5-Coder technical report](https://arxiv.org/abs/2409.12186) publishes MBPP+
+pass@1 (EvalPlus, greedy) for every size of the instruct family. Each one is measured here,
+locally, on the same 378 tasks:
+
+| Qwen2.5-Coder-Instruct | 0.5B | 1.5B | 3B | 7B | 14B | 32B |
+|---|---|---|---|---|---|---|
+| published MBPP+ | 43.7 | 59.4 | 62.4 | 71.7 | 72.8 | 75.1 |
+| measured here | | | | | | |
+
+Six calibration points instead of one: if the measured curve tracks the published one, the
+prompt, extraction, sanitiser and sandbox reproduce EvalPlus; if it doesn't, one of them is
+the difference.
+
+## Running the local arms
+
+From `harness/`, with `uv sync --extra local` done in this example:
+
+```bash
+for m in 05b 15b 3b 7b 14b 32b; do
+  ../examples/code-mbpp-plus/.venv/bin/python scripts/experiment_run.py \
+    --config ../examples/code-mbpp-plus/configs/arm_qwencoder_${m}_n378.yaml; done
+```
+
+The 32B downloads ~65 GB of weights and needs ~70 GB of memory in bf16.
 
 ## Running the hosted arms
 
