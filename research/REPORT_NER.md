@@ -117,7 +117,7 @@ where an arm that invents entities is caught, and they fix the floor.
 | Arm | What it is | Weights (download size) |
 |---|---|---|
 | `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, **fine-tuned on Few-NERD's training split**, predicts the 66 fine types mapped down to 8 | 499 MB |
-| `gliner` | `urchade/gliner_medium-v2.1`, zero-shot, **caller supplies the label set**, threshold 0.5 (library default, untuned) | 745 MB |
+| `gliner` | `urchade/gliner_medium-v2.1`, zero-shot, **caller supplies the label set**, threshold 0.5 (library default, untuned) | 781 MB |
 | 24 hosted | 8 vendors × {small, medium, large}, one prompt, temperature 0 | — |
 | `capitalized` | every capitalised run, minus a stoplist written from English orthography | — |
 | `nothing` | predicts the empty set, always | — |
@@ -420,7 +420,7 @@ Spearman ρ between the 56-item dev slice and the 280-item measurement slice, 28
 **0.903**. Dev leader and measurement leader are the same arm.
 
 Mean |rank move| 2.36 positions; **max 11** — `glm_l`, rank 11 → 22, for the reason in §3.7:
-the dev slice sampled its truncation rate at 5.4% and the measurement slice found 16.4%.
+the dev slice sampled its truncation rate at 5.4% and the measurement slice found 11.4%, the 0.114 in §3.7. (This sentence said 16.4% until 2026-10-15: that is the share of its replies the original parser could not read, 1 − 0.836, not the share that was truncated.)
 
 **No winner's curse.** On the 224 items the dev slice never contained:
 

@@ -1,0 +1,8 @@
+{
+  "what": "One-off index build time for each SciFact first-stage arm: the 5,183-abstract corpus embedded (or BM25-indexed) from scratch, no cache, through the adapter's own warmup(), with the model revisions the committed runs used. Each arm in its own process, one at a time, on an otherwise idle machine. Model weights were already on disk, so no download is included.",
+  "measured": "2026-10-15",
+  "script": "docs/evidence/index_build_times.py",
+  "machine": {"cpu": "Intel Xeon @ 2.80GHz, 4 vCPU (cloud container)", "os": "Linux", "torch": "2.14.0", "sentence_transformers": "3.4.1", "torch_threads": 4},
+  "build_s": {"bm25": 1.2, "minilm": 143.4, "bge_small": 480.1, "mpnet": 1659.3, "e5_base": 1385.5},
+  "note": "bge_small was first timed at 524.1 s while another job briefly shared the CPU; 480.1 s is the re-time on an idle machine. The figures these replace (bm25 0.8 s, minilm 194 s, bge_small 874 s, mpnet 1825 s, e5_base 1825 s) were from a different machine, and only three of them had a recorded source; mpnet's was a copy of e5_base's."
+}

@@ -20,7 +20,7 @@ is scored on. Three consequences:
    once. The harness already timed warm-up separately and excluded it from per-item
    latency — a decision made for *model loading* in the first example — and that turned out
    to be exactly right for an index build. So index cost became a reported column:
-   BM25 **0.8 s**, MiniLM 194 s, e5-base **1825 s**.
+   BM25 **1.2 s**, MiniLM 143 s, e5-base **1,386 s** (one 4-vCPU machine, uncached; [`docs/evidence/index_build_times.json`](../../docs/evidence/index_build_times.json)).
 2. **`corpus_sha256` or the record is a lie.** Two runs over the same queries against
    different corpora agree on `dataset_id`, `items_sha256`, `reference_id`, adapter hash
    and every parameter. *Nothing else* would distinguish them, and the corpus is where the

@@ -410,7 +410,8 @@ def author(place: str) -> str:
 # The same file in both themes -- lime tile, black marks -- exactly as designed.
 
 
-def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> str:
+def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
+         card: str = "social.png") -> str:
     up = "../" * depth
 
     def nav(key: str, href: str, label: str, cls: str = "") -> str:
@@ -428,7 +429,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> st
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="eval-harness">
-<meta property="og:image" content="{SITE}/assets/social.png">
+<meta property="og:image" content="{SITE}/assets/{card}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -589,7 +590,7 @@ def home(f: dict) -> str:
     return page("eval-harness — is the ranking real, or a lucky sample?",
                 "A drop-in harness for evaluating AI systems on your own data: frozen datasets, "
                 "fingerprinted runs, and significance tests before any leaderboard is printed — "
-                "shown on 24 LLMs across five benchmarks.", body, here="harness")
+                "shown on 24 LLMs across five benchmarks.", body, here="harness", card="social-home.png")
 
 
 def landing(f: dict) -> str:

@@ -2577,3 +2577,37 @@ the fp32 runs are there to promote.
 **The lesson.** "Exact on another machine" was the strongest reproducibility claim this
 repository could make about its local arms, and until now nobody had made it. It held
 for 30 of 31 arms. The 31st differs for a documented reason that changes no finding.
+
+### 2026-10-15 · 64 — Closing the free open items, and what checking them turned up
+
+Five items left open by the table audit, all checkable without a key.
+
+1. **Every "separated / not separated" in the synthesis's training-exposure table was
+   re-run** (each arm's own Holm family test against the best paid arm of its experiment).
+   All sixteen verdicts held. Five had been carried over from an older note without a test;
+   six rows had no verdict at all. Each row now carries its p-value and the threshold it had
+   to beat. `bart_l_xsum`'s −0.1389 became −0.1390: the exact difference is −0.13895, and the
+   summarisation report already rounded it the other way.
+2. **The SciFact index build times were re-measured** (`docs/evidence/index_build_times.*`):
+   one 4-vCPU machine, uncached, each arm alone, through the adapter's own `warmup()` with the
+   pinned revisions. bm25 1.2 s, minilm 143 s, bge_small 480 s, e5_base 1,386 s, mpnet
+   1,659 s. Three of the old five had a source; bge_small's 874 s had none, and mpnet's 1825 s
+   was a copy of e5_base's. mpnet is now the slowest build, which sharpens the report's point
+   rather than weakening it. One measurement had to be retaken: bge_small first read 524 s
+   while a site build briefly shared the CPU.
+3. **NER §3.8's "16.4% truncation" was the unparsed rate** (1 − 0.836 in the original parse),
+   not truncation, which is 11.4% in both run directories.
+4. **gliner's "745 MB" was mebibytes**; every other size is decimal. It is 781 MB.
+5. **The five pickle checkpoints now rerun from their safetensors conversions**, pinned by
+   commit. All five scored identically to their committed runs on every item, including both
+   BARTs on all 200 articles where the original check covered 20. The committed runs and
+   configs are untouched.
+
+And one count that was not changed: the summarisation report's "two" corrections from the
+20-article sample (it once said three). When "three" was written the table had nine rows,
+and only two cite the 20 articles; nothing in this journal names a third.
+
+**The lesson.** Each of these was a number that read fine and had never been re-derived. Two
+were wrong (a copied cell, a mislabelled rate), one had the wrong unit, and the rest held. The
+open-items list was worth closing for the ones that held, too: they are now stated with their
+evidence instead of carried.
