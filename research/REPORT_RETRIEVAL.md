@@ -30,13 +30,20 @@
 | **Self-host · open-weight LLM, absolute** | **`glm_s`** — GLM-4.5-Air, MIT, **110B / ~221 GB**. **0.7437** reranking BM25 — **+0.0246 over the encoder alone, not separated**. Paired with `e5_base` it reaches **0.7891**, the highest score here. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model, quantised.** GLM-4.5-Air is ~110 GB at int8 — 86% of a 128 GB box, tight once KV cache is counted — or **~55 GB at int4**, comfortable. No quality is given up *on paper*; quantised quality was not measured. |
 | **Self-host · open-weight LLM, ≤64 GB** | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**, **0.7363**. Costs **0.0074** against GLM-4.5-Air, which its own separation test cannot resolve. The only experiment where halving the memory budget costs anything at all. |
-| **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline. You are renting convenience, not access — **no proprietary model is needed at any point.** |
+| **Deploy — rented API** | The same two models through a provider: **$732/month per 1M items** for the reranked pipeline — `glm_s` reranking `e5_base`'s candidates billed $0.1464 for 200 queries (§3.4 pair run), and the encoder costs nothing. You are renting convenience, not access — **no proprietary model is needed at any point.** |
 | **What should I not deploy?** | A reranker on a weak first stage. Every BM25-based pipeline is capped at **0.8163** no matter which model reorders, and **11 of 12 land within 4 points of each other** — none is within 4 points of the cap itself. |
 | **Does paying more help?** | Slightly: **+2.7%** per 10× cost (r = 0.32, on billed cost). The dearest arm ranks **2nd of 19** at $2,288/month for **−0.2%**. |
-| **Arms tied at the top?** | **11–12 of 18**, the count sitting on a Holm boundary (see §3.2) — and two of them (`e5_base`, `bge_small`) are **free and local**. |
+| **Arms tied at the top?** | **12–13 arms**: the leader `glm_s` plus the **11–12 of its 18 opponents** it cannot separate from — the count sits on a Holm boundary (§3.2). Two of them (`e5_base`, `bge_small`) are **free and local**. |
 | **Biggest single lever?** | **Replacing the retriever, not adding a reranker.** BM25 → e5_base is +0.0740; worst → best reranker is +0.0420. |
 | **Is a pilot enough?** | **Emphatically no.** ρ = 0.756 and the dev slice's leader finished **10th of 19**. |
 | **Fine-tune or pay?** | **The one genuinely marginal case.** No arm here was fine-tuned *on SciFact*; `e5_base` is retrieval-trained but not on this corpus, and lands mid-field — beaten by 0.0246 that the test cannot resolve. Partially-trained looks like a tie, not a win. |
+
+*How to read this table.* Scores are **nDCG@10** over 200 SciFact claims (0–1, higher is
+better; §2). **Reranking** = an LLM reorders BM25's top 20 candidates; **paired with
+`e5_base`** = the same LLM reordering `e5_base`'s top 20 instead (§3.4). **$/month per 1M
+items** = what the provider billed for 200 queries, scaled to one million a month.
+**Separated / tied** = a paired sign-flip permutation test on per-query nDCG@10,
+Holm-corrected over the leader's family of 18 opponents at α = 0.05 (§3.2).
 
 **A prediction registered before the arm existed** — that swapping only the first stage
 would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**, and the
@@ -79,7 +86,8 @@ resolve.
 4. **So the prediction, registered before `first_stage` was even configurable:** a
    reranker on e5_base's candidates should reach ~0.786–0.797. Measured: `glm_s`
    **0.7891**, `qwen_s` **0.7799**. The mechanism transferred too — headroom-used went
-   90.9% → 90.2% and 88.5% → 89.2%.
+   90.9% → 90.2% and 88.5% → 89.2%. (These are the paired runs of §3.4, whose BM25 half
+   scored 0.7422 rather than §3.1's 0.7437 — hence 90.9% here against 91.1% above.)
 
 5. **The dev slice picked the wrong winner.** Its leader, `llama_s`, finished **10th of
    19** on the measurement slice, nine places down. ρ(dev, measurement) = 0.756.
@@ -93,7 +101,7 @@ resolve.
 
 ## 1. What was measured
 
-| | |
+| property | value |
 |---|---|
 | Corpus | BEIR SciFact, **5,183 abstracts**, CC BY-SA 4.0, `corpus_sha256` `297643e2d005` |
 | Queries | 200 test claims, seeded random, `items_sha256` frozen |
@@ -133,7 +141,7 @@ Each is a place where the tidy implementation quietly pays an arm for something 
 be punished for. The extraction scorer in this repo shipped with exactly this class of bug,
 so these were decided — and asserted — **before any arm ran**.
 
-| | |
+| rule | why |
 |---|---|
 | **An unreadable answer is not an empty ranking** | scores zero on every quality metric |
 | **A hallucinated document id keeps its slot** | dropping it would slide real documents *up* and improve the score, making invention a strategy |
@@ -158,7 +166,17 @@ BM25's, to four decimals.
 
 ### 3.1 The leaderboard
 
-| arm | nDCG@10 | recall@10 | recall@100 | MRR@10 | index build | cost |
+*How to read this table.* Sorted by **nDCG@10**, descending. ⟳ = BM25 retrieves, then
+that LLM reorders BM25's top 20 (§2); these rows inherit BM25's recall@100 and its 0.8 s
+index build, because the first stage *is* BM25. **first-stage index build** = one-off
+time to index the 5,183-document corpus on CPU; — = no index (floors). **cost** = what the
+provider billed for all 200 queries. **Bold** marks the best value in each column, plus
+the two free, local arms in the top tie group (`e5_base`, `bge_small`: name, nDCG@10 and
+cost). **Tie group:** every row from `glm_s` down to `gemma_s` except `llama_m` — 13 arms:
+`glm_s` and the 12 opponents it is not separated from. `gemma_s` and `mistral_s` sit on their Holm
+thresholds, which is why the group is quoted as 12–13 (§3.2).
+
+| arm | nDCG@10 | recall@10 | recall@100 | MRR@10 | first-stage index build | cost (billed, 200 queries) |
 |---|---|---|---|---|---|---|
 | glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.1421 |
 | glm_m ⟳ | 0.7419 | 0.8067 | 0.8586 | 0.7325 | 0.8 s | $0.4576 |
@@ -180,8 +198,9 @@ BM25's, to four decimals.
 | random | 0.0005 | 0.0010 | 0.0020 | 0.0006 | — | $0 |
 | first_k | 0.0000 | 0.0000 | 0.0350 | 0.0000 | — | $0 |
 
-⟳ = BM25 + that LLM reranking the top 20. **Costs are what the provider billed**
-(`_meta.usage.cost`), not this repo's price table.
+**Costs are what the provider billed** (`_meta.usage.cost`), not this repo's price table.
+The encoder build times are from the first, uncached build; the committed runs loaded
+that cached index, so their `warmup_ms` (6–9 s) is a load time, not a build time.
 
 *This footnote said the opposite until 2026-09-30 — "costs are this repo's price table,
 they understate the bill by roughly 2.4×" — while the cells above it had already been
@@ -211,7 +230,7 @@ encoder running on a laptop CPU is not distinguishable from twelve hosted LLM re
 
 The tie also explains the stability numbers: ρ between two disjoint halves rises
 monotonically 0.408 → 0.742, so the *ordering* is real, while **P(same winner) is 0.01–0.07**
-— with twelve indistinguishable arms, which one crowns a random half is close to a coin
+— with twelve or thirteen indistinguishable arms, which one crowns a random half is close to a coin
 toss. Both statements are true at once, and reading either alone would mislead.
 
 ### 3.3 Reranking is worth more than the retriever, and the retriever is worth more than the reranker choice
@@ -258,18 +277,23 @@ parser its stored replies give 0.7138 over BM25 and 0.7713 over e5_base. Those t
 have not been re-measured, so the row below is the pre-fix figure with the corrected
 one stated here.*
 
-| reranker | over BM25 | over e5_base | Δ | headroom used |
+Both halves of each pair ran under the same adapter, so the comparison is internally valid;
+that adapter differs from the 19-arm main table's, which is why these four are reported
+separately and are not in §3.1 — and why `glm_s` over BM25 reads 0.7422 here against
+0.7437 in §3.1 (90.9% of the ceiling here, 91.1% in the block above).
+
+| reranker | nDCG@10, BM25 candidates | nDCG@10, e5_base candidates | gain from e5_base | share of ceiling reached (BM25 → e5_base) |
 |---|---|---|---|---|
 | glm_s | 0.7422 | **0.7891** | +0.0469 | 90.9% → 90.2% |
 | qwen_s | 0.7224 | **0.7799** | +0.0575 | 88.5% → 89.2% |
 
+Each reranker reorders the top 20 candidates of the named first stage. **Share of ceiling
+reached** = nDCG@10 ÷ that first stage's oracle ceiling (0.8163 for BM25, 0.8747 for
+`e5_base`).
+
 `glm_s` lands inside the registered range. `qwen_s` lands 0.006 below its own. And the
 **mechanism** transferred, not just the number: the share of available headroom each
 reranker takes moved by under one percentage point when the candidates changed entirely.
-
-Both halves of each pair ran under the same adapter, so the comparison is internally valid;
-that adapter differs from the 19-arm main table's, which is why these four are reported
-separately and are not in §3.1.
 
 ### 3.5 The dev slice picked the wrong winner
 
@@ -289,13 +313,16 @@ critical difference of 2.21 rank positions against an observed span of 8.41.
 
 ### 3.6 Index cost is a first-class number, because `warmup_ms` made it one
 
-| | build | nDCG@10 | recall@100 |
+| arm | index build time | nDCG@10 | recall@100 |
 |---|---|---|---|
 | bm25 | **0.8 s** | 0.6451 | 0.8586 |
 | minilm | 194 s | 0.6533 | 0.9125 |
 | bge_small | 874 s | 0.7097 | 0.9325 |
 | mpnet | 1825 s | 0.6643 | 0.9350 |
 | e5_base | 1825 s | **0.7191** | **0.9540** |
+
+First-stage arms only, sorted by index build time (one-off, CPU, uncached — see the note
+under §3.1).
 
 BM25's index builds **2,280× faster** than e5_base's and scores 0.074 lower. The harness
 already timed warmup separately and excluded it from per-item latency — a decision made for
@@ -326,11 +353,14 @@ harvested partial ranking scored **below the BM25 fallback the pipeline uses whe
 reply is unreadable** — 0.6386 against 0.7155 on the same bytes. The arm was punished
 for the parser's guess.
 
-| arm | as first measured | round-2 "correction" | corrected parser |
+| arm | nDCG@10 as first measured | after round-2 parser change (reverted) | after current parser |
 |---|---|---|---|
-| `llama_l` | 0.7281 | 0.6864 | **0.7281 — unchanged** |
-| `llama_s` | 0.7172 | 0.7129 | **0.7172 — unchanged** |
-| `qwen_s` | 0.7338 | 0.7183 | **0.7183 — real** |
+| `llama_l` | 0.7281 | 0.6864 | **0.7281** |
+| `llama_s` | 0.7172 | 0.7129 | **0.7172** |
+| `qwen_s` | 0.7338 | 0.7183 | **0.7183** |
+
+Under the current parser `llama_l` and `llama_s` are back to their first-measured scores —
+the round-2 drop was the parser's artifact — while `qwen_s`'s drop is real and stays.
 
 The parser now refuses a leading array that will not parse, rather than harvesting
 fragments from it, and a line-path token must look like an id (`[\w.-]+`). Found by
@@ -341,7 +371,12 @@ external review.
 Three arms were re-run on 2026-09-29 (`data/runs-repeats/`). Once the parser artifact
 is removed, the like-for-like deltas are:
 
-| arm | Δ between two runs of an identical config |
+`bm25first` is the BM25-candidate half of the §3.4 pair (`sf_glm_s_bm25first_n200_v1`,
+`sf_qwen_s_bm25first_n200_v1`): the same reranker settings run again later, under the
+pair adapter. Δ = nDCG@10 of the second (later) run − the first, both read under the
+current parser; a negative Δ means the later run scored lower.
+
+| arm | Δ nDCG@10 between two runs of the same reranker settings (second − first) |
 |---|---|
 | `llama_l` | **0.0126** |
 | `llama_s` | −0.0003 |
@@ -369,8 +404,8 @@ from 6 to 5 of 18. **No arm outside SciFact has a repeat run at all.**
 **For the product case, the answer is: use a retrieval-trained bi-encoder, and add a
 reranker only if you need the last four points.** `e5_base` alone reaches 0.7191 for
 nothing, on a CPU, and is not statistically distinguishable from any paid reranker. Adding
-an LLM on top of it reaches 0.7891 — a real +0.070 — for **$0.1421 billed** per 200
-queries. (`glm_s` is not the cheapest reranker; `deepseek_s` is, at $0.0600. The
+an LLM on top of it reaches 0.7891 — a real +0.070 — for **$0.1464 billed** per 200
+queries (the §3.4 pair run; `glm_s` over BM25 in §3.1 billed $0.1421). (`glm_s` is not the cheapest reranker; `deepseek_s` is, at $0.0600. The
 $0.055 previously quoted here was the price table, and the "cheapest" was wrong under
 either cost.)
 
@@ -381,9 +416,10 @@ Money spent on a better reranker there buys almost
 nothing; money spent on the retriever raises the cap itself.
 
 **The tie is the recurring result across all four examples in this repo.** Summarisation:
-the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with nine. DBpedia: a group of
-ten across a 115× price range. NER: eight hosted arms across 78×. Here: twelve, two of
-which are free. Four unrelated tasks, the same shape — at the top of a field, price stops
+the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with three others. DBpedia: a leader
+tied with nineteen, across a 115× price range (both per
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs). NER:
+eight hosted arms across 78×. Here: twelve or thirteen, two of which are free. Four unrelated tasks, the same shape — at the top of a field, price stops
 predicting quality well before quality stops varying.
 
 ---
@@ -445,8 +481,9 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
 
 ## 7. NOT covered, NOT measured, NOT verified
 
-- **Five of the 24 standard arms were never run.** `anthropic_s`, `openai_m`, `openai_l`,
-  `anthropic_m`, `anthropic_l` — the frontier tier. They would cost **about $12**,
+- **Twelve of the 24 hosted arms were never run on SciFact** — only the 12 below the price
+  cut were. The five that matter most are the frontier tier, `anthropic_s`, `openai_m`,
+  `openai_l`, `anthropic_m`, `anthropic_l`: they would cost **about $12**,
   against this sweep's **$1.94 as billed** — not the $31.40 stated here until
   2026-09-29, which rested on a multiplier that does not survive checking. The cut was
   "everything under $0.60/Mtok input", price-ordered and declared before any result was

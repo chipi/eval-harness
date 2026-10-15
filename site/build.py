@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import filecmp
 import html
+import json
 import math
 import re
 import shutil
@@ -32,6 +33,7 @@ import method  # noqa: E402
 ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
 BLOB = f"{REPO}/blob/main"
+SITE = "https://chipi.github.io/eval-harness"
 OUT = HERE / "public"
 
 
@@ -61,7 +63,9 @@ def money(x: float) -> str:
 
 
 def times(x: float) -> str:
-    return f"{x:.0f}×" if x >= 10 else f"{x:.1f}×"
+    # As the reports state them: whole multiples truncated (115.66 is "115×", never "116×"),
+    # small ones to one decimal (2.49 is "2.5×").
+    return f"{math.floor(x)}×" if x >= 10 else f"{x:.1f}×"
 
 
 def ordinal(n: int) -> str:
@@ -77,29 +81,46 @@ def kind_of(a: dict) -> str:
     return a["weights"] if a["kind"] == "hosted" and a["weights"] else a["kind"]
 
 
-def legend(band: bool = True) -> str:
+def legend(band: bool = True, reading: str = "") -> str:
     items = "".join(f'<span><i style="background:var(--{k})"></i>{KIND_LABEL[k]}</span>'
                     for k in ("proprietary", "open", "local", "baseline"))
     if band:
         items += '<span><i class="sw-band"></i>statistically tied with the leader</span>'
+    if reading:
+        items += f'<span class="read">{reading}</span>'
     return f'<div class="legend">{items}</div>'
 
 
+def both(wide: str, narrow: str) -> str:
+    """A chart drawn twice: the wide layout, and a phone layout CSS swaps in under 700px."""
+    return f'<div class="vw">{wide}</div><div class="vn">{narrow}</div>'
+
+
 # ── charts ──────────────────────────────────────────────────────────────────
-def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True) -> str:
-    """One experiment's field on one axis: every learned arm, the tie band, the dearest."""
+def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, compact: bool = False) -> str:
+    """One experiment's field on one axis: every learned arm, the tie band, the dearest.
+    compact: a phone-width layout, title above the axis instead of beside it."""
     arms = [a for a in exp["arms"] if a["kind"] != "baseline"]
     lo, hi = min(a["score"] for a in arms), max(a["score"] for a in arms)
     pad = (hi - lo) * 0.06 or 0.01
     lo, hi = lo - pad, hi + pad
     left, right, y = 190 if title else 20, width - 24, 50
+    fs = 11
+    if compact:
+        width, fs = 400, 13
+        left, right = 14, width - 14
+        y = 70 if title else 44
+        height = y + 46
 
     def x(v):
         return left + (v - lo) / (hi - lo) * (right - left)
 
     tied = [a for a in arms if a["arm"] in exp["tied"]] + [exp["leader_row"]]
     out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: every learned arm by {e(exp["metric_label"])}">']
-    if title:
+    if title and compact:
+        out.append(f'<text x="0" y="18" class="t-head" font-size="18">{e(exp["bench"])}</text>'
+                   f'<text x="{width}" y="18" text-anchor="end" class="t-muted" font-size="12">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>')
+    elif title:
         out.append(f'<text x="0" y="{y - 6}" class="t-head" font-size="17">{e(exp["bench"])}</text>'
                    f'<text x="0" y="{y + 14}" class="t-muted" font-size="11">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>')
     if len(tied) > 1:
@@ -113,19 +134,24 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True) ->
         r = 7 if a["arm"] in (exp["top"]["arm"], exp["dearest"]["arm"]) else 5.5
         out.append(f'<circle cx="{x(a["score"]):.1f}" cy="{y}" r="{r}" class="dot k-{k}" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>')
     d, t = exp["dearest"], exp["top"]
+    half = 80 if compact else 70  # keep the centred label inside the frame
+    dx = min(max(x(d["score"]), left + half), right - half)
     out.append(f'<circle cx="{x(d["score"]):.1f}" cy="{y}" r="11" class="ring"/>'
-               f'<text x="{x(d["score"]):.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="11">dearest · {ordinal(d["rank"])} · {d["score"]:.3f}</text>')
+               f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">dearest · {ordinal(d["rank"])} · {d["score"]:.3f}</text>')
     if t["arm"] != d["arm"]:
-        out.append(f'<text x="{min(x(t["score"]), right - 4):.1f}" y="{y + 28}" text-anchor="end" class="t-ink" font-size="11">{e(t["arm"])} · 1st · {t["score"]:.3f}</text>')
+        out.append(f'<text x="{min(x(t["score"]), right - 4):.1f}" y="{y + 30}" text-anchor="end" class="t-ink" font-size="{fs}">{e(t["arm"])} · 1st · {t["score"]:.3f}</text>')
     out.append("</svg>")
     return "".join(out)
 
 
-def forest(rows: list, width: int = 1000) -> str:
-    """Calibration: our figure minus the published one, in points, with our 95% interval."""
+def forest(rows: list, width: int = 1000, compact: bool = False) -> str:
+    """Calibration: our figure minus the published one, in points, with our 95% interval.
+    compact: a phone-width layout, each row's label above its interval."""
+    span = 4.0
+    if compact:
+        return _forest_compact(rows, span)
     row_h, top, left, right = 46, 30, 330, width - 150
     height = top + row_h * len(rows) + 30
-    span = 4.0
 
     def x(v):
         return left + (v + span) / (2 * span) * (right - left)
@@ -152,6 +178,33 @@ def forest(rows: list, width: int = 1000) -> str:
     return "".join(out)
 
 
+def _forest_compact(rows: list, span: float, width: int = 400) -> str:
+    row_h, top, left, right = 64, 34, 14, width - 14
+    height = top + row_h * len(rows) + 30
+
+    def x(v):
+        return left + (v + span) / (2 * span) * (right - left)
+
+    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Calibration: this repo against published values">']
+    for t in (-4, -2, 0, 2, 4):
+        cls = "axis" if t == 0 else "grid"
+        out.append(f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top - 6}" y2="{height - 26}" class="{cls}"/>'
+                   f'<text x="{x(t):.1f}" y="{height - 8}" text-anchor="middle" class="t-muted" font-size="12">{t:+d}</text>')
+    out.append(f'<text x="{x(0):.1f}" y="{top - 14}" text-anchor="middle" class="t-muted" font-size="12">published value</text>')
+    for i, r in enumerate(rows):
+        y0 = top + i * row_h
+        lo, hi = max(-span, r["delta"] - r["ci"]), min(span, r["delta"] + r["ci"])
+        fmt = (lambda v: f"{v:.2f}") if r["scale"] == 1 else (lambda v: f"{v / 100:.4f}")
+        tip = f'{r["bench"]} · {r["what"]}\nours {fmt(r["ours"])} ± {fmt(r["ci"])}\npublished {fmt(r["published"])}\nn = {r["n"]}'
+        yb = y0 + 40
+        out.append(f'<text x="0" y="{y0 + 16}" class="t-ink" font-size="14">{e(r["bench"])} <tspan class="t-muted" font-size="12">{e(r["what"])}</tspan></text>'
+                   f'<text x="{width}" y="{y0 + 16}" text-anchor="end" class="t-muted" font-size="12">ours <tspan class="t-ink">{fmt(r["ours"])}</tspan> · pub. {fmt(r["published"])}</text>'
+                   f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{yb}" y2="{yb}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
+                   f'<circle cx="{x(r["delta"]):.1f}" cy="{yb}" r="7" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>')
+    out.append("</svg>")
+    return "".join(out)
+
+
 def _spread(items: list, gap: float) -> dict:
     """Label y-positions with at least `gap` between neighbours: {key: y}."""
     out, last = {}, -1e9
@@ -161,17 +214,21 @@ def _spread(items: list, gap: float) -> dict:
     return out
 
 
-def slope(rows: list, width: int = 640, height: int = 420) -> str:
+def slope(rows: list, width: int = 640, height: int = 420, compact: bool = False) -> str:
     """The five local summarisation arms, CNN slice -> DailyMail slice."""
     top, bottom, x0, x1 = 44, height - 30, 120, width - 250
+    if compact:
+        width, height = 400, 380
+        top, bottom, x0, x1 = 44, height - 24, 64, 196
     lo, hi = 0.12, 0.47
+    fs = 15 if compact else 14
 
     def y(v):
         return bottom - (v - lo) / (hi - lo) * (bottom - top)
 
     out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Local summarisers on CNN and on DailyMail">',
-           f'<text x="{x0}" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text>',
-           f'<text x="{x1}" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text>',
+           f'<text x="{x0}" y="20" text-anchor="middle" class="t-muted" font-size="{fs}">CNN slice</text>',
+           f'<text x="{x1}" y="20" text-anchor="middle" class="t-muted" font-size="{fs}">DailyMail slice</text>',
            f'<line x1="{x0}" x2="{x0}" y1="{top - 8}" y2="{bottom + 8}" class="axis"/>',
            f'<line x1="{x1}" x2="{x1}" y1="{top - 8}" y2="{bottom + 8}" class="axis"/>']
     # Ties share one label ("bart_l, bart_m"); then labels are spread so none overlap.
@@ -181,9 +238,9 @@ def slope(rows: list, width: int = 640, height: int = 420) -> str:
     right = _spread([(v, y(v)) for v in groups], 20)
     left = _spread([(r["arm"], y(r["cnn"])) for r in rows], 18)
     for v, names in groups.items():
-        out.append(f'<text x="{x1 + 16}" y="{right[v] + 5:.1f}" class="t-ink" font-size="14">{e(", ".join(names))} {v:.3f}</text>')
+        out.append(f'<text x="{x1 + 16}" y="{right[v] + 5:.1f}" class="t-ink" font-size="{fs}">{e(", ".join(names))} {v:.3f}</text>')
     for r in rows:
-        out.append(f'<text x="{x0 - 16}" y="{left[r["arm"]] + 5:.1f}" text-anchor="end" class="t-muted" font-size="13">{r["cnn"]:.3f}</text>')
+        out.append(f'<text x="{x0 - 16}" y="{left[r["arm"]] + 5:.1f}" text-anchor="end" class="t-muted" font-size="{fs - 1}">{r["cnn"]:.3f}</text>')
     for r in rows:
         k = "baseline" if r["arm"] == "lead3" else "local"
         dash = ' stroke-dasharray="5 5"' if r["arm"] == "bart_l_xsum" else ""
@@ -195,7 +252,7 @@ def slope(rows: list, width: int = 640, height: int = 420) -> str:
     return "".join(out)
 
 
-def scatter(exp: dict, width: int = 1000, height: int = 440) -> str:
+def scatter(exp: dict, width: int = 1000, height: int = 440, compact: bool = False) -> str:
     """Billed cost per 1,000 items (log) against quality. Free arms sit in their own lane."""
     arms = [a for a in exp["arms"] if a["kind"] != "baseline"]
     paid = [a for a in arms if a["cost"] > 0]
@@ -207,8 +264,12 @@ def scatter(exp: dict, width: int = 1000, height: int = 440) -> str:
     hi = max(a["score"] for a in arms)
     pad = (hi - lo) * 0.08 or 0.01
     lo, hi = lo - pad, hi + pad
-    left, right, top, bottom = 150, width - 30, 24, height - 50
-    lane = 70
+    left, right, top, bottom = 150, width - 30, 34, height - 50
+    lane, fs, tick = 70, 11, 10
+    if compact:
+        width, height = 400, 400
+        left, right, top, bottom = 134, width - 14, 34, height - 50
+        lane, fs, tick = 82, 13, 12
 
     def x(c):
         return left + (math.log10(c) - clo) / (chi - clo) * (right - left)
@@ -219,12 +280,13 @@ def scatter(exp: dict, width: int = 1000, height: int = 440) -> str:
     out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: cost against quality">']
     for p in range(clo, chi + 1):
         out.append(f'<line x1="{x(10 ** p):.1f}" x2="{x(10 ** p):.1f}" y1="{top}" y2="{bottom}" class="grid"/>'
-                   f'<text x="{x(10 ** p):.1f}" y="{bottom + 20}" text-anchor="middle" class="t-muted" font-size="10">${10 ** p:g}</text>')
+                   f'<text x="{x(10 ** p):.1f}" y="{bottom + 20}" text-anchor="middle" class="t-muted" font-size="{tick}">${10 ** p:g}</text>')
     for t in (lo + pad, (lo + hi) / 2, hi - pad):
         out.append(f'<line x1="{lane - 30}" x2="{right}" y1="{y(t):.1f}" y2="{y(t):.1f}" class="grid"/>'
-                   f'<text x="{lane - 36}" y="{y(t) + 4:.1f}" text-anchor="end" class="t-muted" font-size="10">{t:.3f}</text>')
-    out.append(f'<text x="{(left + right) / 2:.0f}" y="{height - 6}" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text>'
-               f'<text x="{lane + 6}" y="{bottom + 20}" text-anchor="middle" class="t-muted" font-size="10">free</text>'
+                   f'<text x="{lane - 36}" y="{y(t) + 4:.1f}" text-anchor="end" class="t-muted" font-size="{tick}">{t:.3f}</text>')
+    out.append(f'<text x="{(left + right) / 2:.0f}" y="{height - 6}" text-anchor="middle" class="t-muted" font-size="{fs}">billed cost per 1,000 items (log scale)</text>'
+               f'<text x="0" y="{top - 10}" class="t-muted" font-size="{fs}">↑ {e(exp["metric_label"])}</text>'
+               f'<text x="{lane + 6}" y="{bottom + 20}" text-anchor="middle" class="t-muted" font-size="{tick}">free</text>'
                f'<line x1="{left - 30}" x2="{left - 30}" y1="{top}" y2="{bottom}" class="axis"/>')
     for a in free:
         k = kind_of(a)
@@ -236,10 +298,12 @@ def scatter(exp: dict, width: int = 1000, height: int = 440) -> str:
         out.append(f'<circle cx="{x(per_k(a)):.1f}" cy="{y(a["score"]):.1f}" r="6" class="dot k-{k}" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>')
     d = exp["dearest"]
     out.append(f'<circle cx="{x(per_k(d)):.1f}" cy="{y(d["score"]):.1f}" r="11" class="ring"/>'
-               f'<text x="{x(per_k(d)) - 14:.1f}" y="{y(d["score"]) + 4:.1f}" text-anchor="end" class="t-ink" font-size="11">{e(d["arm"])} · dearest</text>')
+               f'<text x="{x(per_k(d)) - 14:.1f}" y="{y(d["score"]) + 4:.1f}" text-anchor="end" class="t-ink" font-size="{fs}">{e(d["arm"])} · dearest</text>')
     t = exp["top"]
     tx = lane + 6 if t["cost"] <= 0 else x(per_k(t))
-    out.append(f'<text x="{tx + 14:.1f}" y="{y(t["score"]) + 4:.1f}" class="t-ink" font-size="11">{e(t["arm"])} · 1st</text></svg>')
+    # The leader's label sits centred above its dot, clear of the dearest's label beside the ring.
+    lx = min(max(tx, 70), right - 70)
+    out.append(f'<text x="{lx:.1f}" y="{y(t["score"]) - 14:.1f}" text-anchor="middle" class="t-ink" font-size="{fs}">{e(t["arm"])} · 1st</text></svg>')
     return "".join(out)
 
 
@@ -265,6 +329,14 @@ setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add
 </script>"""
 
 
+def analytics_tag() -> str:
+    """The Umami script tag from site/analytics.json, or nothing when it is not configured."""
+    cfg = json.loads((HERE / "analytics.json").read_text())
+    if not (cfg.get("umami_src") and cfg.get("website_id")):
+        return ""
+    return f'<script defer src="{e(cfg["umami_src"])}" data-website-id="{e(cfg["website_id"])}"></script>'
+
+
 def page(title: str, desc: str, body: str, depth: int = 0) -> str:
     up = "../" * depth
     return f"""<!doctype html>
@@ -276,8 +348,14 @@ def page(title: str, desc: str, body: str, depth: int = 0) -> str:
 <meta name="description" content="{e(desc)}">
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="{SITE}/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-{HEAD_JS}
+{HEAD_JS}{analytics_tag()}
 <link rel="stylesheet" href="{up}assets/style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23c8ff3d'/%3E%3C/svg%3E">
 </head>
@@ -317,7 +395,7 @@ def landing(f: dict) -> str:
     local_n = sum(x["n_arms"] - x["n_hosted"] for x in exps)
     billed_all = f'{f["total_billed"]:.2f}'
 
-    strips = "".join(f'<figure class="reveal" style="margin-bottom:10px">{strip(x)}</figure>' for x in exps)
+    strips = "".join(f'<figure class="reveal" style="margin-bottom:10px">{both(strip(x), strip(x, compact=True))}</figure>' for x in exps)
     tie_rows = "".join(
         f'<tr><td class="exp"><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
         f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
@@ -338,7 +416,7 @@ def landing(f: dict) -> str:
 
     body = f"""
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>An open evaluation</b> · {len(exps)} tasks · {f["total_arms"]} systems · {money(f["total_billed"])} billed</div>
+  <div class="kicker"><b>An open evaluation</b> · {len(exps)} tasks · {f["total_arms"]} measured runs · {money(f["total_billed"])} billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
   <p class="dek">{hosted_n} frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through five public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
@@ -353,8 +431,8 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">01</span>Price</div>
   <h2>The price tag told you nothing.</h2>
   <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In all five it finished behind something cheaper</strong> — and in four, behind something free.</p>
-  <div class="chart reveal">{legend()}{strips}
-  <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. Hover any dot for its score, rank and bill.</figcaption></div>
+  <div class="chart reveal">{legend(reading="higher score: further right →")}{strips}
+  <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
 
 <section class="block"><div class="wrap">
@@ -387,7 +465,7 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">04</span>Trust</div>
   <h2>Can you trust any of this?</h2>
   <p class="lede">Every experiment scores a sample of 200–280 items, not a full test set. So each one also runs a <strong>calibration</strong>: one well-known model, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
-  <div class="chart reveal">{forest(f["calibration"])}
+  <div class="chart reveal">{both(forest(f["calibration"]), forest(f["calibration"], compact=True))}
     <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation, accuracy, micro-F1 or nDCG@10 ×100 elsewhere). Bars are our 95% interval. {cal_ok} of {cal_n} sit on the published value.</figcaption></div>
   <div class="cols" style="margin-top:64px">
     <div class="prose">
@@ -395,7 +473,7 @@ def landing(f: dict) -> str:
       <p>The summarisation experiment took the first 200 articles of the CNN/DailyMail test set. The test set lists CNN's articles first, so <strong>all 200 were CNN's</strong>, while the benchmark is 91% DailyMail. Lead-3 scored ROUGE-1 30.20 on that slice against 39.94 on the full test set; CNN articles are simply harder to summarise from their lead.</p>
       <p>Re-run on 200 DailyMail articles drawn at random, the five local summarisers <strong>kept every verdict</strong> they had on CNN: the fine-tune still beats lead-3 by the same margin, and the XSum model is still last. The hosted models were not re-run, so the summarisation price findings are scoped to CNN's articles — and say so.</p>
     </div>
-    <figure class="chart reveal">{slope(f["dailymail"])}<figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
+    <figure class="chart reveal">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}<figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
   <p class="note" style="margin-top:48px"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>
@@ -535,8 +613,8 @@ def experiment_page(x: dict, f: dict) -> str:
     facts = [
         ("Question", QUESTION[x["slug"]]),
         ("Data", f'{x["n_items"]} items from the {x["bench"]} test split'),
-        ("Systems", f'{x["n_arms"]} arms: {x["n_hosted"]} hosted, the rest local or baselines'),
-        ("Metric", f'{x["metric_label"]}' + (" — this repo's own; see the protocol" if x["slug"] in ("summarization", "few-nerd") else " — the field's standard")),
+        ("Systems", f'{x["n_arms"]} compared: {x["n_hosted"]} hosted models billed per call; {x["n_arms"] - x["n_hosted"]} local models and baselines, free'),
+        ("Metric", f'{x["metric_label"]}' + METRIC_GLOSS.get(x["slug"], " — the field's standard; higher is better")),
         ("Calibration", cal_txt or "—"),
         ("Billed", f'{money(x["billed_total"])} for the whole sweep'),
     ]
@@ -548,7 +626,7 @@ def experiment_page(x: dict, f: dict) -> str:
     if x["slug"] == "summarization":
         extra = f"""<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
 <h2>Does it hold on DailyMail?</h2><div class="cols"><div class="prose"><p>The committed sample is all CNN. On 200 DailyMail articles drawn at random, the five local summarisers keep every verdict among themselves. The hosted models were not re-run there.</p></div>
-<figure class="chart">{slope(f["dailymail"])}</figure></div></div></section>"""
+<figure class="chart">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}</figure></div></div></section>"""
     body = f"""
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>{e(x["task"])}</b> · {e(x["bench"])}</div>
@@ -559,11 +637,11 @@ def experiment_page(x: dict, f: dict) -> str:
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart">{legend()}{strip(x, title=False, height=80)}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
+  <div class="chart">{legend(reading="higher score: further right →")}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart">{legend(band=False)}{scatter(x)}<figcaption>Billed cost per 1,000 items, read from the provider's response, against {e(x["metric_label"])}. Free models sit in the left lane.</figcaption></div>
+  <div class="chart">{legend(band=False, reading="better: up · cheaper: left")}{both(scatter(x), scatter(x, compact=True))}<figcaption>Billed cost per 1,000 items, read from the provider's response, against {e(x["metric_label"])}. Free models sit in the left lane.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
@@ -591,6 +669,11 @@ def experiment_page(x: dict, f: dict) -> str:
 </div></section>"""
     return page(f'{x["task"]} · {x["bench"]} — eval-harness', CARD[x["slug"]], body, depth=1)
 
+
+METRIC_GLOSS = {
+    "summarization": " — how much of the reference summary's wording the summary recovers, at the reference's length (ROUGE-Lsum recall, clipped); this repo's own, see the protocol. Higher is better",
+    "few-nerd": " — entities found with the right type, set-matched per sentence and averaged, on 8 coarse types; this repo's own, see the protocol. Higher is better",
+}
 
 QUESTION = {
     "summarization": "Summarise a news article in two or three short sentences, in a wire-service style.",

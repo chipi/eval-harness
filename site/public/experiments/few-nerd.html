@@ -7,6 +7,12 @@
 <meta name="description" content="Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.">
 <meta property="og:title" content="Extraction · Few-NERD — eval-harness">
 <meta property="og:description" content="Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
 <script>
 (function(){var p=new URLSearchParams(location.search),t=p.get('theme');
@@ -28,12 +34,12 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <div class="kicker"><b>Extraction</b> · Few-NERD</div>
   <h1 style="max-width:16ch">The one clean win.</h1>
   <p class="dek">Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.</p>
-  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Find every named entity in a sentence and give it one of 8 types.</div></div><div class="fact"><div class="k">Data</div><div class="v">280 items from the Few-NERD test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">28 arms: 24 hosted, the rest local or baselines</div></div><div class="fact"><div class="k">Metric</div><div class="v">F1 — this repo&#x27;s own; see the protocol</div></div><div class="fact"><div class="k">Calibration</div><div class="v">span_marker 0.7047 vs 0.7040 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$2.61 for the whole sweep</div></div></div>
+  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Find every named entity in a sentence and give it one of 8 types.</div></div><div class="fact"><div class="k">Data</div><div class="v">280 items from the Few-NERD test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">28 compared: 24 hosted models billed per call; 4 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">F1 — entities found with the right type, set-matched per sentence and averaged, on 8 coarse types; this repo&#x27;s own, see the protocol. Higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">span_marker 0.7047 vs 0.7040 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$2.61 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_NER.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../index.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span></div><svg viewBox="0 0 1000 80" role="img" aria-label="Few-NERD: every learned arm by F1"><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-local" data-tip="span_marker · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="Few-NERD: every learned arm by F1"><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-local" data-tip="span_marker · local · free
 F1 0.7674 · rank 1/28
 billed $0.0000 for 280 items"><title>span_marker · local · free
 F1 0.7674 · rank 1/28
@@ -137,111 +143,315 @@ billed $0.0000 for 280 items</title></circle><circle cx="686.3" cy="50" r="7" cl
 F1 0.6798 · rank 3/28
 billed $0.6897 for 280 items"><title>anthropic_l · hosted · proprietary
 F1 0.6798 · rank 3/28
-billed $0.6897 for 280 items</title></circle><circle cx="686.3" cy="50" r="11" class="ring"/><text x="686.3" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.680</text><text x="924.8" y="78" text-anchor="end" class="t-ink" font-size="11">span_marker · 1st · 0.767</text></svg><figcaption>Each dot is one system, by F1. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
+billed $0.6897 for 280 items</title></circle><circle cx="686.3" cy="50" r="11" class="ring"/><text x="686.3" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.680</text><text x="924.8" y="80" text-anchor="end" class="t-ink" font-size="11">span_marker · 1st · 0.767</text></svg></div><div class="vn"><svg viewBox="0 0 400 90" role="img" aria-label="Few-NERD: every learned arm by F1"><line x1="14" x2="386" y1="44" y2="44" class="axis"/><circle cx="366.1" cy="44" r="7" class="dot k-local" data-tip="span_marker · local · free
+F1 0.7674 · rank 1/28
+billed $0.0000 for 280 items"><title>span_marker · local · free
+F1 0.7674 · rank 1/28
+billed $0.0000 for 280 items</title></circle><circle cx="280.3" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+F1 0.6864 · rank 2/28
+billed $0.6507 for 280 items"><title>openai_m · hosted · proprietary
+F1 0.6864 · rank 2/28
+billed $0.6507 for 280 items</title></circle><circle cx="266.4" cy="44" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+F1 0.6733 · rank 4/28
+billed $0.0088 for 280 items"><title>gemma_m · hosted · open weights
+F1 0.6733 · rank 4/28
+billed $0.0088 for 280 items</title></circle><circle cx="264.5" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+F1 0.6716 · rank 5/28
+billed $0.1715 for 280 items"><title>openai_l · hosted · proprietary
+F1 0.6716 · rank 5/28
+billed $0.1715 for 280 items</title></circle><circle cx="258.7" cy="44" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+F1 0.6661 · rank 6/28
+billed $0.2846 for 280 items"><title>anthropic_m · hosted · proprietary
+F1 0.6661 · rank 6/28
+billed $0.2846 for 280 items</title></circle><circle cx="257.5" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+F1 0.6650 · rank 7/28
+billed $0.0157 for 280 items"><title>qwen_s · hosted · proprietary
+F1 0.6650 · rank 7/28
+billed $0.0157 for 280 items</title></circle><circle cx="246.8" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+F1 0.6548 · rank 8/28
+billed $0.0396 for 280 items"><title>qwen_m · hosted · proprietary
+F1 0.6548 · rank 8/28
+billed $0.0396 for 280 items</title></circle><circle cx="239.7" cy="44" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+F1 0.6481 · rank 9/28
+billed $0.0134 for 280 items"><title>gemma_l · hosted · open weights
+F1 0.6481 · rank 9/28
+billed $0.0134 for 280 items</title></circle><circle cx="214.1" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+F1 0.6240 · rank 10/28
+billed $0.0722 for 280 items"><title>qwen_l · hosted · proprietary
+F1 0.6240 · rank 10/28
+billed $0.0722 for 280 items</title></circle><circle cx="204.3" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+F1 0.6148 · rank 11/28
+billed $0.0200 for 280 items"><title>deepseek_m · hosted · open weights
+F1 0.6148 · rank 11/28
+billed $0.0200 for 280 items</title></circle><circle cx="187.6" cy="44" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+F1 0.5990 · rank 12/28
+billed $0.0176 for 280 items"><title>llama_l · hosted · open weights
+F1 0.5990 · rank 12/28
+billed $0.0176 for 280 items</title></circle><circle cx="186.4" cy="44" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+F1 0.5979 · rank 13/28
+billed $0.0419 for 280 items"><title>mistral_l · hosted · open weights
+F1 0.5979 · rank 13/28
+billed $0.0419 for 280 items</title></circle><circle cx="183.2" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+F1 0.5948 · rank 14/28
+billed $0.0784 for 280 items"><title>openai_s · hosted · proprietary
+F1 0.5948 · rank 14/28
+billed $0.0784 for 280 items</title></circle><circle cx="182.2" cy="44" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+F1 0.5939 · rank 15/28
+billed $0.0445 for 280 items"><title>glm_m · hosted · open weights
+F1 0.5939 · rank 15/28
+billed $0.0445 for 280 items</title></circle><circle cx="179.6" cy="44" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+F1 0.5914 · rank 16/28
+billed $0.0462 for 280 items"><title>mistral_m · hosted · proprietary
+F1 0.5914 · rank 16/28
+billed $0.0462 for 280 items</title></circle><circle cx="175.1" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+F1 0.5872 · rank 17/28
+billed $0.0853 for 280 items"><title>deepseek_l · hosted · open weights
+F1 0.5872 · rank 17/28
+billed $0.0853 for 280 items</title></circle><circle cx="172.0" cy="44" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+F1 0.5843 · rank 18/28
+billed $0.1552 for 280 items"><title>anthropic_s · hosted · proprietary
+F1 0.5843 · rank 18/28
+billed $0.1552 for 280 items</title></circle><circle cx="162.8" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+F1 0.5756 · rank 19/28
+billed $0.0091 for 280 items"><title>deepseek_s · hosted · open weights
+F1 0.5756 · rank 19/28
+billed $0.0091 for 280 items</title></circle><circle cx="161.1" cy="44" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+F1 0.5740 · rank 20/28
+billed $0.0194 for 280 items"><title>llama_m · hosted · open weights
+F1 0.5740 · rank 20/28
+billed $0.0194 for 280 items</title></circle><circle cx="155.4" cy="44" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+F1 0.5686 · rank 21/28
+billed $0.0103 for 280 items"><title>llama_s · hosted · open weights
+F1 0.5686 · rank 21/28
+billed $0.0103 for 280 items</title></circle><circle cx="152.8" cy="44" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+F1 0.5662 · rank 22/28
+billed $0.1023 for 280 items"><title>glm_l · hosted · open weights
+F1 0.5662 · rank 22/28
+billed $0.1023 for 280 items</title></circle><circle cx="138.8" cy="44" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+F1 0.5529 · rank 23/28
+billed $0.0194 for 280 items"><title>glm_s · hosted · open weights
+F1 0.5529 · rank 23/28
+billed $0.0194 for 280 items</title></circle><circle cx="135.7" cy="44" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+F1 0.5500 · rank 24/28
+billed $0.0093 for 280 items"><title>gemma_s · hosted · open weights
+F1 0.5500 · rank 24/28
+billed $0.0093 for 280 items</title></circle><circle cx="108.4" cy="44" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+F1 0.5243 · rank 25/28
+billed $0.0076 for 280 items"><title>mistral_s · hosted · open weights
+F1 0.5243 · rank 25/28
+billed $0.0076 for 280 items</title></circle><circle cx="33.9" cy="44" r="5.5" class="dot k-local" data-tip="gliner · local · free
+F1 0.4540 · rank 26/28
+billed $0.0000 for 280 items"><title>gliner · local · free
+F1 0.4540 · rank 26/28
+billed $0.0000 for 280 items</title></circle><circle cx="273.3" cy="44" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+F1 0.6798 · rank 3/28
+billed $0.6897 for 280 items"><title>anthropic_l · hosted · proprietary
+F1 0.6798 · rank 3/28
+billed $0.6897 for 280 items</title></circle><circle cx="273.3" cy="44" r="11" class="ring"/><text x="273.3" y="26" text-anchor="middle" class="t-ink" font-size="13">dearest · 3rd · 0.680</text><text x="366.1" y="74" text-anchor="end" class="t-ink" font-size="13">span_marker · 1st · 0.767</text></svg></div><figcaption>Each dot is one system, by F1. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span></div><svg viewBox="0 0 1000 440" role="img" aria-label="Few-NERD: cost against quality"><line x1="150.0" x2="150.0" y1="24" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="423.3" x2="423.3" y1="24" y2="390" class="grid"/><text x="423.3" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="696.7" x2="696.7" y1="24" y2="390" class="grid"/><text x="696.7" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="24" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="364.8" y2="364.8" class="grid"/><text x="34" y="368.8" text-anchor="end" class="t-muted" font-size="10">0.454</text><line x1="40" x2="970" y1="207.0" y2="207.0" class="grid"/><text x="34" y="211.0" text-anchor="end" class="t-muted" font-size="10">0.611</text><line x1="40" x2="970" y1="49.2" y2="49.2" class="grid"/><text x="34" y="53.2" text-anchor="end" class="t-muted" font-size="10">0.767</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="24" y2="390" class="axis"/><circle cx="76" cy="49.2" r="6" class="dot k-local" data-tip="span_marker · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="Few-NERD: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="423.3" x2="423.3" y1="34" y2="390" class="grid"/><text x="423.3" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="696.7" x2="696.7" y1="34" y2="390" class="grid"/><text x="696.7" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="34" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="365.4" y2="365.4" class="grid"/><text x="34" y="369.4" text-anchor="end" class="t-muted" font-size="10">0.454</text><line x1="40" x2="970" y1="212.0" y2="212.0" class="grid"/><text x="34" y="216.0" text-anchor="end" class="t-muted" font-size="10">0.611</text><line x1="40" x2="970" y1="58.6" y2="58.6" class="grid"/><text x="34" y="62.6" text-anchor="end" class="t-muted" font-size="10">0.767</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ F1</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="390" class="axis"/><circle cx="76" cy="58.6" r="6" class="dot k-local" data-tip="span_marker · local · free
 F1 0.7674 · $0"><title>span_marker · local · free
-F1 0.7674 · $0</title></circle><circle cx="76" cy="364.8" r="6" class="dot k-local" data-tip="gliner · local · free
+F1 0.7674 · $0</title></circle><circle cx="76" cy="365.4" r="6" class="dot k-local" data-tip="gliner · local · free
 F1 0.4540 · $0"><title>gliner · local · free
-F1 0.4540 · $0</title></circle><circle cx="796.8" cy="130.7" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+F1 0.4540 · $0</title></circle><circle cx="796.8" cy="137.8" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
 F1 0.6864
 $2.32 per 1,000 items"><title>openai_m · hosted · proprietary
 F1 0.6864
-$2.32 per 1,000 items</title></circle><circle cx="803.7" cy="137.4" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+$2.32 per 1,000 items</title></circle><circle cx="803.7" cy="144.3" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
 F1 0.6798
 $2.46 per 1,000 items"><title>anthropic_l · hosted · proprietary
 F1 0.6798
-$2.46 per 1,000 items</title></circle><circle cx="286.4" cy="144.0" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+$2.46 per 1,000 items</title></circle><circle cx="286.4" cy="150.7" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
 F1 0.6733
 $0.0315 per 1,000 items"><title>gemma_m · hosted · open weights
 F1 0.6733
-$0.0315 per 1,000 items</title></circle><circle cx="638.5" cy="145.7" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+$0.0315 per 1,000 items</title></circle><circle cx="638.5" cy="152.4" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
 F1 0.6716
 $0.6125 per 1,000 items"><title>openai_l · hosted · proprietary
 F1 0.6716
-$0.6125 per 1,000 items</title></circle><circle cx="698.6" cy="151.3" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+$0.6125 per 1,000 items</title></circle><circle cx="698.6" cy="157.8" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
 F1 0.6661
 $1.02 per 1,000 items"><title>anthropic_m · hosted · proprietary
 F1 0.6661
-$1.02 per 1,000 items</title></circle><circle cx="354.4" cy="152.3" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+$1.02 per 1,000 items</title></circle><circle cx="354.4" cy="158.8" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
 F1 0.6650
 $0.0560 per 1,000 items"><title>qwen_s · hosted · proprietary
 F1 0.6650
-$0.0560 per 1,000 items</title></circle><circle cx="464.6" cy="162.6" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+$0.0560 per 1,000 items</title></circle><circle cx="464.6" cy="168.8" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
 F1 0.6548
 $0.1415 per 1,000 items"><title>qwen_m · hosted · proprietary
 F1 0.6548
-$0.1415 per 1,000 items</title></circle><circle cx="336.2" cy="169.3" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+$0.1415 per 1,000 items</title></circle><circle cx="336.2" cy="175.3" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
 F1 0.6481
 $0.0480 per 1,000 items"><title>gemma_l · hosted · open weights
 F1 0.6481
-$0.0480 per 1,000 items</title></circle><circle cx="535.8" cy="193.6" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+$0.0480 per 1,000 items</title></circle><circle cx="535.8" cy="199.0" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
 F1 0.6240
 $0.2579 per 1,000 items"><title>qwen_l · hosted · proprietary
 F1 0.6240
-$0.2579 per 1,000 items</title></circle><circle cx="383.1" cy="202.9" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+$0.2579 per 1,000 items</title></circle><circle cx="383.1" cy="208.0" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
 F1 0.6148
 $0.0713 per 1,000 items"><title>deepseek_m · hosted · open weights
 F1 0.6148
-$0.0713 per 1,000 items</title></circle><circle cx="368.3" cy="218.8" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+$0.0713 per 1,000 items</title></circle><circle cx="368.3" cy="223.5" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
 F1 0.5990
 $0.0629 per 1,000 items"><title>llama_l · hosted · open weights
 F1 0.5990
-$0.0629 per 1,000 items</title></circle><circle cx="471.1" cy="219.9" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
+$0.0629 per 1,000 items</title></circle><circle cx="471.1" cy="224.5" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
 F1 0.5979
 $0.1495 per 1,000 items"><title>mistral_l · hosted · open weights
 F1 0.5979
-$0.1495 per 1,000 items</title></circle><circle cx="545.6" cy="223.0" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+$0.1495 per 1,000 items</title></circle><circle cx="545.6" cy="227.5" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
 F1 0.5948
 $0.2801 per 1,000 items"><title>openai_s · hosted · proprietary
 F1 0.5948
-$0.2801 per 1,000 items</title></circle><circle cx="478.3" cy="223.9" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+$0.2801 per 1,000 items</title></circle><circle cx="478.3" cy="228.4" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
 F1 0.5939
 $0.1589 per 1,000 items"><title>glm_m · hosted · open weights
 F1 0.5939
-$0.1589 per 1,000 items</title></circle><circle cx="482.8" cy="226.4" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+$0.1589 per 1,000 items</title></circle><circle cx="482.8" cy="230.9" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
 F1 0.5914
 $0.1650 per 1,000 items"><title>mistral_m · hosted · proprietary
 F1 0.5914
-$0.1650 per 1,000 items</title></circle><circle cx="555.6" cy="230.7" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+$0.1650 per 1,000 items</title></circle><circle cx="555.6" cy="235.0" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
 F1 0.5872
 $0.3046 per 1,000 items"><title>deepseek_l · hosted · open weights
 F1 0.5872
-$0.3046 per 1,000 items</title></circle><circle cx="626.6" cy="233.6" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+$0.3046 per 1,000 items</title></circle><circle cx="626.6" cy="237.9" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
 F1 0.5843
 $0.5541 per 1,000 items"><title>anthropic_s · hosted · proprietary
 F1 0.5843
-$0.5541 per 1,000 items</title></circle><circle cx="289.6" cy="242.3" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+$0.5541 per 1,000 items</title></circle><circle cx="289.6" cy="246.3" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
 F1 0.5756
 $0.0324 per 1,000 items"><title>deepseek_s · hosted · open weights
 F1 0.5756
-$0.0324 per 1,000 items</title></circle><circle cx="379.5" cy="244.0" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+$0.0324 per 1,000 items</title></circle><circle cx="379.5" cy="248.0" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
 F1 0.5740
 $0.0691 per 1,000 items"><title>llama_m · hosted · open weights
 F1 0.5740
-$0.0691 per 1,000 items</title></circle><circle cx="305.1" cy="249.3" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+$0.0691 per 1,000 items</title></circle><circle cx="305.1" cy="253.2" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
 F1 0.5686
 $0.0369 per 1,000 items"><title>llama_s · hosted · open weights
 F1 0.5686
-$0.0369 per 1,000 items</title></circle><circle cx="577.2" cy="251.8" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
+$0.0369 per 1,000 items</title></circle><circle cx="577.2" cy="255.6" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
 F1 0.5662
 $0.3654 per 1,000 items"><title>glm_l · hosted · open weights
 F1 0.5662
-$0.3654 per 1,000 items</title></circle><circle cx="379.6" cy="265.2" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+$0.3654 per 1,000 items</title></circle><circle cx="379.6" cy="268.6" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
 F1 0.5529
 $0.0692 per 1,000 items"><title>glm_s · hosted · open weights
 F1 0.5529
-$0.0692 per 1,000 items</title></circle><circle cx="293.0" cy="268.1" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+$0.0692 per 1,000 items</title></circle><circle cx="293.0" cy="271.4" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
 F1 0.5500
 $0.0333 per 1,000 items"><title>gemma_s · hosted · open weights
 F1 0.5500
-$0.0333 per 1,000 items</title></circle><circle cx="269.2" cy="294.0" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+$0.0333 per 1,000 items</title></circle><circle cx="269.2" cy="296.6" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
 F1 0.5243
 $0.0273 per 1,000 items"><title>mistral_s · hosted · open weights
 F1 0.5243
-$0.0273 per 1,000 items</title></circle><circle cx="803.7" cy="137.4" r="11" class="ring"/><text x="789.7" y="141.4" text-anchor="end" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="90.0" y="53.2" class="t-ink" font-size="11">span_marker · 1st</text></svg><figcaption>Billed cost per 1,000 items, read from the provider's response, against F1. Free models sit in the left lane.</figcaption></div>
+$0.0273 per 1,000 items</title></circle><circle cx="803.7" cy="144.3" r="11" class="ring"/><text x="789.7" y="148.3" text-anchor="end" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="76.0" y="44.6" text-anchor="middle" class="t-ink" font-size="11">span_marker · 1st</text></svg></div><div class="vn"><svg viewBox="0 0 400 400" role="img" aria-label="Few-NERD: cost against quality"><line x1="134.0" x2="134.0" y1="34" y2="350" class="grid"/><text x="134.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.01</text><line x1="218.0" x2="218.0" y1="34" y2="350" class="grid"/><text x="218.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.1</text><line x1="302.0" x2="302.0" y1="34" y2="350" class="grid"/><text x="302.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$1</text><line x1="386.0" x2="386.0" y1="34" y2="350" class="grid"/><text x="386.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$10</text><line x1="52" x2="386" y1="328.2" y2="328.2" class="grid"/><text x="46" y="332.2" text-anchor="end" class="t-muted" font-size="12">0.454</text><line x1="52" x2="386" y1="192.0" y2="192.0" class="grid"/><text x="46" y="196.0" text-anchor="end" class="t-muted" font-size="12">0.611</text><line x1="52" x2="386" y1="55.8" y2="55.8" class="grid"/><text x="46" y="59.8" text-anchor="end" class="t-muted" font-size="12">0.767</text><text x="260" y="394" text-anchor="middle" class="t-muted" font-size="13">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="13">↑ F1</text><text x="88" y="370" text-anchor="middle" class="t-muted" font-size="12">free</text><line x1="104" x2="104" y1="34" y2="350" class="axis"/><circle cx="88" cy="55.8" r="6" class="dot k-local" data-tip="span_marker · local · free
+F1 0.7674 · $0"><title>span_marker · local · free
+F1 0.7674 · $0</title></circle><circle cx="88" cy="328.2" r="6" class="dot k-local" data-tip="gliner · local · free
+F1 0.4540 · $0"><title>gliner · local · free
+F1 0.4540 · $0</title></circle><circle cx="332.8" cy="126.2" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+F1 0.6864
+$2.32 per 1,000 items"><title>openai_m · hosted · proprietary
+F1 0.6864
+$2.32 per 1,000 items</title></circle><circle cx="334.9" cy="131.9" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+F1 0.6798
+$2.46 per 1,000 items"><title>anthropic_l · hosted · proprietary
+F1 0.6798
+$2.46 per 1,000 items</title></circle><circle cx="175.9" cy="137.6" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+F1 0.6733
+$0.0315 per 1,000 items"><title>gemma_m · hosted · open weights
+F1 0.6733
+$0.0315 per 1,000 items</title></circle><circle cx="284.1" cy="139.1" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+F1 0.6716
+$0.6125 per 1,000 items"><title>openai_l · hosted · proprietary
+F1 0.6716
+$0.6125 per 1,000 items</title></circle><circle cx="302.6" cy="143.9" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+F1 0.6661
+$1.02 per 1,000 items"><title>anthropic_m · hosted · proprietary
+F1 0.6661
+$1.02 per 1,000 items</title></circle><circle cx="196.8" cy="144.8" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+F1 0.6650
+$0.0560 per 1,000 items"><title>qwen_s · hosted · proprietary
+F1 0.6650
+$0.0560 per 1,000 items</title></circle><circle cx="230.7" cy="153.6" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+F1 0.6548
+$0.1415 per 1,000 items"><title>qwen_m · hosted · proprietary
+F1 0.6548
+$0.1415 per 1,000 items</title></circle><circle cx="191.2" cy="159.5" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+F1 0.6481
+$0.0480 per 1,000 items"><title>gemma_l · hosted · open weights
+F1 0.6481
+$0.0480 per 1,000 items</title></circle><circle cx="252.6" cy="180.4" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+F1 0.6240
+$0.2579 per 1,000 items"><title>qwen_l · hosted · proprietary
+F1 0.6240
+$0.2579 per 1,000 items</title></circle><circle cx="205.6" cy="188.5" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+F1 0.6148
+$0.0713 per 1,000 items"><title>deepseek_m · hosted · open weights
+F1 0.6148
+$0.0713 per 1,000 items</title></circle><circle cx="201.1" cy="202.2" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+F1 0.5990
+$0.0629 per 1,000 items"><title>llama_l · hosted · open weights
+F1 0.5990
+$0.0629 per 1,000 items</title></circle><circle cx="232.7" cy="203.1" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
+F1 0.5979
+$0.1495 per 1,000 items"><title>mistral_l · hosted · open weights
+F1 0.5979
+$0.1495 per 1,000 items</title></circle><circle cx="255.6" cy="205.8" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+F1 0.5948
+$0.2801 per 1,000 items"><title>openai_s · hosted · proprietary
+F1 0.5948
+$0.2801 per 1,000 items</title></circle><circle cx="234.9" cy="206.6" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+F1 0.5939
+$0.1589 per 1,000 items"><title>glm_m · hosted · open weights
+F1 0.5939
+$0.1589 per 1,000 items</title></circle><circle cx="236.3" cy="208.7" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+F1 0.5914
+$0.1650 per 1,000 items"><title>mistral_m · hosted · proprietary
+F1 0.5914
+$0.1650 per 1,000 items</title></circle><circle cx="258.6" cy="212.5" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+F1 0.5872
+$0.3046 per 1,000 items"><title>deepseek_l · hosted · open weights
+F1 0.5872
+$0.3046 per 1,000 items</title></circle><circle cx="280.5" cy="214.9" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+F1 0.5843
+$0.5541 per 1,000 items"><title>anthropic_s · hosted · proprietary
+F1 0.5843
+$0.5541 per 1,000 items</title></circle><circle cx="176.9" cy="222.5" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+F1 0.5756
+$0.0324 per 1,000 items"><title>deepseek_s · hosted · open weights
+F1 0.5756
+$0.0324 per 1,000 items</title></circle><circle cx="204.5" cy="223.9" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+F1 0.5740
+$0.0691 per 1,000 items"><title>llama_m · hosted · open weights
+F1 0.5740
+$0.0691 per 1,000 items</title></circle><circle cx="181.7" cy="228.5" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+F1 0.5686
+$0.0369 per 1,000 items"><title>llama_s · hosted · open weights
+F1 0.5686
+$0.0369 per 1,000 items</title></circle><circle cx="265.3" cy="230.7" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
+F1 0.5662
+$0.3654 per 1,000 items"><title>glm_l · hosted · open weights
+F1 0.5662
+$0.3654 per 1,000 items</title></circle><circle cx="204.6" cy="242.2" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+F1 0.5529
+$0.0692 per 1,000 items"><title>glm_s · hosted · open weights
+F1 0.5529
+$0.0692 per 1,000 items</title></circle><circle cx="177.9" cy="244.8" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+F1 0.5500
+$0.0333 per 1,000 items"><title>gemma_s · hosted · open weights
+F1 0.5500
+$0.0333 per 1,000 items</title></circle><circle cx="170.6" cy="267.1" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+F1 0.5243
+$0.0273 per 1,000 items"><title>mistral_s · hosted · open weights
+F1 0.5243
+$0.0273 per 1,000 items</title></circle><circle cx="334.9" cy="131.9" r="11" class="ring"/><text x="320.9" y="135.9" text-anchor="end" class="t-ink" font-size="13">anthropic_l · dearest</text><text x="88.0" y="41.8" text-anchor="middle" class="t-ink" font-size="13">span_marker · 1st</text></svg></div><figcaption>Billed cost per 1,000 items, read from the provider's response, against F1. Free models sit in the left lane.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>

@@ -7,6 +7,12 @@
 <meta name="description" content="Summarise a news article in two or three sentences. A 1.6 GB fine-tune ties the best paid model — on CNN&#x27;s articles.">
 <meta property="og:title" content="Summarisation · CNN/DailyMail — eval-harness">
 <meta property="og:description" content="Summarise a news article in two or three sentences. A 1.6 GB fine-tune ties the best paid model — on CNN&#x27;s articles.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
 <script>
 (function(){var p=new URLSearchParams(location.search),t=p.get('theme');
@@ -28,12 +34,12 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <div class="kicker"><b>Summarisation</b> · CNN/DailyMail</div>
   <h1 style="max-width:16ch">A free model ties the frontier — on CNN&#x27;s news.</h1>
   <p class="dek">Summarise a news article in two or three sentences. A 1.6 GB fine-tune ties the best paid model — on CNN&#x27;s articles.</p>
-  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Summarise a news article in two or three short sentences, in a wire-service style.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the CNN/DailyMail test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">29 arms: 24 hosted, the rest local or baselines</div></div><div class="fact"><div class="k">Metric</div><div class="v">coverage — this repo&#x27;s own; see the protocol</div></div><div class="fact"><div class="k">Calibration</div><div class="v">LEAD-3, ROUGE-1 39.94 vs 40.34 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$5.74 for the whole sweep</div></div></div>
+  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Summarise a news article in two or three short sentences, in a wire-service style.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the CNN/DailyMail test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">29 compared: 24 hosted models billed per call; 5 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">coverage — how much of the reference summary&#x27;s wording the summary recovers, at the reference&#x27;s length (ROUGE-Lsum recall, clipped); this repo&#x27;s own, see the protocol. Higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">LEAD-3, ROUGE-1 39.94 vs 40.34 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$5.74 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_SUMMARIZATION.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../index.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span></div><svg viewBox="0 0 1000 80" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><rect x="759.0" y="28" width="173.8" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-local" data-tip="bart_l · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><rect x="759.0" y="28" width="173.8" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-local" data-tip="bart_l · local · free
 coverage 0.3461 · rank 1/29
 billed $0.0000 for 200 items"><title>bart_l · local · free
 coverage 0.3461 · rank 1/29
@@ -145,115 +151,331 @@ billed $0.0000 for 200 items</title></circle><circle cx="736.6" cy="50" r="7" cl
 coverage 0.3155 · rank 18/29
 billed $1.97 for 200 items"><title>anthropic_l · hosted · proprietary
 coverage 0.3155 · rank 18/29
-billed $1.97 for 200 items</title></circle><circle cx="736.6" cy="50" r="11" class="ring"/><text x="736.6" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 18th · 0.315</text><text x="924.8" y="78" text-anchor="end" class="t-ink" font-size="11">bart_l · 1st · 0.346</text></svg><figcaption>Each dot is one system, by coverage. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
+billed $1.97 for 200 items</title></circle><circle cx="736.6" cy="50" r="11" class="ring"/><text x="736.6" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 18th · 0.315</text><text x="924.8" y="80" text-anchor="end" class="t-ink" font-size="11">bart_l · 1st · 0.346</text></svg></div><div class="vn"><svg viewBox="0 0 400 90" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><rect x="296.7" y="22" width="77.4" height="44" rx="10" class="band"/><line x1="14" x2="386" y1="44" y2="44" class="axis"/><circle cx="366.1" cy="44" r="7" class="dot k-local" data-tip="bart_l · local · free
+coverage 0.3461 · rank 1/29
+billed $0.0000 for 200 items"><title>bart_l · local · free
+coverage 0.3461 · rank 1/29
+billed $0.0000 for 200 items</title></circle><circle cx="365.9" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+coverage 0.3460 · rank 2/29
+billed $0.0381 for 200 items"><title>deepseek_m · hosted · open weights
+coverage 0.3460 · rank 2/29
+billed $0.0381 for 200 items</title></circle><circle cx="348.2" cy="44" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+coverage 0.3387 · rank 3/29
+billed $0.0389 for 200 items"><title>llama_l · hosted · open weights
+coverage 0.3387 · rank 3/29
+billed $0.0389 for 200 items</title></circle><circle cx="347.2" cy="44" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+coverage 0.3382 · rank 4/29
+billed $0.0330 for 200 items"><title>llama_m · hosted · open weights
+coverage 0.3382 · rank 4/29
+billed $0.0330 for 200 items</title></circle><circle cx="343.5" cy="44" r="5.5" class="dot k-local" data-tip="bart_m · local · free
+coverage 0.3367 · rank 5/29
+billed $0.0000 for 200 items"><title>bart_m · local · free
+coverage 0.3367 · rank 5/29
+billed $0.0000 for 200 items</title></circle><circle cx="335.4" cy="44" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+coverage 0.3333 · rank 6/29
+billed $0.0222 for 200 items"><title>llama_s · hosted · open weights
+coverage 0.3333 · rank 6/29
+billed $0.0222 for 200 items</title></circle><circle cx="333.4" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+coverage 0.3325 · rank 7/29
+billed $0.1389 for 200 items"><title>deepseek_l · hosted · open weights
+coverage 0.3325 · rank 7/29
+billed $0.1389 for 200 items</title></circle><circle cx="332.2" cy="44" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+coverage 0.3320 · rank 8/29
+billed $0.0995 for 200 items"><title>glm_m · hosted · open weights
+coverage 0.3320 · rank 8/29
+billed $0.0995 for 200 items</title></circle><circle cx="323.9" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+coverage 0.3285 · rank 9/29
+billed $0.0137 for 200 items"><title>deepseek_s · hosted · open weights
+coverage 0.3285 · rank 9/29
+billed $0.0137 for 200 items</title></circle><circle cx="321.7" cy="44" r="5.5" class="dot k-local" data-tip="bart_s · local · free
+coverage 0.3276 · rank 10/29
+billed $0.0000 for 200 items"><title>bart_s · local · free
+coverage 0.3276 · rank 10/29
+billed $0.0000 for 200 items</title></circle><circle cx="319.9" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+coverage 0.3268 · rank 11/29
+billed $1.07 for 200 items"><title>openai_m · hosted · proprietary
+coverage 0.3268 · rank 11/29
+billed $1.07 for 200 items</title></circle><circle cx="319.8" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+coverage 0.3268 · rank 12/29
+billed $0.4362 for 200 items"><title>openai_l · hosted · proprietary
+coverage 0.3268 · rank 12/29
+billed $0.4362 for 200 items</title></circle><circle cx="316.9" cy="44" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+coverage 0.3255 · rank 13/29
+billed $0.0179 for 200 items"><title>mistral_s · hosted · open weights
+coverage 0.3255 · rank 13/29
+billed $0.0179 for 200 items</title></circle><circle cx="312.8" cy="44" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+coverage 0.3238 · rank 14/29
+billed $0.2611 for 200 items"><title>anthropic_s · hosted · proprietary
+coverage 0.3238 · rank 14/29
+billed $0.2611 for 200 items</title></circle><circle cx="312.3" cy="44" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+coverage 0.3236 · rank 15/29
+billed $0.7478 for 200 items"><title>anthropic_m · hosted · proprietary
+coverage 0.3236 · rank 15/29
+billed $0.7478 for 200 items</title></circle><circle cx="304.7" cy="44" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+coverage 0.3204 · rank 16/29
+billed $0.0237 for 200 items"><title>gemma_l · hosted · open weights
+coverage 0.3204 · rank 16/29
+billed $0.0237 for 200 items</title></circle><circle cx="296.6" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+coverage 0.3171 · rank 17/29
+billed $0.1672 for 200 items"><title>openai_s · hosted · proprietary
+coverage 0.3171 · rank 17/29
+billed $0.1672 for 200 items</title></circle><circle cx="289.2" cy="44" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+coverage 0.3139 · rank 19/29
+billed $0.0304 for 200 items"><title>glm_s · hosted · open weights
+coverage 0.3139 · rank 19/29
+billed $0.0304 for 200 items</title></circle><circle cx="288.4" cy="44" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+coverage 0.3136 · rank 20/29
+billed $0.0154 for 200 items"><title>gemma_m · hosted · open weights
+coverage 0.3136 · rank 20/29
+billed $0.0154 for 200 items</title></circle><circle cx="285.5" cy="44" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+coverage 0.3124 · rank 21/29
+billed $0.1532 for 200 items"><title>glm_l · hosted · open weights
+coverage 0.3124 · rank 21/29
+billed $0.1532 for 200 items</title></circle><circle cx="284.4" cy="44" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+coverage 0.3120 · rank 22/29
+billed $0.0200 for 200 items"><title>gemma_s · hosted · open weights
+coverage 0.3120 · rank 22/29
+billed $0.0200 for 200 items</title></circle><circle cx="281.7" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+coverage 0.3108 · rank 23/29
+billed $0.1689 for 200 items"><title>qwen_l · hosted · proprietary
+coverage 0.3108 · rank 23/29
+billed $0.1689 for 200 items</title></circle><circle cx="274.9" cy="44" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+coverage 0.3080 · rank 24/29
+billed $0.0973 for 200 items"><title>mistral_l · hosted · open weights
+coverage 0.3080 · rank 24/29
+billed $0.0973 for 200 items</title></circle><circle cx="272.1" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+coverage 0.3068 · rank 25/29
+billed $0.0270 for 200 items"><title>qwen_s · hosted · proprietary
+coverage 0.3068 · rank 25/29
+billed $0.0270 for 200 items</title></circle><circle cx="266.1" cy="44" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+coverage 0.3043 · rank 26/29
+billed $0.0871 for 200 items"><title>mistral_m · hosted · proprietary
+coverage 0.3043 · rank 26/29
+billed $0.0871 for 200 items</title></circle><circle cx="263.0" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+coverage 0.3030 · rank 27/29
+billed $0.0661 for 200 items"><title>qwen_m · hosted · proprietary
+coverage 0.3030 · rank 27/29
+billed $0.0661 for 200 items</title></circle><circle cx="33.9" cy="44" r="5.5" class="dot k-local" data-tip="bart_l_xsum · local · free
+coverage 0.2071 · rank 29/29
+billed $0.0000 for 200 items"><title>bart_l_xsum · local · free
+coverage 0.2071 · rank 29/29
+billed $0.0000 for 200 items</title></circle><circle cx="292.8" cy="44" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+coverage 0.3155 · rank 18/29
+billed $1.97 for 200 items"><title>anthropic_l · hosted · proprietary
+coverage 0.3155 · rank 18/29
+billed $1.97 for 200 items</title></circle><circle cx="292.8" cy="44" r="11" class="ring"/><text x="292.8" y="26" text-anchor="middle" class="t-ink" font-size="13">dearest · 18th · 0.315</text><text x="366.1" y="74" text-anchor="end" class="t-ink" font-size="13">bart_l · 1st · 0.346</text></svg></div><figcaption>Each dot is one system, by coverage. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span></div><svg viewBox="0 0 1000 440" role="img" aria-label="CNN/DailyMail: cost against quality"><line x1="150.0" x2="150.0" y1="24" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="423.3" x2="423.3" y1="24" y2="390" class="grid"/><text x="423.3" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="696.7" x2="696.7" y1="24" y2="390" class="grid"/><text x="696.7" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="24" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="364.8" y2="364.8" class="grid"/><text x="34" y="368.8" text-anchor="end" class="t-muted" font-size="10">0.207</text><line x1="40" x2="970" y1="207.0" y2="207.0" class="grid"/><text x="34" y="211.0" text-anchor="end" class="t-muted" font-size="10">0.277</text><line x1="40" x2="970" y1="49.2" y2="49.2" class="grid"/><text x="34" y="53.2" text-anchor="end" class="t-muted" font-size="10">0.346</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="24" y2="390" class="axis"/><circle cx="76" cy="49.2" r="6" class="dot k-local" data-tip="bart_l · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="CNN/DailyMail: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="423.3" x2="423.3" y1="34" y2="390" class="grid"/><text x="423.3" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="696.7" x2="696.7" y1="34" y2="390" class="grid"/><text x="696.7" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="34" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="365.4" y2="365.4" class="grid"/><text x="34" y="369.4" text-anchor="end" class="t-muted" font-size="10">0.207</text><line x1="40" x2="970" y1="212.0" y2="212.0" class="grid"/><text x="34" y="216.0" text-anchor="end" class="t-muted" font-size="10">0.277</text><line x1="40" x2="970" y1="58.6" y2="58.6" class="grid"/><text x="34" y="62.6" text-anchor="end" class="t-muted" font-size="10">0.346</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ coverage</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="390" class="axis"/><circle cx="76" cy="58.6" r="6" class="dot k-local" data-tip="bart_l · local · free
 coverage 0.3461 · $0"><title>bart_l · local · free
-coverage 0.3461 · $0</title></circle><circle cx="76" cy="70.7" r="6" class="dot k-local" data-tip="bart_m · local · free
+coverage 0.3461 · $0</title></circle><circle cx="76" cy="79.4" r="6" class="dot k-local" data-tip="bart_m · local · free
 coverage 0.3367 · $0"><title>bart_m · local · free
-coverage 0.3367 · $0</title></circle><circle cx="76" cy="91.4" r="6" class="dot k-local" data-tip="bart_s · local · free
+coverage 0.3367 · $0</title></circle><circle cx="76" cy="99.5" r="6" class="dot k-local" data-tip="bart_s · local · free
 coverage 0.3276 · $0"><title>bart_s · local · free
-coverage 0.3276 · $0</title></circle><circle cx="76" cy="364.8" r="6" class="dot k-local" data-tip="bart_l_xsum · local · free
+coverage 0.3276 · $0</title></circle><circle cx="76" cy="365.4" r="6" class="dot k-local" data-tip="bart_l_xsum · local · free
 coverage 0.2071 · $0"><title>bart_l_xsum · local · free
-coverage 0.2071 · $0</title></circle><circle cx="499.9" cy="49.4" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+coverage 0.2071 · $0</title></circle><circle cx="499.9" cy="58.7" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
 coverage 0.3460
 $0.1905 per 1,000 items"><title>deepseek_m · hosted · open weights
 coverage 0.3460
-$0.1905 per 1,000 items</title></circle><circle cx="502.3" cy="66.2" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+$0.1905 per 1,000 items</title></circle><circle cx="502.3" cy="75.0" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
 coverage 0.3387
 $0.1946 per 1,000 items"><title>llama_l · hosted · open weights
 coverage 0.3387
-$0.1946 per 1,000 items</title></circle><circle cx="482.6" cy="67.2" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+$0.1946 per 1,000 items</title></circle><circle cx="482.6" cy="76.0" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
 coverage 0.3382
 $0.1648 per 1,000 items"><title>llama_m · hosted · open weights
 coverage 0.3382
-$0.1648 per 1,000 items</title></circle><circle cx="435.6" cy="78.4" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+$0.1648 per 1,000 items</title></circle><circle cx="435.6" cy="86.9" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
 coverage 0.3333
 $0.1109 per 1,000 items"><title>llama_s · hosted · open weights
 coverage 0.3333
-$0.1109 per 1,000 items</title></circle><circle cx="653.4" cy="80.3" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+$0.1109 per 1,000 items</title></circle><circle cx="653.4" cy="88.7" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
 coverage 0.3325
 $0.6945 per 1,000 items"><title>deepseek_l · hosted · open weights
 coverage 0.3325
-$0.6945 per 1,000 items</title></circle><circle cx="613.8" cy="81.4" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+$0.6945 per 1,000 items</title></circle><circle cx="613.8" cy="89.8" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
 coverage 0.3320
 $0.4974 per 1,000 items"><title>glm_m · hosted · open weights
 coverage 0.3320
-$0.4974 per 1,000 items</title></circle><circle cx="378.7" cy="89.3" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+$0.4974 per 1,000 items</title></circle><circle cx="378.7" cy="97.5" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
 coverage 0.3285
 $0.0686 per 1,000 items"><title>deepseek_s · hosted · open weights
 coverage 0.3285
-$0.0686 per 1,000 items</title></circle><circle cx="895.9" cy="93.1" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+$0.0686 per 1,000 items</title></circle><circle cx="895.9" cy="101.2" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
 coverage 0.3268
 $5.36 per 1,000 items"><title>openai_m · hosted · proprietary
 coverage 0.3268
-$5.36 per 1,000 items</title></circle><circle cx="789.2" cy="93.2" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+$5.36 per 1,000 items</title></circle><circle cx="789.2" cy="101.3" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
 coverage 0.3268
 $2.18 per 1,000 items"><title>openai_l · hosted · proprietary
 coverage 0.3268
-$2.18 per 1,000 items</title></circle><circle cx="410.0" cy="95.9" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+$2.18 per 1,000 items</title></circle><circle cx="410.0" cy="104.0" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
 coverage 0.3255
 $0.0894 per 1,000 items"><title>mistral_s · hosted · open weights
 coverage 0.3255
-$0.0894 per 1,000 items</title></circle><circle cx="728.3" cy="99.8" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+$0.0894 per 1,000 items</title></circle><circle cx="728.3" cy="107.7" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
 coverage 0.3238
 $1.31 per 1,000 items"><title>anthropic_s · hosted · proprietary
 coverage 0.3238
-$1.31 per 1,000 items</title></circle><circle cx="853.2" cy="100.4" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+$1.31 per 1,000 items</title></circle><circle cx="853.2" cy="108.3" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
 coverage 0.3236
 $3.74 per 1,000 items"><title>anthropic_m · hosted · proprietary
 coverage 0.3236
-$3.74 per 1,000 items</title></circle><circle cx="443.5" cy="107.6" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+$3.74 per 1,000 items</title></circle><circle cx="443.5" cy="115.3" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
 coverage 0.3204
 $0.1185 per 1,000 items"><title>gemma_l · hosted · open weights
 coverage 0.3204
-$0.1185 per 1,000 items</title></circle><circle cx="675.4" cy="115.2" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+$0.1185 per 1,000 items</title></circle><circle cx="675.4" cy="122.7" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
 coverage 0.3171
 $0.8361 per 1,000 items"><title>openai_s · hosted · proprietary
 coverage 0.3171
-$0.8361 per 1,000 items</title></circle><circle cx="967.9" cy="118.8" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+$0.8361 per 1,000 items</title></circle><circle cx="967.9" cy="126.2" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
 coverage 0.3155
 $9.83 per 1,000 items"><title>anthropic_l · hosted · proprietary
 coverage 0.3155
-$9.83 per 1,000 items</title></circle><circle cx="472.9" cy="122.3" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+$9.83 per 1,000 items</title></circle><circle cx="472.9" cy="129.6" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
 coverage 0.3139
 $0.1519 per 1,000 items"><title>glm_s · hosted · open weights
 coverage 0.3139
-$0.1519 per 1,000 items</title></circle><circle cx="392.2" cy="123.1" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+$0.1519 per 1,000 items</title></circle><circle cx="392.2" cy="130.4" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
 coverage 0.3136
 $0.0769 per 1,000 items"><title>gemma_m · hosted · open weights
 coverage 0.3136
-$0.0769 per 1,000 items</title></circle><circle cx="665.0" cy="125.8" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
+$0.0769 per 1,000 items</title></circle><circle cx="665.0" cy="133.0" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
 coverage 0.3124
 $0.7661 per 1,000 items"><title>glm_l · hosted · open weights
 coverage 0.3124
-$0.7661 per 1,000 items</title></circle><circle cx="423.4" cy="126.8" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+$0.7661 per 1,000 items</title></circle><circle cx="423.4" cy="134.0" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
 coverage 0.3120
 $0.1001 per 1,000 items"><title>gemma_s · hosted · open weights
 coverage 0.3120
-$0.1001 per 1,000 items</title></circle><circle cx="676.6" cy="129.4" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+$0.1001 per 1,000 items</title></circle><circle cx="676.6" cy="136.5" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
 coverage 0.3108
 $0.8444 per 1,000 items"><title>qwen_l · hosted · proprietary
 coverage 0.3108
-$0.8444 per 1,000 items</title></circle><circle cx="611.1" cy="135.8" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
+$0.8444 per 1,000 items</title></circle><circle cx="611.1" cy="142.8" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
 coverage 0.3080
 $0.4865 per 1,000 items"><title>mistral_l · hosted · open weights
 coverage 0.3080
-$0.4865 per 1,000 items</title></circle><circle cx="459.1" cy="138.5" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+$0.4865 per 1,000 items</title></circle><circle cx="459.1" cy="145.4" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
 coverage 0.3068
 $0.1351 per 1,000 items"><title>qwen_s · hosted · proprietary
 coverage 0.3068
-$0.1351 per 1,000 items</title></circle><circle cx="597.9" cy="144.2" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+$0.1351 per 1,000 items</title></circle><circle cx="597.9" cy="150.9" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
 coverage 0.3043
 $0.4353 per 1,000 items"><title>mistral_m · hosted · proprietary
 coverage 0.3043
-$0.4353 per 1,000 items</title></circle><circle cx="565.3" cy="147.1" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+$0.4353 per 1,000 items</title></circle><circle cx="565.3" cy="153.8" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
 coverage 0.3030
 $0.3307 per 1,000 items"><title>qwen_m · hosted · proprietary
 coverage 0.3030
-$0.3307 per 1,000 items</title></circle><circle cx="967.9" cy="118.8" r="11" class="ring"/><text x="953.9" y="122.8" text-anchor="end" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="90.0" y="53.2" class="t-ink" font-size="11">bart_l · 1st</text></svg><figcaption>Billed cost per 1,000 items, read from the provider's response, against coverage. Free models sit in the left lane.</figcaption></div>
+$0.3307 per 1,000 items</title></circle><circle cx="967.9" cy="126.2" r="11" class="ring"/><text x="953.9" y="130.2" text-anchor="end" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="76.0" y="44.6" text-anchor="middle" class="t-ink" font-size="11">bart_l · 1st</text></svg></div><div class="vn"><svg viewBox="0 0 400 400" role="img" aria-label="CNN/DailyMail: cost against quality"><line x1="134.0" x2="134.0" y1="34" y2="350" class="grid"/><text x="134.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.01</text><line x1="218.0" x2="218.0" y1="34" y2="350" class="grid"/><text x="218.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.1</text><line x1="302.0" x2="302.0" y1="34" y2="350" class="grid"/><text x="302.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$1</text><line x1="386.0" x2="386.0" y1="34" y2="350" class="grid"/><text x="386.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$10</text><line x1="52" x2="386" y1="328.2" y2="328.2" class="grid"/><text x="46" y="332.2" text-anchor="end" class="t-muted" font-size="12">0.207</text><line x1="52" x2="386" y1="192.0" y2="192.0" class="grid"/><text x="46" y="196.0" text-anchor="end" class="t-muted" font-size="12">0.277</text><line x1="52" x2="386" y1="55.8" y2="55.8" class="grid"/><text x="46" y="59.8" text-anchor="end" class="t-muted" font-size="12">0.346</text><text x="260" y="394" text-anchor="middle" class="t-muted" font-size="13">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="13">↑ coverage</text><text x="88" y="370" text-anchor="middle" class="t-muted" font-size="12">free</text><line x1="104" x2="104" y1="34" y2="350" class="axis"/><circle cx="88" cy="55.8" r="6" class="dot k-local" data-tip="bart_l · local · free
+coverage 0.3461 · $0"><title>bart_l · local · free
+coverage 0.3461 · $0</title></circle><circle cx="88" cy="74.3" r="6" class="dot k-local" data-tip="bart_m · local · free
+coverage 0.3367 · $0"><title>bart_m · local · free
+coverage 0.3367 · $0</title></circle><circle cx="88" cy="92.2" r="6" class="dot k-local" data-tip="bart_s · local · free
+coverage 0.3276 · $0"><title>bart_s · local · free
+coverage 0.3276 · $0</title></circle><circle cx="88" cy="328.2" r="6" class="dot k-local" data-tip="bart_l_xsum · local · free
+coverage 0.2071 · $0"><title>bart_l_xsum · local · free
+coverage 0.2071 · $0</title></circle><circle cx="241.5" cy="56.0" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+coverage 0.3460
+$0.1905 per 1,000 items"><title>deepseek_m · hosted · open weights
+coverage 0.3460
+$0.1905 per 1,000 items</title></circle><circle cx="242.3" cy="70.4" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+coverage 0.3387
+$0.1946 per 1,000 items"><title>llama_l · hosted · open weights
+coverage 0.3387
+$0.1946 per 1,000 items</title></circle><circle cx="236.2" cy="71.3" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+coverage 0.3382
+$0.1648 per 1,000 items"><title>llama_m · hosted · open weights
+coverage 0.3382
+$0.1648 per 1,000 items</title></circle><circle cx="221.8" cy="80.9" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+coverage 0.3333
+$0.1109 per 1,000 items"><title>llama_s · hosted · open weights
+coverage 0.3333
+$0.1109 per 1,000 items</title></circle><circle cx="288.7" cy="82.6" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+coverage 0.3325
+$0.6945 per 1,000 items"><title>deepseek_l · hosted · open weights
+coverage 0.3325
+$0.6945 per 1,000 items</title></circle><circle cx="276.5" cy="83.5" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+coverage 0.3320
+$0.4974 per 1,000 items"><title>glm_m · hosted · open weights
+coverage 0.3320
+$0.4974 per 1,000 items</title></circle><circle cx="204.3" cy="90.4" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+coverage 0.3285
+$0.0686 per 1,000 items"><title>deepseek_s · hosted · open weights
+coverage 0.3285
+$0.0686 per 1,000 items</title></circle><circle cx="363.2" cy="93.6" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+coverage 0.3268
+$5.36 per 1,000 items"><title>openai_m · hosted · proprietary
+coverage 0.3268
+$5.36 per 1,000 items</title></circle><circle cx="330.4" cy="93.7" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+coverage 0.3268
+$2.18 per 1,000 items"><title>openai_l · hosted · proprietary
+coverage 0.3268
+$2.18 per 1,000 items</title></circle><circle cx="213.9" cy="96.1" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+coverage 0.3255
+$0.0894 per 1,000 items"><title>mistral_s · hosted · open weights
+coverage 0.3255
+$0.0894 per 1,000 items</title></circle><circle cx="311.7" cy="99.5" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+coverage 0.3238
+$1.31 per 1,000 items"><title>anthropic_s · hosted · proprietary
+coverage 0.3238
+$1.31 per 1,000 items</title></circle><circle cx="350.1" cy="99.9" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+coverage 0.3236
+$3.74 per 1,000 items"><title>anthropic_m · hosted · proprietary
+coverage 0.3236
+$3.74 per 1,000 items</title></circle><circle cx="224.2" cy="106.1" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+coverage 0.3204
+$0.1185 per 1,000 items"><title>gemma_l · hosted · open weights
+coverage 0.3204
+$0.1185 per 1,000 items</title></circle><circle cx="295.5" cy="112.7" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+coverage 0.3171
+$0.8361 per 1,000 items"><title>openai_s · hosted · proprietary
+coverage 0.3171
+$0.8361 per 1,000 items</title></circle><circle cx="385.4" cy="115.9" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+coverage 0.3155
+$9.83 per 1,000 items"><title>anthropic_l · hosted · proprietary
+coverage 0.3155
+$9.83 per 1,000 items</title></circle><circle cx="233.2" cy="118.8" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+coverage 0.3139
+$0.1519 per 1,000 items"><title>glm_s · hosted · open weights
+coverage 0.3139
+$0.1519 per 1,000 items</title></circle><circle cx="208.4" cy="119.5" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+coverage 0.3136
+$0.0769 per 1,000 items"><title>gemma_m · hosted · open weights
+coverage 0.3136
+$0.0769 per 1,000 items</title></circle><circle cx="292.3" cy="121.9" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
+coverage 0.3124
+$0.7661 per 1,000 items"><title>glm_l · hosted · open weights
+coverage 0.3124
+$0.7661 per 1,000 items</title></circle><circle cx="218.0" cy="122.7" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+coverage 0.3120
+$0.1001 per 1,000 items"><title>gemma_s · hosted · open weights
+coverage 0.3120
+$0.1001 per 1,000 items</title></circle><circle cx="295.8" cy="125.0" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+coverage 0.3108
+$0.8444 per 1,000 items"><title>qwen_l · hosted · proprietary
+coverage 0.3108
+$0.8444 per 1,000 items</title></circle><circle cx="275.7" cy="130.6" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
+coverage 0.3080
+$0.4865 per 1,000 items"><title>mistral_l · hosted · open weights
+coverage 0.3080
+$0.4865 per 1,000 items</title></circle><circle cx="229.0" cy="132.9" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+coverage 0.3068
+$0.1351 per 1,000 items"><title>qwen_s · hosted · proprietary
+coverage 0.3068
+$0.1351 per 1,000 items</title></circle><circle cx="271.7" cy="137.8" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+coverage 0.3043
+$0.4353 per 1,000 items"><title>mistral_m · hosted · proprietary
+coverage 0.3043
+$0.4353 per 1,000 items</title></circle><circle cx="261.6" cy="140.3" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+coverage 0.3030
+$0.3307 per 1,000 items"><title>qwen_m · hosted · proprietary
+coverage 0.3030
+$0.3307 per 1,000 items</title></circle><circle cx="385.4" cy="115.9" r="11" class="ring"/><text x="371.4" y="119.9" text-anchor="end" class="t-ink" font-size="13">anthropic_l · dearest</text><text x="88.0" y="41.8" text-anchor="middle" class="t-ink" font-size="13">bart_l · 1st</text></svg></div><figcaption>Billed cost per 1,000 items, read from the provider's response, against coverage. Free models sit in the left lane.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
@@ -261,7 +483,7 @@ $0.3307 per 1,000 items</title></circle><circle cx="967.9" cy="118.8" r="11" cla
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
 <h2>Does it hold on DailyMail?</h2><div class="cols"><div class="prose"><p>The committed sample is all CNN. On 200 DailyMail articles drawn at random, the five local summarisers keep every verdict among themselves. The hosted models were not re-run there.</p></div>
-<figure class="chart"><svg viewBox="0 0 640 420" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="120" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text><text x="390" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text><line x1="120" x2="120" y1="36" y2="398" class="axis"/><line x1="390" x2="390" y1="36" y2="398" class="axis"/><text x="406" y="75.7" class="t-ink" font-size="14">bart_l, bart_m 0.443</text><text x="406" y="114.3" class="t-ink" font-size="14">bart_s 0.404</text><text x="406" y="148.2" class="t-ink" font-size="14">lead3 0.370</text><text x="406" y="363.2" class="t-ink" font-size="14">bart_l_xsum 0.152</text><text x="104" y="171.5" text-anchor="end" class="t-muted" font-size="13">0.346</text><text x="104" y="189.5" text-anchor="end" class="t-muted" font-size="13">0.337</text><text x="104" y="207.5" text-anchor="end" class="t-muted" font-size="13">0.328</text><text x="104" y="244.9" text-anchor="end" class="t-muted" font-size="13">0.272</text><text x="104" y="308.9" text-anchor="end" class="t-muted" font-size="13">0.207</text><line x1="120" y1="166.5" x2="390" y2="70.7" class="s-local" stroke-width="2"/><circle cx="120" cy="166.5" r="5.5" class="dot k-local" data-tip="bart_l
+<figure class="chart"><div class="vw"><svg viewBox="0 0 640 420" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="120" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text><text x="390" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text><line x1="120" x2="120" y1="36" y2="398" class="axis"/><line x1="390" x2="390" y1="36" y2="398" class="axis"/><text x="406" y="75.7" class="t-ink" font-size="14">bart_l, bart_m 0.443</text><text x="406" y="114.3" class="t-ink" font-size="14">bart_s 0.404</text><text x="406" y="148.2" class="t-ink" font-size="14">lead3 0.370</text><text x="406" y="363.2" class="t-ink" font-size="14">bart_l_xsum 0.152</text><text x="104" y="171.5" text-anchor="end" class="t-muted" font-size="13">0.346</text><text x="104" y="189.5" text-anchor="end" class="t-muted" font-size="13">0.337</text><text x="104" y="207.5" text-anchor="end" class="t-muted" font-size="13">0.328</text><text x="104" y="244.9" text-anchor="end" class="t-muted" font-size="13">0.272</text><text x="104" y="308.9" text-anchor="end" class="t-muted" font-size="13">0.207</text><line x1="120" y1="166.5" x2="390" y2="70.7" class="s-local" stroke-width="2"/><circle cx="120" cy="166.5" r="5.5" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><circle cx="390" cy="70.7" r="6" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
@@ -281,7 +503,27 @@ coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><line x1="120" y1
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="390" cy="358.2" r="6" class="dot k-local" data-tip="bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
-coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></figure></div></div></section>
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><div class="vn"><svg viewBox="0 0 400 380" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="64" y="20" text-anchor="middle" class="t-muted" font-size="15">CNN slice</text><text x="196" y="20" text-anchor="middle" class="t-muted" font-size="15">DailyMail slice</text><line x1="64" x2="64" y1="36" y2="364" class="axis"/><line x1="196" x2="196" y1="36" y2="364" class="axis"/><text x="212" y="73.1" class="t-ink" font-size="15">bart_l, bart_m 0.443</text><text x="212" y="107.9" class="t-ink" font-size="15">bart_s 0.404</text><text x="212" y="138.4" class="t-ink" font-size="15">lead3 0.370</text><text x="212" y="332.3" class="t-ink" font-size="15">bart_l_xsum 0.152</text><text x="48" y="159.4" text-anchor="end" class="t-muted" font-size="14">0.346</text><text x="48" y="177.4" text-anchor="end" class="t-muted" font-size="14">0.337</text><text x="48" y="195.4" text-anchor="end" class="t-muted" font-size="14">0.328</text><text x="48" y="225.7" text-anchor="end" class="t-muted" font-size="14">0.272</text><text x="48" y="283.4" text-anchor="end" class="t-muted" font-size="14">0.207</text><line x1="64" y1="154.4" x2="196" y2="68.1" class="s-local" stroke-width="2"/><circle cx="64" cy="154.4" r="5.5" class="dot k-local" data-tip="bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><circle cx="196" cy="68.1" r="6" class="dot k-local" data-tip="bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1="162.9" x2="196" y2="68.1" class="s-local" stroke-width="2"/><circle cx="64" cy="162.9" r="5.5" class="dot k-local" data-tip="bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><circle cx="196" cy="68.1" r="6" class="dot k-local" data-tip="bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1="171.0" x2="196" y2="103.0" class="s-local" stroke-width="2"/><circle cx="64" cy="171.0" r="5.5" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><circle cx="196" cy="103.0" r="6" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><line x1="64" y1="220.7" x2="196" y2="133.4" class="s-baseline" stroke-width="2"/><circle cx="64" cy="220.7" r="5.5" class="dot k-baseline" data-tip="lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><circle cx="196" cy="133.4" r="6" class="dot k-baseline" data-tip="lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><line x1="64" y1="278.4" x2="196" y2="327.3" class="s-local" stroke-width="2" stroke-dasharray="5 5"/><circle cx="64" cy="278.4" r="5.5" class="dot k-local" data-tip="bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="196" cy="327.3" r="6" class="dot k-local" data-tip="bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div></figure></div></div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">05</span>The method, here</div>
   <div class="lesson"><h2>The data is the instrument.</h2><p>The committed sample turned out to be all CNN's articles. A calibration row — copying the first three sentences on the full test set, against its published score — is what showed it.</p><a class="btn" href="../method.html#data">This habit, in the method →</a></div>
 </div></section>

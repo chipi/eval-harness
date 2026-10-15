@@ -55,9 +55,16 @@
 | **What should I not deploy?** | `anthropic_l` at **$9,826/month**. It ranks **18th of 29** (16th of 25 before the distilled arms, both of which beat it) and is 8.9% below free. |
 | **Does paying more help?** | **No.** Quality per 10× cost: **−0.4%**, correlation r = −0.07. Over 24 arms and a 143× price range, price carried no information. |
 | **How many arms are really tied at the top?** | **15 of the 28 others** — 13 paid arms and both distilled BARTs (was 13 of 25). The cheapest paid one is 143× cheaper than the dearest. |
-| **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 and it did pick the right winner here — but see the margin: 0.0001. |
+| **Is a pilot enough?** | ρ(20 articles, 200) = 0.722 over the arms the uncommitted dev run had (0.667 over the 24 hosted arms, §3.1b) and it did pick the right winner here — but see the margin: 0.0001. |
 | **Does it hold outside CNN?** | **For the local arms, yes; for the paid ones, unknown.** On 200 DailyMail articles the five local arms keep every verdict they had on CNN: `bart_l` beats LEAD-3 by +0.073 (CNN +0.074), `bart_m` ties `bart_l`, the XSum control is last (§3.7). The hosted arms were not re-run, so the price verdicts above are CNN-only. |
 | **Fine-tune or pay?** | **Cost only — and only if it is fine-tuned on text like yours.** `bart_l` (fine-tuned on this corpus) matches the best paid arm to 0.0001 and is free, but *slower* (11.0 s vs 1.6 s, both timed from the Mac); distilled, 1.5–1.8× faster than `bart_l` on one machine. The control is decisive: **the same architecture fine-tuned on XSum scores 0.2071 — last of 29, below LEAD-3**. What `bart_l` has is this corpus's house style, not summarisation. |
+
+*How to read this table: every bare score (0.3461, 0.3460, …) is `coverage` on the 200 CNN
+articles — 0 to 1, higher is better (§2 defines it); gaps such as "0.0078" are in the same
+units. **$/month** is what the provider billed for the 200-article run, scaled to 1M
+articles a month (`deepseek_m`: $0.0381 ÷ 200 × 1,000,000 ≈ $191). Times are mean seconds
+per article on the machine named; the hosted arms were timed from the Mac, through a local
+proxy.*
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
@@ -92,12 +99,17 @@ and on the literature-standard metric too. At n=20 that same comparison came bac
 "not separated"; the question was never unanswerable, twenty articles just could not
 answer it.
 
-| pre-registered pair | all 200 | 180 held out |
+| pre-registered pair | all 200 articles · Δ coverage, p | 180 held-out articles · Δ coverage, p |
 |---|---|---|
 | `deepseek_m` > `anthropic_l` (52× dearer) | +0.0306, p=0.0000 | +0.0308, p=0.0000 |
 | `deepseek_m` > `anthropic_m` (19.6×) | +0.0224, p=0.0006 | +0.0224, p=0.0010 |
 | `deepseek_m` > `openai_l` (11.4×) | +0.0193, p=0.0032 | +0.0171, p=0.0153 |
 | `deepseek_s` > `qwen_m` (control) | +0.0255, p=0.0000 | +0.0208, p=0.0003 |
+
+Δ is the first arm's `coverage` minus the second's (mean over articles; positive = the
+cheaper arm is ahead). p is the uncorrected two-sided sign-flip permutation p (20,000
+permutations); **p=0.0000 means p < 0.0001** — no permutation came close. The 180 held-out
+articles are the ones the n=20 run never saw.
 
 All four survive a Holm step-down on `coverage`, in both cuts. **$1.9652 buys 15th place among the 24 hosted arms;
 $0.0381 buys 1st.**
@@ -165,7 +177,7 @@ r=1 by design (with articles available, repeats are the wrong place to spend the
 budget), so it does not re-measure it.
 
 **Nine findings in this report's own history were retracted**, two caused by bugs in this
-harness's own scorer, and three more by the n=20 sample itself. §6 records them, because
+harness's own scorer, and two more by the n=20 sample itself. §6 records them, because
 the retraction rate measures how much of a first-pass eval is instrument rather than
 signal.
 
@@ -221,20 +233,22 @@ experiment cannot attribute any difference between tiers to model size, and does
 This is the part that decided the results, twice.
 
 **ROUGE F1 against a single reference is a length ranking in a quality costume.** Across
-these 24 arms, ρ(output words, precision) = **−0.73** and ρ(words, recall) = **+0.81**.
+these 24 arms in the n=20 run, ρ(output words, precision) = **−0.73** and ρ(words, recall)
+= **+0.81**; at n=200 the precision correlation is stronger still, **−0.84** (the
+`concision` row of the table below).
 Choosing recall over F1 does not remove the bias — it flips its sign. Any single-number
 quality claim on this task is substantially a claim about output length.
 
 So quality is carried by two facets chosen to pull in opposite directions:
 
-| facet | what it is | length bias |
-|---|---|---|
 All correlations below are **across the 24 arm means**, not across individual outputs —
 the same basis as the n=20 version of this table, so the two are comparable. (Pooled over
 all 4,800 outputs the same relationships are much weaker, because the article effect
 dominates any single row; that is a different quantity and is not what this table reports.)
+ρ is Spearman's rank correlation between an arm's mean summary length in words and its
+mean score on the facet: 0 means the facet ignores length, ±1 means it is a length ranking.
 
-| facet | what it is | length bias, n=200 | was, n=20 |
+| facet | what it is | length bias: ρ(output words, facet), n=200 | same ρ in the earlier n=20 run |
 |---|---|---|---|
 | **`coverage`** | rougeLsum **recall**, output clipped to that item's reference length | ρ(words) = **+0.07** | +0.28 |
 | **`concision`** | rougeLsum **precision**, whole output | ρ(words) = **−0.84** | −0.73 |
@@ -267,8 +281,12 @@ code and is not comparable to any published number.
 outputs were once read by hand and all 1440 declared clean.
 
 **Speed is machine-bound and not a model property.** The latency column mixes this
-machine, a local proxy, and the upstream provider. One value is a known artifact:
-`mistral_l`'s 16100 ms includes retry backoff from its rate-limited recovery run.
+machine, a local proxy, and the upstream provider, and it is a **mean**, so a few slow
+calls dominate it. Two values are mostly tail: `mistral_l`'s 11045 ms comes from 36 of its
+200 calls taking over 30 s (its median is 2272 ms), and `qwen_s`'s 25038 ms from 43 calls
+over 30 s (median 7855 ms). (This sentence used to quote 16100 ms for `mistral_l` and
+blame retry backoff; the committed run's mean is 11045 ms, and the harness times each
+attempt that succeeds, so its own retry backoff is not in it.)
 The local arms add a second machine: `bart_l` and `lead3` ran on a 12-core Intel Mac, the
 other three on a 4-core Linux container, which ran `bart_l` itself 1.7× faster. All five
 were re-timed on the Linux container alone, one at a time, and that is the table to compare
@@ -278,53 +296,67 @@ local arms on (below, and `data/runs-linux/README.md`).
 
 ## 3. Results
 
-All 24 arms, ranked by `coverage`. Costs are for one 200-article pass. `n20` is the arm's
-rank in the earlier 20-article run, over the same 24 arms.
+All 24 hosted arms, sorted by `coverage` (best first). Every score is 0 to 1 and higher is
+better: `coverage` is the primary facet, `concision`, `rougeLsum` and `rouge1` are defined
+in §2. `words / summary` is the mean output length (the references average 35). Cost is
+what the provider billed for the whole 200-article pass. Latency is the mean per article,
+timed from the Mac through a local proxy. `format flags / summary` is the mean number of
+the six format flags (§2) an output trips, so 0 is clean and 0.93 means `mistral_l`
+averages almost one flag per summary. The last column is the arm's rank among these 24 in
+the earlier 20-article run, then in this one. **Bold** marks each column's extreme: the
+best score, the fewest words and the fastest time — but in the cost and flags columns the
+*worst* (dearest, most flagged) — and, in the rank column, the three moves of 8 or more
+places named in the text.
 
-| arm | coverage | concision | rougeLsum | rouge1 | words | $/200 | ms | flags | n20 → n200 |
+| arm | coverage | concision | rougeLsum | rouge1 | words / summary | billed $/200 articles | ms / article (mean) | format flags / summary | rank: n=20 → n=200 |
 |---|---|---|---|---|---|---|---|---|---|
-| deepseek_m | **0.3460** | 0.2539 | 0.3188 | 0.3612 | 57 | 0.0381 | 1595 | 0.01 | 1 → 1 |
-| llama_l | 0.3387 | 0.2714 | **0.3221** | **0.3636** | 49 | 0.0389 | 3473 | 0.00 | 3 → 2 |
-| llama_m | 0.3382 | 0.2616 | 0.3098 | 0.3477 | 49 | 0.0330 | 4045 | 0.01 | 5 → 3 |
-| llama_s | 0.3333 | 0.2475 | 0.3081 | 0.3526 | 56 | 0.0222 | 2388 | 0.01 | **16 → 4** |
-| deepseek_l | 0.3325 | 0.2595 | 0.3116 | 0.3547 | 50 | 0.1389 | 2665 | 0.00 | 10 → 5 |
-| glm_m | 0.3320 | 0.2566 | 0.3080 | 0.3517 | 50 | 0.0995 | 3230 | 0.01 | 13 → 6 |
-| deepseek_s | 0.3285 | 0.2628 | 0.3081 | 0.3504 | 48 | 0.0137 | 2753 | 0.01 | **2 → 7** |
-| openai_m | 0.3268 | 0.2787 | 0.3122 | 0.3599 | 42 | 1.0717 | 1745 | 0.00 | 11 → 8 |
-| openai_l | 0.3268 | **0.2800** | 0.3151 | 0.3620 | 42 | 0.4362 | 1775 | 0.01 | 12 → 9 |
-| mistral_s | 0.3255 | 0.2346 | 0.2895 | 0.3285 | 54 | 0.0179 | 2820 | 0.18 | 6 → 10 |
-| anthropic_s | 0.3238 | 0.2084 | 0.2815 | 0.3259 | 71 | 0.2611 | 2025 | 0.08 | 8 → 11 |
-| anthropic_m | 0.3236 | 0.2207 | 0.2903 | 0.3347 | 64 | 0.7478 | 3034 | 0.03 | **4 → 12** |
-| gemma_l | 0.3204 | 0.2739 | 0.3086 | 0.3511 | 42 | 0.0237 | 2591 | 0.00 | 17 → 13 |
-| openai_s | 0.3171 | 0.2508 | 0.2977 | 0.3506 | 48 | 0.1672 | **1277** | 0.01 | 18 → 14 |
-| anthropic_l | 0.3155 | 0.2092 | 0.2878 | 0.3289 | 75 | **1.9652** | 3402 | 0.23 | **9 → 15** |
-| glm_s | 0.3139 | **0.2800** | 0.3012 | 0.3489 | **39** | 0.0304 | 1610 | 0.00 | 21 → 16 |
-| gemma_m | 0.3136 | 0.2661 | 0.3016 | 0.3442 | 44 | 0.0154 | 1873 | 0.00 | 22 → 17 |
-| glm_l | 0.3124 | 0.2456 | 0.2939 | 0.3334 | 65 | 0.1532 | 5689 | 0.38 | 14 → 18 |
-| gemma_s | 0.3120 | 0.2328 | 0.2835 | 0.3215 | 53 | 0.0200 | 6956 | 0.01 | 20 → 19 |
-| qwen_l | 0.3108 | 0.2309 | 0.2803 | 0.3309 | 55 | 0.1689 | 2945 | 0.01 | 15 → 20 |
-| mistral_l | 0.3080 | 0.2356 | 0.2798 | 0.3188 | 48 | 0.0973 | 11045 | **0.93** | 24 → 21 |
-| qwen_s | 0.3068 | 0.2600 | 0.2874 | 0.3360 | 43 | 0.0270 | 25038 | 0.00 | **7 → 22** |
-| mistral_m | 0.3043 | 0.2507 | 0.2806 | 0.3197 | 43 | 0.0871 | 2654 | 0.01 | 19 → 23 |
-| qwen_m | 0.3030 | 0.2206 | 0.2737 | 0.3164 | 57 | 0.0661 | 1534 | 0.00 | 23 → 24 |
+| deepseek_m | **0.3460** | 0.2539 | 0.3188 | 0.3612 | 57 | $0.0381 | 1595 | 0.01 | 1 → 1 |
+| llama_l | 0.3387 | 0.2714 | **0.3221** | **0.3636** | 49 | $0.0389 | 3473 | 0.00 | 3 → 2 |
+| llama_m | 0.3382 | 0.2616 | 0.3098 | 0.3477 | 49 | $0.0330 | 4045 | 0.01 | 5 → 3 |
+| llama_s | 0.3333 | 0.2475 | 0.3081 | 0.3526 | 56 | $0.0222 | 2388 | 0.01 | **16 → 4** |
+| deepseek_l | 0.3325 | 0.2595 | 0.3116 | 0.3547 | 50 | $0.1389 | 2665 | 0.00 | 10 → 5 |
+| glm_m | 0.3320 | 0.2566 | 0.3080 | 0.3517 | 50 | $0.0995 | 3230 | 0.01 | 13 → 6 |
+| deepseek_s | 0.3285 | 0.2628 | 0.3081 | 0.3504 | 48 | $0.0137 | 2753 | 0.01 | 2 → 7 |
+| openai_m | 0.3268 | 0.2787 | 0.3122 | 0.3599 | 42 | $1.0717 | 1745 | 0.00 | 11 → 8 |
+| openai_l | 0.3268 | **0.2800** | 0.3151 | 0.3620 | 42 | $0.4362 | 1775 | 0.01 | 12 → 9 |
+| mistral_s | 0.3255 | 0.2346 | 0.2895 | 0.3285 | 54 | $0.0179 | 2820 | 0.18 | 6 → 10 |
+| anthropic_s | 0.3238 | 0.2084 | 0.2815 | 0.3259 | 71 | $0.2611 | 2025 | 0.08 | 8 → 11 |
+| anthropic_m | 0.3236 | 0.2207 | 0.2903 | 0.3347 | 64 | $0.7478 | 3034 | 0.03 | **4 → 12** |
+| gemma_l | 0.3204 | 0.2739 | 0.3086 | 0.3511 | 42 | $0.0237 | 2591 | 0.00 | 17 → 13 |
+| openai_s | 0.3171 | 0.2508 | 0.2977 | 0.3506 | 48 | $0.1672 | **1277** | 0.01 | 18 → 14 |
+| anthropic_l | 0.3155 | 0.2092 | 0.2878 | 0.3289 | 75 | **$1.9652** | 3402 | 0.23 | 9 → 15 |
+| glm_s | 0.3139 | **0.2800** | 0.3012 | 0.3489 | **39** | $0.0304 | 1610 | 0.00 | 21 → 16 |
+| gemma_m | 0.3136 | 0.2661 | 0.3016 | 0.3442 | 44 | $0.0154 | 1873 | 0.00 | 22 → 17 |
+| glm_l | 0.3124 | 0.2456 | 0.2939 | 0.3334 | 65 | $0.1532 | 5689 | 0.38 | 14 → 18 |
+| gemma_s | 0.3120 | 0.2328 | 0.2835 | 0.3215 | 53 | $0.0200 | 6956 | 0.01 | 20 → 19 |
+| qwen_l | 0.3108 | 0.2309 | 0.2803 | 0.3309 | 55 | $0.1689 | 2945 | 0.01 | 15 → 20 |
+| mistral_l | 0.3080 | 0.2356 | 0.2798 | 0.3188 | 48 | $0.0973 | 11045 | **0.93** | 24 → 21 |
+| qwen_s | 0.3068 | 0.2600 | 0.2874 | 0.3360 | 43 | $0.0270 | 25038 | 0.00 | **7 → 22** |
+| mistral_m | 0.3043 | 0.2507 | 0.2806 | 0.3197 | 43 | $0.0871 | 2654 | 0.01 | 19 → 23 |
+| qwen_m | 0.3030 | 0.2206 | 0.2737 | 0.3164 | 57 | $0.0661 | 1534 | 0.00 | 23 → 24 |
 
 Spearman between the n=20 and n=200 orderings: **+0.667**.
 
 **The five local arms**, all $0 and run on CPU. `bart_l` and `lead3` since 2026-09-26; the
 other three on 2026-09-30, on Linux, because their checkpoints are pickles that need torch
-≥ 2.6. Rank is among all 29.
+≥ 2.6. Same columns as above (scores 0 to 1, higher is better), plus `grounding` (§2:
+share of summary bigrams found in the article, 1.000 = pure copying, so higher is not
+simply better). **Bold** = best of all 29 arms on `coverage` and on `concision`; no local
+arm leads the field on `rougeLsum` or `rouge1`.
 
-| arm | coverage | concision | rougeLsum | rouge1 | grounding | words | ms | rank | ms, one machine |
+| arm | rank of 29 (by coverage) | coverage | concision | rougeLsum | rouge1 | grounding | words / summary | ms / article, recorded run (mean; machine) | ms / article, Linux re-time (median) |
 |---|---|---|---|---|---|---|---|---|---|
-| bart_l | **0.3461** | 0.2608 | 0.3161 | 0.3477 | 0.884 | 51 | 11010 (Mac) | 1 | 6257 |
-| bart_m | 0.3367 | 0.2578 | 0.3153 | 0.3457 | 0.853 | 55 | 5062 | 5 | 4108 |
-| bart_s | 0.3276 | 0.2599 | 0.3111 | 0.3418 | 0.877 | 52 | 4484 † | 10 | 3387 |
-| lead3 | 0.2718 | 0.2145 | 0.2701 | 0.3020 | 1.000 | 62 | 0 (Mac) | 28 | 0 |
-| bart_l_xsum | 0.2071 | **0.3120** | 0.2458 | 0.2836 | 0.422 | 21 | 4621 | 29 | 3934 |
+| bart_l | 1 | **0.3461** | 0.2608 | 0.3161 | 0.3477 | 0.884 | 51 | 11010 (Mac) | 6257 |
+| bart_m | 5 | 0.3367 | 0.2578 | 0.3153 | 0.3457 | 0.853 | 55 | 5062 (Linux) | 4108 |
+| bart_s | 10 | 0.3276 | 0.2599 | 0.3111 | 0.3418 | 0.877 | 52 | 4484 † (Linux) | 3387 |
+| lead3 | 28 | 0.2718 | 0.2145 | 0.2701 | 0.3020 | 1.000 | 62 | 0 (Mac) | 0 |
+| bart_l_xsum | 29 | 0.2071 | **0.3120** | 0.2458 | 0.2836 | 0.422 | 21 | 4621 (Linux) | 3934 |
 
-*`ms` is the recorded run's mean, on the machine it ran on. `ms, one machine` is the median
+*The recorded-run column is the committed run's mean, on the machine it ran on (Mac = the
+12-core Intel Mac, Linux = the 4-core Linux container). The re-time column is the median
 of a re-run of all five on the Linux container, idle and one at a time
-(`data/runs-linux/`). The median is used because a local run's first one to three items
+(`data/runs-linux/`). `lead3` reads 0 because it runs no model: it copies the first three
+sentences, in about 0.1 ms. The median is used because a local run's first one to three items
 pay a one-off initialisation cost that the warm-up does not absorb. † The recorded
 `bart_s` mean is inflated by analysis work I ran on the same CPU during the run; its own
 median was 3,683 ms. On one machine `bart_m` takes 0.66× `bart_l`'s time and `bart_s`
@@ -332,9 +364,12 @@ median was 3,683 ms. On one machine `bart_m` takes 0.66× `bart_l`'s time and `b
 
 **The winner depends on the metric, and the standard ones say so.** Scored with standard
 ROUGE F1 (`rouge_score`, stemmed — what the literature reports), the 29 arms order
-differently from `coverage`:
+differently from `coverage`. Six of the 29 arms are shown — the two hosted leaders and the
+four local arms that score above the XSum control — in ROUGE-1 order. Note the scale: ROUGE
+is printed ×100, as the literature prints it, while `coverage` stays on its 0–1 scale.
+Ranks are out of all 29; **bold** = 1st of 29 in that column.
 
-| arm | `coverage` (rank) | ROUGE-1 F1 (rank) | ROUGE-2 F1 (rank) |
+| arm | coverage (rank of 29) | ROUGE-1 F1 ×100 (rank of 29) | ROUGE-2 F1 ×100 (rank of 29) |
 |---|---|---|---|
 | `llama_l` | 0.3387 (3) | **36.36 (1)** | 13.20 (4) |
 | `deepseek_m` | 0.3460 (2) | 36.12 (3) | 12.99 (5) |
@@ -366,16 +401,23 @@ outputs were identical across three repeats in the earlier sweep here (§3.3), a
 ### 3.1 Is the ordering real?
 
 Friedman-style permutation test on within-item ranks, with a Nemenyi critical difference
-applied simultaneously to all 276 pairs:
+applied simultaneously to all 276 pairs of the 24 hosted arms. Each arm gets a mean rank
+from its within-article ranks over the 200 articles; two arms are separated when their mean
+ranks differ by more than the critical difference. The spread column is the distance
+between the best and worst arm's mean rank — a metric whose spread barely exceeds the
+critical difference can separate few pairs.
 
-| metric | p | critical difference | observed span | pairs distinguishable |
+| metric | Friedman p | Nemenyi critical difference (mean-rank positions) | spread of mean ranks (best to worst) | pairs separated (of 276) |
 |---|---|---|---|---|
-| `coverage` | 0.0002 | 2.57 | 4.46 | **34** / 276 |
-| `rougeLsum` | 0.0002 | 2.57 | 5.69 | 95 / 276 |
-| `rouge1` | 0.0002 | 2.57 | 5.63 | 97 / 276 |
-| `concision` | 0.0002 | 2.57 | 9.66 | 146 / 276 |
-| `grounding` | 0.0002 | 2.58 | 13.99 | 172 / 276 |
-| `summary_words` | 0.0002 | 2.57 | 18.23 | 208 / 276 |
+| `coverage` | 0.0002 | 2.57 | 4.46 | **34** |
+| `rougeLsum` | 0.0002 | 2.57 | 5.69 | 95 |
+| `rouge1` | 0.0002 | 2.57 | 5.63 | 97 |
+| `concision` | 0.0002 | 2.57 | 9.66 | 146 |
+| `grounding` | 0.0002 | 2.58 | 13.99 | 172 |
+| `summary_words` | 0.0002 | 2.57 | 18.23 | 208 |
+
+*p = 0.0002 is the floor of the permutation test (5,000 permutations, none as extreme as
+the data), not a coincidence of six metrics: every one rejects "all arms are alike". **Bold** marks the primary facet.*
 
 On the **180 held-out** articles, `coverage` gives p = 0.0002, CD 2.71, span 4.26, **25 of
 276**. At n=20 the same metric gave 1 of 276 against a CD of 8.13 — wider than the entire
@@ -401,9 +443,10 @@ claim this data supports.
 
 **Over all 29 arms** (k=29: CD 3.18, 80 of 406 pairs): `bart_l` P(1st) 0.45 and
 `deepseek_m` 0.41 — the same coin flip — with `bart_m` P(top 5) 0.57 (`scripts/leaderboard.py --dataset-id cnn_dailymail_200 --sort coverage`, rank bootstrap). Family tests, Holm
-over the 28 others on `coverage`:
+over the 28 others on `coverage` — each row tests one local arm against all 28 others at
+once:
 
-| arm | separated from | ahead on the point estimate | against `bart_l` |
+| arm | separated from (Holm, of 28) | ahead on the point estimate (of 28) | Δ coverage vs `bart_l`, p |
 |---|---|---|---|
 | `bart_l` | 13 of 28 (was 12 of 25) | 28 of 28 | — |
 | `bart_m` | 4 of 28 | 24 of 28 | −0.0095, p = 0.17 |
@@ -422,15 +465,19 @@ them against the best paid arm, `deepseek_m`, which is why its figures differ by
 §3.1 asks "which of all 276 pairs differ?" and pays the multiplicity price for all 276.
 That is the right price for that question and the wrong question for a decision. These
 four pairs were **named before the last arm finished running**, and are Holm-corrected as
-a family of four:
+a family of four. In each cell: Δ (first arm minus second, mean over articles), then the
+number of articles on which the first arm scored strictly higher (ties count for neither),
+then the uncorrected sign-flip p (20,000 permutations; p=0.0000 means p < 0.0001). **Bold
+p** = separated after Holm correction across the four questions. A row with "(same pair)"
+asks the question above it on a second metric.
 
-| question | metric | all 200 | 180 held out |
+| question | metric | all 200 articles | 180 held-out articles |
 |---|---|---|---|
 | `deepseek_m` vs `anthropic_l` — is 52× the price worth it? | coverage | +0.0306, 114/200, **p=0.0000** | +0.0308, 102/180, **p=0.0000** |
-| | rougeLsum | +0.0310, 139/200, **p=0.0000** | +0.0331, 127/180, **p=0.0000** |
+| (same pair) | rougeLsum | +0.0310, 139/200, **p=0.0000** | +0.0331, 127/180, **p=0.0000** |
 | `deepseek_m` vs `anthropic_m` — 19.6× | coverage | +0.0224, 112/200, **p=0.0006** | +0.0224, 104/180, **p=0.0010** |
 | `deepseek_m` vs `openai_l` — 11.4× | coverage | +0.0193, 96/200, **p=0.0032** | +0.0171, 85/180, **p=0.0153** |
-| | rougeLsum | +0.0037, 107/200, p=0.47 | +0.0038, 97/180, p=0.47 |
+| (same pair) | rougeLsum | +0.0037, 107/200, p=0.47 | +0.0038, 97/180, p=0.47 |
 | `deepseek_s` vs `qwen_m` — the control | coverage | +0.0255, 107/200, **p=0.0000** | +0.0208, 93/180, **p=0.0003** |
 
 All four separate on `coverage` in both cuts. On `rougeLsum` three of four do; the
@@ -492,7 +539,7 @@ even the statistics-free part of this report depends on the sample.
 
 Every arm used in turn as the silver author, its own row excluded, ranking the other 23:
 
-| | |
+| quantity | value |
 |---|---|
 | retest ceiling (same arms, same gold, two run sets) | **ρ = +0.924** |
 | silver agreement with gold | **−0.013 … +0.697**, mean **+0.326** |
@@ -516,12 +563,20 @@ treated as truth.
 24 arms, then 26 once `bart_l` and `lead3` arrived; the three BARTs added on 2026-09-30
 move it again, a little. The 26-arm figures are kept beside the new ones.
 
-| items per half | ρ(half A, half B) | 5th pct | P(both crown the same arm) | median rank move | *26 arms: ρ / P(same)* |
-|---|---|---|---|---|---|
-| 10 | 0.336 | 0.033 | 0.08 | 4.84 | *0.278 / 0.12* |
-| 20 | **0.443** | 0.191 | **0.11** | 3.91 | *0.416 / 0.14* |
-| 50 | 0.640 | 0.452 | 0.12 | 2.67 | *0.643 / 0.17* |
-| 100 | **0.793** | 0.689 | **0.01** | 1.63 | *0.799 / 0.01* |
+| articles per half | ρ(half A, half B), mean over draws | ρ, 5th percentile | P(both halves crown the same arm) | median rank move (positions) | arms sharing 1st place | *earlier 26-arm field · ρ / P(same)* |
+|---|---|---|---|---|---|---|
+| 10 | 0.336 | 0.033 | 0.08 | 4.84 | 1.0 | *0.278 / 0.12* |
+| 20 | **0.443** | 0.191 | **0.11** | 3.91 | 1.0 | *0.416 / 0.14* |
+| 50 | 0.640 | 0.452 | 0.12 | 2.67 | 1.0 | *0.643 / 0.17* |
+| 100 | **0.793** | 0.689 | **0.01** | 1.63 | 1.0 | *0.799 / 0.01* |
+
+*Each row averages 400 random draws of two disjoint halves. ρ is the Spearman correlation
+between the two halves' orderings of the 29 arms (1 = they agree exactly). "Median rank
+move" is how many positions an arm typically sits from its
+full-200 rank in a half of that size. "Arms sharing 1st place" is the average number of
+arms tied for the best score in a half; 1.0 means no ties. Bold marks the 20-article size
+of the original experiment and the 100-article size quoted in the summary; italics, the
+superseded 26-arm figures.*
 
 At 20 articles — the size of the original experiment — two independent evals of these arms
 agree at ρ = 0.44. At 100 they still disagree at ρ = 0.79. The three new arms nudge ρ up
@@ -548,9 +603,9 @@ the ML arms produced from the other direction: BART's apparent lead at n=20 was 
 at n=200 it is 0.00008. "P(both halves crown the same arm)" is near zero **because there is
 no winner to crown**, not because the evaluation got noisier.
 
-Note also that `arms tied 1st` is 1.0 at every size: these two arms are not *tied*, they
+Note also that the "arms sharing 1st place" column of the table above is 1.0 at every size: these two arms are not *tied*, they
 are 0.00008 apart, which a continuous metric resolves into a strict order that means
-nothing. A tie count cannot catch that; only the separation test in §3.2 can.
+nothing. A tie count cannot catch that; only the separation tests in §3.1 can.
 
 This is the most transferable result in the report: it is about evaluation rather than
 about 24 models, and it does not go stale when the models change.
@@ -564,7 +619,11 @@ five local arms re-ran on it with their parameters unchanged. All five runs are 
 (`build.dirty: false`, commit `a81669ca`) and committed as
 `harness/data/runs/cnn_*_dm200_v1_*`.
 
-| arm | `coverage`, CNN | `coverage`, DailyMail | ROUGE-1 / 2 F1, DailyMail | words, DailyMail |
+`coverage` is on the same 0–1 scale as above (higher is better); ROUGE is printed ×100, as
+in the ROUGE table in §3; words are the mean summary length. **Bold** = best on DailyMail
+`coverage` — `bart_l` and `bart_m` tie to four decimals.
+
+| arm | CNN · coverage | DailyMail · coverage | DailyMail · ROUGE-1 / ROUGE-2 F1 ×100 | DailyMail · words / summary |
 |---|---|---|---|---|
 | `bart_l` | 0.3461 | **0.4430** | 46.16 / 23.18 | 67 |
 | `bart_m` | 0.3367 | **0.4430** | 46.95 / 24.09 | 76 |
@@ -577,12 +636,15 @@ longer (57 words against 35) and its leads more extractable. The question is whe
 *comparisons* hold, so the same family test was run on both slices over the same five
 arms (Holm, `bart_l` against the other four, sign-flip, 20,000 permutations):
 
-| `bart_l` vs | CNN | DailyMail |
+Each cell is `bart_l`'s `coverage` minus the other arm's (positive = `bart_l` ahead), then
+the Holm verdict within that slice's family of four.
+
+| `bart_l` vs | CNN · Δ coverage, Holm verdict | DailyMail · Δ coverage, Holm verdict |
 |---|---|---|
-| `bart_l_xsum` | +0.1390, separated | **+0.2908**, separated |
-| `lead3` | +0.0743, separated | **+0.0733**, separated |
-| `bart_s` | +0.0186, separated (p = 0.017) | **+0.0391**, separated |
-| `bart_m` | +0.0095, not separated (p = 0.16) | **+0.0000**, not separated (p = 1.00) |
+| `bart_l_xsum` | +0.1390, separated | +0.2908, separated |
+| `lead3` | +0.0743, separated | +0.0733, separated |
+| `bart_s` | +0.0186, separated (p = 0.017) | +0.0391, separated |
+| `bart_m` | +0.0095, not separated (p = 0.16) | +0.0000, not separated (p = 1.00) |
 
 **Among the local arms, every verdict transfers.** The fine-tune beats LEAD-3 by the same
 margin on both outlets (+0.074 and +0.073); the XSum control fails harder on DailyMail;
@@ -663,10 +725,10 @@ produces a *wrong ranking that looks clean*. Excluding the author's own row does
 it, because the bias is stylistic affinity rather than self-preference — and the case
 silver exists for is the one where there is no gold to detect it with.
 
-**Format contamination is rare but concentrated.** By flag rate per output: `mistral_l`
-0.93, `glm_l` 0.38, `anthropic_l` 0.23, `mistral_s` 0.18, `anthropic_s` 0.08 — every other
-arm at or below 0.01. The two arms with the worst format compliance are also the two
-dearest, which is worth noticing before paying for either.
+**Format contamination is rare but concentrated.** By format flags per summary (mean):
+`mistral_l` 0.93, `glm_l` 0.38, `anthropic_l` 0.23, `mistral_s` 0.18, `anthropic_s` 0.08 —
+every other arm at or below 0.01. Three of the five are their vendor's large tier, so a
+higher price tier does not buy cleaner output — worth checking before paying for one.
 
 
 ## 5. What this experiment cannot say
@@ -704,8 +766,9 @@ dearest, which is worth noticing before paying for either.
 
 Nine findings were retracted during this work. They are listed because the retraction rate
 *is* a result: it measures how much of a first-pass eval is instrument rather than signal.
-The first six came from bugs and from reading samples; the last three came from the sample
-size itself, and only the re-measurement at n=200 exposed them.
+The first six came from bugs, untested assumptions and reading samples. The seventh and
+eighth came from the 20-article sample itself, and only the re-measurement at n=200
+exposed them; the ninth was a claim about CI that a log line falsified.
 
 | retracted claim | what was actually true | cause |
 |---|---|---|
@@ -719,7 +782,7 @@ size itself, and only the re-measurement at n=200 exposed them.
 | "10 of 24 arms are on the Pareto frontier" | **8 of 24** | three arms' quality estimates moved with more data, and the cost axis now uses the bill rather than the price table (7 of 24 under the old cost figures) |
 | "CI stops baking a 990 MB model" (commit c7f47e4c) | it kept shipping, restored from cache | manifest drives the preload, not the artifact |
 
-Two were caused by defects in this harness's own scorer, and three by trusting 20 articles.
+Two were caused by defects in this harness's own scorer, and two by trusting 20 articles.
 **All of the first six were found by adversarial review, none by the person who produced
 them**; the last three were found by re-measuring and by a log line added in the same
 commit whose claim it falsified. Two further rounds of review
@@ -807,7 +870,7 @@ end of the field, and therefore inflates every price-ratio claim.** It also reor
 by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by
 what was billed.
 
-The figures below are corrected to what the provider billed. Rankings by *quality* are
+Every cost figure in this report is now corrected to what the provider billed. Rankings by *quality* are
 untouched — cost was never an input to them.
 
 **Fixed at cause:** all four adapters now record `usage.cost` when the provider supplies

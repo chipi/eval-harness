@@ -30,12 +30,18 @@
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model.** At 52 GB native it fits with room to spare — **the absolute open-weight winner here is already the practical one.** |
 | **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 499 MB tagger.** |
 | **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 499 MB model. |
-| **What should I not deploy?** | `anthropic_l` at **$2,463/month per 1M items** — **11.4% below free**, the largest free-vs-paid gap in the set. |
-| **Does paying more help?** | Most of any experiment here, and still not enough: **+5.9%** per 10× cost, while free beats the whole paid field. |
+| **What should I not deploy?** | `anthropic_l` — the **most expensive arm in the set**, **$2,463/month per 1M items**, scoring **11.4% below free** and not separable from the cheaper `openai_m` (§3.3). |
+| **Does paying more help?** | **A little, and not enough.** Each 10× in cost buys **+5.9%** of the best arm's F1 across the paid arms — the steepest price–quality slope of the five experiments ([synthesis](REPORT_SYNTHESIS.md)) — yet the free tagger still beats every paid arm. |
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
-| **What does fine-tuning buy?** | **+0.3134 F1**, isolated by a matched pair at price zero on both sides (`span_marker` vs `gliner`). |
-| **Is a pilot enough?** | Here yes — ρ = 0.895, right winner. It was wrong in 3 of the other 4 experiments. |
-| **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 from exposure alone**, at $0 on both sides. |
+| **Is a pilot enough?** | Here yes — ρ = 0.895 over the 27 arms measured at the time (0.903 with all 28, §3.8), right winner. It was wrong in 3 of the other 4 experiments. |
+| **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 F1 from exposure alone**, at $0 on both sides. |
+
+*How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
+higher is better; §2). **Free** = `span_marker`, self-hosted at $0. **% below free** is the
+relative gap: (0.7674 − the arm's score) / 0.7674. **$/month per 1M items** = what the
+provider billed for the 280 sentences, scaled to one million items a month.
+**Separated** = a paired sign-flip permutation test on per-sentence F1, Holm-corrected
+over the declared family of 27 opponents at α = 0.05 (§3.2).
 
 *Cross-cutting context for all five experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
@@ -43,7 +49,7 @@
 ### What this experiment specifically found
 
 
-**A free 476MB span tagger beat all 24 hosted LLMs and separated from every one of them —
+**A free 499 MB span tagger beat all 24 hosted LLMs and separated from every one of them —
 the first unambiguous winner in this repo. But 57% of its lead comes from a single entity
 type whose meaning is a corpus convention rather than a fact about the world, and on the
 one type that means the same thing everywhere, a frontier LLM beats it.**
@@ -56,8 +62,9 @@ from 64 GB to unlimited.
 
 1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
    field of 0.524–0.686. Holm step-down over a family of 27 declared in advance:
-   **separated from 27 of 27**. Neither classification corpus produced this — AG News gave
-   a leader tied with nine others, DBpedia a group of ten.
+   **separated from 27 of 27**. Neither classification corpus produced this — AG News's
+   leader is tied with three other arms, DBpedia's with nineteen (counts per
+   [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs).
 
 2. **And behind it, the familiar tie.** The best hosted arm, `openai_m` at 0.6864,
    separates from only **20 of 27**. The seven it cannot separate from span
@@ -75,7 +82,7 @@ from 64 GB to unlimited.
    right — while reaching 0.7701 on `person`. This is the cleanest isolation of
    task-specific training in the repo.
 
-5. **34 of 768 gold types (4.4%) are unanimously rejected by the whole field**, and reading
+5. **34 of 768 gold types (4.4%) are rejected by at least 80% of the field, agreeing on one alternative**, and reading
    them, the field is right: "Georgia Dome" filed as `location`, "Nazis" as `person`,
    "EDFL" as `event`. Resolving them the arms' way moves every hosted arm **+0.024 to
    +0.039** and `span_marker` **+0.0060** — it was trained on the convention and never lost
@@ -90,14 +97,14 @@ from 64 GB to unlimited.
 
 ## 1. What was measured
 
-| | |
+| property | value |
 |---|---|
 | Corpus | Few-NERD `supervised` test split, CC BY-SA 4.0 |
 | Slice | 280 sentences, seeded random (`--seed 20260928`), `items_sha256` `95a1b9627073` |
 | Dev slice | 56 sentences, a strict **prefix** of the same permutation — nested, so holdout analysis is honest |
-| Gold | expert annotation, a JSON array of `{text, type}` per item |
-| Density | 2.74 entities/sentence; **34 of 280 sentences have none** |
-| Types | location 199, organization 172, person 166, other 86, product 58, art 30, building 29, event 26 |
+| Gold | expert annotation, a JSON array of `{text, type}` per item — **768 entities as annotated, 766 scorable**: the two bare "£" tags in §5 normalise to nothing and drop out |
+| Density | 2.74 entities/sentence; **34 of 280 sentences have none** (35 once the "£" item is normalised, §5) |
+| Types (of the 766 scorable) | location 199, organization 172, person 166, other 86, product 58, art 30, building 29, event 26 |
 
 The type distribution is left imbalanced. Rebalancing would make the slice
 unrepresentative of the task.
@@ -107,13 +114,15 @@ where an arm that invents entities is caught, and they fix the floor.
 
 ### Arms
 
-| Arm | What it is | Weights |
+| Arm | What it is | Weights (download size) |
 |---|---|---|
 | `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, **fine-tuned on Few-NERD's training split**, predicts the 66 fine types mapped down to 8 | 499 MB |
 | `gliner` | `urchade/gliner_medium-v2.1`, zero-shot, **caller supplies the label set**, threshold 0.5 (library default, untuned) | 745 MB |
 | 24 hosted | 8 vendors × {small, medium, large}, one prompt, temperature 0 | — |
 | `capitalized` | every capitalised run, minus a stoplist written from English orthography | — |
 | `nothing` | predicts the empty set, always | — |
+
+— = no local weights (a hosted API, or a rule-based baseline).
 
 `nothing` is a calibration check on the scorer before it is a baseline on the task. It must
 score exactly the rate at which an empty prediction is correct, and §5 is about the 1/280
@@ -167,7 +176,7 @@ the ranking metric; this sentence used to say "both are reported" and no micro-F
 appeared anywhere. They do now
 (`EVAL_RUNS_DIR=data/runs-rescored scripts/extraction_report.py --dataset-id few_nerd_280`):
 
-| arm | mean F1 (ranking) | corpus micro-F1 | micro P | micro R |
+| arm | mean per-sentence F1 (ranking) | corpus micro-F1 | micro precision | micro recall |
 |---|---|---|---|---|
 | `span_marker` | 0.7674 | **0.7951** | 0.7875 | 0.8029 |
 | `openai_m` | 0.6864 | 0.7006 | 0.6760 | 0.7272 |
@@ -188,7 +197,18 @@ calibration row: `span_marker` scored the standard way on 2,000 seeded test sent
 
 ### 3.1 The leaderboard
 
-| arm | f1 | untyped f1 | parsed | lat/item | cost |
+*How to read this table.* Sorted by `f1`, descending. **f1** = typed mean per-sentence F1
+(span and type must both match; 0–1, higher is better). **untyped f1** = the same score
+ignoring the type label — did the arm find the span at all. **parsed** = share of the 280
+replies the parser could read; an unreadable reply scores 0 (§6). **latency per item** =
+mean wall-clock seconds per sentence — hosted arms include the network, local arms ran on
+CPU fp32; `~0` = under a millisecond (rule-based baselines). **cost** = what the provider
+billed for all 280 sentences. **Bold** marks the winner, the fastest arm and the free
+learned arms. `span_marker` is separated from all 27 opponents (§3.2); `openai_m` is
+separated from 20 of 27 — not from `anthropic_l`, `gemma_m`, `openai_l`, `anthropic_m`,
+`qwen_s`, `qwen_m` or `gemma_l` (§3.3).
+
+| arm | f1 | untyped f1 | parsed (share of items) | latency per item | cost (billed, 280 items) |
 |---|---|---|---|---|---|
 | **span_marker** | 0.7674 | 0.8370 | 1.000 | 0.76 s | **$0** |
 | openai_m | 0.6864 | 0.7783 | 1.000 | 1.60 s | $0.6507 |
@@ -257,18 +277,30 @@ hosted field, price stops predicting quality long before quality stops varying.
 
 Per-type F1, support-weighted contribution to `span_marker`'s advantage over `openai_m`:
 
-| type | span_marker | openai_m | gliner | Δ | support | share of gap |
+| type | gold entities | F1 span_marker | F1 openai_m | Δ (span_marker − openai_m) | share of lead | F1 gliner (reference) |
 |---|---|---|---|---|---|---|
-| location | 0.8170 | 0.7744 | 0.5889 | +0.0427 | 199 | 12.0% |
-| organization | 0.7692 | 0.6863 | 0.5631 | +0.0829 | 172 | 20.2% |
-| **person** | 0.8882 | **0.8949** | 0.7701 | **−0.0067** | 166 | **−1.6%** |
-| **other** | 0.7709 | 0.3017 | **0.0000** | **+0.4693** | 86 | **57.2%** |
-| product | 0.7407 | 0.6903 | 0.4821 | +0.0505 | 58 | 4.2% |
-| art | 0.7761 | 0.7222 | 0.2593 | +0.0539 | 30 | 2.3% |
-| building | 0.6567 | 0.5902 | 0.3385 | +0.0666 | 29 | 2.7% |
-| event | 0.6296 | 0.5507 | 0.1828 | +0.0789 | 26 | 2.9% |
+| location | 199 | 0.8170 | 0.7744 | +0.0427 | 12.0% | 0.5889 |
+| organization | 172 | 0.7692 | 0.6863 | +0.0829 | 20.2% | 0.5631 |
+| **person** | 166 | 0.8882 | **0.8949** | **−0.0067** | **−1.6%** | 0.7701 |
+| **other** | 86 | 0.7709 | 0.3017 | **+0.4693** | **57.2%** | **0.0000** |
+| product | 58 | 0.7407 | 0.6903 | +0.0505 | 4.2% | 0.4821 |
+| art | 30 | 0.7761 | 0.7222 | +0.0539 | 2.3% | 0.2593 |
+| building | 29 | 0.6567 | 0.5902 | +0.0666 | 2.7% | 0.3385 |
+| event | 26 | 0.6296 | 0.5507 | +0.0789 | 2.9% | 0.1828 |
 
-**Total support-weighted gap: +0.0921, of which `other` is 57.2%.**
+*How to read this table.* Rows are sorted by **gold entities** (how many of the 766
+scorable gold entities carry that type), descending. Each **F1** is that type's F1 pooled
+over the whole slice — all its matches, false positives and misses counted together.
+**share of lead** = the type's Δ weighted by its gold-entity count, as a share of the
+total weighted lead of **+0.0921** (= Σ Δ × count / 766). `gliner` is shown for reference
+and does not enter Δ.
+
+**Why +0.0921 and not the 0.0810 lead in §3.2?** They are different averages. +0.0921
+weights every gold *entity* equally and uses per-type F1 pooled over the slice; 0.0810 is
+the difference in *mean per-sentence* F1, which weights every *sentence* equally. Both say
+`span_marker` leads; the percentages in this section are shares of the +0.0921.
+
+**Total entity-weighted lead: +0.0921, of which `other` is 57.2%.**
 
 (Per-type figures are typed F1 against gold as annotated. §3.6 shows what happens when the
 annotation itself is the thing in dispute.)
@@ -296,27 +328,33 @@ answer, because neither had a matched zero-shot control. `gliner` is that contro
 
 ### 3.6 Annotation noise, and an upper bound on what it costs
 
-34 of 768 gold entities (4.4%) carry a coarse type that ≥80% of the 26 learned arms
-unanimously reject:
+34 of 768 gold entities (4.4%) carry a coarse type that at least 80% of the 26 learned
+arms (all 28 except the two baselines, `capitalized` and `nothing`) reject, agreeing on
+the same alternative type. The first 14 of the 34, as `extraction_report.py` prints them
+(count = arms that agree, out of 26):
 
 ```
-25/25  "georgia dome"                     gold location     -> arms building
-25/25  "carolina first arena"             gold organization -> arms building
-25/25  "nazis"                            gold person       -> arms organization
-25/25  "edfl"                             gold event        -> arms organization
-25/25  "olympic club"                     gold location     -> arms organization
-25/25  "burgtheater"                      gold location     -> arms building
-24/25  "fort wayne daisies"               gold person       -> arms organization
-24/25  "maple blues awards"               gold other        -> arms event
-24/25  "cameron mitchell restaurants"     gold building     -> arms organization
-24/25  "bob evans restaurants"            gold building     -> arms organization
-24/25  "tennessee performing arts center" gold location     -> arms building
-23/25  "sanitarium"                       gold building     -> arms organization
-23/25  "katolska bokforlaget"             gold art          -> arms organization
-23/25  "furosemide"                       gold other        -> arms product
+26/26  "georgia dome"                     gold location     -> arms building
+26/26  "carolina first arena"             gold organization -> arms building
+26/26  "fort wayne daisies"               gold person       -> arms organization
+26/26  "nazis"                            gold person       -> arms organization
+26/26  "edfl"                             gold event        -> arms organization
+26/26  "olympic club"                     gold location     -> arms organization
+26/26  "burgtheater"                      gold location     -> arms building
+26/26  "tennessee performing arts center" gold location     -> arms building
+25/26  "maple blues awards"               gold other        -> arms event
+25/26  "edmonton mcclung"                 gold person       -> arms location
+25/26  "cameron mitchell restaurants"     gold building     -> arms organization
+25/26  "bob evans restaurants"            gold building     -> arms organization
+24/26  "sanitarium"                       gold building     -> arms organization
+24/26  "katolska bokforlaget"             gold art          -> arms organization
 ```
 
-Independent models do not agree on a hallucination. Where twenty-five of them tag the same
+*This block previously showed counts out of 25, printed before `mistral_l` joined the
+field; it is re-run here on the committed 28-arm runs. The re-run reproduces the count of
+34 and every figure in the table below.*
+
+Independent models do not agree on a hallucination. Where 21 or more of 26 tag the same
 span the same way against the annotation, the annotation is the thing most likely wrong —
 and reading these, it is. A football league is not an `event`; a diuretic is not `other`;
 a restaurant chain is not a `building`.
@@ -325,16 +363,19 @@ Resolving all 34 the arms' way gives an **upper bound**, not an estimate: resolv
 arms' favour is what raises the number. It answers only "how much of the typed/untyped gap
 could annotation account for at most".
 
-| arm | as measured | bound | move |
+| arm | F1 as measured | F1 with the 34 disputed labels resolved the arms' way (upper bound) | change |
 |---|---|---|---|
 | **span_marker** | 0.7674 | 0.7733 | **+0.0060** |
 | openai_m | 0.6864 | 0.7230 | +0.0365 |
 | openai_l | 0.6716 | 0.7102 | +0.0386 |
 | anthropic_l | 0.6798 | 0.7053 | +0.0255 |
 | gemma_m | 0.6733 | 0.6975 | +0.0242 |
-| *(all 24 hosted)* | | | *+0.0238 to +0.0386* |
 | gliner | 0.4540 | 0.4748 | +0.0208 |
 | capitalized | 0.1913 | 0.1820 | **−0.0093** |
+
+Rows are the winner, the top four hosted arms, the zero-shot control and a baseline.
+**Across all 24 hosted arms the change runs from +0.0242 to +0.0386** — the two ends are
+the `gemma_m` and `openai_l` rows above. F1 is mean per-sentence F1 throughout.
 
 **`span_marker` moves four to six times less than the hosted field**, because it was
 trained on the convention and was never losing those points. Its 0.0810 lead over
@@ -350,10 +391,14 @@ isolate this too, from a direction I was not looking in.
 
 ### 3.7 Output budget is a model property, not a config detail
 
-`glm_l` is the only arm with a serious parse failure rate: **0.836 parsed, 0.114 truncated**
-at `max_tokens` 600. Of the other 22 hosted arms measured, 19 parsed at exactly 1.000 on
-the identical budget; the three that did not are the llama family (0.986 / 0.943 / 0.993),
-and none of them truncated — theirs is malformed JSON, a different failure.
+`glm_l` is the only arm with a serious parse failure rate: **0.889 parsed, 0.114 truncated**
+at `max_tokens` 600. Of the other 23 hosted arms, 19 parsed at exactly 1.000 on the
+identical budget; the four that did not are the llama family (large / medium / small:
+0.996 / 0.954 / 0.993) and `mistral_l` (0.996). Only `llama_m` hit the budget at all
+(0.025 truncated); the rest of their failures are malformed JSON, a different failure.
+
+*This paragraph read "0.836 parsed" for `glm_l` and 0.986 / 0.943 / 0.993 for the llama
+family — figures from before the §6 parser fix — while §3.1 carried the corrected ones.*
 
 It is not producing malformed JSON. It is producing no JSON. On item `0e88aabc` —
 *"Epsilon Centauri is a relatively young star, with an age of around 16 million years"* —
@@ -438,7 +483,7 @@ See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
 ## 4. Discussion
 
 **The honest summary of "small ML model vs LLM" is narrower than the leaderboard makes it
-look.** `span_marker` wins outright and separates from all 26. But decompose it:
+look.** `span_marker` wins outright and separates from all 27 opponents. But decompose it:
 
 - ~57% of the margin is one type whose definition exists only inside this corpus.
 - **~38% of the margin** is agreeing with annotation the rest of the field rejects.
@@ -459,7 +504,7 @@ look.** `span_marker` wins outright and separates from all 26. But decompose it:
 - On the type with a corpus-independent meaning, it loses.
 
 So the defensible claim is: **if your labels are a fixed in-house taxonomy and you can
-label training data, a 476MB model on CPU beats every frontier LLM at 0.76 s/item and $0.**
+label training data, a 499 MB model on CPU beats every frontier LLM at 0.76 s/item and $0.**
 That is a real and useful claim — it is the podcast-product case. The claim it does *not*
 support is that the small model is better at named-entity recognition in general.
 
@@ -521,12 +566,15 @@ anywhere in it. Two real answers died that way:
 Balanced spans are now scanned left to right and the first that reads as entities wins.
 **21 of the 68 items this experiment had scored unreadable were readable all along.**
 
-| arm | f1 before | f1 after | unreadable before | after |
+| arm | F1 before parser fix | F1 after parser fix | unreadable items before | unreadable items after |
 |---|---|---|---|---|
 | `glm_l` | 0.5269 | **0.5662** | 46 | **31** |
 | `llama_l` | 0.5911 | **0.5990** | 4 | **1** |
 | `llama_m` | 0.5704 | **0.5740** | 16 | **13** |
 | `deepseek_m` | 0.6122 | **0.6148** | 0 | 0 |
+
+F1 = mean per-sentence F1; unreadable items = replies, of 280, that the parser could not
+read (each scores 0). Only the four arms the fix moved are shown.
 
 `deepseek_m` moved without any item changing readability: it had answered `[[{...}]]`,
 doubly wrapped, and the old code dropped the inner list as a non-object and returned an
@@ -541,7 +589,7 @@ shape test exists for, without demanding tidiness from an answer that has entiti
 
 **What is still refused, and should be:** prose, and arrays cut off mid-object. `glm_l`
 runs out of tokens on `[{"text": "Corfu International` with no closing bracket. There is
-no answer there, and mining one out of an explanation would be inventing it. 32 of its
+no answer there, and mining one out of an explanation would be inventing it. 31 of its
 280 items are still unreadable and that is the model's behaviour, not the parser's.
 
 **The earlier claim that "both parser fixes change zero recorded numbers" was about the

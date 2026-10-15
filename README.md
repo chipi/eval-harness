@@ -86,14 +86,16 @@ make leaderboard DATASET_ID=my_v1
 
 ## Asking better questions of your results
 
-| | |
+| command | answers |
 | --- | --- |
-| `make leaderboard` | rank arms on quality, cost and speed — and whether the order is real |
-| `make pair-test A=… B=…` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
-| `make holdout EXCLUDE=…` | the same test minus items a smaller dataset already contained |
-| `make rank-stability` | how many items before the ordering stops moving — measured, not assumed |
-| `make silver-calibrate` | is a model-authored reference usable? Read it against the ceiling it prints |
-| `make rescore` | recompute scores from stored outputs, no API calls |
+| `make leaderboard DATASET_ID=my_v1` | rank arms on quality, cost and speed — and whether the order is real |
+| `make pair-test DATASET_ID=my_v1 A=… B=…` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
+| `make holdout DATASET_ID=my_v1 EXCLUDE=…` | the same test minus items a smaller dataset already contained |
+| `make rank-stability DATASET_ID=my_v1` | how many items before the ordering stops moving — measured, not assumed |
+| `make silver-calibrate DATASET_ID=my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
+| `make rescore DATASET_ID=my_v1` | recompute scores from stored outputs, no API calls |
+
+Each of these verbs reads `DATASET_ID`; leave it out and it silently runs on the bundled `smoke_v1` demo dataset.
 
 ## Layout
 

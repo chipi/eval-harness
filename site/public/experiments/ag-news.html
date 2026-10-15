@@ -7,6 +7,12 @@
 <meta name="description" content="Four-way topic labels. Three small fine-tunes take the top three places, largely by learning the dataset&#x27;s labelling conventions.">
 <meta property="og:title" content="Classification · AG News — eval-harness">
 <meta property="og:description" content="Four-way topic labels. Three small fine-tunes take the top three places, largely by learning the dataset&#x27;s labelling conventions.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
 <script>
 (function(){var p=new URLSearchParams(location.search),t=p.get('theme');
@@ -28,12 +34,12 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <div class="kicker"><b>Classification</b> · AG News</div>
   <h1 style="max-width:16ch">Small models win by learning the labels.</h1>
   <p class="dek">Four-way topic labels. Three small fine-tunes take the top three places, largely by learning the dataset&#x27;s labelling conventions.</p>
-  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Label a news snippet World, Sports, Business or Sci/Tech.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the AG News test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">30 arms: 24 hosted, the rest local or baselines</div></div><div class="fact"><div class="k">Metric</div><div class="v">accuracy — the field&#x27;s standard</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bert_mini 0.9338 vs 0.9339 published; bert_base_ta 0.9514 vs 0.9514 published; bert_base_fy 0.9375 vs 0.9375 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$0.5808 for the whole sweep</div></div></div>
+  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Label a news snippet World, Sports, Business or Sci/Tech.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the AG News test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">30 compared: 24 hosted models billed per call; 6 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">accuracy — the field&#x27;s standard; higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bert_mini 0.9338 vs 0.9339 published; bert_base_ta 0.9514 vs 0.9514 published; bert_base_fy 0.9375 vs 0.9375 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$0.5808 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_CLASSIFICATION.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../index.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span></div><svg viewBox="0 0 1000 80" role="img" aria-label="AG News: every learned arm by accuracy"><rect x="752.6" y="28" width="180.1" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-local" data-tip="bert_base_ta · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="AG News: every learned arm by accuracy"><rect x="752.6" y="28" width="180.1" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-local" data-tip="bert_base_ta · local · free
 accuracy 0.9600 · rank 1/30
 billed $0.0000 for 200 items"><title>bert_base_ta · local · free
 accuracy 0.9600 · rank 1/30
@@ -145,115 +151,331 @@ billed $0.0000 for 200 items</title></circle><circle cx="727.8" cy="50" r="7" cl
 accuracy 0.9000 · rank 5/30
 billed $0.1750 for 200 items"><title>anthropic_l · hosted · proprietary
 accuracy 0.9000 · rank 5/30
-billed $0.1750 for 200 items</title></circle><circle cx="727.8" cy="50" r="11" class="ring"/><text x="727.8" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 5th · 0.900</text><text x="924.8" y="78" text-anchor="end" class="t-ink" font-size="11">bert_base_ta · 1st · 0.960</text></svg><figcaption>Each dot is one system, by accuracy. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
+billed $0.1750 for 200 items</title></circle><circle cx="727.8" cy="50" r="11" class="ring"/><text x="727.8" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 5th · 0.900</text><text x="924.8" y="80" text-anchor="end" class="t-ink" font-size="11">bert_base_ta · 1st · 0.960</text></svg></div><div class="vn"><svg viewBox="0 0 400 90" role="img" aria-label="AG News: every learned arm by accuracy"><rect x="294.2" y="22" width="79.9" height="44" rx="10" class="band"/><line x1="14" x2="386" y1="44" y2="44" class="axis"/><circle cx="366.1" cy="44" r="7" class="dot k-local" data-tip="bert_base_ta · local · free
+accuracy 0.9600 · rank 1/30
+billed $0.0000 for 200 items"><title>bert_base_ta · local · free
+accuracy 0.9600 · rank 1/30
+billed $0.0000 for 200 items</title></circle><circle cx="353.3" cy="44" r="5.5" class="dot k-local" data-tip="bert_base_fy · local · free
+accuracy 0.9500 · rank 2/30
+billed $0.0000 for 200 items"><title>bert_base_fy · local · free
+accuracy 0.9500 · rank 2/30
+billed $0.0000 for 200 items</title></circle><circle cx="346.9" cy="44" r="5.5" class="dot k-local" data-tip="bert_mini · local · free
+accuracy 0.9450 · rank 3/30
+billed $0.0000 for 200 items"><title>bert_mini · local · free
+accuracy 0.9450 · rank 3/30
+billed $0.0000 for 200 items</title></circle><circle cx="302.2" cy="44" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+accuracy 0.9100 · rank 4/30
+billed $0.0703 for 200 items"><title>anthropic_m · hosted · proprietary
+accuracy 0.9100 · rank 4/30
+billed $0.0703 for 200 items</title></circle><circle cx="283.0" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+accuracy 0.8950 · rank 6/30
+billed $0.1272 for 200 items"><title>openai_m · hosted · proprietary
+accuracy 0.8950 · rank 6/30
+billed $0.1272 for 200 items</title></circle><circle cx="276.6" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+accuracy 0.8900 · rank 7/30
+billed $0.0487 for 200 items"><title>openai_l · hosted · proprietary
+accuracy 0.8900 · rank 7/30
+billed $0.0487 for 200 items</title></circle><circle cx="270.3" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+accuracy 0.8850 · rank 8/30
+billed $0.0070 for 200 items"><title>qwen_m · hosted · proprietary
+accuracy 0.8850 · rank 8/30
+billed $0.0070 for 200 items</title></circle><circle cx="263.9" cy="44" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+accuracy 0.8800 · rank 9/30
+billed $0.0040 for 200 items"><title>llama_m · hosted · open weights
+accuracy 0.8800 · rank 9/30
+billed $0.0040 for 200 items</title></circle><circle cx="257.5" cy="44" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+accuracy 0.8750 · rank 10/30
+billed $0.0021 for 200 items"><title>gemma_s · hosted · open weights
+accuracy 0.8750 · rank 10/30
+billed $0.0021 for 200 items</title></circle><circle cx="257.5" cy="44" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+accuracy 0.8750 · rank 11/30
+billed $0.0103 for 200 items"><title>mistral_l · hosted · open weights
+accuracy 0.8750 · rank 11/30
+billed $0.0103 for 200 items</title></circle><circle cx="257.5" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+accuracy 0.8750 · rank 12/30
+billed $0.0036 for 200 items"><title>qwen_s · hosted · proprietary
+accuracy 0.8750 · rank 12/30
+billed $0.0036 for 200 items</title></circle><circle cx="251.1" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+accuracy 0.8700 · rank 13/30
+billed $0.0114 for 200 items"><title>deepseek_l · hosted · open weights
+accuracy 0.8700 · rank 13/30
+billed $0.0114 for 200 items</title></circle><circle cx="251.1" cy="44" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+accuracy 0.8700 · rank 14/30
+billed $0.0028 for 200 items"><title>gemma_l · hosted · open weights
+accuracy 0.8700 · rank 14/30
+billed $0.0028 for 200 items</title></circle><circle cx="251.1" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+accuracy 0.8700 · rank 15/30
+billed $0.0164 for 200 items"><title>qwen_l · hosted · proprietary
+accuracy 0.8700 · rank 15/30
+billed $0.0164 for 200 items</title></circle><circle cx="238.3" cy="44" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+accuracy 0.8600 · rank 16/30
+billed $0.0186 for 200 items"><title>glm_l · hosted · open weights
+accuracy 0.8600 · rank 16/30
+billed $0.0186 for 200 items</title></circle><circle cx="238.3" cy="44" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+accuracy 0.8600 · rank 17/30
+billed $0.0107 for 200 items"><title>glm_m · hosted · open weights
+accuracy 0.8600 · rank 17/30
+billed $0.0107 for 200 items</title></circle><circle cx="238.3" cy="44" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+accuracy 0.8600 · rank 18/30
+billed $0.0096 for 200 items"><title>mistral_m · hosted · proprietary
+accuracy 0.8600 · rank 18/30
+billed $0.0096 for 200 items</title></circle><circle cx="238.3" cy="44" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+accuracy 0.8600 · rank 19/30
+billed $0.0019 for 200 items"><title>mistral_s · hosted · open weights
+accuracy 0.8600 · rank 19/30
+billed $0.0019 for 200 items</title></circle><circle cx="238.3" cy="44" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+accuracy 0.8600 · rank 20/30
+billed $0.0190 for 200 items"><title>openai_s · hosted · proprietary
+accuracy 0.8600 · rank 20/30
+billed $0.0190 for 200 items</title></circle><circle cx="231.9" cy="44" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+accuracy 0.8550 · rank 21/30
+billed $0.0016 for 200 items"><title>gemma_m · hosted · open weights
+accuracy 0.8550 · rank 21/30
+billed $0.0016 for 200 items</title></circle><circle cx="225.5" cy="44" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+accuracy 0.8500 · rank 22/30
+billed $0.0027 for 200 items"><title>glm_s · hosted · open weights
+accuracy 0.8500 · rank 22/30
+billed $0.0027 for 200 items</title></circle><circle cx="219.2" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+accuracy 0.8450 · rank 23/30
+billed $0.0043 for 200 items"><title>deepseek_m · hosted · open weights
+accuracy 0.8450 · rank 23/30
+billed $0.0043 for 200 items</title></circle><circle cx="212.8" cy="44" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+accuracy 0.8400 · rank 24/30
+billed $0.0254 for 200 items"><title>anthropic_s · hosted · proprietary
+accuracy 0.8400 · rank 24/30
+billed $0.0254 for 200 items</title></circle><circle cx="212.8" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+accuracy 0.8400 · rank 25/30
+billed $0.0014 for 200 items"><title>deepseek_s · hosted · open weights
+accuracy 0.8400 · rank 25/30
+billed $0.0014 for 200 items</title></circle><circle cx="212.8" cy="44" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+accuracy 0.8400 · rank 26/30
+billed $0.0043 for 200 items"><title>llama_l · hosted · open weights
+accuracy 0.8400 · rank 26/30
+billed $0.0043 for 200 items</title></circle><circle cx="206.4" cy="44" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+accuracy 0.8350 · rank 27/30
+billed $0.0025 for 200 items"><title>llama_s · hosted · open weights
+accuracy 0.8350 · rank 27/30
+billed $0.0025 for 200 items</title></circle><circle cx="33.9" cy="44" r="5.5" class="dot k-local" data-tip="bart_mnli · local · free
+accuracy 0.7000 · rank 28/30
+billed $0.0000 for 200 items"><title>bart_mnli · local · free
+accuracy 0.7000 · rank 28/30
+billed $0.0000 for 200 items</title></circle><circle cx="289.4" cy="44" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+accuracy 0.9000 · rank 5/30
+billed $0.1750 for 200 items"><title>anthropic_l · hosted · proprietary
+accuracy 0.9000 · rank 5/30
+billed $0.1750 for 200 items</title></circle><circle cx="289.4" cy="44" r="11" class="ring"/><text x="289.4" y="26" text-anchor="middle" class="t-ink" font-size="13">dearest · 5th · 0.900</text><text x="366.1" y="74" text-anchor="end" class="t-ink" font-size="13">bert_base_ta · 1st · 0.960</text></svg></div><figcaption>Each dot is one system, by accuracy. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span></div><svg viewBox="0 0 1000 440" role="img" aria-label="AG News: cost against quality"><line x1="150.0" x2="150.0" y1="24" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.001</text><line x1="423.3" x2="423.3" y1="24" y2="390" class="grid"/><text x="423.3" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="696.7" x2="696.7" y1="24" y2="390" class="grid"/><text x="696.7" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="970.0" x2="970.0" y1="24" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="40" x2="970" y1="364.8" y2="364.8" class="grid"/><text x="34" y="368.8" text-anchor="end" class="t-muted" font-size="10">0.700</text><line x1="40" x2="970" y1="207.0" y2="207.0" class="grid"/><text x="34" y="211.0" text-anchor="end" class="t-muted" font-size="10">0.830</text><line x1="40" x2="970" y1="49.2" y2="49.2" class="grid"/><text x="34" y="53.2" text-anchor="end" class="t-muted" font-size="10">0.960</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="24" y2="390" class="axis"/><circle cx="76" cy="49.2" r="6" class="dot k-local" data-tip="bert_base_ta · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="AG News: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.001</text><line x1="423.3" x2="423.3" y1="34" y2="390" class="grid"/><text x="423.3" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="696.7" x2="696.7" y1="34" y2="390" class="grid"/><text x="696.7" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="970.0" x2="970.0" y1="34" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="40" x2="970" y1="365.4" y2="365.4" class="grid"/><text x="34" y="369.4" text-anchor="end" class="t-muted" font-size="10">0.700</text><line x1="40" x2="970" y1="212.0" y2="212.0" class="grid"/><text x="34" y="216.0" text-anchor="end" class="t-muted" font-size="10">0.830</text><line x1="40" x2="970" y1="58.6" y2="58.6" class="grid"/><text x="34" y="62.6" text-anchor="end" class="t-muted" font-size="10">0.960</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ accuracy</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="390" class="axis"/><circle cx="76" cy="58.6" r="6" class="dot k-local" data-tip="bert_base_ta · local · free
 accuracy 0.9600 · $0"><title>bert_base_ta · local · free
-accuracy 0.9600 · $0</title></circle><circle cx="76" cy="61.4" r="6" class="dot k-local" data-tip="bert_base_fy · local · free
+accuracy 0.9600 · $0</title></circle><circle cx="76" cy="70.4" r="6" class="dot k-local" data-tip="bert_base_fy · local · free
 accuracy 0.9500 · $0"><title>bert_base_fy · local · free
-accuracy 0.9500 · $0</title></circle><circle cx="76" cy="67.4" r="6" class="dot k-local" data-tip="bert_mini · local · free
+accuracy 0.9500 · $0</title></circle><circle cx="76" cy="76.3" r="6" class="dot k-local" data-tip="bert_mini · local · free
 accuracy 0.9450 · $0"><title>bert_mini · local · free
-accuracy 0.9450 · $0</title></circle><circle cx="76" cy="364.8" r="6" class="dot k-local" data-tip="bart_mnli · local · free
+accuracy 0.9450 · $0</title></circle><circle cx="76" cy="365.4" r="6" class="dot k-local" data-tip="bart_mnli · local · free
 accuracy 0.7000 · $0"><title>bart_mnli · local · free
-accuracy 0.7000 · $0</title></circle><circle cx="845.9" cy="109.9" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+accuracy 0.7000 · $0</title></circle><circle cx="845.9" cy="117.6" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
 accuracy 0.9100
 $0.3514 per 1,000 items"><title>anthropic_m · hosted · proprietary
 accuracy 0.9100
-$0.3514 per 1,000 items</title></circle><circle cx="954.1" cy="122.1" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+$0.3514 per 1,000 items</title></circle><circle cx="954.1" cy="129.4" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
 accuracy 0.9000
 $0.8749 per 1,000 items"><title>anthropic_l · hosted · proprietary
 accuracy 0.9000
-$0.8749 per 1,000 items</title></circle><circle cx="916.3" cy="128.1" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+$0.8749 per 1,000 items</title></circle><circle cx="916.3" cy="135.3" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
 accuracy 0.8950
 $0.6361 per 1,000 items"><title>openai_m · hosted · proprietary
 accuracy 0.8950
-$0.6361 per 1,000 items</title></circle><circle cx="802.3" cy="134.2" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+$0.6361 per 1,000 items</title></circle><circle cx="802.3" cy="141.2" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
 accuracy 0.8900
 $0.2435 per 1,000 items"><title>openai_l · hosted · proprietary
 accuracy 0.8900
-$0.2435 per 1,000 items</title></circle><circle cx="571.2" cy="140.3" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+$0.2435 per 1,000 items</title></circle><circle cx="571.2" cy="147.1" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
 accuracy 0.8850
 $0.0348 per 1,000 items"><title>qwen_m · hosted · proprietary
 accuracy 0.8850
-$0.0348 per 1,000 items</title></circle><circle cx="504.5" cy="146.3" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+$0.0348 per 1,000 items</title></circle><circle cx="504.5" cy="153.0" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
 accuracy 0.8800
 $0.0198 per 1,000 items"><title>llama_m · hosted · open weights
 accuracy 0.8800
-$0.0198 per 1,000 items</title></circle><circle cx="431.0" cy="152.4" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+$0.0198 per 1,000 items</title></circle><circle cx="431.0" cy="158.9" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
 accuracy 0.8750
 $0.0107 per 1,000 items"><title>gemma_s · hosted · open weights
 accuracy 0.8750
-$0.0107 per 1,000 items</title></circle><circle cx="618.1" cy="152.4" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
+$0.0107 per 1,000 items</title></circle><circle cx="618.1" cy="158.9" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
 accuracy 0.8750
 $0.0516 per 1,000 items"><title>mistral_l · hosted · open weights
 accuracy 0.8750
-$0.0516 per 1,000 items</title></circle><circle cx="493.4" cy="152.4" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+$0.0516 per 1,000 items</title></circle><circle cx="493.4" cy="158.9" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
 accuracy 0.8750
 $0.0180 per 1,000 items"><title>qwen_s · hosted · proprietary
 accuracy 0.8750
-$0.0180 per 1,000 items</title></circle><circle cx="630.2" cy="158.5" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+$0.0180 per 1,000 items</title></circle><circle cx="630.2" cy="164.8" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
 accuracy 0.8700
 $0.0571 per 1,000 items"><title>deepseek_l · hosted · open weights
 accuracy 0.8700
-$0.0571 per 1,000 items</title></circle><circle cx="463.2" cy="158.5" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+$0.0571 per 1,000 items</title></circle><circle cx="463.2" cy="164.8" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
 accuracy 0.8700
 $0.0140 per 1,000 items"><title>gemma_l · hosted · open weights
 accuracy 0.8700
-$0.0140 per 1,000 items</title></circle><circle cx="673.3" cy="158.5" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+$0.0140 per 1,000 items</title></circle><circle cx="673.3" cy="164.8" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
 accuracy 0.8700
 $0.0821 per 1,000 items"><title>qwen_l · hosted · proprietary
 accuracy 0.8700
-$0.0821 per 1,000 items</title></circle><circle cx="688.1" cy="170.6" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
+$0.0821 per 1,000 items</title></circle><circle cx="688.1" cy="176.6" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
 accuracy 0.8600
 $0.0930 per 1,000 items"><title>glm_l · hosted · open weights
 accuracy 0.8600
-$0.0930 per 1,000 items</title></circle><circle cx="622.0" cy="170.6" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+$0.0930 per 1,000 items</title></circle><circle cx="622.0" cy="176.6" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
 accuracy 0.8600
 $0.0533 per 1,000 items"><title>glm_m · hosted · open weights
 accuracy 0.8600
-$0.0533 per 1,000 items</title></circle><circle cx="609.5" cy="170.6" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+$0.0533 per 1,000 items</title></circle><circle cx="609.5" cy="176.6" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
 accuracy 0.8600
 $0.0480 per 1,000 items"><title>mistral_m · hosted · proprietary
 accuracy 0.8600
-$0.0480 per 1,000 items</title></circle><circle cx="417.8" cy="170.6" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+$0.0480 per 1,000 items</title></circle><circle cx="417.8" cy="176.6" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
 accuracy 0.8600
 $0.0095 per 1,000 items"><title>mistral_s · hosted · open weights
 accuracy 0.8600
-$0.0095 per 1,000 items</title></circle><circle cx="690.5" cy="170.6" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+$0.0095 per 1,000 items</title></circle><circle cx="690.5" cy="176.6" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
 accuracy 0.8600
 $0.0950 per 1,000 items"><title>openai_s · hosted · proprietary
 accuracy 0.8600
-$0.0950 per 1,000 items</title></circle><circle cx="395.5" cy="176.7" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+$0.0950 per 1,000 items</title></circle><circle cx="395.5" cy="182.5" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
 accuracy 0.8550
 $0.0079 per 1,000 items"><title>gemma_m · hosted · open weights
 accuracy 0.8550
-$0.0079 per 1,000 items</title></circle><circle cx="460.3" cy="182.7" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+$0.0079 per 1,000 items</title></circle><circle cx="460.3" cy="188.4" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
 accuracy 0.8500
 $0.0137 per 1,000 items"><title>glm_s · hosted · open weights
 accuracy 0.8500
-$0.0137 per 1,000 items</title></circle><circle cx="514.7" cy="188.8" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+$0.0137 per 1,000 items</title></circle><circle cx="514.7" cy="194.3" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
 accuracy 0.8450
 $0.0216 per 1,000 items"><title>deepseek_m · hosted · open weights
 accuracy 0.8450
-$0.0216 per 1,000 items</title></circle><circle cx="724.9" cy="194.9" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+$0.0216 per 1,000 items</title></circle><circle cx="724.9" cy="200.2" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
 accuracy 0.8400
 $0.1268 per 1,000 items"><title>anthropic_s · hosted · proprietary
 accuracy 0.8400
-$0.1268 per 1,000 items</title></circle><circle cx="381.4" cy="194.9" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+$0.1268 per 1,000 items</title></circle><circle cx="381.4" cy="200.2" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
 accuracy 0.8400
 $0.0070 per 1,000 items"><title>deepseek_s · hosted · open weights
 accuracy 0.8400
-$0.0070 per 1,000 items</title></circle><circle cx="513.9" cy="194.9" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+$0.0070 per 1,000 items</title></circle><circle cx="513.9" cy="200.2" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
 accuracy 0.8400
 $0.0214 per 1,000 items"><title>llama_l · hosted · open weights
 accuracy 0.8400
-$0.0214 per 1,000 items</title></circle><circle cx="451.2" cy="200.9" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+$0.0214 per 1,000 items</title></circle><circle cx="451.2" cy="206.1" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
 accuracy 0.8350
 $0.0127 per 1,000 items"><title>llama_s · hosted · open weights
 accuracy 0.8350
-$0.0127 per 1,000 items</title></circle><circle cx="954.1" cy="122.1" r="11" class="ring"/><text x="940.1" y="126.1" text-anchor="end" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="90.0" y="53.2" class="t-ink" font-size="11">bert_base_ta · 1st</text></svg><figcaption>Billed cost per 1,000 items, read from the provider's response, against accuracy. Free models sit in the left lane.</figcaption></div>
+$0.0127 per 1,000 items</title></circle><circle cx="954.1" cy="129.4" r="11" class="ring"/><text x="940.1" y="133.4" text-anchor="end" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="76.0" y="44.6" text-anchor="middle" class="t-ink" font-size="11">bert_base_ta · 1st</text></svg></div><div class="vn"><svg viewBox="0 0 400 400" role="img" aria-label="AG News: cost against quality"><line x1="134.0" x2="134.0" y1="34" y2="350" class="grid"/><text x="134.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.001</text><line x1="218.0" x2="218.0" y1="34" y2="350" class="grid"/><text x="218.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.01</text><line x1="302.0" x2="302.0" y1="34" y2="350" class="grid"/><text x="302.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.1</text><line x1="386.0" x2="386.0" y1="34" y2="350" class="grid"/><text x="386.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$1</text><line x1="52" x2="386" y1="328.2" y2="328.2" class="grid"/><text x="46" y="332.2" text-anchor="end" class="t-muted" font-size="12">0.700</text><line x1="52" x2="386" y1="192.0" y2="192.0" class="grid"/><text x="46" y="196.0" text-anchor="end" class="t-muted" font-size="12">0.830</text><line x1="52" x2="386" y1="55.8" y2="55.8" class="grid"/><text x="46" y="59.8" text-anchor="end" class="t-muted" font-size="12">0.960</text><text x="260" y="394" text-anchor="middle" class="t-muted" font-size="13">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="13">↑ accuracy</text><text x="88" y="370" text-anchor="middle" class="t-muted" font-size="12">free</text><line x1="104" x2="104" y1="34" y2="350" class="axis"/><circle cx="88" cy="55.8" r="6" class="dot k-local" data-tip="bert_base_ta · local · free
+accuracy 0.9600 · $0"><title>bert_base_ta · local · free
+accuracy 0.9600 · $0</title></circle><circle cx="88" cy="66.3" r="6" class="dot k-local" data-tip="bert_base_fy · local · free
+accuracy 0.9500 · $0"><title>bert_base_fy · local · free
+accuracy 0.9500 · $0</title></circle><circle cx="88" cy="71.5" r="6" class="dot k-local" data-tip="bert_mini · local · free
+accuracy 0.9450 · $0"><title>bert_mini · local · free
+accuracy 0.9450 · $0</title></circle><circle cx="88" cy="328.2" r="6" class="dot k-local" data-tip="bart_mnli · local · free
+accuracy 0.7000 · $0"><title>bart_mnli · local · free
+accuracy 0.7000 · $0</title></circle><circle cx="347.8" cy="108.2" r="6" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+accuracy 0.9100
+$0.3514 per 1,000 items"><title>anthropic_m · hosted · proprietary
+accuracy 0.9100
+$0.3514 per 1,000 items</title></circle><circle cx="381.1" cy="118.7" r="6" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+accuracy 0.9000
+$0.8749 per 1,000 items"><title>anthropic_l · hosted · proprietary
+accuracy 0.9000
+$0.8749 per 1,000 items</title></circle><circle cx="369.5" cy="123.9" r="6" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+accuracy 0.8950
+$0.6361 per 1,000 items"><title>openai_m · hosted · proprietary
+accuracy 0.8950
+$0.6361 per 1,000 items</title></circle><circle cx="334.5" cy="129.1" r="6" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+accuracy 0.8900
+$0.2435 per 1,000 items"><title>openai_l · hosted · proprietary
+accuracy 0.8900
+$0.2435 per 1,000 items</title></circle><circle cx="263.4" cy="134.4" r="6" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+accuracy 0.8850
+$0.0348 per 1,000 items"><title>qwen_m · hosted · proprietary
+accuracy 0.8850
+$0.0348 per 1,000 items</title></circle><circle cx="242.9" cy="139.6" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+accuracy 0.8800
+$0.0198 per 1,000 items"><title>llama_m · hosted · open weights
+accuracy 0.8800
+$0.0198 per 1,000 items</title></circle><circle cx="220.3" cy="144.9" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+accuracy 0.8750
+$0.0107 per 1,000 items"><title>gemma_s · hosted · open weights
+accuracy 0.8750
+$0.0107 per 1,000 items</title></circle><circle cx="277.9" cy="144.9" r="6" class="dot k-open" data-tip="mistral_l · hosted · open weights
+accuracy 0.8750
+$0.0516 per 1,000 items"><title>mistral_l · hosted · open weights
+accuracy 0.8750
+$0.0516 per 1,000 items</title></circle><circle cx="239.5" cy="144.9" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+accuracy 0.8750
+$0.0180 per 1,000 items"><title>qwen_s · hosted · proprietary
+accuracy 0.8750
+$0.0180 per 1,000 items</title></circle><circle cx="281.6" cy="150.1" r="6" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+accuracy 0.8700
+$0.0571 per 1,000 items"><title>deepseek_l · hosted · open weights
+accuracy 0.8700
+$0.0571 per 1,000 items</title></circle><circle cx="230.2" cy="150.1" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+accuracy 0.8700
+$0.0140 per 1,000 items"><title>gemma_l · hosted · open weights
+accuracy 0.8700
+$0.0140 per 1,000 items</title></circle><circle cx="294.8" cy="150.1" r="6" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+accuracy 0.8700
+$0.0821 per 1,000 items"><title>qwen_l · hosted · proprietary
+accuracy 0.8700
+$0.0821 per 1,000 items</title></circle><circle cx="299.4" cy="160.6" r="6" class="dot k-open" data-tip="glm_l · hosted · open weights
+accuracy 0.8600
+$0.0930 per 1,000 items"><title>glm_l · hosted · open weights
+accuracy 0.8600
+$0.0930 per 1,000 items</title></circle><circle cx="279.1" cy="160.6" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+accuracy 0.8600
+$0.0533 per 1,000 items"><title>glm_m · hosted · open weights
+accuracy 0.8600
+$0.0533 per 1,000 items</title></circle><circle cx="275.2" cy="160.6" r="6" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+accuracy 0.8600
+$0.0480 per 1,000 items"><title>mistral_m · hosted · proprietary
+accuracy 0.8600
+$0.0480 per 1,000 items</title></circle><circle cx="216.3" cy="160.6" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+accuracy 0.8600
+$0.0095 per 1,000 items"><title>mistral_s · hosted · open weights
+accuracy 0.8600
+$0.0095 per 1,000 items</title></circle><circle cx="300.1" cy="160.6" r="6" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+accuracy 0.8600
+$0.0950 per 1,000 items"><title>openai_s · hosted · proprietary
+accuracy 0.8600
+$0.0950 per 1,000 items</title></circle><circle cx="209.5" cy="165.8" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+accuracy 0.8550
+$0.0079 per 1,000 items"><title>gemma_m · hosted · open weights
+accuracy 0.8550
+$0.0079 per 1,000 items</title></circle><circle cx="229.4" cy="171.0" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+accuracy 0.8500
+$0.0137 per 1,000 items"><title>glm_s · hosted · open weights
+accuracy 0.8500
+$0.0137 per 1,000 items</title></circle><circle cx="246.1" cy="176.3" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+accuracy 0.8450
+$0.0216 per 1,000 items"><title>deepseek_m · hosted · open weights
+accuracy 0.8450
+$0.0216 per 1,000 items</title></circle><circle cx="310.7" cy="181.5" r="6" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+accuracy 0.8400
+$0.1268 per 1,000 items"><title>anthropic_s · hosted · proprietary
+accuracy 0.8400
+$0.1268 per 1,000 items</title></circle><circle cx="205.1" cy="181.5" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+accuracy 0.8400
+$0.0070 per 1,000 items"><title>deepseek_s · hosted · open weights
+accuracy 0.8400
+$0.0070 per 1,000 items</title></circle><circle cx="245.8" cy="181.5" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+accuracy 0.8400
+$0.0214 per 1,000 items"><title>llama_l · hosted · open weights
+accuracy 0.8400
+$0.0214 per 1,000 items</title></circle><circle cx="226.6" cy="186.8" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+accuracy 0.8350
+$0.0127 per 1,000 items"><title>llama_s · hosted · open weights
+accuracy 0.8350
+$0.0127 per 1,000 items</title></circle><circle cx="381.1" cy="118.7" r="11" class="ring"/><text x="367.1" y="122.7" text-anchor="end" class="t-ink" font-size="13">anthropic_l · dearest</text><text x="88.0" y="41.8" text-anchor="middle" class="t-ink" font-size="13">bert_base_ta · 1st</text></svg></div><figcaption>Billed cost per 1,000 items, read from the provider's response, against accuracy. Free models sit in the left lane.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>

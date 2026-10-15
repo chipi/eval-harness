@@ -6,6 +6,7 @@
    capture, anything outside the built pages -- into a GitHub URL, resolved from the page's
    REAL location in the repo. The docs were written to be read on GitHub; this keeps every
    one of their links working on the site without editing them.
+3. Add the link-preview card, and the analytics tag from site/analytics.json when configured.
 """
 
 from __future__ import annotations
@@ -62,3 +63,16 @@ def on_page_markdown(markdown, page, config, files):
         return f"{m.group(1)}{base}/{repo_rel}{'#' + anchor if anchor else ''}{m.group(3)}"
 
     return LINK.sub(fix, markdown)
+
+
+def on_post_page(output, page, config):
+    """3. The link-preview card, and the Umami tag from site/analytics.json when configured."""
+    import json  # noqa: PLC0415
+    from html import escape  # noqa: PLC0415
+    # The findings site's link-preview card, so a shared docs link is not a bare URL.
+    tag = ('<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">'
+           '<meta name="twitter:card" content="summary_large_image">')
+    cfg = json.loads((ROOT / "site" / "analytics.json").read_text())
+    if cfg.get("umami_src") and cfg.get("website_id"):
+        tag += f'<script defer src="{escape(cfg["umami_src"])}" data-website-id="{escape(cfg["website_id"])}"></script>'
+    return output.replace("</head>", tag + "</head>", 1)

@@ -14,7 +14,7 @@ conclusion the pair does.
 | hosted field | 0.835 – 0.910 | 0.939 – 0.993 |
 | fine-tuned ML arm | beat all 24 | **0.9857 — tied with the top group, not above it** (needs torch ≥ 2.6) |
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
-| outcome | a winner | a group of eleven |
+| outcome | a winner | no winner: the leader is tied with 19 of the 27 others |
 
 > **Rerun this experiment** from the repository root — `EXP=dbpedia`:
 >
@@ -94,7 +94,7 @@ which the result says you do not need.
 **$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**, and
 `gemma_m` ties the fine-tuned arm at 0.9857 for $0.0033 — 115× cheaper. Holm over a family
 of 27 declared in advance: the leader is ahead of 27 of 27 and **separated from only 8**.
-The top eleven arms are one group, and one of them is the free fine-tuned classifier.
+It is tied with the other 19, one of them the free fine-tuned classifier; the top eleven sit within four items of each other.
 
 **Label noise is the same size as the signal.** Three items are disputed by 24–25 of the 26
 learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `Building`

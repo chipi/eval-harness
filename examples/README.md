@@ -25,7 +25,7 @@ gitignored.
 > | `METHOD.md` | **why** — why this dataset, why these arms, why these criteria, and what each choice gives up |
 > | the report in [`../research/`](../research) | **what happened** — results, statistics, corrections, and what was *not* covered |
 
-| Example | Task | Shape of the answer | What it broke | Why | Report |
+| Example | Task | Shape of the answer | What it broke in the harness | Method (why) | Report |
 |---|---|---|---|---|---|
 | [`summarization-cnn-dailymail`](summarization-cnn-dailymail) | summarise a news article | one text vs one text, **continuous** | nothing — it *is* the baseline the others are measured against | [METHOD](summarization-cnn-dailymail/METHOD.md) | [report](../research/REPORT_SUMMARIZATION.md) |
 | [`classification-ag-news`](classification-ag-news) | 4-way topic label | one label vs one label, **0 or 1** | a discrete metric ties, and the duplicate-run check flagged honest ties as copies | [METHOD](classification-ag-news/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
@@ -128,15 +128,21 @@ transferred too — the share of available headroom taken moved 90.9% → 90.2%.
 ## The pattern across all five
 
 **At the top of a field, price stops predicting quality well before quality stops
-varying.** Every example produced a tie group spanning a large price range:
+varying.** In four of the five examples the leader cannot be statistically separated
+(Holm step-down, α = 0.05) from a group of other arms — and that group spans a large price
+range. Few-NERD is the exception: it has a clear winner, and the same tie appears one rank
+down.
 
-| | tie at the top | price span |
-|---|---|---|
-| summarisation | dearest arm ranks 18th of 29 | 52× |
-| AG News | leader tied with 3 — two other fine-tunes and one paid arm | 2.5× |
-| DBpedia | a group of 11, one of them free | 115× |
-| Few-NERD | 8 hosted arms | 78× |
-| SciFact | 12 arms, **2 of them free** | 7.6× billed, among cheap arms |
+| experiment | leader | arms not separated from the leader | price ratio: dearest arm ÷ cheapest paid arm not separated from the leader |
+|---|---|---|---|
+| Summarisation · CNN/DM | `bart_l` ($0) | 15 of 28 — 13 paid, plus both distilled BARTs ($0) | 143× |
+| Classification · AG News | `bert_base_ta` ($0) | 3 of 29 — two other fine-tunes ($0) and `anthropic_m` | 2.5× |
+| Classification · DBpedia | `qwen_m` | 19 of 27 — one of them the $0 fine-tune | 115× |
+| Extraction · Few-NERD | `span_marker` ($0) | **none** — separated from all 27 | no tie at the top; the 8 hosted arms tied for 2nd span 78× |
+| Retrieval · SciFact | `glm_s` | 11–12 of 18 (the count sits on a Holm boundary) — **2 of them free** encoders | 7.6× (billed) |
+
+Counts and ratios are from each experiment's report; "dearest" is the most expensive arm in
+the whole experiment, which is not always inside the group.
 
 And every example found something wrong with the instrument before it found anything about
 the models. The append-only journal, [`../research/NOTES.md`](../research/internal/NOTES.md), is the

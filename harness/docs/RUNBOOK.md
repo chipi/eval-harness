@@ -233,9 +233,9 @@ Makefile. Found by external review.
 | `make leaderboard DATASET_ID=…` | how do all the arms rank, on every metric at once |
 | `make family-test DATASET_ID=… A=… AGAINST=…` | is arm A separated from a **pre-declared family**, Holm step-down. This is what every separation claim in the reports rests on |
 | `make pair-test DATASET_ID=… A=… B=…` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
-| `make holdout DATASET_ID=… EXCLUDE_DATASET=…` | does the result survive on the items the dev slice never contained |
+| `make holdout DATASET_ID=… EXCLUDE=…` | does the result survive on the items the dev slice never contained |
 | `make rank-stability DATASET_ID=…` | how many items before the ordering stops moving — measured, not assumed from a power table |
-| `make bootstrap-test DATASET_ID=…` | a percentile interval for a corpus-level metric that has no per-item value |
+| `make bootstrap-test DATASET_ID=… A=… AGAINST=…` | a percentile interval for a corpus-level metric that has no per-item value |
 | `make rescore DATASET_ID=…` | recompute every score from stored outputs under the current scorer — or, with `REFERENCE=gold/…`, against a reference set that arrived later. **$0, no API calls** |
 | `make cost-report` | what each arm actually cost, from the provider's bill rather than a price table |
 | `make silver-calibrate DATASET_ID=…` | does a model-authored reference rank arms the way the trusted one does |

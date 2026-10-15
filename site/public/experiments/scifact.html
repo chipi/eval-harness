@@ -7,6 +7,12 @@
 <meta name="description" content="Retrieve the abstracts that support a scientific claim. LLM rerankers lead a twelve-way tie; a free dense retriever sits inside it.">
 <meta property="og:title" content="Retrieval · SciFact — eval-harness">
 <meta property="og:description" content="Retrieve the abstracts that support a scientific claim. LLM rerankers lead a twelve-way tie; a free dense retriever sits inside it.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
 <script>
 (function(){var p=new URLSearchParams(location.search),t=p.get('theme');
@@ -28,12 +34,12 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <div class="kicker"><b>Retrieval</b> · SciFact</div>
   <h1 style="max-width:16ch">Rerankers lead a crowd.</h1>
   <p class="dek">Retrieve the abstracts that support a scientific claim. LLM rerankers lead a twelve-way tie; a free dense retriever sits inside it.</p>
-  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Rank 5,183 scientific abstracts by how well they bear on a claim.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the SciFact test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">19 arms: 12 hosted, the rest local or baselines</div></div><div class="fact"><div class="k">Metric</div><div class="v">nDCG@10 — the field&#x27;s standard</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bm25 0.6523 vs 0.6650 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$1.94 for the whole sweep</div></div></div>
+  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Rank 5,183 scientific abstracts by how well they bear on a claim.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the SciFact test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">19 compared: 12 hosted models billed per call; 7 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">nDCG@10 — the field&#x27;s standard; higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bm25 0.6523 vs 0.6650 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$1.94 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_RETRIEVAL.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../index.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span></div><svg viewBox="0 0 1000 80" role="img" aria-label="SciFact: every learned arm by nDCG@10"><rect x="553.3" y="28" width="379.5" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-open" data-tip="glm_s · hosted · open weights
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="SciFact: every learned arm by nDCG@10"><rect x="553.3" y="28" width="379.5" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50" r="7" class="dot k-open" data-tip="glm_s · hosted · open weights
 nDCG@10 0.7437 · rank 1/19
 billed $0.1421 for 200 items"><title>glm_s · hosted · open weights
 nDCG@10 0.7437 · rank 1/19
@@ -101,69 +107,195 @@ billed $0.0000 for 200 items</title></circle><circle cx="909.0" cy="50" r="7" cl
 nDCG@10 0.7419 · rank 2/19
 billed $0.4576 for 200 items"><title>glm_m · hosted · open weights
 nDCG@10 0.7419 · rank 2/19
-billed $0.4576 for 200 items</title></circle><circle cx="909.0" cy="50" r="11" class="ring"/><text x="909.0" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 2nd · 0.742</text><text x="924.8" y="78" text-anchor="end" class="t-ink" font-size="11">glm_s · 1st · 0.744</text></svg><figcaption>Each dot is one system, by nDCG@10. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
+billed $0.4576 for 200 items</title></circle><circle cx="909.0" cy="50" r="11" class="ring"/><text x="906.0" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 2nd · 0.742</text><text x="924.8" y="80" text-anchor="end" class="t-ink" font-size="11">glm_s · 1st · 0.744</text></svg></div><div class="vn"><svg viewBox="0 0 400 90" role="img" aria-label="SciFact: every learned arm by nDCG@10"><rect x="216.6" y="22" width="157.5" height="44" rx="10" class="band"/><line x1="14" x2="386" y1="44" y2="44" class="axis"/><circle cx="366.1" cy="44" r="7" class="dot k-open" data-tip="glm_s · hosted · open weights
+nDCG@10 0.7437 · rank 1/19
+billed $0.1421 for 200 items"><title>glm_s · hosted · open weights
+nDCG@10 0.7437 · rank 1/19
+billed $0.1421 for 200 items</title></circle><circle cx="353.2" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+nDCG@10 0.7399 · rank 3/19
+billed $0.2381 for 200 items"><title>deepseek_m · hosted · open weights
+nDCG@10 0.7399 · rank 3/19
+billed $0.2381 for 200 items</title></circle><circle cx="346.3" cy="44" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+nDCG@10 0.7378 · rank 4/19
+billed $0.0600 for 200 items"><title>deepseek_s · hosted · open weights
+nDCG@10 0.7378 · rank 4/19
+billed $0.0600 for 200 items</title></circle><circle cx="341.1" cy="44" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+nDCG@10 0.7363 · rank 5/19
+billed $0.0721 for 200 items"><title>gemma_m · hosted · open weights
+nDCG@10 0.7363 · rank 5/19
+billed $0.0721 for 200 items</title></circle><circle cx="339.6" cy="44" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+nDCG@10 0.7359 · rank 6/19
+billed $0.1701 for 200 items"><title>gemma_l · hosted · open weights
+nDCG@10 0.7359 · rank 6/19
+billed $0.1701 for 200 items</title></circle><circle cx="313.4" cy="44" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+nDCG@10 0.7281 · rank 7/19
+billed $0.1731 for 200 items"><title>llama_l · hosted · open weights
+nDCG@10 0.7281 · rank 7/19
+billed $0.1731 for 200 items</title></circle><circle cx="283.2" cy="44" r="5.5" class="dot k-local" data-tip="e5_base · local · free
+nDCG@10 0.7191 · rank 8/19
+billed $0.0000 for 200 items"><title>e5_base · local · free
+nDCG@10 0.7191 · rank 8/19
+billed $0.0000 for 200 items</title></circle><circle cx="280.4" cy="44" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+nDCG@10 0.7183 · rank 9/19
+billed $0.1559 for 200 items"><title>qwen_s · hosted · proprietary
+nDCG@10 0.7183 · rank 9/19
+billed $0.1559 for 200 items</title></circle><circle cx="277.0" cy="44" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+nDCG@10 0.7172 · rank 10/19
+billed $0.1458 for 200 items"><title>llama_s · hosted · open weights
+nDCG@10 0.7172 · rank 10/19
+billed $0.1458 for 200 items</title></circle><circle cx="251.5" cy="44" r="5.5" class="dot k-local" data-tip="bge_small · local · free
+nDCG@10 0.7097 · rank 11/19
+billed $0.0000 for 200 items"><title>bge_small · local · free
+nDCG@10 0.7097 · rank 11/19
+billed $0.0000 for 200 items</title></circle><circle cx="248.5" cy="44" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+nDCG@10 0.7088 · rank 12/19
+billed $0.1434 for 200 items"><title>llama_m · hosted · open weights
+nDCG@10 0.7088 · rank 12/19
+billed $0.1434 for 200 items</title></circle><circle cx="242.9" cy="44" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+nDCG@10 0.7071 · rank 13/19
+billed $0.0852 for 200 items"><title>mistral_s · hosted · open weights
+nDCG@10 0.7071 · rank 13/19
+billed $0.0852 for 200 items</title></circle><circle cx="224.6" cy="44" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+nDCG@10 0.7017 · rank 14/19
+billed $0.0962 for 200 items"><title>gemma_s · hosted · open weights
+nDCG@10 0.7017 · rank 14/19
+billed $0.0962 for 200 items</title></circle><circle cx="98.7" cy="44" r="5.5" class="dot k-local" data-tip="mpnet · local · free
+nDCG@10 0.6643 · rank 15/19
+billed $0.0000 for 200 items"><title>mpnet · local · free
+nDCG@10 0.6643 · rank 15/19
+billed $0.0000 for 200 items</title></circle><circle cx="61.7" cy="44" r="5.5" class="dot k-local" data-tip="minilm · local · free
+nDCG@10 0.6533 · rank 16/19
+billed $0.0000 for 200 items"><title>minilm · local · free
+nDCG@10 0.6533 · rank 16/19
+billed $0.0000 for 200 items</title></circle><circle cx="33.9" cy="44" r="5.5" class="dot k-local" data-tip="bm25 · local · free
+nDCG@10 0.6451 · rank 17/19
+billed $0.0000 for 200 items"><title>bm25 · local · free
+nDCG@10 0.6451 · rank 17/19
+billed $0.0000 for 200 items</title></circle><circle cx="359.9" cy="44" r="7" class="dot k-open" data-tip="glm_m · hosted · open weights
+nDCG@10 0.7419 · rank 2/19
+billed $0.4576 for 200 items"><title>glm_m · hosted · open weights
+nDCG@10 0.7419 · rank 2/19
+billed $0.4576 for 200 items</title></circle><circle cx="359.9" cy="44" r="11" class="ring"/><text x="306.0" y="26" text-anchor="middle" class="t-ink" font-size="13">dearest · 2nd · 0.742</text><text x="366.1" y="74" text-anchor="end" class="t-ink" font-size="13">glm_s · 1st · 0.744</text></svg></div><figcaption>Each dot is one system, by nDCG@10. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span></div><svg viewBox="0 0 1000 440" role="img" aria-label="SciFact: cost against quality"><line x1="150.0" x2="150.0" y1="24" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="560.0" x2="560.0" y1="24" y2="390" class="grid"/><text x="560.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="24" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="364.8" y2="364.8" class="grid"/><text x="34" y="368.8" text-anchor="end" class="t-muted" font-size="10">0.645</text><line x1="40" x2="970" y1="207.0" y2="207.0" class="grid"/><text x="34" y="211.0" text-anchor="end" class="t-muted" font-size="10">0.694</text><line x1="40" x2="970" y1="49.2" y2="49.2" class="grid"/><text x="34" y="53.2" text-anchor="end" class="t-muted" font-size="10">0.744</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="24" y2="390" class="axis"/><circle cx="76" cy="128.0" r="6" class="dot k-local" data-tip="e5_base · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="SciFact: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="390" class="grid"/><text x="150.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="560.0" x2="560.0" y1="34" y2="390" class="grid"/><text x="560.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="34" y2="390" class="grid"/><text x="970.0" y="410" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="365.4" y2="365.4" class="grid"/><text x="34" y="369.4" text-anchor="end" class="t-muted" font-size="10">0.645</text><line x1="40" x2="970" y1="212.0" y2="212.0" class="grid"/><text x="34" y="216.0" text-anchor="end" class="t-muted" font-size="10">0.694</text><line x1="40" x2="970" y1="58.6" y2="58.6" class="grid"/><text x="34" y="62.6" text-anchor="end" class="t-muted" font-size="10">0.744</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ nDCG@10</text><text x="76" y="410" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="390" class="axis"/><circle cx="76" cy="135.1" r="6" class="dot k-local" data-tip="e5_base · local · free
 nDCG@10 0.7191 · $0"><title>e5_base · local · free
-nDCG@10 0.7191 · $0</title></circle><circle cx="76" cy="158.1" r="6" class="dot k-local" data-tip="bge_small · local · free
+nDCG@10 0.7191 · $0</title></circle><circle cx="76" cy="164.4" r="6" class="dot k-local" data-tip="bge_small · local · free
 nDCG@10 0.7097 · $0"><title>bge_small · local · free
-nDCG@10 0.7097 · $0</title></circle><circle cx="76" cy="303.2" r="6" class="dot k-local" data-tip="mpnet · local · free
+nDCG@10 0.7097 · $0</title></circle><circle cx="76" cy="305.6" r="6" class="dot k-local" data-tip="mpnet · local · free
 nDCG@10 0.6643 · $0"><title>mpnet · local · free
-nDCG@10 0.6643 · $0</title></circle><circle cx="76" cy="338.3" r="6" class="dot k-local" data-tip="minilm · local · free
+nDCG@10 0.6643 · $0</title></circle><circle cx="76" cy="339.7" r="6" class="dot k-local" data-tip="minilm · local · free
 nDCG@10 0.6533 · $0"><title>minilm · local · free
-nDCG@10 0.6533 · $0</title></circle><circle cx="76" cy="364.8" r="6" class="dot k-local" data-tip="bm25 · local · free
+nDCG@10 0.6533 · $0</title></circle><circle cx="76" cy="365.4" r="6" class="dot k-local" data-tip="bm25 · local · free
 nDCG@10 0.6451 · $0"><title>bm25 · local · free
-nDCG@10 0.6451 · $0</title></circle><circle cx="499.2" cy="49.2" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+nDCG@10 0.6451 · $0</title></circle><circle cx="499.2" cy="58.6" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
 nDCG@10 0.7437
 $0.7107 per 1,000 items"><title>glm_s · hosted · open weights
 nDCG@10 0.7437
-$0.7107 per 1,000 items</title></circle><circle cx="707.4" cy="55.1" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+$0.7107 per 1,000 items</title></circle><circle cx="707.4" cy="64.2" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
 nDCG@10 0.7419
 $2.29 per 1,000 items"><title>glm_m · hosted · open weights
 nDCG@10 0.7419
-$2.29 per 1,000 items</title></circle><circle cx="591.0" cy="61.4" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+$2.29 per 1,000 items</title></circle><circle cx="591.0" cy="70.4" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
 nDCG@10 0.7399
 $1.19 per 1,000 items"><title>deepseek_m · hosted · open weights
 nDCG@10 0.7399
-$1.19 per 1,000 items</title></circle><circle cx="345.5" cy="68.0" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+$1.19 per 1,000 items</title></circle><circle cx="345.5" cy="76.8" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
 nDCG@10 0.7378
 $0.2998 per 1,000 items"><title>deepseek_s · hosted · open weights
 nDCG@10 0.7378
-$0.2998 per 1,000 items</title></circle><circle cx="378.4" cy="73.0" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+$0.2998 per 1,000 items</title></circle><circle cx="378.4" cy="81.6" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
 nDCG@10 0.7363
 $0.3606 per 1,000 items"><title>gemma_m · hosted · open weights
 nDCG@10 0.7363
-$0.3606 per 1,000 items</title></circle><circle cx="531.2" cy="74.4" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+$0.3606 per 1,000 items</title></circle><circle cx="531.2" cy="83.0" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
 nDCG@10 0.7359
 $0.8505 per 1,000 items"><title>gemma_l · hosted · open weights
 nDCG@10 0.7359
-$0.8505 per 1,000 items</title></circle><circle cx="534.2" cy="99.3" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+$0.8505 per 1,000 items</title></circle><circle cx="534.2" cy="107.2" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
 nDCG@10 0.7281
 $0.8653 per 1,000 items"><title>llama_l · hosted · open weights
 nDCG@10 0.7281
-$0.8653 per 1,000 items</title></circle><circle cx="515.6" cy="130.6" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+$0.8653 per 1,000 items</title></circle><circle cx="515.6" cy="137.7" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
 nDCG@10 0.7183
 $0.7794 per 1,000 items"><title>qwen_s · hosted · proprietary
 nDCG@10 0.7183
-$0.7794 per 1,000 items</title></circle><circle cx="503.8" cy="133.9" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+$0.7794 per 1,000 items</title></circle><circle cx="503.8" cy="140.9" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
 nDCG@10 0.7172
 $0.7292 per 1,000 items"><title>llama_s · hosted · open weights
 nDCG@10 0.7172
-$0.7292 per 1,000 items</title></circle><circle cx="500.7" cy="161.0" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+$0.7292 per 1,000 items</title></circle><circle cx="500.7" cy="167.2" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
 nDCG@10 0.7088
 $0.7169 per 1,000 items"><title>llama_m · hosted · open weights
 nDCG@10 0.7088
-$0.7169 per 1,000 items</title></circle><circle cx="408.1" cy="166.3" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+$0.7169 per 1,000 items</title></circle><circle cx="408.1" cy="172.4" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
 nDCG@10 0.7071
 $0.4262 per 1,000 items"><title>mistral_s · hosted · open weights
 nDCG@10 0.7071
-$0.4262 per 1,000 items</title></circle><circle cx="429.7" cy="183.6" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+$0.4262 per 1,000 items</title></circle><circle cx="429.7" cy="189.3" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
 nDCG@10 0.7017
 $0.4811 per 1,000 items"><title>gemma_s · hosted · open weights
 nDCG@10 0.7017
-$0.4811 per 1,000 items</title></circle><circle cx="707.4" cy="55.1" r="11" class="ring"/><text x="693.4" y="59.1" text-anchor="end" class="t-ink" font-size="11">glm_m · dearest</text><text x="513.2" y="53.2" class="t-ink" font-size="11">glm_s · 1st</text></svg><figcaption>Billed cost per 1,000 items, read from the provider's response, against nDCG@10. Free models sit in the left lane.</figcaption></div>
+$0.4811 per 1,000 items</title></circle><circle cx="707.4" cy="64.2" r="11" class="ring"/><text x="693.4" y="68.2" text-anchor="end" class="t-ink" font-size="11">glm_m · dearest</text><text x="499.2" y="44.6" text-anchor="middle" class="t-ink" font-size="11">glm_s · 1st</text></svg></div><div class="vn"><svg viewBox="0 0 400 400" role="img" aria-label="SciFact: cost against quality"><line x1="134.0" x2="134.0" y1="34" y2="350" class="grid"/><text x="134.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$0.1</text><line x1="260.0" x2="260.0" y1="34" y2="350" class="grid"/><text x="260.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$1</text><line x1="386.0" x2="386.0" y1="34" y2="350" class="grid"/><text x="386.0" y="370" text-anchor="middle" class="t-muted" font-size="12">$10</text><line x1="52" x2="386" y1="328.2" y2="328.2" class="grid"/><text x="46" y="332.2" text-anchor="end" class="t-muted" font-size="12">0.645</text><line x1="52" x2="386" y1="192.0" y2="192.0" class="grid"/><text x="46" y="196.0" text-anchor="end" class="t-muted" font-size="12">0.694</text><line x1="52" x2="386" y1="55.8" y2="55.8" class="grid"/><text x="46" y="59.8" text-anchor="end" class="t-muted" font-size="12">0.744</text><text x="260" y="394" text-anchor="middle" class="t-muted" font-size="13">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="13">↑ nDCG@10</text><text x="88" y="370" text-anchor="middle" class="t-muted" font-size="12">free</text><line x1="104" x2="104" y1="34" y2="350" class="axis"/><circle cx="88" cy="123.8" r="6" class="dot k-local" data-tip="e5_base · local · free
+nDCG@10 0.7191 · $0"><title>e5_base · local · free
+nDCG@10 0.7191 · $0</title></circle><circle cx="88" cy="149.7" r="6" class="dot k-local" data-tip="bge_small · local · free
+nDCG@10 0.7097 · $0"><title>bge_small · local · free
+nDCG@10 0.7097 · $0</title></circle><circle cx="88" cy="275.1" r="6" class="dot k-local" data-tip="mpnet · local · free
+nDCG@10 0.6643 · $0"><title>mpnet · local · free
+nDCG@10 0.6643 · $0</title></circle><circle cx="88" cy="305.4" r="6" class="dot k-local" data-tip="minilm · local · free
+nDCG@10 0.6533 · $0"><title>minilm · local · free
+nDCG@10 0.6533 · $0</title></circle><circle cx="88" cy="328.2" r="6" class="dot k-local" data-tip="bm25 · local · free
+nDCG@10 0.6451 · $0"><title>bm25 · local · free
+nDCG@10 0.6451 · $0</title></circle><circle cx="241.3" cy="55.8" r="6" class="dot k-open" data-tip="glm_s · hosted · open weights
+nDCG@10 0.7437
+$0.7107 per 1,000 items"><title>glm_s · hosted · open weights
+nDCG@10 0.7437
+$0.7107 per 1,000 items</title></circle><circle cx="305.3" cy="60.8" r="6" class="dot k-open" data-tip="glm_m · hosted · open weights
+nDCG@10 0.7419
+$2.29 per 1,000 items"><title>glm_m · hosted · open weights
+nDCG@10 0.7419
+$2.29 per 1,000 items</title></circle><circle cx="269.5" cy="66.3" r="6" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+nDCG@10 0.7399
+$1.19 per 1,000 items"><title>deepseek_m · hosted · open weights
+nDCG@10 0.7399
+$1.19 per 1,000 items</title></circle><circle cx="194.1" cy="72.0" r="6" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+nDCG@10 0.7378
+$0.2998 per 1,000 items"><title>deepseek_s · hosted · open weights
+nDCG@10 0.7378
+$0.2998 per 1,000 items</title></circle><circle cx="204.2" cy="76.3" r="6" class="dot k-open" data-tip="gemma_m · hosted · open weights
+nDCG@10 0.7363
+$0.3606 per 1,000 items"><title>gemma_m · hosted · open weights
+nDCG@10 0.7363
+$0.3606 per 1,000 items</title></circle><circle cx="251.1" cy="77.5" r="6" class="dot k-open" data-tip="gemma_l · hosted · open weights
+nDCG@10 0.7359
+$0.8505 per 1,000 items"><title>gemma_l · hosted · open weights
+nDCG@10 0.7359
+$0.8505 per 1,000 items</title></circle><circle cx="252.1" cy="99.0" r="6" class="dot k-open" data-tip="llama_l · hosted · open weights
+nDCG@10 0.7281
+$0.8653 per 1,000 items"><title>llama_l · hosted · open weights
+nDCG@10 0.7281
+$0.8653 per 1,000 items</title></circle><circle cx="246.4" cy="126.0" r="6" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+nDCG@10 0.7183
+$0.7794 per 1,000 items"><title>qwen_s · hosted · proprietary
+nDCG@10 0.7183
+$0.7794 per 1,000 items</title></circle><circle cx="242.7" cy="128.9" r="6" class="dot k-open" data-tip="llama_s · hosted · open weights
+nDCG@10 0.7172
+$0.7292 per 1,000 items"><title>llama_s · hosted · open weights
+nDCG@10 0.7172
+$0.7292 per 1,000 items</title></circle><circle cx="241.8" cy="152.3" r="6" class="dot k-open" data-tip="llama_m · hosted · open weights
+nDCG@10 0.7088
+$0.7169 per 1,000 items"><title>llama_m · hosted · open weights
+nDCG@10 0.7088
+$0.7169 per 1,000 items</title></circle><circle cx="213.3" cy="156.8" r="6" class="dot k-open" data-tip="mistral_s · hosted · open weights
+nDCG@10 0.7071
+$0.4262 per 1,000 items"><title>mistral_s · hosted · open weights
+nDCG@10 0.7071
+$0.4262 per 1,000 items</title></circle><circle cx="220.0" cy="171.8" r="6" class="dot k-open" data-tip="gemma_s · hosted · open weights
+nDCG@10 0.7017
+$0.4811 per 1,000 items"><title>gemma_s · hosted · open weights
+nDCG@10 0.7017
+$0.4811 per 1,000 items</title></circle><circle cx="305.3" cy="60.8" r="11" class="ring"/><text x="291.3" y="64.8" text-anchor="end" class="t-ink" font-size="13">glm_m · dearest</text><text x="241.3" y="41.8" text-anchor="middle" class="t-ink" font-size="13">glm_s · 1st</text></svg></div><figcaption>Billed cost per 1,000 items, read from the provider's response, against nDCG@10. Free models sit in the left lane.</figcaption></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>

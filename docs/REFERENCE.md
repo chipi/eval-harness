@@ -64,7 +64,7 @@ the whole run — there is no per-item number whose mean is macro-F1. It lives i
 
 | metric | kind | what it is |
 |---|---|---|
-| **`f1`** ← primary | quality | Harmonic mean of precision and recall over the entity set for **one item**, matched one-to-one after normalisation. Type must match. |
+| **`f1`** ← primary | quality | Harmonic mean of precision and recall over the entity set for **one item**, matched one-to-one after normalisation. Type must match — one of Few-NERD's 8 coarse types (person, location, organization, …). |
 | `precision`, `recall` | quality | Of what it found, how much was right; of what was there, how much it found. |
 | `untyped_f1` | quality | The same, ignoring the type label. **The pair is the point:** `f1` asks "did it label it right", `untyped_f1` asks "did it find it at all". |
 | `type_penalty` | descriptive | `untyped_f1 − f1`. Credit lost purely to mislabelling something it did find. A type-confusion problem is fixed differently from a detection problem, and this says which you have. |
@@ -108,7 +108,7 @@ than one that is merely wrong.
 ran. Everything else is read **after** the ranking, to understand it rather than to change
 it.
 
-| Experiment | Ranked by | Floor that must read true first | Secondary criteria, read after |
+| Experiment | Ranked by | Floors (non-model arms, checked first) | Read after ranking |
 |---|---|---|---|
 | Summarisation · CNN/DM | `coverage` | `lead3` — the first three sentences. A model below it has not earned its inference cost. | `grounding` (did it leave the source?), `length_vs_reference` (did it win by padding?), `concision` |
 | Classification · AG News | `correct` | `constant` (always one class, ≈0.25) and `keyword` (~20 regex rules) | `parsed` and `correct_after_repair` — the parser is part of the system; macro-F1 for concentrated blind spots; `confidence` calibration |
@@ -116,8 +116,9 @@ it.
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
 
-**Why each example has floors that are not models.** `nothing`, `random`, `constant` and
-`first_k` have predictable scores. They are **calibration checks on the scorer** before
+**Why each example has floors that are not models.** A *floor* is any non-model arm — a
+rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
+`random`, `constant`, `first_k`), and those are **calibration checks on the scorer** before
 they are baselines on the task: if `nothing` does not score exactly the empty-gold rate,
 no other row in the table can be trusted. On Few-NERD this caught a gold entity that the
 normaliser deleted (the currency symbol `£`), which moved the floor by 1/280.
@@ -134,7 +135,10 @@ between examples is the **task** and not the configuration. Measured through a
 rerun can go to OpenRouter directly with one key, through the same alias table
 (`examples/models.json`, [Reproduce it](REPRODUCE.md)).
 
-| arm | alias | upstream model | weights |
+Arm names are `<vendor>_<tier>`: `_l` / `_m` / `_s` = the vendor's large / medium / small
+price tier.
+
+| arm | alias (examples/models.json) | upstream model (OpenRouter) | weights · licence |
 |---|---|---|---|
 | `anthropic_l` | `eval-opus-5` | [anthropic/claude-opus-5](https://openrouter.ai/anthropic/claude-opus-5) | proprietary |
 | `anthropic_m` | `eval-claude-sonnet` | [anthropic/claude-sonnet-5](https://openrouter.ai/anthropic/claude-sonnet-5) | proprietary |
@@ -186,7 +190,7 @@ silent upstream change is detectable. **For five of the last six they are not** 
 [`KNOWN_ISSUES.md`](../research/internal/KNOWN_ISSUES.md)), so the revisions below were read from
 the cache by hand and are a record, not a fingerprint.
 
-| arm | model | size | revision | what it is |
+| arm | HuggingFace model | weights size | revision (HF commit) | role |
 |---|---|---|---|---|
 | `bart_l` | [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | 1.6 GB | `37f520fa929c` | BART fine-tuned on CNN/DailyMail — the in-distribution summariser |
 | `bart_mnli` | [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) | 1.6 GB | `d7645e127eaf` | Zero-shot classification by [NLI entailment](https://arxiv.org/abs/1909.00161) — no training on the task |
@@ -221,9 +225,12 @@ computation from the recorded run, which ran at fp16.
 
 ### Non-model arms
 
-Not baselines to be beaten — **calibration checks on the scorer**, with predictable scores.
+The floors. Each is first a **check on the scorer** — its score can be stated before it
+runs, so a mismatch indicts the scorer, not a model — and only then a bar for models to
+clear. `bm25` is the exception: a real retrieval baseline, listed here because it uses no
+model weights.
 
-| arm | what it does | what it must score |
+| arm | what it does | expected score |
 |---|---|---|
 | `lead3` | first three sentences of the article | the extractive floor for summarisation |
 | `constant` | always the same class | ≈ 1/num_classes |
@@ -232,7 +239,7 @@ Not baselines to be beaten — **calibration checks on the scorer**, with predic
 | `capitalized` | every capitalised run, minus a stoplist | high untyped recall, near-random types |
 | `random` | a seeded permutation of the corpus | ≈ k/N for recall@k |
 | `first_k` | the corpus in id order | ≈ 0 |
-| `bm25` | [Okapi BM25](https://en.wikipedia.org/wiki/Okapi_BM25) via [`rank_bm25`](https://github.com/dorianbrown/rank_bm25) | not a strawman — it beats weak dense models on SciFact |
+| `bm25` | [Okapi BM25](https://en.wikipedia.org/wiki/Okapi_BM25) via [`rank_bm25`](https://github.com/dorianbrown/rank_bm25) | no fixed prediction — a strong baseline that beats weak dense models on SciFact (calibrated: 0.6523 vs BEIR's 0.665) |
 
 ---
 
@@ -304,12 +311,12 @@ the dataset is never optional in these labels.
 
 ### Other fixed terms
 
-| term | means | not |
+| term | means | instead of |
 |---|---|---|
 | **arm** | one configuration under test — a model *plus* its prompt, parameters and parsing | "model", which is only part of an arm |
 | **experiment** | one task on one dataset, with its own report section | "dataset" or "task" alone |
 | **dev slice / measurement slice** | the small tuning set / the frozen set results are reported on | "train/test", which implies we trained something |
-| **floor** | an arm whose score is predictable in advance (`nothing`, `random`, `constant`) | "baseline" — these are scorer calibration checks first |
+| **floor** | a non-model arm (rule, constant or random: `lead3`, `keyword`, `constant`, `nothing`, `capitalized`, `random`, `first_k`); those with a score predictable in advance double as scorer calibration checks | "baseline" — the predictable ones are scorer checks first |
 | **separated** | the difference survives Holm step-down at α = 0.05 | "better", which only needs a point estimate |
 | **billed** | what the provider charged (`usage.cost`) | "cost", which used to mean a price-table estimate |
 | **local ML** / **open-weight** / **proprietary** | the three tiers in [REPORT_SYNTHESIS §0](../research/REPORT_SYNTHESIS.md) | "free vs paid", which conflates tiers 1 and 2 |
@@ -386,21 +393,21 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 
 ### Software
 
-| Package | Version used | Licence |
+| Package | Version recorded | Licence |
 |---|---|---|
 | [transformers](https://github.com/huggingface/transformers) | 4.55.4 | Apache-2.0 |
-| [torch](https://github.com/pytorch/pytorch) | 2.2.2 | BSD-3-Clause |
+| [torch](https://github.com/pytorch/pytorch) | 2.2.2 (macOS runs) · 2.14.0 (Linux runs) | BSD-3-Clause |
 | [sentence-transformers](https://github.com/huggingface/sentence-transformers) | 3.4.1 | Apache-2.0 |
 | [datasets](https://github.com/huggingface/datasets) | 5.0.1 | Apache-2.0 |
 | [rouge-score](https://github.com/google-research/google-research/tree/master/rouge) | 0.1.2 | Apache-2.0 |
-| [rank_bm25](https://github.com/dorianbrown/rank_bm25) | 0.2.2 | Apache-2.0 |
-| [gliner](https://github.com/urchade/GLiNER) | ≥0.2.13 | Apache-2.0 |
-| [span-marker](https://github.com/tomaarsen/SpanMarkerNER) | ≥1.5 | Apache-2.0 |
+| [rank_bm25](https://github.com/dorianbrown/rank_bm25) | — (not recorded; lockfile has 0.2.2) | Apache-2.0 |
+| [gliner](https://github.com/urchade/GLiNER) | — (not recorded; requires ≥ 0.2.13) | Apache-2.0 |
+| [span-marker](https://github.com/tomaarsen/SpanMarkerNER) | — (not recorded; requires ≥ 1.5) | Apache-2.0 |
 | [scikit-learn](https://scikit-learn.org/) | 1.9.1 | BSD-3-Clause |
-| [numpy](https://numpy.org/) | 1.26.4 | BSD-3-Clause |
-| [openai](https://github.com/openai/openai-python) (client only) | 2.48.0 / 3.19.2 | Apache-2.0 |
-| [LiteLLM](https://github.com/BerriAI/litellm) | proxy | MIT |
-| [uv](https://github.com/astral-sh/uv) | env management | Apache-2.0 / MIT |
+| [numpy](https://numpy.org/) | 1.26.4 or 2.4.6, varies by run | BSD-3-Clause |
+| [openai](https://github.com/openai/openai-python) (client only) | 2.48.0 – 3.20.0, varies by run | Apache-2.0 |
+| [LiteLLM](https://github.com/BerriAI/litellm) (proxy, not a library) | — (not recorded) | MIT |
+| [uv](https://github.com/astral-sh/uv) (environment manager) | — (not recorded) | Apache-2.0 / MIT |
 
 ### Infrastructure
 

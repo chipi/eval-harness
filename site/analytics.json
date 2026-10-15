@@ -1,0 +1,5 @@
+{
+  "_comment": "Umami (cookieless, no personal data). Fill both to switch analytics on for the site and the docs; leave empty for none. One website id covers both, since they share a domain.",
+  "umami_src": "",
+  "website_id": ""
+}
