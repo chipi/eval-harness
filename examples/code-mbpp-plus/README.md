@@ -81,38 +81,85 @@ It records the slowest execution, which is the evidence behind the timeouts in
 | arm | what it is |
 |---|---|
 | 24 hosted models | the same 24 as every other experiment, shown EvalPlus's instruct prompt ([prompt.txt](prompt.txt)) at temperature 0 |
-| `qwencoder_05b` … `qwencoder_32b` | the whole Qwen2.5-Coder-Instruct family (0.5B, 1.5B, 3B, 7B, 14B, 32B), local, greedy, using EvalPlus's chat prompt and response prefix. 0.5B and 1.5B run in fp32 on a 4-core CPU; 3B and up run in bf16 with `device: auto` (a CUDA GPU or Apple-silicon MPS if there is one), sized for a 128 GB machine |
+| 18 open coder models, local | six families, 0.5B to 34B, listed below; greedy, using each model's own chat template, EvalPlus's instruct prompt and its response prefix |
 
-Licences: Apache-2.0 for every size **except 3B**, which ships under the Qwen Research
-License (non-commercial research only). It is measured here for the size curve; don't
-deploy it commercially.
+| arm | model | licence | runs on |
+|---|---|---|---|
+| `qwencoder_05b`, `_15b` | Qwen2.5-Coder-Instruct 0.5B, 1.5B | Apache-2.0 | 4-core CPU, fp32 |
+| `dscoder_13b` | DeepSeek-Coder-1.3B-Instruct | DeepSeek License | 4-core CPU, fp32 |
+| `yicoder_15b` | Yi-Coder-1.5B-Chat | Apache-2.0 | 4-core CPU, fp32 |
+| `qwencoder_3b` | Qwen2.5-Coder-3B-Instruct | **Qwen Research (non-commercial)** | big machine, bf16 |
+| `qwencoder_7b`, `_14b`, `_32b` | Qwen2.5-Coder-Instruct 7B, 14B, 32B | Apache-2.0 | big machine, bf16 |
+| `codeqwen15_7b` | CodeQwen1.5-7B-Chat | Tongyi Qianwen License | big machine, bf16 |
+| `dscoder_67b`, `_33b` | DeepSeek-Coder-Instruct 6.7B, 33B | DeepSeek License | big machine, bf16 |
+| `dscoderv2_lite` | DeepSeek-Coder-V2-Lite-Instruct (16B MoE) | DeepSeek License | big machine, bf16 |
+| `yicoder_9b` | Yi-Coder-9B-Chat | Apache-2.0 | big machine, bf16 |
+| `starcoder2_15b` | StarCoder2-15B-Instruct-v0.1 | BigCode OpenRAIL-M | big machine, bf16 |
+| `codellama_7b`, `_13b`, `_34b` | CodeLlama-Instruct 7B, 13B, 34B | Llama 2 Community | big machine, bf16 |
+| `qwen3coder_30b` | Qwen3-Coder-30B-A3B-Instruct (MoE) | Apache-2.0 | big machine, bf16 |
+
+"Big machine" means bf16 with `device: auto`, which uses a CUDA GPU or Apple-silicon MPS if
+there is one and the CPU otherwise. The device actually used is recorded in the run. Every
+model loads from safetensors at a pinned revision, and none runs remote code: all six
+architectures are native to the pinned transformers.
+
+The 3B Qwen model is non-commercial. Several others carry use-based conditions (DeepSeek,
+Llama 2, OpenRAIL-M, Tongyi Qianwen). They are measured here; check each licence before
+deploying one. Two models are left out on purpose: Codestral-22B, whose licence forbids
+production use, and CodeLlama-70B, which doesn't fit 128 GB in bf16.
 
 ## Calibration
 
-The [Qwen2.5-Coder technical report](https://arxiv.org/abs/2409.12186) publishes MBPP+
-pass@1 (EvalPlus, greedy) for every size of the instruct family. Each one is measured here,
-locally, on the same 378 tasks:
+The [Qwen2.5-Coder technical report](https://arxiv.org/abs/2409.12186), Table 16, publishes
+MBPP+ pass@1 (EvalPlus, greedy) for 17 of these 18 models under one setup. That gives a
+calibration point for almost every arm, not just one per experiment:
 
-| Qwen2.5-Coder-Instruct | 0.5B | 1.5B | 3B | 7B | 14B | 32B |
-|---|---|---|---|---|---|---|
-| published MBPP+ | 43.7 | 59.4 | 62.4 | 71.7 | 72.8 | 75.1 |
-| measured here | | | | | | |
+| model | published MBPP+ | measured here |
+|---|---|---|
+| Qwen2.5-Coder-0.5B-Instruct | 43.7 | |
+| CodeLlama-7B-Instruct | 44.4 | |
+| CodeLlama-34B-Instruct | 50.5 | |
+| CodeLlama-13B-Instruct | 51.1 | |
+| DeepSeek-Coder-1.3B-Instruct | 54.8 | |
+| Yi-Coder-1.5B-Chat | 57.7 | |
+| Qwen2.5-Coder-1.5B-Instruct | 59.4 | |
+| Qwen2.5-Coder-3B-Instruct | 62.4 | |
+| StarCoder2-15B-Instruct-v0.1 | 65.1 | |
+| DeepSeek-Coder-6.7B-Instruct | 65.6 | |
+| CodeQwen1.5-7B-Chat | 67.2 | |
+| Yi-Coder-9B-Chat | 69.0 | |
+| DeepSeek-Coder-33B-Instruct | 70.1 | |
+| DeepSeek-Coder-V2-Lite-Instruct | 70.4 | |
+| Qwen2.5-Coder-7B-Instruct | 71.7 | |
+| Qwen2.5-Coder-14B-Instruct | 72.8 | |
+| Qwen2.5-Coder-32B-Instruct | 75.1 | |
+| Qwen3-Coder-30B-A3B-Instruct | not published (newer than the report) | |
 
-Six calibration points instead of one: if the measured curve tracks the published one, the
-prompt, extraction, sanitiser and sandbox reproduce EvalPlus; if it doesn't, one of them is
-the difference.
+If the measured column tracks the published one across families, then the prompt,
+extraction, sanitiser and sandbox reproduce EvalPlus. If one family drifts and the rest
+don't, its chat template is the first suspect.
 
 ## Running the local arms
 
-From `harness/`, with `uv sync --extra local` done in this example:
+From `harness/`, after running `uv sync --extra local` in this example. These four are
+small enough for a 4-core CPU:
 
 ```bash
-for m in 05b 15b 3b 7b 14b 32b; do
+for a in qwencoder_05b qwencoder_15b dscoder_13b yicoder_15b; do
   ../examples/code-mbpp-plus/.venv/bin/python scripts/experiment_run.py \
-    --config ../examples/code-mbpp-plus/configs/arm_qwencoder_${m}_n378.yaml; done
+    --config ../examples/code-mbpp-plus/configs/arm_${a}_n378.yaml; done
 ```
 
-The 32B downloads ~65 GB of weights and needs ~70 GB of memory in bf16.
+The rest need a big machine. Together they download about 330 GB of weights; the largest
+(34B) needs about 70 GB of memory in bf16:
+
+```bash
+for a in qwencoder_3b qwencoder_7b qwencoder_14b qwencoder_32b codeqwen15_7b \
+         dscoder_67b dscoder_33b dscoderv2_lite yicoder_9b starcoder2_15b \
+         codellama_7b codellama_13b codellama_34b qwen3coder_30b; do
+  ../examples/code-mbpp-plus/.venv/bin/python scripts/experiment_run.py \
+    --config ../examples/code-mbpp-plus/configs/arm_${a}_n378.yaml; done
+```
 
 ## Running the hosted arms
 

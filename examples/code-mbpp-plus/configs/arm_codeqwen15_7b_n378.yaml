@@ -1,0 +1,19 @@
+# CodeQwen1.5-7B-Chat, local, greedy, EvalPlus's chat prompt and response prefix.
+# The Qwen2.5-Coder technical report (arXiv 2409.12186, Table 16) publishes MBPP+ 67.2
+# for this model under the same EvalPlus setup, so it is a calibration point.
+# Licence: Tongyi Qianwen License (commercial use allowed, with conditions). Safetensors, pinned revision, no remote code.
+# Sized for a big machine: bf16, and `device: auto` takes a CUDA GPU or Apple-silicon MPS
+# when there is one, else the CPU. The device actually used is in the run's fingerprint.
+config_id: mb_codeqwen15_7b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: local
+  model: Qwen/CodeQwen1.5-7B-Chat
+  revision: 7b0cc3380fe815e6f08fe2f80c03e05a8b1883d8
+  family: qwen-coder
+  price_tier: free
+  precision: bf16
+  device: auto
+  max_new_tokens: 768
+  prompt_file: prompt.txt

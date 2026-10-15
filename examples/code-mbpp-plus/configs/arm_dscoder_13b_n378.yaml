@@ -1,0 +1,17 @@
+# deepseek-coder-1.3b-instruct, local, greedy, EvalPlus's chat prompt and response prefix.
+# The Qwen2.5-Coder technical report (arXiv 2409.12186, Table 16) publishes MBPP+ 54.8
+# for this model under the same EvalPlus setup, so it is a calibration point.
+# Licence: DeepSeek License (commercial use allowed, with use-based restrictions). Safetensors, pinned revision, no remote code.
+# Small enough for a 4-core CPU in fp32.
+config_id: mb_dscoder_13b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: local
+  model: deepseek-ai/deepseek-coder-1.3b-instruct
+  revision: e063262dac8366fc1f28a4da0ff3c50ea66259ca
+  family: deepseek-coder
+  price_tier: free
+  precision: fp32
+  max_new_tokens: 768
+  prompt_file: prompt.txt
