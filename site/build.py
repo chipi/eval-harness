@@ -378,6 +378,34 @@ def analytics_tag() -> str:
     return f'<script defer src="{e(cfg["umami_src"])}" data-website-id="{e(cfg["website_id"])}"{domains}></script>'
 
 
+# The author's own sites. Every link is tagged twice: UTM parameters, so humancopilot.eu's
+# analytics can see visitors arriving from here, and an Umami event named by where on this
+# site it was clicked, so this site's analytics can see which placement earns the click.
+HUMAN = "https://www.humancopilot.eu/"
+DWO = "https://devwhateverops.com/"
+
+
+def out(url: str, place: str, label: str, cls: str = "") -> str:
+    """An outbound link to one of the author's sites, tagged for both analytics."""
+    site = "humancopilot" if "humancopilot" in url else "devwhateverops"
+    href = f"{url}?utm_source=eval-harness&utm_medium=site&utm_campaign=launch&utm_content={place}"
+    c = f' class="{cls}"' if cls else ""
+    return (f'<a href="{e(href)}"{c} data-umami-event="outbound-{site}" '
+            f'data-umami-event-placement="{place}" rel="noopener">{label}</a>')
+
+
+def author(place: str) -> str:
+    """Who built this, and where to find them: the closing section of the main pages."""
+    return f"""
+<section class="block author" id="author"><div class="wrap">
+  <div class="eyebrow">Who built this</div>
+  <h2>Built by Marko Dragoljevic.</h2>
+  <p class="lede">I have led engineering teams for twenty years — at ServiceNow, EclecticIQ and Backbase — and through <b>Human Copilot</b> I now advise technology leaders. Which model, build or buy, own or rent: the questions this harness answers are the ones I help teams answer, on their own data.</p>
+  <div class="btns">{out(HUMAN, f"author-{place}", "Work with Human Copilot →", "btn primary")}{out(DWO, f"author-{place}", "DevWhateverOps: principles for building end to end ↗", "btn")}</div>
+</div></section>
+"""
+
+
 # The project mark: an estimate with its interval, held in a harness (site/assets/icon.svg).
 # Inline here so its colours follow the theme: the tile is the accent, the marks its ink.
 MARK = ('<svg class="mark" viewBox="0 0 64 64" aria-hidden="true">'
@@ -427,7 +455,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> st
 </main>
 <footer><div class="wrap">
   <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>
-  <div><a href="{up}docs/">Documentation</a> · <a href="{REPO}">github.com/chipi/eval-harness</a></div>
+  <div><a href="{up}docs/">Documentation</a> · <a href="{up}docs/DATA/">Data &amp; licences</a> · <a href="{REPO}">github.com/chipi/eval-harness</a></div>
+  <div class="made">Built by Marko Dragoljevic · {out(HUMAN, "footer", "Human Copilot")}, advisory for technology leaders · {out(DWO, "footer", "DevWhateverOps")}, principles for engineers who build end to end</div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 {JS}
@@ -437,7 +466,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> st
 
 
 #: The helpers method.py borrows, passed in rather than imported (no circular import).
-H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, REPO=REPO)
+H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, REPO=REPO, author=author)
 
 
 # ── the landing page ────────────────────────────────────────────────────────
@@ -511,7 +540,7 @@ def home(f: dict) -> str:
         for x in exps)
     body = f"""
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>eval-harness</b> · open source · MIT</div>
+  <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
@@ -562,7 +591,7 @@ def home(f: dict) -> str:
 <section class="block"><div class="wrap">
   <p class="note"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>
-"""
+{author("home")}"""
     return page("eval-harness — is the ranking real, or a lucky sample?",
                 "A drop-in harness for evaluating AI systems on your own data: frozen datasets, "
                 "fingerprinted runs, and significance tests before any leaderboard is printed — "
@@ -698,7 +727,7 @@ def landing(f: dict) -> str:
     </div>
   </div>
 </div></section>
-"""
+{author("experiments")}"""
     return page("The most expensive model never won — eval-harness",
                 "24 LLMs, small fine-tuned models and baselines on five public benchmarks, "
                 "with significance tests, billed costs and calibration against the literature.", body, here="experiments")

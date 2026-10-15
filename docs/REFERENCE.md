@@ -245,6 +245,9 @@ model weights.
 
 ## Datasets
 
+What of each is in this repository, what it asks of you, and what the committed run outputs
+contain: **[Data and licences](DATA.md)**.
+
 **None is committed.** Each example ships a `fetch.py` download recipe; the slice lands on
 your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 `corpus_sha256` for retrieval), not as bytes in the repo.

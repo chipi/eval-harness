@@ -354,3 +354,9 @@ section.method { padding-top: 64px; }
 .why-q p b { display: block; font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
 .why-q a { margin-top: auto; font: 500 13px/1 var(--mono); color: var(--accent); text-decoration: none; padding-top: 6px; }
 @media (max-width: 760px) { .why { grid-template-columns: 1fr; } .why-q { padding: 20px; } .why-q h3 { font-size: 20px; } .why-q p b { font-size: 12px; } }
+
+/* who built this: closing section on the main pages, and the footer credit */
+section.author h2 { max-width: 20ch; }
+footer .made { flex-basis: 100%; padding-top: 18px; border-top: 1px solid var(--hair); }
+footer .made a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.kicker a.byline { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }

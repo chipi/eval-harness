@@ -285,14 +285,19 @@ of us thought to check.
 
 Committed: `metrics.json`, `predictions.jsonl` **and `outputs/`** for every measurement
 run, plus the rescored NER set that REPORT_NER's figures actually come from. `make ci`
-runs `check_report_claims.py`, which verifies 17 headline numbers against them.
+runs `check_report_claims.py`, which verifies 82 claims against them (17 when this
+section was first written).
 
 `outputs/` was excluded until 2026-09-29 on an estimate of mine that was wrong — "128 MB
 of copyrighted derivatives". Measured, it is 8.3 MB of content, and four of the five
 examples are single class words, document ids, or CC BY-SA 4.0 entity spans. Only the
-1.7 MB of summarisation output raises a copyright question at all, and those are
-~60-word model paraphrases rather than corpus text. Committed; the one-line reversal is
-in `harness/.gitignore`.
+1.7 MB of summarisation output raises a copyright question at all. This said those are
+"~60-word model paraphrases rather than corpus text", and that was wrong for one arm:
+the lead-3 baseline's outputs *are* corpus text, the first three sentences of each of 200
+CNN articles, verbatim (corrected 2026-10-15). CNN/DailyMail is Apache-2.0, which permits
+redistribution with attribution; what the committed outputs contain and the licence each
+follows is now stated publicly in [`docs/DATA.md`](../../docs/DATA.md). Committed; the
+one-line reversal is in `harness/.gitignore`.
 
 **What a clone still needs before it can rescore: the corpora.** This is the part
 committing outputs did not solve. `data/sources/<id>/` and

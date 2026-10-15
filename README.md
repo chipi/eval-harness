@@ -191,9 +191,18 @@ docs/        the guide, REPRODUCE, PROTOCOL, REFERENCE, evidence/: published as 
 Makefile     verify / plan / data / reproduce / compare: the way in for a rerun
 ```
 
+## Who built this
+
+**Marko Dragoljevic**: twenty years leading engineering teams (ServiceNow, EclecticIQ,
+Backbase), now advising technology leaders through
+**[Human Copilot](https://www.humancopilot.eu/?utm_source=eval-harness&utm_medium=github&utm_campaign=launch&utm_content=readme)**.
+Which model, build or buy, own or rent: the questions this harness answers are the ones
+he helps teams answer on their own data. Principles for engineers who build end to end:
+**[DevWhateverOps](https://devwhateverops.com/?utm_source=eval-harness&utm_medium=github&utm_campaign=launch&utm_content=readme)**.
+
 `research/internal/NOTES.md` is the append-only journal, corrections included. Findings
 have been retracted along the way, several caused by bugs in this harness's own scorer.
 The retraction rate is itself a result: it measures how much of a first-pass eval is
 instrument rather than signal.
 
-No corpus is committed. Examples ship a download recipe.
+No corpus is committed; examples ship a download recipe. What *is* committed, each dataset's licence, and what it asks of you: **[docs/DATA.md](docs/DATA.md)**.

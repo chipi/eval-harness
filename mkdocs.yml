@@ -10,7 +10,7 @@ site_name: eval-harness · documentation
 site_url: https://chipi.github.io/eval-harness/docs/
 site_description: Protocol, reference and harness documentation for eval-harness.
 repo_url: https://github.com/chipi/eval-harness
-copyright: eval-harness · every number on the site is checked against the runs in this repository
+copyright: eval-harness · every number on the site is checked against the runs in this repository · built by Marko Dragoljevic
 repo_name: chipi/eval-harness
 edit_uri: edit/main/docs/
 docs_dir: docs
@@ -41,6 +41,7 @@ nav:
       - Protocol: PROTOCOL.md
       - Reference: REFERENCE.md
       - Evidence: evidence/README.md
+  - Data & licences: DATA.md
   - Influences: INFLUENCES.md
   - Papers:
       - Index: papers/README.md
@@ -73,8 +74,20 @@ theme:
 extra_css:
   - assets/docs.css
 
+# The author's sites in the docs footer, UTM-tagged so humancopilot.eu sees where a visit
+# came from (the findings site also tags each click with an Umami event).
 extra:
   homepage: https://chipi.github.io/eval-harness/
+  social:
+    - icon: fontawesome/solid/compass
+      link: https://www.humancopilot.eu/?utm_source=eval-harness&utm_medium=docs&utm_campaign=launch&utm_content=footer
+      name: "Human Copilot: advisory for technology leaders"
+    - icon: fontawesome/solid/screwdriver-wrench
+      link: https://devwhateverops.com/?utm_source=eval-harness&utm_medium=docs&utm_campaign=launch&utm_content=footer
+      name: "DevWhateverOps: principles for engineers who build end to end"
+    - icon: fontawesome/brands/github
+      link: https://github.com/chipi/eval-harness
+      name: eval-harness on GitHub
 
 markdown_extensions:
   - tables

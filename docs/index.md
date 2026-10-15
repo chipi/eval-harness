@@ -39,9 +39,11 @@ measured, every metric, model and test with its source, and how to rerun all of 
 
 <div class="eh-cards" markdown>
 
-[<span class="n">09</span><b>Influences</b><span class="d">The approach builds on Chip Huyen's books: idea by idea, with chapters, and the statistics it also stands on.</span>](INFLUENCES.md)
+[<span class="n">09</span><b>Data & licences</b><span class="d">What of each dataset is in the repository, what you download, each licence, and what it asks of you.</span>](DATA.md)
 
-[<span class="n">10</span><b>Papers</b><span class="d">The papers the work cites, and what each is cited for.</span>](papers/README.md)
+[<span class="n">10</span><b>Influences</b><span class="d">The approach builds on Chip Huyen's books: idea by idea, with chapters, and the statistics it also stands on.</span>](INFLUENCES.md)
+
+[<span class="n">11</span><b>Papers</b><span class="d">The papers the work cites, and what each is cited for.</span>](papers/README.md)
 
 </div>
 

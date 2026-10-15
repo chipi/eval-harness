@@ -258,7 +258,7 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
     return H.page("The method — eval-harness",
                   "Six habits for measuring AI systems, as five experiments taught them: "
                   "experiments, frozen data, gold references, noise, significance, the record.",
-                  body, here="method")
+                  body + H.author("method"), here="method")
 
 
 # ── use it on your problem ──────────────────────────────────────────────────
@@ -416,7 +416,7 @@ show('dataset');}})();
     return H.page("Use it on your problem — eval-harness",
                   "Apply the method to your own system: the evaluation lifecycle, patterns for "
                   "common questions, seven steps on a real example, and what you write vs. what "
-                  "the harness gives you.", body, here="use")
+                  "the harness gives you.", body + H.author("use"), here="use")
 
 
 # ── borrowed by the landing and experiment pages ────────────────────────────
