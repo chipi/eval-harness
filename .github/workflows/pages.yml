@@ -5,7 +5,9 @@
 #
 # The findings site is built and committed, and `make ci` fails if it is stale, so this
 # workflow only copies it; no corpora, weights or API keys are needed. The docs are built
-# here in strict mode, so a broken link fails the deploy instead of shipping.
+# here in strict mode, so a broken link fails the deploy instead of shipping -- and on
+# every pull request too, so it fails the PR's checks before the merge rather than the
+# deploy after it. A pull request only builds; only a push to main deploys.
 #
 # One-time setup: Settings -> Pages -> Source: "GitHub Actions".
 name: pages
@@ -19,6 +21,13 @@ on:
       - "harness/docs/**"
       - "mkdocs.yml"
       - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - "docs/**"
+      - "harness/docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -26,8 +35,10 @@ permissions:
   pages: write
   id-token: write
 
+# One deploy at a time; a pull request's check builds in its own group, so it can never
+# cancel a deploy in progress.
 concurrency:
-  group: pages
+  group: ${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.ref) || 'pages' }}
   cancel-in-progress: true
 
 jobs:
@@ -50,11 +61,14 @@ jobs:
           cp -r site/public/. _site/
           cp -r build/docs-site _site/docs
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: _site
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:

@@ -71,7 +71,7 @@ differently from omitting the flag.
 
 ## Gold is not silver
 
-| | |
+| tier | means |
 | --- | --- |
 | **gold** | human-authored or human-reviewed. The only thing you can honestly call correct. |
 | **silver** | model-generated. Consistent, cheap, plentiful — and it encodes that model's opinion, including its mistakes. |

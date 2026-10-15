@@ -7,25 +7,31 @@
 <meta name="description" content="24 LLMs, small fine-tuned models and baselines on five public benchmarks, with significance tests, billed costs and calibration against the literature.">
 <meta property="og:title" content="The most expensive model never won — eval-harness">
 <meta property="og:description" content="24 LLMs, small fine-tuned models and baselines on five public benchmarks, with significance tests, billed costs and calibration against the literature.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
 <script>
 (function(){var p=new URLSearchParams(location.search),t=p.get('theme');
 try{t=t||localStorage.getItem('theme');}catch(e){}
 if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
 if(!p.has('static'))document.documentElement.classList.add('js');})();
-</script>
+</script><script defer src="https://analytics.closelistening.app/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="chipi.github.io"></script>
 <link rel="stylesheet" href="assets/style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23c8ff3d'/%3E%3C/svg%3E">
 </head>
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="index.html"><i></i>eval-harness</a>
-  <nav class="nav"><a href="index.html#findings">Findings</a><a href="method.html">Method</a><a href="use.html">Use it</a><a href="index.html#experiments" class="hide-sm">Experiments</a><a href="docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="index.html#findings" class="hide-xs">Findings</a><a href="method.html">Method</a><a href="use.html">Use it</a><a href="index.html#experiments" class="hide-sm">Experiments</a><a href="docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>An open evaluation</b> · 5 tasks · 134 systems · $12.05 billed</div>
+  <div class="kicker"><b>An open evaluation</b> · 5 tasks · 134 measured runs · $12.05 billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
   <p class="dek">24 frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through five public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
@@ -40,508 +46,1020 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <div class="eyebrow"><span class="num">01</span>Price</div>
   <h2>The price tag told you nothing.</h2>
   <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In all five it finished behind something cheaper</strong> — and in four, behind something free.</p>
-  <div class="chart reveal"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span><span><i class="sw-band"></i>statistically tied with the leader</span></div><figure class="reveal" style="margin-bottom:10px"><svg viewBox="0 0 1000 92" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="44" class="t-head" font-size="17">CNN/DailyMail</text><text x="0" y="64" class="t-muted" font-size="11">summarisation · coverage</text><rect x="796.2" y="28" width="145.7" height="44" rx="10" class="band"/><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50" r="7" class="dot k-local" data-tip="bart_l · local · free
+  <div class="chart reveal"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="44" class="t-head" font-size="17">CNN/DailyMail</text><text x="0" y="64" class="t-muted" font-size="11">summarisation · coverage</text><rect x="527.7" y="28" width="416.0" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
 coverage 0.3461 · rank 1/29
-billed $0.0000 for 200 items"><title>bart_l · local · free
+free: runs locally, nothing billed</title></circle><circle cx="935.7" cy="50.0" r="12" class="hit" data-tip="bart_l · local · free
 coverage 0.3461 · rank 1/29
-billed $0.0000 for 200 items</title></circle><circle cx="933.5" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+free: runs locally, nothing billed"/><circle cx="934.4" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
 coverage 0.3460 · rank 2/29
-billed $0.0381 for 200 items"><title>deepseek_m · hosted · open weights
+billed $0.0381 for 200 items</title></circle><circle cx="934.4" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
 coverage 0.3460 · rank 2/29
-billed $0.0381 for 200 items</title></circle><circle cx="896.2" cy="50" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+billed $0.0381 for 200 items"/><circle cx="819.5" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
 coverage 0.3387 · rank 3/29
-billed $0.0389 for 200 items"><title>llama_l · hosted · open weights
+billed $0.0389 for 200 items</title></circle><circle cx="819.5" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
 coverage 0.3387 · rank 3/29
-billed $0.0389 for 200 items</title></circle><circle cx="894.0" cy="50" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+billed $0.0389 for 200 items"/><circle cx="812.8" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
 coverage 0.3382 · rank 4/29
-billed $0.0330 for 200 items"><title>llama_m · hosted · open weights
+billed $0.0330 for 200 items</title></circle><circle cx="812.8" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
 coverage 0.3382 · rank 4/29
-billed $0.0330 for 200 items</title></circle><circle cx="886.1" cy="50" r="5.5" class="dot k-local" data-tip="bart_m · local · free
+billed $0.0330 for 200 items"/><circle cx="788.5" cy="50.0" r="5.5" class="dot k-local"><title>bart_m · local · free
 coverage 0.3367 · rank 5/29
-billed $0.0000 for 200 items"><title>bart_m · local · free
+free: runs locally, nothing billed</title></circle><circle cx="788.5" cy="50.0" r="12" class="hit" data-tip="bart_m · local · free
 coverage 0.3367 · rank 5/29
-billed $0.0000 for 200 items</title></circle><circle cx="869.1" cy="50" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+free: runs locally, nothing billed"/><circle cx="736.0" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
 coverage 0.3333 · rank 6/29
-billed $0.0222 for 200 items"><title>llama_s · hosted · open weights
+billed $0.0222 for 200 items</title></circle><circle cx="736.0" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
 coverage 0.3333 · rank 6/29
-billed $0.0222 for 200 items</title></circle><circle cx="864.9" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+billed $0.0222 for 200 items"/><circle cx="722.9" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
 coverage 0.3325 · rank 7/29
-billed $0.1389 for 200 items"><title>deepseek_l · hosted · open weights
+billed $0.1389 for 200 items</title></circle><circle cx="722.9" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
 coverage 0.3325 · rank 7/29
-billed $0.1389 for 200 items</title></circle><circle cx="862.4" cy="50" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+billed $0.1389 for 200 items"/><circle cx="715.3" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
 coverage 0.3320 · rank 8/29
-billed $0.0995 for 200 items"><title>glm_m · hosted · open weights
+billed $0.0995 for 200 items</title></circle><circle cx="715.3" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 coverage 0.3320 · rank 8/29
-billed $0.0995 for 200 items</title></circle><circle cx="844.8" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+billed $0.0995 for 200 items"/><circle cx="661.0" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
 coverage 0.3285 · rank 9/29
-billed $0.0137 for 200 items"><title>deepseek_s · hosted · open weights
+billed $0.0137 for 200 items</title></circle><circle cx="661.0" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
 coverage 0.3285 · rank 9/29
-billed $0.0137 for 200 items</title></circle><circle cx="840.2" cy="50" r="5.5" class="dot k-local" data-tip="bart_s · local · free
+billed $0.0137 for 200 items"/><circle cx="646.9" cy="50.0" r="5.5" class="dot k-local"><title>bart_s · local · free
 coverage 0.3276 · rank 10/29
-billed $0.0000 for 200 items"><title>bart_s · local · free
+free: runs locally, nothing billed</title></circle><circle cx="646.9" cy="50.0" r="12" class="hit" data-tip="bart_s · local · free
 coverage 0.3276 · rank 10/29
-billed $0.0000 for 200 items</title></circle><circle cx="836.4" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+free: runs locally, nothing billed"/><circle cx="635.1" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
 coverage 0.3268 · rank 11/29
-billed $1.07 for 200 items"><title>openai_m · hosted · proprietary
+billed $1.07 for 200 items</title></circle><circle cx="635.1" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
 coverage 0.3268 · rank 11/29
-billed $1.07 for 200 items</title></circle><circle cx="836.2" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+billed $1.07 for 200 items"/><circle cx="634.5" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
 coverage 0.3268 · rank 12/29
-billed $0.4362 for 200 items"><title>openai_l · hosted · proprietary
+billed $0.4362 for 200 items</title></circle><circle cx="634.5" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
 coverage 0.3268 · rank 12/29
-billed $0.4362 for 200 items</title></circle><circle cx="830.0" cy="50" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+billed $0.4362 for 200 items"/><circle cx="615.5" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
 coverage 0.3255 · rank 13/29
-billed $0.0179 for 200 items"><title>mistral_s · hosted · open weights
+billed $0.0179 for 200 items</title></circle><circle cx="615.5" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
 coverage 0.3255 · rank 13/29
-billed $0.0179 for 200 items</title></circle><circle cx="821.4" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+billed $0.0179 for 200 items"/><circle cx="588.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
 coverage 0.3238 · rank 14/29
-billed $0.2611 for 200 items"><title>anthropic_s · hosted · proprietary
+billed $0.2611 for 200 items</title></circle><circle cx="588.9" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
 coverage 0.3238 · rank 14/29
-billed $0.2611 for 200 items</title></circle><circle cx="820.2" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+billed $0.2611 for 200 items"/><circle cx="585.1" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
 coverage 0.3236 · rank 15/29
-billed $0.7478 for 200 items"><title>anthropic_m · hosted · proprietary
+billed $0.7478 for 200 items</title></circle><circle cx="585.1" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
 coverage 0.3236 · rank 15/29
-billed $0.7478 for 200 items</title></circle><circle cx="804.2" cy="50" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+billed $0.7478 for 200 items"/><circle cx="535.7" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
 coverage 0.3204 · rank 16/29
-billed $0.0237 for 200 items"><title>gemma_l · hosted · open weights
+billed $0.0237 for 200 items</title></circle><circle cx="535.7" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
 coverage 0.3204 · rank 16/29
-billed $0.0237 for 200 items</title></circle><circle cx="787.2" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+billed $0.0237 for 200 items"/><circle cx="483.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
 coverage 0.3171 · rank 17/29
-billed $0.1672 for 200 items"><title>openai_s · hosted · proprietary
+billed $0.1672 for 200 items</title></circle><circle cx="483.4" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
 coverage 0.3171 · rank 17/29
-billed $0.1672 for 200 items</title></circle><circle cx="771.5" cy="50" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+billed $0.1672 for 200 items"/><circle cx="434.8" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
 coverage 0.3139 · rank 19/29
-billed $0.0304 for 200 items"><title>glm_s · hosted · open weights
+billed $0.0304 for 200 items</title></circle><circle cx="434.8" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
 coverage 0.3139 · rank 19/29
-billed $0.0304 for 200 items</title></circle><circle cx="769.7" cy="50" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+billed $0.0304 for 200 items"/><circle cx="429.4" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
 coverage 0.3136 · rank 20/29
-billed $0.0154 for 200 items"><title>gemma_m · hosted · open weights
+billed $0.0154 for 200 items</title></circle><circle cx="429.4" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
 coverage 0.3136 · rank 20/29
-billed $0.0154 for 200 items</title></circle><circle cx="763.7" cy="50" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+billed $0.0154 for 200 items"/><circle cx="410.9" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
 coverage 0.3124 · rank 21/29
-billed $0.1532 for 200 items"><title>glm_l · hosted · open weights
+billed $0.1532 for 200 items</title></circle><circle cx="410.9" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
 coverage 0.3124 · rank 21/29
-billed $0.1532 for 200 items</title></circle><circle cx="761.4" cy="50" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+billed $0.1532 for 200 items"/><circle cx="403.9" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
 coverage 0.3120 · rank 22/29
-billed $0.0200 for 200 items"><title>gemma_s · hosted · open weights
+billed $0.0200 for 200 items</title></circle><circle cx="403.9" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
 coverage 0.3120 · rank 22/29
-billed $0.0200 for 200 items</title></circle><circle cx="755.6" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+billed $0.0200 for 200 items"/><circle cx="385.8" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
 coverage 0.3108 · rank 23/29
-billed $0.1689 for 200 items"><title>qwen_l · hosted · proprietary
+billed $0.1689 for 200 items</title></circle><circle cx="385.8" cy="50.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
 coverage 0.3108 · rank 23/29
-billed $0.1689 for 200 items</title></circle><circle cx="741.3" cy="50" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+billed $0.1689 for 200 items"/><circle cx="341.8" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
 coverage 0.3080 · rank 24/29
-billed $0.0973 for 200 items"><title>mistral_l · hosted · open weights
+billed $0.0973 for 200 items</title></circle><circle cx="341.8" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
 coverage 0.3080 · rank 24/29
-billed $0.0973 for 200 items</title></circle><circle cx="735.3" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+billed $0.0973 for 200 items"/><circle cx="323.3" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
 coverage 0.3068 · rank 25/29
-billed $0.0270 for 200 items"><title>qwen_s · hosted · proprietary
+billed $0.0270 for 200 items</title></circle><circle cx="323.3" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
 coverage 0.3068 · rank 25/29
-billed $0.0270 for 200 items</title></circle><circle cx="722.6" cy="50" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+billed $0.0270 for 200 items"/><circle cx="284.2" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
 coverage 0.3043 · rank 26/29
-billed $0.0871 for 200 items"><title>mistral_m · hosted · proprietary
+billed $0.0871 for 200 items</title></circle><circle cx="284.2" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
 coverage 0.3043 · rank 26/29
-billed $0.0871 for 200 items</title></circle><circle cx="716.1" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+billed $0.0871 for 200 items"/><circle cx="264.3" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
 coverage 0.3030 · rank 27/29
-billed $0.0661 for 200 items"><title>qwen_m · hosted · proprietary
+billed $0.0661 for 200 items</title></circle><circle cx="264.3" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
 coverage 0.3030 · rank 27/29
-billed $0.0661 for 200 items</title></circle><circle cx="232.1" cy="50" r="5.5" class="dot k-local" data-tip="bart_l_xsum · local · free
+billed $0.0661 for 200 items"/><circle cx="190.0" cy="50.0" r="5.5" class="dot k-local"><title>bart_l_xsum · local · free
 coverage 0.2071 · rank 29/29
-billed $0.0000 for 200 items"><title>bart_l_xsum · local · free
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="190.0" cy="50.0" r="12" class="hit" data-tip="bart_l_xsum · local · free
 coverage 0.2071 · rank 29/29
-billed $0.0000 for 200 items</title></circle><circle cx="779.1" cy="50" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="458.5" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
 coverage 0.3155 · rank 18/29
-billed $1.97 for 200 items"><title>anthropic_l · hosted · proprietary
+billed $1.97 for 200 items</title></circle><circle cx="458.5" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
 coverage 0.3155 · rank 18/29
-billed $1.97 for 200 items</title></circle><circle cx="779.1" cy="50" r="11" class="ring"/><text x="779.1" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 18th · 0.315</text><text x="933.9" y="78" text-anchor="end" class="t-ink" font-size="11">bart_l · 1st · 0.346</text></svg></figure><figure class="reveal" style="margin-bottom:10px"><svg viewBox="0 0 1000 92" role="img" aria-label="AG News: every learned arm by accuracy"><text x="0" y="44" class="t-head" font-size="17">AG News</text><text x="0" y="64" class="t-muted" font-size="11">classification · accuracy</text><rect x="790.9" y="28" width="151.0" height="44" rx="10" class="band"/><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50" r="7" class="dot k-local" data-tip="bert_base_ta · local · free
+billed $1.97 for 200 items"/><circle cx="458.5" cy="50" r="11" class="ring"/><text x="458.5" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 18th · 0.315</text><text x="935.7" y="80" text-anchor="end" class="t-ink" font-size="11">bart_l · 1st · 0.346</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="20" class="t-head" font-size="20">CNN/DailyMail</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">summarisation · coverage</text><rect x="180.1" y="52" width="195.8" height="44" rx="10" class="band"/><line x1="48" x2="386" y1="74" y2="74" class="axis"/><line x1="14" x2="28" y1="74" y2="74" class="axis"/><text x="37" y="79" text-anchor="middle" class="t-muted" font-size="17">⫽</text><circle cx="367.9" cy="74.0" r="7" class="dot k-local"><title>bart_l · local · free
+coverage 0.3461 · rank 1/29
+free: runs locally, nothing billed</title></circle><circle cx="367.9" cy="74.0" r="12" class="hit" data-tip="bart_l · local · free
+coverage 0.3461 · rank 1/29
+free: runs locally, nothing billed"/><circle cx="367.3" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+coverage 0.3460 · rank 2/29
+billed $0.0381 for 200 items</title></circle><circle cx="367.3" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+coverage 0.3460 · rank 2/29
+billed $0.0381 for 200 items"/><circle cx="315.7" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+coverage 0.3387 · rank 3/29
+billed $0.0389 for 200 items</title></circle><circle cx="315.7" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+coverage 0.3387 · rank 3/29
+billed $0.0389 for 200 items"/><circle cx="312.7" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+coverage 0.3382 · rank 4/29
+billed $0.0330 for 200 items</title></circle><circle cx="312.7" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+coverage 0.3382 · rank 4/29
+billed $0.0330 for 200 items"/><circle cx="301.7" cy="74.0" r="5.5" class="dot k-local"><title>bart_m · local · free
+coverage 0.3367 · rank 5/29
+free: runs locally, nothing billed</title></circle><circle cx="301.7" cy="74.0" r="12" class="hit" data-tip="bart_m · local · free
+coverage 0.3367 · rank 5/29
+free: runs locally, nothing billed"/><circle cx="278.1" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+coverage 0.3333 · rank 6/29
+billed $0.0222 for 200 items</title></circle><circle cx="278.1" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+coverage 0.3333 · rank 6/29
+billed $0.0222 for 200 items"/><circle cx="272.3" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+coverage 0.3325 · rank 7/29
+billed $0.1389 for 200 items</title></circle><circle cx="272.3" cy="74.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+coverage 0.3325 · rank 7/29
+billed $0.1389 for 200 items"/><circle cx="268.8" cy="74.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+coverage 0.3320 · rank 8/29
+billed $0.0995 for 200 items</title></circle><circle cx="268.8" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+coverage 0.3320 · rank 8/29
+billed $0.0995 for 200 items"/><circle cx="244.4" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+coverage 0.3285 · rank 9/29
+billed $0.0137 for 200 items</title></circle><circle cx="244.4" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+coverage 0.3285 · rank 9/29
+billed $0.0137 for 200 items"/><circle cx="238.1" cy="74.0" r="5.5" class="dot k-local"><title>bart_s · local · free
+coverage 0.3276 · rank 10/29
+free: runs locally, nothing billed</title></circle><circle cx="238.1" cy="74.0" r="12" class="hit" data-tip="bart_s · local · free
+coverage 0.3276 · rank 10/29
+free: runs locally, nothing billed"/><circle cx="232.8" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+coverage 0.3268 · rank 11/29
+billed $1.07 for 200 items</title></circle><circle cx="232.8" cy="74.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+coverage 0.3268 · rank 11/29
+billed $1.07 for 200 items"/><circle cx="232.5" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+coverage 0.3268 · rank 12/29
+billed $0.4362 for 200 items</title></circle><circle cx="232.5" cy="74.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+coverage 0.3268 · rank 12/29
+billed $0.4362 for 200 items"/><circle cx="223.9" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+coverage 0.3255 · rank 13/29
+billed $0.0179 for 200 items</title></circle><circle cx="223.9" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+coverage 0.3255 · rank 13/29
+billed $0.0179 for 200 items"/><circle cx="212.0" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+coverage 0.3238 · rank 14/29
+billed $0.2611 for 200 items</title></circle><circle cx="212.0" cy="74.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+coverage 0.3238 · rank 14/29
+billed $0.2611 for 200 items"/><circle cx="210.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+coverage 0.3236 · rank 15/29
+billed $0.7478 for 200 items</title></circle><circle cx="210.3" cy="74.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+coverage 0.3236 · rank 15/29
+billed $0.7478 for 200 items"/><circle cx="188.1" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+coverage 0.3204 · rank 16/29
+billed $0.0237 for 200 items</title></circle><circle cx="188.1" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+coverage 0.3204 · rank 16/29
+billed $0.0237 for 200 items"/><circle cx="164.6" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+coverage 0.3171 · rank 17/29
+billed $0.1672 for 200 items</title></circle><circle cx="164.6" cy="74.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+coverage 0.3171 · rank 17/29
+billed $0.1672 for 200 items"/><circle cx="142.8" cy="74.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+coverage 0.3139 · rank 19/29
+billed $0.0304 for 200 items</title></circle><circle cx="142.8" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+coverage 0.3139 · rank 19/29
+billed $0.0304 for 200 items"/><circle cx="140.3" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+coverage 0.3136 · rank 20/29
+billed $0.0154 for 200 items</title></circle><circle cx="140.3" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+coverage 0.3136 · rank 20/29
+billed $0.0154 for 200 items"/><circle cx="132.0" cy="74.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+coverage 0.3124 · rank 21/29
+billed $0.1532 for 200 items</title></circle><circle cx="132.0" cy="74.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+coverage 0.3124 · rank 21/29
+billed $0.1532 for 200 items"/><circle cx="128.8" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+coverage 0.3120 · rank 22/29
+billed $0.0200 for 200 items</title></circle><circle cx="128.8" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+coverage 0.3120 · rank 22/29
+billed $0.0200 for 200 items"/><circle cx="120.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
+coverage 0.3108 · rank 23/29
+billed $0.1689 for 200 items</title></circle><circle cx="120.7" cy="74.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
+coverage 0.3108 · rank 23/29
+billed $0.1689 for 200 items"/><circle cx="100.9" cy="74.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+coverage 0.3080 · rank 24/29
+billed $0.0973 for 200 items</title></circle><circle cx="100.9" cy="74.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+coverage 0.3080 · rank 24/29
+billed $0.0973 for 200 items"/><circle cx="92.6" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+coverage 0.3068 · rank 25/29
+billed $0.0270 for 200 items</title></circle><circle cx="92.6" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+coverage 0.3068 · rank 25/29
+billed $0.0270 for 200 items"/><circle cx="75.1" cy="74.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+coverage 0.3043 · rank 26/29
+billed $0.0871 for 200 items</title></circle><circle cx="75.1" cy="74.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+coverage 0.3043 · rank 26/29
+billed $0.0871 for 200 items"/><circle cx="66.1" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+coverage 0.3030 · rank 27/29
+billed $0.0661 for 200 items</title></circle><circle cx="66.1" cy="74.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+coverage 0.3030 · rank 27/29
+billed $0.0661 for 200 items"/><circle cx="14.0" cy="74.0" r="5.5" class="dot k-local"><title>bart_l_xsum · local · free
+coverage 0.2071 · rank 29/29
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="14.0" cy="74.0" r="12" class="hit" data-tip="bart_l_xsum · local · free
+coverage 0.2071 · rank 29/29
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="153.4" cy="74.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+coverage 0.3155 · rank 18/29
+billed $1.97 for 200 items</title></circle><circle cx="153.4" cy="74.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+coverage 0.3155 · rank 18/29
+billed $1.97 for 200 items"/><circle cx="153.4" cy="74" r="11" class="ring"/><text x="153.4" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 18th · 0.315</text><text x="367.9" y="104" text-anchor="end" class="t-ink" font-size="15">bart_l · 1st · 0.346</text></svg></div></figure><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="AG News: every learned arm by accuracy"><text x="0" y="44" class="t-head" font-size="17">AG News</text><text x="0" y="64" class="t-muted" font-size="11">classification · accuracy</text><rect x="790.9" y="28" width="151.0" height="44" rx="10" class="band"/><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50.0" r="7" class="dot k-local"><title>bert_base_ta · local · free
 accuracy 0.9600 · rank 1/30
-billed $0.0000 for 200 items"><title>bert_base_ta · local · free
+free: runs locally, nothing billed</title></circle><circle cx="933.9" cy="50.0" r="12" class="hit" data-tip="bert_base_ta · local · free
 accuracy 0.9600 · rank 1/30
-billed $0.0000 for 200 items</title></circle><circle cx="906.9" cy="50" r="5.5" class="dot k-local" data-tip="bert_base_fy · local · free
+free: runs locally, nothing billed"/><circle cx="906.9" cy="50.0" r="5.5" class="dot k-local"><title>bert_base_fy · local · free
 accuracy 0.9500 · rank 2/30
-billed $0.0000 for 200 items"><title>bert_base_fy · local · free
+free: runs locally, nothing billed</title></circle><circle cx="906.9" cy="50.0" r="12" class="hit" data-tip="bert_base_fy · local · free
 accuracy 0.9500 · rank 2/30
-billed $0.0000 for 200 items</title></circle><circle cx="893.4" cy="50" r="5.5" class="dot k-local" data-tip="bert_mini · local · free
+free: runs locally, nothing billed"/><circle cx="893.4" cy="50.0" r="5.5" class="dot k-local"><title>bert_mini · local · free
 accuracy 0.9450 · rank 3/30
-billed $0.0000 for 200 items"><title>bert_mini · local · free
+free: runs locally, nothing billed</title></circle><circle cx="893.4" cy="50.0" r="12" class="hit" data-tip="bert_mini · local · free
 accuracy 0.9450 · rank 3/30
-billed $0.0000 for 200 items</title></circle><circle cx="798.9" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+free: runs locally, nothing billed"/><circle cx="798.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
 accuracy 0.9100 · rank 4/30
-billed $0.0703 for 200 items"><title>anthropic_m · hosted · proprietary
+billed $0.0703 for 200 items</title></circle><circle cx="798.9" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
 accuracy 0.9100 · rank 4/30
-billed $0.0703 for 200 items</title></circle><circle cx="758.4" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+billed $0.0703 for 200 items"/><circle cx="758.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
 accuracy 0.8950 · rank 6/30
-billed $0.1272 for 200 items"><title>openai_m · hosted · proprietary
+billed $0.1272 for 200 items</title></circle><circle cx="758.4" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
 accuracy 0.8950 · rank 6/30
-billed $0.1272 for 200 items</title></circle><circle cx="745.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+billed $0.1272 for 200 items"/><circle cx="745.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
 accuracy 0.8900 · rank 7/30
-billed $0.0487 for 200 items"><title>openai_l · hosted · proprietary
+billed $0.0487 for 200 items</title></circle><circle cx="745.0" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
 accuracy 0.8900 · rank 7/30
-billed $0.0487 for 200 items</title></circle><circle cx="731.5" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+billed $0.0487 for 200 items"/><circle cx="731.5" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
 accuracy 0.8850 · rank 8/30
-billed $0.0070 for 200 items"><title>qwen_m · hosted · proprietary
+billed $0.0070 for 200 items</title></circle><circle cx="731.5" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
 accuracy 0.8850 · rank 8/30
-billed $0.0070 for 200 items</title></circle><circle cx="718.0" cy="50" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+billed $0.0070 for 200 items"/><circle cx="718.0" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
 accuracy 0.8800 · rank 9/30
-billed $0.0040 for 200 items"><title>llama_m · hosted · open weights
+billed $0.0040 for 200 items</title></circle><circle cx="718.0" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
 accuracy 0.8800 · rank 9/30
-billed $0.0040 for 200 items</title></circle><circle cx="704.5" cy="50" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+billed $0.0040 for 200 items"/><circle cx="704.5" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
 accuracy 0.8750 · rank 10/30
-billed $0.0021 for 200 items"><title>gemma_s · hosted · open weights
+billed $0.0021 for 200 items</title></circle><circle cx="704.5" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
 accuracy 0.8750 · rank 10/30
-billed $0.0021 for 200 items</title></circle><circle cx="704.5" cy="50" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+billed $0.0021 for 200 items"/><circle cx="704.5" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
 accuracy 0.8750 · rank 11/30
-billed $0.0103 for 200 items"><title>mistral_l · hosted · open weights
+billed $0.0103 for 200 items</title></circle><circle cx="704.5" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
 accuracy 0.8750 · rank 11/30
-billed $0.0103 for 200 items</title></circle><circle cx="704.5" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+billed $0.0103 for 200 items"/><circle cx="704.5" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
 accuracy 0.8750 · rank 12/30
-billed $0.0036 for 200 items"><title>qwen_s · hosted · proprietary
+billed $0.0036 for 200 items</title></circle><circle cx="704.5" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
 accuracy 0.8750 · rank 12/30
-billed $0.0036 for 200 items</title></circle><circle cx="691.0" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+billed $0.0036 for 200 items"/><circle cx="691.0" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
 accuracy 0.8700 · rank 13/30
-billed $0.0114 for 200 items"><title>deepseek_l · hosted · open weights
+billed $0.0114 for 200 items</title></circle><circle cx="691.0" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
 accuracy 0.8700 · rank 13/30
-billed $0.0114 for 200 items</title></circle><circle cx="691.0" cy="50" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+billed $0.0114 for 200 items"/><circle cx="691.0" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
 accuracy 0.8700 · rank 14/30
-billed $0.0028 for 200 items"><title>gemma_l · hosted · open weights
+billed $0.0028 for 200 items</title></circle><circle cx="691.0" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
 accuracy 0.8700 · rank 14/30
-billed $0.0028 for 200 items</title></circle><circle cx="691.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+billed $0.0028 for 200 items"/><circle cx="691.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
 accuracy 0.8700 · rank 15/30
-billed $0.0164 for 200 items"><title>qwen_l · hosted · proprietary
+billed $0.0164 for 200 items</title></circle><circle cx="691.0" cy="50.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
 accuracy 0.8700 · rank 15/30
-billed $0.0164 for 200 items</title></circle><circle cx="664.0" cy="50" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+billed $0.0164 for 200 items"/><circle cx="664.0" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
 accuracy 0.8600 · rank 16/30
-billed $0.0186 for 200 items"><title>glm_l · hosted · open weights
+billed $0.0186 for 200 items</title></circle><circle cx="664.0" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
 accuracy 0.8600 · rank 16/30
-billed $0.0186 for 200 items</title></circle><circle cx="664.0" cy="50" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+billed $0.0186 for 200 items"/><circle cx="664.0" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
 accuracy 0.8600 · rank 17/30
-billed $0.0107 for 200 items"><title>glm_m · hosted · open weights
+billed $0.0107 for 200 items</title></circle><circle cx="664.0" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 accuracy 0.8600 · rank 17/30
-billed $0.0107 for 200 items</title></circle><circle cx="664.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+billed $0.0107 for 200 items"/><circle cx="664.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
 accuracy 0.8600 · rank 18/30
-billed $0.0096 for 200 items"><title>mistral_m · hosted · proprietary
+billed $0.0096 for 200 items</title></circle><circle cx="664.0" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
 accuracy 0.8600 · rank 18/30
-billed $0.0096 for 200 items</title></circle><circle cx="664.0" cy="50" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+billed $0.0096 for 200 items"/><circle cx="664.0" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
 accuracy 0.8600 · rank 19/30
-billed $0.0019 for 200 items"><title>mistral_s · hosted · open weights
+billed $0.0019 for 200 items</title></circle><circle cx="664.0" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
 accuracy 0.8600 · rank 19/30
-billed $0.0019 for 200 items</title></circle><circle cx="664.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+billed $0.0019 for 200 items"/><circle cx="664.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
 accuracy 0.8600 · rank 20/30
-billed $0.0190 for 200 items"><title>openai_s · hosted · proprietary
+billed $0.0190 for 200 items</title></circle><circle cx="664.0" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
 accuracy 0.8600 · rank 20/30
-billed $0.0190 for 200 items</title></circle><circle cx="650.5" cy="50" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+billed $0.0190 for 200 items"/><circle cx="650.5" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
 accuracy 0.8550 · rank 21/30
-billed $0.0016 for 200 items"><title>gemma_m · hosted · open weights
+billed $0.0016 for 200 items</title></circle><circle cx="650.5" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
 accuracy 0.8550 · rank 21/30
-billed $0.0016 for 200 items</title></circle><circle cx="637.0" cy="50" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+billed $0.0016 for 200 items"/><circle cx="637.0" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
 accuracy 0.8500 · rank 22/30
-billed $0.0027 for 200 items"><title>glm_s · hosted · open weights
+billed $0.0027 for 200 items</title></circle><circle cx="637.0" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
 accuracy 0.8500 · rank 22/30
-billed $0.0027 for 200 items</title></circle><circle cx="623.5" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+billed $0.0027 for 200 items"/><circle cx="623.5" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
 accuracy 0.8450 · rank 23/30
-billed $0.0043 for 200 items"><title>deepseek_m · hosted · open weights
+billed $0.0043 for 200 items</title></circle><circle cx="623.5" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
 accuracy 0.8450 · rank 23/30
-billed $0.0043 for 200 items</title></circle><circle cx="610.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+billed $0.0043 for 200 items"/><circle cx="610.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
 accuracy 0.8400 · rank 24/30
-billed $0.0254 for 200 items"><title>anthropic_s · hosted · proprietary
+billed $0.0254 for 200 items</title></circle><circle cx="610.0" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
 accuracy 0.8400 · rank 24/30
-billed $0.0254 for 200 items</title></circle><circle cx="610.0" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+billed $0.0254 for 200 items"/><circle cx="610.0" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
 accuracy 0.8400 · rank 25/30
-billed $0.0014 for 200 items"><title>deepseek_s · hosted · open weights
+billed $0.0014 for 200 items</title></circle><circle cx="610.0" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
 accuracy 0.8400 · rank 25/30
-billed $0.0014 for 200 items</title></circle><circle cx="610.0" cy="50" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+billed $0.0014 for 200 items"/><circle cx="610.0" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
 accuracy 0.8400 · rank 26/30
-billed $0.0043 for 200 items"><title>llama_l · hosted · open weights
+billed $0.0043 for 200 items</title></circle><circle cx="610.0" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
 accuracy 0.8400 · rank 26/30
-billed $0.0043 for 200 items</title></circle><circle cx="596.5" cy="50" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+billed $0.0043 for 200 items"/><circle cx="596.5" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
 accuracy 0.8350 · rank 27/30
-billed $0.0025 for 200 items"><title>llama_s · hosted · open weights
+billed $0.0025 for 200 items</title></circle><circle cx="596.5" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
 accuracy 0.8350 · rank 27/30
-billed $0.0025 for 200 items</title></circle><circle cx="232.1" cy="50" r="5.5" class="dot k-local" data-tip="bart_mnli · local · free
+billed $0.0025 for 200 items"/><circle cx="232.1" cy="50.0" r="5.5" class="dot k-local"><title>bart_mnli · local · free
 accuracy 0.7000 · rank 28/30
-billed $0.0000 for 200 items"><title>bart_mnli · local · free
+free: runs locally, nothing billed</title></circle><circle cx="232.1" cy="50.0" r="12" class="hit" data-tip="bart_mnli · local · free
 accuracy 0.7000 · rank 28/30
-billed $0.0000 for 200 items</title></circle><circle cx="771.9" cy="50" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+free: runs locally, nothing billed"/><circle cx="771.9" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
 accuracy 0.9000 · rank 5/30
-billed $0.1750 for 200 items"><title>anthropic_l · hosted · proprietary
+billed $0.1750 for 200 items</title></circle><circle cx="771.9" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
 accuracy 0.9000 · rank 5/30
-billed $0.1750 for 200 items</title></circle><circle cx="771.9" cy="50" r="11" class="ring"/><text x="771.9" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 5th · 0.900</text><text x="933.9" y="78" text-anchor="end" class="t-ink" font-size="11">bert_base_ta · 1st · 0.960</text></svg></figure><figure class="reveal" style="margin-bottom:10px"><svg viewBox="0 0 1000 92" role="img" aria-label="DBpedia-14: every learned arm by accuracy"><text x="0" y="44" class="t-head" font-size="17">DBpedia-14</text><text x="0" y="64" class="t-muted" font-size="11">classification · accuracy</text><rect x="870.9" y="28" width="71.0" height="44" rx="10" class="band"/><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50" r="7" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+billed $0.1750 for 200 items"/><circle cx="771.9" cy="50" r="11" class="ring"/><text x="771.9" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 5th · 0.900</text><text x="933.9" y="80" text-anchor="end" class="t-ink" font-size="11">bert_base_ta · 1st · 0.960</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="AG News: every learned arm by accuracy"><text x="0" y="20" class="t-head" font-size="20">AG News</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">classification · accuracy</text><rect x="294.2" y="52" width="79.9" height="44" rx="10" class="band"/><line x1="14" x2="386" y1="74" y2="74" class="axis"/><circle cx="366.1" cy="74.0" r="7" class="dot k-local"><title>bert_base_ta · local · free
+accuracy 0.9600 · rank 1/30
+free: runs locally, nothing billed</title></circle><circle cx="366.1" cy="74.0" r="12" class="hit" data-tip="bert_base_ta · local · free
+accuracy 0.9600 · rank 1/30
+free: runs locally, nothing billed"/><circle cx="353.3" cy="74.0" r="5.5" class="dot k-local"><title>bert_base_fy · local · free
+accuracy 0.9500 · rank 2/30
+free: runs locally, nothing billed</title></circle><circle cx="353.3" cy="74.0" r="12" class="hit" data-tip="bert_base_fy · local · free
+accuracy 0.9500 · rank 2/30
+free: runs locally, nothing billed"/><circle cx="346.9" cy="74.0" r="5.5" class="dot k-local"><title>bert_mini · local · free
+accuracy 0.9450 · rank 3/30
+free: runs locally, nothing billed</title></circle><circle cx="346.9" cy="74.0" r="12" class="hit" data-tip="bert_mini · local · free
+accuracy 0.9450 · rank 3/30
+free: runs locally, nothing billed"/><circle cx="302.2" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+accuracy 0.9100 · rank 4/30
+billed $0.0703 for 200 items</title></circle><circle cx="302.2" cy="74.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+accuracy 0.9100 · rank 4/30
+billed $0.0703 for 200 items"/><circle cx="283.0" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+accuracy 0.8950 · rank 6/30
+billed $0.1272 for 200 items</title></circle><circle cx="283.0" cy="74.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+accuracy 0.8950 · rank 6/30
+billed $0.1272 for 200 items"/><circle cx="276.6" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+accuracy 0.8900 · rank 7/30
+billed $0.0487 for 200 items</title></circle><circle cx="276.6" cy="74.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+accuracy 0.8900 · rank 7/30
+billed $0.0487 for 200 items"/><circle cx="270.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+accuracy 0.8850 · rank 8/30
+billed $0.0070 for 200 items</title></circle><circle cx="270.3" cy="74.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+accuracy 0.8850 · rank 8/30
+billed $0.0070 for 200 items"/><circle cx="263.9" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+accuracy 0.8800 · rank 9/30
+billed $0.0040 for 200 items</title></circle><circle cx="263.9" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+accuracy 0.8800 · rank 9/30
+billed $0.0040 for 200 items"/><circle cx="257.5" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+accuracy 0.8750 · rank 10/30
+billed $0.0021 for 200 items</title></circle><circle cx="257.5" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+accuracy 0.8750 · rank 10/30
+billed $0.0021 for 200 items"/><circle cx="257.5" cy="74.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+accuracy 0.8750 · rank 11/30
+billed $0.0103 for 200 items</title></circle><circle cx="257.5" cy="74.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+accuracy 0.8750 · rank 11/30
+billed $0.0103 for 200 items"/><circle cx="257.5" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+accuracy 0.8750 · rank 12/30
+billed $0.0036 for 200 items</title></circle><circle cx="257.5" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+accuracy 0.8750 · rank 12/30
+billed $0.0036 for 200 items"/><circle cx="251.1" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+accuracy 0.8700 · rank 13/30
+billed $0.0114 for 200 items</title></circle><circle cx="251.1" cy="74.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+accuracy 0.8700 · rank 13/30
+billed $0.0114 for 200 items"/><circle cx="251.1" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+accuracy 0.8700 · rank 14/30
+billed $0.0028 for 200 items</title></circle><circle cx="251.1" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+accuracy 0.8700 · rank 14/30
+billed $0.0028 for 200 items"/><circle cx="251.1" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
+accuracy 0.8700 · rank 15/30
+billed $0.0164 for 200 items</title></circle><circle cx="251.1" cy="74.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
+accuracy 0.8700 · rank 15/30
+billed $0.0164 for 200 items"/><circle cx="238.3" cy="74.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+accuracy 0.8600 · rank 16/30
+billed $0.0186 for 200 items</title></circle><circle cx="238.3" cy="74.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+accuracy 0.8600 · rank 16/30
+billed $0.0186 for 200 items"/><circle cx="238.3" cy="74.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+accuracy 0.8600 · rank 17/30
+billed $0.0107 for 200 items</title></circle><circle cx="238.3" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+accuracy 0.8600 · rank 17/30
+billed $0.0107 for 200 items"/><circle cx="238.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+accuracy 0.8600 · rank 18/30
+billed $0.0096 for 200 items</title></circle><circle cx="238.3" cy="74.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+accuracy 0.8600 · rank 18/30
+billed $0.0096 for 200 items"/><circle cx="238.3" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+accuracy 0.8600 · rank 19/30
+billed $0.0019 for 200 items</title></circle><circle cx="238.3" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+accuracy 0.8600 · rank 19/30
+billed $0.0019 for 200 items"/><circle cx="238.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+accuracy 0.8600 · rank 20/30
+billed $0.0190 for 200 items</title></circle><circle cx="238.3" cy="74.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+accuracy 0.8600 · rank 20/30
+billed $0.0190 for 200 items"/><circle cx="231.9" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+accuracy 0.8550 · rank 21/30
+billed $0.0016 for 200 items</title></circle><circle cx="231.9" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+accuracy 0.8550 · rank 21/30
+billed $0.0016 for 200 items"/><circle cx="225.5" cy="74.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+accuracy 0.8500 · rank 22/30
+billed $0.0027 for 200 items</title></circle><circle cx="225.5" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+accuracy 0.8500 · rank 22/30
+billed $0.0027 for 200 items"/><circle cx="219.2" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+accuracy 0.8450 · rank 23/30
+billed $0.0043 for 200 items</title></circle><circle cx="219.2" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+accuracy 0.8450 · rank 23/30
+billed $0.0043 for 200 items"/><circle cx="212.8" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+accuracy 0.8400 · rank 24/30
+billed $0.0254 for 200 items</title></circle><circle cx="212.8" cy="74.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+accuracy 0.8400 · rank 24/30
+billed $0.0254 for 200 items"/><circle cx="212.8" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+accuracy 0.8400 · rank 25/30
+billed $0.0014 for 200 items</title></circle><circle cx="212.8" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+accuracy 0.8400 · rank 25/30
+billed $0.0014 for 200 items"/><circle cx="212.8" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+accuracy 0.8400 · rank 26/30
+billed $0.0043 for 200 items</title></circle><circle cx="212.8" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+accuracy 0.8400 · rank 26/30
+billed $0.0043 for 200 items"/><circle cx="206.4" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+accuracy 0.8350 · rank 27/30
+billed $0.0025 for 200 items</title></circle><circle cx="206.4" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+accuracy 0.8350 · rank 27/30
+billed $0.0025 for 200 items"/><circle cx="33.9" cy="74.0" r="5.5" class="dot k-local"><title>bart_mnli · local · free
+accuracy 0.7000 · rank 28/30
+free: runs locally, nothing billed</title></circle><circle cx="33.9" cy="74.0" r="12" class="hit" data-tip="bart_mnli · local · free
+accuracy 0.7000 · rank 28/30
+free: runs locally, nothing billed"/><circle cx="289.4" cy="74.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+accuracy 0.9000 · rank 5/30
+billed $0.1750 for 200 items</title></circle><circle cx="289.4" cy="74.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+accuracy 0.9000 · rank 5/30
+billed $0.1750 for 200 items"/><circle cx="289.4" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 5th · 0.900</text><text x="366.1" y="104" text-anchor="end" class="t-ink" font-size="15">bert_base_ta · 1st · 0.960</text></svg></div></figure><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="DBpedia-14: every learned arm by accuracy"><text x="0" y="44" class="t-head" font-size="17">DBpedia-14</text><text x="0" y="64" class="t-muted" font-size="11">classification · accuracy</text><rect x="569.6" y="28" width="374.1" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
 accuracy 0.9929 · rank 1/28
-billed $0.0143 for 280 items"><title>qwen_m · hosted · proprietary
+billed $0.0143 for 280 items</title></circle><circle cx="935.7" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
 accuracy 0.9929 · rank 1/28
-billed $0.0143 for 280 items</title></circle><circle cx="920.1" cy="50" r="5.5" class="dot k-local" data-tip="bert_base_fy · local · free
+billed $0.0143 for 280 items"/><circle cx="846.2" cy="50.0" r="5.5" class="dot k-local"><title>bert_base_fy · local · free
 accuracy 0.9857 · rank 3/28
-billed $0.0000 for 280 items"><title>bert_base_fy · local · free
+free: runs locally, nothing billed</title></circle><circle cx="846.2" cy="50.0" r="12" class="hit" data-tip="bert_base_fy · local · free
 accuracy 0.9857 · rank 3/28
-billed $0.0000 for 280 items</title></circle><circle cx="920.1" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+free: runs locally, nothing billed"/><circle cx="846.2" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
 accuracy 0.9857 · rank 4/28
-billed $0.0209 for 280 items"><title>deepseek_l · hosted · open weights
+billed $0.0209 for 280 items</title></circle><circle cx="846.2" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
 accuracy 0.9857 · rank 4/28
-billed $0.0209 for 280 items</title></circle><circle cx="920.1" cy="50" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+billed $0.0209 for 280 items"/><circle cx="846.2" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
 accuracy 0.9857 · rank 5/28
-billed $0.0033 for 280 items"><title>gemma_m · hosted · open weights
+billed $0.0033 for 280 items</title></circle><circle cx="846.2" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
 accuracy 0.9857 · rank 5/28
-billed $0.0033 for 280 items</title></circle><circle cx="920.1" cy="50" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+billed $0.0033 for 280 items"/><circle cx="846.2" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
 accuracy 0.9857 · rank 6/28
-billed $0.0159 for 280 items"><title>glm_m · hosted · open weights
+billed $0.0159 for 280 items</title></circle><circle cx="846.2" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 accuracy 0.9857 · rank 6/28
-billed $0.0159 for 280 items</title></circle><circle cx="920.1" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+billed $0.0159 for 280 items"/><circle cx="846.2" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
 accuracy 0.9857 · rank 7/28
-billed $0.0072 for 280 items"><title>qwen_s · hosted · proprietary
+billed $0.0072 for 280 items</title></circle><circle cx="846.2" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
 accuracy 0.9857 · rank 7/28
-billed $0.0072 for 280 items</title></circle><circle cx="913.3" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+billed $0.0072 for 280 items"/><circle cx="801.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
 accuracy 0.9821 · rank 8/28
-billed $0.1514 for 280 items"><title>anthropic_m · hosted · proprietary
+billed $0.1514 for 280 items</title></circle><circle cx="801.4" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
 accuracy 0.9821 · rank 8/28
-billed $0.1514 for 280 items</title></circle><circle cx="913.3" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+billed $0.1514 for 280 items"/><circle cx="801.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
 accuracy 0.9821 · rank 9/28
-billed $0.2380 for 280 items"><title>openai_m · hosted · proprietary
+billed $0.2380 for 280 items</title></circle><circle cx="801.4" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
 accuracy 0.9821 · rank 9/28
-billed $0.2380 for 280 items</title></circle><circle cx="906.4" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+billed $0.2380 for 280 items"/><circle cx="756.7" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
 accuracy 0.9786 · rank 10/28
-billed $0.0536 for 280 items"><title>anthropic_s · hosted · proprietary
+billed $0.0536 for 280 items</title></circle><circle cx="756.7" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
 accuracy 0.9786 · rank 10/28
-billed $0.0536 for 280 items</title></circle><circle cx="906.4" cy="50" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+billed $0.0536 for 280 items"/><circle cx="756.7" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
 accuracy 0.9786 · rank 11/28
-billed $0.0084 for 280 items"><title>llama_m · hosted · open weights
+billed $0.0084 for 280 items</title></circle><circle cx="756.7" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
 accuracy 0.9786 · rank 11/28
-billed $0.0084 for 280 items</title></circle><circle cx="899.5" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+billed $0.0084 for 280 items"/><circle cx="711.9" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
 accuracy 0.9750 · rank 12/28
-billed $0.0079 for 280 items"><title>deepseek_m · hosted · open weights
+billed $0.0079 for 280 items</title></circle><circle cx="711.9" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
 accuracy 0.9750 · rank 12/28
-billed $0.0079 for 280 items</title></circle><circle cx="899.5" cy="50" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+billed $0.0079 for 280 items"/><circle cx="711.9" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
 accuracy 0.9750 · rank 13/28
-billed $0.0046 for 280 items"><title>gemma_l · hosted · open weights
+billed $0.0046 for 280 items</title></circle><circle cx="711.9" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
 accuracy 0.9750 · rank 13/28
-billed $0.0046 for 280 items</title></circle><circle cx="899.5" cy="50" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+billed $0.0046 for 280 items"/><circle cx="711.9" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
 accuracy 0.9750 · rank 14/28
-billed $0.0035 for 280 items"><title>gemma_s · hosted · open weights
+billed $0.0035 for 280 items</title></circle><circle cx="711.9" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
 accuracy 0.9750 · rank 14/28
-billed $0.0035 for 280 items</title></circle><circle cx="899.5" cy="50" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+billed $0.0035 for 280 items"/><circle cx="711.9" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
 accuracy 0.9750 · rank 15/28
-billed $0.0089 for 280 items"><title>llama_l · hosted · open weights
+billed $0.0089 for 280 items</title></circle><circle cx="711.9" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
 accuracy 0.9750 · rank 15/28
-billed $0.0089 for 280 items</title></circle><circle cx="899.5" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+billed $0.0089 for 280 items"/><circle cx="711.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
 accuracy 0.9750 · rank 16/28
-billed $0.0921 for 280 items"><title>openai_l · hosted · proprietary
+billed $0.0921 for 280 items</title></circle><circle cx="711.9" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
 accuracy 0.9750 · rank 16/28
-billed $0.0921 for 280 items</title></circle><circle cx="899.5" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+billed $0.0921 for 280 items"/><circle cx="711.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
 accuracy 0.9750 · rank 17/28
-billed $0.0360 for 280 items"><title>openai_s · hosted · proprietary
+billed $0.0360 for 280 items</title></circle><circle cx="711.9" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
 accuracy 0.9750 · rank 17/28
-billed $0.0360 for 280 items</title></circle><circle cx="885.7" cy="50" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+billed $0.0360 for 280 items"/><circle cx="622.4" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
 accuracy 0.9679 · rank 18/28
-billed $0.0359 for 280 items"><title>glm_l · hosted · open weights
+billed $0.0359 for 280 items</title></circle><circle cx="622.4" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
 accuracy 0.9679 · rank 18/28
-billed $0.0359 for 280 items</title></circle><circle cx="885.7" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+billed $0.0359 for 280 items"/><circle cx="622.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
 accuracy 0.9679 · rank 19/28
-billed $0.0342 for 280 items"><title>qwen_l · hosted · proprietary
+billed $0.0342 for 280 items</title></circle><circle cx="622.4" cy="50.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
 accuracy 0.9679 · rank 19/28
-billed $0.0342 for 280 items</title></circle><circle cx="878.9" cy="50" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+billed $0.0342 for 280 items"/><circle cx="577.6" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
 accuracy 0.9643 · rank 20/28
-billed $0.0210 for 280 items"><title>mistral_l · hosted · open weights
+billed $0.0210 for 280 items</title></circle><circle cx="577.6" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
 accuracy 0.9643 · rank 20/28
-billed $0.0210 for 280 items</title></circle><circle cx="865.1" cy="50" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+billed $0.0210 for 280 items"/><circle cx="488.1" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
 accuracy 0.9571 · rank 21/28
-billed $0.0076 for 280 items"><title>llama_s · hosted · open weights
+billed $0.0076 for 280 items</title></circle><circle cx="488.1" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
 accuracy 0.9571 · rank 21/28
-billed $0.0076 for 280 items</title></circle><circle cx="865.1" cy="50" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+billed $0.0076 for 280 items"/><circle cx="488.1" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
 accuracy 0.9571 · rank 22/28
-billed $0.0188 for 280 items"><title>mistral_m · hosted · proprietary
+billed $0.0188 for 280 items</title></circle><circle cx="488.1" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
 accuracy 0.9571 · rank 22/28
-billed $0.0188 for 280 items</title></circle><circle cx="865.1" cy="50" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+billed $0.0188 for 280 items"/><circle cx="488.1" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
 accuracy 0.9571 · rank 23/28
-billed $0.0039 for 280 items"><title>mistral_s · hosted · open weights
+billed $0.0039 for 280 items</title></circle><circle cx="488.1" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
 accuracy 0.9571 · rank 23/28
-billed $0.0039 for 280 items</title></circle><circle cx="837.6" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+billed $0.0039 for 280 items"/><circle cx="309.0" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
 accuracy 0.9429 · rank 24/28
-billed $0.0028 for 280 items"><title>deepseek_s · hosted · open weights
+billed $0.0028 for 280 items</title></circle><circle cx="309.0" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
 accuracy 0.9429 · rank 24/28
-billed $0.0028 for 280 items</title></circle><circle cx="830.7" cy="50" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+billed $0.0028 for 280 items"/><circle cx="264.3" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
 accuracy 0.9393 · rank 25/28
-billed $0.0052 for 280 items"><title>glm_s · hosted · open weights
+billed $0.0052 for 280 items</title></circle><circle cx="264.3" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
 accuracy 0.9393 · rank 25/28
-billed $0.0052 for 280 items</title></circle><circle cx="232.1" cy="50" r="5.5" class="dot k-local" data-tip="bart_mnli · local · free
+billed $0.0052 for 280 items"/><circle cx="190.0" cy="50.0" r="5.5" class="dot k-local"><title>bart_mnli · local · free
 accuracy 0.6286 · rank 27/28
-billed $0.0000 for 280 items"><title>bart_mnli · local · free
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="190.0" cy="50.0" r="12" class="hit" data-tip="bart_mnli · local · free
 accuracy 0.6286 · rank 27/28
-billed $0.0000 for 280 items</title></circle><circle cx="927.0" cy="50" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="891.0" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
 accuracy 0.9893 · rank 2/28
-billed $0.3784 for 280 items"><title>anthropic_l · hosted · proprietary
+billed $0.3784 for 280 items</title></circle><circle cx="891.0" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
 accuracy 0.9893 · rank 2/28
-billed $0.3784 for 280 items</title></circle><circle cx="927.0" cy="50" r="11" class="ring"/><text x="927.0" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 2nd · 0.989</text><text x="933.9" y="78" text-anchor="end" class="t-ink" font-size="11">qwen_m · 1st · 0.993</text></svg></figure><figure class="reveal" style="margin-bottom:10px"><svg viewBox="0 0 1000 92" role="img" aria-label="Few-NERD: every learned arm by F1"><text x="0" y="44" class="t-head" font-size="17">Few-NERD</text><text x="0" y="64" class="t-muted" font-size="11">extraction · F1</text><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50" r="7" class="dot k-local" data-tip="span_marker · local · free
+billed $0.3784 for 280 items"/><circle cx="891.0" cy="50" r="11" class="ring"/><text x="891.0" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 2nd · 0.989</text><text x="935.7" y="80" text-anchor="end" class="t-ink" font-size="11">qwen_m · 1st · 0.993</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="DBpedia-14: every learned arm by accuracy"><text x="0" y="20" class="t-head" font-size="20">DBpedia-14</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">classification · accuracy</text><rect x="198.9" y="52" width="177.0" height="44" rx="10" class="band"/><line x1="48" x2="386" y1="74" y2="74" class="axis"/><line x1="14" x2="28" y1="74" y2="74" class="axis"/><text x="37" y="79" text-anchor="middle" class="t-muted" font-size="17">⫽</text><circle cx="367.9" cy="74.0" r="7" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+accuracy 0.9929 · rank 1/28
+billed $0.0143 for 280 items</title></circle><circle cx="367.9" cy="74.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+accuracy 0.9929 · rank 1/28
+billed $0.0143 for 280 items"/><circle cx="327.7" cy="74.0" r="5.5" class="dot k-local"><title>bert_base_fy · local · free
+accuracy 0.9857 · rank 3/28
+free: runs locally, nothing billed</title></circle><circle cx="327.7" cy="74.0" r="12" class="hit" data-tip="bert_base_fy · local · free
+accuracy 0.9857 · rank 3/28
+free: runs locally, nothing billed"/><circle cx="327.7" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+accuracy 0.9857 · rank 4/28
+billed $0.0209 for 280 items</title></circle><circle cx="327.7" cy="74.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+accuracy 0.9857 · rank 4/28
+billed $0.0209 for 280 items"/><circle cx="327.7" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+accuracy 0.9857 · rank 5/28
+billed $0.0033 for 280 items</title></circle><circle cx="327.7" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+accuracy 0.9857 · rank 5/28
+billed $0.0033 for 280 items"/><circle cx="327.7" cy="74.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+accuracy 0.9857 · rank 6/28
+billed $0.0159 for 280 items</title></circle><circle cx="327.7" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+accuracy 0.9857 · rank 6/28
+billed $0.0159 for 280 items"/><circle cx="327.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+accuracy 0.9857 · rank 7/28
+billed $0.0072 for 280 items</title></circle><circle cx="327.7" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+accuracy 0.9857 · rank 7/28
+billed $0.0072 for 280 items"/><circle cx="307.5" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+accuracy 0.9821 · rank 8/28
+billed $0.1514 for 280 items</title></circle><circle cx="307.5" cy="74.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+accuracy 0.9821 · rank 8/28
+billed $0.1514 for 280 items"/><circle cx="307.5" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+accuracy 0.9821 · rank 9/28
+billed $0.2380 for 280 items</title></circle><circle cx="307.5" cy="74.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+accuracy 0.9821 · rank 9/28
+billed $0.2380 for 280 items"/><circle cx="287.4" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+accuracy 0.9786 · rank 10/28
+billed $0.0536 for 280 items</title></circle><circle cx="287.4" cy="74.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+accuracy 0.9786 · rank 10/28
+billed $0.0536 for 280 items"/><circle cx="287.4" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+accuracy 0.9786 · rank 11/28
+billed $0.0084 for 280 items</title></circle><circle cx="287.4" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+accuracy 0.9786 · rank 11/28
+billed $0.0084 for 280 items"/><circle cx="267.3" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+accuracy 0.9750 · rank 12/28
+billed $0.0079 for 280 items</title></circle><circle cx="267.3" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+accuracy 0.9750 · rank 12/28
+billed $0.0079 for 280 items"/><circle cx="267.3" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+accuracy 0.9750 · rank 13/28
+billed $0.0046 for 280 items</title></circle><circle cx="267.3" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+accuracy 0.9750 · rank 13/28
+billed $0.0046 for 280 items"/><circle cx="267.3" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+accuracy 0.9750 · rank 14/28
+billed $0.0035 for 280 items</title></circle><circle cx="267.3" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+accuracy 0.9750 · rank 14/28
+billed $0.0035 for 280 items"/><circle cx="267.3" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+accuracy 0.9750 · rank 15/28
+billed $0.0089 for 280 items</title></circle><circle cx="267.3" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+accuracy 0.9750 · rank 15/28
+billed $0.0089 for 280 items"/><circle cx="267.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+accuracy 0.9750 · rank 16/28
+billed $0.0921 for 280 items</title></circle><circle cx="267.3" cy="74.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+accuracy 0.9750 · rank 16/28
+billed $0.0921 for 280 items"/><circle cx="267.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+accuracy 0.9750 · rank 17/28
+billed $0.0360 for 280 items</title></circle><circle cx="267.3" cy="74.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+accuracy 0.9750 · rank 17/28
+billed $0.0360 for 280 items"/><circle cx="227.1" cy="74.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+accuracy 0.9679 · rank 18/28
+billed $0.0359 for 280 items</title></circle><circle cx="227.1" cy="74.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+accuracy 0.9679 · rank 18/28
+billed $0.0359 for 280 items"/><circle cx="227.1" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
+accuracy 0.9679 · rank 19/28
+billed $0.0342 for 280 items</title></circle><circle cx="227.1" cy="74.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
+accuracy 0.9679 · rank 19/28
+billed $0.0342 for 280 items"/><circle cx="206.9" cy="74.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+accuracy 0.9643 · rank 20/28
+billed $0.0210 for 280 items</title></circle><circle cx="206.9" cy="74.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+accuracy 0.9643 · rank 20/28
+billed $0.0210 for 280 items"/><circle cx="166.7" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+accuracy 0.9571 · rank 21/28
+billed $0.0076 for 280 items</title></circle><circle cx="166.7" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+accuracy 0.9571 · rank 21/28
+billed $0.0076 for 280 items"/><circle cx="166.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+accuracy 0.9571 · rank 22/28
+billed $0.0188 for 280 items</title></circle><circle cx="166.7" cy="74.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+accuracy 0.9571 · rank 22/28
+billed $0.0188 for 280 items"/><circle cx="166.7" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+accuracy 0.9571 · rank 23/28
+billed $0.0039 for 280 items</title></circle><circle cx="166.7" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+accuracy 0.9571 · rank 23/28
+billed $0.0039 for 280 items"/><circle cx="86.2" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+accuracy 0.9429 · rank 24/28
+billed $0.0028 for 280 items</title></circle><circle cx="86.2" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+accuracy 0.9429 · rank 24/28
+billed $0.0028 for 280 items"/><circle cx="66.1" cy="74.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+accuracy 0.9393 · rank 25/28
+billed $0.0052 for 280 items</title></circle><circle cx="66.1" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+accuracy 0.9393 · rank 25/28
+billed $0.0052 for 280 items"/><circle cx="14.0" cy="74.0" r="5.5" class="dot k-local"><title>bart_mnli · local · free
+accuracy 0.6286 · rank 27/28
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="14.0" cy="74.0" r="12" class="hit" data-tip="bart_mnli · local · free
+accuracy 0.6286 · rank 27/28
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="347.8" cy="74.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+accuracy 0.9893 · rank 2/28
+billed $0.3784 for 280 items</title></circle><circle cx="347.8" cy="74.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+accuracy 0.9893 · rank 2/28
+billed $0.3784 for 280 items"/><circle cx="347.8" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 2nd · 0.989</text><text x="367.9" y="104" text-anchor="end" class="t-ink" font-size="15">qwen_m · 1st · 0.993</text></svg></div></figure><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="Few-NERD: every learned arm by F1"><text x="0" y="44" class="t-head" font-size="17">Few-NERD</text><text x="0" y="64" class="t-muted" font-size="11">extraction · F1</text><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50.0" r="7" class="dot k-local"><title>span_marker · local · free
 F1 0.7674 · rank 1/28
-billed $0.0000 for 280 items"><title>span_marker · local · free
+free: runs locally, nothing billed</title></circle><circle cx="933.9" cy="50.0" r="12" class="hit" data-tip="span_marker · local · free
 F1 0.7674 · rank 1/28
-billed $0.0000 for 280 items</title></circle><circle cx="752.6" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_m · hosted · proprietary
+free: runs locally, nothing billed"/><circle cx="752.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
 F1 0.6864 · rank 2/28
-billed $0.6507 for 280 items"><title>openai_m · hosted · proprietary
+billed $0.6507 for 280 items</title></circle><circle cx="752.6" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
 F1 0.6864 · rank 2/28
-billed $0.6507 for 280 items</title></circle><circle cx="723.2" cy="50" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+billed $0.6507 for 280 items"/><circle cx="723.2" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
 F1 0.6733 · rank 4/28
-billed $0.0088 for 280 items"><title>gemma_m · hosted · open weights
+billed $0.0088 for 280 items</title></circle><circle cx="723.2" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
 F1 0.6733 · rank 4/28
-billed $0.0088 for 280 items</title></circle><circle cx="719.4" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_l · hosted · proprietary
+billed $0.0088 for 280 items"/><circle cx="719.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
 F1 0.6716 · rank 5/28
-billed $0.1715 for 280 items"><title>openai_l · hosted · proprietary
+billed $0.1715 for 280 items</title></circle><circle cx="719.4" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
 F1 0.6716 · rank 5/28
-billed $0.1715 for 280 items</title></circle><circle cx="707.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_m · hosted · proprietary
+billed $0.1715 for 280 items"/><circle cx="707.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
 F1 0.6661 · rank 6/28
-billed $0.2846 for 280 items"><title>anthropic_m · hosted · proprietary
+billed $0.2846 for 280 items</title></circle><circle cx="707.0" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
 F1 0.6661 · rank 6/28
-billed $0.2846 for 280 items</title></circle><circle cx="704.6" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+billed $0.2846 for 280 items"/><circle cx="704.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
 F1 0.6650 · rank 7/28
-billed $0.0157 for 280 items"><title>qwen_s · hosted · proprietary
+billed $0.0157 for 280 items</title></circle><circle cx="704.6" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
 F1 0.6650 · rank 7/28
-billed $0.0157 for 280 items</title></circle><circle cx="681.8" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_m · hosted · proprietary
+billed $0.0157 for 280 items"/><circle cx="681.8" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
 F1 0.6548 · rank 8/28
-billed $0.0396 for 280 items"><title>qwen_m · hosted · proprietary
+billed $0.0396 for 280 items</title></circle><circle cx="681.8" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
 F1 0.6548 · rank 8/28
-billed $0.0396 for 280 items</title></circle><circle cx="666.8" cy="50" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+billed $0.0396 for 280 items"/><circle cx="666.8" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
 F1 0.6481 · rank 9/28
-billed $0.0134 for 280 items"><title>gemma_l · hosted · open weights
+billed $0.0134 for 280 items</title></circle><circle cx="666.8" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
 F1 0.6481 · rank 9/28
-billed $0.0134 for 280 items</title></circle><circle cx="612.8" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_l · hosted · proprietary
+billed $0.0134 for 280 items"/><circle cx="612.8" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
 F1 0.6240 · rank 10/28
-billed $0.0722 for 280 items"><title>qwen_l · hosted · proprietary
+billed $0.0722 for 280 items</title></circle><circle cx="612.8" cy="50.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
 F1 0.6240 · rank 10/28
-billed $0.0722 for 280 items</title></circle><circle cx="592.1" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+billed $0.0722 for 280 items"/><circle cx="592.1" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
 F1 0.6148 · rank 11/28
-billed $0.0200 for 280 items"><title>deepseek_m · hosted · open weights
+billed $0.0200 for 280 items</title></circle><circle cx="592.1" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
 F1 0.6148 · rank 11/28
-billed $0.0200 for 280 items</title></circle><circle cx="556.7" cy="50" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+billed $0.0200 for 280 items"/><circle cx="556.7" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
 F1 0.5990 · rank 12/28
-billed $0.0176 for 280 items"><title>llama_l · hosted · open weights
+billed $0.0176 for 280 items</title></circle><circle cx="556.7" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
 F1 0.5990 · rank 12/28
-billed $0.0176 for 280 items</title></circle><circle cx="554.3" cy="50" r="5.5" class="dot k-open" data-tip="mistral_l · hosted · open weights
+billed $0.0176 for 280 items"/><circle cx="554.3" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
 F1 0.5979 · rank 13/28
-billed $0.0419 for 280 items"><title>mistral_l · hosted · open weights
+billed $0.0419 for 280 items</title></circle><circle cx="554.3" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
 F1 0.5979 · rank 13/28
-billed $0.0419 for 280 items</title></circle><circle cx="547.5" cy="50" r="5.5" class="dot k-proprietary" data-tip="openai_s · hosted · proprietary
+billed $0.0419 for 280 items"/><circle cx="547.5" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
 F1 0.5948 · rank 14/28
-billed $0.0784 for 280 items"><title>openai_s · hosted · proprietary
+billed $0.0784 for 280 items</title></circle><circle cx="547.5" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
 F1 0.5948 · rank 14/28
-billed $0.0784 for 280 items</title></circle><circle cx="545.5" cy="50" r="5.5" class="dot k-open" data-tip="glm_m · hosted · open weights
+billed $0.0784 for 280 items"/><circle cx="545.5" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
 F1 0.5939 · rank 15/28
-billed $0.0445 for 280 items"><title>glm_m · hosted · open weights
+billed $0.0445 for 280 items</title></circle><circle cx="545.5" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 F1 0.5939 · rank 15/28
-billed $0.0445 for 280 items</title></circle><circle cx="539.9" cy="50" r="5.5" class="dot k-proprietary" data-tip="mistral_m · hosted · proprietary
+billed $0.0445 for 280 items"/><circle cx="539.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
 F1 0.5914 · rank 16/28
-billed $0.0462 for 280 items"><title>mistral_m · hosted · proprietary
+billed $0.0462 for 280 items</title></circle><circle cx="539.9" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
 F1 0.5914 · rank 16/28
-billed $0.0462 for 280 items</title></circle><circle cx="530.3" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_l · hosted · open weights
+billed $0.0462 for 280 items"/><circle cx="530.3" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
 F1 0.5872 · rank 17/28
-billed $0.0853 for 280 items"><title>deepseek_l · hosted · open weights
+billed $0.0853 for 280 items</title></circle><circle cx="530.3" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
 F1 0.5872 · rank 17/28
-billed $0.0853 for 280 items</title></circle><circle cx="523.9" cy="50" r="5.5" class="dot k-proprietary" data-tip="anthropic_s · hosted · proprietary
+billed $0.0853 for 280 items"/><circle cx="523.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
 F1 0.5843 · rank 18/28
-billed $0.1552 for 280 items"><title>anthropic_s · hosted · proprietary
+billed $0.1552 for 280 items</title></circle><circle cx="523.9" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
 F1 0.5843 · rank 18/28
-billed $0.1552 for 280 items</title></circle><circle cx="504.5" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+billed $0.1552 for 280 items"/><circle cx="504.5" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
 F1 0.5756 · rank 19/28
-billed $0.0091 for 280 items"><title>deepseek_s · hosted · open weights
+billed $0.0091 for 280 items</title></circle><circle cx="504.5" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
 F1 0.5756 · rank 19/28
-billed $0.0091 for 280 items</title></circle><circle cx="500.8" cy="50" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+billed $0.0091 for 280 items"/><circle cx="500.8" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
 F1 0.5740 · rank 20/28
-billed $0.0194 for 280 items"><title>llama_m · hosted · open weights
+billed $0.0194 for 280 items</title></circle><circle cx="500.8" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
 F1 0.5740 · rank 20/28
-billed $0.0194 for 280 items</title></circle><circle cx="488.9" cy="50" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+billed $0.0194 for 280 items"/><circle cx="488.9" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
 F1 0.5686 · rank 21/28
-billed $0.0103 for 280 items"><title>llama_s · hosted · open weights
+billed $0.0103 for 280 items</title></circle><circle cx="488.9" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
 F1 0.5686 · rank 21/28
-billed $0.0103 for 280 items</title></circle><circle cx="483.3" cy="50" r="5.5" class="dot k-open" data-tip="glm_l · hosted · open weights
+billed $0.0103 for 280 items"/><circle cx="483.3" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
 F1 0.5662 · rank 22/28
-billed $0.1023 for 280 items"><title>glm_l · hosted · open weights
+billed $0.1023 for 280 items</title></circle><circle cx="483.3" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
 F1 0.5662 · rank 22/28
-billed $0.1023 for 280 items</title></circle><circle cx="453.6" cy="50" r="5.5" class="dot k-open" data-tip="glm_s · hosted · open weights
+billed $0.1023 for 280 items"/><circle cx="453.6" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
 F1 0.5529 · rank 23/28
-billed $0.0194 for 280 items"><title>glm_s · hosted · open weights
+billed $0.0194 for 280 items</title></circle><circle cx="453.6" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
 F1 0.5529 · rank 23/28
-billed $0.0194 for 280 items</title></circle><circle cx="447.1" cy="50" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+billed $0.0194 for 280 items"/><circle cx="447.1" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
 F1 0.5500 · rank 24/28
-billed $0.0093 for 280 items"><title>gemma_s · hosted · open weights
+billed $0.0093 for 280 items</title></circle><circle cx="447.1" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
 F1 0.5500 · rank 24/28
-billed $0.0093 for 280 items</title></circle><circle cx="389.5" cy="50" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+billed $0.0093 for 280 items"/><circle cx="389.5" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
 F1 0.5243 · rank 25/28
-billed $0.0076 for 280 items"><title>mistral_s · hosted · open weights
+billed $0.0076 for 280 items</title></circle><circle cx="389.5" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
 F1 0.5243 · rank 25/28
-billed $0.0076 for 280 items</title></circle><circle cx="232.1" cy="50" r="5.5" class="dot k-local" data-tip="gliner · local · free
+billed $0.0076 for 280 items"/><circle cx="232.1" cy="50.0" r="5.5" class="dot k-local"><title>gliner · local · free
 F1 0.4540 · rank 26/28
-billed $0.0000 for 280 items"><title>gliner · local · free
+free: runs locally, nothing billed</title></circle><circle cx="232.1" cy="50.0" r="12" class="hit" data-tip="gliner · local · free
 F1 0.4540 · rank 26/28
-billed $0.0000 for 280 items</title></circle><circle cx="737.8" cy="50" r="7" class="dot k-proprietary" data-tip="anthropic_l · hosted · proprietary
+free: runs locally, nothing billed"/><circle cx="737.8" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
 F1 0.6798 · rank 3/28
-billed $0.6897 for 280 items"><title>anthropic_l · hosted · proprietary
+billed $0.6897 for 280 items</title></circle><circle cx="737.8" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
 F1 0.6798 · rank 3/28
-billed $0.6897 for 280 items</title></circle><circle cx="737.8" cy="50" r="11" class="ring"/><text x="737.8" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.680</text><text x="933.9" y="78" text-anchor="end" class="t-ink" font-size="11">span_marker · 1st · 0.767</text></svg></figure><figure class="reveal" style="margin-bottom:10px"><svg viewBox="0 0 1000 92" role="img" aria-label="SciFact: every learned arm by nDCG@10"><text x="0" y="44" class="t-head" font-size="17">SciFact</text><text x="0" y="64" class="t-muted" font-size="11">retrieval · nDCG@10</text><rect x="627.0" y="28" width="314.9" height="44" rx="10" class="band"/><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50" r="7" class="dot k-open" data-tip="glm_s · hosted · open weights
+billed $0.6897 for 280 items"/><circle cx="737.8" cy="50" r="11" class="ring"/><text x="737.8" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.680</text><text x="933.9" y="80" text-anchor="end" class="t-ink" font-size="11">span_marker · 1st · 0.767</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="Few-NERD: every learned arm by F1"><text x="0" y="20" class="t-head" font-size="20">Few-NERD</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">extraction · F1</text><line x1="14" x2="386" y1="74" y2="74" class="axis"/><circle cx="366.1" cy="74.0" r="7" class="dot k-local"><title>span_marker · local · free
+F1 0.7674 · rank 1/28
+free: runs locally, nothing billed</title></circle><circle cx="366.1" cy="74.0" r="12" class="hit" data-tip="span_marker · local · free
+F1 0.7674 · rank 1/28
+free: runs locally, nothing billed"/><circle cx="280.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+F1 0.6864 · rank 2/28
+billed $0.6507 for 280 items</title></circle><circle cx="280.3" cy="74.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+F1 0.6864 · rank 2/28
+billed $0.6507 for 280 items"/><circle cx="266.4" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+F1 0.6733 · rank 4/28
+billed $0.0088 for 280 items</title></circle><circle cx="266.4" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+F1 0.6733 · rank 4/28
+billed $0.0088 for 280 items"/><circle cx="264.5" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+F1 0.6716 · rank 5/28
+billed $0.1715 for 280 items</title></circle><circle cx="264.5" cy="74.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+F1 0.6716 · rank 5/28
+billed $0.1715 for 280 items"/><circle cx="258.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+F1 0.6661 · rank 6/28
+billed $0.2846 for 280 items</title></circle><circle cx="258.7" cy="74.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+F1 0.6661 · rank 6/28
+billed $0.2846 for 280 items"/><circle cx="257.5" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+F1 0.6650 · rank 7/28
+billed $0.0157 for 280 items</title></circle><circle cx="257.5" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+F1 0.6650 · rank 7/28
+billed $0.0157 for 280 items"/><circle cx="246.8" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+F1 0.6548 · rank 8/28
+billed $0.0396 for 280 items</title></circle><circle cx="246.8" cy="74.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+F1 0.6548 · rank 8/28
+billed $0.0396 for 280 items"/><circle cx="239.7" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+F1 0.6481 · rank 9/28
+billed $0.0134 for 280 items</title></circle><circle cx="239.7" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+F1 0.6481 · rank 9/28
+billed $0.0134 for 280 items"/><circle cx="214.1" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_l · hosted · proprietary
+F1 0.6240 · rank 10/28
+billed $0.0722 for 280 items</title></circle><circle cx="214.1" cy="74.0" r="12" class="hit" data-tip="qwen_l · hosted · proprietary
+F1 0.6240 · rank 10/28
+billed $0.0722 for 280 items"/><circle cx="204.3" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+F1 0.6148 · rank 11/28
+billed $0.0200 for 280 items</title></circle><circle cx="204.3" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+F1 0.6148 · rank 11/28
+billed $0.0200 for 280 items"/><circle cx="187.6" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+F1 0.5990 · rank 12/28
+billed $0.0176 for 280 items</title></circle><circle cx="187.6" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+F1 0.5990 · rank 12/28
+billed $0.0176 for 280 items"/><circle cx="186.4" cy="74.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+F1 0.5979 · rank 13/28
+billed $0.0419 for 280 items</title></circle><circle cx="186.4" cy="74.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+F1 0.5979 · rank 13/28
+billed $0.0419 for 280 items"/><circle cx="183.2" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+F1 0.5948 · rank 14/28
+billed $0.0784 for 280 items</title></circle><circle cx="183.2" cy="74.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+F1 0.5948 · rank 14/28
+billed $0.0784 for 280 items"/><circle cx="182.2" cy="74.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+F1 0.5939 · rank 15/28
+billed $0.0445 for 280 items</title></circle><circle cx="182.2" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+F1 0.5939 · rank 15/28
+billed $0.0445 for 280 items"/><circle cx="179.6" cy="74.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+F1 0.5914 · rank 16/28
+billed $0.0462 for 280 items</title></circle><circle cx="179.6" cy="74.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+F1 0.5914 · rank 16/28
+billed $0.0462 for 280 items"/><circle cx="175.1" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+F1 0.5872 · rank 17/28
+billed $0.0853 for 280 items</title></circle><circle cx="175.1" cy="74.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+F1 0.5872 · rank 17/28
+billed $0.0853 for 280 items"/><circle cx="172.0" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+F1 0.5843 · rank 18/28
+billed $0.1552 for 280 items</title></circle><circle cx="172.0" cy="74.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+F1 0.5843 · rank 18/28
+billed $0.1552 for 280 items"/><circle cx="162.8" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+F1 0.5756 · rank 19/28
+billed $0.0091 for 280 items</title></circle><circle cx="162.8" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+F1 0.5756 · rank 19/28
+billed $0.0091 for 280 items"/><circle cx="161.1" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+F1 0.5740 · rank 20/28
+billed $0.0194 for 280 items</title></circle><circle cx="161.1" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+F1 0.5740 · rank 20/28
+billed $0.0194 for 280 items"/><circle cx="155.4" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+F1 0.5686 · rank 21/28
+billed $0.0103 for 280 items</title></circle><circle cx="155.4" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+F1 0.5686 · rank 21/28
+billed $0.0103 for 280 items"/><circle cx="152.8" cy="74.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+F1 0.5662 · rank 22/28
+billed $0.1023 for 280 items</title></circle><circle cx="152.8" cy="74.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+F1 0.5662 · rank 22/28
+billed $0.1023 for 280 items"/><circle cx="138.8" cy="74.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+F1 0.5529 · rank 23/28
+billed $0.0194 for 280 items</title></circle><circle cx="138.8" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+F1 0.5529 · rank 23/28
+billed $0.0194 for 280 items"/><circle cx="135.7" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+F1 0.5500 · rank 24/28
+billed $0.0093 for 280 items</title></circle><circle cx="135.7" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+F1 0.5500 · rank 24/28
+billed $0.0093 for 280 items"/><circle cx="108.4" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+F1 0.5243 · rank 25/28
+billed $0.0076 for 280 items</title></circle><circle cx="108.4" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+F1 0.5243 · rank 25/28
+billed $0.0076 for 280 items"/><circle cx="33.9" cy="74.0" r="5.5" class="dot k-local"><title>gliner · local · free
+F1 0.4540 · rank 26/28
+free: runs locally, nothing billed</title></circle><circle cx="33.9" cy="74.0" r="12" class="hit" data-tip="gliner · local · free
+F1 0.4540 · rank 26/28
+free: runs locally, nothing billed"/><circle cx="273.3" cy="74.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+F1 0.6798 · rank 3/28
+billed $0.6897 for 280 items</title></circle><circle cx="273.3" cy="74.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+F1 0.6798 · rank 3/28
+billed $0.6897 for 280 items"/><circle cx="273.3" cy="74" r="11" class="ring"/><text x="273.3" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 3rd · 0.680</text><text x="366.1" y="104" text-anchor="end" class="t-ink" font-size="15">span_marker · 1st · 0.767</text></svg></div></figure><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="SciFact: every learned arm by nDCG@10"><text x="0" y="44" class="t-head" font-size="17">SciFact</text><text x="0" y="64" class="t-muted" font-size="11">retrieval · nDCG@10</text><rect x="615.6" y="28" width="328.1" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-open"><title>glm_s · hosted · open weights
 nDCG@10 0.7437 · rank 1/19
-billed $0.1421 for 200 items"><title>glm_s · hosted · open weights
+billed $0.1421 for 200 items</title></circle><circle cx="935.7" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
 nDCG@10 0.7437 · rank 1/19
-billed $0.1421 for 200 items</title></circle><circle cx="906.8" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_m · hosted · open weights
+billed $0.1421 for 200 items"/><circle cx="907.4" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
 nDCG@10 0.7399 · rank 3/19
-billed $0.2381 for 200 items"><title>deepseek_m · hosted · open weights
+billed $0.2381 for 200 items</title></circle><circle cx="907.4" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
 nDCG@10 0.7399 · rank 3/19
-billed $0.2381 for 200 items</title></circle><circle cx="892.1" cy="50" r="5.5" class="dot k-open" data-tip="deepseek_s · hosted · open weights
+billed $0.2381 for 200 items"/><circle cx="892.1" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
 nDCG@10 0.7378 · rank 4/19
-billed $0.0600 for 200 items"><title>deepseek_s · hosted · open weights
+billed $0.0600 for 200 items</title></circle><circle cx="892.1" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
 nDCG@10 0.7378 · rank 4/19
-billed $0.0600 for 200 items</title></circle><circle cx="881.1" cy="50" r="5.5" class="dot k-open" data-tip="gemma_m · hosted · open weights
+billed $0.0600 for 200 items"/><circle cx="880.6" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
 nDCG@10 0.7363 · rank 5/19
-billed $0.0721 for 200 items"><title>gemma_m · hosted · open weights
+billed $0.0721 for 200 items</title></circle><circle cx="880.6" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
 nDCG@10 0.7363 · rank 5/19
-billed $0.0721 for 200 items</title></circle><circle cx="878.0" cy="50" r="5.5" class="dot k-open" data-tip="gemma_l · hosted · open weights
+billed $0.0721 for 200 items"/><circle cx="877.4" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
 nDCG@10 0.7359 · rank 6/19
-billed $0.1701 for 200 items"><title>gemma_l · hosted · open weights
+billed $0.1701 for 200 items</title></circle><circle cx="877.4" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
 nDCG@10 0.7359 · rank 6/19
-billed $0.1701 for 200 items</title></circle><circle cx="822.6" cy="50" r="5.5" class="dot k-open" data-tip="llama_l · hosted · open weights
+billed $0.1701 for 200 items"/><circle cx="819.6" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
 nDCG@10 0.7281 · rank 7/19
-billed $0.1731 for 200 items"><title>llama_l · hosted · open weights
+billed $0.1731 for 200 items</title></circle><circle cx="819.6" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
 nDCG@10 0.7281 · rank 7/19
-billed $0.1731 for 200 items</title></circle><circle cx="758.8" cy="50" r="5.5" class="dot k-local" data-tip="e5_base · local · free
+billed $0.1731 for 200 items"/><circle cx="752.9" cy="50.0" r="5.5" class="dot k-local"><title>e5_base · local · free
 nDCG@10 0.7191 · rank 8/19
-billed $0.0000 for 200 items"><title>e5_base · local · free
+free: runs locally, nothing billed</title></circle><circle cx="752.9" cy="50.0" r="12" class="hit" data-tip="e5_base · local · free
 nDCG@10 0.7191 · rank 8/19
-billed $0.0000 for 200 items</title></circle><circle cx="753.0" cy="50" r="5.5" class="dot k-proprietary" data-tip="qwen_s · hosted · proprietary
+free: runs locally, nothing billed"/><circle cx="746.8" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
 nDCG@10 0.7183 · rank 9/19
-billed $0.1559 for 200 items"><title>qwen_s · hosted · proprietary
+billed $0.1559 for 200 items</title></circle><circle cx="746.8" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
 nDCG@10 0.7183 · rank 9/19
-billed $0.1559 for 200 items</title></circle><circle cx="745.6" cy="50" r="5.5" class="dot k-open" data-tip="llama_s · hosted · open weights
+billed $0.1559 for 200 items"/><circle cx="739.1" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
 nDCG@10 0.7172 · rank 10/19
-billed $0.1458 for 200 items"><title>llama_s · hosted · open weights
+billed $0.1458 for 200 items</title></circle><circle cx="739.1" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
 nDCG@10 0.7172 · rank 10/19
-billed $0.1458 for 200 items</title></circle><circle cx="691.9" cy="50" r="5.5" class="dot k-local" data-tip="bge_small · local · free
+billed $0.1458 for 200 items"/><circle cx="683.0" cy="50.0" r="5.5" class="dot k-local"><title>bge_small · local · free
 nDCG@10 0.7097 · rank 11/19
-billed $0.0000 for 200 items"><title>bge_small · local · free
+free: runs locally, nothing billed</title></circle><circle cx="683.0" cy="50.0" r="12" class="hit" data-tip="bge_small · local · free
 nDCG@10 0.7097 · rank 11/19
-billed $0.0000 for 200 items</title></circle><circle cx="685.4" cy="50" r="5.5" class="dot k-open" data-tip="llama_m · hosted · open weights
+free: runs locally, nothing billed"/><circle cx="676.2" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
 nDCG@10 0.7088 · rank 12/19
-billed $0.1434 for 200 items"><title>llama_m · hosted · open weights
+billed $0.1434 for 200 items</title></circle><circle cx="676.2" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
 nDCG@10 0.7088 · rank 12/19
-billed $0.1434 for 200 items</title></circle><circle cx="673.6" cy="50" r="5.5" class="dot k-open" data-tip="mistral_s · hosted · open weights
+billed $0.1434 for 200 items"/><circle cx="663.9" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
 nDCG@10 0.7071 · rank 13/19
-billed $0.0852 for 200 items"><title>mistral_s · hosted · open weights
+billed $0.0852 for 200 items</title></circle><circle cx="663.9" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
 nDCG@10 0.7071 · rank 13/19
-billed $0.0852 for 200 items</title></circle><circle cx="635.0" cy="50" r="5.5" class="dot k-open" data-tip="gemma_s · hosted · open weights
+billed $0.0852 for 200 items"/><circle cx="623.6" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
 nDCG@10 0.7017 · rank 14/19
-billed $0.0962 for 200 items"><title>gemma_s · hosted · open weights
+billed $0.0962 for 200 items</title></circle><circle cx="623.6" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
 nDCG@10 0.7017 · rank 14/19
-billed $0.0962 for 200 items</title></circle><circle cx="369.0" cy="50" r="5.5" class="dot k-local" data-tip="mpnet · local · free
+billed $0.0962 for 200 items"/><circle cx="345.9" cy="50.0" r="5.5" class="dot k-local"><title>mpnet · local · free
 nDCG@10 0.6643 · rank 15/19
-billed $0.0000 for 200 items"><title>mpnet · local · free
+free: runs locally, nothing billed</title></circle><circle cx="345.9" cy="50.0" r="12" class="hit" data-tip="mpnet · local · free
 nDCG@10 0.6643 · rank 15/19
-billed $0.0000 for 200 items</title></circle><circle cx="290.9" cy="50" r="5.5" class="dot k-local" data-tip="minilm · local · free
+free: runs locally, nothing billed"/><circle cx="264.3" cy="50.0" r="5.5" class="dot k-local"><title>minilm · local · free
 nDCG@10 0.6533 · rank 16/19
-billed $0.0000 for 200 items"><title>minilm · local · free
+free: runs locally, nothing billed</title></circle><circle cx="264.3" cy="50.0" r="12" class="hit" data-tip="minilm · local · free
 nDCG@10 0.6533 · rank 16/19
-billed $0.0000 for 200 items</title></circle><circle cx="232.1" cy="50" r="5.5" class="dot k-local" data-tip="bm25 · local · free
+free: runs locally, nothing billed"/><circle cx="190.0" cy="50.0" r="5.5" class="dot k-local"><title>bm25 · local · free
 nDCG@10 0.6451 · rank 17/19
-billed $0.0000 for 200 items"><title>bm25 · local · free
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="190.0" cy="50.0" r="12" class="hit" data-tip="bm25 · local · free
 nDCG@10 0.6451 · rank 17/19
-billed $0.0000 for 200 items</title></circle><circle cx="920.9" cy="50" r="7" class="dot k-open" data-tip="glm_m · hosted · open weights
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="922.2" cy="50.0" r="7" class="dot k-open"><title>glm_m · hosted · open weights
 nDCG@10 0.7419 · rank 2/19
-billed $0.4576 for 200 items"><title>glm_m · hosted · open weights
+billed $0.4576 for 200 items</title></circle><circle cx="922.2" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 nDCG@10 0.7419 · rank 2/19
-billed $0.4576 for 200 items</title></circle><circle cx="920.9" cy="50" r="11" class="ring"/><text x="920.9" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 2nd · 0.742</text><text x="933.9" y="78" text-anchor="end" class="t-ink" font-size="11">glm_s · 1st · 0.744</text></svg></figure>
-  <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. Hover any dot for its score, rank and bill.</figcaption></div>
+billed $0.4576 for 200 items"/><circle cx="922.2" cy="50" r="11" class="ring"/><text x="906.0" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 2nd · 0.742</text><text x="935.7" y="80" text-anchor="end" class="t-ink" font-size="11">glm_s · 1st · 0.744</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="SciFact: every learned arm by nDCG@10"><text x="0" y="20" class="t-head" font-size="20">SciFact</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">retrieval · nDCG@10</text><rect x="219.6" y="52" width="156.3" height="44" rx="10" class="band"/><line x1="48" x2="386" y1="74" y2="74" class="axis"/><line x1="14" x2="28" y1="74" y2="74" class="axis"/><text x="37" y="79" text-anchor="middle" class="t-muted" font-size="17">⫽</text><circle cx="367.9" cy="74.0" r="7" class="dot k-open"><title>glm_s · hosted · open weights
+nDCG@10 0.7437 · rank 1/19
+billed $0.1421 for 200 items</title></circle><circle cx="367.9" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+nDCG@10 0.7437 · rank 1/19
+billed $0.1421 for 200 items"/><circle cx="355.2" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+nDCG@10 0.7399 · rank 3/19
+billed $0.2381 for 200 items</title></circle><circle cx="355.2" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+nDCG@10 0.7399 · rank 3/19
+billed $0.2381 for 200 items"/><circle cx="348.3" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+nDCG@10 0.7378 · rank 4/19
+billed $0.0600 for 200 items</title></circle><circle cx="348.3" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+nDCG@10 0.7378 · rank 4/19
+billed $0.0600 for 200 items"/><circle cx="343.1" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+nDCG@10 0.7363 · rank 5/19
+billed $0.0721 for 200 items</title></circle><circle cx="343.1" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+nDCG@10 0.7363 · rank 5/19
+billed $0.0721 for 200 items"/><circle cx="341.7" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+nDCG@10 0.7359 · rank 6/19
+billed $0.1701 for 200 items</title></circle><circle cx="341.7" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+nDCG@10 0.7359 · rank 6/19
+billed $0.1701 for 200 items"/><circle cx="315.7" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+nDCG@10 0.7281 · rank 7/19
+billed $0.1731 for 200 items</title></circle><circle cx="315.7" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+nDCG@10 0.7281 · rank 7/19
+billed $0.1731 for 200 items"/><circle cx="285.7" cy="74.0" r="5.5" class="dot k-local"><title>e5_base · local · free
+nDCG@10 0.7191 · rank 8/19
+free: runs locally, nothing billed</title></circle><circle cx="285.7" cy="74.0" r="12" class="hit" data-tip="e5_base · local · free
+nDCG@10 0.7191 · rank 8/19
+free: runs locally, nothing billed"/><circle cx="283.0" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+nDCG@10 0.7183 · rank 9/19
+billed $0.1559 for 200 items</title></circle><circle cx="283.0" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+nDCG@10 0.7183 · rank 9/19
+billed $0.1559 for 200 items"/><circle cx="279.5" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+nDCG@10 0.7172 · rank 10/19
+billed $0.1458 for 200 items</title></circle><circle cx="279.5" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+nDCG@10 0.7172 · rank 10/19
+billed $0.1458 for 200 items"/><circle cx="254.3" cy="74.0" r="5.5" class="dot k-local"><title>bge_small · local · free
+nDCG@10 0.7097 · rank 11/19
+free: runs locally, nothing billed</title></circle><circle cx="254.3" cy="74.0" r="12" class="hit" data-tip="bge_small · local · free
+nDCG@10 0.7097 · rank 11/19
+free: runs locally, nothing billed"/><circle cx="251.3" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+nDCG@10 0.7088 · rank 12/19
+billed $0.1434 for 200 items</title></circle><circle cx="251.3" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+nDCG@10 0.7088 · rank 12/19
+billed $0.1434 for 200 items"/><circle cx="245.7" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+nDCG@10 0.7071 · rank 13/19
+billed $0.0852 for 200 items</title></circle><circle cx="245.7" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+nDCG@10 0.7071 · rank 13/19
+billed $0.0852 for 200 items"/><circle cx="227.6" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+nDCG@10 0.7017 · rank 14/19
+billed $0.0962 for 200 items</title></circle><circle cx="227.6" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+nDCG@10 0.7017 · rank 14/19
+billed $0.0962 for 200 items"/><circle cx="102.8" cy="74.0" r="5.5" class="dot k-local"><title>mpnet · local · free
+nDCG@10 0.6643 · rank 15/19
+free: runs locally, nothing billed</title></circle><circle cx="102.8" cy="74.0" r="12" class="hit" data-tip="mpnet · local · free
+nDCG@10 0.6643 · rank 15/19
+free: runs locally, nothing billed"/><circle cx="66.1" cy="74.0" r="5.5" class="dot k-local"><title>minilm · local · free
+nDCG@10 0.6533 · rank 16/19
+free: runs locally, nothing billed</title></circle><circle cx="66.1" cy="74.0" r="12" class="hit" data-tip="minilm · local · free
+nDCG@10 0.6533 · rank 16/19
+free: runs locally, nothing billed"/><circle cx="14.0" cy="74.0" r="5.5" class="dot k-local"><title>bm25 · local · free
+nDCG@10 0.6451 · rank 17/19
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="14.0" cy="74.0" r="12" class="hit" data-tip="bm25 · local · free
+nDCG@10 0.6451 · rank 17/19
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="361.8" cy="74.0" r="7" class="dot k-open"><title>glm_m · hosted · open weights
+nDCG@10 0.7419 · rank 2/19
+billed $0.4576 for 200 items</title></circle><circle cx="361.8" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+nDCG@10 0.7419 · rank 2/19
+billed $0.4576 for 200 items"/><circle cx="361.8" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 2nd · 0.742</text><text x="367.9" y="104" text-anchor="end" class="t-ink" font-size="15">glm_s · 1st · 0.744</text></svg></div></figure>
+  <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
 
 <section class="block"><div class="wrap">
@@ -553,9 +1071,10 @@ billed $0.4576 for 200 items</title></circle><circle cx="920.9" cy="50" r="11" c
       <p>In 4 of 5 experiments the leader <strong>cannot be told apart</strong> from a group of others — on summarisation, from 15 of them. The cheapest paid model inside that group cost a fraction of the dearest: 143× less on summarisation.</p>
       <p>The one clean winner is a 499 MB tagger fine-tuned on Few-NERD's own training data, separated from all 27 rivals.</p>
     </div>
-    <div class="chart scroll-x reveal"><table class="data">
-      <thead><tr><th>experiment</th><th>first</th><th>tied</th><th>paid</th><th>cheapest tied</th><th>cheaper than dearest</th><th>dearest</th></tr></thead>
-      <tbody><tr><td><a href="experiments/summarization.html">Summarisation · CNN/DailyMail</a></td><td class="num">bart_l</td><td class="num big">15</td><td class="num">13</td><td class="num">deepseek_s</td><td class="num">143×</td><td class="num">anthropic_l · 18th of 29</td></tr><tr><td><a href="experiments/ag-news.html">Classification · AG News</a></td><td class="num">bert_base_ta</td><td class="num big">3</td><td class="num">1</td><td class="num">anthropic_m</td><td class="num">2.5×</td><td class="num">anthropic_l · 5th of 30</td></tr><tr><td><a href="experiments/dbpedia.html">Classification · DBpedia-14</a></td><td class="num">qwen_m</td><td class="num big">19</td><td class="num">18</td><td class="num">gemma_m</td><td class="num">116×</td><td class="num">anthropic_l · 2nd of 28</td></tr><tr><td><a href="experiments/few-nerd.html">Extraction · Few-NERD</a></td><td class="num">span_marker</td><td class="num big">0</td><td class="num">0</td><td class="num">—</td><td class="num">no paid arm ties</td><td class="num">anthropic_l · 3rd of 28</td></tr><tr><td><a href="experiments/scifact.html">Retrieval · SciFact</a></td><td class="num">glm_s</td><td class="num big">12</td><td class="num">10</td><td class="num">deepseek_s</td><td class="num">7.6×</td><td class="num">glm_m · 2nd of 19</td></tr></tbody></table></div>
+    <div class="chart scroll-x reveal"><table class="data ties">
+      <thead><tr><th>experiment</th><th>first place</th><th>tied with 1st</th><th>…of which paid</th><th>cheapest paid tie</th><th>cheaper than dearest</th><th>dearest model</th></tr></thead>
+      <tbody><tr><td class="exp"><a href="experiments/summarization.html">Summarisation · CNN/DailyMail</a></td><td class="num" data-label="first place">bart_l</td><td class="num big" data-label="tied with 1st">15</td><td class="num" data-label="…of which paid">13</td><td class="num" data-label="cheapest paid tie">deepseek_s</td><td class="num" data-label="cheaper than dearest">143×</td><td class="num" data-label="dearest model">anthropic_l · 18th of 29</td></tr><tr><td class="exp"><a href="experiments/ag-news.html">Classification · AG News</a></td><td class="num" data-label="first place">bert_base_ta</td><td class="num big" data-label="tied with 1st">3</td><td class="num" data-label="…of which paid">1</td><td class="num" data-label="cheapest paid tie">anthropic_m</td><td class="num" data-label="cheaper than dearest">2.5×</td><td class="num" data-label="dearest model">anthropic_l · 5th of 30</td></tr><tr><td class="exp"><a href="experiments/dbpedia.html">Classification · DBpedia-14</a></td><td class="num" data-label="first place">qwen_m</td><td class="num big" data-label="tied with 1st">19</td><td class="num" data-label="…of which paid">18</td><td class="num" data-label="cheapest paid tie">gemma_m</td><td class="num" data-label="cheaper than dearest">115×</td><td class="num" data-label="dearest model">anthropic_l · 2nd of 28</td></tr><tr><td class="exp"><a href="experiments/few-nerd.html">Extraction · Few-NERD</a></td><td class="num" data-label="first place">span_marker</td><td class="num big" data-label="tied with 1st">0</td><td class="num" data-label="…of which paid">0</td><td class="num" data-label="cheapest paid tie">—</td><td class="num" data-label="cheaper than dearest">no paid model ties</td><td class="num" data-label="dearest model">anthropic_l · 3rd of 28</td></tr><tr><td class="exp"><a href="experiments/scifact.html">Retrieval · SciFact</a></td><td class="num" data-label="first place">glm_s</td><td class="num big" data-label="tied with 1st">12</td><td class="num" data-label="…of which paid">10</td><td class="num" data-label="cheapest paid tie">deepseek_s</td><td class="num" data-label="cheaper than dearest">7.6×</td><td class="num" data-label="dearest model">glm_m · 2nd of 19</td></tr></tbody></table>
+      <figcaption><b>Tied with 1st</b>: other systems the leader cannot be statistically separated from (paired permutation test, Holm-corrected). <b>…of which paid</b>: how many of those are hosted models that bill per call; the rest are free. <b>Cheapest paid tie</b>: the cheapest of them, and how many times less it cost than the most expensive model in the field. <b>0 tied</b> means a clean winner: separated from every rival.</figcaption></div>
   </div>
 </div></section>
 
@@ -573,7 +1092,7 @@ billed $0.4576 for 200 items</title></circle><circle cx="920.9" cy="50" r="11" c
   <div class="eyebrow"><span class="num">04</span>Trust</div>
   <h2>Can you trust any of this?</h2>
   <p class="lede">Every experiment scores a sample of 200–280 items, not a full test set. So each one also runs a <strong>calibration</strong>: one well-known model, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
-  <div class="chart reveal"><svg viewBox="0 0 1000 382" role="img" aria-label="Calibration: this repo against published values"><line x1="330.0" x2="330.0" y1="22" y2="356" class="grid"/><text x="330.0" y="374" text-anchor="middle" class="t-muted" font-size="10">-4</text><line x1="460.0" x2="460.0" y1="22" y2="356" class="grid"/><text x="460.0" y="374" text-anchor="middle" class="t-muted" font-size="10">-2</text><line x1="590.0" x2="590.0" y1="22" y2="356" class="axis"/><text x="590.0" y="374" text-anchor="middle" class="t-muted" font-size="10">+0</text><line x1="720.0" x2="720.0" y1="22" y2="356" class="grid"/><text x="720.0" y="374" text-anchor="middle" class="t-muted" font-size="10">+2</text><line x1="850.0" x2="850.0" y1="22" y2="356" class="grid"/><text x="850.0" y="374" text-anchor="middle" class="t-muted" font-size="10">+4</text><text x="590.0" y="14" text-anchor="middle" class="t-muted" font-size="10">published value</text><text x="0" y="50.0" class="t-ink" font-size="13">CNN/DailyMail</text><text x="0" y="66.0" class="t-muted" font-size="11">LEAD-3, ROUGE-1</text><line x1="549.7" x2="578.3" y1="53.0" y2="53.0" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="564.0" cy="53.0" r="6.5" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
+  <div class="chart reveal"><div class="vw"><svg viewBox="0 0 1000 382" role="img" aria-label="Calibration: this repo against published values"><line x1="330.0" x2="330.0" y1="22" y2="356" class="grid"/><text x="330.0" y="374" text-anchor="middle" class="t-muted" font-size="10">-4</text><line x1="460.0" x2="460.0" y1="22" y2="356" class="grid"/><text x="460.0" y="374" text-anchor="middle" class="t-muted" font-size="10">-2</text><line x1="590.0" x2="590.0" y1="22" y2="356" class="axis"/><text x="590.0" y="374" text-anchor="middle" class="t-muted" font-size="10">+0</text><line x1="720.0" x2="720.0" y1="22" y2="356" class="grid"/><text x="720.0" y="374" text-anchor="middle" class="t-muted" font-size="10">+2</text><line x1="850.0" x2="850.0" y1="22" y2="356" class="grid"/><text x="850.0" y="374" text-anchor="middle" class="t-muted" font-size="10">+4</text><text x="590.0" y="14" text-anchor="middle" class="t-muted" font-size="10">published value</text><text x="0" y="50.0" class="t-ink" font-size="13">CNN/DailyMail</text><text x="0" y="66.0" class="t-muted" font-size="11">LEAD-3, ROUGE-1</text><line x1="549.7" x2="578.3" y1="53.0" y2="53.0" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="564.0" cy="53.0" r="6.5" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
 ours 39.94 ± 0.22
 published 40.34
 n = 11490"><title>CNN/DailyMail · LEAD-3, ROUGE-1
@@ -615,15 +1134,57 @@ published 0.6650
 n = 300"><title>SciFact · bm25
 ours 0.6523 ± 0.0453
 published 0.6650
-n = 300</title></circle><text x="868" y="333.0" class="t-ink" font-size="12">0.6523</text><text x="932" y="333.0" class="t-muted" font-size="12">0.6650</text><text x="868" y="14" class="t-muted" font-size="10">ours</text><text x="932" y="14" class="t-muted" font-size="10">published</text></svg>
+n = 300</title></circle><text x="868" y="333.0" class="t-ink" font-size="12">0.6523</text><text x="932" y="333.0" class="t-muted" font-size="12">0.6650</text><text x="868" y="14" class="t-muted" font-size="10">ours</text><text x="932" y="14" class="t-muted" font-size="10">published</text></svg></div><div class="vn"><svg viewBox="0 0 400 654" role="img" aria-label="Calibration: this repo against published values"><line x1="14.0" x2="14.0" y1="30" y2="628" class="grid"/><text x="14.0" y="646" text-anchor="middle" class="t-muted" font-size="14">-4</text><line x1="107.0" x2="107.0" y1="30" y2="628" class="grid"/><text x="107.0" y="646" text-anchor="middle" class="t-muted" font-size="14">-2</text><line x1="200.0" x2="200.0" y1="30" y2="628" class="axis"/><text x="200.0" y="646" text-anchor="middle" class="t-muted" font-size="14">+0</text><line x1="293.0" x2="293.0" y1="30" y2="628" class="grid"/><text x="293.0" y="646" text-anchor="middle" class="t-muted" font-size="14">+2</text><line x1="386.0" x2="386.0" y1="30" y2="628" class="grid"/><text x="386.0" y="646" text-anchor="middle" class="t-muted" font-size="14">+4</text><text x="200.0" y="22" text-anchor="middle" class="t-muted" font-size="14">published value</text><text x="0" y="52" class="t-ink" font-size="16">CNN/DailyMail <tspan class="t-muted" font-size="14">LEAD-3, ROUGE-1</tspan></text><text x="0" y="102" class="t-muted" font-size="14">ours <tspan class="t-ink">39.94</tspan> · published 40.34</text><line x1="171.2" x2="191.6" y1="74" y2="74" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="181.4" cy="74" r="7" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
+ours 39.94 ± 0.22
+published 40.34
+n = 11490"><title>CNN/DailyMail · LEAD-3, ROUGE-1
+ours 39.94 ± 0.22
+published 40.34
+n = 11490</title></circle><text x="0" y="136" class="t-ink" font-size="16">AG News <tspan class="t-muted" font-size="14">bert_mini</tspan></text><text x="0" y="186" class="t-muted" font-size="14">ours <tspan class="t-ink">0.9338</tspan> · published 0.9339</text><line x1="173.5" x2="225.6" y1="158" y2="158" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="199.5" cy="158" r="7" class="dot accent" data-tip="AG News · bert_mini
+ours 0.9338 ± 0.0056
+published 0.9339
+n = 7600"><title>AG News · bert_mini
+ours 0.9338 ± 0.0056
+published 0.9339
+n = 7600</title></circle><text x="0" y="220" class="t-ink" font-size="16">AG News <tspan class="t-muted" font-size="14">bert_base_ta</tspan></text><text x="0" y="270" class="t-muted" font-size="14">ours <tspan class="t-ink">0.9514</tspan> · published 0.9514</text><line x1="177.7" x2="222.3" y1="242" y2="242" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="200.0" cy="242" r="7" class="dot accent" data-tip="AG News · bert_base_ta
+ours 0.9514 ± 0.0048
+published 0.9514
+n = 7600"><title>AG News · bert_base_ta
+ours 0.9514 ± 0.0048
+published 0.9514
+n = 7600</title></circle><text x="0" y="304" class="t-ink" font-size="16">AG News <tspan class="t-muted" font-size="14">bert_base_fy</tspan></text><text x="0" y="354" class="t-muted" font-size="14">ours <tspan class="t-ink">0.9375</tspan> · published 0.9375</text><line x1="174.9" x2="225.1" y1="326" y2="326" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="200.0" cy="326" r="7" class="dot accent" data-tip="AG News · bert_base_fy
+ours 0.9375 ± 0.0054
+published 0.9375
+n = 7600"><title>AG News · bert_base_fy
+ours 0.9375 ± 0.0054
+published 0.9375
+n = 7600</title></circle><text x="0" y="388" class="t-ink" font-size="16">DBpedia-14 <tspan class="t-muted" font-size="14">bert_base_fy</tspan></text><text x="0" y="438" class="t-muted" font-size="14">ours <tspan class="t-ink">0.9879</tspan> · published 0.9903</text><line x1="175.4" x2="202.3" y1="410" y2="410" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="188.8" cy="410" r="7" class="dot accent" data-tip="DBpedia-14 · bert_base_fy
+ours 0.9879 ± 0.0029
+published 0.9903
+n = 5600"><title>DBpedia-14 · bert_base_fy
+ours 0.9879 ± 0.0029
+published 0.9903
+n = 5600</title></circle><text x="0" y="472" class="t-ink" font-size="16">Few-NERD <tspan class="t-muted" font-size="14">span_marker</tspan></text><text x="0" y="522" class="t-muted" font-size="14">ours <tspan class="t-ink">0.7047</tspan> · published 0.7040</text><line x1="128.4" x2="278.1" y1="494" y2="494" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="203.3" cy="494" r="7" class="dot accent" data-tip="Few-NERD · span_marker
+ours 0.7047 ± 0.0161
+published 0.7040
+n = 2000"><title>Few-NERD · span_marker
+ours 0.7047 ± 0.0161
+published 0.7040
+n = 2000</title></circle><text x="0" y="556" class="t-ink" font-size="16">SciFact <tspan class="t-muted" font-size="14">bm25</tspan></text><text x="0" y="606" class="t-muted" font-size="14">ours <tspan class="t-ink">0.6523</tspan> · published 0.6650</text><line x1="14.0" x2="351.6" y1="578" y2="578" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="140.9" cy="578" r="7" class="dot accent" data-tip="SciFact · bm25
+ours 0.6523 ± 0.0453
+published 0.6650
+n = 300"><title>SciFact · bm25
+ours 0.6523 ± 0.0453
+published 0.6650
+n = 300</title></circle></svg></div>
     <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation, accuracy, micro-F1 or nDCG@10 ×100 elsewhere). Bars are our 95% interval. 7 of 7 sit on the published value.</figcaption></div>
   <div class="cols" style="margin-top:64px">
     <div class="prose">
-      <h3 style="font-size:28px;margin-bottom:16px">Calibration found one real error — in our sample, not our scorer.</h3>
+      <h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Calibration found one real error — in our sample, not our scorer.</h3>
       <p>The summarisation experiment took the first 200 articles of the CNN/DailyMail test set. The test set lists CNN's articles first, so <strong>all 200 were CNN's</strong>, while the benchmark is 91% DailyMail. Lead-3 scored ROUGE-1 30.20 on that slice against 39.94 on the full test set; CNN articles are simply harder to summarise from their lead.</p>
       <p>Re-run on 200 DailyMail articles drawn at random, the five local summarisers <strong>kept every verdict</strong> they had on CNN: the fine-tune still beats lead-3 by the same margin, and the XSum model is still last. The hosted models were not re-run, so the summarisation price findings are scoped to CNN's articles — and say so.</p>
     </div>
-    <figure class="chart reveal"><svg viewBox="0 0 640 420" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="120" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text><text x="390" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text><line x1="120" x2="120" y1="36" y2="398" class="axis"/><line x1="390" x2="390" y1="36" y2="398" class="axis"/><text x="406" y="75.7" class="t-ink" font-size="14">bart_l, bart_m 0.443</text><text x="406" y="114.3" class="t-ink" font-size="14">bart_s 0.404</text><text x="406" y="148.2" class="t-ink" font-size="14">lead3 0.370</text><text x="406" y="363.2" class="t-ink" font-size="14">bart_l_xsum 0.152</text><text x="104" y="171.5" text-anchor="end" class="t-muted" font-size="13">0.346</text><text x="104" y="189.5" text-anchor="end" class="t-muted" font-size="13">0.337</text><text x="104" y="207.5" text-anchor="end" class="t-muted" font-size="13">0.328</text><text x="104" y="244.9" text-anchor="end" class="t-muted" font-size="13">0.272</text><text x="104" y="308.9" text-anchor="end" class="t-muted" font-size="13">0.207</text><line x1="120" y1="166.5" x2="390" y2="70.7" class="s-local" stroke-width="2"/><circle cx="120" cy="166.5" r="5.5" class="dot k-local" data-tip="bart_l
+    <figure class="chart reveal"><div class="vw"><svg viewBox="0 0 640 420" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="120" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text><text x="390" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text><line x1="120" x2="120" y1="36" y2="398" class="axis"/><line x1="390" x2="390" y1="36" y2="398" class="axis"/><text x="406" y="75.7" class="t-ink" font-size="14">bart_l, bart_m 0.443</text><text x="406" y="114.3" class="t-ink" font-size="14">bart_s 0.404</text><text x="406" y="148.2" class="t-ink" font-size="14">lead3 0.370</text><text x="406" y="363.2" class="t-ink" font-size="14">bart_l_xsum 0.152</text><text x="104" y="171.5" text-anchor="end" class="t-muted" font-size="13">0.346</text><text x="104" y="189.5" text-anchor="end" class="t-muted" font-size="13">0.337</text><text x="104" y="207.5" text-anchor="end" class="t-muted" font-size="13">0.328</text><text x="104" y="244.9" text-anchor="end" class="t-muted" font-size="13">0.272</text><text x="104" y="308.9" text-anchor="end" class="t-muted" font-size="13">0.207</text><line x1="120" y1="166.5" x2="390" y2="70.7" class="s-local" stroke-width="2"/><circle cx="120" cy="166.5" r="5.5" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><circle cx="390" cy="70.7" r="6" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
@@ -643,7 +1204,27 @@ coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><line x1="120" y1
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="390" cy="358.2" r="6" class="dot k-local" data-tip="bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
-coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg><figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><div class="vn"><svg viewBox="0 0 400 380" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="64" y="20" text-anchor="middle" class="t-muted" font-size="16">CNN slice</text><text x="196" y="20" text-anchor="middle" class="t-muted" font-size="16">DailyMail slice</text><line x1="64" x2="64" y1="36" y2="364" class="axis"/><line x1="196" x2="196" y1="36" y2="364" class="axis"/><text x="212" y="73.1" class="t-ink" font-size="16">bart_l, bart_m 0.443</text><text x="212" y="107.9" class="t-ink" font-size="16">bart_s 0.404</text><text x="212" y="138.4" class="t-ink" font-size="16">lead3 0.370</text><text x="212" y="332.3" class="t-ink" font-size="16">bart_l_xsum 0.152</text><text x="48" y="159.4" text-anchor="end" class="t-muted" font-size="15">0.346</text><text x="48" y="177.4" text-anchor="end" class="t-muted" font-size="15">0.337</text><text x="48" y="195.4" text-anchor="end" class="t-muted" font-size="15">0.328</text><text x="48" y="225.7" text-anchor="end" class="t-muted" font-size="15">0.272</text><text x="48" y="283.4" text-anchor="end" class="t-muted" font-size="15">0.207</text><line x1="64" y1="154.4" x2="196" y2="68.1" class="s-local" stroke-width="2"/><circle cx="64" cy="154.4" r="5.5" class="dot k-local" data-tip="bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><circle cx="196" cy="68.1" r="6" class="dot k-local" data-tip="bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
+coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1="162.9" x2="196" y2="68.1" class="s-local" stroke-width="2"/><circle cx="64" cy="162.9" r="5.5" class="dot k-local" data-tip="bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><circle cx="196" cy="68.1" r="6" class="dot k-local" data-tip="bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
+coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1="171.0" x2="196" y2="103.0" class="s-local" stroke-width="2"/><circle cx="64" cy="171.0" r="5.5" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><circle cx="196" cy="103.0" r="6" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><line x1="64" y1="220.7" x2="196" y2="133.4" class="s-baseline" stroke-width="2"/><circle cx="64" cy="220.7" r="5.5" class="dot k-baseline" data-tip="lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><circle cx="196" cy="133.4" r="6" class="dot k-baseline" data-tip="lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
+coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><line x1="64" y1="278.4" x2="196" y2="327.3" class="s-local" stroke-width="2" stroke-dasharray="5 5"/><circle cx="64" cy="278.4" r="5.5" class="dot k-local" data-tip="bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="196" cy="327.3" r="6" class="dot k-local" data-tip="bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
   <p class="note" style="margin-top:48px"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies 82 claims against the runs on every commit.</p>
 </div></section>
@@ -706,9 +1287,13 @@ document.getElementById('theme').addEventListener('click',()=>{const r=document.
 const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
 r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
 const tip=document.getElementById('tip');
-document.addEventListener('pointerover',ev=>{const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');});
-document.addEventListener('pointermove',ev=>{if(!tip.classList.contains('on'))return;const w=tip.offsetWidth;tip.style.left=Math.min(ev.clientX+14,innerWidth-w-8)+'px';tip.style.top=(ev.clientY+14)+'px';});
-document.addEventListener('pointerout',ev=>{if(ev.target.closest('[data-tip]'))tip.classList.remove('on');});
+function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
+document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
+document.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'||!tip.classList.contains('on'))return;place(ev.clientX,ev.clientY);});
+document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='touch'&&ev.target.closest('[data-tip]'))tip.classList.remove('on');});
+// Touch: a tap shows the tip where the finger is; the next tap elsewhere, or a scroll, hides it.
+document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='touch')return;const t=ev.target.closest('[data-tip]');if(!t){tip.classList.remove('on');return;}tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
+addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
 const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);

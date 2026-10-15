@@ -140,7 +140,7 @@ can extend later without re-authoring what you have.
 
 ## What you get, in exchange for that one function
 
-| | |
+| you get | what it means |
 | --- | --- |
 | a frozen dataset | a `dataset_id` plus a sha256 per item — the thing that makes two numbers comparable |
 | provenance | every run records which build produced it |

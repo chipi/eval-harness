@@ -16,13 +16,30 @@ one sampling defect found so far was found.
 
 ## At a glance
 
-| experiment | benchmark · split (official size) | our sample | our primary metric | field-standard metric | calibration: ours vs published |
-|---|---|---|---|---|---|
-| Summarisation · CNN/DM | `abisee/cnn_dailymail` · test (11,490) | 200 = **first 200 rows, all CNN**; plus a seeded DailyMail slice of 200 | `coverage` — ours | ROUGE-1/2/L F1 | LEAD-3, full test: R1 **39.94** / R2 **17.37** vs 40.34 / 17.70 |
-| Classification · AG News | `fancyzhx/ag_news` · test (7,600) | 200 = first 50 per class from the first 1,600 rows | accuracy | accuracy | full test, three fine-tunes vs their model cards: `bert_mini` **0.9338** vs 0.9339 · `bert_base_ta` **0.9514** vs 0.9514 · `bert_base_fy` **0.9375** vs 0.9375 |
-| Classification · DBpedia | `fancyzhx/dbpedia_14` · test (70,000) | 280 = 20 per class, seeded (20260927) | accuracy | accuracy | `bert_base_fy`, seeded 5,600 of 70,000: **0.9879** ±0.003 vs 0.9903 (card) |
-| Extraction · Few-NERD | `DFKI-SLT/few-nerd` supervised · test (37,648 sentences) | 280 sentences, seeded (20260928), ≥3 tokens | mean per-sentence F1, 8 coarse types, string match — ours | entity micro-F1, 66 fine types, token spans | `span_marker`, seeded 2,000 sentences: **0.7047** ±0.016 vs 0.7040 (card) |
-| Retrieval · SciFact | `BeIR/scifact` · test (300 queries, full 5,183-doc corpus) | 200 queries, seeded (20260928), **full corpus** | nDCG@10 | nDCG@10 | BM25, all 300 queries: **0.6523** ±0.045 vs 0.665 (BEIR) |
+**What was sampled.**
+
+| Experiment | benchmark · test split (official size) | our sample |
+|---|---|---|
+| Summarisation · CNN/DM | `abisee/cnn_dailymail` · test (11,490) | 200 = **first 200 rows, all CNN**; plus a seeded DailyMail slice of 200 |
+| Classification · AG News | `fancyzhx/ag_news` · test (7,600) | 200 = first 50 per class from the first 1,600 rows |
+| Classification · DBpedia | `fancyzhx/dbpedia_14` · test (70,000) | 280 = 20 per class, seeded (20260927) |
+| Extraction · Few-NERD | `DFKI-SLT/few-nerd` supervised · test (37,648 sentences) | 280 sentences, seeded (20260928), ≥3 tokens |
+| Retrieval · SciFact | `BeIR/scifact` · test (300 queries, full 5,183-doc corpus) | 200 queries, seeded (20260928), **full corpus** |
+
+**How it was scored, and whether the scorer agrees with the field.**
+
+| Experiment | our primary metric | field-standard metric | calibration in the field-standard metric: our run vs published |
+|---|---|---|---|
+| Summarisation · CNN/DM | `coverage` — ours | ROUGE-1/2/L F1 | LEAD-3, full test: R1 **39.94** / R2 **17.37** vs 40.34 / 17.70 |
+| Classification · AG News | accuracy | accuracy | full test, three fine-tunes vs their model cards: `bert_mini` **0.9338** vs 0.9339 · `bert_base_ta` **0.9514** vs 0.9514 · `bert_base_fy` **0.9375** vs 0.9375 |
+| Classification · DBpedia | accuracy | accuracy | `bert_base_fy`, seeded 5,600 of 70,000: **0.9879** ±0.003 vs 0.9903 (card) |
+| Extraction · Few-NERD | mean per-sentence F1, 8 coarse types, string match — ours | entity micro-F1, 66 fine types, token spans | `span_marker`, seeded 2,000 sentences: **0.7047** ±0.016 vs 0.7040 (card) |
+| Retrieval · SciFact | nDCG@10 | nDCG@10 | BM25, all 300 queries: **0.6523** ±0.045 vs 0.665 (BEIR) |
+
+How to read it: **bold** is this repo's own run; the figure after "vs" is the published
+one. **±** is the half-width of a 95% confidence interval on our run. **"— ours"** marks a
+metric this repo defines; it is not comparable to any paper's number, which is why each
+row is calibrated in the field-standard metric instead.
 
 Calibration results are machine-checked against `docs/evidence/calibration/*.json`, which
 each example's `calibrate.py` writes.

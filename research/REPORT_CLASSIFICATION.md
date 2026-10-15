@@ -31,7 +31,7 @@
 
 | the choice | AG News (headroom) | DBpedia-14 (saturated) |
 |---|---|---|
-| **Self-host · small ML** | **`bert_base_ta`** — BERT-base fine-tuned on AG News, **438 MB**, 76 ms/item on a 4-core Linux CPU. **0.9600 — 1st of 30**, separated from 26 of the 29 others. But **`bert_mini`** (44 MB, 7 ms on the Mac) scores 0.9450 and is **not separated** from it (p = 0.55): ten times smaller and 11× faster on the same machine, for no measurable loss. **Read §3.4 before relying on either** — the fine-tuned lead lives in items whose gold labels the whole LLM field disputes. | **`bert_base_fy`** — BERT-base fine-tuned on DBpedia-14, **438 MB**, 87 ms/item on a 4-core Linux CPU. **0.9857 — tied 3rd**, two items in 280 behind the leader and **not separated** from it (p = 0.62). Ties the top; does not clear it. |
+| **Self-host · small ML** | **`bert_base_ta`** — BERT-base fine-tuned on AG News, **438 MB**, 76 ms/item on a 4-core Linux CPU. **0.9600 — 1st of 30**, separated from 26 of the 29 others. But **`bert_mini`** (44 MB, 7 ms on the Mac) scores 0.9450 and is **not separated** from it (p = 0.55): ten times smaller and 11× faster when both are re-timed on the same Linux machine (4.3 vs 49 ms median, §3.1), for no measurable loss. **Read §3.4 before relying on either** — the fine-tuned lead lives in items whose gold labels the whole LLM field disputes. | **`bert_base_fy`** — BERT-base fine-tuned on DBpedia-14, **438 MB**, 87 ms/item on a 4-core Linux CPU. **0.9857 — tied 3rd**, two items in 280 behind the leader and **not separated** from it (p = 0.62). Ties the top; does not clear it. |
 | **Self-host · open-weight LLM, absolute** | **`llama_m`** — Llama-3.3-70B, **70.6B / ~141 GB**. **0.8800** — **0.0800 behind a 438 MB fine-tune and separated from it**; 0.0650 behind the 44 MB one (**3,205× smaller**) and **not separated** from that (p = 0.0149 vs a 0.0063 threshold at m=29). | **`glm_m`** — GLM-4.6, MIT, **357B / ~714 GB**. **0.9857**, **not separated** from the overall winner. Needs a multi-node cluster. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model at int8, ~70 GB.** 0.8800 — no loss on paper. Native alternative: `gemma_s` (27B, 55 GB) at 0.8750. | **`gemma_m`** — Gemma-4-26B-A4B, **52 GB native**. **0.9857 — identical to GLM-4.6 at 1/14 the size.** |
 | **Self-host · open-weight LLM, ≤64 GB** | **The same model at int4, ~35 GB.** 0.8800 on paper. Native alternative: `gemma_s` at 55 GB, 0.8750 — and still **0.0700 below a 44 MB fine-tune.** | **Still `gemma_m`**, 52 GB native. Halving the budget costs nothing here. |
@@ -43,7 +43,19 @@
 | **Is a pilot enough?** | No — ρ = 0.852* and it picked `anthropic_l`, truly **5th of 30** (3rd before the bert-base arms) | No — ρ = 0.728*, picked `anthropic_l`, truly 2nd |
 | **Fine-tune or pay?** | **Fine-tune — for this corpus's labels.** Three independent fine-tunes take 1st, 2nd and 3rd of 30 at $0. What they learned is partly AG News's labelling convention (§3.4): on your own data that is exactly what you want; as evidence that a small model "understands news" better than an LLM, it is not. | **Fine-tune for cost, not for quality.** Measured 2026-09-30: the fine-tuned arm scores **0.9857**, statistically tied with the $51/mo leader (−0.0071, 1 item won against 3 lost, p = 0.62) at **$0**. On a saturated task training buys a free seat in the top group, not a lead. The prior from AG News — that it would win — **did not hold.** |
 
-\* From dev-slice runs that were never committed; the committed runs give 0.677 and 0.757 (§5). The pick and its true rank are from committed runs.
+\* From dev-slice runs that were never committed; the committed runs give 0.677 and 0.757 (§5). The pick and its true rank are from committed runs. The **dev slice** is the small pilot set run before the full slices — 20 AG News items and 56 DBpedia items, all contained in the measured 200 and 280 (§1).
+
+*How to read this table: every bare score is accuracy on that corpus's slice (0 to 1,
+higher is better; 0.9600 = 192 of 200 right). **$/month** is what the provider billed for
+the slice, scaled to 1M items a month (`anthropic_m` on AG News: $0.0703 ÷ 200 ×
+1,000,000 ≈ $351). A **% figure** is relative accuracy against a reference arm: "vs free"
+means against the best $0 arm on that corpus (`bert_base_ta` on AG News); on DBpedia the
+cell names its reference ($51/mo = `qwen_m`). "Per 10× cost" is the change in accuracy
+that goes with each tenfold rise in price. Latencies are mean ms per item on the machine
+named — the 4-core Linux container or the 12-core Mac — so two figures from different
+machines are not directly comparable. p-values are sign-flip permutation p from the
+Holm family tests in §3; where a threshold is quoted, it is the Holm threshold that p had
+to beat.*
 
 **Read the two together or not at all.** They were chosen before any result was seen to
 sit in opposite regimes; either alone supports whichever conclusion it happens to produce.
@@ -88,7 +100,8 @@ fine-tuning: it bought a tie at $0. Same harness, same arms, same statistics.**
 
 3. **DBpedia-14.** `qwen_m` led at **0.9929 for $0.0143**; `anthropic_l` was one item in
    280 behind at **0.9893 for $0.3784**, p = 1.0000. The leader separated from only **8 of
-   27**. The top eleven arms are one group across a 115× price range — and one of them
+   27**, so it is statistically tied with the other **19** — and the top eleven arms, leader
+   included, sit within four items of each other across a 115× price range. One of those eleven
    costs nothing: the **fine-tuned `bert_base_fy` scores 0.9857 at $0**, two items behind
    the leader, p = 0.62. Where there is no headroom, training buys a tie, not a win.
 
@@ -112,11 +125,11 @@ fine-tuning: it bought a tie at $0. Same harness, same arms, same statistics.**
 
 ## 1. What was measured
 
-| | AG News | DBpedia-14 |
+| property | AG News | DBpedia-14 |
 | --- | --- | --- |
 | task | news snippet → 1 of 4 topics | Wikipedia abstract → 1 of 14 ontology classes |
 | measurement slice | 200 items, 50/class | 280 items, 20/class |
-| dev slice | 20 items (first-k per class) | 56 items (seeded-random per class) |
+| dev slice (pilot subset of the measurement slice) | 20 items (first-k per class) | 56 items (seeded-random per class) |
 | licence | **`unknown`**, source says non-commercial | **CC-BY-SA 3.0 + GFDL** |
 | median length | 40 words | 52 words |
 | hosted spend (billed) | $0.58 | $1.17 |
@@ -161,9 +174,11 @@ fingerprint as `parser_sha256` — including local arms that never touch it, bec
 question those hashes answer is *"would this number change if the parser changed?"* and an
 identical hash across both kinds is what makes "no" checkable rather than assumed.
 
-How much it matters, measured:
+How much it matters, measured. The middle column counts items scored correct only because
+the parser cleaned the answer up (the raw output was not exactly the gold label); the last
+column shows accuracy with the parser, then with exact-match scoring alone:
 
-| arm | corpus | `correct_after_repair` | accuracy without the parser |
+| arm | corpus | scored correct only via lenient parser (share, count) | accuracy: with parser → without |
 | --- | --- | --- | --- |
 | `glm_l` | AG News | 0.075 (15 of 200) | 0.860 → **0.785** |
 | `glm_l` | DBpedia | 0.086 (24 of 280) | 0.968 → **0.882** |
@@ -244,7 +259,7 @@ field, timed on the same Mac; the two bert-base fine-tunes roughly 5×–100×, 
 Linux machine, a cross-machine ratio good to about a factor of two) —
 with the qualification in §3.4 about *what* they are better at.
 
-### 3.2 DBpedia-14 — no winner, a group of eleven
+### 3.2 DBpedia-14 — no winner: the leader is tied with 19 of the 27 others
 
 ```
 arm                accuracy  macro_f1     $/280    arm              accuracy    $/280
@@ -275,7 +290,8 @@ that "CD 2.45", from a reused k=25 value, then withdrawn, then computed. Adding 
 changes every pair count, so the old figures are superseded rather than wrong.*
 
 **Pre-registered family test** (`qwen_m`, Holm over m=27): ahead against **27 of 27**,
-separated from **8**. Against `anthropic_l`: delta **+0.0036** — one item in 280 — at
+separated from **8** — so it is tied with the other **19** (18 paid arms and the fine-tune;
+the top eleven arms, within four items of each other, are the head of that group). Against `anthropic_l`: delta **+0.0036** — one item in 280 — at
 **p = 1.0000**. Against the fine-tuned arm: **+0.0071**, two items, **p = 0.62**.
 
 **The fine-tuned arm, measured.** This row did not exist until 2026-09-30: the checkpoint
@@ -352,7 +368,7 @@ rather than wrong in any interesting way — a "physician, novelist and politici
 
 #### Where the AG News fine-tuned lead comes from
 
-The two AG News arms named above — "Charles Schwab" and "Card fraud" — were "missed by
+The two AG News items named above — "Charles Schwab" and "Card fraud" — were "missed by
 26/26" before the bert-base arms ran. The two arms that now get them right are both
 bert-base fine-tunes. That is not a coincidence, and it is worth measuring rather than
 noting:
@@ -372,10 +388,13 @@ llama_m           0.8800             0 of 17                    0.9617
 **Almost the entire fine-tuned lead lives in those 17 items** — `bert_base_ta` is 11 items
 ahead of `anthropic_m` on them and 1 item behind on the other 183. All 17, so the reading
 below can be checked rather than taken on trust (the corpus is not redistributed; these are
-headlines only). "F" marks which of the three fine-tunes (`ta`, `fy`, `mini`) agree with the
-gold; the reading is mine:
+headlines only). The fourth column lists which of the three fine-tunes (`ta` =
+`bert_base_ta`, `fy` = `bert_base_fy`, `mini` = `bert_mini`) agree with the gold label;
+"—" means none of them does. "Field's majority" is the label most of the 24 hosted arms
+chose. Rows are grouped by the reading, which is mine: convention, then ambiguous, then
+mislabel.
 
-| headline | gold | field's majority | F | reading |
+| headline | gold | field's majority | fine-tunes agreeing with gold | reading |
 |---|---|---|---|---|
 | Storage, servers bruise HP earnings update | Sci/Tech | Business | ta fy mini | convention |
 | Some People Not Eligible to Get in on Google IPO | Sci/Tech | Business | fy | convention |
@@ -470,20 +489,28 @@ ties, and rho as Pearson-on-ranks.
 counts only when **both** halves have a *unique* best arm. Draws where either half's top is
 tied are reported as **undecided** and excluded, never scored as agreement.
 
-| | n=10 | n=20 | n=50 | n=100 |
+Each column is the number of items per half; every cell averages 400 draws of two disjoint
+halves. "(was)" rows are the figures published before the 2026-09-29 fix; "(fixed)" rows
+are the same field re-measured after it. "Undecided" counts draws, out of 400, in which at
+least one half had no unique best arm, so no winner could be compared; P(same winner) is
+computed over the remaining, decided draws. k is the number of arms in the field. **Bold
+row labels** mark the current field (AG News k=30, DBpedia k=28); the other rows are
+superseded and kept for comparison.
+
+| corpus · quantity (arms k) | n=10 | n=20 | n=50 | n=100 |
 |---|---|---|---|---|
-| **AG News** ρ (was) | 0.492 | 0.470 | 0.540 | 0.675 |
-| **AG News** ρ (fixed, k=28) | 0.403 | 0.453 | 0.548 | 0.715 |
-| AG News undecided draws (k=28) | 361/400 | 316/400 | 173/400 | 34/400 |
-| AG News P(same winner), of decided (k=28) | 0.74 | 0.77 | 0.78 | 0.97 |
-| **AG News** ρ (k=30, with the bert-base arms) | **0.410** | **0.502** | **0.621** | **0.768** |
-| AG News undecided draws (k=30) | 395/400 | 373/400 | 257/400 | 210/400 |
-| AG News P(same winner), of decided (k=30) | 0.20 | 0.41 | 0.21 | **0.24** |
-| **DBpedia** ρ (was) | 0.782 | 0.709 | 0.671 | 0.742 |
-| **DBpedia** ρ (fixed, k=27) | 0.667 | 0.602 | 0.616 | 0.713 |
-| **DBpedia** ρ (k=28, with the fine-tuned arm) | **0.657** | **0.600** | **0.605** | **0.706** |
-| DBpedia undecided draws (k=28) | **399/400** | **391/400** | **379/400** | **354/400** |
-| DBpedia P(same winner), of decided (k=28) | 0.00 | 0.00 | 0.00 | 0.00 |
+| AG News · ρ (was) | 0.492 | 0.470 | 0.540 | 0.675 |
+| AG News · ρ (fixed, k=28) | 0.403 | 0.453 | 0.548 | 0.715 |
+| AG News · undecided draws (k=28) | 361/400 | 316/400 | 173/400 | 34/400 |
+| AG News · P(same winner), of decided (k=28) | 0.74 | 0.77 | 0.78 | 0.97 |
+| **AG News · ρ (k=30, with the bert-base arms)** | 0.410 | 0.502 | 0.621 | 0.768 |
+| **AG News · undecided draws (k=30)** | 395/400 | 373/400 | 257/400 | 210/400 |
+| **AG News · P(same winner), of decided (k=30)** | 0.20 | 0.41 | 0.21 | 0.24 |
+| DBpedia · ρ (was) | 0.782 | 0.709 | 0.671 | 0.742 |
+| DBpedia · ρ (fixed, k=27) | 0.667 | 0.602 | 0.616 | 0.713 |
+| **DBpedia · ρ (k=28, with the fine-tuned arm)** | 0.657 | 0.600 | 0.605 | 0.706 |
+| **DBpedia · undecided draws (k=28)** | 399/400 | 391/400 | 379/400 | 354/400 |
+| **DBpedia · P(same winner), of decided (k=28)** | 0.00 | 0.00 | 0.00 | 0.00 |
 
 **DBpedia has no winner to agree about, at any size tested.** At k=27 every one of 400
 draws at every n had at least one half with no unique best arm. Adding the fine-tuned arm
