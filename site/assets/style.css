@@ -60,6 +60,7 @@ a:hover { color: var(--accent); }
 .nav { display: flex; gap: 22px; font: 500 13px/1 var(--mono); letter-spacing: .03em; }
 .nav a { text-decoration: none; color: var(--ink-2); }
 .nav a:hover { color: var(--accent); }
+.nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 6px; }
 @media (max-width: 760px) { .nav .hide-sm { display: none; } }
 
 /* theme toggle */
@@ -151,7 +152,7 @@ table.data td.big { font: 700 22px/1 var(--display); letter-spacing: -0.02em; }
 .findings p { margin: 0; color: var(--ink-2); }
 
 /* ── experiment cards ──────────────────────────────────── */
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
 .card { display: flex; flex-direction: column; gap: 14px; padding: 26px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); text-decoration: none; transition: border-color .15s, transform .15s; min-height: 280px; }
 .card:hover { border-color: var(--accent); transform: translateY(-2px); color: inherit; }
 .card .task { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -319,7 +320,7 @@ section.method { padding-top: 64px; }
 
 /* phones, round two: touch targets, the narrowest screens, density */
 .chart svg .hit { fill: transparent; }
-@media (max-width: 400px) { .nav .hide-xs { display: none; } }
+@media (max-width: 400px) { .nav { gap: 2px; font-size: 12px; letter-spacing: 0; } .nav a { padding-left: 4px; padding-right: 4px; } .theme { width: 34px; height: 34px; margin-left: 4px; } .bar .wrap { gap: 6px; } .brand { font-size: 13px; gap: 6px; } }
 @media (max-width: 640px) {
   .nav a { padding: 14px 4px; }
   .theme { width: 38px; height: 38px; font-size: 17px; }
@@ -338,3 +339,15 @@ section.method { padding-top: 64px; }
   .lesson .btn { margin-top: 20px; }
 }
 @media (max-width: 900px) { .method-aside { display: none; } }
+@media (max-width: 400px) { .brand span { display: none; } }
+@media (max-width: 340px) { .nav { font-size: 11px; } .nav a { padding-left: 2px; padding-right: 2px; } .theme { width: 30px; height: 30px; } }
+
+/* homepage: why it exists -- question, what the harness gives, what it found */
+.why { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.why-q { display: flex; flex-direction: column; gap: 12px; padding: 26px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); }
+.why-q .n { font: 600 12px/1 var(--mono); color: var(--accent); }
+.why-q h3 { font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; margin: 0; }
+.why-q p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+.why-q p b { display: block; font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.why-q a { margin-top: auto; font: 500 13px/1 var(--mono); color: var(--accent); text-decoration: none; padding-top: 6px; }
+@media (max-width: 760px) { .why { grid-template-columns: 1fr; } .why-q { padding: 20px; } .why-q h3 { font-size: 20px; } .why-q p b { font-size: 12px; } }

@@ -25,8 +25,8 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="brand" href="../index.html"><i></i>eval-harness</a>
-  <nav class="nav"><a href="../index.html#findings" class="hide-xs">Findings</a><a href="../method.html">Method</a><a href="../use.html">Use it</a><a href="../index.html#experiments" class="hide-sm">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <a class="brand" href="../index.html" aria-label="eval-harness home"><i></i><span>eval-harness</span></a>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -35,7 +35,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h1 style="max-width:16ch">The one clean win.</h1>
   <p class="dek">Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.</p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Find every named entity in a sentence and give it one of 8 types.</div></div><div class="fact"><div class="k">Data</div><div class="v">280 items from the Few-NERD test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">28 compared: 24 hosted models billed per call; 4 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">F1 — entities found with the right type, set-matched per sentence and averaged, on 8 coarse types; this repo&#x27;s own, see the protocol. Higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">span_marker 0.7047 vs 0.7040 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$2.61 for the whole sweep</div></div></div>
-  <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_NER.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../index.html#experiments">All experiments</a></div>
+  <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_NER.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
