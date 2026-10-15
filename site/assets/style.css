@@ -27,7 +27,7 @@
     --ink: #0b0b0b; --ink-2: #4a4945; --muted: #7a7872; --hair: #dddbd3; --axis: #c3c2b7;
     --accent: #3d5c00; --accent-ink: #f6f5f1;
     --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
-    --band: rgba(61, 92, 0, 0.08);
+    --band: rgba(61, 92, 0, 0.16);
   }
 }
 :root[data-theme="light"] {
@@ -36,7 +36,7 @@
   --ink: #0b0b0b; --ink-2: #4a4945; --muted: #7a7872; --hair: #dddbd3; --axis: #c3c2b7;
   --accent: #3d5c00; --accent-ink: #f6f5f1;
   --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
-  --band: rgba(61, 92, 0, 0.08);
+  --band: rgba(61, 92, 0, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -316,3 +316,25 @@ section.method { padding-top: 64px; }
   .findings li { grid-template-columns: 1fr; gap: 4px; padding: 18px 0; }
   .findings h3 { font-size: 20px; }
 }
+
+/* phones, round two: touch targets, the narrowest screens, density */
+.chart svg .hit { fill: transparent; }
+@media (max-width: 400px) { .nav .hide-xs { display: none; } }
+@media (max-width: 640px) {
+  .nav a { padding: 14px 4px; }
+  .theme { width: 38px; height: 38px; font-size: 17px; }
+  .hero .dek { font-size: 17px; }
+  .stats { margin-top: 36px; }
+  .facts { grid-template-columns: 1fr 1fr; grid-auto-flow: row dense; }
+  .facts .fact:nth-child(1), .facts .fact:nth-child(3), .facts .fact:nth-child(4), .facts .fact:nth-child(5) { grid-column: 1 / -1; }
+  pre.term { font-size: 12.5px; padding: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .card { min-height: 0; padding: 20px; }
+  .doors .card { min-height: 0; }
+  .habit-card { padding: 16px 18px 18px; }
+  .card .task, .pattern .task, .fact .k, .tool .k, .habit b, .yours b { font-size: 12px; }
+  .byo-col { padding-right: 0; }
+  .pattern .meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .legend { gap: 10px 14px; font-size: 11.5px; }
+  .lesson .btn { margin-top: 20px; }
+}
+@media (max-width: 900px) { .method-aside { display: none; } }

@@ -1,5 +1,6 @@
 {
-  "_comment": "Umami (cookieless, no personal data). Fill both to switch analytics on for the site and the docs; leave empty for none. One website id covers both, since they share a domain.",
-  "umami_src": "",
-  "website_id": ""
+  "_comment": "Umami (cookieless, no personal data). Leave umami_src or website_id empty for no analytics. One website id covers the findings site and the docs, which share a domain; 'domains' stops local previews from being counted. All three values are public by design.",
+  "umami_src": "https://analytics.closelistening.app/script.js",
+  "website_id": "76169139-07c1-4806-bde6-f9014e803e7f",
+  "domains": "chipi.github.io"
 }

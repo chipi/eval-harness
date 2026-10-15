@@ -74,5 +74,6 @@ def on_post_page(output, page, config):
            '<meta name="twitter:card" content="summary_large_image">')
     cfg = json.loads((ROOT / "site" / "analytics.json").read_text())
     if cfg.get("umami_src") and cfg.get("website_id"):
-        tag += f'<script defer src="{escape(cfg["umami_src"])}" data-website-id="{escape(cfg["website_id"])}"></script>'
+        domains = f' data-domains="{escape(cfg["domains"])}"' if cfg.get("domains") else ""
+        tag += f'<script defer src="{escape(cfg["umami_src"])}" data-website-id="{escape(cfg["website_id"])}"{domains}></script>'
     return output.replace("</head>", tag + "</head>", 1)
