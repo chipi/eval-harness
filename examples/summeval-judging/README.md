@@ -67,6 +67,7 @@ setup.) The instrument reproduces the literature before anything new is read off
 
 | arm | τ | ρ | τ, relevance | τ, consistency |
 |---|---|---|---|---|
+| `bartscore` | 0.256 | 0.325 | 0.246 | 0.198 |
 | `rouge2` | 0.158 | 0.201 | 0.220 | 0.148 |
 | `rouge1` | 0.149 | 0.190 | 0.253 | 0.122 |
 | `rougeL` | 0.143 | 0.184 | 0.210 | 0.109 |
@@ -74,7 +75,16 @@ setup.) The instrument reproduces the literature before anything new is read off
 | `length` | 0.039 | 0.048 | 0.100 | 0.071 |
 | `random` | 0.003 | 0.003 | 0.007 | −0.007 |
 
-Two things already worth saying:
+Three things already worth saying:
+
+- **BARTScore, a model that never sees a reference, beats every reference-based metric**
+  (τ 0.256 against ROUGE-2's 0.158). G-Eval publishes BARTScore at τ 0.305 / ρ 0.385; ours is
+  lower on consistency and fluency and *higher* on coherence (τ 0.380 against 0.342). That
+  pattern looks like a different variant, not a broken run: this is plain
+  `bart-large-cnn`, source → summary, and G-Eval does not say which BARTScore variant it ran.
+  So it is reported as measured, not counted as a calibration row. (ROUGE-2 reproduces too:
+  τ 0.158 against 0.161 published. ROUGE-L comes out a little higher than published,
+  0.143 against 0.128.)
 
 - **This repository's own `coverage` agrees with the experts less than plain ROUGE-1**
   (τ 0.101 against 0.149), most of the gap in consistency and fluency. Coverage was built to
@@ -83,7 +93,8 @@ Two things already worth saying:
   effect in disguise.
 
 The hosted judges are the open question: does any LLM order summaries like an expert better
-than ROUGE's 0.15?
+than BARTScore's 0.26? G-Eval reports GPT-4 at τ 0.418 with its own prompt and probability
+weighting.
 
 ## Running the hosted judges
 
