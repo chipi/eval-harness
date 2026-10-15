@@ -201,6 +201,18 @@ data/runs-linux/*/*
 data/runs-linux/*/outputs/_rows.jsonl
 !data/runs-linux/README.md
 
+# data/runs-fp32/ — bart_s re-measured at the precision its config always declared. It
+# was stored at fp16 and, before the 2026-10-14 instrument fix, RAN at fp16 under an fp32
+# label. The record in data/runs/ is that fp16 measurement and stays; these are beside it.
+!data/runs-fp32/
+data/runs-fp32/*/*
+!data/runs-fp32/*/metrics.json
+!data/runs-fp32/*/predictions.jsonl
+!data/runs-fp32/*/outputs
+!data/runs-fp32/*/outputs/**
+data/runs-fp32/*/outputs/_rows.jsonl
+!data/runs-fp32/README.md
+
 
 # data/runs-reparsed/ — the SciFact rankings rebuilt from each run's stored LLM reply
 # with the corrected parser. `rescore` cannot produce these: this adapter parses at

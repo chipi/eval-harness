@@ -259,7 +259,8 @@ def v7_committed_runs_are_readable() -> None:
     # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. `data/runs-rescored`,
     # `-reparsed`, `-pair` and `-repeats` are all committed and all cited by reports,
     # and nothing validated them at all. Found by external review.
-    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats"):
+    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats", "runs-linux",
+                  "runs-fp32"):
         base = ROOT / "data" / extra
         if not base.is_dir():
             continue
@@ -300,11 +301,11 @@ def v9_no_committed_evidence_is_missing() -> None:
     #: that nine published latency numbers rest on passed every check. Found reviewing
     #: the merged ML-arm work, which is the same defect round 4 found one directory over.
     FLOORS = {"runs-reparsed": 19, "runs-rescored": 28, "runs-pair": 4, "runs-repeats": 3,
-              "runs-linux": 9}
+              "runs-linux": 9, "runs-fp32": 2}
 
     tracked = subprocess.run(
         ["git", "ls-files", "data/runs", "data/runs-rescored", "data/runs-reparsed",
-         "data/runs-pair", "data/runs-repeats", "data/runs-linux"],
+         "data/runs-pair", "data/runs-repeats", "data/runs-linux", "data/runs-fp32"],
         cwd=ROOT, capture_output=True, text=True,
     ).stdout.split()
     missing, incomplete = [], []
@@ -513,7 +514,7 @@ def v8_no_duplicate_config_ids() -> None:
     # it by filesystem order, so a duplicate changed the answer depending on how the
     # names sorted. That is the round-3 ext4 defect in the sixth directory. Round 5.
     COMMITTED = ("runs", "runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats",
-                 "runs-linux")
+                 "runs-linux", "runs-fp32")
     #: One documented exception. `demo_v1` on `smoke_v1` is the bundled demo, run many
     #: times by `make demo` and by the self-test; smoke_v1 is not an experiment and no
     #: report cites it. Named here rather than scoped away silently, so that adding a

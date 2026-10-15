@@ -2519,3 +2519,61 @@ all three cards. The hosted arms have not been rerun; that needs a key and about
 **The lesson.** Every reproducibility check here ran in the tree that made the results,
 so none of them could see the infrastructure that only that tree had. The cheapest check
 that compares the repo with a stranger's machine is a stranger's machine.
+
+### 2026-10-15 · 63 — Every local arm, rerun on another machine
+
+Item 2 shipped as an instrument change (entry 62's successor commits):
+- every local adapter now casts the model to its declared precision;
+- each adapter warms up with an untimed forward pass;
+- every local loader accepts a pinned revision.
+
+Then every local model and baseline in all six measurements was rerun with
+`make reproduce`, weights pinned to `examples/local_models.json`. The runs were made on a
+4-core Linux container. Most of the committed record was measured on a 12-core Intel Mac.
+
+**Result: 31 arms, all exact but one.** Each arm's rerun matched its committed run item
+for item:
+- summarisation: 5 arms on CNN and 5 on DailyMail;
+- AG News: 6;
+- DBpedia: 4;
+- Few-NERD: 4;
+- SciFact: 7.
+
+The exception is `bart_s`, which now runs at the fp32 its config always declared instead
+of the fp16 it is stored in. Its identical scores: 199/200 on CNN and 187/200 on
+DailyMail, neither distinguishable from the committed run (p = 1.0 and 0.52). Every
+committed separation and every tie held in all six replication cards.
+
+**The official fp32 `bart_s` runs** were made from a clean tree and committed to
+`data/runs-fp32/`: 0.3274 on CNN and 0.4048 on DailyMail, against the committed fp16
+0.3276 and 0.4039. `bart_l`'s five-arm Holm family gives the same verdicts with them in.
+
+**The decision: keep the fp16 runs as the record.** They are what was measured.
+Replacing them would rewrite about fifteen figures for a change no test detects. The
+report now says plainly that `bart_s` ran at fp16 and gives the fp32 figures beside it,
+and `check_report_claims` verifies both. If a later change makes the difference matter,
+the fp32 runs are there to promote.
+
+**Two defects found by doing it:**
+
+1. **`span_marker` failed to load when pinned.** SpanMarker forwards `revision=` to its
+   underlying encoder, a different Hub repository where that commit does not exist.
+   Yesterday's "pass the revision everywhere" fix was therefore broken for exactly the
+   arm that leads Few-NERD. Nothing caught it, because no test loads a pinned
+   SpanMarker. It now pins by downloading the snapshot and loading from its local path.
+   Rerun: exact.
+2. **This environment kills long work.** The container restarted three times overnight,
+   each restart killing the run in progress. Each restart also left the example
+   environments without their `local` extras: the venvs link into a package cache that
+   did not survive. Finished runs and index caches on disk survived. The fix was
+   procedural:
+   - rerun one arm at a time, so a restart loses one arm at most;
+   - `uv sync --extra local` after each restart;
+   - stay active while runs go.
+
+   For a stranger on their own machine none of this applies. For anyone running this
+   in a hosted sandbox, it is the first thing that will go wrong.
+
+**The lesson.** "Exact on another machine" was the strongest reproducibility claim this
+repository could make about its local arms, and until now nobody had made it. It held
+for 30 of 31 arms. The 31st differs for a documented reason that changes no finding.

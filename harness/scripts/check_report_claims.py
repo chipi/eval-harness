@@ -32,6 +32,7 @@ if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 DATA = HERE.parent / "data" / "runs"
+FP32 = HERE.parent / "data" / "runs-fp32"
 RESCORED = HERE.parent / "data" / "runs-rescored"
 #: The pre-registered first-stage prediction. Its four runs lived in an ignored
 #: directory until round 2, so the most-advertised number in the repo -- 0.7891 -- was
@@ -78,6 +79,10 @@ CLAIMS = [
     ("DailyMail bart_s",          DATA,     "cnn_bart_s_dm200_v1",      "coverage", 0.4039),
     ("DailyMail lead3",           DATA,     "cnn_lead3_dm200_v1",       "coverage", 0.3697),
     ("DailyMail bart_l_xsum",     DATA,     "cnn_bart_l_xsum_dm200_v1", "coverage", 0.1522),
+    # bart_s at the precision its config declared (data/runs-fp32, 2026-10-15): the
+    # committed runs above are fp16 measurements, and REPORT_SUMMARIZATION says so.
+    ("Summarisation bart_s at fp32", FP32,  "cnn_bart_s_n200_v1",      "coverage", 0.3274),
+    ("DailyMail bart_s at fp32",  FP32,     "cnn_bart_s_dm200_v1",      "coverage", 0.4048),
 ]
 
 #: Which report states each CLAIM. A claim here is a copy of a number in a report, and a

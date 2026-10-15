@@ -78,6 +78,13 @@ genuinely expensive. Distillation narrows that without a measurable cost. Timed 
 machine (`data/runs-linux/`), `bart_l` takes **6.3 s**, `bart_m` (1.2 GB, 0.3367) **4.1 s**
 and `bart_s` (460 MB, 0.3276) **3.4 s**, neither separated from `bart_l` under Holm.
 
+> **`bart_s` ran at fp16.** Its checkpoint is stored at half precision, and until the
+> 2026-10-14 instrument fix the adapters did not apply a config's `precision`, so every
+> committed `bart_s` figure here is an fp16 measurement under an fp32 label. Re-measured
+> at fp32 (`harness/data/runs-fp32/`): **0.3274** on CNN and **0.4048** on DailyMail,
+> identical scores on 199 and 187 of 200 items, and no verdict in this report moves. The
+> fp16 runs stay the record.
+
 **The expensive arms do not earn their price, and this is now the firmest result here.**
 `deepseek_m` at **$0.0381** per 200 articles beats `anthropic_l` at **$1.9652** — 52×
 dearer — by +0.0306 coverage, p = 0.0000, and it holds on the 180 out-of-sample articles
