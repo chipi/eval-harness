@@ -60,6 +60,7 @@ a:hover { color: var(--accent); }
 .nav { display: flex; gap: 22px; font: 500 13px/1 var(--mono); letter-spacing: .03em; }
 .nav a { text-decoration: none; color: var(--ink-2); }
 .nav a:hover { color: var(--accent); }
+.nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 6px; }
 @media (max-width: 760px) { .nav .hide-sm { display: none; } }
 
 /* theme toggle */
@@ -319,7 +320,7 @@ section.method { padding-top: 64px; }
 
 /* phones, round two: touch targets, the narrowest screens, density */
 .chart svg .hit { fill: transparent; }
-@media (max-width: 400px) { .nav .hide-xs { display: none; } }
+@media (max-width: 400px) { .nav { gap: 2px; font-size: 12px; letter-spacing: 0; } .nav a { padding-left: 4px; padding-right: 4px; } .theme { width: 34px; height: 34px; margin-left: 4px; } .bar .wrap { gap: 6px; } .brand { font-size: 13px; gap: 6px; } }
 @media (max-width: 640px) {
   .nav a { padding: 14px 4px; }
   .theme { width: 38px; height: 38px; font-size: 17px; }
@@ -338,3 +339,4 @@ section.method { padding-top: 64px; }
   .lesson .btn { margin-top: 20px; }
 }
 @media (max-width: 900px) { .method-aside { display: none; } }
+@media (max-width: 340px) { .brand span { display: none; } }

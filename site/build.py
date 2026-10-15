@@ -378,8 +378,13 @@ def analytics_tag() -> str:
     return f'<script defer src="{e(cfg["umami_src"])}" data-website-id="{e(cfg["website_id"])}"{domains}></script>'
 
 
-def page(title: str, desc: str, body: str, depth: int = 0) -> str:
+def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> str:
     up = "../" * depth
+
+    def nav(key: str, href: str, label: str, cls: str = "") -> str:
+        cur = ' aria-current="page"' if key == here else ""
+        c = f' class="{cls}"' if cls else ""
+        return f'<a href="{href}"{c}{cur}>{label}</a>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -402,8 +407,8 @@ def page(title: str, desc: str, body: str, depth: int = 0) -> str:
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="brand" href="{up}index.html"><i></i>eval-harness</a>
-  <nav class="nav"><a href="{up}index.html#findings" class="hide-xs">Findings</a><a href="{up}method.html">Method</a><a href="{up}use.html">Use it</a><a href="{up}index.html#experiments" class="hide-sm">Experiments</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <a class="brand" href="{up}index.html" aria-label="eval-harness home"><i></i><span>eval-harness</span></a>
+  <nav class="nav">{nav("findings", f"{up}index.html", "Findings")}{nav("method", f"{up}method.html", "Method")}{nav("use", f"{up}use.html", "Use it")}{nav("experiments", f"{up}index.html#experiments", "Experiments", "hide-sm")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -560,7 +565,7 @@ def landing(f: dict) -> str:
 """
     return page("The most expensive model never won — eval-harness",
                 "24 LLMs, small fine-tuned models and baselines on five public benchmarks, "
-                "with significance tests, billed costs and calibration against the literature.", body)
+                "with significance tests, billed costs and calibration against the literature.", body, here="findings")
 
 
 CARD = {
@@ -708,7 +713,7 @@ def experiment_page(x: dict, f: dict) -> str:
 <span class="p">$ </span>make compare   EXP={x["slug"]}</pre>
   </div>
 </div></section>"""
-    return page(f'{x["task"]} · {x["bench"]} — eval-harness', CARD[x["slug"]], body, depth=1)
+    return page(f'{x["task"]} · {x["bench"]} — eval-harness', CARD[x["slug"]], body, depth=1, here="experiments")
 
 
 OFF_NOTE = " A dot left of the ⫽ break sits far below the rest, off the scale; tap it for its score."
