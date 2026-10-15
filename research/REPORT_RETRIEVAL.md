@@ -167,7 +167,7 @@ BM25's, to four decimals.
 ### 3.1 The leaderboard
 
 *How to read this table.* Sorted by **nDCG@10**, descending. ⟳ = BM25 retrieves, then
-that LLM reorders BM25's top 20 (§2); these rows inherit BM25's recall@100 and its 0.8 s
+that LLM reorders BM25's top 20 (§2); these rows inherit BM25's recall@100 and its 1.2 s
 index build, because the first stage *is* BM25. **first-stage index build** = one-off
 time to index the 5,183-document corpus on CPU; — = no index (floors). **cost** = what the
 provider billed for all 200 queries. **Bold** marks the best value in each column, plus
@@ -178,29 +178,34 @@ thresholds, which is why the group is quoted as 12–13 (§3.2).
 
 | arm | nDCG@10 | recall@10 | recall@100 | MRR@10 | first-stage index build | cost (billed, 200 queries) |
 |---|---|---|---|---|---|---|
-| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.1421 |
-| glm_m ⟳ | 0.7419 | 0.8067 | 0.8586 | 0.7325 | 0.8 s | $0.4576 |
-| deepseek_m ⟳ | 0.7399 | 0.7893 | 0.8586 | 0.7373 | 0.8 s | $0.2381 |
-| deepseek_s ⟳ | 0.7378 | 0.8017 | 0.8586 | 0.7303 | 0.8 s | $0.0600 |
-| gemma_m ⟳ | 0.7363 | 0.7967 | 0.8586 | 0.7287 | 0.8 s | $0.0721 |
-| gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 0.8 s | $0.1701 |
-| llama_l ⟳ | 0.7281 | 0.7955 | 0.8586 | 0.7234 | 0.8 s | $0.1731 |
-| **e5_base** | **0.7191** | **0.8305** | **0.9540** | 0.6889 | 1825 s | **$0** |
-| qwen_s ⟳ | 0.7183 | 0.7947 | 0.8586 | 0.7062 | 0.8 s | $0.1559 |
-| llama_s ⟳ | 0.7172 | 0.7855 | 0.8586 | 0.7065 | 0.8 s | $0.1458 |
-| **bge_small** | **0.7097** | 0.8298 | 0.9325 | 0.6812 | 874 s | **$0** |
-| llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 0.8 s | $0.1434 |
-| mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 0.8 s | $0.0852 |
-| gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 0.8 s | $0.0962 |
-| mpnet | 0.6643 | 0.7707 | 0.9350 | 0.6355 | 1825 s | $0 |
-| minilm | 0.6533 | 0.7705 | 0.9125 | 0.6212 | 194 s | $0 |
-| bm25 | 0.6451 | 0.7635 | 0.8586 | 0.6152 | **0.8 s** | $0 |
+| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 1.2 s | $0.1421 |
+| glm_m ⟳ | 0.7419 | 0.8067 | 0.8586 | 0.7325 | 1.2 s | $0.4576 |
+| deepseek_m ⟳ | 0.7399 | 0.7893 | 0.8586 | 0.7373 | 1.2 s | $0.2381 |
+| deepseek_s ⟳ | 0.7378 | 0.8017 | 0.8586 | 0.7303 | 1.2 s | $0.0600 |
+| gemma_m ⟳ | 0.7363 | 0.7967 | 0.8586 | 0.7287 | 1.2 s | $0.0721 |
+| gemma_l ⟳ | 0.7359 | 0.7917 | 0.8586 | 0.7287 | 1.2 s | $0.1701 |
+| llama_l ⟳ | 0.7281 | 0.7955 | 0.8586 | 0.7234 | 1.2 s | $0.1731 |
+| **e5_base** | **0.7191** | **0.8305** | **0.9540** | 0.6889 | 1386 s | **$0** |
+| qwen_s ⟳ | 0.7183 | 0.7947 | 0.8586 | 0.7062 | 1.2 s | $0.1559 |
+| llama_s ⟳ | 0.7172 | 0.7855 | 0.8586 | 0.7065 | 1.2 s | $0.1458 |
+| **bge_small** | **0.7097** | 0.8298 | 0.9325 | 0.6812 | 480 s | **$0** |
+| llama_m ⟳ | 0.7088 | 0.7792 | 0.8586 | 0.6996 | 1.2 s | $0.1434 |
+| mistral_s ⟳ | 0.7071 | 0.7668 | 0.8586 | 0.6990 | 1.2 s | $0.0852 |
+| gemma_s ⟳ | 0.7017 | 0.7760 | 0.8586 | 0.6938 | 1.2 s | $0.0962 |
+| mpnet | 0.6643 | 0.7707 | 0.9350 | 0.6355 | 1659 s | $0 |
+| minilm | 0.6533 | 0.7705 | 0.9125 | 0.6212 | 143 s | $0 |
+| bm25 | 0.6451 | 0.7635 | 0.8586 | 0.6152 | **1.2 s** | $0 |
 | random | 0.0005 | 0.0010 | 0.0020 | 0.0006 | — | $0 |
 | first_k | 0.0000 | 0.0000 | 0.0350 | 0.0000 | — | $0 |
 
 **Costs are what the provider billed** (`_meta.usage.cost`), not this repo's price table.
-The encoder build times are from the first, uncached build; the committed runs loaded
-that cached index, so their `warmup_ms` (6–9 s) is a load time, not a build time.
+**Index build times** are one-off, uncached builds re-measured on 2026-10-15 on one machine
+(4-vCPU Xeon, Linux), each arm alone, through the adapter's own `warmup()` with the
+revisions the runs used: [`docs/evidence/index_build_times.json`](../docs/evidence/index_build_times.json).
+The committed runs loaded a cached index, so their `warmup_ms` (6–9 s) is a load time, not a
+build time. *The figures these replace (bm25 0.8 s, minilm 194 s, bge_small 874 s, mpnet
+1825 s, e5_base 1825 s) came from another machine, and only three had a recorded source;
+mpnet's was a copy of e5_base's.*
 
 *This footnote said the opposite until 2026-09-30 — "costs are this repo's price table,
 they understate the bill by roughly 2.4×" — while the cells above it had already been
@@ -315,22 +320,22 @@ critical difference of 2.21 rank positions against an observed span of 8.41.
 
 | arm | index build time | nDCG@10 | recall@100 |
 |---|---|---|---|
-| bm25 | **0.8 s** | 0.6451 | 0.8586 |
-| minilm | 194 s | 0.6533 | 0.9125 |
-| bge_small | 874 s | 0.7097 | 0.9325 |
-| mpnet | 1825 s | 0.6643 | 0.9350 |
-| e5_base | 1825 s | **0.7191** | **0.9540** |
+| bm25 | **1.2 s** | 0.6451 | 0.8586 |
+| minilm | 143 s | 0.6533 | 0.9125 |
+| bge_small | 480 s | 0.7097 | 0.9325 |
+| e5_base | 1386 s | **0.7191** | **0.9540** |
+| mpnet | 1659 s | 0.6643 | 0.9350 |
 
 First-stage arms only, sorted by index build time (one-off, CPU, uncached — see the note
 under §3.1).
 
-BM25's index builds **2,280× faster** than e5_base's and scores 0.074 lower. The harness
+BM25's index builds about **1,150× faster** than e5_base's (1.2 s against 1,386 s) and scores 0.074 lower. The harness
 already timed warmup separately and excluded it from per-item latency — a decision made for
 model loading in the first example — and that turned out to be exactly the right shape for
 an index build.
 
-`mpnet` is the cautionary row: 1825 seconds to build, and it scores *below* `bge_small`
-which builds in less than half the time. Size is not the variable; training objective is.
+`mpnet` is the cautionary row: the slowest build, 1,659 seconds, and it scores *below*
+`bge_small`, which builds in under a third of the time (480 s). Size is not the variable; training objective is.
 `minilm` and `mpnet` are general sentence-similarity models, `bge_small` and `e5_base` are
 trained for retrieval.
 

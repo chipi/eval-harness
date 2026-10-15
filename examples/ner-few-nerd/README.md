@@ -178,7 +178,7 @@ as `person`, a football league as an `event`, a diuretic as `other`.
 | Arm | What it is | Why it is here |
 |---|---|---|
 | `span_marker` | `guishe/span-marker-generic-ner-v1-fewnerd-fine-super`, 499 MB, **fine-tuned on this corpus** | the in-distribution ceiling |
-| `gliner` | `urchade/gliner_medium-v2.1`, 745MB, zero-shot, **caller supplies the labels** | the matched control: same class, never trained here |
+| `gliner` | `urchade/gliner_medium-v2.1`, 781 MB, zero-shot, **caller supplies the labels** | the matched control: same class, never trained here |
 | 24 hosted | 8 vendors × 3 price tiers, one prompt, temperature 0, `max_tokens` 600 | the field |
 | `capitalized` | every capitalised run minus an orthography stoplist | finds spans, cannot type them |
 | `nothing` | the empty set, always | a calibration check on the scorer, then a floor |

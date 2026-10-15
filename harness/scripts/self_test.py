@@ -1661,8 +1661,8 @@ def test_the_checks_can_actually_fail() -> None:
         # precisely there. Found by external review.
         ("check_report_claims.py", "a wrong COST in a table cell",
          "research/REPORT_RETRIEVAL.md",
-         "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.1421 |",
-         "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 0.8 s | $0.5000 |"),
+         "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 1.2 s | $0.1421 |",
+         "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 1.2 s | $0.5000 |"),
         ("check_report_claims.py", "a wrong number in a CODE BLOCK",
          "research/REPORT_CLASSIFICATION.md",
          "bert_mini ◆          0.9450", "bert_mini ◆          0.9999"),
@@ -1693,7 +1693,7 @@ def test_the_checks_can_actually_fail() -> None:
         # plant is deliberately a NEAR miss (1.7%), not an obvious one.
         ("check_report_claims.py", "a cost cell 1.7% off the bill",
          "research/REPORT_RETRIEVAL.md",
-         "| 0.7364 | 0.8 s | $0.1421 |", "| 0.7364 | 0.8 s | $0.1445 |"),
+         "| 0.7364 | 1.2 s | $0.1421 |", "| 0.7364 | 1.2 s | $0.1445 |"),
         ("check_report_claims.py", "a wrong CROSS-MACHINE ratio",
          "research/REPORT_SUMMARIZATION.md",
          "ran `bart_l` itself 1.7\u00d7 faster", "ran `bart_l` itself 2.7\u00d7 faster"),

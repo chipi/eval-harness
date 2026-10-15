@@ -61,7 +61,11 @@ Reruns go to `harness/data/runs-repro/<experiment>/`, which is gitignored and ne
 mixed with the committed runs — those stay the record.
 
 Model weights download from Hugging Face on first use, at the revision the committed run
-pinned (sizes in [REFERENCE](REFERENCE.md)). On Linux, `uv` installs the CUDA build of
+pinned (sizes in [REFERENCE](REFERENCE.md)). Five of them were measured from pickle
+checkpoints (`pytorch_model.bin`), which execute code when loaded and which torch < 2.6
+refuses; for those a rerun loads the model's **safetensors conversion** instead, pinned by
+commit in `examples/local_models.json`. Each was rerun that way and scored identically to its
+committed run on every item (all 200 or 280). On Linux, `uv` installs the CUDA build of
 PyTorch, about 5 GB; nothing here needs a GPU.
 
 **What to expect.** A local model with pinned weights and a fixed input should give the

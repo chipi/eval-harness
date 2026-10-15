@@ -88,10 +88,15 @@ def committed(exp: dict) -> dict:
         out[arm] = {"cid": cid, "dir": f.parent, "score": m["scores"][exp["metric"]],
                     "kind": kind, "model": params.get("model"), "n": m.get("n_items")}
     # Cost and time come from data/runs, where the provider's response was recorded.
-    pins = json.loads((HERE / "local_models.json").read_text())["revisions"]
+    table = json.loads((HERE / "local_models.json").read_text())
+    pins, safe = table["revisions"], table.get("safetensors", {})
     for arm, a in out.items():
         a["cost"], a["minutes"] = 0.0, None
-        a["revision"] = pins.get(a["model"]) if a["kind"] == "local" else None
+        # A rerun loads the safetensors conversion where one was verified to give identical
+        # outputs, so it never unpickles a checkpoint; otherwise the revision that was measured.
+        a["safetensors"] = a["kind"] == "local" and a["model"] in safe
+        a["revision"] = ((safe[a["model"]]["revision"] if a["safetensors"] else pins.get(a["model"]))
+                         if a["kind"] == "local" else None)
         for f in (DATA / "runs").glob(f"{a['cid']}_*/metrics.json"):
             m = json.loads(f.read_text())
             if m.get("dataset_id") != exp["dataset"]:
@@ -257,9 +262,13 @@ def _pinned(cfg_path: Path, arm: dict, out: Path) -> Path:
     cfg.setdefault("params", {})["revision"] = arm["revision"]
     pinned = out / "configs" / cfg_path.name
     pinned.parent.mkdir(parents=True, exist_ok=True)
-    pinned.write_text(f"# {cfg_path.relative_to(ROOT)}, pinned to the committed run's weights\n"
+    what = ("the verified safetensors conversion of the committed run's weights" if arm.get("safetensors")
+            else "the committed run's weights")
+    pinned.write_text(f"# {cfg_path.relative_to(ROOT)}, pinned to {what}\n"
                       + yaml.safe_dump(cfg, sort_keys=False))
-    print(f"  weights pinned to the committed revision {arm['revision'][:12]}")
+    print(f"  weights pinned to {arm['revision'][:12]}"
+          + (" (the verified safetensors conversion of the committed weights)" if arm.get("safetensors")
+             else " (the committed revision)"))
     return pinned
 
 

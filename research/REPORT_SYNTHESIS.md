@@ -188,27 +188,30 @@ Sorting all sixteen local arms by how much training on *this* data they had prod
 to least exposure. "Learned arms", here and below, means every arm that is a trained model:
 all arms except the rule-based baselines (`constant`, `keyword`, `nothing`, `capitalized`,
 `lead3`, `bm25`, `random`, `first_k`). The last column is the arm's score minus the best
-**paid** arm's score in that experiment, in that experiment's metric; "not separated" means
-the Holm test cannot tell the two apart.
+**paid** arm's score in that experiment, in that experiment's metric, and the verdict of the
+arm's own Holm family test against that paid arm: its p-value against the Holm threshold it
+had to beat. "Not separated" means the test cannot tell the two apart. Every row was
+re-run from the committed runs on 2026-10-15 (`scripts/family_test.py`, the arm against the
+whole field).
 
 | training exposure | experiment | arm | rank (of N arms) | quality minus best paid arm (that task's metric) |
 |---|---|---|---|---|
-| **Fine-tuned on this dataset** | Extraction · Few-NERD | `span_marker` | **1st of 28** | **+0.0810**, separated |
+| **Fine-tuned on this dataset** | Extraction · Few-NERD | `span_marker` | **1st of 28** | **+0.0810**, separated (p = 0.0001 vs 0.05) |
 | | Classification · AG News | `bert_base_ta` | **1st of 30** | +0.0500, not separated (p = 0.022 vs 0.0167) |
-| | Classification · AG News | `bert_base_fy` | 2nd of 30 | +0.0400 |
-| | Classification · AG News | `bert_mini` | 3rd of 30 | +0.0350 |
-| | Summarisation · CNN/DM | `bart_l` | **1st of 29** | +0.0001 |
-| | Summarisation · CNN/DM | `bart_m` | 5th of 29 | −0.0094, not separated |
-| | Summarisation · CNN/DM | `bart_s` | 10th of 29 | −0.0185, not separated |
-| | Classification · DBpedia | `bert_base_fy` | 3rd= of 28 (five-way tie) | −0.0071, not separated |
-| Fine-tuned on the task, **another corpus** | Summarisation · CNN/DM | `bart_l_xsum` (XSum → CNN/DM) | **29th of 29 — last** | **−0.1389**, separated from all 28 opponents |
-| Trained for the task *type* | Retrieval · SciFact | `e5_base` | 8th of 19 | −0.0246, not separated |
-| | Retrieval · SciFact | `bge_small` | 11th of 19 | −0.0340, not separated |
-| General-purpose embeddings | Retrieval · SciFact | `mpnet` | 15th of 19 | −0.0794, separated |
-| | Retrieval · SciFact | `minilm` | 16th of 19 | −0.0904, separated |
-| **Zero-shot** | Classification · AG News | `bart_mnli` | 28th of 30 — **last learned arm** | **−0.2100** |
-| | Extraction · Few-NERD | `gliner` | 26th of 28 — **last learned arm** | **−0.2324** |
-| | Classification · DBpedia | `bart_mnli` | 27th of 28 — **last learned arm** | **−0.3643** |
+| | Classification · AG News | `bert_base_fy` | 2nd of 30 | +0.0400, not separated (p = 0.077 vs 0.0167) |
+| | Classification · AG News | `bert_mini` | 3rd of 30 | +0.0350, not separated (p = 0.116 vs 0.0167) |
+| | Summarisation · CNN/DM | `bart_l` | **1st of 29** | +0.0001, not separated (p = 0.99 vs 0.05) |
+| | Summarisation · CNN/DM | `bart_m` | 5th of 29 | −0.0094, not separated (p = 0.30 vs 0.0071) |
+| | Summarisation · CNN/DM | `bart_s` | 10th of 29 | −0.0185, not separated (p = 0.054 vs 0.0023) |
+| | Classification · DBpedia | `bert_base_fy` | 3rd= of 28 (five-way tie) | −0.0071, not separated (p = 0.62 vs 0.0050) |
+| Fine-tuned on the task, **another corpus** | Summarisation · CNN/DM | `bart_l_xsum` (XSum → CNN/DM) | **29th of 29 — last** | **−0.1390**, separated (p < 0.0001 vs 0.0024), and from all 28 opponents |
+| Trained for the task *type* | Retrieval · SciFact | `e5_base` | 8th of 19 | −0.0246, not separated (p = 0.27 vs 0.0038) |
+| | Retrieval · SciFact | `bge_small` | 11th of 19 | −0.0340, not separated (p = 0.13 vs 0.0042) |
+| General-purpose embeddings | Retrieval · SciFact | `mpnet` | 15th of 19 | −0.0794, separated (p = 0.0011 vs 0.0031) |
+| | Retrieval · SciFact | `minilm` | 16th of 19 | −0.0904, separated (p = 0.0002 vs 0.0042) |
+| **Zero-shot** | Classification · AG News | `bart_mnli` | 28th of 30 — **last learned arm** | **−0.2100**, separated (p < 0.0001 vs 0.0018) |
+| | Extraction · Few-NERD | `gliner` | 26th of 28 — **last learned arm** | **−0.2324**, separated (p < 0.0001 vs 0.0071) |
+| | Classification · DBpedia | `bart_mnli` | 27th of 28 — **last learned arm** | **−0.3643**, separated (p < 0.0001 vs 0.0167) |
 
 **The best model fine-tuned on each dataset ranked first in three experiments and
 third-equal in the saturated fourth. Every zero-shot model ranked last among the learned
@@ -945,8 +948,8 @@ path (this read 44×–766× until 2026-09-30, computed from 10 ms rather than t
 7.11 ms). The bert-base fine-tunes, ten times larger, take 76–90 ms, timed on a different (Linux)
 machine: roughly 5× to 140× faster than any hosted arm on their tasks, a cross-machine
 ratio good to about a factor of two. On one machine `bert_mini` is 11–13× faster than
-them (`harness/data/runs-linux/`). What they cost instead is **setup**: e5-base takes 1,825 s to embed the SciFact
-corpus once, BM25 takes 0.8 s for the same job. That is a real cost, it is reported as
+them (`harness/data/runs-linux/`). What they cost instead is **setup**: e5-base takes 1,386 s to embed the SciFact
+corpus once on a 4-vCPU machine, BM25 takes 1.2 s for the same job. That is a real cost, it is reported as
 `warmup_ms` rather than hidden, and it is paid once rather than per item.
 
 ### The task shape sets the bill, not the model

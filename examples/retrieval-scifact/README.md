@@ -94,17 +94,17 @@ latency, a decision made for model loading in the first example that turns out t
 exactly right for an index build. So index cost becomes a reported column:
 
 ```
-bm25         0.8 s
-minilm     194 s
-bge_small  874 s
-mpnet     1825 s
-e5_base   1825 s
+bm25         1.2 s
+minilm     143 s
+bge_small  480 s
+e5_base   1386 s
+mpnet     1659 s
 ```
 
 Dense embeddings are cached to disk keyed on **corpus hash**, model, prefix and device, so
 a rerun loads in ~6 s instead of rebuilding. Keyed on the hash and not the path, so a
 corpus change misses every cache rather than silently searching the wrong haystack;
-`index_built_this_run` is in the fingerprint, because 1825 s and 6 s of warmup are both
+`index_built_this_run` is in the fingerprint, because 1386 s and 6 s of warmup are both
 honest and the number alone cannot say which.
 
 ### The arm is a pipeline, so it has a ceiling it did not choose
@@ -137,7 +137,7 @@ made it return the literal string `["a","b"]` as a document id.
 
 | Arm | What it is | Cost |
 |---|---|---|
-| `bm25` | `rank_bm25.BM25Okapi`, defaults, no stemming or stoplist | $0, 0.8 s build |
+| `bm25` | `rank_bm25.BM25Okapi`, defaults, no stemming or stoplist | $0, 1.2 s build |
 | `minilm` / `mpnet` | general sentence-similarity encoders, symmetric, no prefix | $0 |
 | `bge_small` / `e5_base` | **retrieval-trained**, asymmetric query/document prefixes | $0 |
 | 12 hosted ⟳ | reranking BM25's top-20, temperature 0, reasoning off | ~$0.05–0.15 |
