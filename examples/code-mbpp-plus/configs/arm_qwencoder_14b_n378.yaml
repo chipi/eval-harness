@@ -1,0 +1,19 @@
+# Qwen2.5-Coder-14B-Instruct, local, greedy. The setup behind the Qwen2.5-Coder technical
+# report's MBPP+ number for this model (72.8; arXiv 2409.12186): EvalPlus's chat prompt, its
+# response prefix, temperature 0. Licence: Apache-2.0. Safetensors, pinned revision.
+# Sized for a big machine: bf16 (the 32B alone would need ~128 GB at fp32), and `device: auto`
+# takes a CUDA GPU or Apple-silicon MPS when there is one, else the CPU. The device actually
+# used is in the run's fingerprint.
+config_id: mb_qwencoder_14b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: local
+  model: Qwen/Qwen2.5-Coder-14B-Instruct
+  revision: aedcc2d42b622764e023cf882b6652e646b95671
+  family: qwen-coder
+  price_tier: free
+  precision: bf16
+  device: auto
+  max_new_tokens: 768
+  prompt_file: prompt.txt
