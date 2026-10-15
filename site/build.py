@@ -319,13 +319,13 @@ def landing(f: dict) -> str:
 
     strips = "".join(f'<figure class="reveal" style="margin-bottom:10px">{strip(x)}</figure>' for x in exps)
     tie_rows = "".join(
-        f'<tr><td><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
-        f'<td class="num">{e(x["top"]["arm"])}</td>'
-        f'<td class="num big">{x["n_tied"]}</td>'
-        f'<td class="num">{x["n_tied_paid"]}</td>'
-        f'<td class="num">{e(x["cheapest_tied"]["arm"]) if x["cheapest_tied"] else "—"}</td>'
-        f'<td class="num">{times(x["tied_ratio"]) if x["tied_ratio"] else "no paid arm ties"}</td>'
-        f'<td class="num">{e(x["dearest"]["arm"])} · {ordinal(x["dearest"]["rank"])} of {x["n_arms"]}</td></tr>'
+        f'<tr><td class="exp"><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
+        f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
+        f'<td class="num big" data-label="tied with 1st">{x["n_tied"]}</td>'
+        f'<td class="num" data-label="…of which paid">{x["n_tied_paid"]}</td>'
+        f'<td class="num" data-label="cheapest paid tie">{e(x["cheapest_tied"]["arm"]) if x["cheapest_tied"] else "—"}</td>'
+        f'<td class="num" data-label="cheaper than dearest">{times(x["tied_ratio"]) if x["tied_ratio"] else "no paid model ties"}</td>'
+        f'<td class="num" data-label="dearest model">{e(x["dearest"]["arm"])} · {ordinal(x["dearest"]["rank"])} of {x["n_arms"]}</td></tr>'
         for x in exps)
     cards = "".join(
         f'<a class="card reveal" href="experiments/{x["slug"]}.html"><div class="task">{e(x["task"])}</div>'
@@ -366,9 +366,10 @@ def landing(f: dict) -> str:
       <p>In {ties} of {len(exps)} experiments the leader <strong>cannot be told apart</strong> from a group of others — on summarisation, from {s["n_tied"]} of them. The cheapest paid model inside that group cost a fraction of the dearest: {times(s["tied_ratio"])} less on summarisation.</p>
       <p>The one clean winner is a 499 MB tagger fine-tuned on Few-NERD's own training data, separated from all {by["few-nerd"]["n_arms"] - 1} rivals.</p>
     </div>
-    <div class="chart scroll-x reveal"><table class="data">
-      <thead><tr><th>experiment</th><th>first</th><th>tied</th><th>paid</th><th>cheapest tied</th><th>cheaper than dearest</th><th>dearest</th></tr></thead>
-      <tbody>{tie_rows}</tbody></table></div>
+    <div class="chart scroll-x reveal"><table class="data ties">
+      <thead><tr><th>experiment</th><th>first place</th><th>tied with 1st</th><th>…of which paid</th><th>cheapest paid tie</th><th>cheaper than dearest</th><th>dearest model</th></tr></thead>
+      <tbody>{tie_rows}</tbody></table>
+      <figcaption><b>Tied with 1st</b>: other systems the leader cannot be statistically separated from (paired permutation test, Holm-corrected). <b>…of which paid</b>: how many of those are hosted models that bill per call; the rest are free. <b>Cheapest paid tie</b>: the cheapest of them, and how many times less it cost than the most expensive model in the field. <b>0 tied</b> means a clean winner: separated from every rival.</figcaption></div>
   </div>
 </div></section>
 

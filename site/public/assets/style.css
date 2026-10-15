@@ -287,3 +287,18 @@ section.method { padding-top: 64px; }
 @media (max-width: 760px) { .nav { gap: 14px; } }
 @media (max-width: 420px) { .nav { gap: 10px; font-size: 12px; } .brand { gap: 7px; font-size: 13px; } }
 .method-grid > *, .lc-explorer > *, .cols > *, .byo > *, .findings li > * { min-width: 0; }
+
+/* ── the ties table: cards on narrow screens ────────────── */
+.chart figcaption b { color: var(--ink-2); font-weight: 600; }
+@media (max-width: 700px) {
+  .chart.scroll-x:has(table.ties) { overflow-x: visible; }
+  table.data.ties thead { display: none; }
+  table.data.ties, table.data.ties tbody { display: block; }
+  table.data.ties tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 18px 0;
+    border-bottom: 1px solid var(--hair); }
+  table.data.ties td { display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; white-space: normal; }
+  table.data.ties td.exp { grid-column: 1 / -1; font-size: 17px; font-weight: 600; }
+  table.data.ties td[data-label]::before { content: attr(data-label); font: 500 10.5px/1.2 var(--mono);
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  table.data.ties td.big { font-size: 26px; }
+}
