@@ -1,0 +1,13 @@
+```python
+def count(lst):
+    """
+    Write a python function to count true booleans in the given list.
+    
+    :param lst: List of boolean values
+    :return: Count of true booleans in the list
+    """
+    return sum(lst)
+
+# Test cases
+assert count([True,False,True]) == 2
+```

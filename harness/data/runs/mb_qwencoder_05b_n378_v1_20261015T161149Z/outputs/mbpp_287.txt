@@ -1,0 +1,17 @@
+```python
+def square_Sum(n):
+    # Initialize the sum to 0
+    total_sum = 0
+    
+    # Loop through the first n even natural numbers
+    for i in range(2, n + 1, 2):
+        # Add the square of the current even number to the total sum
+        total_sum += i ** 2
+    
+    # Return the total sum
+    return total_sum
+
+# Test the function with the provided test case
+assert square_Sum(2) == 20
+```
+

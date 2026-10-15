@@ -1,0 +1,40 @@
+```python
+def text_match_two_three(text):
+    # Check if the string contains the 'a' character followed by two or three 'b' characters
+    return 'ab' in text
+
+# Test cases to verify the correctness of the function
+assert text_match_two_three("ac") == False
+assert text_match_two_three("abab") == True
+assert text_match_two_three("abcabc") == True
+assert text_match_two_three("ababa") == False
+assert text_match_two_three("ababab") == True
+assert text_match_two_three("abababa") == True
+assert text_match_two_three("abababab") == True
+assert text_match_two_three("ababababab") == True
+assert text_match_two_three("abababababab") == True
+assert text_match_two_three("ababababababab") == True
+assert text_match_two_three("abababababababab") == True
+assert text_match_two_three("ababababababababab") == True
+assert text_match_two_three("abababababababababab") == True
+assert text_match_two_three("ababababababababababab") == True
+assert text_match_two_three("abababababababababababab") == True
+assert text_match_two_three("ababababababababababababab") == True
+assert text_match_two_three("abababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababab") == True
+assert text_match_two_three("abababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababababababababababababababababab") == True
+assert text_match_two_three("ababab

@@ -1,0 +1,24 @@
+```python
+def power_base_sum(base, power):
+    # Initialize the sum of digits to 0
+    total_sum = 0
+    
+    # Loop through each digit in the base number
+    for digit in str(base):
+        # Convert the digit back to an integer and add it to the total sum
+        total_sum += int(digit)
+    
+    # Return the total sum of digits
+    return total_sum
+
+# Test cases to verify the correctness of the function
+assert power_base_sum(2, 100) == 115
+assert power_base_sum(3, 100) == 81
+assert power_base_sum(4, 100) == 64
+assert power_base_sum(5, 100) == 49
+assert power_base_sum(6, 100) == 36
+assert power_base_sum(7, 100) == 25
+assert power_base_sum(8, 100) == 16
+assert power_base_sum(9, 100) == 9
+```
+

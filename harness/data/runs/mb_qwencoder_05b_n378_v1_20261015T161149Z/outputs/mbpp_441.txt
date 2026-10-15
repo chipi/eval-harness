@@ -1,0 +1,20 @@
+```python
+def surfacearea_cube(side_length):
+    """
+    Calculate the surface area of a cube of a given size.
+
+    Args:
+    side_length (int): The length of one side of the cube.
+
+    Returns:
+    int: The surface area of the cube.
+    """
+    return 6 * side_length ** 2
+
+# Test cases to verify the correctness of the function
+assert surfacearea_cube(5) == 150
+assert surfacearea_cube(3) == 27
+assert surfacearea_cube(1) == 6
+assert surfacearea_cube(0) == 0
+```
+

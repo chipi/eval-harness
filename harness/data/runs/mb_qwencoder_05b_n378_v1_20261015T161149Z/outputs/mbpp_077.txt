@@ -1,0 +1,16 @@
+```python
+def is_Diff(n):
+    # Check if the number is divisible by 11
+    return n % 11 == 0
+
+# Test cases to verify the correctness of the function
+assert is_Diff(12345) == False
+assert is_Diff(11111) == True
+assert is_Diff(13579) == False
+assert is_Diff(24680) == True
+assert is_Diff(123456) == False
+assert is_Diff(111111) == True
+assert is_Diff(135790) == False
+assert is_Diff(246800) == True
+```
+

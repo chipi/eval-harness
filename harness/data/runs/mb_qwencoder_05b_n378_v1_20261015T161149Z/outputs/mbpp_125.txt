@@ -1,0 +1,27 @@
+```python
+def find_length(binary_string):
+    """
+    Write a function to find the maximum difference between the number of 0s and number of 1s in any sub-string of the given binary string.
+    
+    :param binary_string: A string representing a binary number.
+    :return: The maximum difference between the number of 0s and number of 1s in any sub-string.
+    """
+    max_diff = 0
+    current_diff = 0
+    
+    for char in binary_string:
+        if char == '0':
+            current_diff += 1
+        else:
+            current_diff -= 1
+        
+        # Update the maximum difference found so far
+        max_diff = max(max_diff, current_diff)
+    
+    return max_diff
+
+# Test cases
+assert find_length("11000010001") == 6
+assert find_length("11111111111") == 0
+assert find_length("00000000000") == 8
+assert find_length("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111

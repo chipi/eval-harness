@@ -1,0 +1,18 @@
+```python
+def last(arr, x):
+    # Initialize the last index to -1 (indicating no element found)
+    last_index = -1
+    
+    # Iterate through the array from the end to the beginning
+    for i in range(len(arr) - 1, -1, -1):
+        # Check if the current element matches the target value
+        if arr[i] == x:
+            # Update the last index if the current element is greater than the last found index
+            last_index = i
+    
+    return last_index
+
+# Test the function with the provided test case
+assert last([1,2,3],1) == 0
+```
+

@@ -56,6 +56,14 @@
      "report": "REPORT_RETRIEVAL.md", "calibration": "scifact", "site": true,
      "note": "the times above had the corpus embeddings cached; a dense arm's first run also embeds all 5,183 documents, 3 to 30 min each on a laptop CPU, cached afterwards",
      "fetch": [["--n", "200"], ["--n", "40", "--skip-corpus"]],
-     "datasets": ["scifact_200", "scifact_40"]}
+     "datasets": ["scifact_200", "scifact_40"]},
+    {"slug": "mbpp", "task": "Code", "bench": "MBPP+", "example": "code-mbpp-plus",
+     "extras": ["local"], "dataset": "mbppplus_378", "prefix": "mb_", "suffix": "_n378_v1",
+     "metric": "pass_plus", "metric_label": "pass@1, MBPP+ tests", "base": "runs",
+     "leader": "qwencoder_05b", "report": "../examples/code-mbpp-plus/README.md",
+     "calibration": "mbpp", "site": false,
+     "note": "in progress: 1 of 18 local arms measured (Qwen2.5-Coder-0.5B, 44.2 vs 43.7 published); the other local arms and the 24 hosted arms are not yet run",
+     "fetch": [[]],
+     "datasets": ["mbppplus_378"]}
   ]
 }

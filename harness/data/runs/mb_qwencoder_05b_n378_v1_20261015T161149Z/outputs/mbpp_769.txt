@@ -1,0 +1,18 @@
+```python
+def Diff(list1, list2):
+    """
+    Get the difference between two lists.
+
+    Args:
+    list1 (list): The first list.
+    list2 (list): The second list.
+
+    Returns:
+    list: A list containing elements that are in list1 but not in list2.
+    """
+    # Use set intersection to find common elements and then subtract from list1
+    return list(set(list1) - set(list2))
+
+# Test cases to verify the correctness of the function
+assert (Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == [10, 20, 30, 15]
+```

@@ -1,0 +1,21 @@
+```python
+def odd_length_sum(arr):
+    # Initialize the sum of odd length subarrays
+    total_sum = 0
+    
+    # Iterate over each possible length of the subarray
+    for i in range(len(arr)):
+        # Calculate the length of the current subarray
+        subarray_length = i + 1
+        
+        # Check if the length is odd
+        if subarray_length % 2 != 0:
+            # Add the sum of the first subarray to the total sum
+            total_sum += arr[i]
+    
+    return total_sum
+
+# Test the function with the provided test case
+assert odd_length_sum([1, 2, 4]) == 14
+```
+

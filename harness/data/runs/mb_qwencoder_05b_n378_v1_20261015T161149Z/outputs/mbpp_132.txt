@@ -1,0 +1,9 @@
+```python
+def tup_string(tup):
+    # Convert the tuple to a string using the join method
+    return ''.join(tup)
+
+# Test the function with the provided test case
+assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+```
+

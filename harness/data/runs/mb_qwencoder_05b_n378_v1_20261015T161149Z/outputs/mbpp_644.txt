@@ -1,0 +1,20 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverse an array upto a given position.
+
+    :param arr: List of integers
+    :param k: Position up to which the array should be reversed
+    :return: Reversed list up to the given position
+    """
+    # Reverse the first k elements of the array
+    arr[:k] = arr[k:][::-1]
+    return arr
+
+# Test cases
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]
+assert reverse_Array_Upto_K([10, 20, 30, 40, 50], 3) == [50, 40, 30, 20, 10]
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5], 1) == [5]
+assert reverse_Array_Upto_K([10, 20, 30, 40, 50], 0) == []
+```
+

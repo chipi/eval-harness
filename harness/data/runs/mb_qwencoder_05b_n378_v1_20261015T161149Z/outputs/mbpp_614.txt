@@ -1,0 +1,17 @@
+```python
+def cummulative_sum(tup_list):
+    # Initialize the sum variable to 0
+    total_sum = 0
+    
+    # Iterate over each tuple in the tuple list
+    for tup in tup_list:
+        # Add the value of each tuple to the total sum
+        total_sum += tup[0]
+    
+    # Return the total sum
+    return total_sum
+
+# Test the function with the provided test case
+assert cummulative_sum([(1, 3), (5, 6, 7), (2, 6)]) == 30
+```
+

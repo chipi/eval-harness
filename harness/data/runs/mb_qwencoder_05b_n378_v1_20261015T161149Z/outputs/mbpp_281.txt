@@ -1,0 +1,14 @@
+```python
+def all_unique(lst):
+    # Convert the list to a set to remove duplicates
+    unique_elements = set(lst)
+    # Check if the length of the set is equal to the original list
+    return len(unique_elements) == len(lst)
+
+# Test cases to verify the correctness of the function
+assert all_unique([1, 2, 3]) == True
+assert all_unique([1, 2, 3, 4]) == False
+assert all_unique(['a', 'b', 'c']) == True
+assert all_unique(['a', 'b', 'c', 'd']) == False
+```
+

@@ -1,0 +1,22 @@
+```python
+def max_Abs_Diff(arr):
+    # Initialize variables to store the minimum and maximum values found so far
+    min_val = arr[0]
+    max_val = arr[0]
+    
+    # Iterate through the array starting from the second element
+    for num in arr[1:]:
+        # Update the minimum value if the current number is smaller
+        if num < min_val:
+            min_val = num
+        # Update the maximum value if the current number is larger
+        if num > max_val:
+            max_val = num
+    
+    # Calculate the absolute difference between the maximum and minimum values
+    return abs(max_val - min_val)
+
+# Test the function with the provided test case
+assert max_Abs_Diff((2,1,5,3)) == 4
+```
+

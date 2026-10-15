@@ -1,0 +1,12 @@
+```python
+def tuple_intersection(tuple_list1, tuple_list2):
+    # Use set intersection to find common elements between the two tuples
+    result = tuple(set(tuple_list1) & set(tuple_list2))
+    return result
+
+# Test cases to verify the correctness of the function
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)], [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(4, 5), (3, 4), (5, 6)}
+assert tuple_intersection([(1, 2), (3, 4), (5, 6)], [(5, 4), (3, 4), (6, 7), (8, 9)]) == {(5, 4), (3, 4), (6, 7)}
+assert tuple_intersection([(10, 20), (30, 40), (50, 60)], [(5, 4), (3, 4), (6, 7), (8, 9)]) == {(5, 4), (3, 4), (6, 7)}
+assert tuple_intersection([(1, 2), (3, 4), (5, 6)], [(1, 2), (3, 4), (5, 6), (7, 8)]) == {(1, 2), (3, 4), (5, 6)}
+```

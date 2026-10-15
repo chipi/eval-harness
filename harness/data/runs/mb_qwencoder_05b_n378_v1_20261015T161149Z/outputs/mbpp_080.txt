@@ -1,0 +1,21 @@
+```python
+def tetrahedral_number(n):
+    """
+    Calculate the nth tetrahedral number.
+
+    Args:
+    n (int): The position of the tetrahedral number to calculate.
+
+    Returns:
+    int: The nth tetrahedral number.
+    """
+    return n * (n + 1) // 2
+
+# Test cases to verify the correctness of the function
+assert tetrahedral_number(5) == 35
+assert tetrahedral_number(6) == 84
+assert tetrahedral_number(7) == 140
+assert tetrahedral_number(8) == 210
+assert tetrahedral_number(9) == 285
+```
+

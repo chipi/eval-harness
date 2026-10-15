@@ -1,0 +1,24 @@
+```python
+def sum_Of_Subarray_Prod(nums):
+    # Initialize variables to store the result and the current product
+    result = 0
+    current_product = 1
+    
+    # Iterate through each number in the list
+    for num in nums:
+        # Multiply the current product by the number
+        current_product *= num
+        
+        # If the current product becomes zero, reset it to 1
+        if current_product == 0:
+            current_product = 1
+        
+        # Add the current product to the result
+        result += current_product
+    
+    return result
+
+# Test the function with the provided test case
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+```
+

@@ -220,6 +220,7 @@ the cache by hand and are a record, not a fingerprint.
 | `bert_base_ta` | [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | 438 MB | `fe417ad660b1` | BERT-base fine-tuned on AG News (TextAttack; card reports 0.9514) |
 | `bert_base_fy` (AG) | [`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | 438 MB | `c14e3b32fe1f` | BERT-base fine-tuned on AG News by a second author — a check on the first |
 | `bert_base_fy` (DBpedia) | [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14) | 438 MB | `1fbfc3deaa28` | BERT-base fine-tuned on DBpedia-14 |
+| `qwencoder_05b` | [`Qwen/Qwen2.5-Coder-0.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct) | 988 MB | `ea3f2471cf1b` | Code-instruct model, the smallest of the Qwen2.5-Coder family; writes MBPP+ functions, scored by execution. The other 17 open coder arms are listed in [`code-mbpp-plus`](../examples/code-mbpp-plus/README.md#arms) |
 
 **The last six need torch ≥ 2.6**, and ran on 2026-09-30 on Linux. Their `main` branches
 ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` below torch 2.6
@@ -378,6 +379,7 @@ and check before reusing any of them commercially.
 | [`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2) | MIT |
 | [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | Apache-2.0 |
 | [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) | Apache-2.0 |
+| [`Qwen/Qwen2.5-Coder-0.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct) | Apache-2.0 |
 | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | Apache-2.0 |
 | [`sshleifer/distilbart-cnn-12-6`](https://huggingface.co/sshleifer/distilbart-cnn-12-6) | Apache-2.0 |
 | [`sshleifer/distilbart-cnn-6-6`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | Apache-2.0 |

@@ -1,0 +1,22 @@
+```python
+def combinations_colors(colors, n):
+    """
+    Takes in a list and length n, and generates all combinations (with repetition) of the elements of the list and returns a list with a tuple for each combination.
+    
+    :param colors: List of strings representing colors
+    :param n: Length of the combinations
+    :return: List of tuples containing all combinations
+    """
+    result = []
+    for i in range(n):
+        for j in range(len(colors)):
+            result.append((colors[j],))
+    return result
+
+# Test cases
+assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+assert combinations_colors(["Red", "Green", "Blue"], 2) == [('Red', 'Green'), ('Red', 'Blue'), ('Green', 'Blue')]
+assert combinations_colors(["Red", "Green", "Blue"], 3) == [('Red', 'Green', 'Blue')]
+assert combinations_colors(["Red", "Green", "Blue"], 4) == [('Red', 'Green', 'Blue', 'Red'), ('Red', 'Green', 'Blue', 'Green'), ('Red', 'Green', 'Blue', 'Blue'), ('Green', 'Blue', 'Blue', 'Red'), ('Green', 'Blue', 'Blue', 'Green'), ('Green', 'Blue', 'Blue', 'Blue')]
+```
+

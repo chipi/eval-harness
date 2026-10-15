@@ -1,0 +1,24 @@
+```python
+def lateralsurface_cone(radius, height):
+    """
+    Calculate the lateral surface area of a cone given its radius and height.
+
+    Args:
+    radius (float): The radius of the base of the cone.
+    height (float): The height of the cone.
+
+    Returns:
+    float: The lateral surface area of the cone.
+    """
+    # Calculate the slant height of the cone
+    slant_height = radius * math.sqrt(height**2 + radius**2)
+    
+    # Calculate the lateral surface area using the formula: LSA = πr * slant_height
+    lateral_surface_area = math.pi * radius * slant_height
+    
+    return lateral_surface_area
+
+# Test cases to verify the correctness of the function
+assert lateralsurface_cone(5, 12) == 204.20352248333654
+```
+

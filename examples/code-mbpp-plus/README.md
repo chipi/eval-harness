@@ -117,7 +117,7 @@ calibration point for almost every arm, not just one per experiment:
 
 | model | published MBPP+ | measured here |
 |---|---|---|
-| Qwen2.5-Coder-0.5B-Instruct | 43.7 | |
+| Qwen2.5-Coder-0.5B-Instruct | 43.7 | **44.2** (base 51.3 vs 52.4 published; 4-core CPU, fp32) |
 | CodeLlama-7B-Instruct | 44.4 | |
 | CodeLlama-34B-Instruct | 50.5 | |
 | CodeLlama-13B-Instruct | 51.1 | |

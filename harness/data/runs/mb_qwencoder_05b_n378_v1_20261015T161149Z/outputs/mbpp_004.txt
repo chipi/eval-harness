@@ -1,0 +1,17 @@
+```python
+def heap_queue_largest(numbers, n):
+    # Create a max-heap from the list of numbers
+    max_heap = []
+    for num in numbers:
+        heapq.heappush(max_heap, -num)
+    
+    # Extract the n largest elements from the heap
+    largest_elements = [-heapq.heappop(max_heap) for _ in range(n)]
+    
+    # Return the largest n elements in descending order
+    return largest_elements[::-1]
+
+# Test the function with the provided test case
+assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+```
+

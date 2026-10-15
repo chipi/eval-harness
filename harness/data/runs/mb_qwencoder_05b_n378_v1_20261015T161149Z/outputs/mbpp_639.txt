@@ -1,0 +1,11 @@
+```python
+def sample_nam(names):
+    # Filter out names that start with a lowercase letter
+    filtered_names = [name for name in names if not name.startswith(name.lower())]
+    # Calculate the length of the remaining names
+    return len(filtered_names)
+
+# Test the function with the provided test case
+assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+```
+

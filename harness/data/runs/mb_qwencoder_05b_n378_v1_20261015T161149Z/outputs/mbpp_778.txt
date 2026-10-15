@@ -1,0 +1,22 @@
+```python
+def pack_consecutive_duplicates(lst):
+    """
+    Write a function to pack consecutive duplicates of a given list elements into sublists.
+    
+    :param lst: List of integers
+    :return: A list of lists containing consecutive duplicates
+    """
+    result = []
+    current_list = []
+    for num in lst:
+        if num == current_list[-1]:
+            current_list.append(num)
+        else:
+            result.append(current_list)
+            current_list = [num]
+    result.append(current_list)
+    return result
+
+# Test cases
+assert pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+```

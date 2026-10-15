@@ -122,6 +122,7 @@ what all five agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTH
 | `classification-ag-news` | 4-way topic label | one label, scored 0 or 1 | [`REPORT_CLASSIFICATION.md`](research/REPORT_CLASSIFICATION.md) |
 | `classification-dbpedia-14` | 14-way ontology label | same, but saturated | same report |
 | `ner-few-nerd` | named entities + types | **a set**, matched one-to-one | [`REPORT_NER.md`](research/REPORT_NER.md) |
+| `code-mbpp-plus` *(in progress)* | write a Python function that passes the tests | **source code**, scored by running it in a sandbox | [`README`](examples/code-mbpp-plus/README.md) |
 | `retrieval-scifact` | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | [`REPORT_RETRIEVAL.md`](research/REPORT_RETRIEVAL.md) |
 
 What they found, and what a plain leaderboard would have hidden:

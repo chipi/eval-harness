@@ -1,0 +1,23 @@
+```python
+def find(num1, num2):
+    """
+    Find the quotient of two numbers (rounded down to the nearest integer).
+
+    Args:
+    num1 (int): The first number.
+    num2 (int): The second number.
+
+    Returns:
+    int: The quotient of num1 divided by num2, rounded down to the nearest integer.
+    """
+    return num1 // num2
+
+# Test cases to verify the correctness of the function
+assert find(10, 3) == 3
+assert find(7, 4) == 1
+assert find(15, 5) == 3
+assert find(20, 6) == 3
+assert find(25, 7) == 4
+assert find(30, 8) == 3
+```
+

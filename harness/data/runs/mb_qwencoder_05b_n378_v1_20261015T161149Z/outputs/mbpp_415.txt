@@ -1,0 +1,23 @@
+```python
+def max_Product(arr):
+    # Initialize variables to store the maximum product and the minimum product
+    max_product = float('-inf')
+    min_product = float('inf')
+    
+    # Iterate through the array to find the maximum and minimum products
+    for num in arr:
+        if num > 0:
+            # If the current number is positive, update max_product and min_product
+            max_product = max(num, max_product * num)
+            min_product = min(num, min_product * num)
+        else:
+            # If the current number is negative, swap max_product and min_product
+            max_product, min_product = min_product, max_product
+    
+    # Return the pair with the highest product
+    return (max_product, min_product)
+
+# Test the function with the provided test case
+assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+```
+

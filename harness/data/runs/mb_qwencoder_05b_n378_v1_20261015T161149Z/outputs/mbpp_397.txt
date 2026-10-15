@@ -1,0 +1,11 @@
+```python
+def median_numbers(a, b, c):
+    # Sort the numbers to find the median
+    sorted_numbers = sorted([a, b, c])
+    # Return the middle element, which is the median
+    return sorted_numbers[len(sorted_numbers) // 2]
+
+# Test the function with the provided test case
+assert median_numbers(25, 55, 65) == 55.0
+```
+

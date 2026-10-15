@@ -1,0 +1,20 @@
+```python
+def max_length(lst):
+    # Initialize variables to store the maximum length and the corresponding list
+    max_length = 0
+    result = []
+    
+    # Iterate through each sublist in the input list
+    for sublist in lst:
+        # Check if the current sublist has more elements than the current maximum length
+        if len(sublist) > max_length:
+            # Update the maximum length and the corresponding list
+            max_length = len(sublist)
+            result = sublist
+    
+    return max_length, result
+
+# Test the function with the provided test case
+assert max_length([[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]]) == (3, [13, 15, 17])
+```
+

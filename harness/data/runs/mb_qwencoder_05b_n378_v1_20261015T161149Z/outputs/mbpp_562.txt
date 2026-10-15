@@ -1,0 +1,20 @@
+```python
+def Find_Max_Length(lists):
+    # Initialize variables to keep track of the maximum length and the current length
+    max_length = 0
+    current_length = 0
+    
+    # Iterate through each sublist in the list
+    for sublist in lists:
+        # Update the current length if the current sublist is longer
+        current_length = max(current_length, len(sublist))
+        
+        # Update the maximum length if the current length is greater than the previously recorded maximum
+        max_length = max(max_length, current_length)
+    
+    return max_length
+
+# Test the function with the provided test case
+assert Find_Max_Length([[1],[1,4],[5,6,7,8]]) == 4
+```
+

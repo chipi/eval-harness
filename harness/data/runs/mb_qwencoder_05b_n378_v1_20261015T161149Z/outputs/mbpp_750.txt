@@ -1,0 +1,17 @@
+```python
+def add_tuple(tuple1, tuple2):
+    """
+    Add the given tuple to the given list.
+
+    :param tuple1: The first tuple to be added.
+    :param tuple2: The second tuple to be added.
+    :return: A new list containing the elements of tuple1 followed by the elements of tuple2.
+    """
+    # Create a new list by concatenating tuple1 and tuple2
+    result = tuple1 + tuple2
+    return result
+
+# Test the function with the provided test case
+assert add_tuple([5, 6, 7], (9, 10)) == [5, 6, 7, 9, 10]
+```
+

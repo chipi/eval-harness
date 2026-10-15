@@ -1,0 +1,24 @@
+```python
+def odd_Equivalent(binary_str, n):
+    # Convert the binary string to an integer
+    num = int(binary_str, 2)
+    
+    # Calculate the number of rotations needed
+    rotations = n % len(binary_str)
+    
+    # If rotations are less than the length of the binary string, it's impossible to rotate
+    if rotations < len(binary_str):
+        # Calculate the number of odd values in the rotated string
+        odd_count = sum(1 for bit in str(num)[rotations:])
+        return odd_count
+    else:
+        # If rotations are equal to or greater than the length of the binary string, all numbers are odd
+        return 0
+
+# Test cases
+assert odd_Equivalent("011001", 6) == 3
+assert odd_Equivalent("111111", 4) == 0
+assert odd_Equivalent("000000", 5) == 0
+assert odd_Equivalent("111111", 7) == 3
+```
+

@@ -1,0 +1,26 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Count inversions in an array.
+
+    Args:
+    arr (list): The input array.
+
+    Returns:
+    int: The number of inversions in the array.
+    """
+    # Initialize the inversion counter
+    inv_count = 0
+
+    # Iterate through the array and compare elements with their neighbors
+    for i in range(len(arr)):
+        for j in range(i + 1, len(arr)):
+            if arr[i] > arr[j]:
+                inv_count += 1
+
+    return inv_count
+
+# Test the function with the provided test case
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+```
+

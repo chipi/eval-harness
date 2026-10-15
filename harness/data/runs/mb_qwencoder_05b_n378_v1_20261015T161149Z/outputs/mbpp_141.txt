@@ -1,0 +1,17 @@
+```python
+def pancake_sort(arr):
+    n = len(arr)
+    for i in range(n - 1):
+        # Find the index of the maximum element in the unsorted part of the array
+        max_index = i
+        for j in range(i + 1, n):
+            if arr[j] > arr[max_index]:
+                max_index = j
+        # Swap the maximum element with the first element of the unsorted part
+        arr[i], arr[max_index] = arr[max_index], arr[i]
+    return arr
+
+# Test the function with the provided test case
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+```
+

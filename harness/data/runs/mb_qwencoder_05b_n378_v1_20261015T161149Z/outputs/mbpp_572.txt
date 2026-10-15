@@ -1,0 +1,11 @@
+```python
+def two_unique_nums(nums):
+    # Use a set to store unique numbers
+    unique_nums = set(nums)
+    # Convert the set back to a list and return it
+    return list(unique_nums)
+
+# Test the function with the provided test case
+assert two_unique_nums([1, 2, 3, 2, 3, 4, 5]) == [1, 4, 5]
+```
+

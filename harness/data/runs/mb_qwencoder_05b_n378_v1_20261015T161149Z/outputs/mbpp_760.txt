@@ -1,0 +1,14 @@
+```python
+def unique_Element(numbers):
+    # Convert the list to a set to remove duplicates
+    unique_numbers = set(numbers)
+    # Check if the length of the set is 1, which means all elements were unique
+    return len(unique_numbers) == 1
+
+# Test cases to verify the correctness of the function
+assert unique_Element([1,1,1]) == True
+assert unique_Element([1,2,3,4,5]) == False
+assert unique_Element([10,20,30,40,50]) == True
+assert unique_Element([10,20,20,30,40]) == False
+```
+

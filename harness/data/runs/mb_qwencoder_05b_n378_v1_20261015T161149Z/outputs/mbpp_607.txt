@@ -1,0 +1,22 @@
+```python
+import re
+
+def find_literals(text, pattern):
+    # Use re.search to find all occurrences of the pattern in the text
+    matches = re.search(pattern, text)
+    
+    # Check if any matches were found
+    if matches:
+        # Return the matched substring, start index, and end index
+        return matches.group(), matches.start(), matches.end()
+    else:
+        # Return None if no matches are found
+        return None
+
+# Test cases to verify the correctness of the function
+assert find_literals('The quick brown fox jumps over the lazy dog.', 'fox') == ('fox', 16, 19)
+assert find_literals('Hello world!', 'world') == ('world', 0, 5)
+assert find_literals('Python programming is fun.', 'fun') == ('fun', 23, 27)
+assert find_literals('No match here.', 'match') == (None, -1, -1)
+```
+

@@ -1,0 +1,16 @@
+```python
+def add_lists(list1, tuple2):
+    """
+    Append the given list to the given tuples.
+
+    :param list1: List of integers
+    :param tuple2: Tuple of integers
+    :return: A new tuple containing all elements from both input lists
+    """
+    # Use the + operator to concatenate the two tuples
+    return tuple1 + tuple2
+
+# Test the function with the provided test case
+assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+```
+
