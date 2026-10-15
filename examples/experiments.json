@@ -56,6 +56,14 @@
      "report": "REPORT_RETRIEVAL.md", "calibration": "scifact", "site": true,
      "note": "the times above had the corpus embeddings cached; a dense arm's first run also embeds all 5,183 documents, 3 to 30 min each on a laptop CPU, cached afterwards",
      "fetch": [["--n", "200"], ["--n", "40", "--skip-corpus"]],
-     "datasets": ["scifact_200", "scifact_40"]}
+     "datasets": ["scifact_200", "scifact_40"]},
+    {"slug": "summeval", "task": "Judging", "bench": "SummEval",
+     "example": "summeval-judging", "extras": ["local"],
+     "dataset": "summeval_100", "prefix": "se_", "suffix": "_n100_v1",
+     "metric": "tau", "metric_label": "Kendall tau vs experts", "base": "runs", "leader": "rouge2",
+     "report": "../examples/summeval-judging/README.md", "calibration": "summeval", "site": false,
+     "note": "in progress: the free arms are measured; the 24 hosted judges are not yet run",
+     "fetch": [[]],
+     "datasets": ["summeval_100"]}
   ]
 }

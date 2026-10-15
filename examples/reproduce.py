@@ -52,7 +52,7 @@ sys.path.insert(0, str(HERE / "_shared"))
 sys.path.insert(0, str(HARNESS / "scripts"))
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
-BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k"}
+BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k", "length"}
 HOSTED_PROVIDERS = {"litellm", "rerank"}
 
 
