@@ -2,6 +2,10 @@
 
 *A research note for planning, not a result: what new experiments would add a genuinely different angle (answer shape, metric family, harness capability), each with a cleanly licensed dataset, CPU-runnable local models and a published calibration number. Researched 2026-10-15; licences, model ids and sizes were checked on the source pages that day and should be re-checked before building.*
 
+> **Decision (2026-10-15).** This repository builds **(1) SummEval judging** and **(3) code
+> generation scored by execution (MBPP+)**. **Speech-to-text (2) is out of scope here** and
+> will not be built in this repository. The confidence add-on (5) stays a candidate.
+
 
 *I checked every licence, model id and size against the HF Hub API or the source page on that date. The prices behind the cost estimates come from OpenRouter's live `/api/v1/models` for the 23 hosted arms in `examples/models.json` that are still listed. `qwen/qwen3-max` is no longer listed, so I estimated its price.*
 
