@@ -2,7 +2,7 @@
 
 # How it was measured, and how to check it.
 
-The reference behind [the findings](https://chipi.github.io/eval-harness/): what each
+The reference behind [the harness](https://chipi.github.io/eval-harness/) and [its experiments](https://chipi.github.io/eval-harness/experiments.html): what each
 experiment measured, every metric, model and test with its source, how the harness
 works — and how to rerun all of it yourself.
 
@@ -35,4 +35,4 @@ The experiment reports live in the repository's
 the lab notebook — handovers, review rounds, the journal, every correction — in
 [`research/internal/`](https://github.com/chipi/eval-harness/tree/main/research/internal).
 
-[← Back to the findings](https://chipi.github.io/eval-harness/){ .eh-back }
+[← Back to the site](https://chipi.github.io/eval-harness/){ .eh-back }

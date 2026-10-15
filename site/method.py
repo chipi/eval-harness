@@ -247,7 +247,7 @@ def method_page(H, f: dict) -> str:
       <li>More, curated by Chip Huyen: <a href="https://huyenchip.com/mlops/">huyenchip.com/mlops</a></li>
     </ul>
   </div>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="index.html#findings">Back to the findings</a></div>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
 </div></section>
 <script>
 (function(){{const nodes=document.querySelectorAll('.method-aside .lc-node');
@@ -420,7 +420,7 @@ show('dataset');}})();
 
 
 # ── borrowed by the landing and experiment pages ────────────────────────────
-def landing_teaser(H, f: dict) -> str:
+def landing_teaser(H, f: dict, num: str = "03") -> str:
     chs = chapters(H, f)
     habits = "".join(
         f'<a class="habit-card reveal" href="method.html#{c["id"]}"><span class="n">{i:02d}</span>'
@@ -428,8 +428,8 @@ def landing_teaser(H, f: dict) -> str:
         for i, c in enumerate(chs, 1))
     return f"""
 <section class="block" id="method"><div class="wrap">
-  <div class="eyebrow"><span class="num">06</span>The method</div>
-  <h2>These answers took a method, not a model.</h2>
+  <div class="eyebrow"><span class="num">{num}</span>The method</div>
+  <h2>The harness enforces a method.</h2>
   <p class="lede">Nothing here needed special access or a big budget. It took six habits — each learned by getting something wrong first — and a harness that enforces them. They work on any problem you can put into a dataset. The framing builds on Chip Huyen's <i>AI Engineering</i> and <i>Designing Machine Learning Systems</i>.</p>
   <div class="habits">{habits}</div>
   <div class="btns"><a class="btn primary" href="method.html">Read the method</a><a class="btn" href="use.html">Use it on your problem</a></div>

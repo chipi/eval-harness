@@ -10,7 +10,8 @@ published literature.
 
 | you want to | go to |
 |---|---|
-| **read what was found** | **[chipi.github.io/eval-harness](https://chipi.github.io/eval-harness/)** — the findings, for people; generated from the runs in this repository, so every number on it is checked |
+| **see what it is** | **[chipi.github.io/eval-harness](https://chipi.github.io/eval-harness/)** — the harness, for people: what it does, how to start, and what it found |
+| **read what was found** | [**The experiments**](https://chipi.github.io/eval-harness/experiments.html) — 24 LLMs, fine-tunes and baselines on five benchmarks; generated from the runs in this repository, so every number on it is checked |
 | **learn the method** | [**The method**](https://chipi.github.io/eval-harness/method.html) — six habits for measuring AI systems, as these experiments taught them — and [**Use it on your problem**](https://chipi.github.io/eval-harness/use.html) |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md) — five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
 | **measure your own system** | [**Use the harness**](docs/GUIDE.md) — your first evaluation end to end in twenty minutes, offline: freeze a dataset, build a golden reference set, measure, compare, promote. [What the harness is](#what-it-is-for), below |

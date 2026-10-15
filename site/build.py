@@ -408,7 +408,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> st
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><i></i><span>eval-harness</span></a>
-  <nav class="nav">{nav("findings", f"{up}index.html", "Findings")}{nav("method", f"{up}method.html", "Method")}{nav("use", f"{up}use.html", "Use it")}{nav("experiments", f"{up}index.html#experiments", "Experiments", "hide-sm")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -430,6 +430,88 @@ H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, REPO=RE
 
 # ── the landing page ────────────────────────────────────────────────────────
 SYN = "research/REPORT_SYNTHESIS.md"
+
+
+def home(f: dict) -> str:
+    """The front door: the harness -- what it is, what it asks, how to start -- and then
+    what it found when pointed at 24 LLMs, which is the reason to believe it."""
+    exps = f["experiments"]
+    ties = sum(x["n_tied"] > 0 for x in exps)
+    cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
+    hosted_n = max(x["n_hosted"] for x in exps)
+    ideas = [
+        ("01", "A frozen dataset",
+         "Items are hashed and every run records the hash. Change the data and you get a "
+         "different id — not a silently different number."),
+        ("02", "A fingerprint per run",
+         "The model behind the alias, the prompt, the scoring code, library versions, the "
+         "commit. So \u201cwe changed one thing\u201d is checkable, not asserted."),
+        ("03", "A leaderboard that argues with itself",
+         "Before it prints an order it tests every pair at once — a Friedman permutation test "
+         "and a Nemenyi critical difference — and says plainly when nothing is distinguishable."),
+        ("04", "Re-scoring for $0",
+         "Scores are recomputed from stored outputs. Checking a metric should never cost "
+         "another sweep of paid calls."),
+    ]
+    idea_html = "".join(
+        f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
+        for n, t, d in ideas)
+    cards = "".join(
+        f'<a class="card reveal" href="experiments/{x["slug"]}.html"><div class="task">{e(x["task"])}</div>'
+        f'<h3>{e(x["bench"])}</h3><p>{e(CARD[x["slug"]])}</p>'
+        f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} systems</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
+        for x in exps)
+    body = f"""
+<section class="hero"><div class="wrap">
+  <div class="kicker"><b>eval-harness</b> · open source · MIT</div>
+  <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
+  <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
+</div></section>
+
+<section class="block" id="what"><div class="wrap">
+  <div class="eyebrow"><span class="num">01</span>What it does</div>
+  <h2>Four ideas, one adapter file.</h2>
+  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with four functions.</p>
+  <div class="habits">{idea_html}</div>
+  <div class="cols" style="margin-top:48px">
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop in a minute.</h3><p>The demo runs on bundled synthetic data — no API key, no network. It freezes a dataset, runs an arm three times and checks the record; <code>make leaderboard</code> then shows the ranking and whether it is real.</p>
+      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Your first evaluation — the guide</a></div></div>
+<pre class="term"><span class="p">$ </span>git clone {REPO}
+<span class="p">$ </span>cd eval-harness/harness
+<span class="p">$ </span>make install
+<span class="p">$ </span>make demo
+<span class="p">$ </span>make leaderboard
+<span class="c"># then, on your own system</span>
+<span class="p">$ </span>make dataset-create DATASET_ID=my_v1
+<span class="p">$ </span>make experiment-run CONFIG=data/configs/arm_a.yaml
+<span class="p">$ </span>make leaderboard DATASET_ID=my_v1</pre>
+  </div>
+</div></section>
+
+<section class="block" id="proof"><div class="wrap">
+  <div class="eyebrow"><span class="num">02</span>Pointed at {hosted_n} LLMs</div>
+  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
+  <p class="lede">To show the harness doing something real, it measured {hosted_n} frontier and open-weight LLMs, small fine-tuned models and baselines on five public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
+  <div class="stats">
+    <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
+    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
+    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first or tied for first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers</div></div>
+  </div>
+  <div class="cards" style="margin-top:48px">{cards}</div>
+  <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
+</div></section>
+
+{method.landing_teaser(H, f, "03")}
+<section class="block"><div class="wrap">
+  <p class="note"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+</div></section>
+"""
+    return page("eval-harness — is the ranking real, or a lucky sample?",
+                "A drop-in harness for evaluating AI systems on your own data: frozen datasets, "
+                "fingerprinted runs, and significance tests before any leaderboard is printed — "
+                "shown on 24 LLMs across five benchmarks.", body, here="harness")
 
 
 def landing(f: dict) -> str:
@@ -462,7 +544,7 @@ def landing(f: dict) -> str:
 
     body = f"""
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>An open evaluation</b> · {len(exps)} tasks · {f["total_arms"]} measured runs · {money(f["total_billed"])} billed</div>
+  <div class="kicker"><b>The experiments</b> · {len(exps)} tasks · {f["total_arms"]} measured runs · {money(f["total_billed"])} billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
   <p class="dek">{hosted_n} frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through five public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
@@ -531,9 +613,8 @@ def landing(f: dict) -> str:
   <div class="cards">{cards}</div>
 </div></section>
 
-{method.landing_teaser(H, f)}
 <section class="block" id="reproduce"><div class="wrap">
-  <div class="eyebrow"><span class="num">07</span>Reproduce it</div>
+  <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Built to be checked — by you.</h2>
   <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Five levels of checking, each optional, each a few commands.</p>
   <div class="cols">
@@ -565,7 +646,7 @@ def landing(f: dict) -> str:
 """
     return page("The most expensive model never won — eval-harness",
                 "24 LLMs, small fine-tuned models and baselines on five public benchmarks, "
-                "with significance tests, billed costs and calibration against the literature.", body, here="findings")
+                "with significance tests, billed costs and calibration against the literature.", body, here="experiments")
 
 
 CARD = {
@@ -679,7 +760,7 @@ def experiment_page(x: dict, f: dict) -> str:
   <h1 style="max-width:16ch">{e(HEADLINE[x["slug"]])}</h1>
   <p class="dek">{e(CARD[x["slug"]])}</p>
   <div class="facts">{facts_html}</div>
-  <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../index.html#experiments">All experiments</a></div>
+  <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
@@ -747,7 +828,8 @@ def build(out: Path) -> None:
         shutil.rmtree(out)
     (out / "experiments").mkdir(parents=True)
     shutil.copytree(HERE / "assets", out / "assets")
-    (out / "index.html").write_text(landing(f), encoding="utf-8")
+    (out / "index.html").write_text(home(f), encoding="utf-8")
+    (out / "experiments.html").write_text(landing(f), encoding="utf-8")
     (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
     (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
     for x in f["experiments"]:

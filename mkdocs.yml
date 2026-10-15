@@ -10,7 +10,7 @@ site_name: eval-harness · documentation
 site_url: https://chipi.github.io/eval-harness/docs/
 site_description: Protocol, reference and harness documentation for eval-harness.
 repo_url: https://github.com/chipi/eval-harness
-copyright: eval-harness · every number on the findings site is checked against the runs in this repository
+copyright: eval-harness · every number on the site is checked against the runs in this repository
 repo_name: chipi/eval-harness
 edit_uri: edit/main/docs/
 docs_dir: docs
@@ -29,7 +29,8 @@ hooks:
 
 nav:
   - Home: index.md
-  - The findings ↗: https://chipi.github.io/eval-harness/
+  - The harness ↗: https://chipi.github.io/eval-harness/
+  - The experiments ↗: https://chipi.github.io/eval-harness/experiments.html
   - Use the harness: GUIDE.md
   - Reproduce it: REPRODUCE.md
   - Protocol: PROTOCOL.md

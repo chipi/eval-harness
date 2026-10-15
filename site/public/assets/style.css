@@ -152,7 +152,7 @@ table.data td.big { font: 700 22px/1 var(--display); letter-spacing: -0.02em; }
 .findings p { margin: 0; color: var(--ink-2); }
 
 /* ── experiment cards ──────────────────────────────────── */
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
 .card { display: flex; flex-direction: column; gap: 14px; padding: 26px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); text-decoration: none; transition: border-color .15s, transform .15s; min-height: 280px; }
 .card:hover { border-color: var(--accent); transform: translateY(-2px); color: inherit; }
 .card .task { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -339,4 +339,5 @@ section.method { padding-top: 64px; }
   .lesson .btn { margin-top: 20px; }
 }
 @media (max-width: 900px) { .method-aside { display: none; } }
-@media (max-width: 340px) { .brand span { display: none; } }
+@media (max-width: 400px) { .brand span { display: none; } }
+@media (max-width: 340px) { .nav { font-size: 11px; } .nav a { padding-left: 2px; padding-right: 2px; } .theme { width: 30px; height: 30px; } }
