@@ -1,0 +1,17 @@
+# Yi-Coder-1.5B-Chat, local, greedy, EvalPlus's chat prompt and response prefix.
+# The Qwen2.5-Coder technical report (arXiv 2409.12186, Table 16) publishes MBPP+ 57.7
+# for this model under the same EvalPlus setup, so it is a calibration point.
+# Licence: Apache-2.0. Safetensors, pinned revision, no remote code.
+# Small enough for a 4-core CPU in fp32.
+config_id: mb_yicoder_15b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: local
+  model: 01-ai/Yi-Coder-1.5B-Chat
+  revision: 92fdd1b2f1539ac990e7f4a921db5601da2f0299
+  family: yi-coder
+  price_tier: free
+  precision: fp32
+  max_new_tokens: 768
+  prompt_file: prompt.txt
