@@ -1,0 +1,9 @@
+# The floor: seeded random 1-5 scores. Expected tau near 0.
+config_id: se_random_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: random
+  seed: 20261015
+  family: baseline
+  price_tier: free

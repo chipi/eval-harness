@@ -1,0 +1,11 @@
+# ROUGE-1 F1 against each of the 11 human references, averaged. The calibration arm:
+# G-Eval (Liu et al. 2023, Table 1) reports rho 0.192 / tau 0.150 for this metric on these
+# 100 articles, averaged over the four dimensions.
+config_id: se_rouge1_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: rouge
+  metric: rouge1
+  family: rouge
+  price_tier: free

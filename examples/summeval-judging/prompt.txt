@@ -1,0 +1,9 @@
+You will be shown a news article and 16 numbered summaries of it. Rate every summary on four dimensions, each on a scale of 1 (worst) to 5 (best):
+
+- coherence: the collective quality of all sentences. A good summary is well-structured and well-organised, building from sentence to sentence into a coherent body of information about the topic, not a heap of related facts.
+- consistency: factual alignment with the article. A consistent summary contains only statements that are entailed by the article; penalise any hallucinated or contradicted fact.
+- fluency: the quality of the individual sentences: grammatical, free of formatting problems, capitalisation errors and obvious mistakes, and easy to read.
+- relevance: selection of the important content from the article. A relevant summary includes only the important information and contains no redundancy or excess detail.
+
+Rate each summary on its own merits; the summaries may share mistakes. Output only a JSON object with exactly these four keys, each a list of 16 integers in summary order, for example:
+{"coherence": [3, 4, ...], "consistency": [5, 2, ...], "fluency": [4, 4, ...], "relevance": [2, 3, ...]}
