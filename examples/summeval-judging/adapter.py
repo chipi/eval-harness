@@ -225,6 +225,9 @@ def _summarisation_scorer() -> Any:
         path = HERE.parent / "summarization-cnn-dailymail" / "adapter.py"
         spec = importlib.util.spec_from_file_location("_summ_adapter", path)
         mod = importlib.util.module_from_spec(spec)
+        # Registered before it runs: its @dataclass looks itself up in sys.modules, and a
+        # module loaded by path is not there unless put there.
+        sys.modules["_summ_adapter"] = mod
         spec.loader.exec_module(mod)  # type: ignore[union-attr]
         _SUMM = mod
     return _SUMM
