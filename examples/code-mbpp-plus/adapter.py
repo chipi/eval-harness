@@ -26,7 +26,8 @@ SCORING, IN ORDER
             block; else the whole reply. `code_found` records whether a block was fenced.
   sanitise  keep imports, functions, classes and assignments at the top level; drop the
             rest (example calls, prints, `if __name__` blocks), as EvalPlus does. A reply
-            that is not valid Python scores 0 with `syntax_ok` 0.
+            cut off mid-line keeps the complete code before the break. A reply with no
+            runnable code scores 0 with `syntax_ok` 0.
   execute   base tests, then -- only if base passes -- plus tests, each in a fresh
             sandboxed process. `pass_plus` therefore means base AND plus, EvalPlus's
             definition. A timeout scores 0 and is recorded in `timeout`, so a slow machine
@@ -298,17 +299,34 @@ _KEEP = (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.AsyncFunctionDef, ast.
          ast.Assign, ast.AnnAssign)
 
 
+def _parse_prefix(code: str) -> Optional[ast.Module]:
+    """The longest leading run of lines that parses. A reply cut off at the token limit
+    (a small model writing test asserts until it runs out) usually holds a complete,
+    correct function followed by a broken last line; EvalPlus's sanitiser keeps the
+    function, so this does too, by cutting at each syntax error and reparsing."""
+    lines = code.splitlines()
+    while lines:
+        try:
+            return ast.parse("\n".join(lines))
+        except SyntaxError as exc:
+            cut = (exc.lineno or len(lines)) - 1
+            lines = lines[:min(cut, len(lines) - 1)]
+        except ValueError:  # null bytes
+            return None
+    return None
+
+
 def sanitise(code: str) -> Optional[str]:
     """Top-level imports, functions, classes and assignments only, as EvalPlus's sanitiser
-    keeps; None when the code is not valid Python. Example calls and prints a model adds
-    after its function are dropped: they are not the answer, and an example with a wrong
-    expected value would otherwise fail a correct function."""
-    try:
-        tree = ast.parse(code)
-    except (SyntaxError, ValueError):
+    keeps; None when no prefix of the code is valid Python with something left to run.
+    Example calls and prints a model adds after its function are dropped: they are not the
+    answer, and an example with a wrong expected value would otherwise fail a correct
+    function."""
+    tree = _parse_prefix(code)
+    if tree is None:
         return None
     tree.body = [n for n in tree.body if isinstance(n, _KEEP)]
-    return ast.unparse(tree)
+    return ast.unparse(tree) if tree.body else None
 
 
 # ── the scorer ───────────────────────────────────────────────────────────────
@@ -339,7 +357,7 @@ def score(output: str, reference: Optional[str], source: Optional[str] = None) -
 
 
 def scorer_sha256() -> str:
-    return code_digest(score, extract_code, sanitise, sandbox.execute, sandbox.backend,
+    return code_digest(score, extract_code, sanitise, _parse_prefix, sandbox.execute, sandbox.backend,
                        sandbox._limits,
                        consts={"_FENCE": _FENCE, "_KEEP": [k.__name__ for k in _KEEP],
                                "BASE_TIMEOUT_S": BASE_TIMEOUT_S, "PLUS_TIMEOUT_S": PLUS_TIMEOUT_S,
