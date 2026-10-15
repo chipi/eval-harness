@@ -406,14 +406,8 @@ def author(place: str) -> str:
 """
 
 
-# The project mark: an estimate with its interval, held in a harness (site/assets/icon.svg).
-# Inline here so its colours follow the theme: the tile is the accent, the marks its ink.
-MARK = ('<svg class="mark" viewBox="0 0 64 64" aria-hidden="true">'
-        '<rect width="64" height="64" rx="14" class="mark-tile"/>'
-        '<g class="mark-ink" fill="none" stroke-linecap="round">'
-        '<path d="M20 14H12V50H20M44 14H52V50H44" stroke-width="6" stroke-linejoin="round"/>'
-        '<path d="M22 32H42" stroke-width="5"/></g>'
-        '<circle cx="32" cy="32" r="7" class="mark-dot"/></svg>')
+# The project mark (site/assets/icon.svg): an estimate with its interval, held in a harness.
+# The same file in both themes -- lime tile, black marks -- exactly as designed.
 
 
 def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> str:
@@ -447,7 +441,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "") -> st
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="brand" href="{up}index.html" aria-label="eval-harness home">{MARK}<span>eval-harness</span></a>
+  <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
