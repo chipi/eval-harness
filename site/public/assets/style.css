@@ -222,6 +222,8 @@ section.method { padding-top: 64px; }
 .method-aside .sticky { position: sticky; top: 88px; }
 .aside-note { font-size: 13px; color: var(--muted); margin-top: 14px; max-width: 30ch; }
 .chapter { padding: 56px 0 72px; border-top: 1px solid var(--hair); scroll-margin-top: 72px; }
+/* Sections are linked to directly (posts, articles); keep the heading clear of the 56px sticky bar. */
+section[id] { scroll-margin-top: 72px; }
 .chapter:first-child { border-top: 0; padding-top: 8px; }
 .chapter h2 { font-size: clamp(34px, 4.6vw, 60px); line-height: 1; font-weight: 800; margin: 18px 0 26px; max-width: 18ch; }
 .habit { margin: 28px 0 22px; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--surface); font-size: 18px; line-height: 1.5; max-width: 66ch; }
