@@ -74,12 +74,32 @@ gold (checked by a person) or silver (written by a model). The refusals are the 
 
 ## Try it in a minute
 
+You need `git`, `make` and Python ≥ 3.11.
+
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness/harness
-make install
+make install       # creates harness/.venv; the make targets use it from then on
 make demo          # the whole loop on bundled synthetic data: no API key, no network
 make leaderboard   # the ranking, and whether it is real
 ```
+
+### Setup, in full
+
+There are three separate environments. Install only the ones you need.
+
+| for | install once | then |
+| --- | --- | --- |
+| **the harness**: the demo, your own evals, `make verify` | `make -C harness install` | `make verify` from the repository root |
+| **the five worked examples** | [uv](https://docs.astral.sh/uv/). Each example gets its own uv environment, so its pinned libraries cannot disturb another's | `make data EXP=<name>` runs `uv sync` and fetches the data ([docs/REPRODUCE.md](docs/REPRODUCE.md)) |
+| **the documentation site** | `harness/.venv/bin/pip install -r site/requirements-docs.txt` (MkDocs + Material, into the harness venv) | `source harness/.venv/bin/activate && make docs` writes `build/docs-site/` |
+
+`make docs` is the exception: it calls `mkdocs` from your `PATH`, which is why the venv
+has to be activated first.
+
+The demo, `make verify` and the local arms need no API key. To run hosted LLM arms, copy
+`harness/.env.example` to `harness/.env`, set `OPENROUTER_API_KEY` (or the LiteLLM or
+direct-provider keys listed there), and set `EVAL_MAX_COST_USD` to cap the spend. Then
+check with `make -C harness env-check`.
 
 ## The loop, on your system
 
