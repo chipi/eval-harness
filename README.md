@@ -3,8 +3,8 @@
 # eval-harness
 
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)
-[![site](https://github.com/chipi/eval-harness/actions/workflows/pages.yml/badge.svg?branch=main)](https://chipi.github.io/eval-harness/)
-[![docs](https://img.shields.io/badge/docs-chipi.github.io-c8ff3d)](https://chipi.github.io/eval-harness/docs/)
+[![site](https://github.com/chipi/eval-harness/actions/workflows/pages.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
+[![docs](https://img.shields.io/badge/docs-evals.humancopilot.eu-c8ff3d)](https://evals.humancopilot.eu/docs/)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](harness/README.md)
 [![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-minute)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -42,12 +42,12 @@ It was built to answer four questions anyone building with AI ends up asking:
 
 | you want to | go to |
 |---|---|
-| **see what it is** | **[chipi.github.io/eval-harness](https://chipi.github.io/eval-harness/)**: the harness, what it does, and what it found |
-| **measure your own system** | [**Use the harness**](docs/GUIDE.md): your first evaluation end to end in twenty minutes, offline. Freeze a dataset, build a golden reference set, measure, compare, promote. Or [**Use it on your problem**](https://chipi.github.io/eval-harness/use.html), the patterns and a walkthrough |
-| **learn the method** | [**The method**](https://chipi.github.io/eval-harness/method.html): six habits for measuring AI systems, as these experiments taught them |
-| **read what it found** | [**The experiments**](https://chipi.github.io/eval-harness/experiments.html): 24 LLMs, fine-tunes and baselines on five benchmarks, generated from the runs in this repository, so every number on it is checked |
+| **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
+| **measure your own system** | [**Use the harness**](docs/GUIDE.md): your first evaluation end to end in twenty minutes, offline. Freeze a dataset, build a golden reference set, measure, compare, promote. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns and a walkthrough |
+| **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
+| **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on five benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
-| **read the full documentation** | [chipi.github.io/eval-harness/docs](https://chipi.github.io/eval-harness/docs/): guide, concepts, runbook, integration, protocol, reference |
+| **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
 
 ## What it is
@@ -133,7 +133,7 @@ Each needs `DATASET_ID`; without it the Makefile falls back to the demo dataset,
 
 Five tasks, four metric shapes, one harness. Each experiment exists because it breaks
 something the previous one did not, and each ships a download recipe rather than a corpus.
-On the site: **[the experiments](https://chipi.github.io/eval-harness/experiments.html)**;
+On the site: **[the experiments](https://evals.humancopilot.eu/experiments.html)**;
 what all five agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)**.
 
 | Example | Task | Shape of the answer | Report |

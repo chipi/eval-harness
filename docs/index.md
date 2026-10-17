@@ -2,9 +2,9 @@
 
 # The harness, the method, and the evidence.
 
-How to use [eval-harness](https://chipi.github.io/eval-harness/) on your own system, the
+How to use [eval-harness](https://evals.humancopilot.eu/) on your own system, the
 ideas it is built on, and the reference behind
-[its five experiments](https://chipi.github.io/eval-harness/experiments.html): what each
+[its five experiments](https://evals.humancopilot.eu/experiments.html): what each
 measured, every metric, model and test with its source, and how to rerun all of it yourself.
 
 <div class="eh-kicker">The harness</div>
@@ -52,4 +52,4 @@ The experiment reports live in the repository's
 the lab notebook — handovers, review rounds, the journal, every correction — in
 [`research/internal/`](https://github.com/chipi/eval-harness/tree/main/research/internal).
 
-[← Back to the site](https://chipi.github.io/eval-harness/){ .eh-back }
+[← Back to the site](https://evals.humancopilot.eu/){ .eh-back }

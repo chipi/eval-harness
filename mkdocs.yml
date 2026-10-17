@@ -7,7 +7,7 @@
 # leave the documentation -- to the reports, the harness code, a PDF or a JSON capture --
 # are rewritten to GitHub, so nothing third-party is republished and nothing breaks.
 site_name: eval-harness · documentation
-site_url: https://chipi.github.io/eval-harness/docs/
+site_url: https://evals.humancopilot.eu/docs/
 site_description: Protocol, reference and harness documentation for eval-harness.
 repo_url: https://github.com/chipi/eval-harness
 copyright: eval-harness · every number on the site is checked against the runs in this repository · built by Marko Dragoljevic
@@ -29,8 +29,8 @@ hooks:
 
 nav:
   - Home: index.md
-  - The harness ↗: https://chipi.github.io/eval-harness/
-  - The experiments ↗: https://chipi.github.io/eval-harness/experiments.html
+  - The harness ↗: https://evals.humancopilot.eu/
+  - The experiments ↗: https://evals.humancopilot.eu/experiments.html
   - Use the harness: GUIDE.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
@@ -77,7 +77,7 @@ extra_css:
 # The author's sites in the docs footer, UTM-tagged so humancopilot.eu sees where a visit
 # came from (the findings site also tags each click with an Umami event).
 extra:
-  homepage: https://chipi.github.io/eval-harness/
+  homepage: https://evals.humancopilot.eu/
   social:
     - icon: fontawesome/solid/compass
       link: https://www.humancopilot.eu/?utm_source=eval-harness&utm_medium=docs&utm_campaign=launch&utm_content=footer
