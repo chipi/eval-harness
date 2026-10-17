@@ -230,7 +230,7 @@ def method_page(H, f: dict) -> str:
   <div class="chapters">{''.join(body_ch)}</div>
 </div></section>
 
-<section class="block"><div class="wrap">
+<section class="block" id="influences"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>Standing on</div>
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
@@ -398,7 +398,7 @@ def use_page(H, f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block"><div class="wrap">
+<section class="block" id="doors"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>Two doors</div>
   <h2>Rerun ours, or build yours.</h2>
   <div class="cards doors">

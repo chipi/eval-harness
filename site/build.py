@@ -642,7 +642,7 @@ def landing(f: dict) -> str:
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
 
-<section class="block"><div class="wrap">
+<section class="block" id="ties"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Ties</div>
   <h2>The top is a crowd, not a podium.</h2>
   <div>
@@ -658,7 +658,7 @@ def landing(f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block"><div class="wrap">
+<section class="block" id="fine-tuning"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
@@ -830,7 +830,7 @@ def experiment_page(x: dict, f: dict) -> str:
     lesson = method.experiment_lesson(H, x)
     extra = ""
     if x["slug"] == "summarization":
-        extra = f"""<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
+        extra = f"""<section class="block" id="dailymail"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
 <h2>Does it hold on DailyMail?</h2><div class="cols"><div class="prose"><p>The committed sample is all CNN. On 200 DailyMail articles drawn at random, the five local summarisers keep every verdict among themselves. The hosted models were not re-run there.</p></div>
 <figure class="chart">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}</figure></div></div></section>"""
     body = f"""
@@ -841,23 +841,23 @@ def experiment_page(x: dict, f: dict) -> str:
   <div class="facts">{facts_html}</div>
   <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
+<section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
   <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
 </div></section>
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
+<section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
   <div class="chart">{legend(band=False, reading="better: up · cheaper: left", baseline=False)}{both(scatter(x), scatter(x, compact=True))}<figcaption>Billed cost per 1,000 items, read from the provider's response, against {e(x["metric_label"])}. Free models sit in the left lane.{OFF_NOTE_Y if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
 </div></section>
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
+<section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
   <ol class="findings">{finds}</ol>
 </div></section>
 {extra}
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">{"05" if extra else "04"}</span>The method, here</div>
+<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">{"05" if extra else "04"}</span>The method, here</div>
   <div class="lesson"><h2>{e(lesson[1])}</h2><p>{lesson[2]}</p><a class="btn" href="../method.html#{lesson[0]}">This habit, in the method →</a></div>
 </div></section>
-<section class="block"><div class="wrap"><div class="eyebrow"><span class="num">{"06" if extra else "05"}</span>Reproduce it</div>
+<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">{"06" if extra else "05"}</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">
