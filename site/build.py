@@ -33,7 +33,7 @@ import method  # noqa: E402
 ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
 BLOB = f"{REPO}/blob/main"
-SITE = "https://chipi.github.io/eval-harness"
+SITE = "https://evals.humancopilot.eu"
 OUT = HERE / "public"
 
 

@@ -1,7 +1,7 @@
 # The experiments
 
 The harness, pointed at 24 LLMs, small fine-tuned models and baselines. On the site:
-[the experiments](https://chipi.github.io/eval-harness/experiments.html).
+[the experiments](https://evals.humancopilot.eu/experiments.html).
 
 Five experiments, four metric shapes, one harness. Each exists because it **breaks
 something the previous one did not** — the harness grew by meeting a task it could not

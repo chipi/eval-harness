@@ -70,7 +70,7 @@ def on_post_page(output, page, config):
     import json  # noqa: PLC0415
     from html import escape  # noqa: PLC0415
     # The findings site's link-preview card, so a shared docs link is not a bare URL.
-    tag = ('<meta property="og:image" content="https://chipi.github.io/eval-harness/assets/social.png">'
+    tag = ('<meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">'
            '<meta name="twitter:card" content="summary_large_image">')
     cfg = json.loads((ROOT / "site" / "analytics.json").read_text())
     if cfg.get("umami_src") and cfg.get("website_id"):
