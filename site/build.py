@@ -390,7 +390,7 @@ def analytics_tag() -> str:
 # analytics can see visitors arriving from here, and an Umami event named by where on this
 # site it was clicked, so this site's analytics can see which placement earns the click.
 HUMAN = "https://www.humancopilot.eu/"
-DWO = "https://devwhateverops.com/"
+DWO = "https://www.devwhateverops.com/"
 
 #: The family footer, shared with humancopilot.eu and devwhateverops.com: the operator's
 #: other sites, then the places he can be found. Same links, order and analytics events as
