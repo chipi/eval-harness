@@ -392,6 +392,50 @@ def analytics_tag() -> str:
 HUMAN = "https://www.humancopilot.eu/"
 DWO = "https://devwhateverops.com/"
 
+#: The family footer, shared with humancopilot.eu and devwhateverops.com: the operator's
+#: other sites, then the places he can be found. Same links, order and analytics events as
+#: the reference footer on humancopilot.eu; only the brand column is this site's own.
+FAMILY = [
+    ("https://www.orrerylearn.com/", "orrery", "Orrery", "A solar system explorer for the browser"),
+    (HUMAN, "humancopilot", "Human Copilot", "Advisory for technology leaders"),
+    (DWO, "devwhateverops", "DevWhateverOps", "A manifesto for engineers who build end to end"),
+]
+ELSEWHERE = [
+    ("https://www.linkedin.com/in/markodragoljevic", "linkedin", "LinkedIn"),
+    ("https://medium.com/@marko.dragoljevic", "medium", "Medium"),
+    ("https://github.com/chipi", "github", "GitHub"),
+    ("https://www.markodragoljevic.com/", "underwater-photography", "Underwater photography"),
+]
+UTM = "utm_source=eval-harness&utm_medium=referral&utm_content=footer"
+
+
+def footer(up: str) -> str:
+    projects = "".join(
+        f'<a href="{e(url + "?" + UTM)}" data-umami-event="outbound" '
+        f'data-umami-event-target="{tgt}" rel="noopener"><b>{e(name)}</b><span>{e(line)}</span></a>'
+        for url, tgt, name, line in FAMILY)
+    elsewhere = "".join(
+        f'<a href="{e(url)}" data-umami-event="outbound" data-umami-event-target="{tgt}" '
+        f'rel="noopener me">{e(label)}</a>' for url, tgt, label in ELSEWHERE)
+    return f"""<footer><div class="wrap foot">
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="26" height="26"><span>eval-harness</span></a>
+      <p>Is the ranking real, or a lucky sample?<br>Every number here is recomputed from the committed runs on each build.</p>
+    </div>
+    <nav class="foot-col" aria-label="Personal projects">
+      <h2>Personal projects</h2>
+      {projects}
+    </nav>
+    <nav class="foot-col" aria-label="Elsewhere">
+      <h2>Elsewhere</h2>
+      {elsewhere}
+      <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
+    </nav>
+  </div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="{up}docs/DATA/">Data &amp; licences</a></span><span>Cookieless, self-hosted analytics. No cookies, no tracking across sites.</span></div>
+</div></footer>"""
+
 
 def out(url: str, place: str, label: str, cls: str = "") -> str:
     """An outbound link to one of the author's sites, tagged for both analytics."""
@@ -456,11 +500,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 <main>
 {body}
 </main>
-<footer><div class="wrap">
-  <div>Generated from the committed runs by <code>site/build.py</code>. Every number here is recomputed from the data on each build.</div>
-  <div><a href="{up}docs/">Documentation</a> · <a href="{up}docs/DATA/">Data &amp; licences</a> · <a href="{REPO}">github.com/chipi/eval-harness</a></div>
-  <div class="made">Built by Marko Dragoljevic · {out(HUMAN, "footer", "Human Copilot")}, advisory for technology leaders · {out(DWO, "footer", "DevWhateverOps")}, principles for engineers who build end to end</div>
-</div></footer>
+{footer(up)}
 <div id="tip" role="tooltip"></div>
 {JS}
 </body>
