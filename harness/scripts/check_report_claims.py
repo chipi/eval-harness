@@ -83,6 +83,14 @@ CLAIMS = [
     # committed runs above are fp16 measurements, and REPORT_SUMMARIZATION says so.
     ("Summarisation bart_s at fp32", FP32,  "cnn_bart_s_n200_v1",      "coverage", 0.3274),
     ("DailyMail bart_s at fp32",  FP32,     "cnn_bart_s_dm200_v1",      "coverage", 0.4048),
+    # SummEval judging (2026-10-18): tau against the expert means, REPORT_SUMMEVAL §3.1.
+    ("SummEval openai_l tau",     DATA,     "se_openai_l_n100_v1",      "tau",      0.5398),
+    ("SummEval gemma_l tau",      DATA,     "se_gemma_l_n100_v1",       "tau",      0.5384),
+    ("SummEval qwen37max tau",    DATA,     "se_qwen37max_n100_v1",     "tau",      0.5204),
+    ("SummEval llama_s tau",      DATA,     "se_llama_s_n100_v1",       "tau",      0.3533),
+    ("SummEval bartscore tau",    DATA,     "se_bartscore_n100_v1",     "tau",      0.2562),
+    ("SummEval rouge1 tau",       DATA,     "se_rouge1_n100_v1",        "tau",      0.1487),
+    ("SummEval coverage tau",     DATA,     "se_coverage_n100_v1",      "tau",      0.1011),
 ]
 
 #: Which report states each CLAIM. A claim here is a copy of a number in a report, and a
@@ -91,7 +99,7 @@ CLAIMS = [
 #: in the report it came from.
 CLAIM_REPORT = {"fn_": "REPORT_NER.md", "sf_": "REPORT_RETRIEVAL.md",
                 "ag_": "REPORT_CLASSIFICATION.md", "db_": "REPORT_CLASSIFICATION.md",
-                "cnn_": "REPORT_SUMMARIZATION.md"}
+                "cnn_": "REPORT_SUMMARIZATION.md", "se_": "REPORT_SUMMEVAL.md"}
 
 #: (label, claimed, a - b) — the DIFFERENCES the reports lead with.
 #: The registered prediction, checked as a RANGE rather than a point, because that is
@@ -175,7 +183,23 @@ COST_REPORTS = {
     "REPORT_RETRIEVAL.md": ("sf_", "scifact_200"),
     "REPORT_SUMMARIZATION.md": ("cnn_", "cnn_dailymail_200"),
     "REPORT_CLASSIFICATION.md": ("ag_", "ag_news_200"),
+    "REPORT_SUMMEVAL.md": ("se_", "summeval_100"),
 }
+
+#: The size suffix every config_id ends with. It was a literal "_n200_v1" at each call
+#: site, which is right for the five 200-item datasets and silently wrong for SummEval's
+#: 100 articles: "se_openai_l_n100_v1" kept its suffix, matched no arm name, and every
+#: SummEval row would have been skipped rather than checked.
+_SIZE_SUFFIX = re.compile(r"_n\d+_v1$")
+
+
+def _arm_name(config_id, prefix):
+    return _SIZE_SUFFIX.sub("", config_id.replace(prefix, "", 1))
+
+
+def _first_arm_cell(cells):
+    """Index of the arm cell: 0, or 1 when the table leads with a rank column."""
+    return 1 if len(cells) > 1 and cells[0].isdigit() else 0
 
 
 def _billed_and_recorded(prefix, dataset_id):
@@ -194,7 +218,7 @@ def _billed_and_recorded(prefix, dataset_id):
             r = json.loads(line)
             rec += float(r.get("cost_usd") or 0)
             bil += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
-        out[m["config_id"].replace(prefix, "").replace("_n200_v1", "")] = (bil, rec)
+        out[_arm_name(m["config_id"], prefix)] = (bil, rec)
     return out
 
 
@@ -207,7 +231,8 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
         if not _line.startswith("|"):
             continue
         _cells = [c.strip() for c in _line.strip("|").split("|")]
-        _arm = re.sub(r"[`*\u27f3 ]", "", _cells[0])
+        _a = _first_arm_cell(_cells)
+        _arm = re.sub(r"[`*\u27f3 ]", "", _cells[_a])
         if _arm not in _data:
             continue
         _bil, _rec = _data[_arm]
@@ -222,7 +247,7 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
         # and the "neither" branch still does the work.
         if _bil <= 0:
             continue          # no bill, or the table happens to be right
-        for _c in _cells[1:]:
+        for _c in _cells[_a + 1:]:
             # THE DOLLAR SIGN IS REQUIRED. With it optional this matched any
             # four-decimal cell, so an f1 of 0.6864 was read as a cost. That was
             # harmless while the check only flagged exact price-table matches, and
@@ -282,12 +307,14 @@ PRIMARY_BY_DATASET = {
     "ag_news_200": ("ag_", "correct", DATA),
     "dbpedia_280": ("db_", "correct", DATA),
     "cnn_dailymail_200": ("cnn_", "coverage", DATA),
+    "summeval_100": ("se_", "tau", DATA),
 }
 REPORT_DATASETS = {
     "REPORT_NER.md": ["few_nerd_280"],
     "REPORT_RETRIEVAL.md": ["scifact_200"],
     "REPORT_CLASSIFICATION.md": ["ag_news_200", "dbpedia_280"],
     "REPORT_SUMMARIZATION.md": ["cnn_dailymail_200"],
+    "REPORT_SUMMEVAL.md": ["summeval_100"],
     # SYNTHESIS tables are keyed by EXPERIMENT, not by arm, so this check cannot
     # reach them and the per-report floor below deliberately excludes it.
     "REPORT_SYNTHESIS.md": list(PRIMARY_BY_DATASET),
@@ -301,7 +328,8 @@ def _runs_for(base, dataset_id, prefix):
     `make ci` was called green for a week on the only machine anyone ran it on.
     """
     try:
-        return runs_by_arm(base, dataset_id, prefix=prefix, strip="_n200_v1")
+        return runs_by_arm(base, dataset_id, prefix=prefix,
+                           strip="_n100_v1" if dataset_id == "summeval_100" else "_n200_v1")
     except AmbiguousRuns as exc:
         print(f"FAIL  {exc}")
         sys.exit(1)
@@ -331,6 +359,7 @@ METRIC_HEADERS = {
     "ndcg_10": {"ndcg@10", "ndcg_10"},
     "correct": {"accuracy", "acc", "correct"},
     "coverage": {"coverage"},
+    "tau": {"τ", "tau"},
 }
 _stale_rows = []
 _rows_checked = 0
@@ -348,7 +377,7 @@ for _rep, _dss in REPORT_DATASETS.items():
                 continue
             _v = (_m.get("scores") or {}).get(_metric)
             if _v is not None:
-                _vals[_m["config_id"].replace(_pref, "").replace("_n200_v1", "")] = _v
+                _vals[_arm_name(_m["config_id"], _pref)] = _v
         _col = None
         for _i, _line in enumerate(_lines):
             if not _line.startswith("|"):
@@ -363,7 +392,7 @@ for _rep, _dss in REPORT_DATASETS.items():
                 continue
             if _col is None or _col >= len(_cells):
                 continue
-            _arm = re.sub(r"[`*\u27f3 ]", "", _cells[0])
+            _arm = re.sub(r"[`*\u27f3 ]", "", _cells[_first_arm_cell(_cells)])
             if _arm not in _vals:
                 continue
             _mm = re.fullmatch(r"\*{0,2}(0\.[0-9]{3,4})\*{0,2}", _cells[_col])
@@ -399,9 +428,10 @@ _DATASET_IN_HEADING = {
     "few_nerd_280": ("few-nerd", "few nerd", "ner"),
     "scifact_200": ("scifact",),
     "cnn_dailymail_200": ("cnn", "dailymail", "summaris"),
+    "summeval_100": ("summeval",),
 }
 _METRIC_COLUMN = {"correct": "accuracy", "f1": "f1",
-                  "ndcg_10": "ndcg", "coverage": "coverage"}
+                  "ndcg_10": "ndcg", "coverage": "coverage", "tau": "τ"}
 
 for _rep, _dss in REPORT_DATASETS.items():
     _lines = (ROOT / "research" / _rep).read_text().splitlines()
@@ -604,7 +634,7 @@ def _arm_costs(prefix, dataset_id):
             r = json.loads(line)
             rec += float(r.get("cost_usd") or 0)
             bil += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
-        out[m["config_id"].replace(prefix, "").replace("_n200_v1", "")] = bil or rec
+        out[_arm_name(m["config_id"], prefix)] = bil or rec
     return out
 
 

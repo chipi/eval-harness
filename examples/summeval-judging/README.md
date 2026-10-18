@@ -92,9 +92,13 @@ Three things already worth saying:
 - **The experts were not rewarding length** (τ 0.039), so agreement here is not a length
   effect in disguise.
 
-The hosted judges are the open question: does any LLM order summaries like an expert better
-than BARTScore's 0.26? G-Eval reports GPT-4 at τ 0.418 with its own prompt and probability
-weighting.
+## Results: the hosted judges
+
+All 24 hosted judges are measured ($7.03 billed). Every one is separated from, and ahead of,
+BARTScore; the top is a six-way tie led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
+cheapest member at $0.03 for all 100 articles. The full results, the significance tests and
+what changed while measuring (a retired model, a model that forces reasoning, moved prices)
+are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
 
 ## Running the hosted judges
 
@@ -103,7 +107,7 @@ With `OPENROUTER_API_KEY` in `harness/.env`, from `harness/` (about $7 for all 2
 ```bash
 for a in anthropic_s anthropic_m anthropic_l openai_s openai_m openai_l \
          deepseek_s deepseek_m deepseek_l gemma_s gemma_m gemma_l glm_s glm_m glm_l \
-         llama_s llama_m llama_l mistral_s mistral_m mistral_l qwen_s qwen_m qwen_l; do
+         llama_s llama_m llama_l mistral_s mistral_m mistral_l qwen_s qwen_m qwen37max; do
   ../examples/summeval-judging/.venv/bin/python scripts/experiment_run.py \
     --config ../examples/summeval-judging/configs/arm_${a}_n100.yaml; done
 make leaderboard DATASET_ID=summeval_100
@@ -118,4 +122,5 @@ make leaderboard DATASET_ID=summeval_100
 - **One prompt, four dimensions in one call.** Scoring one summary per call, or asking for
   token probabilities (G-Eval's probability-weighted score), are different judges; they are
   not measured here.
-- **The articles are CNN's**, like the summarisation experiment's sample.
+- **The articles are mostly DailyMail** (87 of 100; 13 CNN), unlike the summarisation
+  experiment's sample, which is all CNN.
