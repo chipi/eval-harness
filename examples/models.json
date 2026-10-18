@@ -1,7 +1,7 @@
 {
   "_comment": [
     "Every hosted alias the example configs use, and the OpenRouter model it named when",
-    "the committed runs were measured. One table for all five examples.",
+    "the committed runs were measured. One table for all six examples.",
     "",
     "Two ways to reach these models, chosen by `_shared/gateway.py` at call time:",
     "  * your own LiteLLM proxy -- LITELLM_BASE_URL + LITELLM_API_KEY; the proxy owns the",

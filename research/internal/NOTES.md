@@ -2655,3 +2655,30 @@ an experiment forced every count to be recomputed, and a recomputed count does n
 an old mistake. Items 6–9 were mine, written while adding the experiment, and each was
 caught by a check or a review before merge — the same instrument this repository exists
 to build, pointed at its own prose.
+
+### 2026-10-18 · 66 — CORRECTION to entry 65: what the second and third reviews changed
+
+Entry 65 listed nine corrections. Two more independent reviews of the branch found more,
+and they are recorded here rather than folded into it.
+
+1. **CORRECTION.** The site's new headline said that where "no small model trained for your
+   task exists", an LLM earns its bill. UniEval exists and was not run; it now says "where no
+   free model measured was trained for your task", everywhere it appeared.
+2. **CORRECTION.** The 93% ceiling was stated bare on every public page; it now carries its
+   interval (89–97%) and that the best of 24 judges was chosen on the same articles. "An
+   expert scored summaries one at a time" had no source in this repository and is gone.
+3. **CORRECTION.** "10 of 10 calibration checks match" counted the rule's 2-point allowance
+   as agreement. Nine of ten are inside their own interval; LEAD-3 (−0.40 against ±0.22) is
+   not, and ROUGE-L's coherence is not on its dimension. The pages now say both numbers.
+4. **CORRECTION.** The synthesis named BARTScore SummEval's "fastest local arm"; it is the
+   slowest of the seven free arms, and `length` is the fastest.
+5. **CORRECTION.** PROTOCOL's new hardware section said local arms are deterministic, from
+   nine re-runs in two experiments; it now says which nine, and that hosted latency also
+   depends on the caller and its gateway.
+6. **CORRECTION.** The hardware section was headed "measured on machines you could own",
+   which read as hardware evidence for "own it or rent it". No open-weight LLM ran on any of
+   the listed machines for the committed results; the section now says so.
+
+**The lesson.** Each review round found fewer and smaller things, and every round still
+found something in text written to fix the previous round. A sentence written in a hurry to
+close a finding is as unreviewed as any other.

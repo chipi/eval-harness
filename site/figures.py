@@ -201,6 +201,7 @@ def compute() -> dict:
                                    for e in exps),
         "calibration": cal,
         "calibration_consistent": sum(r["consistent"] for r in cal),
+        "calibration_inside": sum(abs(r["delta"]) <= r["ci"] for r in cal),
         "dailymail": dailymail(),
         "hardware": hardware(),
     }

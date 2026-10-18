@@ -789,7 +789,7 @@ under-counts label errors — and a leaderboard that includes them over-counts t
 
 ### 6. The instrument was broken before the models got interesting — in five of six
 
-*Sources: the Corrections section of each report, and [`NOTES.md`](internal/NOTES.md), 65 entries*
+*Sources: the Corrections section of each report, and [`NOTES.md`](internal/NOTES.md), 66 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -1031,7 +1031,7 @@ re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-
 
 | experiment | Pearson r, log(cost) vs latency (hosted) | hosted latency per item, min–max | fastest local arm, latency per item |
 |---|---|---|---|
-| Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `bartscore` 15.66 s, the only learned local arm (the rule-based scorers take 0.18 s or less) |
+| Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `length` and `random`, ~0 s (the rule-based ROUGE and `coverage` 0.18–0.89 s; BARTScore, the one learned local arm, 15.66 s) |
 | Extraction · Few-NERD | **r = −0.19** | 0.79 – 10.25 s | `gliner` 0.17 s |
 | Summarisation · CNN/DM | r = −0.18 | 1.28 – 25.04 s | `bart_s` 3.39 s (`bart_l` 6.26 s), one Linux machine; `bart_l` 11.01 s on the Mac |
 | Classification · DBpedia | r = +0.02 | 0.44 – 12.35 s | `bert_base_fy` **0.087 s** |
@@ -1041,7 +1041,9 @@ re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-
 Essentially uncorrelated in five experiments, and negative twice. **Price is not a proxy
 for latency**, and the spread *within* the hosted field (up to 28×, on DBpedia) dwarfs
 anything cost predicts. The exception is SummEval, where the dearer judges were faster
-(r = −0.47); this report does not measure why.
+(r = −0.47); this report does not measure why, and its judges were called from a different
+machine and gateway than the other five experiments' hosted arms, so its latencies are not on
+the same footing as theirs.
 
 Local models are a different regime entirely: `bert_mini` answers in **7 ms** against
 0.44–7.66 s for hosted arms on the same task — 61× to 1,078× faster, with no network in the
@@ -1198,4 +1200,4 @@ python scripts/summeval_analysis.py
 
 Terms, models, datasets and tests are defined in
 [`../docs/REFERENCE.md`](../docs/REFERENCE.md). The append-only journal of how each finding
-arrived — including the ones that were retracted — is [`NOTES.md`](internal/NOTES.md), 65 entries.
+arrived — including the ones that were retracted — is [`NOTES.md`](internal/NOTES.md), 66 entries.

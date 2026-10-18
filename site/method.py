@@ -108,7 +108,8 @@ def chapters(H, f: dict) -> list:
          "story": (f"<p>The same {max(x['n_hosted'] for x in exps)} hosted models (the cheapest twelve on SciFact) ran on {H.word(len(exps))} tasks with one prompt per "
                    "task, at temperature 0 with reasoning off (on SummEval, Qwen's large slot is "
                    "a stand-in, qwen37max) — so when a model's score differs "
-                   "between two tasks, the task is the only thing that changed.</p>"
+                   "between two tasks, the task is what changed, apart from what each report states: on "
+                   "SummEval a stand-in model, prices a month later and a different calling machine.</p>"
                    "<p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the "
                    "prompt and the scoring code, the model behind the alias, library versions, "
                    "the commit. Before the harness shows a single delta between two runs, it "
@@ -130,7 +131,8 @@ def chapters(H, f: dict) -> list:
                    "<p>No check in the harness could see it: every one compared the repository "
                    "with itself. One <strong>calibration row</strong> — a known baseline against its "
                    "published value — caught it. Now every experiment has one, and "
-                   f"{f['calibration_consistent']} of {len(f['calibration'])} match the literature on their averages.</p>"),
+                   f"{f['calibration_consistent']} of {len(f['calibration'])} agree with the literature, "
+                   f"{f['calibration_inside']} of them inside their own interval.</p>"),
          "habit": "Freeze the data and hash it, so a number always means the same items. Then "
                   "check your sample against the population it claims to represent.",
          "tool": ("make dataset-create · make dataset-materialize",

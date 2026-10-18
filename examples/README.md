@@ -121,7 +121,8 @@ whole field; resolving them moves every hosted arm ~+0.03 and the fine-tuned mod
 so **38% of its lead is agreeing with the annotator rather than being right**.
 
 ### SciFact — pipelines have a ceiling they did not choose
-Twelve LLM rerankers tie with each other **and with two free local encoders**. `e5_base`
+The leading LLM reranker cannot be separated from twelve other arms: ten rerankers **and two
+free local encoders**. `e5_base`
 (0.7191, $0, CPU) is not statistically distinguishable from any paid arm.
 
 A reranker cannot rank a document its first stage never returned, so the ceiling analysis

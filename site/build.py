@@ -524,6 +524,7 @@ def home(f: dict) -> str:
     exps = f["experiments"]
     ties = sum(x["n_tied"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
+    cal_in = f["calibration_inside"]
     hosted_n = max(x["n_hosted"] for x in exps)
     ideas = [
         ("01", "A frozen dataset",
@@ -630,7 +631,7 @@ def home(f: dict) -> str:
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers on average</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="cards" style="margin-top:48px">{cards}</div>
   <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
@@ -653,6 +654,7 @@ def landing(f: dict) -> str:
     by = {x["slug"]: x for x in exps}
     ties = sum(x["n_tied"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
+    cal_in = f["calibration_inside"]
     hosted_n = max(x["n_hosted"] for x in exps)
     local_n = sum(x["n_arms"] - x["n_hosted"] for x in exps)
     billed_all = f'{f["total_billed"]:.2f}'
@@ -700,7 +702,7 @@ def landing(f: dict) -> str:
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers on average</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
 </div></section>
 
@@ -744,7 +746,7 @@ def landing(f: dict) -> str:
   <h2>Can you trust any of this?</h2>
   <p class="lede">Five experiments score a sample of 200–280 items, not a full test set, and SummEval scores the whole of its 100. So each one also runs a <strong>calibration</strong>: one well-known model or metric, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
   <div class="chart reveal">{both(forest(f["calibration"]), forest(f["calibration"], compact=True))}
-    <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation; accuracy, micro-F1, nDCG@10 or Kendall τ ×100 elsewhere). Bars are our 95% interval. {cal_ok} of {cal_n} sit on the published value.</figcaption></div>
+    <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation; accuracy, micro-F1, nDCG@10 or Kendall τ ×100 elsewhere). Bars are our 95% interval. {cal_ok} of {cal_n} agree with the published value within that interval plus a 2-point allowance for protocol differences; {cal_in} are inside the interval itself.</figcaption></div>
   <div class="cols" style="margin-top:64px">
     <div class="prose">
       <h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Calibration found one real error — in our sample, not our scorer.</h3>
@@ -795,12 +797,12 @@ def landing(f: dict) -> str:
 </div></section>
 <section class="block" id="hardware"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>The hardware</div>
-  <h2>Measured on machines you could own.</h2>
-  <p class="lede">"Own it or rent it" is a question about hardware, so here is the hardware. Every committed run records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself.</p>
+  <h2>Where the runs were made.</h2>
+  <p class="lede">Every run on this site records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself. Most of it is a 2018 Mac mini. No open-weight LLM was run on any of these machines for these results: the "own it" figures elsewhere are provider-served scores, set against what would fit a given memory budget.</p>
   <div class="chart scroll-x reveal"><table class="data">
-    <thead><tr><th>machine</th><th>what it is</th><th>committed runs it measured</th><th>role</th></tr></thead>
+    <thead><tr><th>machine</th><th>what it is</th><th>runs on this site it measured</th><th>role</th></tr></thead>
     <tbody>{hw_rows}</tbody></table>
-    <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of the committed runs; the local LLMs now being measured (code generation, MBPP+) run on the EVO-X3. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
+    <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of these runs. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
 </div></section>
 {author("experiments")}"""
     return page("The most expensive model never won — eval-harness",
@@ -813,7 +815,7 @@ CARD = {
     "ag-news": "Four-way topic labels. Three small fine-tunes take the top three places, largely by learning the dataset's labelling conventions.",
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the top is a group of nineteen, and the gold label is sometimes the error.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
-    "scifact": "Retrieve the abstracts that support a scientific claim. LLM rerankers lead a twelve-way tie; a free dense retriever sits inside it.",
+    "scifact": "Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.",
     "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.",
 }
 
@@ -889,7 +891,7 @@ def findings_for(x: dict, f: dict) -> list:
     if x["slug"] == "scifact":
         return [
             ("LLM rerankers lead — inside a twelve-way tie.",
-             f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_tied']} arms cannot be separated from it, including the free dense retriever e5_base."),
+             f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_tied']} arms cannot be separated from it, including the free retrievers e5_base and bge_small."),
             *common,
             ("The dev slice picked the wrong winner.",
              q("Tuned on a 40-query dev slice, the leaderboard's winner there was not the winner on the 160 queries it never saw.", rep)),

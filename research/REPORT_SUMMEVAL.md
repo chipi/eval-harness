@@ -24,7 +24,7 @@
 
 | the choice | what the data says |
 |---|---|
-| **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries at once while an expert scored them one by one (§3.7). |
+| **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries in one prompt, which a per-article rank correlation rewards (§3.7). |
 | **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 25 arms. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
 | **Do I need an LLM here at all?** | **Yes, against every free scorer measured** — the first of six experiments where every free arm is separated below every LLM. Every one of the 24 judges is separated from BARTScore (§3.3). No evaluator trained to judge summaries was run; UniEval, the free one G-Eval reports, has a published τ of 0.377, which would put it above the weakest judge here (§7). |
@@ -185,8 +185,7 @@ trained to judge summaries — none was fine-tuned on SummEval, and UniEval, a f
 evaluator, was not run — and a model that scores only how likely the summary is given the
 article (BARTScore) is far behind one asked to assess it.
 
-The free scorers rank as the summarisation experiment's own analysis would predict:
-BARTScore, which never sees a reference, beats every reference-based metric; plain ROUGE-1
+Among the free scorers, BARTScore, which never sees a reference, beats every reference-based metric; plain ROUGE-1
 beats this repository's `coverage` (0.1011, against ROUGE-1's 0.1487), most of the gap in consistency
 and fluency; and the experts were not rewarding length (τ 0.0388).
 
@@ -283,7 +282,7 @@ interval 89–97% by a paired bootstrap over articles, and the gap to the expert
 on reading it as "an LLM is nearly an expert". The best judge is the best of 24 chosen on
 these same articles, which the interval does not correct for. And a judge sees all 16
 summaries in one prompt and can rank them against each other, which is what a per-article
-rank correlation rewards, while an expert scored summaries one at a time. The order at
+rank correlation rewards; how the experts were shown the summaries is not recorded here. The order at
 the top changes on this footing (`gemma_l` above `openai_l`), which is the tie of §3.2
 showing again. The three positions in the file give 0.5213–0.5812 for "one expert against
 the other two"; whether those are three people depends on the file keeping one annotator
@@ -386,8 +385,9 @@ between this experiment and the earlier five mix September and October prices.
 - **The human ceiling is one expert against two.** It is computed from the original
   release's per-expert scores (§3.7) and is somewhat pessimistic, since two experts are a
   noisier reference than three. The judges' 93% has a bootstrap interval, but the best judge
-  is selected on the same articles, and the judge's all-16-at-once prompt is a different
-  task from an expert's one-at-a-time scoring; neither is corrected for.
+  is selected on the same articles, and the judge sees all 16 summaries at once, which a
+  per-article rank correlation rewards; neither is corrected for, and how the experts were
+  shown the summaries is not recorded here.
 
 ## 8. Reproduction
 

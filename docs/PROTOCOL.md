@@ -57,23 +57,28 @@ ran.
 
 ## The hardware
 
-Every run records the machine it ran on (`fingerprint.host`), and
+Every run on the site records the machine it ran on (`fingerprint.host`), and
 [`evidence/hardware.json`](evidence/hardware.json) maps those records to machines, each
 described from the machine itself:
 
 | machine | what it is | what it measured |
 |---|---|---|
 | Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
-| cloud runner | 4-core Linux (x86_64) containers from cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
-| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls |
+| cloud runner | 4-core Linux (x86_64) containers; the operator's cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
+| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls. No open-weight LLM was run on any of these machines for the committed results |
 | NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs |
 | MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs |
 
-What it means for a number: **quality and cost do not depend on the machine**; a hosted
-arm's answer comes from the provider, and a local arm is deterministic on CPU (measured:
-nine local arms re-ran byte-identically, REPORT_SYNTHESIS). **Latency does.** Local
-latencies are this hardware's, and a ratio between arms timed on two different machines
-is good to about a factor of two, which the reports say wherever they compare them.
+What it means for a number. **A hosted arm's quality and cost come from the provider**, not
+the machine that called it. **A local arm's outputs are expected to repeat on any CPU**, and
+that is measured for nine of them, not all: the summarisation and classification local arms
+re-ran with identical outputs (three of them on a different machine; `bert_mini`'s
+confidences moved by up to 2 × 10⁻⁶, its labels not at all). The NER, retrieval and SummEval
+local arms were not re-run. **Latency depends on the machine**, local and hosted alike: a
+hosted latency includes the caller's network and gateway (the Mac mini called through a
+gateway on itself, the EVO-X3 through one on the Mac mini), and a ratio between arms timed
+on two different machines is good to about a factor of two, which the reports say wherever
+they compare them.
 
 ## What is the same in every experiment
 

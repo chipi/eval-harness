@@ -1,5 +1,5 @@
 {
-  "what": "The machines behind the experiments: what each is, as read from the machine itself, and which committed runs it measured (matched on each run's fingerprint host block). Captured 2026-10-18 with hardware/linux.sh and hardware/mac.sh; the cloud runner could not be captured and is described from the run fingerprints alone.",
+  "what": "The machines behind the experiments: what each is, as read from the machine itself, and which of the site's committed runs it measured (matched on each run's fingerprint host block). Captured 2026-10-18 with hardware/linux.sh and hardware/mac.sh. The cloud runner could not be captured: its fingerprints record only a 4-core Linux container, and that it was the operator's cloud coding sessions is the operator's account.",
   "captured": "2026-10-18",
   "machines": [
     {
@@ -17,7 +17,7 @@
     {
       "id": "cloud_runner",
       "name": "Cloud runner",
-      "role": "4-core Linux containers from Anthropic cloud coding sessions (at least two instances, by the kernel release each run records); they ran the six local models that need torch 2.6 or later (the distilled and XSum BARTs, the three bert-base fine-tunes) and SummEval's seven free scorers, and re-timed the BARTs on one machine (harness/data/runs-linux)",
+      "role": "4-core Linux containers from the operator's cloud coding sessions (the fingerprints record two kernel releases); they ran the six local models that need torch 2.6 or later (the distilled and XSum BARTs, the three bert-base fine-tunes) and SummEval's seven free scorers, and re-ran nine local arms on one machine for timing (harness/data/runs-linux)",
       "captured_output": null,
       "summary": "4-core Linux (x86_64) containers; a session's container, so not captured",
       "fingerprint": {"platform": "Linux/x86_64", "cpu_count": 4}
@@ -25,7 +25,7 @@
     {
       "id": "evo_x3",
       "name": "GMKtec EVO-X3",
-      "role": "the workstation SummEval's 24 hosted judges were called from, and where local LLMs (MBPP+) are being measured",
+      "role": "the workstation SummEval's 24 hosted judges were called from; local LLMs for a planned next experiment are run here, and none is in the committed results",
       "captured_output": {
         "cpu": "AMD RYZEN AI MAX+ 395 w/ Radeon 8060S", "threads": 32,
         "memory_kb": 130485068, "vendor": "GMKtec", "product": "EVO-X3",

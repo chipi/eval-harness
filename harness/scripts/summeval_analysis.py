@@ -76,7 +76,7 @@ def summarisation_hosted(n: int = 20) -> dict:
     scores = {}
     for mj in sorted(RUNS.glob("cnn_*_n200_v1_*/metrics.json")):
         if "20260929" in mj.parent.name:
-            continue
+            continue  # the 2026-09-29 re-runs duplicate arms; every other check skips them too
         m = json.loads(mj.read_text(encoding="utf-8"))
         if m.get("dataset_id") != "cnn_dailymail_200" or (m.get("params") or {}).get("provider") != "litellm":
             continue

@@ -167,8 +167,8 @@ What they found, and what a plain leaderboard would have hidden:
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
-- **Retrieval.** Twelve LLM rerankers tie with each other *and with two free local
-  encoders*. A prediction registered before the arm existed (that swapping only the
+- **Retrieval.** The leading LLM reranker cannot be separated from twelve other arms,
+  ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
 - **Judging.** Asked to grade summaries the way three experts did, every one of the 24 LLMs
   is separated from, and ahead of, BARTScore, the best free metric measured — the first
