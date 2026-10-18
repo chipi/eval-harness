@@ -13,7 +13,7 @@ paper or specification for a metric.
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
 - [Statistical tests](#statistical-tests) — how separation is decided
 - [Terminology](#terminology) — the canonical name for every experiment, arm and term
-- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the twelve mirrored here
+- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the thirteen mirrored here
 
 ---
 
@@ -450,11 +450,10 @@ NLP*](https://aclanthology.org/P18-1128/).
 
 **No corpus and no model weight is redistributed by this repository.** Every example ships
 a download recipe instead. Two things are committed on purpose: the models' outputs, which
-are the evidence every score is recomputed from, and twelve CC-licensed papers, mirrored
-under their licences. [`papers/README.md`](papers/README.md) records the licence of each of
-the twenty-seven cited works — twelve mirrored, fourteen that may not be, and one (CC0)
-that could be and is linked instead; the split follows publisher policy rather than
-importance. (This paragraph said no paper and no provider output was redistributed until
+are the evidence every score is recomputed from, and thirteen CC-licensed papers,
+mirrored under their licences. [`papers/README.md`](papers/README.md) records the licence of
+each of the twenty-eight cited works — thirteen mirrored, fifteen that may not be — and the
+split follows publisher policy rather than importance. (This paragraph said no paper and no provider output was redistributed until
 2026-10-18; both were committed long before.)
 
 **Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,

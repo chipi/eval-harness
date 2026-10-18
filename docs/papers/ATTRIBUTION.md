@@ -1,13 +1,14 @@
 # Attribution for the papers mirrored in this directory
 
-The twelve PDFs here are **redistributed under Creative Commons licences**, which permit
-copying provided the author, title and licence travel with the copy. This file is that
+The thirteen PDFs here are **redistributed under Creative Commons licences**, which permit
+copying provided the author, title and licence travel with the copy (CC0, on one of them,
+asks nothing, and is attributed the same way). This file is that
 attribution. It is a licence obligation, not documentation — **if you fork this repo or
 copy these files, this file comes too.**
 
 **None of these files has been modified.** Each is the publisher's PDF, byte-for-byte as
-served, fetched on 2026-09-29 by [`fetch_papers.py`](fetch_papers.py). Licences were read
-from each publisher's own page on the same date.
+served, fetched on 2026-09-29 by [`fetch_papers.py`](fetch_papers.py) — BARTScore on
+2026-10-18. Licences were read from each publisher's own page on the same dates.
 
 | File | Work | Author(s) | Licence | Source |
 |---|---|---|---|---|
@@ -23,6 +24,7 @@ from each publisher's own page on the same date.
 | `wang-2022-e5.pdf` | *Text Embeddings by Weakly-Supervised Contrastive Pre-training* (2022) | Liang Wang, Nan Yang, Xiaolong Huang, Binxing Jiao, Linjun Yang, Daxin Jiang, Rangan Majumder, Furu Wei | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [arXiv 2212.03533](https://arxiv.org/abs/2212.03533) |
 | `zaratiana-2023-gliner.pdf` | *GLiNER: Generalist Model for Named Entity Recognition using Bidirectional Transformer* (2023) | Urchade Zaratiana, Nadi Tomeh, Pierre Holat, Thierry Charnois | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [arXiv 2311.08526](https://arxiv.org/abs/2311.08526) |
 | `zhang-2024-gsm1k.pdf` | *A Careful Examination of Large Language Model Performance on Grade School Arithmetic* (2024) | Hugh Zhang, Jeff Da, Dean Lee, Vaughn Robinson, Catherine Wu, Will Song, et al. | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [arXiv 2405.00332](https://arxiv.org/abs/2405.00332) |
+| `yuan-2021-bartscore.pdf` | *BARTScore: Evaluating Generated Text as Text Generation* (2021) | Weizhe Yuan, Graham Neubig, Pengfei Liu | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [arXiv 2106.11520](https://arxiv.org/abs/2106.11520) |
 
 ## Share-alike obligation on two of them
 
@@ -33,10 +35,11 @@ such obligation, which is one reason they are mirrored unmodified.
 
 ## What is NOT here, and why
 
-Twelve further works cited by this repo are **not** redistributable and are therefore not
-in this directory: ten arXiv papers under `arxiv.org/licenses/nonexclusive-distrib/1.0`
-(which grants arXiv a distribution right and says nothing about third parties), plus
-Järvelin & Kekäläinen (2002) behind the ACM Digital Library and Holm (1979) behind JSTOR.
+Fifteen further works cited by this repo are **not** in this directory: eleven arXiv
+papers under `arxiv.org/licenses/nonexclusive-distrib/1.0` (which grants arXiv a
+distribution right and says nothing about third parties), G-Eval under CC BY-NC-ND 4.0
+(non-commercial only), Järvelin & Kekäläinen (2002) behind the ACM Digital Library, Holm
+(1979) behind JSTOR, and Demšar (2006), whose page states no licence.
 [`README.md`](README.md) lists each with its licence and a link.
 
 `python docs/papers/fetch_papers.py --all` downloads those for reading. They are gitignored

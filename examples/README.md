@@ -205,7 +205,7 @@ licence in **[`../docs/REFERENCE.md#credits`](../docs/REFERENCE.md#credits)**, a
 per-experiment at the bottom of each `METHOD.md`.
 
 Every cited paper's redistribution licence is recorded in
-[`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the twelve
+[`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the thirteen
 mirrored there. All citations were verified by fetching them and comparing titles.
 
 **No corpus, model weights or papers are redistributed here.** Each example ships a

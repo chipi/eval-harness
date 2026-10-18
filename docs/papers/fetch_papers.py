@@ -33,7 +33,7 @@ HERE = Path(__file__).resolve().parent
 
 #: (slug, url, licence, redistributable). PDF urls are the publisher's canonical ones.
 PAPERS = [
-    # ── CC BY / CC BY-SA: mirroring permitted with attribution ───────────────
+    # ── CC BY / CC BY-SA / CC0: mirroring permitted (with attribution for BY) ─
     ("lin-2004-rouge", "https://aclanthology.org/W04-1013.pdf", "CC BY 4.0", True),
     ("conll-2003-ner", "https://aclanthology.org/W03-0419.pdf", "CC BY 4.0", True),
     ("dror-2018-significance", "https://aclanthology.org/P18-1128.pdf", "CC BY 4.0", True),
@@ -46,6 +46,7 @@ PAPERS = [
     ("wang-2022-e5", "https://arxiv.org/pdf/2212.03533", "CC BY 4.0", True),
     ("zaratiana-2023-gliner", "https://arxiv.org/pdf/2311.08526", "CC BY 4.0", True),
     ("zhang-2024-gsm1k", "https://arxiv.org/pdf/2405.00332", "CC BY 4.0", True),
+    ("yuan-2021-bartscore", "https://arxiv.org/pdf/2106.11520", "CC0 1.0", True),
     # ── arXiv non-exclusive: read, do not redistribute ───────────────────────
     ("hermann-2015-cnn-dailymail", "https://arxiv.org/pdf/1506.03340", "arXiv non-exclusive", False),
     ("zhang-2015-char-cnn", "https://arxiv.org/pdf/1509.01626", "arXiv non-exclusive", False),
@@ -60,7 +61,6 @@ PAPERS = [
     ("fabbri-2021-summeval", "https://arxiv.org/pdf/2007.12626", "arXiv non-exclusive", False),
     # ── other licences: linked, not mirrored (see README.md for why) ─────────
     ("liu-2023-g-eval", "https://arxiv.org/pdf/2303.16634", "CC BY-NC-ND 4.0", False),
-    ("yuan-2021-bartscore", "https://arxiv.org/pdf/2106.11520", "CC0 1.0", False),
 ]
 
 #: Cited, and not fetchable: no open PDF exists to download.
@@ -121,7 +121,8 @@ def main() -> int:
     print("\nCited but not fetchable:")
     for name, where, lic in PAYWALLED:
         print(f"  {name:<46} {lic:<18} {where}")
-    print("\nLicences were read from each publisher's page on 2026-09-29 and are listed")
+    print("\nLicences were read from each publisher's page on 2026-09-29 (SummEval's three on")
+    print("2026-10-18) and are listed")
     print("in README.md. Re-check before relying on them — papers can be relicensed.")
     return 0
 

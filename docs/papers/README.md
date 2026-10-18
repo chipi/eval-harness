@@ -1,12 +1,13 @@
-# Papers — what may be mirrored here, what may not, and which twelve are
+# Papers — what may be mirrored here, what may not, and which thirteen are
 
 Every work cited in [`../REFERENCE.md`](../REFERENCE.md) and the per-experiment
 `METHOD.md` files, with the redistribution licence **read from the publisher's own page**
 on 2026-09-29 rather than assumed.
 
 [`fetch_papers.py`](fetch_papers.py) downloads the redistributable ones into this
-directory for offline reading. **Twelve of the twenty-seven are committed here**; the
-other fifteen are gitignored so `--all` cannot commit them by accident. See
+directory for offline reading. **Thirteen of the twenty-eight are committed here**; the
+other fifteen are gitignored so `--all` cannot commit them by accident. (This said
+"twelve of the twenty-four" until 2026-10-18, while the tables below listed 25.) See
 [What is committed here](#what-is-committed-here).
 
 (This paragraph and the heading above used to say nothing was mirrored, which was true
@@ -14,15 +15,16 @@ only before the mirroring was done. The body of this file was right and the head
 stale — corrected 2026-09-29.)
 
 ```bash
-python docs/papers/fetch_papers.py          # the 12 that permit redistribution
-python docs/papers/fetch_papers.py --all    # all 27, for personal use only
+python docs/papers/fetch_papers.py          # the 13 that permit redistribution
+python docs/papers/fetch_papers.py --all    # all 25 with an open PDF, for personal use only
 ```
 
 ---
 
-## Redistributable — CC BY / CC BY-SA, attribution required
+## Redistributable — CC BY / CC BY-SA (attribution required) and CC0
 
-Mirroring these is permitted provided the author and licence travel with the copy.
+Mirroring these is permitted provided the author and licence travel with the copy; CC0
+requires nothing, and gets the same attribution anyway.
 
 | Work | Licence | Source |
 |---|---|---|
@@ -38,6 +40,7 @@ Mirroring these is permitted provided the author and licence travel with the cop
 | Wang et al. (2022), *Text Embeddings by Weakly-Supervised Contrastive Pre-training* (E5) | CC BY 4.0 | [arXiv 2212.03533](https://arxiv.org/abs/2212.03533) |
 | Zaratiana et al. (2023), *GLiNER* | CC BY 4.0 | [arXiv 2311.08526](https://arxiv.org/abs/2311.08526) |
 | Zhang et al. (2024), *A Careful Examination of LLM Performance on Grade School Arithmetic* | CC BY 4.0 | [arXiv 2405.00332](https://arxiv.org/abs/2405.00332) |
+| Yuan, Neubig & Liu (2021), *BARTScore: Evaluating Generated Text as Text Generation* | CC0 1.0 | [arXiv 2106.11520](https://arxiv.org/abs/2106.11520) |
 
 ## NOT redistributable — link only
 
@@ -55,7 +58,6 @@ Mirroring these is permitted provided the author and licence travel with the cop
 | Xiao et al. (2023), *C-Pack* (BGE) | arXiv non-exclusive 1.0 | same |
 | Fabbri et al. (2021), *SummEval: Re-evaluating Summarization Evaluation* | [arXiv non-exclusive 1.0](https://arxiv.org/abs/2007.12626) | same |
 | Liu et al. (2023), *G-Eval: NLG Evaluation using GPT-4 with Better Human Alignment* | [CC BY-NC-ND 4.0](https://arxiv.org/abs/2303.16634) | Redistribution is permitted only non-commercially and unmodified; this repository is MIT, so it is linked rather than mirrored |
-| Yuan, Neubig & Liu (2021), *BARTScore: Evaluating Generated Text as Text Generation* | [CC0 1.0](https://arxiv.org/abs/2106.11520) | None: it could be mirrored. Licences read 2026-10-18, after the mirrored set was fixed; it is linked until someone decides to add it |
 | Järvelin & Kekäläinen (2002), *Cumulated gain-based evaluation of IR techniques* | © ACM | [ACM DL](https://dl.acm.org/doi/10.1145/582415.582418), subscription |
 | Holm (1979), *A Simple Sequentially Rejective Multiple Test Procedure* | © Scandinavian Journal of Statistics | Paywalled. **Also the one citation in this repo that could not be verified programmatically** — JSTOR serves a bot challenge and Crossref does not index the 1979 volume, so the reference is given in full text instead of linked |
 | Demšar (2006), *Statistical Comparisons of Classifiers over Multiple Data Sets* | not machine-readable on the page | [JMLR v7](https://www.jmlr.org/papers/v7/demsar06a.html) states no licence this check could read; freely readable there |
@@ -68,17 +70,17 @@ Mirroring these is permitted provided the author and licence travel with the cop
 
 ## What is committed here
 
-**The twelve CC-licensed papers above are mirrored in this directory**, 18 MB, with
+**The thirteen CC-licensed papers above are mirrored in this directory**, 19 MB, with
 [`ATTRIBUTION.md`](ATTRIBUTION.md) carrying the author, title, licence and source of each —
 which is what CC BY and CC BY-SA require of anyone redistributing them. None is modified;
 each is the publisher's PDF byte-for-byte.
 
-The other fifteen are **not** here and are gitignored, so `--all` cannot commit them by
-accident.
+The other fifteen are **not** here: twelve that `--all` can fetch for reading, which are
+gitignored so they cannot be committed by accident, and the three with no open PDF.
 
 Two caveats a reader of this directory should have:
 
-- **The split follows publisher licensing policy, not importance.** Twelve papers sitting
+- **The split follows publisher licensing policy, not importance.** Thirteen papers sitting
   here does not make them the canon. nDCG (Järvelin & Kekäläinen) and Holm — two of the
   most load-bearing citations in this repo — are both in the *un*-mirrorable half. Read
   the table above, not the file listing.

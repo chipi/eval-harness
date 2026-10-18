@@ -34,8 +34,9 @@ prediction and the three hosted repeat runs, the repo has spent $20.10.*
 > among the five local arms **every comparison transfers**, including the house-style
 > control (BART on XSum still last). The hosted arms were not re-run, so **the
 > summarisation price verdicts below are CNN-only**. Every other experiment was
-> calibrated the same way and needed no correction: all ten calibration figures agree
-> with the published values ([`docs/PROTOCOL.md`](../docs/PROTOCOL.md)).
+> calibrated the same way and needed no correction: all seven calibration figures then,
+> and all ten with SummEval's three, agree with the published values
+> ([`docs/PROTOCOL.md`](../docs/PROTOCOL.md)).
 
 Seven findings, each tested in every experiment that could test it (§1–§7), and what they
 imply for **quality vs cost vs latency** in production (§8).
@@ -64,7 +65,7 @@ a gap such as "0.0071" is in the units of the row's own metric.
 "Arm" means one model-plus-configuration measured on one experiment.*
 
 Every number below is computed from the stored runs, not quoted from the reports.
-Reproduction commands are in §8.
+Reproduction commands are at the end.
 
 ---
 
@@ -85,7 +86,8 @@ fine-tuned on that dataset, the best one **ranked first in three** (Few-NERD, AG
 and not separable from it. "Not separable" is weaker than it sounds on DBpedia: the leader
 cannot separate from 19 of its 27 opponents, so the fine-tune sits in a large group, not
 beside the winner. Every zero-shot model ranked **last** among the learned arms
-(3 of 3), and the one model fine-tuned on a *different* corpus of the same task ranked
+(3 of 3), and so did BARTScore, trained on SummEval's corpus to write summaries rather than
+judge them; the one model fine-tuned on a *different* corpus of the same task ranked
 **last of 29**. The predictor is training exposure to *your* data, not model size — and on
 AG News what that exposure buys is largely the corpus's own labelling (§0).
 
@@ -156,8 +158,8 @@ Four more findings that travel:
   the fine-tuned leader now ties with only one paid arm, 2.5×. Few-NERD has none.
 - **Cost does not buy speed.** log(cost) vs latency correlates at **r = −0.19 to +0.20** in
   five experiments — uncorrelated, negative twice. On SummEval it is **−0.47**: the dearer
-  judges answered faster, the one experiment where paying more bought speed. `bert_mini` (7 ms) runs 61× to 1,078× faster than the
-  hosted field, timed on the same Mac. The bert-base fine-tunes (76–90 ms) come out roughly
+  judges answered faster, the one experiment where paying more bought speed. `bert_mini`
+  (7 ms) runs 61× to 1,078× faster than the hosted field, timed on the same Mac. The bert-base fine-tunes (76–90 ms) come out roughly
   5×–140× faster, but they were timed on a different machine, so that ratio is good to
   about a factor of two. Generators run *slower*.
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
@@ -170,7 +172,7 @@ Four more findings that travel:
 
 1. **Check the architecture before the model.** The largest cost lever here was structural.
 2. **If you can label a few thousand examples, fine-tune a small model** — $0 against up to
-   $9,826/month, and far lower latency on classification. Every task-specific winner here
+   $9,826/month where one exists, and far lower latency on classification. Every task-specific winner here
    is **under 2 GB and needs no GPU**. Fine-tune on *your* data: the same BART trained on
    another corpus's summaries finished last.
 3. **If you cannot, self-host an open-weight LLM before renting one.** A proprietary model
@@ -183,8 +185,8 @@ Four more findings that travel:
 6. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
 
 **When paying more is right:** you cannot label data; the task is unlike anything a small
-model has seen — SummEval is that case, measured; a wrong answer is expensive; your volume is low enough that the whole
-spread is rounding error (at 1,000 items/month the entire DBpedia range is $1.35); or
+model has seen — SummEval is that case, measured; a wrong answer is expensive; your volume
+is low enough that the whole spread is rounding error (at 1,000 items/month the entire DBpedia range is $1.35); or
 engineering time costs more than the API. The claim is not that expensive models are bad —
 it is that **price stops predicting quality long before it stops rising.**
 
@@ -210,8 +212,8 @@ Sorting all seventeen local arms by how much training on *this* data they had pr
 **monotonic** relationship — and the boundary is sharp. One row per arm, grouped from most
 to least exposure. "Learned arms", here and below, means every arm that is a trained model:
 all arms except the rule-based baselines (`constant`, `keyword`, `nothing`, `capitalized`,
-`lead3`, `bm25`, `random`, `first_k`, and on SummEval ROUGE, `coverage` and `length`). The last column is the arm's score minus the best
-**paid** arm's score in that experiment, in that experiment's metric, and the verdict of the
+`lead3`, `bm25`, `random`, `first_k`, and on SummEval ROUGE, `coverage` and `length`). The
+last column is the arm's score minus the best **paid** arm's score in that experiment, in that experiment's metric, and the verdict of the
 arm's own Holm family test against that paid arm: its p-value against the Holm threshold it
 had to beat. "Not separated" means the test cannot tell the two apart. Every row was
 re-run from the committed runs on 2026-10-15 (`scripts/family_test.py`, the arm against the
@@ -240,8 +242,9 @@ whole field).
 **The best model fine-tuned on each dataset ranked first in three experiments and
 third-equal in the saturated fourth. Every zero-shot model ranked last among the learned
 arms, and so did the one model trained on the corpus for a different task** — BARTScore,
-fine-tuned to summarise CNN/DailyMail and asked here to judge summaries of it. Until 2026-09-30 the first sentence read "every model fine-tuned on its dataset
-ranked first", 3 of 3. With eight such arms it is true of the best one per experiment in
+fine-tuned to summarise CNN/DailyMail and asked here to judge summaries of it. Until
+2026-09-30 the first sentence read "every model fine-tuned on its dataset ranked first",
+3 of 3. With eight such arms it is true of the best one per experiment in
 three of four and not of every one: distillation costs `bart_m` and `bart_s` a few places
 without a separable loss, and on DBpedia the fine-tune lands in a five-way tie for third,
 two items behind the leader — inside the 19-arm group the leader cannot separate from,
@@ -406,9 +409,9 @@ Two practical consequences a DGX owner should weigh:
   measures no throughput at all.**
 
 **So the ordering for a hardware owner is: fine-tuned small ML first, open-weight LLM
-where no fine-tuned model exists or the task is generative or a judgement, and a rented API
-only when neither can run.** DBpedia used to be the exception, because its ML arm was blocked; run,
-it fits the ordering — a 438 MB classifier matches the best open-weight LLM exactly.
+where no fine-tuned model exists or the task is generative or a judgement, and a rented
+API only when neither can run.** DBpedia used to be the exception, because its ML arm was
+blocked; run, it fits the ordering — a 438 MB classifier matches the best open-weight LLM exactly.
 
 
 ### What you would actually install on a 128 GB machine
@@ -454,8 +457,8 @@ the two it missed, it missed by 0.0078 and 0.0074. This read "four of five" unti
 was three of five.
 
 **But the 64 GB column leans on int4 twice and int8 once** (SummEval), and that is where the
-caveat below bites hardest: int8 is usually close to lossless, int4 frequently is not. If your box is 64 GB,
-the native-precision options (Gemma-4-26B at 52 GB, Mistral-Small-24B at 48 GB) are the
+caveat below bites hardest: int8 is usually close to lossless, int4 frequently is not. If
+your box is 64 GB, the native-precision options (Gemma-4-26B at 52 GB, Mistral-Small-24B at 48 GB) are the
 ones whose numbers here you can trust without re-measuring.
 
 > **The caveat, and it is a real one: quantised quality was never measured here.** Every
@@ -499,8 +502,9 @@ difference the data cannot resolve — to avoid the only winner in the set that 
 self-host option at any price** (`qwen_m`, one vendor, no published weights). That $0
 answer used to need a 52 GB open-weight LLM; since 2026-09-30 a 438 MB classifier on a CPU
 reaches the same score. SummEval costs 0.0013 τ against `openai_l`, also unresolvable, and
-it is the one $0 answer that needs an LLM: a 63 GB model, where every other row's fits on
-a CPU.
+it is the one experiment whose $0 answer has no CPU-sized alternative: SciFact's is an
+LLM too, but `e5_base` on a CPU is tied with it, while on SummEval the only small model is
+separated below every judge.
 
 **This is the finding a hardware owner should read first.** Not "free models are
 competitive" but: *across six unrelated tasks, the best configuration you can run
@@ -673,8 +677,8 @@ apparent win into the winner's-curse case of §4.
 
 So: **one separated win (Few-NERD), four statistical ties — two led by the free arm (AG
 News, summarisation) and two trailed by it (SciFact, DBpedia) — and one loss, SummEval,
-where no free arm was trained for the task.** Until
-2026-09-30 this line read "two clear wins, two ties, one loss", and the loss was DBpedia — where the only free arm that had run
+where no free arm was trained for the task.** Until 2026-09-30 this line read "two clear
+wins, two ties, one loss", and the loss was DBpedia — where the only free arm that had run
 was `bart_mnli`, a zero-shot NLI model, because the fine-tuned checkpoint would not load.
 Run on a machine with torch ≥ 2.6, the fine-tune ties the top group. The pattern is
 narrower and stronger than "small models win":
@@ -791,11 +795,11 @@ would have:
 | all | Spearman had no tie correction; ranks broke ties **alphabetically** | ρ measured the alphabet on saturated tasks |
 
 Three of these — the parser, the unparsed-as-empty rule, the reasoning flag — moved a
-single arm by **more than the gap separating most of the field**. SummEval adds none: none of
-its committed runs was rescored or re-run because of a scorer defect. What it did find were facts about
-renting models — a model withdrawn by its provider, a successor that refuses reasoning
-off, and prices that had moved since September ([REPORT_SUMMEVAL §6](REPORT_SUMMEVAL.md)).
-So:
+single arm by **more than the gap separating most of the field**. SummEval adds none:
+none of its committed runs was rescored or re-run because of a scorer defect. What it did
+find were facts about renting models — a model withdrawn by its provider, a successor that
+refuses reasoning off, and prices that had moved since September
+([REPORT_SUMMEVAL §6](REPORT_SUMMEVAL.md)). So:
 
 > **The scoring code is a model-sized lever.** Changing how you parse an answer can matter
 > more than changing which model produced it.
@@ -806,7 +810,7 @@ checking a scorer is never the expensive option.
 
 ### 7. The metric's shape decides which diagnostics can be read at all
 
-*Sources:* [classification §3.6](REPORT_CLASSIFICATION.md) · [NER §3.9](REPORT_NER.md) · [retrieval](REPORT_RETRIEVAL.md)
+*Sources:* [classification §3.6](REPORT_CLASSIFICATION.md) · [NER §3.9](REPORT_NER.md) · [retrieval](REPORT_RETRIEVAL.md) · [SummEval §3.5](REPORT_SUMMEVAL.md)
 
 Not which model wins — which *tools* work.
 
@@ -827,8 +831,6 @@ fine-tuned arm breaks a few ties without producing agreement.)
 
 The same tool on Few-NERD reports `arms tied 1st = 1.0` at every size and is perfectly
 readable. **The tool was never wrong in general; it was wrong for a metric shape.**
-
----
 
 ---
 
@@ -927,9 +929,9 @@ ranked first, and on Few-NERD it is separated from everything.
 
 ### What "free" actually gets you, in all six
 
-The free-vs-paid comparison in full. Free loses once by a margin the data can see, and
-there by a margin no test was needed for: SummEval, the one task no free arm was trained
-for.
+The free-vs-paid comparison in full. Free loses once: on SummEval, the one task no free arm
+was trained for, and there by a margin no test was needed to see.
+
 The verdict's percentage is the winner's lead **relative to the lower of the two scores**
 (+11.8% = 0.7674 ÷ 0.6864 − 1), whereas the table above measures everything relative to the
 best arm — which is why Few-NERD reads −11.4% there and +11.8% here. "Separated" is the
@@ -1027,7 +1029,7 @@ re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-
 Essentially uncorrelated in five experiments, and negative twice. **Price is not a proxy
 for latency**, and the spread *within* the hosted field (up to 28×, on DBpedia) dwarfs
 anything cost predicts. The exception is SummEval, where the dearer judges were faster
-(r = −0.47) — the one task with long prompts and long JSON answers.
+(r = −0.47); this report does not measure why.
 
 Local models are a different regime entirely: `bert_mini` answers in **7 ms** against
 0.44–7.66 s for hosted arms on the same task — 61× to 1,078× faster, with no network in the
@@ -1071,9 +1073,11 @@ Ordered by what they are worth, not by how obvious they are.
    architectural, and no model choice could recover it.
 2. **If you can label a few thousand examples, fine-tune a small model — on your own
    data.** The best fine-tune ranked first in three of six and third-equal, not separable
-   from the leader, in a fourth (DBpedia); SciFact and SummEval had none — at **$0/month against up to $9,826/month**, and lower latency on classification — 61×–1,078× for `bert_mini` against the hosted
-   field on the same Mac, roughly 5×–140× for the bert-base fine-tunes timed elsewhere. On someone else's data of the same task it finished last. This is the
-   single biggest lever in the table.
+   from the leader, in a fourth (DBpedia); SciFact and SummEval had none. It costs
+   **$0/month against up to $9,826/month**, with lower latency on classification —
+   61×–1,078× for `bert_mini` against the hosted field on the same Mac, roughly 5×–140× for
+   the bert-base fine-tunes timed elsewhere. On someone else's data of the same task it
+   finished last. This is the single biggest lever in the table.
 3. **Never buy the most expensive arm.** Six for six it was not the best, and in three
    experiments it was *worse* than free while costing $875–$9,826/month.
 4. **Pick the cheapest arm your test cannot separate from the leader.** That is 8×–143×
@@ -1082,8 +1086,8 @@ Ordered by what they are worth, not by how obvious they are.
    leaderboard — "ahead on the average" was true of the leader in 100% of cases and meant
    almost nothing.
 5. **Do not select on a pilot.** ρ ≈ 0.8 feels like enough and picked the wrong winner
-   three times in the five experiments that ran one. Use the pilot to catch instrument bugs, which is what it is
-   genuinely good for.
+   three times in the five experiments that ran one. Use the pilot to catch instrument
+   bugs, which is what it is genuinely good for.
 6. **Read the items your whole field gets wrong before you read the ranking.** On a
    saturated benchmark that is where the ceiling is, and it is annotation rather than
    capability.
@@ -1091,9 +1095,9 @@ Ordered by what they are worth, not by how obvious they are.
    here moved an arm further than most model swaps did.
 
 **When paying more IS right**, and this report should not be read as saying never: when
-you cannot label data and the task is unlike anything a small model was trained on (SummEval
-measures that case: every LLM judge beat every free option); when
-the quality difference is worth more than the bill (at 1,000 items/month the entire
+you cannot label data and the task is unlike anything a small model was trained on
+(SummEval measures that case: every LLM judge beat every free option); when the quality
+difference is worth more than the bill (at 1,000 items/month the entire
 DBpedia spread is $1.35 and the analysis is not worth your time); when a single wrong
 answer is expensive; or when engineering time to fine-tune and host costs more than the
 API. The finding is not that expensive models are bad — it is that **price stops
@@ -1109,8 +1113,9 @@ something other than the leaderboard.
   could not be re-run from the environment that found it, so whether the *paid*
   comparisons travel is measured for none of them.
 - **Six tasks, all English, all text.** No multilingual, multimodal, long-context or
-  agentic task, and one judging task (SummEval) as the only open-ended one. The tie-at-the-top result may be a property of
-  *saturated-ish academic benchmarks* rather than of frontier models.
+  agentic task, and one judging task (SummEval) as the only open-ended one. The
+  tie-at-the-top result may be a property of *saturated-ish academic benchmarks* rather
+  than of frontier models.
 - **One pass per arm, temperature 0.** Every interval here is over *items*, never over
   *runs*. Run-to-run variance is real and, for hosted arms, unmeasured — two runs of an
   identical SciFact config scored 0.6691 and 0.6617, because OpenRouter routes across
@@ -1134,19 +1139,19 @@ something other than the leaderboard.
 - **Nothing here measures factual accuracy, safety, or instruction-following.** ROUGE is
   n-gram overlap; accuracy is label match. A confident, fluent, wrong answer scores well on
   several of these metrics, and the reports say so individually.
-- **§5 is three corpora, not six.** Two were never checked for gold errors, and their
+- **§5 is three corpora, not six.** Three were never checked for gold errors, and their
   absence from the table is a gap, not a clean bill.
 - **The economics in §8 price inference and nothing else.** No engineering time to
   fine-tune or host a local model, no GPU rental, no maintenance, no serving
   infrastructure, no cost of a wrong answer. "Free" means *zero inference cost*, and a
   local model that takes a week to set up is not free in any sense a business recognises.
-- **The 1M-items/month projections are linear extrapolations** from 200–280 item runs.
+- **The 1M-items/month projections are linear extrapolations** from 100–280 item runs.
   They ignore volume discounts, batch pricing, caching, and rate limits — all of which a
   real deployment at that scale would negotiate or hit. Treat them as *ratios* that are
   sound, and absolute figures that are indicative.
 - **Prices are two snapshots**, taken 2026-09-28/29 for the first five experiments and
-  2026-10-18 for SummEval, through one reseller, and several had moved in between. Model pricing
-  moves fast and the ordering of vendors is the least durable finding here. The
+  2026-10-18 for SummEval, through one reseller, and several had moved in between. Model
+  pricing moves fast and the ordering of vendors is the least durable finding here. The
   *structure* — that price stops predicting quality — is what is expected to survive.
 
 ---

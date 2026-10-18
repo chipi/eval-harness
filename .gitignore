@@ -41,6 +41,7 @@ docs/papers/*.pdf
 !docs/papers/wang-2022-e5.pdf
 !docs/papers/zaratiana-2023-gliner.pdf
 !docs/papers/zhang-2024-gsm1k.pdf
+!docs/papers/yuan-2021-bartscore.pdf
 
 # MkDocs output (mkdocs build); published by .github/workflows/pages.yml, never committed
 /build/
