@@ -1,0 +1,17 @@
+Here is the JSON object with the ratings for the 16 summaries:
+
+```
+{
+  "coherence": [3, 4, 4, 2, 4, 4, 4, 3, 1, 4, 4, 4, 4, 2, 3, 4],
+  "consistency": [5, 5, 5, 3, 5, 5, 5, 5, 2, 5, 5, 5, 5, 4, 5, 5],
+  "fluency": [3, 4, 4, 3, 4, 4, 5, 4, 2, 4, 4, 4, 5, 4, 4, 4],
+  "relevance": [4, 4, 4, 2, 4, 3, 4, 3, 1, 3, 4, 4, 3, 2, 3, 4]
+}
+```
+
+Here's a brief explanation for the ratings:
+
+* Coherence: Summaries 2, 3, 5, 6, 7, 11, and 12 are well-structured and coherent, while summaries 4, 9, and 14 are less coherent due to missing or disjointed information.
+* Consistency: Most summaries are factually consistent with the article, but summary 9 introduces new, unverified information and is thus rated lower.
+* Fluency: Summaries with proper grammar, capitalization, and formatting (e.g., 7, 11, 13) are rated higher, while those with errors (e.g., 1, 9) are rated lower.
+* Relevance: Summaries that include the most important information (e.g., Munden's disappearance, his offense, and the manhunt) are rated higher, while those that omit key details or include redundant information are rated lower.

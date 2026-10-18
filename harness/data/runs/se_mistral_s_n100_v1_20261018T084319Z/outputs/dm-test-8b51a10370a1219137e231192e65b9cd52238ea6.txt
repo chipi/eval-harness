@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary based on the four dimensions:
+
+```json
+{
+  "coherence": [2, 4, 3, 3, 4, 4, 4, 3, 2, 3, 4, 2, 4, 4, 2, 4],
+  "consistency": [2, 5, 5, 5, 5, 5, 5, 5, 2, 5, 5, 5, 5, 5, 3, 5],
+  "fluency": [4, 5, 3, 5, 5, 5, 3, 5, 4, 4, 5, 3, 5, 5, 3, 5],
+  "relevance": [2, 4, 3, 3, 4, 4, 4, 3, 2, 3, 4, 2, 4, 4, 2, 4]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Lower scores for summaries that lack logical flow or are disjointed (e.g., Summary 1 mixes unrelated facts, Summary 9 introduces irrelevant details).
+- **Consistency**: Lower scores for factual errors (e.g., Summary 1 incorrectly states Stokes broke his neck, Summary 9 introduces unrelated information about Peter Moores' team changes).
+- **Fluency**: Lower scores for awkward phrasing or formatting issues (e.g., Summary 3 and 11 have redundant parentheses, Summary 12 has a formatting error with backticks).
+- **Relevance**: Lower scores for summaries that include minor or irrelevant details (e.g., Summary 1 mentions "ashes series of ups and downs" without context, Summary 9 introduces unrelated team changes).

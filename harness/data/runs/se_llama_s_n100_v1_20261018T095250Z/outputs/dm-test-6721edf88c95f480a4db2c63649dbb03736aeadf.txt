@@ -1,0 +1,19 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [3, 5, 5, 5, 5, 5, 5, 4, 2, 4, 5, 5, 4, 2, 3, 3],
+  "consistency": [2, 5, 5, 5, 5, 5, 5, 5, 2, 5, 5, 5, 5, 2, 5, 3],
+  "fluency": [2, 5, 5, 5, 5, 5, 5, 4, 2, 4, 5, 5, 4, 2, 3, 3],
+  "relevance": [2, 5, 5, 5, 5, 5, 5, 5, 2, 4, 5, 5, 4, 2, 3, 3]
+}
+```
+
+Note that I've tried to rate each summary based on its own merits, rather than comparing them to each other. Here's a brief explanation of my ratings:
+
+* Coherence: I looked for summaries that were well-structured and easy to follow. Summaries that were disjointed or hard to understand received lower ratings.
+* Consistency: I checked each summary for factual accuracy and consistency with the original article. Summaries that introduced errors or inconsistencies received lower ratings.
+* Fluency: I evaluated the grammar, syntax, and overall readability of each summary. Summaries with errors or awkward phrasing received lower ratings.
+* Relevance: I assessed whether each summary captured the main points and key information from the article. Summaries that omitted important details or included irrelevant information received lower ratings.
+
+Please let me know if you have any questions or if you'd like me to elaborate on any of my ratings!

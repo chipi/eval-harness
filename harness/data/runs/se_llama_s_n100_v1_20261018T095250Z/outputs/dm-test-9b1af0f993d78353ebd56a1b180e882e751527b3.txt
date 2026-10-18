@@ -1,0 +1,19 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [4, 5, 5, 4, 4, 3, 5, 5, 2, 5, 5, 5, 5, 3, 3, 2],
+  "consistency": [5, 5, 5, 5, 5, 5, 5, 5, 2, 5, 5, 5, 5, 4, 4, 3],
+  "fluency": [4, 5, 5, 4, 4, 3, 5, 5, 4, 5, 5, 5, 5, 4, 4, 3],
+  "relevance": [3, 4, 5, 4, 4, 3, 5, 5, 2, 5, 5, 5, 5, 3, 3, 2]
+}
+```
+
+Here's a brief explanation of the ratings:
+
+* Coherence: This dimension assesses how well-structured and organized the summary is. A high score indicates that the summary is well-organized and easy to follow.
+* Consistency: This dimension checks if the summary is factually consistent with the article. A high score indicates that the summary does not contain any factual errors or inconsistencies.
+* Fluency: This dimension evaluates the quality of the individual sentences in the summary. A high score indicates that the sentences are grammatically correct, well-phrased, and easy to read.
+* Relevance: This dimension assesses how well the summary captures the main points of the article. A high score indicates that the summary includes the most important information and excludes unnecessary details.
+
+Note that these ratings are subjective and may vary depending on individual perspectives.

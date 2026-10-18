@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 3, 4, 3, 4, 4, 4, 3, 2, 3, 4, 3, 4, 4, 3, 2],
+  "consistency": [2, 4, 5, 5, 5, 5, 5, 5, 3, 5, 5, 5, 5, 5, 5, 2],
+  "fluency": [3, 4, 5, 5, 5, 5, 3, 5, 4, 5, 5, 3, 5, 5, 5, 3],
+  "relevance": [2, 3, 4, 3, 4, 4, 4, 3, 2, 3, 4, 3, 4, 4, 3, 2]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Lower scores for summaries that lack logical flow (e.g., Summary 1 jumps between topics, Summary 9 is too vague).
+- **Consistency**: Lower scores for summaries with factual errors (e.g., Summary 1 incorrectly states Merson was brought on, Summary 16 misattributes the row to Burnley).
+- **Fluency**: Lower scores for summaries with formatting issues (e.g., Summary 7 and 12 have inconsistent spacing and hashtags).
+- **Relevance**: Lower scores for summaries that omit key details (e.g., Summary 9 is too brief, Summary 16 misrepresents the conflict).

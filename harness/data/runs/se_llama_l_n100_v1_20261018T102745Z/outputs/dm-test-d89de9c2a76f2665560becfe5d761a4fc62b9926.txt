@@ -1,0 +1,17 @@
+Here is the JSON object with the ratings for the 16 summaries:
+
+```
+{
+  "coherence": [3, 4, 5, 3, 4, 4, 5, 4, 1, 4, 4, 4, 4, 3, 2, 3],
+  "consistency": [5, 5, 5, 4, 4, 5, 5, 5, 1, 5, 5, 5, 5, 4, 3, 4],
+  "fluency": [4, 5, 5, 4, 5, 5, 5, 5, 2, 5, 5, 5, 5, 4, 4, 4],
+  "relevance": [3, 4, 5, 3, 3, 4, 5, 4, 1, 4, 4, 4, 4, 3, 2, 3]
+}
+```
+
+Here's a brief explanation for the ratings:
+
+* Coherence: Summaries 3 and 7 scored high for coherence as they presented a clear and well-structured account of the match. Summaries 9 and 15 scored low due to poor sentence structure and irrelevant information.
+* Consistency: Most summaries were consistent with the article, but summary 9 was penalized for introducing a completely new and incorrect fact (Rashford heading home a free-kick). Summary 15 was also penalized for mentioning "paul mcguinness and marcus wood were in the first team", which is not mentioned in the article.
+* Fluency: Summaries with high fluency scores (e.g., 2, 3, 7, 10, 11) had well-written, grammatical sentences. Those with lower scores (e.g., 9, 15) had grammatical errors or awkward phrasing.
+* Relevance: Summaries that focused on the main event (the match) and its key aspects (e.g., Callum Gribbin's goal) scored higher for relevance. Those that included too much extraneous information or failed to capture the main points scored lower.

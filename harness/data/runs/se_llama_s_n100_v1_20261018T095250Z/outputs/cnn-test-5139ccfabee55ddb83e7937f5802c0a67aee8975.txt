@@ -1,0 +1,17 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [4, 5, 5, 4, 4, 4, 5, 4, 3, 3, 5, 5, 4, 3, 4, 3],
+  "consistency": [3, 5, 5, 4, 4, 4, 5, 4, 4, 4, 5, 5, 4, 4, 4, 4],
+  "fluency": [4, 5, 5, 4, 4, 4, 5, 4, 3, 3, 5, 5, 4, 3, 4, 3],
+  "relevance": [3, 5, 5, 4, 4, 4, 5, 4, 3, 3, 5, 5, 4, 3, 4, 3]
+}
+```
+
+Note that the ratings are subjective and may vary depending on individual perspectives. However, I've tried to provide ratings based on the guidelines provided:
+
+* Coherence: How well-structured and organized is the summary?
+* Consistency: Are the facts in the summary accurate and consistent with the article?
+* Fluency: Is the summary easy to read and free of grammatical errors?
+* Relevance: Does the summary include only important information and avoid redundancy or excess detail?

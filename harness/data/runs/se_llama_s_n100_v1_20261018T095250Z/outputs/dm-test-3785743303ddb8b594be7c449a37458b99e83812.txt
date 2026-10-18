@@ -1,0 +1,12 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [3, 5, 5, 4, 4, 4, 5, 4, 2, 4, 5, 5, 4, 4, 4, 3],
+  "consistency": [4, 5, 5, 4, 4, 4, 5, 4, 2, 4, 5, 5, 4, 4, 4, 3],
+  "fluency": [4, 5, 5, 4, 4, 4, 5, 4, 2, 4, 5, 5, 4, 4, 4, 3],
+  "relevance": [3, 5, 5, 4, 4, 4, 5, 4, 2, 4, 5, 5, 4, 4, 4, 3]
+}
+```
+
+Note that the ratings are subjective and may vary depending on individual perspectives. However, I've tried to evaluate the summaries based on the provided guidelines. Let me know if you have any further questions or concerns!

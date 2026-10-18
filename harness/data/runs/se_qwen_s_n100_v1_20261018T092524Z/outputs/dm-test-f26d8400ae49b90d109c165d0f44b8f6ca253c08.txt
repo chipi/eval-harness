@@ -1,0 +1,79 @@
+To evaluate the summaries, I will assess each one based on the four dimensions: **coherence**, **consistency**, **fluency**, and **relevance**.
+
+**Article Key Facts:**
+1.  Chelsea made an offer for Yoshinori Muto (FC Tokyo, 22-year-old forward).
+2.  Source: FC Tokyo president Naoki Ogane.
+3.  Plan: If he joins Chelsea, he goes on loan to Vitesse Arnhem (Dutch partner club) next season.
+4.  Ogane claims interest is NOT connected to the £200m Yokohama Rubber sponsorship deal.
+5.  Muto stats: 11 caps, 1 goal for Japan; played for FC Tokyo since 2013; scored 3 goals in 4 games this season.
+6.  Muto graduated from Keio University recently.
+7.  Would be first Japanese player at Chelsea.
+8.  Deal value mooted at £4m.
+
+**Evaluation of Summaries:**
+
+1.  **Summary 1**: "chelsea have made an offer for fc tokyo 's dutch partner yoshinori muto..."
+    *   **Coherence**: Low. The sentence structure is broken ("dutch partner yoshinori muto" implies Muto is the partner, not Vitesse).
+    *   **Consistency**: Poor. It says "the dutch club has scored three goals", but the article says *Muto* scored three goals. Also calls Muto "fc tokyo's dutch partner".
+    *   **Fluency**: Poor. Lowercase start, weird phrasing.
+    *   **Relevance**: Misses key context (loan plan, source).
+    *   *Scores*: Coherence: 1, Consistency: 1, Fluency: 1, Relevance: 2.
+
+2.  **Summary 2**: "...muto claims chelsea 's interest..."
+    *   **Coherence**: Good flow.
+    *   **Consistency**: Error. The article states *Ogane* (club president) claims the interest is not connected to the sponsorship. This summary attributes the claim to *Muto*.
+    *   **Fluency**: Good, though starts with lowercase.
+    *   **Relevance**: Covers main points well.
+    *   *Scores*: Coherence: 4, Consistency: 2, Fluency: 3, Relevance: 4.
+
+3.  **Summary 3**: "...according to club president naoki ogane... ogane claims..."
+    *   **Coherence**: Excellent. Logical progression.
+    *   **Consistency**: Perfect. Matches article facts exactly.
+    *   **Fluency**: Good, standard news style (lowercase start is a minor formatting issue common in these datasets, but sentences are grammatically sound).
+    *   **Relevance**: High. Captures the offer, the loan condition, and the denial of sponsorship link.
+    *   *Scores*: Coherence: 5, Consistency: 5, Fluency: 4, Relevance: 5.
+
+4.  **Summary 4**: "...will join chelsea 's dutch partner club vitesse arnhem."
+    *   **Coherence**: Okay.
+    *   **Consistency**: Missing the conditional nature ("if he completes a move"). It states it as fact. Also omits the source (Ogane) for the claim about sponsorship, though it mentions Ogane later. Wait, it says "ogane claims...". But the first sentence lacks attribution. More importantly, it misses the "next season" timing and the "if" condition.
+    *   **Fluency**: Acceptable.
+    *   **Relevance**: Less detailed than #3.
+    *   *Scores*: Coherence: 3, Consistency: 3, Fluency: 4, Relevance: 3.
+
+5.  **Summary 5**: "...join chelsea 's vitesse arnhem..."
+    *   **Coherence**: Okay.
+    *   **Consistency**: Phrasing "Chelsea's Vitesse Arnhem" is slightly awkward but understandable. "£200million deal" vs "sponsorship deal" - acceptable.
+    *   **Fluency**: Acceptable.
+    *   **Relevance**: Good coverage.
+    *   *Scores*: Coherence: 4, Consistency: 4, Fluency: 4, Relevance: 4.
+
+6.  **Summary 6**: "...ogane claims chelsea 's interest..."
+    *   **Coherence**: Very good.
+    *   **Consistency**: Accurate.
+    *   **Fluency**: Good.
+    *   **Relevance**: High. Similar to #3 but slightly less formal punctuation usage (missing commas around non-restrictive clauses? No, looks fine).
+    *   *Scores*: Coherence: 5, Consistency: 5, Fluency: 4, Relevance: 5.
+
+7.  **Summary 7**: "...j - league side... £ 200million..."
+    *   **Coherence**: Good.
+    *   **Consistency**: Accurate.
+    *   **Fluency**: Spacing issues ("22 - year - old", "j - league") make it look like tokenized text rather than natural language.
+    *   **Relevance**: High.
+    *   *Scores*: Coherence: 4, Consistency: 5, Fluency: 2, Relevance: 5.
+
+8.  **Summary 8**: "yoshinori muto has been linked with a £4million move..."
+    *   **Coherence**: Good.
+    *   **Consistency**: Accurate. Mentions graduation and loan.
+    *   **Fluency**: Good.
+    *   **Relevance**: Focuses on different aspects (graduation, price) but misses the specific denial of the sponsorship link which was a major point in the article. Still relevant.
+    *   *Scores*: Coherence: 4, Consistency: 5, Fluency: 4, Relevance: 3.
+
+9.  **Summary 9**: "Chelsea have made an offer for FC Tokyo's 22-year-old forward Yoshinori Muto."
+    *   **Coherence**: Single sentence.
+    *   **Consistency**: Accurate.
+    *   **Fluency**: Perfect capitalization and grammar.
+    *   **Relevance**: Too brief. Misses the loan arrangement, the sponsorship denial, and the source.
+    *   *Scores*: Coherence: 3, Consistency: 5, Fluency: 5, Relevance: 1.
+
+10. **Summary 10**: "...first japanese player... scored three goals..."
+    *   **Coherence**:

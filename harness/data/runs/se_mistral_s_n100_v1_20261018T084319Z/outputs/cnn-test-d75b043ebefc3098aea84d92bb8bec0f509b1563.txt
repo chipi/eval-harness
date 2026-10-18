@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [3, 4, 5, 4, 4, 4, 5, 4, 2, 3, 5, 5, 5, 4, 4, 4],
+  "consistency": [3, 4, 5, 5, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 4, 5],
+  "fluency": [4, 4, 4, 5, 5, 5, 5, 5, 3, 4, 4, 4, 5, 5, 5, 4],
+  "relevance": [3, 3, 5, 4, 4, 4, 5, 4, 1, 4, 5, 5, 5, 4, 3, 4]
+}
+```
+
+### Explanation of Key Ratings:
+- **Coherence**: Summaries like 3, 7, 11, 12, and 13 are well-structured and logically flow. Summary 9 is incoherent (e.g., "Iran is a major ally of Pakistan" is false and disrupts the flow).
+- **Consistency**: Summary 9 contains a factual error ("Iran is a major ally of Pakistan"), while others align well with the article.
+- **Fluency**: Most summaries are grammatically correct, but some (e.g., 1, 2, 6, 11, 12) have minor issues like missing commas or awkward phrasing.
+- **Relevance**: Summaries like 3, 7, 11, 12, and 13 include the most critical details (casualties, militant group, Pakistani response). Summary 9 is irrelevant due to incorrect claims.

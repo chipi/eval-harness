@@ -1,0 +1,17 @@
+Here is the JSON object with the ratings for the 16 summaries:
+
+```
+{
+  "coherence": [2, 4, 5, 3, 4, 3, 3, 3, 2, 3, 2, 5, 4, 4, 1, 2],
+  "consistency": [2, 5, 5, 4, 4, 4, 4, 4, 2, 4, 3, 5, 4, 4, 2, 3],
+  "fluency": [3, 5, 5, 5, 5, 5, 4, 5, 3, 5, 3, 5, 5, 5, 4, 4],
+  "relevance": [3, 4, 5, 3, 3, 3, 3, 3, 2, 3, 2, 4, 3, 4, 1, 2]
+}
+```
+
+Here's a brief explanation for the ratings:
+
+* Coherence: Summaries 3 and 12 score high for coherence as they effectively convey the main points of the article in a well-structured manner. Summaries 1, 9, 11, and 15 score low due to disjointed or confusing sentence structures.
+* Consistency: Summaries 2, 3, and 12 are consistent with the article, accurately conveying the main points. Summaries 1, 9, and 15 contain factual errors or contradictions.
+* Fluency: Most summaries score high for fluency, with summaries 2, 3, 4, 5, 10, 12, 13, and 14 being well-written and free of errors. Summaries 9 and 11 contain formatting issues or awkward phrasing.
+* Relevance: Summaries 3 and 12 score high for relevance as they effectively capture the main points of the article. Summaries 9, 11, and 15 score low due to the inclusion of irrelevant or redundant information.

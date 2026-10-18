@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [3, 4, 4, 3, 4, 4, 5, 4, 2, 3, 5, 5, 3, 4, 4, 3],
+  "consistency": [3, 5, 4, 5, 5, 5, 5, 5, 1, 2, 5, 5, 3, 5, 4, 4],
+  "fluency": [4, 5, 4, 5, 5, 5, 5, 5, 3, 4, 5, 5, 4, 5, 5, 5],
+  "relevance": [3, 4, 4, 3, 4, 3, 5, 4, 1, 2, 5, 5, 2, 4, 4, 3]
+}
+```
+
+### Explanation of Key Ratings:
+- **Coherence**: Summaries like 7, 11, and 12 are well-structured, while 9 and 10 are disjointed or include irrelevant details.
+- **Consistency**: Summaries like 9 and 10 introduce hallucinated facts (e.g., £250m release clause, move to Barcelona), while others stick closely to the article.
+- **Fluency**: Most summaries are grammatically correct, but 9 has awkward phrasing, and 1 has formatting issues (e.g., "alves -lrb- left -rrb-").
+- **Relevance**: Summaries like 7, 11, and 12 include all key points, while 9 and 10 add unnecessary or incorrect details.

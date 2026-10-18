@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [3, 4, 4, 3, 3, 4, 4, 4, 1, 3, 3, 4, 4, 4, 4, 4],
+  "consistency": [3, 5, 5, 5, 4, 5, 5, 5, 2, 5, 5, 5, 5, 5, 5, 4],
+  "fluency": [4, 3, 4, 4, 4, 4, 4, 4, 1, 4, 4, 4, 4, 4, 4, 4],
+  "relevance": [3, 4, 4, 3, 3, 4, 4, 4, 1, 3, 3, 4, 4, 4, 4, 4]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries with clear, logical flow (e.g., 2, 3, 6, 7, 10, 12, 13, 14, 15, 16) score higher. Summary 9 is incoherent due to excessive repetition.
+- **Consistency**: Most summaries are factually accurate (scores 4-5). Summary 1 has a hallucination ("found guilty of injuries"), and Summary 9 has irrelevant repetition.
+- **Fluency**: Most summaries are grammatically correct (scores 3-5). Summary 9 has formatting issues and excessive repetition, scoring 1.
+- **Relevance**: Summaries that include key details (e.g., cause of death, arrest, appeal for witnesses) score higher. Some (e.g., 1, 4, 5, 9) omit important details or include redundancy.

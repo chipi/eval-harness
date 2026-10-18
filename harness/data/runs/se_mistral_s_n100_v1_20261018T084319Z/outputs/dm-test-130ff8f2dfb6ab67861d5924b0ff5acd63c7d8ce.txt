@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 3, 5, 2, 2, 4, 5, 4, 2, 4, 5, 5, 4, 3, 2, 3],
+  "consistency": [3, 4, 5, 4, 2, 5, 5, 5, 1, 5, 5, 5, 5, 2, 3, 3],
+  "fluency": [3, 4, 5, 4, 3, 4, 5, 4, 3, 4, 5, 5, 4, 3, 3, 3],
+  "relevance": [3, 4, 5, 2, 1, 4, 5, 4, 1, 4, 5, 5, 4, 2, 2, 4]
+}
+```
+
+### Explanation of Key Ratings:
+- **Coherence**: Summaries 3, 7, 11, 12, and 13 are the most coherent, as they logically connect the key events (firing, reinstatement, and final sacking). Summaries 1, 2, 4, 5, 6, 8, 9, 10, 14, 15, and 16 are less coherent due to disjointed or incomplete information.
+- **Consistency**: Summaries 3, 5, 6, 7, 10, 11, 12, and 13 are fully consistent with the article. Summary 9 introduces incorrect information (e.g., "failed attempt to buy the club"), while Summary 14 mislabels Ze Maria as a "Romanian coach" and "Inter defender."
+- **Fluency**: Summaries 3, 5, 7, 10, 11, 12, and 13 are grammatically correct and well-structured. Some summaries (e.g., 1, 2, 4, 6, 8, 9, 14, 15, 16) have minor errors or awkward phrasing.
+- **Relevance**: Summaries 3, 5, 7, 11, 12, and 13 include the most important details (firing, reinstatement, final sacking, and key context). Summaries 1, 2, 4, 6, 8, 9, 10, 14, 15, and 16 omit key details or include redundant/irrelevant information.

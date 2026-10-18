@@ -1,0 +1,19 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [3, 4, 5, 2, 5, 3, 5, 4, 3, 4, 3, 5, 5, 2, 3, 4],
+  "consistency": [4, 4, 5, 2, 5, 4, 5, 4, 4, 4, 4, 5, 5, 2, 4, 4],
+  "fluency": [4, 4, 5, 3, 5, 4, 5, 4, 4, 4, 4, 5, 5, 3, 4, 4],
+  "relevance": [3, 4, 5, 2, 5, 3, 5, 4, 3, 4, 3, 5, 5, 2, 3, 4]
+}
+```
+
+Here's a brief explanation of the ratings:
+
+* Coherence: Measures how well-structured and organized the summary is.
+* Consistency: Checks if the summary is factually aligned with the article.
+* Fluency: Evaluates the quality of individual sentences, including grammar, syntax, and readability.
+* Relevance: Assesses whether the summary includes only important information and omits unnecessary details.
+
+Note that these ratings are subjective and may vary depending on individual perspectives. However, they should provide a general idea of the quality of each summary.

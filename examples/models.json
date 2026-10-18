@@ -36,6 +36,7 @@
     "eval-opus-5": "openrouter/anthropic/claude-opus-5",
     "eval-qwen-37plus": "openrouter/qwen/qwen3.7-plus",
     "eval-qwen-3max": "openrouter/qwen/qwen3-max",
-    "eval-qwen-flash": "openrouter/qwen/qwen3.8-flash"
+    "eval-qwen-flash": "openrouter/qwen/qwen3.8-flash",
+    "eval-qwen-37max": "openrouter/qwen/qwen3.7-max"
   }
 }
