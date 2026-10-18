@@ -21,19 +21,20 @@ ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 
-#: The five measurement slices, from the registry `make reproduce` uses too -- so the site
+#: The measurement slices on the site, from the registry `make reproduce` uses too -- so the site
 #: and a stranger's rerun cannot mean different experiments. `base` is the directory the
 #: REPORT is computed from; billed cost always comes from data/runs, where the provider's
 #: response was recorded.
 EXPERIMENTS = [e for e in json.loads((ROOT / "examples" / "experiments.json").read_text())
                ["experiments"] if e.get("site")]
 
-#: Arms that are not models at all — calibration floors for the scorer.
+#: Arms that are not models at all — calibration floors for the scorer. On SummEval that
+#: is every free scorer but BARTScore: ROUGE, `coverage` and length are rules, not models.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k",
-             "random_rank", "first20"}
+             "random_rank", "first20", "length", "rouge1", "rouge2", "rougeL", "coverage"}
 
 
-def _runs(base: str, dataset: str, prefix: str, suffix: str = "_n200_v1") -> dict:
+def _runs(base: str, dataset: str, prefix: str, suffix: str) -> dict:
     """{arm: run_dir} for one slice. Two runs sharing an arm is an error, as in V8."""
     out: dict = {}
     for f in sorted((DATA / base).glob(f"{prefix}*/metrics.json")):
@@ -65,6 +66,10 @@ def _weights() -> dict:
     out = {}
     for arm, w in re.findall(r"^\| `([a-z]+_[sml])` \| `eval-[^`]+` \| .*\| (\*\*open\*\*|proprietary)", ref, re.M):
         out[arm] = "open" if "open" in w else "proprietary"
+    # A replacement arm is described in a note, not a table row: the row count is the
+    # 24-model field other checks derive from.
+    for arm, w in re.findall(r"`([a-z0-9_]+)` \(alias `eval-[^`]+` → .*?, weights: (open|proprietary)\)", ref):
+        out[arm] = w
     return out
 
 
@@ -72,18 +77,18 @@ def _not_separated(exp: dict) -> list:
     """Opponents the leader's Holm family test does not separate from."""
     r = subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "family_test.py"), "--dataset-id",
-         exp["dataset"], "--a", f"{exp['prefix']}{exp['leader']}_n200_v1", "--against",
-         "_n200_v1", "--metric", exp["metric"], "--runs-dir", str(DATA / exp["base"])],
+         exp["dataset"], "--a", f"{exp['prefix']}{exp['leader']}{exp['suffix']}", "--against",
+         exp["suffix"], "--metric", exp["metric"], "--runs-dir", str(DATA / exp["base"])],
         capture_output=True, text=True, cwd=HARNESS)
     if r.returncode != 0:
         raise SystemExit(f"family test failed for {exp['slug']}:\n{r.stderr[-800:]}")
-    return [ln.split()[0][len(exp["prefix"]):-len("_n200_v1")] for ln in r.stdout.splitlines()
-            if ln.strip().endswith("--") and ln.split()[0].endswith("_n200_v1")]
+    return [ln.split()[0][len(exp["prefix"]):-len(exp["suffix"])] for ln in r.stdout.splitlines()
+            if ln.strip().endswith("--") and ln.split()[0].endswith(exp["suffix"])]
 
 
 def experiment(exp: dict, weights: dict) -> dict:
-    scored = _runs(exp["base"], exp["dataset"], exp["prefix"])
-    billed = _runs("runs", exp["dataset"], exp["prefix"])
+    scored = _runs(exp["base"], exp["dataset"], exp["prefix"], exp["suffix"])
+    billed = _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"])
     arms = []
     for arm, d in scored.items():
         m = json.loads((d / "metrics.json").read_text())
@@ -128,7 +133,7 @@ def calibration() -> list:
                  "ci": ft["rouge1_ci95"], "published": pub["rouge1"], "n": ft["n"],
                  "scale": 1})
     names = {"ag_news": "AG News", "dbpedia": "DBpedia-14", "few_nerd": "Few-NERD",
-             "scifact": "SciFact"}
+             "scifact": "SciFact", "summeval": "SummEval"}
     for exp, label in names.items():
         c = json.loads((cal / f"{exp}.json").read_text())
         for arm, r in c["arms"].items():
@@ -144,7 +149,7 @@ def calibration() -> list:
 def dailymail() -> list:
     """The five local summarisation arms on the CNN slice and on the DailyMail slice."""
     out = []
-    cnn = _runs("runs", "cnn_dailymail_200", "cnn_")
+    cnn = _runs("runs", "cnn_dailymail_200", "cnn_", "_n200_v1")
     dm = _runs("runs", "cnn_dailymail_dm200", "cnn_", "_dm200_v1")
     for arm in ("bart_l", "bart_m", "bart_s", "lead3", "bart_l_xsum"):
         c = json.loads((cnn[arm] / "metrics.json").read_text())["scores"]["coverage"]

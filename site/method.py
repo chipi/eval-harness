@@ -16,6 +16,7 @@ CLASS = "research/REPORT_CLASSIFICATION.md"
 NER = "research/REPORT_NER.md"
 RET = "research/REPORT_RETRIEVAL.md"
 SYN = "research/REPORT_SYNTHESIS.md"
+JUDGE = "research/REPORT_SUMMEVAL.md"
 GUIDE = "docs/GUIDE.md"
 
 # ── the lifecycle, shared by both pages ─────────────────────────────────────
@@ -104,7 +105,7 @@ def chapters(H, f: dict) -> list:
         {"id": "experiment", "nodes": "arms runs", "kicker": "Experiment",
          "title": "An eval is an experiment.",
          "short": "Vary one thing. Record everything else.",
-         "story": (f"<p>The same {max(x['n_hosted'] for x in exps)} hosted models ran on five tasks with one prompt per "
+         "story": (f"<p>The same {max(x['n_hosted'] for x in exps)} hosted models ran on {H.word(len(exps))} tasks with one prompt per "
                    "task, at temperature 0 with reasoning off — so when a model's score differs "
                    "between two tasks, the task is the only thing that changed.</p>"
                    "<p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the "
@@ -161,7 +162,7 @@ def chapters(H, f: dict) -> list:
                    "was 0.00008.", SUMM) + " " + H.q("Two independent 100-article evals of the same "
                    "models agree at only ρ = 0.79.", SUMM) + "</p>"
                    "<p>" + H.q("A pilot correlates beautifully and picks the wrong winner — in "
-                   "three of five experiments here.", SYN) + "</p>"),
+                   "three of the five experiments here that ran one.", SYN) + "</p>"),
          "habit": "Run every arm more than once and measure how far it disagrees with itself. "
                   "Tune on a small dev slice, report on the rest, and measure how many items a "
                   "ranking needs instead of assuming it.",
@@ -235,7 +236,7 @@ def method_page(H, f: dict) -> str:
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
     <div class="prose">
-      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and five experiments that show what skipping it costs.</p>
+      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six experiments that show what skipping it costs.</p>
       <p>The idea-by-idea mapping, with chapters, is in <a href="docs/INFLUENCES/">Influences</a>.</p>
     </div>
     <ul class="reading">
@@ -256,7 +257,7 @@ const on=x.target.dataset.nodes.split(' ');nodes.forEach(n=>n.classList.toggle('
 document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
 </script>"""
     return H.page("The method — eval-harness",
-                  "Six habits for measuring AI systems, as five experiments taught them: "
+                  "Six habits for measuring AI systems, as six experiments taught them: "
                   "experiments, frozen data, gold references, noise, significance, the record.",
                   body + H.author("method"), here="method")
 
@@ -458,5 +459,11 @@ def experiment_lesson(H, x: dict) -> tuple:
                 H.q("57% of the winner's margin is one entity type whose meaning exists only in "
                     "that corpus.", NER) + " A clean win can still be partly a win at the "
                 "annotation, not the task.")
+    if slug == "summeval":
+        return ("gold", "Silver is not gold.",
+                H.q("The best of the 24 judges agrees with the experts at τ 0.5398: better than "
+                    "any free metric, and still far from agreement.", JUDGE)
+                + " An LLM judge is a silver reference. This experiment is what checking one "
+                "against a gold set looks like.")
     return ("noise", "Measure the noise before the difference.",
             H.q("The dev slice picked the wrong winner — its leader finished 10th of 19.", RET))

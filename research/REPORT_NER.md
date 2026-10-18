@@ -13,8 +13,8 @@
 > methodology as about which model won.
 
 
-> **This is one of five experiments.** What all five agree on — and the four
-> places they disagree with the conventional reading of a leaderboard — is in
+> **This is one of six experiments.** What all six agree on — and where they disagree
+> with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ---
@@ -43,7 +43,7 @@ provider billed for the 280 sentences, scaled to one million items a month.
 **Separated** = a paired sign-flip permutation test on per-sentence F1, Holm-corrected
 over the declared family of 27 opponents at α = 0.05 (§3.2).
 
-*Cross-cutting context for all five experiments:
+*Cross-cutting context for all six experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 
 ### What this experiment specifically found

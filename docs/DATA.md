@@ -12,7 +12,7 @@ each dataset's own page is what binds.*
 | | in this repository | you download |
 |---|---|---|
 | **The corpora** (articles, snippets, abstracts, sentences) | **no** | yes, with each example's `fetch.py`, from the public source |
-| **Gold and silver references** for the five experiments | **no** | rebuilt by `fetch.py`, byte for byte (seeded) |
+| **Gold and silver references** for the six experiments | **no** | rebuilt by `fetch.py`, byte for byte (seeded) |
 | **Run outputs** (`outputs/`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
 | **Scores, costs, fingerprints** (`metrics.json`) | yes | — |
 | **Demo and tutorial data** (`harness/data/sources`, `harness/tutorial/`) | yes: synthetic or invented, written for this repository | — |

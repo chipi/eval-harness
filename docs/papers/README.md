@@ -5,8 +5,8 @@ Every work cited in [`../REFERENCE.md`](../REFERENCE.md) and the per-experiment
 on 2026-09-29 rather than assumed.
 
 [`fetch_papers.py`](fetch_papers.py) downloads the redistributable ones into this
-directory for offline reading. **Twelve of the twenty-four are committed here**; the
-other twelve are gitignored by name so `--all` cannot commit them by accident. See
+directory for offline reading. **Twelve of the twenty-seven are committed here**; the
+other fifteen are gitignored so `--all` cannot commit them by accident. See
 [What is committed here](#what-is-committed-here).
 
 (This paragraph and the heading above used to say nothing was mirrored, which was true
@@ -15,7 +15,7 @@ stale — corrected 2026-09-29.)
 
 ```bash
 python docs/papers/fetch_papers.py          # the 12 that permit redistribution
-python docs/papers/fetch_papers.py --all    # all 24, for personal use only
+python docs/papers/fetch_papers.py --all    # all 27, for personal use only
 ```
 
 ---
@@ -53,13 +53,16 @@ Mirroring these is permitted provided the author and licence travel with the cop
 | Lewis et al. (2019), *BART* | arXiv non-exclusive 1.0 | same |
 | Song et al. (2020), *MPNet* | arXiv non-exclusive 1.0 | same |
 | Xiao et al. (2023), *C-Pack* (BGE) | arXiv non-exclusive 1.0 | same |
+| Fabbri et al. (2021), *SummEval: Re-evaluating Summarization Evaluation* | [arXiv non-exclusive 1.0](https://arxiv.org/abs/2007.12626) | same |
+| Liu et al. (2023), *G-Eval: NLG Evaluation using GPT-4 with Better Human Alignment* | [CC BY-NC-ND 4.0](https://arxiv.org/abs/2303.16634) | Redistribution is permitted only non-commercially and unmodified; this repository is MIT, so it is linked rather than mirrored |
+| Yuan, Neubig & Liu (2021), *BARTScore: Evaluating Generated Text as Text Generation* | [CC0 1.0](https://arxiv.org/abs/2106.11520) | None: it could be mirrored. Licences read 2026-10-18, after the mirrored set was fixed; it is linked until someone decides to add it |
 | Järvelin & Kekäläinen (2002), *Cumulated gain-based evaluation of IR techniques* | © ACM | [ACM DL](https://dl.acm.org/doi/10.1145/582415.582418), subscription |
 | Holm (1979), *A Simple Sequentially Rejective Multiple Test Procedure* | © Scandinavian Journal of Statistics | Paywalled. **Also the one citation in this repo that could not be verified programmatically** — JSTOR serves a bot challenge and Crossref does not index the 1979 volume, so the reference is given in full text instead of linked |
 | Demšar (2006), *Statistical Comparisons of Classifiers over Multiple Data Sets* | not machine-readable on the page | [JMLR v7](https://www.jmlr.org/papers/v7/demsar06a.html) states no licence this check could read; freely readable there |
 
 > **The arXiv non-exclusive licence is the common trap.** It reads like an open licence and
 > is not: it grants arXiv a perpetual right to distribute the work. It says nothing about
-> anyone else mirroring it. Ten of the sixteen arXiv papers cited here are under it.
+> anyone else mirroring it. Eleven of the nineteen arXiv papers cited here are under it.
 
 ---
 
@@ -70,8 +73,8 @@ Mirroring these is permitted provided the author and licence travel with the cop
 which is what CC BY and CC BY-SA require of anyone redistributing them. None is modified;
 each is the publisher's PDF byte-for-byte.
 
-The other twelve are **not** here and are gitignored by name, so `--all` cannot commit them
-by accident.
+The other fifteen are **not** here and are gitignored, so `--all` cannot commit them by
+accident.
 
 Two caveats a reader of this directory should have:
 

@@ -57,6 +57,10 @@ PAPERS = [
     ("lewis-2019-bart", "https://arxiv.org/pdf/1910.13461", "arXiv non-exclusive", False),
     ("song-2020-mpnet", "https://arxiv.org/pdf/2004.09297", "arXiv non-exclusive", False),
     ("xiao-2023-c-pack-bge", "https://arxiv.org/pdf/2309.07597", "arXiv non-exclusive", False),
+    ("fabbri-2021-summeval", "https://arxiv.org/pdf/2007.12626", "arXiv non-exclusive", False),
+    # ── other licences: linked, not mirrored (see README.md for why) ─────────
+    ("liu-2023-g-eval", "https://arxiv.org/pdf/2303.16634", "CC BY-NC-ND 4.0", False),
+    ("yuan-2021-bartscore", "https://arxiv.org/pdf/2106.11520", "CC0 1.0", False),
 ]
 
 #: Cited, and not fetchable: no open PDF exists to download.

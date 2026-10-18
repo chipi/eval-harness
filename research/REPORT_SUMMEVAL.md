@@ -43,11 +43,12 @@
   rise with tier; DeepSeek, GLM and Mistral peak at the medium tier, Anthropic's medium
   sits below its small, and Qwen's small leads its medium (§3.4).
 - **The order is stable; the winner is not.** Rankings agree across disjoint halves far
-  more than on the summarisation experiment (ρ 0.90 at 20 articles per half, against 0.44
-  there) — but the top is close enough that the unique winner changes most of the time.
+  more than on the summarisation experiment: ρ 0.90 at 20 articles per half, against 0.333
+  for the same 24 models there, by the same method — but the top is close enough that the
+  unique winner changes most of the time.
 - **Two models could not run as planned**, and both are findings about renting models:
-  `qwen_l`'s model was retired by the provider nine days before this run, and its successor
-  refuses to run with reasoning off (§6).
+  `qwen_l`'s model is no longer served by the provider, and its successor refuses to run
+  with reasoning off (§6).
 
 ---
 
@@ -194,7 +195,8 @@ about quality (r = −0.07 across its 24 hosted arms).
 ### 3.5 The order is stable, the winner is not
 
 Split-half stability among the 24 judges: two disjoint sets of *n* articles, the judges
-ranked independently on each, 400 draws (computed from the committed runs):
+ranked independently on each, 400 seeded draws (`harness/scripts/summeval_analysis.py`,
+from the committed runs):
 
 | articles per half | ρ (half A, half B) | 5th percentile | same unique winner |
 |---|---|---|---|
@@ -205,9 +207,11 @@ ranked independently on each, 400 draws (computed from the committed runs):
 With all 31 arms included (`make rank-stability METRIC=tau`) ρ is higher still (0.953 at 20
 per half), because the free scorers sit far below the judges and are easy to agree on.
 
-The order of the judges is far more stable than the summarisation experiment's (ρ 0.44 at
-20 articles there). Each item here averages 16 summaries and four dimensions, so a single
-article already carries a lot of signal. The winner is a different matter: the top six are
+The order of the judges is far more stable than the summarisation experiment's. The same
+24 hosted models, ranked there by the same split-half method at 20 articles per half, agree
+at ρ **0.333**; that report's own figure, over its whole 29-arm field, is 0.443
+([REPORT_SUMMARIZATION §3.6](REPORT_SUMMARIZATION.md)). Each item here averages 16 summaries
+and four dimensions, so a single article already carries a lot of signal. The winner is a different matter: the top six are
 close enough that the unique leader changes in most draws, which is what §3.2's tie says in
 another way.
 
@@ -248,16 +252,25 @@ generations and is not a calibration.
 [G-Eval](https://arxiv.org/abs/2303.16634), Table 1, reports ROUGE-1 against these experts
 at ρ 0.192, τ 0.150, averaged over four dimensions. Measured here on the same 100 articles,
 ROUGE-1 F1 averaged over the 11 references: **ρ 0.1896, τ 0.1487**, and within 0.01 of the
-published value on every dimension. ROUGE-2 reproduces too (τ 0.1578 against 0.161).
+published value on every dimension. ROUGE-2 reproduces too (τ 0.1578 against 0.161, within
+0.01 on every dimension). ROUGE-L does not, quite: its average is 0.1435 against 0.128 and
+its coherence 0.1530 against 0.099. Both gaps sit inside the 95% interval over articles, so
+under this repository's rule it counts as consistent, but G-Eval scored these same 100
+articles, so a gap of that size is a difference of protocol rather than of sample; the paper
+does not say which ROUGE-L it ran, and this is `rouge_score`'s `rougeL` with stemming. The
+three rows, with their intervals, are in
+[`docs/evidence/calibration/summeval.json`](../docs/evidence/calibration/summeval.json),
+written by `examples/summeval-judging/calibrate.py`.
 BARTScore comes out at τ 0.2562 against G-Eval's 0.305; G-Eval does not state its variant,
 and ours is plain `bart-large-cnn`, source → summary, so it is reported as measured and not
 counted as a calibration row.
 
 ## 6. What changed while measuring
 
-**`qwen_l` could not run.** Its model, `qwen/qwen3-max`, was retired by OpenRouter on
-2026-10-09, after the other five experiments measured it; the run failed at warm-up (404)
-and billed nothing. Qwen's current flagship, `qwen/qwen3.8-max-0902`, refuses reasoning
+**`qwen_l` could not run.** Its model, `qwen/qwen3-max`, is no longer served by OpenRouter:
+the model page remains, but its list of endpoints is empty (checked 2026-10-18), and it was
+already missing from the model listing on 2026-10-15. The other five experiments measured
+it on 2026-09-26 to 09-28. The run failed at warm-up (404) and billed nothing. Qwen's current flagship, `qwen/qwen3.8-max-0902`, refuses reasoning
 disabled ("Reasoning is mandatory for this endpoint"), which this field's protocol does not
 allow. The previous flagship, `qwen/qwen3.7-max`, accepts it (tested: 0 reasoning tokens)
 and runs as `qwen37max` — its own config, never read as `qwen_l`.
@@ -286,8 +299,9 @@ between this experiment and the earlier five mix September and October prices.
   the summarisation experiment found for model-written references.
 - **The annotations are public** and may be in some judges' training data; memorising
   per-summary scores for 1,600 summaries is unlikely but not ruled out.
-- **One pass per judge.** Run-to-run variance at temperature 0 is not measured here; the
-  summarisation experiment found hosted outputs repeat exactly only 9.8% of the time.
+- **One pass per judge.** Run-to-run variance at temperature 0 is not measured here; in the
+  summarisation experiment's three-run sweep only 9.8% of hosted outputs were byte-identical
+  across the three.
 - **Within-family steps are not pair-tested** (§3.4); the size pattern is descriptive.
 - **Costs are October 2026 bills**; the earlier five experiments' costs are September bills.
 - **The tie in §3.2 has two boundary members**; a different sample could move `qwen37max`
@@ -301,4 +315,9 @@ make reproduce EXP=summeval LEVEL=local    # the seven free arms, $0
 make reproduce EXP=summeval LEVEL=hosted   # the 24 judges, one LiteLLM or OpenRouter key
 cd harness && make leaderboard DATASET_ID=summeval_100
 make family-test DATASET_ID=summeval_100 A=se_openai_l_n100_v1 AGAINST=se_ METRIC=tau
+python scripts/summeval_analysis.py            # §3.4–§3.6: split-half, price, ladders, dimensions
+cd .. && examples/summeval-judging/.venv/bin/python examples/summeval-judging/calibrate.py   # §5
 ```
+
+`make ci` checks every figure in this report against those two scripts and the committed
+runs (`harness/scripts/check_report_claims.py`).

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The method — eval-harness</title>
-<meta name="description" content="Six habits for measuring AI systems, as five experiments taught them: experiments, frozen data, gold references, noise, significance, the record.">
+<meta name="description" content="Six habits for measuring AI systems, as six experiments taught them: experiments, frozen data, gold references, noise, significance, the record.">
 <meta property="og:title" content="The method — eval-harness">
-<meta property="og:description" content="Six habits for measuring AI systems, as five experiments taught them: experiments, frozen data, gold references, noise, significance, the record.">
+<meta property="og:description" content="Six habits for measuring AI systems, as six experiments taught them: experiments, frozen data, gold references, noise, significance, the record.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="eval-harness">
 <meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">
@@ -45,7 +45,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <article class="chapter reveal" id="experiment" data-nodes="arms runs">
   <div class="eyebrow"><span class="num">01</span>Experiment</div>
   <h2>An eval is an experiment.</h2>
-  <div class="story prose"><p>The same 24 hosted models ran on five tasks with one prompt per task, at temperature 0 with reasoning off — so when a model's score differs between two tasks, the task is the only thing that changed.</p><p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the prompt and the scoring code, the model behind the alias, library versions, the commit. Before the harness shows a single delta between two runs, it lists the fields that moved.</p></div>
+  <div class="story prose"><p>The same 24 hosted models ran on six tasks with one prompt per task, at temperature 0 with reasoning off — so when a model's score differs between two tasks, the task is the only thing that changed.</p><p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the prompt and the scoring code, the model behind the alias, library versions, the commit. Before the harness shows a single delta between two runs, it lists the fields that moved.</p></div>
   <div class="habit"><b>The habit</b>Change one thing per arm, and record everything else — so “we only changed the prompt” is checkable rather than claimed.</div>
   <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make run-compare BASE=… CAND=…
 <span class="c">Fingerprints DIFFER. Fields that moved: arm.params.sentences</span></pre></div>
@@ -54,7 +54,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <article class="chapter reveal" id="data" data-nodes="sources dataset materialized">
   <div class="eyebrow"><span class="num">02</span>Data</div>
   <h2>The data is the instrument.</h2>
-  <div class="story prose"><p>The summarisation sample was the first 200 articles of the CNN/DailyMail test set. The test set lists CNN's articles first, so every one was CNN's, while the benchmark is mostly DailyMail. Copying the first three sentences scored ROUGE-1 30.20 on that slice against 39.94 on the full test set.</p><p>No check in the harness could see it: every one compared the repository with itself. One <strong>calibration row</strong> — a known baseline against its published value — caught it. Now every experiment has one, and 7 of 7 match the literature.</p></div>
+  <div class="story prose"><p>The summarisation sample was the first 200 articles of the CNN/DailyMail test set. The test set lists CNN's articles first, so every one was CNN's, while the benchmark is mostly DailyMail. Copying the first three sentences scored ROUGE-1 30.20 on that slice against 39.94 on the full test set.</p><p>No check in the harness could see it: every one compared the repository with itself. One <strong>calibration row</strong> — a known baseline against its published value — caught it. Now every experiment has one, and 10 of 10 match the literature.</p></div>
   <div class="habit"><b>The habit</b>Freeze the data and hash it, so a number always means the same items. Then check your sample against the population it claims to represent.</div>
   <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make dataset-create · make dataset-materialize
 <span class="c">a changed input fails loudly instead of silently measuring different bytes</span></pre></div>
@@ -72,7 +72,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <article class="chapter reveal" id="noise" data-nodes="runs">
   <div class="eyebrow"><span class="num">04</span>Noise</div>
   <h2>Measure the noise before the difference.</h2>
-  <div class="story prose"><p>BART's apparent lead at n=20 was 0.0737; across 200 articles it was 0.00008. Two independent 100-article evals of the same models agree at only ρ = 0.79.</p><p>A pilot correlates beautifully and picks the wrong winner — in three of five experiments here.</p></div>
+  <div class="story prose"><p>BART's apparent lead at n=20 was 0.0737; across 200 articles it was 0.00008. Two independent 100-article evals of the same models agree at only ρ = 0.79.</p><p>A pilot correlates beautifully and picks the wrong winner — in three of the five experiments here that ran one.</p></div>
   <div class="habit"><b>The habit</b>Run every arm more than once and measure how far it disagrees with itself. Tune on a small dev slice, report on the rest, and measure how many items a ranking needs instead of assuming it.</div>
   <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make experiment-run REPEAT=3 · make holdout · make rank-stability
 <span class="c">treat deltas below 0.044479 as noise</span></pre></div>
@@ -81,7 +81,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <article class="chapter reveal" id="tested" data-nodes="tests">
   <div class="eyebrow"><span class="num">05</span>Significance</div>
   <h2>Tested, not read.</h2>
-  <div class="story prose"><p>A leaderboard sorts, so something is always first. In 4 of 5 experiments here the leader cannot be separated from a group of others — on summarisation, from 15 of them, the cheapest paid one 143× cheaper than the dearest model in the field.</p><p>Every claim on this site rests on a paired permutation test per item, with a Holm correction for the number of comparisons made at once.</p></div>
+  <div class="story prose"><p>A leaderboard sorts, so something is always first. In 5 of 6 experiments here the leader cannot be separated from a group of others — on summarisation, from 15 of them, the cheapest paid one 143× cheaper than the dearest model in the field.</p><p>Every claim on this site rests on a paired permutation test per item, with a Holm correction for the number of comparisons made at once.</p></div>
   <div class="habit"><b>The habit</b>Decide the comparisons before reading the table, correct for how many you made, and report a tie as a tie.</div>
   <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make family-test · make leaderboard
 <span class="c">separated from 6 of 18 opponents   ← SciFact&#x27;s leader, glm_s</span></pre></div>
@@ -103,7 +103,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
     <div class="prose">
-      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and five experiments that show what skipping it costs.</p>
+      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six experiments that show what skipping it costs.</p>
       <p>The idea-by-idea mapping, with chapters, is in <a href="docs/INFLUENCES/">Influences</a>.</p>
     </div>
     <ul class="reading">

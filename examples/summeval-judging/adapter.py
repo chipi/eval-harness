@@ -203,7 +203,8 @@ def _rouge(text: str, params: Dict[str, Any]) -> Result:
     Averaged, not max: this is the setup that reproduces G-Eval's published ROUGE-1 row
     (Liu et al. 2023, Table 1: rho 0.192, tau 0.150 averaged over the four dimensions;
     measured here on the same 100 articles: 0.190 and 0.149). Max over references and
-    first-reference-only were also computed and do not reproduce it (0.198 / 0.158 rho).
+    first-reference-only were also computed and do not reproduce it (0.198 / 0.159 rho;
+    calibrate.py recomputes all three).
     """
     from rouge_score import rouge_scorer  # noqa: PLC0415
 

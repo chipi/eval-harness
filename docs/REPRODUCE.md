@@ -18,7 +18,7 @@ its pinned libraries cannot disturb another's.
 
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness
-make list                         # the six measurements, their arms, what they billed
+make list                         # the seven measurements, their arms, what they billed
 ```
 
 ## 0 · Verify — trust nothing, recompute everything ($0)

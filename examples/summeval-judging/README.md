@@ -58,10 +58,13 @@ A reference-based metric gives one number per summary; it stands for all four di
 **ρ 0.192, τ 0.150** (averaged over the four dimensions). Measured here, on the same 100
 articles, with ROUGE-1 F1 averaged over the references: **ρ 0.190, τ 0.149**, and per
 dimension within 0.01 of every published value. (Max over references gives ρ 0.198 and the
-first reference alone 0.158; neither reproduces the published row, so averaging is the
+first reference alone 0.159; neither reproduces the published row, so averaging is the
 setup.) The instrument reproduces the literature before anything new is read off it.
+[`calibrate.py`](calibrate.py) recomputes all of this from the committed runs and writes
+[`docs/evidence/calibration/summeval.json`](../../docs/evidence/calibration/summeval.json),
+which `make ci` checks this page against.
 
-## Results so far: the free arms
+## Results: the free arms
 
 τ against the experts, per article, averaged over the four dimensions (100 articles):
 
@@ -79,12 +82,14 @@ Three things already worth saying:
 
 - **BARTScore, a model that never sees a reference, beats every reference-based metric**
   (τ 0.256 against ROUGE-2's 0.158). G-Eval publishes BARTScore at τ 0.305 / ρ 0.385; ours is
-  lower on consistency and fluency and *higher* on coherence (τ 0.380 against 0.342). That
-  pattern looks like a different variant, not a broken run: this is plain
-  `bart-large-cnn`, source → summary, and G-Eval does not say which BARTScore variant it ran.
-  So it is reported as measured, not counted as a calibration row. (ROUGE-2 reproduces too:
-  τ 0.158 against 0.161 published. ROUGE-L comes out a little higher than published,
-  0.143 against 0.128.)
+  lower on consistency, fluency and relevance and *higher* on coherence (τ 0.380 against
+  0.342). G-Eval does not say which BARTScore variant it ran; this is plain
+  `bart-large-cnn`, source → summary. So it is reported as measured, not counted as a
+  calibration row. (ROUGE-2 reproduces too:
+  τ 0.158 against 0.161 published. ROUGE-L does not quite: 0.143 against 0.128 on average,
+  and 0.153 against 0.099 on coherence. That is inside the interval over articles, but G-Eval
+  scored these same articles, so the gap is one of protocol rather than sample; the paper does
+  not say which ROUGE-L it ran.)
 
 - **This repository's own `coverage` agrees with the experts less than plain ROUGE-1**
   (τ 0.101 against 0.149), most of the gap in consistency and fluency. Coverage was built to

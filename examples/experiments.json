@@ -60,9 +60,8 @@
     {"slug": "summeval", "task": "Judging", "bench": "SummEval",
      "example": "summeval-judging", "extras": ["local"],
      "dataset": "summeval_100", "prefix": "se_", "suffix": "_n100_v1",
-     "metric": "tau", "metric_label": "Kendall tau vs experts", "base": "runs", "leader": "bartscore",
-     "report": "../examples/summeval-judging/README.md", "calibration": "summeval", "site": false,
-     "note": "in progress: the seven free arms are measured (BARTScore leads); the 24 hosted judges are not yet run",
+     "metric": "tau", "metric_label": "Kendall tau vs experts", "base": "runs", "leader": "openai_l",
+     "report": "REPORT_SUMMEVAL.md", "calibration": "summeval", "site": true,
      "fetch": [[]],
      "datasets": ["summeval_100"]}
   ]

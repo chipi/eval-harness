@@ -244,7 +244,7 @@ Two that are easy to reach for and wrong:
 
 - **`pair-test` on a pair you chose after seeing the leaderboard** is the winner's
   curse with extra steps. If you did not name the pair in advance, use `family-test`.
-- **`leaderboard` as a ranking.** It sorts; it does not separate. Four of the five
+- **`leaderboard` as a ranking.** It sorts; it does not separate. Five of the six
   experiments here have a top group its own tests cannot tell apart, and the table
   still prints them 1, 2, 3.
 

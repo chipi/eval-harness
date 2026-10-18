@@ -1,6 +1,6 @@
 # Reference — every metric, model and dataset in this repo, and where each one comes from
 
-A single index for the five worked examples. Nothing here is a summary of results; it is
+A single index for the six worked examples. Nothing here is a summary of results; it is
 the **glossary**, so that reading an example does not require already knowing what
 `rougeLsum` recall or nDCG@10 is, or which weights `gemma_m` actually loads.
 
@@ -13,7 +13,7 @@ paper or specification for a metric.
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
 - [Statistical tests](#statistical-tests) — how separation is decided
 - [Terminology](#terminology) — the canonical name for every experiment, arm and term
-- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the twelve that permit it
+- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the twelve mirrored here
 
 ---
 
@@ -177,6 +177,12 @@ price tier.
 | `glm_m` | `eval-glm-46` | [z-ai/glm-4.6](https://openrouter.ai/z-ai/glm-4.6) | **open** · MIT |
 | `glm_s` | `eval-glm-45-air` | [z-ai/glm-4.5-air](https://openrouter.ai/z-ai/glm-4.5-air) | **open** · MIT |
 
+> **One replacement arm.** `qwen37max` (alias `eval-qwen-37max` → [qwen/qwen3.7-max](https://openrouter.ai/qwen/qwen3.7-max), weights: proprietary)
+> stands in for `qwen_l` on SummEval only. `qwen_l`'s model is no longer served by
+> OpenRouter, and Qwen's current flagship refuses to run with reasoning disabled; Qwen3.7
+> Max is the previous flagship and accepts it. It is its own arm, never read as `qwen_l`
+> ([REPORT_SUMMEVAL §6](../research/REPORT_SUMMEVAL.md#6-what-changed-while-measuring)).
+
 > **14 of these 24 have downloadable weights and could be self-hosted.** Verified on
 > 2026-09-29 against the HuggingFace API. Ten are unrestricted (MIT / Apache-2.0); four
 > are gated behind licence acceptance and carry use conditions. An earlier version said
@@ -184,7 +190,7 @@ price tier.
 > closed* — which is **not a valid test**: `mistral_l` is served only by Mistral and its
 > weights are on HuggingFace under Apache-2.0. What that is worth is measured in
 > [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **no proprietary model
-> separated from the best open-weight model in any of the five experiments.**
+> separated from the best open-weight model in any of the six experiments.**
 
 > **A hosted model has no verifiable identity.** The fingerprint records
 > `identity_declared: true` and `revision_source: unavailable` — we record the alias we
@@ -321,6 +327,7 @@ with a dataset name in the next is what this convention exists to stop.
 | **Classification · DBpedia** | classification | [DBpedia-14](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | [REPORT_CLASSIFICATION](../research/REPORT_CLASSIFICATION.md) |
 | **Extraction · Few-NERD** | extraction (NER) | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | [REPORT_NER](../research/REPORT_NER.md) |
 | **Retrieval · SciFact** | retrieval | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | [REPORT_RETRIEVAL](../research/REPORT_RETRIEVAL.md) |
+| **Judging · SummEval** | judging (an LLM as the grader) | [SummEval](https://huggingface.co/datasets/mteb/summeval) | [REPORT_SUMMEVAL](../research/REPORT_SUMMEVAL.md) |
 
 Two experiments share the *classification* task and differ only in dataset, which is why
 the dataset is never optional in these labels.
@@ -441,14 +448,18 @@ multiple classifiers over multiple datasets
 described in [Dror et al., *The Hitchhiker's Guide to Testing Statistical Significance in
 NLP*](https://aclanthology.org/P18-1128/).
 
-**No corpus, no model weight, no paper and no provider output is redistributed by this
-repository.** Every example ships a download recipe instead, and
-[`papers/README.md`](papers/README.md) records the licence of each cited work — twelve of
-the twenty-four may be mirrored, twelve may not, and the split follows publisher policy
-rather than importance.
+**No corpus and no model weight is redistributed by this repository.** Every example ships
+a download recipe instead. Two things are committed on purpose: the models' outputs, which
+are the evidence every score is recomputed from, and twelve CC-licensed papers, mirrored
+under their licences. [`papers/README.md`](papers/README.md) records the licence of each of
+the twenty-seven cited works — twelve mirrored, fourteen that may not be, and one (CC0)
+that could be and is linked instead; the split follows publisher policy rather than
+importance. (This paragraph said no paper and no provider output was redistributed until
+2026-10-18; both were committed long before.)
 
-**Every citation above was verified on 2026-09-29** by fetching it and comparing the real
-title to the claim made about it. That check found four errors in the first draft: a
+**Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
+BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18) by fetching it
+and comparing the real title to the claim made about it. That check found four errors in the first draft: a
 fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
 credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could
 **not** be verified programmatically and is therefore given as a full text reference rather

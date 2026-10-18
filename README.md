@@ -14,8 +14,8 @@ most leaderboards skip: is this ranking real, or a lucky sample?**
 
 Freeze a dataset, run your system against it, and get an answer that says whether one
 system is actually better than another, or only ahead on this sample. To show it doing
-something real, it measured 24 LLMs, small fine-tuned models and baselines on five public
-benchmarks. The most expensive model never won, and four of five leaderboard tops were
+something real, it measured 24 LLMs, small fine-tuned models and baselines on six public
+benchmarks. The most expensive model never won, and five of six leaderboard tops were
 statistical ties.
 
 ### Why it exists
@@ -32,11 +32,12 @@ It was built to answer four questions anyone building with AI ends up asking:
    side by side, with a test that says whether the ranking is real.
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
-   GPU was first or tied for first in all five experiments, but only on text like the
-   text it was trained on.
+   GPU was first or tied for first in five of the six experiments, but only on text like
+   the text it was trained on; on the sixth, judging summaries, every LLM beat every free
+   option.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
    quality. Here a proprietary model never separated from the best open-weight one, and
-   64 GB of memory matched the unlimited-hardware answer on four of five tasks.
+   a 64 GB machine matched the unlimited-hardware answer on four of the six tasks.
 
 **Start where you are:**
 
@@ -45,7 +46,7 @@ It was built to answer four questions anyone building with AI ends up asking:
 | **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
 | **measure your own system** | [**Use the harness**](docs/GUIDE.md): your first evaluation end to end in twenty minutes, offline. Freeze a dataset, build a golden reference set, measure, compare, promote. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns and a walkthrough |
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
-| **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on five benchmarks, generated from the runs in this repository, so every number on it is checked |
+| **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
 | **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
@@ -131,10 +132,10 @@ Each needs `DATASET_ID`; without it the Makefile falls back to the demo dataset,
 
 ## Pointed at 24 LLMs: the experiments
 
-Five tasks, four metric shapes, one harness. Each experiment exists because it breaks
+Six tasks, five metric shapes, one harness. Each experiment exists because it breaks
 something the previous one did not, and each ships a download recipe rather than a corpus.
 On the site: **[the experiments](https://evals.humancopilot.eu/experiments.html)**;
-what all five agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)**.
+what all six agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)**.
 
 | Example | Task | Shape of the answer | Report |
 |---|---|---|---|
@@ -143,11 +144,11 @@ what all five agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTH
 | `classification-dbpedia-14` | 14-way ontology label | same, but saturated | same report |
 | `ner-few-nerd` | named entities + types | **a set**, matched one-to-one | [`REPORT_NER.md`](research/REPORT_NER.md) |
 | `retrieval-scifact` | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | [`REPORT_RETRIEVAL.md`](research/REPORT_RETRIEVAL.md) |
-| `summeval-judging` *(in progress)* | grade summaries the way experts do | **a vector of judgements**, scored by rank correlation | [`README`](examples/summeval-judging/README.md) |
+| `summeval-judging` | grade summaries the way experts do | **a vector of judgements**, scored by rank correlation | [`REPORT_SUMMEVAL.md`](research/REPORT_SUMMEVAL.md) |
 
 What they found, and what a plain leaderboard would have hidden:
 
-- **Summarisation.** The dearest arm, at **52× the price** of the cheapest, ranks **18th of
+- **Summarisation.** The dearest arm, at **143× the price** of the cheapest, ranks **18th of
   29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**;
   at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus ties the best LLM for $0;
   the same BART fine-tuned on XSum finishes **last**, below copying the first three
@@ -167,8 +168,15 @@ What they found, and what a plain leaderboard would have hidden:
 - **Retrieval.** Twelve LLM rerankers tie with each other *and with two free local
   encoders*. A prediction registered before the arm existed (that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
+- **Judging.** Asked to grade summaries the way three experts did, every one of the 24 LLMs
+  is separated from, and ahead of, the best free scorer — the first task here where the
+  free option loses. The top is a six-way tie, and an open-weight judge sits 0.0013 behind
+  the leader for $0.0278 per 100 articles. ROUGE agrees with the experts at τ 0.14–0.16, and
+  this repository's own summarisation metric below that.
 
-Every experiment has an answer you can run on your own 64 GB machine for $0. Full index,
+Every experiment has a $0 answer you can run on hardware you own. Five of them fit a 64 GB
+machine at measured quality; SummEval's is a 63 GB open-weight judge, which a 64 GB machine
+holds only at int8, a precision that was not measured. Full index,
 with what each one broke in the harness: **[`examples/README.md`](examples/README.md)**.
 
 ### Check it yourself, in four commands
@@ -182,7 +190,7 @@ make data EXP=scifact && make reproduce EXP=scifact LEVEL=local && make compare 
 
 `make compare` writes a replication card: each rerun arm against its committed run, and
 every committed separation and tie re-tested with your reruns in place. `make list` shows
-all six measurements and what each billed; `LEVEL=hosted` reruns the LLMs with one
+all seven measurements and what each billed; `LEVEL=hosted` reruns the LLMs with one
 `OPENROUTER_API_KEY` in `harness/.env`. The full walkthrough, including what a rerun
 cannot reproduce and how to add a model of your own: **[docs/REPRODUCE.md](docs/REPRODUCE.md)**.
 
@@ -196,14 +204,14 @@ The approach builds on **Chip Huyen's books**, *AI Engineering* (O'Reilly, 2025)
 *Designing Machine Learning Systems* (O'Reilly, 2022): evaluation as engineering work on
 your own data, a private leaderboard rather than a public one, the dataset as a design
 decision, every experiment tracked and versioned. This repository adds a tool that
-enforces that framing and five experiments that test it. Idea by idea, with chapters, and
+enforces that framing and six experiments that test it. Idea by idea, with chapters, and
 the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
 
 ## Layout
 
 ```
 harness/     the harness. Liftable into another project as-is (harness/README.md).
-examples/    the five experiments, each with its own uv environment
+examples/    the six experiments, each with its own uv environment
 research/    the experiment reports and the synthesis; research/internal/ is the lab
              notebook: handovers, review rounds and an append-only journal
 site/        the public site, generated from the runs (make site; checked by make ci)

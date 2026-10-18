@@ -35,8 +35,8 @@
 > result below is also reported on the **180 that took no part** in the earlier run.
 
 
-> **This is one of five experiments.** What all five agree on — and the four
-> places they disagree with the conventional reading of a leaderboard — is in
+> **This is one of six experiments.** What all six agree on — and where they disagree
+> with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ---
@@ -66,7 +66,7 @@ articles a month (`deepseek_m`: $0.0381 ÷ 200 × 1,000,000 ≈ $191). Times are
 per article on the machine named; the hosted arms were timed from the Mac, through a local
 proxy.*
 
-*Cross-cutting context for all five experiments:
+*Cross-cutting context for all six experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 
 ### What this experiment specifically found

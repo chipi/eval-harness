@@ -3,7 +3,7 @@
 The harness, pointed at 24 LLMs, small fine-tuned models and baselines. On the site:
 [the experiments](https://evals.humancopilot.eu/experiments.html).
 
-Five experiments, four metric shapes, one harness. Each exists because it **breaks
+Six experiments, five metric shapes, one harness. Each exists because it **breaks
 something the previous one did not** — the harness grew by meeting a task it could not
 already express, and every example's most interesting output is the defect it exposed.
 
@@ -18,7 +18,7 @@ gitignored.
 > **[`../docs/REFERENCE.md`](../docs/REFERENCE.md)** — the encyclopedia. Every metric
 > explained with a link to its paper, every model with a link to its weights, every
 > dataset with its licence, and every statistical test with the reason it was chosen.
-> Read it once and the five examples stop needing footnotes.
+> Read it once and the six examples stop needing footnotes.
 >
 > Each example then has **three** documents:
 >
@@ -34,35 +34,36 @@ gitignored.
 | [`classification-ag-news`](classification-ag-news) | 4-way topic label | one label vs one label, **0 or 1** | a discrete metric ties, and the duplicate-run check flagged honest ties as copies | [METHOD](classification-ag-news/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
 | [`classification-dbpedia-14`](classification-dbpedia-14) | 14-way ontology label | same, but **saturated** | rank-stability measured the alphabet when most arms tie | [METHOD](classification-dbpedia-14/METHOD.md) | [report](../research/REPORT_CLASSIFICATION.md) |
 | [`ner-few-nerd`](ner-few-nerd) | named entities + types | **a set** vs a set, order irrelevant | an unreadable answer scored 1.0, and no fingerprint covered the scorer | [METHOD](ner-few-nerd/METHOD.md) | [report](../research/REPORT_NER.md) |
-| [`summeval-judging`](summeval-judging) | grade 16 summaries of an article like an expert would | **a vector of judgements**, scored by **rank correlation** with experts | the first experiment whose answer is a judgement of other systems' outputs, and whose arms include this repository's own metrics | [README](summeval-judging/README.md) | in progress: free arms measured, hosted judges pending |
 | [`retrieval-scifact`](retrieval-scifact) | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | the corpus is not the items, so nothing in the fingerprint identified it | [METHOD](retrieval-scifact/METHOD.md) | [report](../research/REPORT_RETRIEVAL.md) |
+| [`summeval-judging`](summeval-judging) | grade 16 summaries of an article like an expert would | **a vector of judgements**, scored by **rank correlation** with experts | the first experiment whose answer is a judgement of other systems' outputs, and whose arms include this repository's own metrics | [METHOD](summeval-judging/METHOD.md) | [report](../research/REPORT_SUMMEVAL.md) |
 
 Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extraction.py`,
 `retrieval.py`, plus `hf_identity.py` for pinning local model weights.
 
 ---
 
-## What all five agree on
+## What all six agree on
 
 **[`../research/REPORT_SYNTHESIS.md`](../research/REPORT_SYNTHESIS.md)** — the
-cross-cutting report. Seven findings that hold across every experiment, each computed
-from the stored runs rather than quoted: the dearest arm is never first (5/5), four of
-five leaderboard tops are statistical ties, a pilot with ρ ≈ 0.8 picked the wrong winner
-three times in five, and the scoring code moved single arms further than most model swaps
-did.
+cross-cutting report. Seven findings, each tested in every experiment that could test it
+and computed from the stored runs rather than quoted: the dearest arm is never first (6/6),
+five of six leaderboard tops are statistical ties, a pilot with ρ ≈ 0.8 picked the wrong
+winner three times in the five experiments that ran one, and the scoring code moved single
+arms further than most model swaps did.
 
 It also answers the deployment question directly. **Every experiment has a $0 answer**:
 the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal (not
 separable from the leader) on saturated DBpedia, a
-proprietary model never separated from the best open-weight one in any of the five, and
-**a 64 GB machine reaches the same answer as unlimited hardware on four of the five
-tasks**. Every task-specific winner is under 2 GB and needs no GPU.
+proprietary model never separated from the best open-weight one in any of the six, and
+**a 64 GB machine reaches the same answer as unlimited hardware on four of the six
+tasks**. Every task-specific winner is under 2 GB and needs no GPU. On SummEval, the one
+task no small model was trained for, the $0 answer is an open-weight LLM judge.
 
 ## What each one actually found
 
 ### Summarisation — price does not predict quality
 24 hosted models over 200 news articles — **all of them CNN's** (the first 200 test rows; the
-benchmark is 91% DailyMail). The dearest arm, at **52× the price** of the
+benchmark is 91% DailyMail). The dearest arm, at **143× the price** of the
 cheapest, ranks **18th of 29** (15th of the 24 hosted). Two *independent* 100-article evals of the same models
 agree at only **ρ = 0.79**, and at 20 articles at **ρ = 0.44** (29 arms).
 
@@ -127,12 +128,25 @@ produced a **prediction registered before the arm existed**: swapping only the f
 should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891**, and the mechanism
 transferred too — the share of available headroom taken moved 90.9% → 90.2%.
 
+### SummEval — the first task where free loses
+The 24 hosted models as **judges**, scoring 16 summaries per article on four dimensions,
+graded by how well they order the summaries the way three experts did (Kendall τ-b). Every
+judge is separated from, and ahead of, the best free scorer: BARTScore, a model fine-tuned
+on this corpus to write summaries, reaches τ **0.2562** against `openai_l`'s **0.5398**. The
+top is a six-way tie, and `gemma_l` — open weights, $0.0278 for all 100 articles — sits
+0.0013 behind the leader.
+
+It also measures the instrument: ROUGE agrees with the experts at τ 0.14–0.16, and this
+repository's own `coverage` at **0.1011**, below ROUGE-1. One model could not run as
+planned: `qwen_l`'s is no longer served, so `qwen37max` stands in
+([REPORT_SUMMEVAL](../research/REPORT_SUMMEVAL.md)).
+
 ---
 
-## The pattern across all five
+## The pattern across all six
 
 **At the top of a field, price stops predicting quality well before quality stops
-varying.** In four of the five examples the leader cannot be statistically separated
+varying.** In five of the six examples the leader cannot be statistically separated
 (Holm step-down, α = 0.05) from a group of other arms — and that group spans a large price
 range. Few-NERD is the exception: it has a clear winner, and the same tie appears one rank
 down.
@@ -144,12 +158,13 @@ down.
 | Classification · DBpedia | `qwen_m` | 19 of 27 — one of them the $0 fine-tune | 115× |
 | Extraction · Few-NERD | `span_marker` ($0) | **none** — separated from all 27 | no tie at the top; the 8 hosted arms tied for 2nd span 78× |
 | Retrieval · SciFact | `glm_s` | 11–12 of 18 (the count sits on a Holm boundary) — **2 of them free** encoders | 7.6× (billed) |
+| Judging · SummEval | `openai_l` | 5 of 30 — all hosted judges; every free scorer is separated below them | 72× |
 
 Counts and ratios are from each experiment's report; "dearest" is the most expensive arm in
 the whole experiment, which is not always inside the group.
 
-And every example found something wrong with the instrument before it found anything about
-the models. The append-only journal, [`../research/NOTES.md`](../research/internal/NOTES.md), is the
+And every example before SummEval found something wrong with the instrument before it found
+anything about the models. The append-only journal, [`../research/NOTES.md`](../research/internal/NOTES.md), is the
 record of that — including the retractions.
 
 ---
@@ -185,13 +200,13 @@ that needed a machine able to load pickle checkpoints ran on 2026-09-30.
 
 ## Credits
 
-Every dataset, model, paper and library used across the five examples is credited with its
+Every dataset, model, paper and library used across the six examples is credited with its
 licence in **[`../docs/REFERENCE.md#credits`](../docs/REFERENCE.md#credits)**, and again
 per-experiment at the bottom of each `METHOD.md`.
 
 Every cited paper's redistribution licence is recorded in
-[`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the twelve that
-permit mirroring. All citations were verified by fetching them and comparing titles.
+[`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the twelve
+mirrored there. All citations were verified by fetching them and comparing titles.
 
 **No corpus, model weights or papers are redistributed here.** Each example ships a
 download recipe, and dataset identity travels as a content hash (`items_sha256`,

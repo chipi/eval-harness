@@ -68,6 +68,14 @@ def times(x: float) -> str:
     return f"{math.floor(x)}×" if x >= 10 else f"{x:.1f}×"
 
 
+_WORDS = ("zero one two three four five six seven eight nine ten").split()
+
+
+def word(n: int) -> str:
+    """A small count as prose writes it: 6 is "six"."""
+    return _WORDS[n] if 0 <= n < len(_WORDS) else str(n)
+
+
 def ordinal(n: int) -> str:
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
 
@@ -461,7 +469,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 
 
 #: The helpers method.py borrows, passed in rather than imported (no circular import).
-H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, REPO=REPO, author=author)
+H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, word=word, REPO=REPO,
+                          author=author)
 
 
 # ── the landing page ────────────────────────────────────────────────────────
@@ -519,8 +528,8 @@ def home(f: dict) -> str:
          "Every cost is read off the provider's bill and set beside quality, so renting an API "
          "can be weighed against running open weights on hardware you own.",
          q("A proprietary model never separated from the best open-weight model in any of the "
-           "five experiments, and 64 GB of memory is enough to match the unlimited-hardware "
-           "answer on four of five tasks.", SYN),
+           "six experiments, and a 64 GB machine matched the unlimited-hardware answer on four "
+           "of the six tasks.", SYN),
          f"{BLOB}/research/REPORT_SYNTHESIS.md", "The synthesis"),
     ]
     why_html = "".join(
@@ -571,7 +580,7 @@ def home(f: dict) -> str:
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Pointed at {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
-  <p class="lede">To show the harness doing something real, it measured {hosted_n} frontier and open-weight LLMs, small fine-tuned models and baselines on five public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
+  <p class="lede">To show the harness doing something real, it measured {hosted_n} frontier and open-weight LLMs, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
@@ -590,7 +599,8 @@ def home(f: dict) -> str:
     return page("eval-harness — is the ranking real, or a lucky sample?",
                 "A drop-in harness for evaluating AI systems on your own data: frozen datasets, "
                 "fingerprinted runs, and significance tests before any leaderboard is printed — "
-                "shown on 24 LLMs across five benchmarks.", body, here="harness", card="social-home.png")
+                f"shown on 24 LLMs across {word(len(exps))} benchmarks.", body, here="harness",
+                card="social-home.png")
 
 
 def landing(f: dict) -> str:
@@ -620,12 +630,18 @@ def landing(f: dict) -> str:
     s = by["summarization"]
     dear_x = max(exps, key=lambda x: x["dearest"]["cost"])
     dear = dear_x["dearest"]
+    n_exp = word(len(exps))
+    behind_cheaper = sum(any(a["cost"] < x["dearest"]["cost"] and a["rank"] < x["dearest"]["rank"]
+                             for a in x["arms"]) for x in exps)
+    behind_free = sum(any(a["kind"] != "hosted" and a["rank"] < x["dearest"]["rank"]
+                          for a in x["arms"]) for x in exps)
+    in_all = "all " + n_exp if behind_cheaper == len(exps) else f"{word(behind_cheaper)} of {n_exp}"
 
     body = f"""
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>The experiments</b> · {len(exps)} tasks · {f["total_arms"]} measured runs · {money(f["total_billed"])} billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
-  <p class="dek">{hosted_n} frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through five public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
+  <p class="dek">{hosted_n} frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
@@ -637,7 +653,7 @@ def landing(f: dict) -> str:
 <section class="block" id="findings"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
   <h2>The price tag told you nothing.</h2>
-  <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In all five it finished behind something cheaper</strong> — and in four, behind something free.</p>
+  <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In {in_all} it finished behind something cheaper</strong> — and in {word(behind_free)}, behind something free.</p>
   <div class="chart reveal">{legend(reading="higher score: further right →", baseline=False)}{strips}
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
@@ -662,7 +678,7 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
-    <li><div><h3>The best fine-tuned model was first, or tied for first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
+    <li><div><h3>A free local model was first, or tied for first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}). The exception is the one task no small model was trained for, grading summaries: there every LLM judge beat every free metric.</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
@@ -671,9 +687,9 @@ def landing(f: dict) -> str:
 <section class="block" id="trust"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Trust</div>
   <h2>Can you trust any of this?</h2>
-  <p class="lede">Every experiment scores a sample of 200–280 items, not a full test set. So each one also runs a <strong>calibration</strong>: one well-known model, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
+  <p class="lede">Five experiments score a sample of 200–280 items, not a full test set, and SummEval scores the whole of its 100. So each one also runs a <strong>calibration</strong>: one well-known model or metric, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
   <div class="chart reveal">{both(forest(f["calibration"]), forest(f["calibration"], compact=True))}
-    <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation, accuracy, micro-F1 or nDCG@10 ×100 elsewhere). Bars are our 95% interval. {cal_ok} of {cal_n} sit on the published value.</figcaption></div>
+    <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation; accuracy, micro-F1, nDCG@10 or Kendall τ ×100 elsewhere). Bars are our 95% interval. {cal_ok} of {cal_n} sit on the published value.</figcaption></div>
   <div class="cols" style="margin-top:64px">
     <div class="prose">
       <h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Calibration found one real error — in our sample, not our scorer.</h3>
@@ -687,7 +703,7 @@ def landing(f: dict) -> str:
 
 <section class="block" id="experiments"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>The experiments</div>
-  <h2>Five benchmarks, one harness.</h2>
+  <h2>{n_exp.capitalize()} benchmarks, one harness.</h2>
   <p class="lede">The same {hosted_n} hosted models — eight vendors, three price tiers each — on every task, beside the strongest free models each task allows.</p>
   <div class="cards">{cards}</div>
 </div></section>
@@ -701,7 +717,7 @@ def landing(f: dict) -> str:
       <li><span class="lvl">00</span><div><h3>Verify</h3><p>Every number in every report, recomputed from the committed predictions.</p></div><span class="cost">$0 · one command</span></li>
       <li><span class="lvl">01</span><div><h3>Data</h3><p>Fetch the public benchmarks and hash-check every item against what was measured.</p></div><span class="cost">$0</span></li>
       <li><span class="lvl">02</span><div><h3>Local</h3><p>Rerun the {local_n} free arms — local models and baselines — on your CPU, pinned to the same weights.</p></div><span class="cost">$0 · CPU hours</span></li>
-      <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the {hosted_n} LLMs with one OpenRouter key. The test: does every separation still hold?</p></div><span class="cost">${billed_all} billed, all five</span></li>
+      <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the {hosted_n} LLMs with one OpenRouter key. The test: does every separation still hold?</p></div><span class="cost">${billed_all} billed, all {n_exp}</span></li>
       <li><span class="lvl">04</span><div><h3>Extend</h3><p>Add a model of your own and test it against the whole committed field.</p></div><span class="cost">one config</span></li>
     </ol>
     <div>
@@ -724,7 +740,7 @@ def landing(f: dict) -> str:
 </div></section>
 {author("experiments")}"""
     return page("The most expensive model never won — eval-harness",
-                "24 LLMs, small fine-tuned models and baselines on five public benchmarks, "
+                f"24 LLMs, small fine-tuned models and baselines on {n_exp} public benchmarks, "
                 "with significance tests, billed costs and calibration against the literature.", body, here="experiments")
 
 
@@ -734,6 +750,7 @@ CARD = {
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the top is a group of nineteen, and the gold label is sometimes the error.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
     "scifact": "Retrieve the abstracts that support a scientific claim. LLM rerankers lead a twelve-way tie; a free dense retriever sits inside it.",
+    "summeval": "Grade machine summaries the way experts do. Every LLM judge beats every free metric, and an open-weight judge ties the leader.",
 }
 
 
@@ -757,6 +774,11 @@ def findings_for(x: dict, f: dict) -> list:
     require(s != "few-nerd" or x["n_tied"] == 0, "Few-NERD: span_marker separated from all")
     require(s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
             "SciFact: twelve tied, including e5_base")
+    require(s != "summeval" or (max(a["rank"] for a in x["arms"] if a["kind"] == "hosted")
+                                < min(a["rank"] for a in x["arms"] if a["kind"] != "hosted")),
+            "SummEval: every hosted judge ranks above every free arm")
+    require(s != "summeval" or (x["cheapest_tied"] and x["cheapest_tied"]["weights"] == "open"),
+            "SummEval: the cheapest judge tied with the leader has open weights")
     common = [(f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
                f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
                + (f"The cheapest model statistically tied with the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
@@ -807,6 +829,26 @@ def findings_for(x: dict, f: dict) -> list:
             *common,
             ("The dev slice picked the wrong winner.",
              q("Tuned on a 40-query dev slice, the leaderboard's winner there was not the winner on the 160 queries it never saw.", rep)),
+        ]
+    if x["slug"] == "summeval":
+        free = [a for a in x["arms"] if a["kind"] != "hosted"]
+        best_free = min(free, key=lambda a: a["rank"])
+        weakest = max((a for a in x["arms"] if a["kind"] == "hosted"), key=lambda a: a["rank"])
+        ct = x["cheapest_tied"]
+        return [
+            ("Every LLM judge beats every free metric.",
+             f"The weakest judge, {weakest['arm']}, scores {weakest['score']:.4f}; the best free "
+             f"scorer, {best_free['arm']}, {best_free['score']:.4f}. "
+             + q("In the paired test BARTScore is separated from all 24 judges, all of them ahead.", rep)),
+            ("An open-weight judge ties the leader.",
+             f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
+             f"the leader cannot be separated from it or from {x['n_tied'] - 1} others."),
+            *common,
+            ("The order is stable; the winner is not.",
+             q("Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
+               "but name the same unique winner only 21% of the time.", rep)),
+            ("This repository's own metric agrees with experts less than ROUGE does.",
+             q("coverage agrees with the experts at τ 0.1011, below ROUGE-1's 0.1487.", rep)),
         ]
     return common
 
@@ -882,6 +924,7 @@ OFF_NOTE_Y = " A dot below the ⫽ break sits far below the rest, off the scale;
 METRIC_GLOSS = {
     "summarization": " — how much of the reference summary's wording the summary recovers, at the reference's length (ROUGE-Lsum recall, clipped); this repo's own, see the protocol. Higher is better",
     "few-nerd": " — entities found with the right type, set-matched per sentence and averaged, on 8 coarse types; this repo's own, see the protocol. Higher is better",
+    "summeval": " — how well a judge's scores order the 16 summaries of an article the way the experts' do (Kendall τ-b per article, averaged over four dimensions); the field's standard. 1 is perfect agreement, 0 none",
 }
 
 QUESTION = {
@@ -890,6 +933,7 @@ QUESTION = {
     "dbpedia": "Label a Wikipedia abstract with one of 14 ontology classes.",
     "few-nerd": "Find every named entity in a sentence and give it one of 8 types.",
     "scifact": "Rank 5,183 scientific abstracts by how well they bear on a claim.",
+    "summeval": "Score 16 summaries of a news article on coherence, consistency, fluency and relevance, as three experts did.",
 }
 HEADLINE = {
     "summarization": "A free model ties the frontier — on CNN's news.",
@@ -897,6 +941,7 @@ HEADLINE = {
     "dbpedia": "Nineteen-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",
+    "summeval": "The first task where free loses.",
 }
 
 

@@ -14,8 +14,8 @@
 > not correct, and no set-valued metric can say so.
 
 
-> **This is one of five experiments.** What all five agree on — and the four
-> places they disagree with the conventional reading of a leaderboard — is in
+> **This is one of six experiments.** What all six agree on — and where they disagree
+> with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ---
@@ -49,7 +49,7 @@ Holm-corrected over the leader's family of 18 opponents at α = 0.05 (§3.2).
 would move the pipeline from 0.74 to 0.786–0.797 — came back at **0.7891**, and the
 mechanism transferred too (headroom-used 90.9% → 90.2%).
 
-*Cross-cutting context for all five experiments:
+*Cross-cutting context for all six experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 
 ### What this experiment specifically found
