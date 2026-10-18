@@ -24,30 +24,34 @@
 
 | the choice | what the data says |
 |---|---|
-| **Can an LLM judge summaries like an expert?** | **Nearly as well as one expert does, and far better than any free metric.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44% (§3.7). |
+| **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries at once while an expert scored them one by one (§3.7). |
 | **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 25 arms. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
-| **Do I need an LLM here at all?** | **Yes — the first time in six experiments.** Every one of the 24 judges is separated from BARTScore (§3.3). |
-| **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range. But the cheapest member of the top tie costs 1/23 of the leader. |
+| **Do I need an LLM here at all?** | **Yes, against every free scorer measured** — the first of six experiments where every free arm is separated below every LLM. Every one of the 24 judges is separated from BARTScore (§3.3). No evaluator trained on human ratings of summaries was run; UniEval, the free one G-Eval reports, has a published τ of 0.377, which would put it above the weakest judge here (§7). |
+| **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there. But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
 
 ### What this experiment specifically found
 
-- **Every hosted judge beats every free scorer.** In the paired test, BARTScore is
+- **Every hosted judge beats every free scorer measured.** In the paired test, BARTScore is
   separated from all 24 judges, all of them ahead (`make family-test`, Holm-corrected, §3.3).
+  The free scorers here are metrics and one summariser; none was trained to judge (§7).
   Against the weakest judge, `llama_s` (τ 0.3533), BARTScore wins only 33 of 100 articles.
-- **The best judges come close to a single expert.** Scored against the mean of two experts,
-  as one expert is against the other two, the best judges reach 93% of a human's agreement
-  (§3.7). The experts themselves are noisy: in 37 articles two or more systems wrote the
+- **The best judges come close to a single expert, and stay measurably below one.** Scored
+  against the mean of two experts, as one expert is against the other two, the best judges
+  reach 93% of a human's agreement (95% interval 89–97%; the gap to the expert excludes zero,
+  §3.7). The experts themselves are noisy: in 37 articles two or more systems wrote the
   same summary word for word, and 41 of those 44 groups of identical texts received
   different expert scores.
 - **The top is a crowd.** `openai_l` leads at τ 0.5398 and cannot be separated from five
   others; `gemma_l` sits 0.0013 behind it at 1/23 of the price. Four of the six are tied by
   a wide margin; the other two sit on a Holm boundary (§3.2).
-- **Model size helps in three families, not in the other five.** Llama, Gemma and OpenAI
-  rise with tier; DeepSeek, GLM and Mistral peak at the medium tier, Anthropic's medium
-  sits below its small, and Qwen's small leads its medium (§3.4).
+- **The large tier beats the small one in all eight families, but the ladder rises steadily
+  in only three.** Llama, Gemma and OpenAI rise with tier; DeepSeek, GLM and Mistral peak at
+  the medium tier, Anthropic's medium sits below its small, and Qwen's small leads its
+  medium (§3.4). Tier is a price label, not a size: OpenAI's medium now costs more than its
+  large.
 - **The order is stable; the winner is not.** Rankings agree across disjoint halves far
   more than on the summarisation experiment: ρ 0.90 at 20 articles per half, against 0.333
   for the same 24 models there, by the same method — but the top is close enough that the
@@ -185,7 +189,7 @@ BARTScore, which never sees a reference, beats every reference-based metric; pla
 beats this repository's `coverage` (0.1011, against ROUGE-1's 0.1487), most of the gap in consistency
 and fluency; and the experts were not rewarding length (τ 0.0388).
 
-### 3.4 Size helps in three families of eight
+### 3.4 Tier, by family: large beats small in all eight, steadily in three
 
 τ by price tier within each vendor:
 
@@ -200,13 +204,13 @@ and fluency; and the experts were not rewarding length (τ 0.0388).
 | Anthropic | 0.4836 | 0.4802 | 0.5283 |
 | Qwen | 0.5192 | 0.5075 | 0.5204 (`qwen37max`) |
 
-Three families rise with tier. In the other five the middle or the smallest tier is at
-least as good as the next one up. Whether any single step is a real difference is a pair
+The large tier beats the small one in every family. The ladder rises steadily in three; in
+the other five the middle or the smallest tier is at least as good as the next one up. Whether any single step is a real difference is a pair
 test this report has not run; the pattern is the finding.
 
 Across all 24, more expensive judges do score somewhat higher: Spearman(billed cost, τ) =
 +0.437 over an 80× range. In the summarisation experiment price carried no information
-about quality (r = −0.07 across its 24 hosted arms).
+about quality (Spearman −0.037 across its 24 hosted arms, by the same statistic).
 
 ### 3.5 The order is stable, the winner is not
 
@@ -226,9 +230,10 @@ per half), because the free scorers sit far below the judges and are easy to agr
 The order of the judges is far more stable than the summarisation experiment's. The same
 24 hosted models, ranked there by the same split-half method at 20 articles per half, agree
 at ρ **0.333**; that report's own figure, over its whole 29-arm field, is 0.443
-([REPORT_SUMMARIZATION §3.6](REPORT_SUMMARIZATION.md)). Each item here averages 16 summaries
-and four dimensions, so a single article already carries a lot of signal. The winner is a different matter: the top six are
-close enough that the unique leader changes in most draws, which is what §3.2's tie says in
+([REPORT_SUMMARIZATION §3.6](REPORT_SUMMARIZATION.md)). Why is not tested here; the field
+is also more spread out (the judges span τ 0.35–0.54, where the summarisation arms sit
+within about 0.04 of each other), and a wider field is easier to order. The winner is a
+different matter: the top six are close enough that the unique leader changes in most draws, which is what §3.2's tie says in
 another way.
 
 ### 3.6 By dimension
@@ -271,7 +276,13 @@ over which expert is left out:
 | `rouge1` | 0.1454 | 26% |
 | `coverage` | 0.0955 | 17% |
 
-**The best judges agree with the experts about 93% as well as an expert does.** The order at
+**The best judges agree with the experts about 93% as well as an expert does** — 95%
+interval 89–97% by a paired bootstrap over articles, and the gap to the expert (0.0152 to
+0.0624 for `gemma_l`) excludes zero, so they are close and measurably below. Two cautions
+on reading it as "an LLM is nearly an expert". The best judge is the best of 24 chosen on
+these same articles, which the interval does not correct for. And a judge sees all 16
+summaries in one prompt and can rank them against each other, which is what a per-article
+rank correlation rewards, while an expert scored summaries one at a time. The order at
 the top changes on this footing (`gemma_l` above `openai_l`), which is the tie of §3.2
 showing again. The three positions in the file give 0.5213–0.5812 for "one expert against
 the other two"; whether those are three people depends on the file keeping one annotator
@@ -280,7 +291,8 @@ the ceiling.
 
 The experts are not a noiseless target either. In 37 of the 100 articles, two or more of the
 16 systems produced the same summary word for word — 44 groups of identical texts — and 41
-of those groups received different expert scores. Whether the gap between 93% and 100% is
+of those groups received different expert scores (different mean scores, so this does not
+depend on the annotators' order in the file). Whether the gap between 93% and 100% is
 the judges falling short or the experts' own noise is not something this sample can split.
 
 ## 4. Discussion
@@ -309,9 +321,11 @@ at ρ 0.192, τ 0.150, averaged over four dimensions. Measured here on the same 
 ROUGE-1 F1 averaged over the 11 references: **ρ 0.1896, τ 0.1487**, and within 0.01 of the
 published value on every dimension. ROUGE-2 reproduces too (τ 0.1578 against 0.161, within
 0.01 on every dimension). ROUGE-L does not, quite: its average is 0.1435 against 0.128 and
-its coherence 0.1530 against 0.099. Both gaps sit inside the 95% interval over articles, so
-under this repository's rule it counts as consistent, but G-Eval scored these same 100
-articles, so a gap of that size is a difference of protocol rather than of sample; the paper
+its coherence 0.1530 against 0.099. The average gap (0.0155) sits inside the 95% interval
+over articles (±0.0322); the coherence gap (0.054) does not (±0.0422), and passes only with
+the 0.02 allowance this repository's rule adds for protocol differences (`calibrate.py`,
+as for NER and SciFact). So it counts as consistent by the rule and is not a reproduction:
+G-Eval scored these same 100 articles, so a gap of that size is a difference of protocol rather than of sample; the paper
 does not say which ROUGE-L it ran, and this is `rouge_score`'s `rougeL` with stemming. The
 three rows, with their intervals, are in
 [`docs/evidence/calibration/summeval.json`](../docs/evidence/calibration/summeval.json),
@@ -324,8 +338,8 @@ counted as a calibration row.
 
 **`qwen_l` could not run.** Its model, `qwen/qwen3-max`, is no longer served by OpenRouter:
 the model page remains, but its list of endpoints is empty (checked 2026-10-18), and it was
-already missing from the model listing on 2026-10-15. The other five experiments measured
-it on 2026-09-26 to 09-28. The run failed at warm-up (404) and billed nothing. Qwen's current flagship, `qwen/qwen3.8-max-0902`, refuses reasoning
+already missing from the model listing on 2026-10-15. Four of the other five experiments
+measured it, on 2026-09-26 to 09-28; SciFact's sweep did not include it. The run failed at warm-up (404) and billed nothing. Qwen's current flagship, `qwen/qwen3.8-max-0902`, refuses reasoning
 disabled ("Reasoning is mandatory for this endpoint"), which this field's protocol does not
 allow. The previous flagship, `qwen/qwen3.7-max`, accepts it (tested: 0 reasoning tokens)
 and runs as `qwen37max` — its own config, never read as `qwen_l`.
@@ -340,6 +354,13 @@ than the large one, so "price tier" here is a label, not a price order. Cost com
 between this experiment and the earlier five mix September and October prices.
 
 ## 7. NOT covered, NOT measured, NOT verified
+
+- **No evaluator trained on human ratings was run.** The free arms are reference metrics
+  (ROUGE, `coverage`), a length and a random floor, and BARTScore, a summariser scored by
+  likelihood; none was trained to judge summaries. UniEval, the free trained evaluator in
+  G-Eval's table, reports τ 0.377 (ρ 0.474) there, which would put it above the weakest
+  judges here. "Every judge beats every free scorer" is about the seven measured. UniEval is
+  the next arm to run.
 
 - **n = 100 articles**, below the usual 200, and every summary is from a 2019-era system.
   Modern summaries are more fluent; a judge's skill at catching 2019 failures may not
@@ -363,8 +384,9 @@ between this experiment and the earlier five mix September and October prices.
   (§3.2); what a different sample of articles would do to them is not measured.
 - **The human ceiling is one expert against two.** It is computed from the original
   release's per-expert scores (§3.7) and is somewhat pessimistic, since two experts are a
-  noisier reference than three; whether the gap between the judges and it is significant is
-  not tested.
+  noisier reference than three. The judges' 93% has a bootstrap interval, but the best judge
+  is selected on the same articles, and the judge's all-16-at-once prompt is a different
+  task from an expert's one-at-a-time scoring; neither is corrected for.
 
 ## 8. Reproduction
 

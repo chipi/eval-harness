@@ -105,7 +105,7 @@ def chapters(H, f: dict) -> list:
         {"id": "experiment", "nodes": "arms runs", "kicker": "Experiment",
          "title": "An eval is an experiment.",
          "short": "Vary one thing. Record everything else.",
-         "story": (f"<p>The same {max(x['n_hosted'] for x in exps)} hosted models ran on {H.word(len(exps))} tasks with one prompt per "
+         "story": (f"<p>The same {max(x['n_hosted'] for x in exps)} hosted models (the cheapest twelve on SciFact) ran on {H.word(len(exps))} tasks with one prompt per "
                    "task, at temperature 0 with reasoning off — so when a model's score differs "
                    "between two tasks, the task is the only thing that changed.</p>"
                    "<p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the "

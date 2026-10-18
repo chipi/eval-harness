@@ -84,9 +84,10 @@ reported beside it because the literature reports both.
 
 ### What this scoring cannot see
 
-Agreement with three experts is agreement with three people. Their own disagreement is not
-measured here, so the ceiling a judge could reach is unknown, and a τ of 0.54 is not "54%
-of the way to perfect". And the protocol is one prompt, one call per article, scores as
+Agreement with three experts is agreement with three people, and they disagree with each
+other: one expert agrees with the other two at τ 0.5587, so a τ of 0.54 is not "54% of the
+way to perfect". [`human_ceiling.py`](human_ceiling.py) measures that ceiling from the
+original release's per-expert scores and sets every arm against it (report §3.7). And the protocol is one prompt, one call per article, scores as
 integers: scoring one summary per call, one dimension per call, or with token probabilities
 (G-Eval's method) are different judges, and none of them is measured.
 

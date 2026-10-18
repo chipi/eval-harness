@@ -32,13 +32,14 @@ It was built to answer four questions anyone building with AI ends up asking:
    side by side, with a test that says whether the ranking is real.
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
-   GPU was first or tied for first in five of the six experiments, but only on text like
-   the text it was trained on. On the sixth, judging summaries, nothing small was trained
-   for the task, and the LLM earned its bill: the best judges reach 93% of a human expert's
+   GPU was first, or not separable from first, in five of the six experiments, but only on
+   text like the text it was trained on. On the sixth, judging summaries, no free model
+   measured was trained for the task, and the LLM earned its bill: the best judges reach 93% of a human expert's
    agreement, the best free metric 44%.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
    quality. Here a proprietary model never separated from the best open-weight one, and
-   a 64 GB machine matched the unlimited-hardware answer on four of the six tasks.
+   a 64 GB machine matched the unlimited-hardware answer on four of the six tasks (two of
+   them at int8 or int4, which was not measured).
 
 **Start where you are:**
 
@@ -171,15 +172,16 @@ What they found, and what a plain leaderboard would have hidden:
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
 - **Judging.** Asked to grade summaries the way three experts did, every one of the 24 LLMs
   is separated from, and ahead of, BARTScore, the best free metric measured — the first
-  task here where the LLM clearly earns its bill. Scored against two experts, as one expert
+  task here where the LLM clearly earns its bill (a free evaluator trained for the job,
+  UniEval, was not run). Scored against two experts, as one expert
   is against the other two, the best judges reach 93% of a human's agreement. The top is a
   six-way tie, and an open-weight judge sits 0.0013 behind the leader for $0.0278 per 100
   articles. ROUGE agrees with the experts at τ 0.14–0.16, and
   this repository's own summarisation metric below that.
 
-Every experiment has a $0 answer you can run on hardware you own. Five of them fit a 64 GB
-machine at measured quality; SummEval's is a 63 GB open-weight judge, which a 64 GB machine
-holds only at int8, a precision that was not measured. Full index,
+Every experiment has a $0 answer you can run on hardware you own — on SummEval a 63 GB
+open-weight judge, which a 64 GB machine holds only at int8, a precision that was not
+measured. Full index,
 with what each one broke in the harness: **[`examples/README.md`](examples/README.md)**.
 
 ### Check it yourself, in four commands

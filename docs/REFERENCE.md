@@ -127,6 +127,7 @@ it.
 | Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
+| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
 
 **Why each example has floors that are not models.** A *floor* is any non-model arm — a
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
@@ -226,6 +227,10 @@ the cache by hand and are a record, not a fingerprint.
 | `bert_base_fy` (AG) | [`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | 438 MB | `c14e3b32fe1f` | BERT-base fine-tuned on AG News by a second author — a check on the first |
 | `bert_base_fy` (DBpedia) | [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14) | 438 MB | `1fbfc3deaa28` | BERT-base fine-tuned on DBpedia-14 |
 
+SummEval's `bartscore` arm loads the same checkpoint as `bart_l`, at the same revision
+(`37f520fa929c`), and scores a summary by its log-likelihood given the article
+([BARTScore](https://arxiv.org/abs/2106.11520)); it is not a separate model.
+
 **The last six need torch ≥ 2.6**, and ran on 2026-09-30 on Linux. Their `main` branches
 ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` below torch 2.6
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)); x86_64 macOS has no
@@ -275,7 +280,7 @@ your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 | CNN/DailyMail | [`abisee/cnn_dailymail`](https://huggingface.co/datasets/abisee/cnn_dailymail) | Apache-2.0 | `cnn_dailymail_200`: the first 200 test articles — **all from CNN** (the split puts CNN's 9% first; 91% of it is DailyMail). `cnn_dailymail_dm200`: 200 DailyMail test articles, seeded random. Human highlights as gold. Corpus from [Hermann et al. 2015](https://arxiv.org/abs/1506.03340); adapted for summarisation by [Nallapati et al. 2016](https://arxiv.org/abs/1602.06023) |
 | AG News | [`fancyzhx/ag_news`](https://huggingface.co/datasets/fancyzhx/ag_news) | **`unknown`** on the card; the corpus description says non-commercial research use | 200 snippets, 4 topics ([paper](https://arxiv.org/abs/1509.01626)) |
 | DBpedia-14 | [`fancyzhx/dbpedia_14`](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | 280 abstracts, 14 ontology classes |
-| Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
+| Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the first five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
 | BEIR SciFact | [`BeIR/scifact`](https://huggingface.co/datasets/BeIR/scifact) + [`BeIR/scifact-qrels`](https://huggingface.co/datasets/BeIR/scifact-qrels) | CC BY-SA 4.0 | 200 claims over a 5,183-abstract corpus ([BEIR](https://arxiv.org/abs/2104.08663), [SciFact](https://aclanthology.org/2020.emnlp-main.609/)) |
 | SummEval | [`mteb/summeval`](https://huggingface.co/datasets/mteb/summeval) | MIT | `summeval_100`: all 100 annotated CNN/DailyMail test articles, 16 machine summaries each, 11 human references, expert scores (mean of 3) on coherence, consistency, fluency and relevance as gold ([Fabbri et al. 2021](https://arxiv.org/abs/2007.12626)) |
 

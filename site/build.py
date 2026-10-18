@@ -521,18 +521,20 @@ def home(f: dict) -> str:
         ("Do I need an LLM — or a GPU — at all?",
          "Put a small classic model, or a plain baseline, in the same comparison as the LLMs: "
          "same data, same scoring, same test.",
-         f"A free model that needs no GPU was first or tied for first in "
+         f"A free model that needs no GPU was first, or not separable from first, in "
          f"{f['local_first_or_tied']} of {len(exps)} — but only on text like the text it was "
-         "trained on. Where nothing was trained for the task, the LLM earned its bill: "
-         + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement, "
-             "and the best free metric measured 44%.", JUDGE),
+         "trained on. Where no free model measured was trained for the task, the LLM earned "
+         "its bill: " + q("judging summaries, the best LLM judges reach 93% of a human expert's "
+                          "agreement, and the best free metric measured 44%.", JUDGE)
+         + " One task, so the direction, not the size.",
          "experiments.html#experiments", "Per experiment"),
         ("Own it or rent it?",
          "Every cost is read off the provider's bill and set beside quality, so renting an API "
          "can be weighed against running open weights on hardware you own.",
          q("A proprietary model never separated from the best open-weight model in any of the "
            "six experiments, and a 64 GB machine matched the unlimited-hardware answer on four "
-           "of the six tasks.", SYN),
+           "of the six tasks", SYN) + " — two of them at int8 or int4 precision, which was not "
+         "measured.",
          f"{BLOB}/research/REPORT_SYNTHESIS.md", "The synthesis"),
     ]
     why_html = "".join(
@@ -587,7 +589,7 @@ def home(f: dict) -> str:
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
-    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first or tied for first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
+    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers</div></div>
   </div>
   <div class="cards" style="margin-top:48px">{cards}</div>
@@ -648,7 +650,7 @@ def landing(f: dict) -> str:
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
-    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first or tied for first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
+    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers</div></div>
   </div>
 </div></section>
@@ -681,9 +683,9 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
-    <li><div><h3>A free local model was first, or tied for first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
+    <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
-    <li><div><h3>When nothing was trained for your task, pay for an LLM — but not the dearest.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)}</p></div></li>
+    <li><div><h3>Where no small model trained for your task exists, an LLM can earn its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -708,7 +710,7 @@ def landing(f: dict) -> str:
 <section class="block" id="experiments"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>The experiments</div>
   <h2>{n_exp.capitalize()} benchmarks, one harness.</h2>
-  <p class="lede">The same {hosted_n} hosted models — eight vendors, three price tiers each — on every task, beside the strongest free models each task allows.</p>
+  <p class="lede">The same {hosted_n} hosted models — eight vendors, three price tiers each — on every task (the cheapest twelve on SciFact), beside the strongest free models each task allows.</p>
   <div class="cards">{cards}</div>
 </div></section>
 
@@ -949,7 +951,7 @@ HEADLINE = {
     "dbpedia": "Nineteen-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",
-    "summeval": "Nothing was trained for it. The LLMs win.",
+    "summeval": "LLM judges beat every free scorer measured.",
 }
 
 

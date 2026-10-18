@@ -35,6 +35,7 @@ import hashlib
 import importlib.util
 import itertools
 import json
+import random
 import statistics
 import sys
 import urllib.request
@@ -104,7 +105,12 @@ def main() -> int:
                 raise SystemExit(f"{key}: {len(ours)} copies of a summary here, {len(theirs)} there")
             if len(ours) > 1:
                 duplicate_groups += 1
-                scored_differently += any(a != theirs[0] for a in theirs[1:])
+                # Order-proof: the copies' expert MEANS, which is what the gold is. Comparing
+                # the annotation lists would count the same three scores in another order
+                # as a disagreement, and the file does not document its annotator order.
+                scored_differently += any(
+                    any(abs(mean_of(a, d) - mean_of(theirs[0], d)) > 1e-9 for d in ad.DIMS)
+                    for a in theirs[1:])
             fits = [perm for perm in itertools.permutations(theirs)
                     if all(abs(mean_of(a, d) - gold_ref[d][i]) < 1e-6
                            for i, a in zip(ours, perm) for d in ad.DIMS)]
@@ -130,15 +136,18 @@ def main() -> int:
 
     per_expert = [[] for _ in range(3)]
     per_dim = {d: [] for d in ad.DIMS}
-    for it in items.values():
+    expert_by_item = {}
+    for stem, it in items.items():
         for k in range(3):
             one = json.dumps({d: [s[k][d] for s in it["experts"]] for d in ad.DIMS})
             sc = ad.score(one, rest_of(it, k))
             per_expert[k].append(sc["tau"])
+            expert_by_item.setdefault(stem, []).append(sc["tau"])
             for d in ad.DIMS:
                 per_dim[d].append(sc[f"tau_{d}"])
     experts = [statistics.fmean(v) for v in per_expert]
 
+    judge_by_item: dict = {}
     # Every arm on the same footing: its committed outputs scored against each
     # leave-one-out reference, averaged over the three. Re-scoring against the full gold
     # first must reproduce the arm's committed tau, or the alignment is wrong.
@@ -148,18 +157,43 @@ def main() -> int:
         if m.get("dataset_id") != "summeval_100":
             continue
         arm = m["config_id"][len("se_"):-len("_n100_v1")]
-        full, loo = [], []
+        full, loo, loo_by_item = [], [], {}
         for stem, it in items.items():
             out = (mj.parent / "outputs" / f"{stem}.txt").read_text(encoding="utf-8")
             full.append(ad.score(out, json.dumps(it["gold"]))["tau"])
             loo.append(statistics.fmean(ad.score(out, rest_of(it, k))["tau"] for k in range(3)))
+            loo_by_item[stem] = loo[-1]
         if abs(statistics.fmean(full) - m["scores"]["tau"]) > 1e-6:
             raise SystemExit(f"{arm}: re-scoring gives {statistics.fmean(full):.6f}, "
                              f"the run says {m['scores']['tau']:.6f}")
         arms[arm] = {"tau": round(m["scores"]["tau"], 4),
                      "tau_vs_two_experts": round(statistics.fmean(loo), 4)}
+        judge_by_item[arm] = loo_by_item
 
     ceiling = statistics.fmean(experts)
+
+    # How sure is "93%"? A paired bootstrap over articles (seeded), for the two best judges:
+    # the ratio judge / expert and the gap expert - judge, resampling the same articles on
+    # both sides. The best judge is chosen on these same articles, so its interval is the
+    # optimistic one; that selection is not corrected for.
+    stems = sorted(items)
+    expert_item = {st: statistics.fmean(expert_by_item[st]) for st in stems}
+    rng = random.Random(20261018)
+    draws = [[rng.choice(stems) for _ in stems] for _ in range(10000)]
+    top = sorted((a for a in arms if a not in ("bartscore", "rouge1", "rouge2", "rougeL",
+                                               "coverage", "length", "random")),
+                 key=lambda a: -arms[a]["tau_vs_two_experts"])[:2]
+    for arm in top:
+        ratios, gaps = [], []
+        for d in draws:
+            e = statistics.fmean(expert_item[st] for st in d)
+            j = statistics.fmean(judge_by_item[arm][st] for st in d)
+            ratios.append(j / e)
+            gaps.append(e - j)
+        ratios.sort()
+        gaps.sort()
+        arms[arm]["share_ci95"] = [round(ratios[250], 3), round(ratios[9749], 3)]
+        arms[arm]["gap_ci95"] = [round(gaps[250], 4), round(gaps[9749], 4)]
     result = {
         "what": "Kendall tau-b per article between one SummEval expert and the mean of the other "
                 "two (leave-one-out), averaged over the four dimensions and then over the 100 "
@@ -190,8 +224,10 @@ def main() -> int:
         print(f"  {d:11s} {v:.4f}")
     print("\narms against the same two-expert references (tau vs all three in brackets):")
     for arm, r in result["arms"].items():
+        extra = (f"  share 95% CI {r['share_ci95'][0]:.0%}-{r['share_ci95'][1]:.0%}, "
+                 f"gap {r['gap_ci95'][0]:+.4f} to {r['gap_ci95'][1]:+.4f}" if "share_ci95" in r else "")
         print(f"  {arm:12s} {r['tau_vs_two_experts']:.4f}  ({r['tau']:.4f})"
-              f"  {r['tau_vs_two_experts'] / ceiling:.0%} of one expert")
+              f"  {r['tau_vs_two_experts'] / ceiling:.0%} of one expert{extra}")
     print(f"wrote {OUT.relative_to(ROOT)}")
     return 0
 

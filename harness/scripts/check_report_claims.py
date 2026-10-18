@@ -1245,7 +1245,9 @@ if _hc:
     _bart_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
     check(f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
           f"BARTScore {_bart_p}%",
-          f"**{_bv:.4f}**, **{_bp}%** of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
+          f"**{_bv:.4f}**, **{_bp}%** (95% interval "
+          f"{round(100 * _hc['arms'][_best]['share_ci95'][0])}–{round(100 * _hc['arms'][_best]['share_ci95'][1])}%) "
+          f"of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
           and f"BARTScore reaches {_bart_p}%" in _SEV and f"| **{_ceil:.4f}** |" in _SEV,
           "the decision table or §3.7 does not state the evidence's figures")
     # The same two figures, repeated where the conclusions are drawn. A copy is checked
@@ -1258,6 +1260,11 @@ if _hc:
                    or f"{_bart_p}%" not in (ROOT / f).read_text()]
     check(f"SummEval's {_bp}% / {_bart_p}% stated the same in the synthesis and both READMEs",
           not _stale_copy, f"stale or missing in {_stale_copy}")
+    _gap = _hc["arms"][_best]["gap_ci95"]
+    check(f"SummEval §3.7: the gap to one expert, {_gap[0]:.4f} to {_gap[1]:.4f}, as the evidence says",
+          f"({_gap[0]:.4f} to\n{_gap[1]:.4f} for `{_best}`)" in _SEV
+          or f"({_gap[0]:.4f} to {_gap[1]:.4f} for `{_best}`)" in " ".join(_SEV.split()),
+          "§3.7 does not state the bootstrap interval of the gap")
     _pos = _hc["tau_per_position"]
     check(f"SummEval §3.7: positions {min(_pos):.4f}-{max(_pos):.4f}; {_hc['duplicate_summary_groups']} "
           f"identical-text groups in {_hc['duplicate_articles']} articles, "

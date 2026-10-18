@@ -56,8 +56,8 @@ the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal
 separable from the leader) on saturated DBpedia, a
 proprietary model never separated from the best open-weight one in any of the six, and
 **a 64 GB machine reaches the same answer as unlimited hardware on four of the six
-tasks**. Every task-specific winner is under 2 GB and needs no GPU. On SummEval, the one
-task no small model was trained for, the LLM earns its bill — the best judges reach 93% of a
+tasks** (two at int8 or int4, unmeasured). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, where no
+free arm measured was trained for the task, the LLM earns its bill — the best judges reach 93% of a
 human expert's agreement — and the $0 answer is an open-weight LLM judge.
 
 ## What each one actually found
@@ -129,7 +129,7 @@ produced a **prediction registered before the arm existed**: swapping only the f
 should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891**, and the mechanism
 transferred too — the share of available headroom taken moved 90.9% → 90.2%.
 
-### SummEval — nothing was trained for it, and the LLMs win
+### SummEval — LLM judges beat every free scorer measured
 The 24 hosted models as **judges**, scoring 16 summaries per article on four dimensions,
 graded by how well they order the summaries the way three experts did (Kendall τ-b). Every
 judge is separated from, and ahead of, the best free scorer: BARTScore, a model fine-tuned
