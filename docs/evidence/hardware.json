@@ -1,0 +1,60 @@
+{
+  "what": "The machines behind the experiments: what each is, as read from the machine itself, and which committed runs it measured (matched on each run's fingerprint host block). Captured 2026-10-18 with hardware/linux.sh and hardware/mac.sh; the cloud runner could not be captured and is described from the run fingerprints alone.",
+  "captured": "2026-10-18",
+  "machines": [
+    {
+      "id": "mac_mini",
+      "name": "Mac mini (2018)",
+      "role": "the homelab host: it ran the first five experiments, local arms on its CPU and hosted arms as API calls through a LiteLLM gateway it also hosts",
+      "captured_output": {
+        "model": "Macmini8,1", "cpu": "Intel(R) Core(TM) i7-8700B CPU @ 3.20GHz",
+        "cores": 6, "threads": 12, "memory_bytes": 34359738368, "arch": "x86_64",
+        "os": "macOS 15.7.7"
+      },
+      "summary": "Intel Core i7-8700B, 6 cores / 12 threads, 32 GB",
+      "fingerprint": {"platform": "Darwin/x86_64", "cpu_count": 12}
+    },
+    {
+      "id": "cloud_runner",
+      "name": "Cloud runner",
+      "role": "4-core Linux containers from Anthropic cloud coding sessions (at least two instances, by the kernel release each run records); they ran the six local models that need torch 2.6 or later (the distilled and XSum BARTs, the three bert-base fine-tunes) and SummEval's seven free scorers, and re-timed the BARTs on one machine (harness/data/runs-linux)",
+      "captured_output": null,
+      "summary": "4-core Linux (x86_64) containers; a session's container, so not captured",
+      "fingerprint": {"platform": "Linux/x86_64", "cpu_count": 4}
+    },
+    {
+      "id": "evo_x3",
+      "name": "GMKtec EVO-X3",
+      "role": "the workstation SummEval's 24 hosted judges were called from, and where local LLMs (MBPP+) are being measured",
+      "captured_output": {
+        "cpu": "AMD RYZEN AI MAX+ 395 w/ Radeon 8060S", "threads": 32,
+        "memory_kb": 130485068, "vendor": "GMKtec", "product": "EVO-X3",
+        "os": "Omarchy, Linux 7.2.5"
+      },
+      "summary": "AMD Ryzen AI Max+ 395 (Strix Halo) with Radeon 8060S, 32 threads, 128 GB unified memory",
+      "fingerprint": {"platform": "Linux/x86_64", "cpu_count": 32}
+    },
+    {
+      "id": "dgx_spark",
+      "name": "NVIDIA DGX Spark",
+      "role": "owned, and serves local models in the homelab; no committed run here was measured on it",
+      "captured_output": {
+        "cpu": "Cortex-X925", "threads": 20, "memory_kb": 127600812,
+        "gpu": "NVIDIA GB10", "product": "NVIDIA_DGX_Spark", "os": "Ubuntu 24.04.4 LTS aarch64"
+      },
+      "summary": "NVIDIA GB10, 20 Arm cores, 128 GB unified memory",
+      "fingerprint": null
+    },
+    {
+      "id": "macbook_pro",
+      "name": "MacBook Pro (M4 Pro)",
+      "role": "the laptop the work is driven from; no committed run here was measured on it",
+      "captured_output": {
+        "model": "Mac16,8", "cpu": "Apple M4 Pro", "cores": 14, "threads": 14,
+        "memory_bytes": 51539607552, "arch": "arm64", "os": "macOS 15.7.3"
+      },
+      "summary": "Apple M4 Pro, 14 cores, 48 GB unified memory",
+      "fingerprint": null
+    }
+  ]
+}

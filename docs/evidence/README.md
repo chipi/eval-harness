@@ -53,6 +53,14 @@ params. The `.json` records the results from 2026-09-30:
 The usage line is in the script's docstring. It needs the datasets materialised under
 `harness/data/materialized/` and network access to the Hub.
 
+## `hardware.json` — the machines behind the runs
+
+What each machine is, captured from the machine itself on 2026-10-18 with
+`hardware/linux.sh` and `hardware/mac.sh`, and the run-fingerprint signature
+(`platform`, `cpu_count`) that identifies it. The site's hardware table counts each
+machine's committed runs from those signatures, and its build fails if any committed run
+matches no documented machine, or more than one.
+
 ## `summeval_human_ceiling.json` — how well one SummEval expert agrees with the other two
 
 Written by `examples/summeval-judging/human_ceiling.py` from the original SummEval release's

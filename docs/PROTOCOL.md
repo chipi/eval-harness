@@ -53,6 +53,26 @@ can still be a difference of protocol. ROUGE-1 and ROUGE-2 agree with the paper 
 on every one of the four dimensions; ROUGE-L agrees on average but is 0.054 above it on
 coherence, and the paper does not say which ROUGE-L it ran.
 
+## The hardware
+
+Every run records the machine it ran on (`fingerprint.host`), and
+[`evidence/hardware.json`](evidence/hardware.json) maps those records to machines, each
+described from the machine itself:
+
+| machine | what it is | what it measured |
+|---|---|---|
+| Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
+| cloud runner | 4-core Linux (x86_64) containers from cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
+| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls |
+| NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs |
+| MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs |
+
+What it means for a number: **quality and cost do not depend on the machine**; a hosted
+arm's answer comes from the provider, and a local arm is deterministic on CPU (measured:
+nine local arms re-ran byte-identically, REPORT_SYNTHESIS). **Latency does.** Local
+latencies are this hardware's, and a ratio between arms timed on two different machines
+is good to about a factor of two, which the reports say wherever they compare them.
+
 ## What is the same in every experiment
 
 - **Pinned data.** Each dataset is a JSON file under `harness/data/datasets/` listing every

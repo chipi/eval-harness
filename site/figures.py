@@ -146,6 +146,27 @@ def calibration() -> list:
     return rows
 
 
+def hardware() -> list:
+    """The machines behind the experiments (docs/evidence/hardware.json), each with the
+    committed runs whose fingerprint names it. Every run must match exactly one machine,
+    or the build stops: a run measured somewhere undocumented is a gap, not a footnote."""
+    hw = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["machines"]
+    machines = [{**m, "hosted": 0, "local": 0} for m in hw]
+    for exp in EXPERIMENTS:
+        for arm, d in _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"]).items():
+            fp = json.loads((d / "metrics.json").read_text()).get("fingerprint") or {}
+            host = fp.get("host") or {}
+            hits = [m for m in machines if m["fingerprint"]
+                    and host.get("platform") == m["fingerprint"]["platform"]
+                    and host.get("cpu_count") == m["fingerprint"]["cpu_count"]]
+            if len(hits) != 1:
+                raise SystemExit(f"{d.name}: host {host.get('platform')}/{host.get('cpu_count')} "
+                                 f"matches {len(hits)} machines in docs/evidence/hardware.json")
+            prov = (json.loads((d / "metrics.json").read_text()).get("params") or {}).get("provider")
+            hits[0]["hosted" if prov in ("litellm", "rerank") else "local"] += 1
+    return machines
+
+
 def dailymail() -> list:
     """The five local summarisation arms on the CNN slice and on the DailyMail slice."""
     out = []
@@ -181,6 +202,7 @@ def compute() -> dict:
         "calibration": cal,
         "calibration_consistent": sum(r["consistent"] for r in cal),
         "dailymail": dailymail(),
+        "hardware": hardware(),
     }
 
 

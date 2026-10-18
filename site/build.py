@@ -633,6 +633,15 @@ def landing(f: dict) -> str:
         f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} arms</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
         for x in exps)
     s = by["summarization"]
+    hw_rows = "".join(
+        f'<tr><td class="exp">{e(m["name"])}</td><td data-label="what it is">{e(m["summary"])}</td>'
+        f'<td class="num" data-label="committed runs">'
+        + (f'{m["local"] + m["hosted"]} ({m["local"]} local, {m["hosted"]} hosted)' if m["local"] + m["hosted"] else "none")
+        + f'</td><td data-label="role">{e(m["role"])}</td></tr>'
+        for m in f["hardware"])
+    hw_date = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["captured"]
+    require(sum(m["local"] + m["hosted"] for m in f["hardware"]) == f["total_arms"],
+            "every measured run is attributed to a documented machine")
     dear_x = max(exps, key=lambda x: x["dearest"]["cost"])
     dear = dear_x["dearest"]
     n_exp = word(len(exps))
@@ -743,6 +752,15 @@ def landing(f: dict) -> str:
       <p class="note" style="margin-top:32px">Reviewed in five adversarial rounds, every correction kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
     </div>
   </div>
+</div></section>
+<section class="block" id="hardware"><div class="wrap">
+  <div class="eyebrow"><span class="num">07</span>The hardware</div>
+  <h2>Measured on machines you could own.</h2>
+  <p class="lede">"Own it or rent it" is a question about hardware, so here is the hardware. Every committed run records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself.</p>
+  <div class="chart scroll-x reveal"><table class="data">
+    <thead><tr><th>machine</th><th>what it is</th><th>committed runs it measured</th><th>role</th></tr></thead>
+    <tbody>{hw_rows}</tbody></table>
+    <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of the committed runs; the local LLMs now being measured (code generation, MBPP+) run on the EVO-X3. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
 </div></section>
 {author("experiments")}"""
     return page("The most expensive model never won — eval-harness",
