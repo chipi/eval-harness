@@ -1248,6 +1248,16 @@ if _hc:
           f"**{_bv:.4f}**, **{_bp}%** of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
           and f"BARTScore reaches {_bart_p}%" in _SEV and f"| **{_ceil:.4f}** |" in _SEV,
           "the decision table or §3.7 does not state the evidence's figures")
+    # The same two figures, repeated where the conclusions are drawn. A copy is checked
+    # where it is stated, or it drifts from the report it was copied from.
+    _copies = {"research/REPORT_SYNTHESIS.md": f"reached {_bp}% of a human expert's agreement",
+               "README.md": f"reach {_bp}% of a human expert's",
+               "examples/README.md": f"reach {_bp}% of a\nhuman expert's agreement"}
+    _stale_copy = [f for f, t in _copies.items()
+                   if " ".join(t.split()) not in " ".join((ROOT / f).read_text().split())
+                   or f"{_bart_p}%" not in (ROOT / f).read_text()]
+    check(f"SummEval's {_bp}% / {_bart_p}% stated the same in the synthesis and both READMEs",
+          not _stale_copy, f"stale or missing in {_stale_copy}")
     _pos = _hc["tau_per_position"]
     check(f"SummEval §3.7: positions {min(_pos):.4f}-{max(_pos):.4f}; {_hc['duplicate_summary_groups']} "
           f"identical-text groups in {_hc['duplicate_articles']} articles, "

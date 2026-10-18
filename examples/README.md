@@ -57,7 +57,8 @@ separable from the leader) on saturated DBpedia, a
 proprietary model never separated from the best open-weight one in any of the six, and
 **a 64 GB machine reaches the same answer as unlimited hardware on four of the six
 tasks**. Every task-specific winner is under 2 GB and needs no GPU. On SummEval, the one
-task no small model was trained for, the $0 answer is an open-weight LLM judge.
+task no small model was trained for, the LLM earns its bill — the best judges reach 93% of a
+human expert's agreement — and the $0 answer is an open-weight LLM judge.
 
 ## What each one actually found
 
@@ -128,13 +129,14 @@ produced a **prediction registered before the arm existed**: swapping only the f
 should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891**, and the mechanism
 transferred too — the share of available headroom taken moved 90.9% → 90.2%.
 
-### SummEval — the first task where free loses
+### SummEval — nothing was trained for it, and the LLMs win
 The 24 hosted models as **judges**, scoring 16 summaries per article on four dimensions,
 graded by how well they order the summaries the way three experts did (Kendall τ-b). Every
 judge is separated from, and ahead of, the best free scorer: BARTScore, a model fine-tuned
 on this corpus to write summaries, reaches τ **0.2562** against `openai_l`'s **0.5398**. The
 top is a six-way tie, and `gemma_l` — open weights, $0.0278 for all 100 articles — sits
-0.0013 behind the leader.
+0.0013 behind the leader. Scored against the mean of two experts, as one expert is against
+the other two, the best judges reach 93% of a human's agreement, BARTScore 44%.
 
 It also measures the instrument: ROUGE agrees with the experts at τ 0.14–0.16, and this
 repository's own `coverage` at **0.1011**, below ROUGE-1. One model could not run as

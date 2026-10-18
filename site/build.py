@@ -475,6 +475,7 @@ H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, word=wo
 
 # ── the landing page ────────────────────────────────────────────────────────
 SYN = "research/REPORT_SYNTHESIS.md"
+JUDGE = "research/REPORT_SUMMEVAL.md"
 
 
 def home(f: dict) -> str:
@@ -522,7 +523,9 @@ def home(f: dict) -> str:
          "same data, same scoring, same test.",
          f"A free model that needs no GPU was first or tied for first in "
          f"{f['local_first_or_tied']} of {len(exps)} — but only on text like the text it was "
-         "trained on.",
+         "trained on. Where nothing was trained for the task, the LLM earned its bill: "
+         + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement, "
+             "and the best free metric measured 44%.", JUDGE),
          "experiments.html#experiments", "Per experiment"),
         ("Own it or rent it?",
          "Every cost is read off the provider's bill and set beside quality, so renting an API "
@@ -678,8 +681,9 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
-    <li><div><h3>A free local model was first, or tied for first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}). The exception is the one task no small model was trained for, grading summaries: there every LLM judge beat every free metric.</p></div></li>
+    <li><div><h3>A free local model was first, or tied for first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
+    <li><div><h3>When nothing was trained for your task, pay for an LLM — but not the dearest.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)}</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -750,7 +754,7 @@ CARD = {
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the top is a group of nineteen, and the gold label is sometimes the error.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
     "scifact": "Retrieve the abstracts that support a scientific claim. LLM rerankers lead a twelve-way tie; a free dense retriever sits inside it.",
-    "summeval": "Grade machine summaries the way experts do. Every LLM judge beats every free metric, and an open-weight judge ties the leader.",
+    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.",
 }
 
 
@@ -836,7 +840,7 @@ def findings_for(x: dict, f: dict) -> list:
         weakest = max((a for a in x["arms"] if a["kind"] == "hosted"), key=lambda a: a["rank"])
         ct = x["cheapest_tied"]
         return [
-            ("Every LLM judge beats every free metric.",
+            ("Every LLM judge beats BARTScore, the best free metric measured.",
              f"The weakest judge, {weakest['arm']}, scores {weakest['score']:.4f}; the best free "
              f"scorer, {best_free['arm']}, {best_free['score']:.4f}. "
              + q("In the paired test BARTScore is separated from all 24 judges, all of them ahead.", rep)),
@@ -945,7 +949,7 @@ HEADLINE = {
     "dbpedia": "Nineteen-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",
-    "summeval": "The first task where free loses.",
+    "summeval": "Nothing was trained for it. The LLMs win.",
 }
 
 

@@ -146,10 +146,15 @@ def chapters(H, f: dict) -> list:
                    "<p>" + H.q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 "
                    "items whose gold labels most of the hosted field disputes.", CLASS)
                    + " Read, many of those labels were wrong. Disputed gold is a finding, not "
-                   "noise.</p>"),
+                   "noise.</p>"
+                   "<p>" + H.q("An AI judge is silver too, and SummEval measures how good: scored "
+                   "against the mean of two experts, as one expert is against the other two, the "
+                   "best judges reach 93% of a human's agreement. The experts are not noiseless "
+                   "either: 41 of 44 groups of word-for-word identical summaries got different "
+                   "expert scores.", JUDGE) + " Close to a person is not the same as a person.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
-                  "early, check silver against it, and read every item where strong systems "
-                  "agree against the gold.",
+                  "early, check silver — and any AI judge — against it, and read every item "
+                  "where strong systems agree against the gold.",
          "tool": ("make rescore REFERENCE=gold/… · make silver-calibrate",
                   "re-score old runs against new gold for $0, then measure how far silver drifts"),
          "yours": "A small set of answers written by someone who knows the domain is worth more "
@@ -286,6 +291,11 @@ def patterns(H, f: dict) -> list:
          "The answer is a set; matching and parsing are part of the instrument, and an unreadable "
          "answer must score zero, not be skipped.",
          "ner-few-nerd", "set F1 · parse rate"),
+        ("Use an LLM as a judge", "arms = judges, scored against people",
+         H.q("Score a few dozen outputs yourself, then measure how well each judge orders them "
+             "the way you do. On SummEval the best judges reached 93% of an expert's agreement, "
+             "and an open-weight one at 1/23 of the leader's price tied it.", JUDGE),
+         "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",
          "Score against references, clip for length so verbosity cannot buy recall, and check "
          "silver against a gold slice.",

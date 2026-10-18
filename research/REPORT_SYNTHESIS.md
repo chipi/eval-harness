@@ -77,7 +77,8 @@ ranked first in three experiments and third-equal — not separable from the lea
 fourth, always at $0, a 10× cost increase bought
 between −0.4% and +7.4% of quality — and a 64 GB machine reached the same answer as
 unlimited hardware on four of the six tasks.** On the one task no small model was trained
-for — judging summaries — every LLM beat every free option.
+for — judging summaries — the best LLM judges reached 93% of a human expert's agreement,
+and the best free metric measured 44%.
 
 **The production question — should you fine-tune a small model instead of paying an
 LLM?** Yes, for a task you can define and label: in all four experiments with a model
@@ -1097,7 +1098,8 @@ Ordered by what they are worth, not by how obvious they are.
 
 **When paying more IS right**, and this report should not be read as saying never: when
 you cannot label data and the task is unlike anything a small model was trained on
-(SummEval measures that case: every LLM judge beat every free option); when the quality
+(SummEval measures that case: every LLM judge beat the best free metric measured); when the
+quality
 difference is worth more than the bill (at 1,000 items/month the entire
 DBpedia spread is $1.35 and the analysis is not worth your time); when a single wrong
 answer is expensive; or when engineering time to fine-tune and host costs more than the
