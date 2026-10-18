@@ -398,7 +398,7 @@ DWO = "https://devwhateverops.com/"
 FAMILY = [
     ("https://www.orrerylearn.com/", "orrery", "Orrery", "A solar system explorer for the browser"),
     (HUMAN, "humancopilot", "Human Copilot", "Advisory for technology leaders"),
-    (DWO, "devwhateverops", "DevWhateverOps", "A manifesto for engineers who build end to end"),
+    ("https://www.devwhateverops.com/", "devwhateverops", "DevWhateverOps", "A manifesto for engineers who build end to end"),
 ]
 ELSEWHERE = [
     ("https://www.linkedin.com/in/markodragoljevic", "linkedin", "LinkedIn"),
