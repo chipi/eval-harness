@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 4, 3, 2, 3, 4, 4, 3, 2, 3, 3, 3, 3, 2, 3, 3],
+  "consistency": [2, 5, 5, 3, 5, 5, 5, 5, 3, 5, 5, 5, 4, 5, 5, 5],
+  "fluency": [2, 4, 3, 3, 4, 4, 3, 4, 2, 4, 3, 3, 4, 4, 4, 3],
+  "relevance": [2, 4, 4, 2, 3, 4, 4, 3, 2, 3, 4, 4, 3, 2, 3, 4]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Lower scores for summaries with disjointed or repetitive sentences (e.g., Summary 1 mixes unrelated details, Summary 9 includes an irrelevant link).
+- **Consistency**: Lower scores for factual errors (e.g., Summary 1 incorrectly states the Baltic Sea of Okhotsk, Summary 4 misreports the transponder claim).
+- **Fluency**: Lower scores for poor grammar, formatting issues, or awkward phrasing (e.g., Summary 1 lacks punctuation, Summary 9 includes a URL).
+- **Relevance**: Lower scores for omitting key details (e.g., Summary 4 skips the transponder dispute) or including irrelevant information (e.g., Summary 9’s link).

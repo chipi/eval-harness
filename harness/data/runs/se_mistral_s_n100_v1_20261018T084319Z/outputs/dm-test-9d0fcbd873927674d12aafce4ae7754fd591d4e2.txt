@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 4, 4, 3, 4, 4, 4, 3, 1, 4, 4, 5, 4, 4, 4, 3],
+  "consistency": [2, 5, 5, 4, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 5, 4],
+  "fluency": [2, 5, 5, 3, 5, 5, 5, 4, 2, 5, 5, 5, 5, 5, 5, 3],
+  "relevance": [3, 4, 4, 3, 4, 4, 4, 4, 1, 4, 4, 5, 4, 4, 4, 3]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries with clear structure and logical flow (e.g., 12, 3, 4) score higher, while those with disjointed or repetitive sentences (e.g., 1, 8, 16) score lower.
+- **Consistency**: Summaries that accurately reflect the article (e.g., 2, 3, 5, 12) score higher, while those with factual errors or hallucinations (e.g., 1, 8, 9) score lower.
+- **Fluency**: Well-written, grammatically correct summaries (e.g., 2, 3, 5, 12) score higher, while those with awkward phrasing or errors (e.g., 1, 8, 9) score lower.
+- **Relevance**: Summaries that focus on key details (e.g., 12, 3, 5) score higher, while those with unnecessary or redundant information (e.g., 1, 8, 16) score lower.

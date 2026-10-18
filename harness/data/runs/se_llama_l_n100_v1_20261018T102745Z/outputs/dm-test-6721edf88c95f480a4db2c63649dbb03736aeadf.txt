@@ -1,0 +1,17 @@
+Here is the JSON object with the ratings for the 16 summaries:
+
+```
+{
+  "coherence": [2, 4, 3, 4, 4, 4, 4, 5, 1, 4, 4, 5, 4, 3, 3, 2],
+  "consistency": [4, 5, 4, 5, 5, 5, 5, 5, 1, 4, 5, 5, 5, 4, 4, 3],
+  "fluency": [2, 5, 4, 5, 5, 5, 5, 5, 1, 4, 5, 5, 5, 4, 4, 3],
+  "relevance": [3, 4, 3, 4, 4, 4, 4, 5, 1, 4, 4, 5, 4, 3, 3, 2]
+}
+```
+
+Here's a brief explanation for the ratings:
+
+* Coherence: Summaries 2, 4, 5, 6, 7, 8, 11, 12, and 13 are well-structured and coherent, while summaries 1, 3, 9, 14, 15, and 16 are less coherent due to missing or out-of-order information. Summaries 9 and 16 are particularly poor.
+* Consistency: Summaries 2, 4, 5, 6, 7, 8, 11, 12, and 13 are factually consistent with the article. Summaries 1, 14, and 15 are mostly consistent but lack some details or contain minor errors. Summary 9 is highly inconsistent, and summary 16 is missing crucial information.
+* Fluency: Summaries 2, 4, 5, 6, 7, 8, 11, 12, and 13 are well-written and free of errors. Summaries 1, 3, 14, and 15 contain some minor errors or awkward phrasing. Summaries 9 and 16 are poorly written.
+* Relevance: Summaries 8 and 12 are highly relevant, covering the key points of the article. Summaries 2, 4, 5, 6, 7, 10, 11, and 13 are also relevant, although some may contain minor redundant information. Summaries 1, 3, 14, and 15 are somewhat relevant but lack important details. Summaries 9 and 16 are not very relevant.

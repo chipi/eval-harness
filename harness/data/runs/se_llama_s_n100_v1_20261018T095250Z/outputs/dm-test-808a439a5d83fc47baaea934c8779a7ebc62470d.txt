@@ -1,0 +1,19 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [4, 5, 5, 4, 4, 5, 5, 4, 1, 4, 5, 5, 4, 4, 4, 3],
+  "consistency": [5, 5, 5, 5, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 5, 4],
+  "fluency": [4, 5, 5, 4, 4, 5, 5, 4, 1, 4, 5, 5, 4, 4, 4, 3],
+  "relevance": [5, 5, 5, 5, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 5, 4]
+}
+```
+
+Note that I rated the summaries based on their individual merits, and not in comparison to each other. Here's a brief explanation of my ratings:
+
+* Coherence: I rated summaries that were well-structured and easy to follow with a 4 or 5. Summaries that were a bit disjointed or hard to follow got a 3.
+* Consistency: I rated summaries that were factually accurate and consistent with the article with a 5. Summaries that contained small errors or inconsistencies got a 4.
+* Fluency: I rated summaries that were written in clear and concise language with a 4 or 5. Summaries that contained awkward phrasing or grammatical errors got a 3.
+* Relevance: I rated summaries that included the most important information from the article with a 5. Summaries that left out key details or included unnecessary information got a 4 or lower.
+
+Summary 9 got a low rating across the board because it appears to be unrelated to the article, and instead discusses recent matches and the Premier League table.

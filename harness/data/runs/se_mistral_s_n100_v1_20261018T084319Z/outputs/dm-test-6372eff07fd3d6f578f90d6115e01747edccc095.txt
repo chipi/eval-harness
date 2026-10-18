@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [4, 4, 5, 4, 5, 4, 3, 5, 1, 4, 3, 3, 5, 4, 3, 4],
+  "consistency": [5, 5, 5, 5, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 3, 5],
+  "fluency": [4, 4, 5, 5, 5, 5, 4, 5, 2, 5, 2, 4, 5, 5, 4, 4],
+  "relevance": [4, 4, 5, 4, 5, 4, 3, 5, 1, 5, 3, 3, 5, 4, 2, 4]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries with clear, logical flow (e.g., 3, 4, 5) score higher. Summary 9 is incoherent due to repetition and abrupt cuts.
+- **Consistency**: All summaries except 9 (which misrepresents the laser's purpose) are factually accurate.
+- **Fluency**: Well-structured sentences (e.g., 3, 4, 5) score higher. Summary 9 has grammatical errors and awkward phrasing.
+- **Relevance**: Summaries that focus on the main points (e.g., 3, 4, 5) score higher. Summary 15 includes irrelevant space debris info, and 12 is too broad.

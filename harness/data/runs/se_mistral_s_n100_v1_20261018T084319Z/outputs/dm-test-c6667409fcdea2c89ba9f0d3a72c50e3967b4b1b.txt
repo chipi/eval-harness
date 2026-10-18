@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary based on the four dimensions:
+
+```json
+{
+  "coherence": [2, 3, 4, 3, 4, 4, 4, 3, 1, 3, 3, 4, 3, 4, 2, 3],
+  "consistency": [2, 3, 5, 4, 5, 4, 5, 3, 1, 4, 4, 5, 3, 5, 2, 3],
+  "fluency": [4, 4, 4, 4, 4, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4],
+  "relevance": [2, 3, 4, 3, 4, 3, 4, 2, 1, 3, 3, 4, 2, 4, 2, 3]
+}
+```
+
+### Explanation of Key Ratings:
+- **Coherence**: Lower scores for summaries that lack logical flow (e.g., Summary 1 mixes unrelated facts, Summary 9 is a photo caption).
+- **Consistency**: Lower scores for factual errors (e.g., Summary 1 incorrectly attributes Baines' penalty record to Martinez, Summary 9 is irrelevant, Summary 15 misattributes Baines' record to Barkley).
+- **Fluency**: Most summaries are grammatically correct, but Summary 9 is a photo caption and lacks fluency.
+- **Relevance**: Lower scores for summaries that omit key details (e.g., Summary 1 lacks context, Summary 9 is a photo caption, Summary 15 misattributes facts).

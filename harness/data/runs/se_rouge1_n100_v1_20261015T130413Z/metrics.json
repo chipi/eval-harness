@@ -1,0 +1,116 @@
+{
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "605e549e67a40c4345829ff3b99b1325d0286206",
+    "source": "git"
+  },
+  "config_id": "se_rouge1_n100_v1",
+  "created_at": "2026-10-15T13:04:33Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_rouge1_n100_v1",
+      "params": {
+        "family": "rouge",
+        "metric": "rouge1",
+        "price_tier": "free",
+        "provider": "rouge"
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "hash": "644f4af49f8ad325b8c03ba5e71766c1ffc5bd8ba777ff643079a44e233444ec",
+    "host": {
+      "cpu_count": 4,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "0894c70f87d48fa61b72c600a9b91b539e3127fe5cf204f97ed9b622fca92036"
+      },
+      "harness": {
+        "commit": "605e549e67a4",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "code_sha256": "5846350d3a15121a40dd385da05679248bdbb4f4826800c59bc2e1a5492e2bb0",
+        "id": "rouge1",
+        "identity_declared": false,
+        "kind": "deterministic metric, no model and no network",
+        "provider": "rouge",
+        "revision": null,
+        "revision_source": "not-a-model"
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "input_truncated": "descriptive",
+    "parsed": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "rho": "quality",
+    "rho_coherence": "quality",
+    "rho_consistency": "quality",
+    "rho_fluency": "quality",
+    "rho_relevance": "quality",
+    "tau": "quality",
+    "tau_coherence": "quality",
+    "tau_consistency": "quality",
+    "tau_fluency": "quality",
+    "tau_relevance": "quality",
+    "tie_rate": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 100,
+  "params": {
+    "family": "rouge",
+    "metric": "rouge1",
+    "price_tier": "free",
+    "provider": "rouge"
+  },
+  "primary_metric": "tau",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "se_rouge1_n100_v1_20261015T130413Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 195.55545,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "rho": 0.189648,
+    "rho_coherence": 0.171974,
+    "rho_consistency": 0.149977,
+    "rho_fluency": 0.109741,
+    "rho_relevance": 0.326898,
+    "tau": 0.148679,
+    "tau_coherence": 0.129734,
+    "tau_consistency": 0.122058,
+    "tau_fluency": 0.090296,
+    "tau_relevance": 0.252627,
+    "tie_rate": 0.012833,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": 0.972
+}

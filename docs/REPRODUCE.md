@@ -9,7 +9,7 @@ commands from the repository root.
 | **0 · verify** | every number in every report, recomputed from the committed predictions | a clone | $0, ~15 min |
 | **1 · data** | the public data still matches what was measured, byte for byte | network | $0, minutes |
 | **2 · local** | rerun every local model and baseline on your own CPU | disk for models | $0, CPU hours |
-| **3 · hosted** | rerun the 24 hosted LLMs | one OpenRouter key | what `make plan` says, ≈ $0.60–$5.75 per experiment |
+| **3 · hosted** | rerun the 24 hosted LLMs | one OpenRouter key | what `make plan` says, ≈ $0.60–$7.03 per experiment as billed when measured; prices move |
 | **4 · extend** | measure a model of your own against the whole committed field | a config file | your model |
 
 You need `git`, `make`, Python ≥ 3.11 and [uv](https://docs.astral.sh/uv/) (`curl -LsSf
@@ -18,7 +18,7 @@ its pinned libraries cannot disturb another's.
 
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness
-make list                         # the six measurements, their arms, what they billed
+make list                         # the seven measurements, their arms, what they billed
 ```
 
 ## 0 · Verify — trust nothing, recompute everything ($0)

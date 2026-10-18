@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [3, 4, 5, 4, 3, 3, 5, 4, 2, 4, 5, 5, 4, 3, 3, 3],
+  "consistency": [4, 5, 5, 5, 4, 4, 5, 5, 2, 5, 5, 5, 5, 5, 3, 4],
+  "fluency": [3, 4, 5, 5, 4, 3, 5, 5, 3, 5, 5, 5, 4, 4, 4, 3],
+  "relevance": [3, 4, 5, 4, 3, 3, 5, 4, 2, 4, 5, 5, 4, 3, 3, 3]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries like 3, 7, 11, and 12 are well-structured and logically flow, while others (e.g., 9, 15) are disjointed or lack clear progression.
+- **Consistency**: Most summaries (e.g., 2, 3, 7, 10) accurately reflect the article, while some (e.g., 9) introduce unsupported details (e.g., "blamed it on his own stupidity").
+- **Fluency**: Summaries like 3, 7, and 10 are grammatically correct and easy to read, while others (e.g., 1, 6, 16) have minor errors or awkward phrasing.
+- **Relevance**: Summaries like 3, 7, 11, and 12 include key details (location, reason, injury) without redundancy, while others (e.g., 9, 15) omit or misrepresent important points.

@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 4, 5, 3, 4, 4, 5, 3, 1, 4, 4, 5, 4, 3, 3, 2],
+  "consistency": [3, 5, 5, 5, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 5, 3],
+  "fluency": [2, 5, 5, 4, 5, 5, 5, 5, 2, 5, 5, 5, 5, 3, 5, 3],
+  "relevance": [2, 4, 5, 3, 4, 4, 5, 3, 1, 4, 3, 5, 4, 3, 3, 2]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries with clear, logical flow (e.g., 3, 7, 12) score higher, while disjointed or incomplete ones (e.g., 1, 9, 16) score lower.
+- **Consistency**: Most summaries are factually accurate, but Summary 9 contains a hallucinated quote ("You can't be a professional and be a professional and smoke weed") and misrepresents Gerrard's availability.
+- **Fluency**: Well-structured, grammatically correct summaries (e.g., 3, 5, 7) score higher, while those with errors (e.g., 1, 9, 16) score lower.
+- **Relevance**: Summaries that focus on key points (e.g., 3, 7, 12) score higher, while those with redundant or irrelevant details (e.g., 1, 9, 16) score lower.

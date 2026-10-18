@@ -13,8 +13,8 @@
 > methodology as about which model won.
 
 
-> **This is one of five experiments.** What all five agree on — and the four
-> places they disagree with the conventional reading of a leaderboard — is in
+> **This is one of six experiments.** What all six agree on — and where they disagree
+> with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ---
@@ -31,7 +31,7 @@
 | **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 499 MB tagger.** |
 | **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 499 MB model. |
 | **What should I not deploy?** | `anthropic_l` — the **most expensive arm in the set**, **$2,463/month per 1M items**, scoring **11.4% below free** and not separable from the cheaper `openai_m` (§3.3). |
-| **Does paying more help?** | **A little, and not enough.** Each 10× in cost buys **+5.9%** of the best arm's F1 across the paid arms — the steepest price–quality slope of the five experiments ([synthesis](REPORT_SYNTHESIS.md)) — yet the free tagger still beats every paid arm. |
+| **Does paying more help?** | **A little, and not enough.** Each 10× in cost buys **+5.9%** of the best arm's F1 across the paid arms — the steepest absolute price–quality slope of the six experiments, though SummEval's is larger as a share of its best score ([synthesis](REPORT_SYNTHESIS.md)) — yet the free tagger still beats every paid arm. |
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
 | **Is a pilot enough?** | Here yes — ρ = 0.895 over the 27 arms measured at the time (0.903 with all 28, §3.8), right winner. It was wrong in 3 of the other 4 experiments. |
 | **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 F1 from exposure alone**, at $0 on both sides. |
@@ -43,7 +43,7 @@ provider billed for the 280 sentences, scaled to one million items a month.
 **Separated** = a paired sign-flip permutation test on per-sentence F1, Holm-corrected
 over the declared family of 27 opponents at α = 0.05 (§3.2).
 
-*Cross-cutting context for all five experiments:
+*Cross-cutting context for all six experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 
 ### What this experiment specifically found

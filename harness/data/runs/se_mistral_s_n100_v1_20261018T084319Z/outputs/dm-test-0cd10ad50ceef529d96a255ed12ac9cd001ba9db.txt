@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 4, 2, 2, 2, 3, 3, 4, 3, 5, 5, 5, 4, 2, 3, 2],
+  "consistency": [2, 5, 3, 3, 3, 4, 4, 5, 2, 5, 5, 5, 5, 4, 5, 2],
+  "fluency": [3, 4, 3, 3, 3, 4, 4, 5, 4, 5, 5, 5, 5, 4, 5, 2],
+  "relevance": [3, 4, 2, 2, 2, 4, 4, 5, 2, 5, 5, 5, 5, 3, 5, 3]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries with clear, logical flow (e.g., 2, 3, 4, 5) vs. disjointed or repetitive ones (e.g., 1, 6, 14, 16).
+- **Consistency**: Summaries with factual accuracy (e.g., 2, 5, 7, 13) vs. those with hallucinations (e.g., "pleaded sentenced to 12 years in jail" in 1, "he told a court" in 6, 14).
+- **Fluency**: Well-written, grammatically correct sentences (e.g., 2, 5, 7, 13) vs. those with errors (e.g., "did n't" in 1, 3, 4, 5, 6, 15, 16).
+- **Relevance**: Summaries that include key details (e.g., 2, 5, 7, 13) vs. those missing important context (e.g., 1, 6, 14, 16).

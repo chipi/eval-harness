@@ -1,0 +1,10 @@
+# This repository's own summarisation metric (ROUGE-Lsum recall with the summary clipped to
+# the reference's length), from that example's scorer, averaged over the 11 references.
+# How well it agrees with experts is how far the summarisation leaderboard can be believed.
+config_id: se_coverage_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: coverage
+  family: coverage
+  price_tier: free

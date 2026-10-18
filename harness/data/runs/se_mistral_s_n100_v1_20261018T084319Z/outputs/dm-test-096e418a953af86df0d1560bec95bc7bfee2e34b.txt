@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary based on the four dimensions:
+
+```json
+{
+  "coherence": [2, 3, 3, 3, 5, 4, 4, 4, 1, 2, 3, 5, 4, 3, 3, 3],
+  "consistency": [2, 4, 4, 4, 5, 5, 5, 5, 1, 2, 4, 5, 5, 4, 3, 4],
+  "fluency": [4, 4, 4, 4, 5, 5, 5, 5, 3, 4, 4, 5, 4, 4, 4, 4],
+  "relevance": [2, 3, 3, 3, 5, 4, 4, 4, 1, 3, 3, 5, 4, 3, 2, 3]
+}
+```
+
+### Explanation of Ratings:
+- **Coherence**: Summaries with clear, logical flow (e.g., 5, 4, 5) score higher, while those with repetition or disjointed sentences (e.g., 1, 2) score lower.
+- **Consistency**: Summaries that accurately reflect the article (e.g., 5, 4, 5) score higher, while those with factual errors (e.g., 1, 2) score lower.
+- **Fluency**: Well-written, grammatically correct sentences (e.g., 5, 4, 5) score higher, while those with errors (e.g., 3, 4) score lower.
+- **Relevance**: Summaries that focus on key details (e.g., 5, 4, 5) score higher, while those with redundancy or irrelevant details (e.g., 1, 2) score lower.

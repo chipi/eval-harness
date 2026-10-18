@@ -52,7 +52,7 @@ sys.path.insert(0, str(HERE / "_shared"))
 sys.path.insert(0, str(HARNESS / "scripts"))
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
-BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k"}
+BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k", "length"}
 HOSTED_PROVIDERS = {"litellm", "rerank"}
 
 
@@ -164,8 +164,8 @@ def plan(exp: dict, level: str, only: str | None) -> int:
     cost = sum(arms[a]["cost"] for a in chosen)
     mins = sum(arms[a]["minutes"] or 0 for a in chosen)
     print(f"\n  {len(chosen)} arm(s): billed ${cost:.2f} when measured; about {mins/60:.1f} h of "
-          "compute on the machine that measured them\n  (local timings are a 12-core laptop "
-          "CPU; hosted timings are mostly waiting on the provider)")
+          "compute on the machine that measured them\n  (local timings depend on the machine that measured them; "
+          "hosted timings are mostly waiting on the provider)")
 
     venv = _venv_python(exp)
     have = {d: (DATA / "materialized" / d).is_dir() for d in exp["datasets"]}

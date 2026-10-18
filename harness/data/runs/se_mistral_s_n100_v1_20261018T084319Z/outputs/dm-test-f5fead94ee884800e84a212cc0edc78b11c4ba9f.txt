@@ -1,0 +1,18 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [3, 4, 4, 3, 4, 3, 4, 3, 2, 3, 3, 4, 3, 4, 1, 3],
+  "consistency": [4, 5, 5, 4, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 1, 5],
+  "fluency": [4, 5, 5, 4, 5, 5, 4, 5, 3, 5, 4, 5, 4, 5, 2, 5],
+  "relevance": [3, 4, 4, 3, 4, 3, 5, 4, 1, 3, 4, 5, 4, 4, 1, 4]
+}
+```
+
+### Explanation of key ratings:
+- **Summary 1**: Coherence is reduced due to the awkward repetition of "barcelona to barcelona."
+- **Summary 9**: Consistency is 1 because it incorrectly states that *Anderlecht* are keen to sign Patoulidis (should be Manchester City).
+- **Summary 15**: Consistency is 1 because it incorrectly states that *Anderlecht chairman Roger Vanden is keen to sign Manuel Pellegrini* (no such claim in the article).
+- **Summary 15**: Fluency is 2 due to the awkward phrasing and missing words (e.g., "Roger Vanden is keen to sign" should be "Roger Vanden Stock in the hope of agreeing a compensation package").
+- **Summary 7, 12, 14**: These are among the best, with high scores in all dimensions.
+- **Summary 13**: Coherence is slightly lower due to the abrupt shift from Pellegrini to Arsenal/Barcelona interest.

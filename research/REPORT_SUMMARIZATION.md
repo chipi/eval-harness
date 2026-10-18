@@ -35,8 +35,8 @@
 > result below is also reported on the **180 that took no part** in the earlier run.
 
 
-> **This is one of five experiments.** What all five agree on — and the four
-> places they disagree with the conventional reading of a leaderboard — is in
+> **This is one of six experiments.** What all six agree on — and where they disagree
+> with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ---
@@ -66,7 +66,7 @@ articles a month (`deepseek_m`: $0.0381 ÷ 200 × 1,000,000 ≈ $191). Times are
 per article on the machine named; the hosted arms were timed from the Mac, through a local
 proxy.*
 
-*Cross-cutting context for all five experiments:
+*Cross-cutting context for all six experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 
 ### What this experiment specifically found
@@ -733,6 +733,10 @@ higher price tier does not buy cleaner output — worth checking before paying f
 
 ## 5. What this experiment cannot say
 
+- **How well `coverage` tracks what a person prefers.** Measured since on SummEval, against
+  expert judgement of 1,600 summaries, it agrees at τ 0.1011, below plain ROUGE-1 (0.1487)
+  ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) §3.3). The comparisons here are separations under
+  `coverage`; a lead under it is weaker evidence of a better summary than its size suggests.
 - **Which model is best.** 34 of 276 pairs separate on the primary facet, and none of them
   are inside the top six. The output is a set, not a winner.
 - **Whether the ordering would hold on another 200 articles.** Measured, and it largely

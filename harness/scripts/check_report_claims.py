@@ -83,6 +83,14 @@ CLAIMS = [
     # committed runs above are fp16 measurements, and REPORT_SUMMARIZATION says so.
     ("Summarisation bart_s at fp32", FP32,  "cnn_bart_s_n200_v1",      "coverage", 0.3274),
     ("DailyMail bart_s at fp32",  FP32,     "cnn_bart_s_dm200_v1",      "coverage", 0.4048),
+    # SummEval judging (2026-10-18): tau against the expert means, REPORT_SUMMEVAL §3.1.
+    ("SummEval openai_l tau",     DATA,     "se_openai_l_n100_v1",      "tau",      0.5398),
+    ("SummEval gemma_l tau",      DATA,     "se_gemma_l_n100_v1",       "tau",      0.5384),
+    ("SummEval qwen37max tau",    DATA,     "se_qwen37max_n100_v1",     "tau",      0.5204),
+    ("SummEval llama_s tau",      DATA,     "se_llama_s_n100_v1",       "tau",      0.3533),
+    ("SummEval bartscore tau",    DATA,     "se_bartscore_n100_v1",     "tau",      0.2562),
+    ("SummEval rouge1 tau",       DATA,     "se_rouge1_n100_v1",        "tau",      0.1487),
+    ("SummEval coverage tau",     DATA,     "se_coverage_n100_v1",      "tau",      0.1011),
 ]
 
 #: Which report states each CLAIM. A claim here is a copy of a number in a report, and a
@@ -91,7 +99,7 @@ CLAIMS = [
 #: in the report it came from.
 CLAIM_REPORT = {"fn_": "REPORT_NER.md", "sf_": "REPORT_RETRIEVAL.md",
                 "ag_": "REPORT_CLASSIFICATION.md", "db_": "REPORT_CLASSIFICATION.md",
-                "cnn_": "REPORT_SUMMARIZATION.md"}
+                "cnn_": "REPORT_SUMMARIZATION.md", "se_": "REPORT_SUMMEVAL.md"}
 
 #: (label, claimed, a - b) — the DIFFERENCES the reports lead with.
 #: The registered prediction, checked as a RANGE rather than a point, because that is
@@ -175,7 +183,23 @@ COST_REPORTS = {
     "REPORT_RETRIEVAL.md": ("sf_", "scifact_200"),
     "REPORT_SUMMARIZATION.md": ("cnn_", "cnn_dailymail_200"),
     "REPORT_CLASSIFICATION.md": ("ag_", "ag_news_200"),
+    "REPORT_SUMMEVAL.md": ("se_", "summeval_100"),
 }
+
+#: The size suffix every config_id ends with. It was a literal "_n200_v1" at each call
+#: site, which is right for the five 200-item datasets and silently wrong for SummEval's
+#: 100 articles: "se_openai_l_n100_v1" kept its suffix, matched no arm name, and every
+#: SummEval row would have been skipped rather than checked.
+_SIZE_SUFFIX = re.compile(r"_n\d+_v1$")
+
+
+def _arm_name(config_id, prefix):
+    return _SIZE_SUFFIX.sub("", config_id.replace(prefix, "", 1))
+
+
+def _first_arm_cell(cells):
+    """Index of the arm cell: 0, or 1 when the table leads with a rank column."""
+    return 1 if len(cells) > 1 and cells[0].isdigit() else 0
 
 
 def _billed_and_recorded(prefix, dataset_id):
@@ -194,7 +218,7 @@ def _billed_and_recorded(prefix, dataset_id):
             r = json.loads(line)
             rec += float(r.get("cost_usd") or 0)
             bil += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
-        out[m["config_id"].replace(prefix, "").replace("_n200_v1", "")] = (bil, rec)
+        out[_arm_name(m["config_id"], prefix)] = (bil, rec)
     return out
 
 
@@ -207,7 +231,8 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
         if not _line.startswith("|"):
             continue
         _cells = [c.strip() for c in _line.strip("|").split("|")]
-        _arm = re.sub(r"[`*\u27f3 ]", "", _cells[0])
+        _a = _first_arm_cell(_cells)
+        _arm = re.sub(r"[`*\u27f3 ]", "", _cells[_a])
         if _arm not in _data:
             continue
         _bil, _rec = _data[_arm]
@@ -222,7 +247,7 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
         # and the "neither" branch still does the work.
         if _bil <= 0:
             continue          # no bill, or the table happens to be right
-        for _c in _cells[1:]:
+        for _c in _cells[_a + 1:]:
             # THE DOLLAR SIGN IS REQUIRED. With it optional this matched any
             # four-decimal cell, so an f1 of 0.6864 was read as a cost. That was
             # harmless while the check only flagged exact price-table matches, and
@@ -282,12 +307,14 @@ PRIMARY_BY_DATASET = {
     "ag_news_200": ("ag_", "correct", DATA),
     "dbpedia_280": ("db_", "correct", DATA),
     "cnn_dailymail_200": ("cnn_", "coverage", DATA),
+    "summeval_100": ("se_", "tau", DATA),
 }
 REPORT_DATASETS = {
     "REPORT_NER.md": ["few_nerd_280"],
     "REPORT_RETRIEVAL.md": ["scifact_200"],
     "REPORT_CLASSIFICATION.md": ["ag_news_200", "dbpedia_280"],
     "REPORT_SUMMARIZATION.md": ["cnn_dailymail_200"],
+    "REPORT_SUMMEVAL.md": ["summeval_100"],
     # SYNTHESIS tables are keyed by EXPERIMENT, not by arm, so this check cannot
     # reach them and the per-report floor below deliberately excludes it.
     "REPORT_SYNTHESIS.md": list(PRIMARY_BY_DATASET),
@@ -301,7 +328,8 @@ def _runs_for(base, dataset_id, prefix):
     `make ci` was called green for a week on the only machine anyone ran it on.
     """
     try:
-        return runs_by_arm(base, dataset_id, prefix=prefix, strip="_n200_v1")
+        return runs_by_arm(base, dataset_id, prefix=prefix,
+                           strip="_n100_v1" if dataset_id == "summeval_100" else "_n200_v1")
     except AmbiguousRuns as exc:
         print(f"FAIL  {exc}")
         sys.exit(1)
@@ -331,6 +359,7 @@ METRIC_HEADERS = {
     "ndcg_10": {"ndcg@10", "ndcg_10"},
     "correct": {"accuracy", "acc", "correct"},
     "coverage": {"coverage"},
+    "tau": {"τ", "tau"},
 }
 _stale_rows = []
 _rows_checked = 0
@@ -348,7 +377,7 @@ for _rep, _dss in REPORT_DATASETS.items():
                 continue
             _v = (_m.get("scores") or {}).get(_metric)
             if _v is not None:
-                _vals[_m["config_id"].replace(_pref, "").replace("_n200_v1", "")] = _v
+                _vals[_arm_name(_m["config_id"], _pref)] = _v
         _col = None
         for _i, _line in enumerate(_lines):
             if not _line.startswith("|"):
@@ -363,7 +392,7 @@ for _rep, _dss in REPORT_DATASETS.items():
                 continue
             if _col is None or _col >= len(_cells):
                 continue
-            _arm = re.sub(r"[`*\u27f3 ]", "", _cells[0])
+            _arm = re.sub(r"[`*\u27f3 ]", "", _cells[_first_arm_cell(_cells)])
             if _arm not in _vals:
                 continue
             _mm = re.fullmatch(r"\*{0,2}(0\.[0-9]{3,4})\*{0,2}", _cells[_col])
@@ -399,9 +428,10 @@ _DATASET_IN_HEADING = {
     "few_nerd_280": ("few-nerd", "few nerd", "ner"),
     "scifact_200": ("scifact",),
     "cnn_dailymail_200": ("cnn", "dailymail", "summaris"),
+    "summeval_100": ("summeval",),
 }
 _METRIC_COLUMN = {"correct": "accuracy", "f1": "f1",
-                  "ndcg_10": "ndcg", "coverage": "coverage"}
+                  "ndcg_10": "ndcg", "coverage": "coverage", "tau": "τ"}
 
 for _rep, _dss in REPORT_DATASETS.items():
     _lines = (ROOT / "research" / _rep).read_text().splitlines()
@@ -604,7 +634,7 @@ def _arm_costs(prefix, dataset_id):
             r = json.loads(line)
             rec += float(r.get("cost_usd") or 0)
             bil += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
-        out[m["config_id"].replace(prefix, "").replace("_n200_v1", "")] = bil or rec
+        out[_arm_name(m["config_id"], prefix)] = bil or rec
     return out
 
 
@@ -618,6 +648,8 @@ CHEAPNESS = [
     # Was gemma_s / 9 arms around bert_mini. The bert-base leader ties with one paid arm.
     ("AG News cheapest-tied vs dearest", "ag_", "ag_news_200",
      "anthropic_m", "| Classification · AG News | 3 arms (1 paid) |"),
+    ("SummEval cheapest-tied vs dearest", "se_", "summeval_100",
+     "gemma_l", "| Judging · SummEval | 5 arms (5 paid) |"),
 ]
 # THE CLAIMED RATIO IS READ OUT OF THE REPORT, NOT OUT OF THIS FILE.
 #
@@ -667,21 +699,23 @@ TIE_GROUPS = [
     ("cnn_bart_l_n200_v1", DATA, "cnn_dailymail_200", "coverage", "cnn_", "| Summarisation · CNN/DM |"),
     ("db_qwen_m_n200_v1", DATA, "dbpedia_280", "correct", "db_", "| Classification · DBpedia |"),
     ("ag_bert_base_ta_n200_v1", DATA, "ag_news_200", "correct", "ag_", "| Classification · AG News |"),
+    ("se_openai_l_n100_v1", DATA, "summeval_100", "tau", "se_", "| Judging · SummEval |"),
 ]
 
 
 def _not_separated(leader, runs_dir, dataset_id, metric):
     """Opponents the leader's Holm family test does not separate from, or None."""
     import subprocess  # noqa: PLC0415
+    suffix = _SIZE_SUFFIX.search(leader).group(0)
     r = subprocess.run(
         [sys.executable, str(HERE / "family_test.py"), "--dataset-id", dataset_id,
-         "--a", leader, "--against", "_n200_v1", "--metric", metric,
+         "--a", leader, "--against", suffix, "--metric", metric,
          "--runs-dir", str(runs_dir)],
         capture_output=True, text=True)
     if r.returncode != 0:
         return None
     return [ln.split()[0] for ln in r.stdout.splitlines()
-            if ln.strip().endswith("--") and ln.split()[0].endswith("_n200_v1")]
+            if ln.strip().endswith("--") and ln.split()[0].endswith(suffix)]
 
 
 def _provider(runs_dir, config_id):
@@ -709,10 +743,9 @@ for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
         continue
     paid = [a for a in tied if _provider(rdir, a) == "litellm"]
     costs = _arm_costs(pref, ds)
-    cheapest = min(paid, key=lambda a: costs.get(a.replace(pref, "").replace("_n200_v1", ""),
-                                                 float("inf"))) if paid else None
+    cheapest = min(paid, key=lambda a: costs.get(_arm_name(a, pref), float("inf"))) if paid else None
     n, n_paid, named = int(m.group(1)), int(m.group(2) or m.group(1)), m.group(3)
-    got_name = cheapest.replace(pref, "").replace("_n200_v1", "") if cheapest else None
+    got_name = _arm_name(cheapest, pref) if cheapest else None
     check(f"tie group {cell.strip('| ')}: {n} arms ({n_paid} paid), cheapest `{named}`",
           len(tied) == n and len(paid) == n_paid and got_name == named,
           f"the row says {n} ({n_paid} paid), cheapest {named}; the family test gives "
@@ -907,10 +940,11 @@ else:
 # counted the runs. It is the first line of the top-level report. Both figures are
 # derived here and then looked for in the document, so adding or removing any arm
 # fails until the headline is updated.
-_FIVE = ("cnn_dailymail_200", "ag_news_200", "dbpedia_280", "few_nerd_280", "scifact_200")
+_SLICES = ("cnn_dailymail_200", "ag_news_200", "dbpedia_280", "few_nerd_280", "scifact_200",
+           "summeval_100")
 _arm_n, _billed = 0, 0.0
 for _d in sorted(DATA.glob("*/metrics.json")):
-    if json.load(open(_d)).get("dataset_id") not in _FIVE:
+    if json.load(open(_d)).get("dataset_id") not in _SLICES:
         continue
     _arm_n += 1
     _billed += _billed_of(_d.parent)
@@ -924,7 +958,7 @@ _wrong_arms = [_x for _x in _stated_arms if _x != _arm_n]
 check(f"the synthesis states {_arm_n} measured arms, everywhere it says so "
       f"({len(_stated_arms)} place(s))",
       bool(_stated_arms) and not _wrong_arms,
-      f"data/runs holds {_arm_n} arms across the five measurement slices; the "
+      f"data/runs holds {_arm_n} arms across the {len(_SLICES)} measurement slices; the "
       f"synthesis says {_wrong_arms or 'nothing'}")
 # ANCHORED TO THE CLAIM, not the phrase. A bare "$N billed" also matches "that
 # sweep's $1.94 billed" -- a true sentence about SciFact alone -- which the first
@@ -1010,7 +1044,7 @@ else:
 _CAL = ROOT / "docs" / "evidence" / "calibration"
 _proto = (ROOT / "docs" / "PROTOCOL.md").read_text() if (ROOT / "docs" / "PROTOCOL.md").is_file() else ""
 _rows = [ln for ln in _proto.splitlines() if ln.startswith("|")]
-for _exp in ("summarization", "ag_news", "dbpedia", "few_nerd", "scifact"):
+for _exp in ("summarization", "ag_news", "dbpedia", "few_nerd", "scifact", "summeval"):
     _f = _CAL / f"{_exp}.json"
     if not _f.is_file():
         check(f"calibration {_exp}: the capture exists", False,
@@ -1040,6 +1074,207 @@ for _exp in ("summarization", "ag_news", "dbpedia", "few_nerd", "scifact"):
               f"({_r.get('verdict')}) in one row",
               _ok, f"no PROTOCOL.md table row carries both {_v} and the published {_p}"
                    + (" and the word 'differs'" if _r.get("verdict") == "differs" else ""))
+
+# ---- SUMMEVAL: THE FIGURES THAT ARE NOT ONE RUN'S OWN METRIC ---------------------
+#
+# The scans above read a run's primary metric wherever an arm names it. Everything else
+# REPORT_SUMMEVAL states -- the split-half table, price against quality, the family
+# ladders, the per-dimension leaders, the tie table -- was first computed by a scratch
+# script outside the repo, so a reader could not reproduce it and nothing here could
+# notice it drift. `summeval_analysis.py` computes all of it from the committed runs,
+# seeded, and every figure below is looked for in the document that states it.
+import summeval_analysis as _sea  # noqa: E402
+import subprocess as _sp  # noqa: E402
+
+_SE = _sea.compute()
+_SEV = (ROOT / "research" / "REPORT_SUMMEVAL.md").read_text()
+_SER = (ROOT / "examples" / "summeval-judging" / "README.md").read_text()
+_MINUS = "−"
+
+
+def _signed(x, nd=4):
+    return (f"{x:.{nd}f}" if x >= 0 else f"{_MINUS}{-x:.{nd}f}")
+
+
+for _n, _st in _SE["stability"].items():
+    _row = f"| {_n} | {_st['rho']:.3f} | {_st['p5']:.3f} | {_st['same_winner']:.0%} |"
+    check(f"SummEval split-half at {_n} per half: {_row}", _row in _SEV,
+          "that row is not in REPORT_SUMMEVAL §3.5")
+_st20 = _SE["stability"][20]
+check("SummEval decision table states the 20-per-half rho and same-winner rate",
+      f"ρ = **{_st20['rho']:.2f}**" in _SEV and f"**{_st20['same_winner']:.0%}**" in _SEV,
+      f"expected ρ = **{_st20['rho']:.2f}** and **{_st20['same_winner']:.0%}**")
+_sh = f"{_SE['summarisation_hosted_20']['rho']:.3f}"
+check(f"SummEval compares like for like: summarisation's 24 hosted arms at {_sh}, twice",
+      _SEV.count(_sh) >= 2, f"{_sh} appears {_SEV.count(_sh)} time(s)")
+_m443 = re.search(r"^\| 20 \| \*\*(0\.\d{3})\*\*", SUMM, re.M)
+check("SummEval cites the summarisation report's own 20-per-half rho as it stands there",
+      bool(_m443) and f"is {_m443.group(1)}" in _SEV,
+      f"REPORT_SUMMARIZATION §3.6 says {_m443.group(1) if _m443 else '?'}")
+_sc = f"{_SE['spearman_cost_tau']:+.3f}"
+check(f"SummEval Spearman(billed cost, tau) = {_sc}, everywhere it is stated",
+      _SEV.count(_sc) >= 2 and f"{round(_SE['price_range'])}×" in _SEV,
+      f"{_sc} appears {_SEV.count(_sc)} time(s); range {_SE['price_range']:.1f}x")
+_tr = f"Spearman {_SE['spearman_tie_rate_tau']:+.2f}"
+check(f"SummEval tie rate vs quality: {_tr}", _tr in _SEV, "not stated as computed")
+
+_FAM = {"anthropic": "Anthropic", "deepseek": "DeepSeek", "gemma": "Gemma", "glm": "GLM",
+        "llama": "Llama", "mistral": "Mistral", "openai": "OpenAI", "qwen": "Qwen"}
+_bad_lad = []
+for _fam, _lad in _SE["ladders"].items():
+    _want = f"| {_FAM[_fam]} | {_lad['s']:.4f} | {_lad['m']:.4f} | {_lad['l']:.4f}"
+    if not any(ln.startswith(_want) for ln in _SEV.splitlines()):
+        _bad_lad.append(_want)
+check("SummEval family ladders (§3.4) match the runs", not _bad_lad, "; ".join(_bad_lad[:3]))
+_bad_dim = []
+for _d, _r in _SE["dimensions"].items():
+    _want = (f"| {_d} | `{_r['best']}` | {_r['best_tau']:.4f} | "
+             f"`{_r['worst']}` | {_r['worst_tau']:.4f} |")
+    if _want not in _SEV:
+        _bad_dim.append(_want)
+check("SummEval per-dimension leaders (§3.6) match the runs", not _bad_dim, "; ".join(_bad_dim))
+
+_se_arms = _SE["arms"]
+_lead = max((a for a in _se_arms if a not in _sea.FREE), key=lambda a: _se_arms[a]["scores"]["tau"])
+_ft = _sp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", _sea.DATASET,
+               "--a", f"se_{_lead}_n100_v1", "--against", "_n100_v1", "--metric", "tau",
+               "--runs-dir", str(DATA)], capture_output=True, text=True)
+_tied_rows = [ln.split() for ln in _ft.stdout.splitlines() if ln.strip().endswith("--")
+              and ln.split()[0].endswith("_n100_v1")]
+_bad_tie = []
+for _t in _tied_rows:
+    _arm = _t[0][len("se_"):-len("_n100_v1")]
+    _wins = _t[2].split("/")[0]
+    _want = (f"| `{_arm}` | {_signed(-float(_t[1]))} | {_wins} of 100 | "
+             f"{float(_t[3]):.4f} | {float(_t[4]):.4f} |")
+    if _want not in _SEV:
+        _bad_tie.append(_want)
+check(f"SummEval tie table (§3.2): the {len(_tied_rows)} arms {_lead} cannot separate from, "
+      "with delta, wins, p and threshold", bool(_tied_rows) and not _bad_tie,
+      "; ".join(_bad_tie[:3]) or "the family test returned no tied rows")
+
+_judges = sorted(a for a in _se_arms if a not in _sea.FREE)
+_bft = _sp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", _sea.DATASET,
+                "--a", "se_bartscore_n100_v1", "--against", "_n100_v1", "--metric", "tau",
+                "--runs-dir", str(DATA)], capture_output=True, text=True)
+_bart = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2])
+         for ln in _bft.stdout.splitlines()
+         if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")}
+_not_sep = [a for a in _judges if a not in _bart or _bart[a][1] != "SEPARATED" or _bart[a][0] >= 0]
+check(f"SummEval: BARTScore is separated from all {len(_judges)} judges, every one ahead of it",
+      len(_judges) == 24 and not _not_sep and f"separated from all {len(_judges)} judges" in _SEV,
+      f"not separated, or not behind: {_not_sep}")
+_weakest = min(_judges, key=lambda a: _se_arms[a]["scores"]["tau"])
+_bw = _bart.get(_weakest, (0, "", "?/100"))[2].split("/")[0]
+check(f"SummEval: against the weakest judge, {_weakest}, BARTScore wins {_bw} of 100 articles",
+      f"`{_weakest}`" in _SEV and f"BARTScore wins only {_bw} of 100 articles" in _SEV,
+      f"the family test gives {_bw}/100 against {_weakest}")
+_per_m = lambda a: f"${_se_arms[a]['billed'] / _SE['n_items'] * 1e6:,.0f}"  # noqa: E731
+_cheap_tie = min((_t[0][3:-8] for _t in _tied_rows), key=lambda a: _se_arms[a]["billed"])
+check(f"SummEval cheapest tied judge {_cheap_tie} at {_per_m(_cheap_tie)} per million, "
+      f"the leader at {_per_m(_lead)}, 1/{round(_se_arms[_lead]['billed'] / _se_arms[_cheap_tie]['billed'])}",
+      f"**{_per_m(_cheap_tie)} per million articles**" in _SEV and _per_m(_lead) in _SEV
+      and f"1/{round(_se_arms[_lead]['billed'] / _se_arms[_cheap_tie]['billed'])}" in _SEV,
+      "the decision table's per-million figures or the ratio do not match the bills")
+_bill = f"${_SE['total_billed']:.2f}"
+check(f"SummEval states {_bill} billed in the report and the example README",
+      f"**{_bill} billed**" in _SEV and f"({_bill} billed)" in _SER,
+      f"the 24 judges' bills sum to {_bill}")
+
+_bad_free = []
+for _ln in _SER.splitlines():
+    _c = [c.strip() for c in _ln.strip().strip("|").split("|")]
+    _a = _c[0].strip("`") if _c else ""
+    if not _ln.startswith("| `") or _a not in _sea.FREE or len(_c) < 5:
+        continue
+    _sc4 = _se_arms[_a]["scores"]
+    for _k, _cell in zip(("tau", "rho", "tau_relevance", "tau_consistency"), _c[1:5]):
+        if abs(float(_cell.replace(_MINUS, "-")) - _sc4[_k]) > 0.0005 + 1e-9:
+            _bad_free.append(f"{_a} {_k} {_cell} vs {_sc4[_k]:.4f}")
+check("SummEval README's free-arm table (3 decimals) matches the runs",
+      not _bad_free and sum(1 for ln in _SER.splitlines() if ln.startswith("| `")) >= 7,
+      "; ".join(_bad_free[:4]))
+
+_cal_se = json.loads((_CAL / "summeval.json").read_text())
+_r1 = _cal_se["arms"]["rouge1"]
+_combo = _cal_se["rouge1_reference_combination"]
+check("SummEval calibration in the README: rho/tau mean, max and first-reference variants",
+      f"ρ {_combo['mean']['rho']:.3f}, τ {_combo['mean']['tau']:.3f}" in _SER
+      and f"ρ {_combo['max']['rho']:.3f}" in _SER
+      and f"alone {_combo['first']['rho']:.3f}" in _SER,
+      f"mean {_combo['mean']}, max {_combo['max']}, first {_combo['first']}")
+check("SummEval 'within 0.01 of the published value on every dimension' holds for ROUGE-1",
+      all(abs(x["value"] - x["published"]) <= 0.01 for x in _r1["by_dimension"].values()),
+      str(_r1["by_dimension"]))
+_rl = _cal_se["arms"]["rougeL"]["by_dimension"]["coherence"]
+check("SummEval names ROUGE-L's coherence gap where it calls ROUGE-L not quite reproduced",
+      f"{_rl['value']:.4f} against {_rl['published']:.3f}" in _SEV
+      and f"{_rl['value']:.3f} against {_rl['published']:.3f}" in _SER,
+      f"coherence {_rl['value']:.4f} vs {_rl['published']}")
+
+# The human ceiling (REPORT_SUMMEVAL §3.7), from the original release's per-expert scores.
+# The evidence file is written by examples/summeval-judging/human_ceiling.py, which
+# refuses to write it unless the experts' means reproduce the gold and every arm re-scores
+# to its committed tau -- so those two flags are part of the claim, not decoration.
+_hc_path = ROOT / "docs" / "evidence" / "summeval_human_ceiling.json"
+_hc = json.loads(_hc_path.read_text()) if _hc_path.is_file() else {}
+check("SummEval human ceiling: the evidence exists, reproduced the gold and re-scored every arm",
+      bool(_hc) and _hc.get("gold_reproduced") and _hc.get("arms_rescored_exactly")
+      and _hc.get("duplicate_groups_with_more_than_one_fitting_assignment") == 0
+      and set(_hc.get("arms", {})) == set(_se_arms),
+      f"{_hc_path.relative_to(ROOT)} missing, or its arms differ from the runs")
+if _hc:
+    _ceil = _hc["tau_mean"]
+    _bad_hc = []
+    for _ln in _SEV.splitlines():
+        _m = re.match(r"^\| `([a-z0-9_]+)`(?: \([^)]*\))? \| (0\.\d{4}) \| \*{0,2}(\d+)%\*{0,2} \|$", _ln)
+        if not _m:
+            continue
+        _a, _v, _pct = _m.group(1), float(_m.group(2)), int(_m.group(3))
+        _want = _hc["arms"].get(_a, {}).get("tau_vs_two_experts")
+        if _want is None or abs(_v - _want) > 0.00005 or _pct != round(100 * _want / _ceil):
+            _bad_hc.append(f"{_a} {_v} {_pct}% vs {_want} {round(100 * (_want or 0) / _ceil)}%")
+    _n_hc = sum(1 for _ln in _SEV.splitlines()
+                if re.match(r"^\| `[a-z0-9_]+`(?: \([^)]*\))? \| 0\.\d{4} \| \*{0,2}\d+%", _ln))
+    check(f"SummEval §3.7: the {_n_hc} arm rows against two experts match the evidence",
+          _n_hc >= 5 and not _bad_hc, "; ".join(_bad_hc[:3]))
+    _best = max((a for a in _hc["arms"] if a not in _sea.FREE),
+                key=lambda a: _hc["arms"][a]["tau_vs_two_experts"])
+    _bv = _hc["arms"][_best]["tau_vs_two_experts"]
+    _bp = round(100 * _bv / _ceil)
+    _bart_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
+    check(f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
+          f"BARTScore {_bart_p}%",
+          f"**{_bv:.4f}**, **{_bp}%** (95% interval "
+          f"{round(100 * _hc['arms'][_best]['share_ci95'][0])}–{round(100 * _hc['arms'][_best]['share_ci95'][1])}%) "
+          f"of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
+          and f"BARTScore reaches {_bart_p}%" in _SEV and f"| **{_ceil:.4f}** |" in _SEV,
+          "the decision table or §3.7 does not state the evidence's figures")
+    # The same two figures, repeated where the conclusions are drawn. A copy is checked
+    # where it is stated, or it drifts from the report it was copied from.
+    _copies = {"research/REPORT_SYNTHESIS.md": f"reached {_bp}% of a human expert's agreement",
+               "README.md": f"reach {_bp}% of a human expert's",
+               "examples/README.md": f"reach {_bp}% of a\nhuman expert's agreement"}
+    _stale_copy = [f for f, t in _copies.items()
+                   if " ".join(t.split()) not in " ".join((ROOT / f).read_text().split())
+                   or f"{_bart_p}%" not in (ROOT / f).read_text()]
+    check(f"SummEval's {_bp}% / {_bart_p}% stated the same in the synthesis and both READMEs",
+          not _stale_copy, f"stale or missing in {_stale_copy}")
+    _gap = _hc["arms"][_best]["gap_ci95"]
+    check(f"SummEval §3.7: the gap to one expert, {_gap[0]:.4f} to {_gap[1]:.4f}, as the evidence says",
+          f"({_gap[0]:.4f} to\n{_gap[1]:.4f} for `{_best}`)" in _SEV
+          or f"({_gap[0]:.4f} to {_gap[1]:.4f} for `{_best}`)" in " ".join(_SEV.split()),
+          "§3.7 does not state the bootstrap interval of the gap")
+    _pos = _hc["tau_per_position"]
+    check(f"SummEval §3.7: positions {min(_pos):.4f}-{max(_pos):.4f}; {_hc['duplicate_summary_groups']} "
+          f"identical-text groups in {_hc['duplicate_articles']} articles, "
+          f"{_hc['duplicate_groups_scored_differently']} scored differently",
+          f"give {min(_pos):.4f}–{max(_pos):.4f}" in _SEV
+          and f"{_hc['duplicate_summary_groups']} groups of identical texts" in _SEV
+          and f"In {_hc['duplicate_articles']} of the 100 articles" in _SEV
+          and " ".join(_SEV.split()).count(f"{_hc['duplicate_groups_scored_differently']} of those") >= 2
+          and f"in {_hc['duplicate_articles']} articles two or more systems" in _SEV,
+          "a count in §3.7 or the findings does not match the evidence")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

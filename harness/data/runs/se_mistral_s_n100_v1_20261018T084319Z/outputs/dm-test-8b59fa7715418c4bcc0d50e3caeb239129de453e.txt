@@ -1,0 +1,18 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 5, 3, 4, 3, 5, 4, 4, 1, 3, 3, 5, 4, 3, 1, 3],
+  "consistency": [2, 5, 4, 4, 4, 5, 5, 4, 1, 3, 3, 5, 5, 5, 1, 4],
+  "fluency": [3, 5, 4, 5, 4, 5, 4, 5, 2, 4, 4, 4, 5, 5, 2, 4],
+  "relevance": [2, 5, 3, 4, 3, 5, 4, 4, 1, 3, 3, 5, 4, 3, 1, 3]
+}
+```
+
+### Explanation of Key Ratings:
+- **Coherence**: Summaries like #2, #6, #7, #12, and #13 are well-structured and logically flow. Poor coherence (e.g., #1, #9, #15) results from disjointed or redundant sentences.
+- **Consistency**: Most summaries align with the article, but #1, #9, and #15 contain factual errors (e.g., misattributing "legend" to Hart, incorrect cap details).
+- **Fluency**: Grammatical errors (e.g., #1, #9, #15) or awkward phrasing (e.g., #3, #11) lower fluency scores. Well-written summaries (#2, #6, #7, #12, #13) score higher.
+- **Relevance**: Highly relevant summaries (#2, #6, #7, #12, #13) focus on key details (Buffon’s caps, Hart’s milestone, praise). Redundant or off-topic summaries (e.g., #1, #9, #15) score lower.
+
+Ratings reflect the summaries' individual merits, not comparisons between them.

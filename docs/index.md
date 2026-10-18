@@ -4,7 +4,7 @@
 
 How to use [eval-harness](https://evals.humancopilot.eu/) on your own system, the
 ideas it is built on, and the reference behind
-[its five experiments](https://evals.humancopilot.eu/experiments.html): what each
+[its six experiments](https://evals.humancopilot.eu/experiments.html): what each
 measured, every metric, model and test with its source, and how to rerun all of it yourself.
 
 <div class="eh-kicker">The harness</div>

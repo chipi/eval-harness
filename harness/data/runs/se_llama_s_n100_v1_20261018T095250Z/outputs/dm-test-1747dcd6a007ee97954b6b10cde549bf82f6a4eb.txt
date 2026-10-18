@@ -1,0 +1,17 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [5, 5, 5, 5, 5, 5, 5, 5, 2, 3, 5, 5, 4, 4, 3, 2],
+  "consistency": [5, 5, 5, 5, 4, 5, 5, 5, 1, 2, 5, 5, 5, 4, 4, 2],
+  "fluency": [5, 5, 5, 5, 5, 5, 5, 5, 3, 4, 5, 5, 5, 4, 4, 3],
+  "relevance": [5, 5, 5, 5, 4, 4, 5, 4, 2, 3, 5, 5, 4, 4, 3, 2]
+}
+```
+
+Here's a brief explanation of the ratings:
+
+* Coherence: Most summaries have a clear structure and are easy to follow, but some have issues with sentence order or connection (e.g., 9, 15, 16).
+* Consistency: Most summaries accurately reflect the article, but some have minor errors or omissions (e.g., 13, 14).
+* Fluency: Most summaries are well-written and free of grammatical errors, but some have minor issues with sentence structure or wording (e.g., 9, 15).
+* Relevance: Most summaries accurately capture the main points of the article, but some include unnecessary information or omit important details (e.g., 9, 10, 16).

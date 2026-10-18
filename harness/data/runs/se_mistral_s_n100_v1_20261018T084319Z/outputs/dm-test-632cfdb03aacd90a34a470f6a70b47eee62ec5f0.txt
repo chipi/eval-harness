@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [3, 4, 5, 4, 4, 4, 5, 4, 1, 4, 5, 5, 5, 3, 3, 2],
+  "consistency": [2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4],
+  "fluency": [3, 5, 5, 5, 5, 5, 4, 5, 1, 5, 5, 5, 5, 5, 4, 3],
+  "relevance": [3, 4, 5, 4, 4, 4, 5, 4, 1, 4, 5, 5, 5, 3, 3, 3]
+}
+```
+
+### Explanation of Key Ratings:
+- **Coherence**: Summaries like 1, 15, and 16 are less coherent due to disjointed or repetitive sentences.
+- **Consistency**: Summary 1 is inconsistent (mentions Bayern Munich incorrectly). Others are mostly accurate.
+- **Fluency**: Summary 9 has poor fluency (incomplete sentence). Others are grammatically correct.
+- **Relevance**: Summary 14 omits key details (e.g., return timeline). Summary 16 is slightly redundant.

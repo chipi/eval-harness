@@ -1,6 +1,6 @@
 # Reference — every metric, model and dataset in this repo, and where each one comes from
 
-A single index for the five worked examples. Nothing here is a summary of results; it is
+A single index for the six worked examples. Nothing here is a summary of results; it is
 the **glossary**, so that reading an example does not require already knowing what
 `rougeLsum` recall or nDCG@10 is, or which weights `gemma_m` actually loads.
 
@@ -13,7 +13,7 @@ paper or specification for a metric.
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
 - [Statistical tests](#statistical-tests) — how separation is decided
 - [Terminology](#terminology) — the canonical name for every experiment, arm and term
-- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the twelve that permit it
+- [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the thirteen mirrored here
 
 ---
 
@@ -91,6 +91,18 @@ On SciFact every judgment is binary, so this is indistinguishable from linear ga
 declared anyway, because a metric that silently changes meaning between corpora is worse
 than one that is merely wrong.
 
+### Judging (SummEval) — a rank correlation with experts
+
+| metric | what it measures |
+|---|---|
+| `tau` (**primary**) | Kendall's τ-b between the system's scores for an article's 16 summaries and the expert means, per dimension, averaged over coherence, consistency, fluency and relevance. τ-b corrects for ties on both sides, which matters because judges give integer scores and tie constantly. 1 = the experts' order, 0 = unrelated, −1 = reversed. Per article, so the paired tests apply |
+| `rho` | Spearman's ρ, the same way; reported because the literature (G-Eval, SummEval) reports both |
+| `tau_<dimension>`, `rho_<dimension>` | the same, one dimension at a time |
+| `parsed` *(descriptive)* | share of the four dimensions the reply returned as 16 numbers; a missing dimension scores 0 rather than being dropped |
+| `tie_rate` *(descriptive)* | share of the 120 summary pairs the system scored equal |
+
+Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here.
+
 ### Shared across all examples
 
 | metric | kind | what it is |
@@ -115,6 +127,7 @@ it.
 | Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
+| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
 
 **Why each example has floors that are not models.** A *floor* is any non-model arm — a
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
@@ -165,6 +178,12 @@ price tier.
 | `glm_m` | `eval-glm-46` | [z-ai/glm-4.6](https://openrouter.ai/z-ai/glm-4.6) | **open** · MIT |
 | `glm_s` | `eval-glm-45-air` | [z-ai/glm-4.5-air](https://openrouter.ai/z-ai/glm-4.5-air) | **open** · MIT |
 
+> **One replacement arm.** `qwen37max` (alias `eval-qwen-37max` → [qwen/qwen3.7-max](https://openrouter.ai/qwen/qwen3.7-max), weights: proprietary)
+> stands in for `qwen_l` on SummEval only. `qwen_l`'s model is no longer served by
+> OpenRouter, and Qwen's current flagship refuses to run with reasoning disabled; Qwen3.7
+> Max is the previous flagship and accepts it. It is its own arm, never read as `qwen_l`
+> ([REPORT_SUMMEVAL §6](../research/REPORT_SUMMEVAL.md#6-what-changed-while-measuring)).
+
 > **14 of these 24 have downloadable weights and could be self-hosted.** Verified on
 > 2026-09-29 against the HuggingFace API. Ten are unrestricted (MIT / Apache-2.0); four
 > are gated behind licence acceptance and carry use conditions. An earlier version said
@@ -172,7 +191,7 @@ price tier.
 > closed* — which is **not a valid test**: `mistral_l` is served only by Mistral and its
 > weights are on HuggingFace under Apache-2.0. What that is worth is measured in
 > [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **no proprietary model
-> separated from the best open-weight model in any of the five experiments.**
+> separated from the best open-weight model in any of the six experiments.**
 
 > **A hosted model has no verifiable identity.** The fingerprint records
 > `identity_declared: true` and `revision_source: unavailable` — we record the alias we
@@ -207,6 +226,10 @@ the cache by hand and are a record, not a fingerprint.
 | `bert_base_ta` | [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | 438 MB | `fe417ad660b1` | BERT-base fine-tuned on AG News (TextAttack; card reports 0.9514) |
 | `bert_base_fy` (AG) | [`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | 438 MB | `c14e3b32fe1f` | BERT-base fine-tuned on AG News by a second author — a check on the first |
 | `bert_base_fy` (DBpedia) | [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14) | 438 MB | `1fbfc3deaa28` | BERT-base fine-tuned on DBpedia-14 |
+
+SummEval's `bartscore` arm loads the same checkpoint as `bart_l`, at the same revision
+(`37f520fa929c`), and scores a summary by its log-likelihood given the article
+([BARTScore](https://arxiv.org/abs/2106.11520)); it is not a separate model.
 
 **The last six need torch ≥ 2.6**, and ran on 2026-09-30 on Linux. Their `main` branches
 ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` below torch 2.6
@@ -257,8 +280,9 @@ your machine and is gitignored. Dataset identity travels as `items_sha256` (and
 | CNN/DailyMail | [`abisee/cnn_dailymail`](https://huggingface.co/datasets/abisee/cnn_dailymail) | Apache-2.0 | `cnn_dailymail_200`: the first 200 test articles — **all from CNN** (the split puts CNN's 9% first; 91% of it is DailyMail). `cnn_dailymail_dm200`: 200 DailyMail test articles, seeded random. Human highlights as gold. Corpus from [Hermann et al. 2015](https://arxiv.org/abs/1506.03340); adapted for summarisation by [Nallapati et al. 2016](https://arxiv.org/abs/1602.06023) |
 | AG News | [`fancyzhx/ag_news`](https://huggingface.co/datasets/fancyzhx/ag_news) | **`unknown`** on the card; the corpus description says non-commercial research use | 200 snippets, 4 topics ([paper](https://arxiv.org/abs/1509.01626)) |
 | DBpedia-14 | [`fancyzhx/dbpedia_14`](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | 280 abstracts, 14 ontology classes |
-| Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
+| Few-NERD | [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | **CC BY-SA 4.0** — the cleanest of the first five | 280 sentences, 8 coarse entity types ([paper](https://aclanthology.org/2021.acl-long.248/)) |
 | BEIR SciFact | [`BeIR/scifact`](https://huggingface.co/datasets/BeIR/scifact) + [`BeIR/scifact-qrels`](https://huggingface.co/datasets/BeIR/scifact-qrels) | CC BY-SA 4.0 | 200 claims over a 5,183-abstract corpus ([BEIR](https://arxiv.org/abs/2104.08663), [SciFact](https://aclanthology.org/2020.emnlp-main.609/)) |
+| SummEval | [`mteb/summeval`](https://huggingface.co/datasets/mteb/summeval) | MIT | `summeval_100`: all 100 annotated CNN/DailyMail test articles, 16 machine summaries each, 11 human references, expert scores (mean of 3) on coherence, consistency, fluency and relevance as gold ([Fabbri et al. 2021](https://arxiv.org/abs/2007.12626)) |
 
 > **Licence is a selection criterion here, not a footnote.** Few-NERD was chosen over
 > WNUT-2017 — which is closer to noisy podcast speech, the actual application — purely
@@ -308,6 +332,7 @@ with a dataset name in the next is what this convention exists to stop.
 | **Classification · DBpedia** | classification | [DBpedia-14](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | [REPORT_CLASSIFICATION](../research/REPORT_CLASSIFICATION.md) |
 | **Extraction · Few-NERD** | extraction (NER) | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | [REPORT_NER](../research/REPORT_NER.md) |
 | **Retrieval · SciFact** | retrieval | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | [REPORT_RETRIEVAL](../research/REPORT_RETRIEVAL.md) |
+| **Judging · SummEval** | judging (an LLM as the grader) | [SummEval](https://huggingface.co/datasets/mteb/summeval) | [REPORT_SUMMEVAL](../research/REPORT_SUMMEVAL.md) |
 
 Two experiments share the *classification* task and differ only in dataset, which is why
 the dataset is never optional in these labels.
@@ -428,14 +453,17 @@ multiple classifiers over multiple datasets
 described in [Dror et al., *The Hitchhiker's Guide to Testing Statistical Significance in
 NLP*](https://aclanthology.org/P18-1128/).
 
-**No corpus, no model weight, no paper and no provider output is redistributed by this
-repository.** Every example ships a download recipe instead, and
-[`papers/README.md`](papers/README.md) records the licence of each cited work — twelve of
-the twenty-four may be mirrored, twelve may not, and the split follows publisher policy
-rather than importance.
+**No corpus and no model weight is redistributed by this repository.** Every example ships
+a download recipe instead. Two things are committed on purpose: the models' outputs, which
+are the evidence every score is recomputed from, and thirteen CC-licensed papers,
+mirrored under their licences. [`papers/README.md`](papers/README.md) records the licence of
+each of the twenty-eight cited works — thirteen mirrored, fifteen that may not be — and the
+split follows publisher policy rather than importance. (This paragraph said no paper and no provider output was redistributed until
+2026-10-18; both were committed long before.)
 
-**Every citation above was verified on 2026-09-29** by fetching it and comparing the real
-title to the claim made about it. That check found four errors in the first draft: a
+**Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
+BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18) by fetching it
+and comparing the real title to the claim made about it. That check found four errors in the first draft: a
 fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
 credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could
 **not** be verified programmatically and is therefore given as a full text reference rather

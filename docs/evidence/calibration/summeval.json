@@ -1,0 +1,122 @@
+{
+  "what": "ROUGE-1/2/L F1 arms on all 100 SummEval articles (the committed runs), Kendall tau-b against the expert means",
+  "split_rows": 100,
+  "arms": {
+    "rouge1": {
+      "n": 100,
+      "value": 0.1487,
+      "ci95": 0.0322,
+      "published": 0.15,
+      "source": "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions",
+      "verdict": "consistent",
+      "by_dimension": {
+        "coherence": {
+          "value": 0.1297,
+          "ci95": 0.041,
+          "published": 0.126,
+          "verdict": "consistent"
+        },
+        "consistency": {
+          "value": 0.1221,
+          "ci95": 0.0455,
+          "published": 0.13,
+          "verdict": "consistent"
+        },
+        "fluency": {
+          "value": 0.0903,
+          "ci95": 0.0475,
+          "published": 0.094,
+          "verdict": "consistent"
+        },
+        "relevance": {
+          "value": 0.2526,
+          "ci95": 0.045,
+          "published": 0.252,
+          "verdict": "consistent"
+        }
+      }
+    },
+    "rouge2": {
+      "n": 100,
+      "value": 0.1578,
+      "ci95": 0.0282,
+      "published": 0.161,
+      "source": "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions",
+      "verdict": "consistent",
+      "by_dimension": {
+        "coherence": {
+          "value": 0.1383,
+          "ci95": 0.04,
+          "published": 0.139,
+          "verdict": "consistent"
+        },
+        "consistency": {
+          "value": 0.1482,
+          "ci95": 0.041,
+          "published": 0.155,
+          "verdict": "consistent"
+        },
+        "fluency": {
+          "value": 0.1243,
+          "ci95": 0.0488,
+          "published": 0.128,
+          "verdict": "consistent"
+        },
+        "relevance": {
+          "value": 0.2204,
+          "ci95": 0.0408,
+          "published": 0.219,
+          "verdict": "consistent"
+        }
+      }
+    },
+    "rougeL": {
+      "n": 100,
+      "value": 0.1435,
+      "ci95": 0.0322,
+      "published": 0.128,
+      "source": "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions",
+      "verdict": "consistent",
+      "by_dimension": {
+        "coherence": {
+          "value": 0.153,
+          "ci95": 0.0422,
+          "published": 0.099,
+          "verdict": "consistent"
+        },
+        "consistency": {
+          "value": 0.1091,
+          "ci95": 0.045,
+          "published": 0.092,
+          "verdict": "consistent"
+        },
+        "fluency": {
+          "value": 0.1021,
+          "ci95": 0.0488,
+          "published": 0.084,
+          "verdict": "consistent"
+        },
+        "relevance": {
+          "value": 0.2097,
+          "ci95": 0.0469,
+          "published": 0.237,
+          "verdict": "consistent"
+        }
+      }
+    }
+  },
+  "rouge1_reference_combination": {
+    "mean": {
+      "rho": 0.1896,
+      "tau": 0.1487
+    },
+    "max": {
+      "rho": 0.1978,
+      "tau": 0.1554
+    },
+    "first": {
+      "rho": 0.1586,
+      "tau": 0.1264
+    }
+  }
+}

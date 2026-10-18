@@ -4,8 +4,9 @@ What each experiment measured, on which data, with which metric — and how that
 the protocol the field uses for the same benchmark. Everything a reader needs to decide
 what a number in this repo speaks for, in one place.
 
-**The short version.** Every experiment scores a **declared sample** of a public
-benchmark's test split (200–280 items), not the full test set. That is enough for the
+**The short version.** Five of the six experiments score a **declared sample** of a public
+benchmark's test split (200–280 items), not the full test set; the sixth, SummEval, scores
+the whole of its benchmark, which is 100 annotated articles. That is enough for the
 question this repo asks — *which models can be told apart, at what cost* — and the reports
 test separations rather than read rank order. It is not enough to produce a leaderboard
 number comparable to a paper's. So each experiment also carries a **calibration row**: one
@@ -25,6 +26,7 @@ one sampling defect found so far was found.
 | Classification · DBpedia | `fancyzhx/dbpedia_14` · test (70,000) | 280 = 20 per class, seeded (20260927) |
 | Extraction · Few-NERD | `DFKI-SLT/few-nerd` supervised · test (37,648 sentences) | 280 sentences, seeded (20260928), ≥3 tokens |
 | Retrieval · SciFact | `BeIR/scifact` · test (300 queries, full 5,183-doc corpus) | 200 queries, seeded (20260928), **full corpus** |
+| Judging · SummEval | `mteb/summeval` · test (100 annotated articles, 16 summaries each) | **all 100** |
 
 **How it was scored, and whether the scorer agrees with the field.**
 
@@ -35,6 +37,7 @@ one sampling defect found so far was found.
 | Classification · DBpedia | accuracy | accuracy | `bert_base_fy`, seeded 5,600 of 70,000: **0.9879** ±0.003 vs 0.9903 (card) |
 | Extraction · Few-NERD | mean per-sentence F1, 8 coarse types, string match — ours | entity micro-F1, 66 fine types, token spans | `span_marker`, seeded 2,000 sentences: **0.7047** ±0.016 vs 0.7040 (card) |
 | Retrieval · SciFact | nDCG@10 | nDCG@10 | BM25, all 300 queries: **0.6523** ±0.045 vs 0.665 (BEIR) |
+| Judging · SummEval | Kendall τ-b per article against the expert means | Kendall τ-b | the ROUGE arms, all 100 articles, vs G-Eval: ROUGE-1 **0.1487** ±0.032 vs 0.150 · ROUGE-2 **0.1578** ±0.028 vs 0.161 · ROUGE-L **0.1435** ±0.032 vs 0.128 |
 
 How to read it: **bold** is this repo's own run; the figure after "vs" is the published
 one. **±** is the half-width of a 95% confidence interval on our run. **"— ours"** marks a
@@ -43,6 +46,39 @@ row is calibrated in the field-standard metric instead.
 
 Calibration results are machine-checked against `docs/evidence/calibration/*.json`, which
 each example's `calibrate.py` writes.
+
+SummEval's rows need a note. Its sample is the benchmark, so the "±" there is the spread
+over the same 100 articles the paper scored, not sampling error against it: a gap inside it
+can still be a difference of protocol. ROUGE-1 and ROUGE-2 agree with the paper within 0.01
+on every one of the four dimensions; ROUGE-L agrees on average but is 0.054 above it on
+coherence, outside that dimension's interval (±0.042) and inside it only with the 0.02
+allowance the rule adds for protocol differences; the paper does not say which ROUGE-L it
+ran.
+
+## The hardware
+
+Every run on the site records the machine it ran on (`fingerprint.host`), and
+[`evidence/hardware.json`](evidence/hardware.json) maps those records to machines, each
+described from the machine itself:
+
+| machine | what it is | what it measured |
+|---|---|---|
+| Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
+| cloud runner | 4-core Linux (x86_64) containers; the operator's cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
+| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls. No open-weight LLM was run on any of these machines for the committed results |
+| NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs |
+| MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs |
+
+What it means for a number. **A hosted arm's quality and cost come from the provider**, not
+the machine that called it. **A local arm's outputs are expected to repeat on any CPU**, and
+that is measured for nine of them, not all: the summarisation and classification local arms
+re-ran with identical outputs (three of them on a different machine; `bert_mini`'s
+confidences moved by up to 2 × 10⁻⁶, its labels not at all). The NER, retrieval and SummEval
+local arms were not re-run. **Latency depends on the machine**, local and hosted alike: a
+hosted latency includes the caller's network and gateway (the Mac mini called through a
+gateway on itself, the EVO-X3 through one on the Mac mini), and a ratio between arms timed
+on two different machines is good to about a factor of two, which the reports say wherever
+they compare them.
 
 ## What is the same in every experiment
 
@@ -53,7 +89,8 @@ each example's `calibrate.py` writes.
   Hugging Face datasets API, stdlib only, and `make dataset-materialize` refuses bytes
   whose hash does not match.
 - **A dev slice, nested inside the sample.** Prompts and parsers may be tuned on it and
-  on nothing else; every headline is also reported on the held-out remainder.
+  on nothing else; every headline is also reported on the held-out remainder. SummEval has
+  no dev slice, and so no held-out remainder.
 - **One pass per arm, temperature 0, one prompt per task.** An *arm* is one system under
   test: a model plus its configuration (prompt, decoding, provider). Between-run variance
   of hosted models is not measured except where stated (five SciFact repeat pairs).
@@ -141,6 +178,24 @@ each example's `calibrate.py` writes.
   (one field, no stemming) explains.
 - **Reproduce.** `examples/retrieval-scifact/README.md`; calibration: `calibrate.py`.
 
+### Judging · SummEval
+
+- **Benchmark.** `mteb/summeval` (MIT; the original Yale-LILY/SummEval is MIT): the 100
+  CNN/DailyMail test articles that carry expert annotations, 87 DailyMail and 13 CNN, each
+  with 16 summaries from 2019-era systems and 11 human reference summaries.
+- **Sample.** `summeval_100`: all 100. Nothing is drawn, so nothing is seeded.
+- **Reference.** The mean of three expert annotators' 1–5 scores per summary, on
+  coherence, consistency, fluency and relevance — gold. The crowd ratings are not used.
+- **Metric.** Kendall τ-b per article between a judge's scores and the expert means over
+  the 16 summaries, averaged over the four dimensions (`tau`); Spearman (`rho`) beside it.
+  This is the summary-level protocol G-Eval reports, and τ-b corrects for the ties integer
+  scores produce. Because it is per article, the paired permutation tests apply unchanged.
+- **Comparability.** Directly comparable to G-Eval's Table 1 for the same metric, which is
+  what the calibration rows use. A judge's prompt, decoding and one-call-per-article design
+  are this repo's, so a judge's τ is comparable in kind, not as a reproduction of G-Eval.
+- **Reproduce.** `examples/summeval-judging/README.md`; calibration: `calibrate.py`;
+  the derived figures in its report: `harness/scripts/summeval_analysis.py`.
+
 ## What a number here does and does not support
 
 - **Supports:** whether two arms on the same sample can be told apart, at what billed cost
@@ -148,4 +203,4 @@ each example's `calibrate.py` writes.
 - **Supports, with the calibration row:** that the instrument scores a known system the
   way the field does.
 - **Does not support:** a leaderboard position against published papers — the samples are
-  200–280 items, and two of five primary metrics are this repo's own.
+  100–280 items, and two of six primary metrics are this repo's own.

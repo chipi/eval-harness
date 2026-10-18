@@ -1,0 +1,12 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [4, 5, 5, 4, 4, 5, 5, 4, 2, 4, 5, 5, 4, 4, 4, 4],
+  "consistency": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+  "fluency": [4, 5, 5, 4, 4, 5, 5, 4, 3, 4, 5, 5, 4, 4, 4, 4],
+  "relevance": [4, 5, 5, 4, 4, 5, 5, 4, 3, 4, 5, 5, 4, 4, 4, 4]
+}
+```
+
+Note that the consistency ratings are all 5, as none of the summaries introduce any factual errors or contradictions. The other ratings are subjective and based on the individual merits of each summary.

@@ -246,7 +246,7 @@ and call one function.
 
 ## See also
 
-- [`../examples/`](../examples) — five worked examples, what each one found, and
+- [`../examples/`](../examples) — six worked examples, what each one found, and
   what each one broke in this harness.
 - [`../research/`](../research) — the reports, the append-only journal, and a
   handover per example for the work that was not finished.

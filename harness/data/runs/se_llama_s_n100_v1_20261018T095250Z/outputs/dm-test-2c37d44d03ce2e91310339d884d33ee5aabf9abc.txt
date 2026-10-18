@@ -1,0 +1,16 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [4, 5, 5, 5, 4, 4, 5, 5, 4, 4, 5, 5, 5, 5, 5, 4],
+  "consistency": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+  "fluency": [4, 5, 5, 5, 4, 4, 5, 5, 4, 4, 5, 5, 5, 5, 5, 4],
+  "relevance": [4, 5, 5, 5, 4, 4, 5, 5, 4, 4, 5, 5, 5, 5, 5, 4]
+}
+```
+
+Note that I rated consistency as 5 for all summaries because they do not contain any factual errors or contradictions with the article. However, some summaries may be more or less complete or accurate in their representation of the article, but that is reflected in the other ratings. 
+
+Also, I considered a summary to be coherent if it was easy to follow and understand, even if it didn't include all the details from the article. Fluency ratings consider grammar, sentence structure, and readability. Relevance ratings consider whether the summary includes the most important information from the article and omits unnecessary details. 
+
+Please let me know if you have any further questions or if you'd like me to clarify any of the ratings!

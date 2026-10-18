@@ -1,0 +1,28 @@
+Here is the JSON object with the ratings for each summary based on the four dimensions:
+
+```json
+{
+  "coherence": [3, 5, 4, 4, 5, 4, 5, 4, 2, 3, 5, 5, 4, 5, 3, 2],
+  "consistency": [3, 5, 5, 5, 5, 5, 5, 5, 2, 3, 5, 5, 5, 5, 3, 2],
+  "fluency": [4, 5, 5, 5, 5, 5, 5, 5, 4, 4, 5, 5, 5, 5, 4, 3],
+  "relevance": [3, 4, 4, 4, 5, 4, 5, 4, 2, 3, 4, 5, 4, 5, 3, 2]
+}
+```
+
+### Explanation of Key Ratings:
+- **Summary 1**: Lower coherence due to abrupt transitions and redundancy (e.g., "the mls side are also keen on signing adrian heath" is irrelevant).
+- **Summary 2**: High scores across the board; well-structured, consistent, and relevant.
+- **Summary 3**: Slightly lower relevance due to inclusion of European clubs' interest (minor detail).
+- **Summary 4**: Good but slightly less relevant due to mentioning European interest (minor detail).
+- **Summary 5**: Excellent; includes key details (Real Madrid loan struggles) without redundancy.
+- **Summary 6**: Slightly less relevant due to minor detail ("big" vs. "huge" fanbase).
+- **Summary 7**: Perfect; includes all key points logically.
+- **Summary 8**: Lower coherence due to abrupt shift to Andreas Pereira; less relevant.
+- **Summary 9**: Low coherence and consistency (hallucinates contract status at Real Madrid).
+- **Summary 10**: Low coherence and relevance (mixes unrelated details).
+- **Summary 11**: Excellent; includes all key points logically.
+- **Summary 12**: Perfect; includes all key points logically.
+- **Summary 13**: Lower relevance due to Andreas Pereira detail (minor).
+- **Summary 14**: Perfect; includes all key points logically.
+- **Summary 15**: Lower coherence and relevance (mixes unrelated details like European clubs).
+- **Summary 16**: Low coherence and consistency (hallucinates "Manchester United" as the subject of interest; irrelevant Kaka detail).

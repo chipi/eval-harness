@@ -1,0 +1,19 @@
+Here is the JSON object with the ratings:
+
+```
+{
+  "coherence": [3, 5, 5, 4, 5, 5, 4, 4, 2, 4, 5, 5, 4, 3, 3, 3],
+  "consistency": [2, 5, 5, 4, 5, 5, 4, 4, 1, 4, 5, 5, 4, 3, 3, 3],
+  "fluency": [3, 5, 5, 4, 5, 5, 4, 4, 2, 4, 5, 5, 4, 3, 3, 3],
+  "relevance": [2, 5, 5, 4, 5, 5, 4, 4, 2, 4, 5, 5, 4, 3, 3, 3]
+}
+```
+
+Here's a brief explanation of the ratings:
+
+* Summary 1: Coherence is low because the sentences are not well-structured and contain inconsistent information. Consistency is low because the number of migrants and the incident of the ship capsizing are not accurately reported. Fluency is average, but relevance is low because the summary does not capture the main points of the article.
+* Summary 2-6: These summaries have high coherence, consistency, fluency, and relevance because they accurately report the main points of the article, including the number of migrants rescued and the concerns about missing migrants.
+* Summary 7: This summary has lower coherence and relevance because it does not include the information about the missing migrants.
+* Summary 8: This summary has lower relevance because it does not mention the recent upsurge in migrant boats and the number of deaths.
+* Summary 9: This summary has low coherence and consistency because it includes inaccurate information about the number of deaths and the demographics of the migrants.
+* Summary 10-16: These summaries have varying degrees of coherence, consistency, fluency, and relevance, but most of them accurately report the main points of the article.

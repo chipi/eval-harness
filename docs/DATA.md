@@ -12,7 +12,7 @@ each dataset's own page is what binds.*
 | | in this repository | you download |
 |---|---|---|
 | **The corpora** (articles, snippets, abstracts, sentences) | **no** | yes, with each example's `fetch.py`, from the public source |
-| **Gold and silver references** for the five experiments | **no** | rebuilt by `fetch.py`, byte for byte (seeded) |
+| **Gold and silver references** for the six experiments | **no** | rebuilt by `fetch.py`, byte for byte (seeded) |
 | **Run outputs** (`outputs/`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
 | **Scores, costs, fingerprints** (`metrics.json`) | yes | — |
 | **Demo and tutorial data** (`harness/data/sources`, `harness/tutorial/`) | yes: synthetic or invented, written for this repository | — |
@@ -32,6 +32,7 @@ the datasets, so each one's licence follows its data:
 | **Classification · DBpedia** | one ontology label | no: a class word | CC-BY-SA 3.0 + GFDL |
 | **Extraction · Few-NERD** | a list of entity spans and types | short spans (names, places) quoted from the sentences | **CC BY-SA 4.0** |
 | **Retrieval · SciFact** | a ranked list of document ids | no: numeric ids | CC BY-SA 4.0 |
+| **Judging · SummEval** | 64 scores (16 summaries × 4 dimensions), as JSON | no: numbers | MIT (SummEval); the articles are CNN/DailyMail, Apache-2.0 |
 
 ## Each dataset
 
@@ -42,6 +43,7 @@ the datasets, so each one's licence follows its data:
 | [DBpedia-14](https://huggingface.co/datasets/fancyzhx/dbpedia_14) | CC-BY-SA 3.0 + GFDL, inherited from Wikipedia | Attribute Wikipedia/DBpedia; anything you redistribute that contains its text is share-alike. |
 | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | CC BY-SA 4.0 | Attribute the authors; derived text you redistribute is share-alike (CC BY-SA 4.0). |
 | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | CC BY-SA 4.0 | The same: attribute, and share-alike for redistributed text. |
+| [SummEval](https://huggingface.co/datasets/mteb/summeval) | MIT ([original repo](https://github.com/Yale-LILY/SummEval) also MIT) | Keep the MIT notice when you redistribute the annotations. Each item also carries a CNN/DailyMail article and its human references, so those follow CNN/DailyMail's terms. |
 
 Licence was a selection criterion, not an afterthought: Few-NERD was chosen over a corpus
 closer to the original application because that one is licensed `other`. Sources, papers

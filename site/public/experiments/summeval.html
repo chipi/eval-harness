@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Judging · SummEval — eval-harness</title>
+<meta name="description" content="Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert&#x27;s agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.">
+<meta property="og:title" content="Judging · SummEval — eval-harness">
+<meta property="og:description" content="Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert&#x27;s agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="eval-harness">
+<meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="dark light">
+<script>
+(function(){var p=new URLSearchParams(location.search),t=p.get('theme');
+try{t=t||localStorage.getItem('theme');}catch(e){}
+if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
+if(!p.has('static'))document.documentElement.classList.add('js');})();
+</script><script defer src="https://analytics.closelistening.app/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+</head>
+<body>
+<header class="bar"><div class="wrap">
+  <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+</div></header>
+<main>
+
+<section class="hero"><div class="wrap">
+  <div class="kicker"><b>Judging</b> · SummEval</div>
+  <h1 style="max-width:16ch">LLM judges beat every free scorer measured.</h1>
+  <p class="dek">Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert&#x27;s agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.</p>
+  <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Score 16 summaries of a news article on coherence, consistency, fluency and relevance, as three experts did.</div></div><div class="fact"><div class="k">Data</div><div class="v">100 items from the SummEval test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">31 compared: 24 hosted models billed per call; 7 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">Kendall tau vs experts — how well a judge&#x27;s scores order the 16 summaries of an article the way the experts&#x27; do (Kendall τ-b per article, averaged over four dimensions); the field&#x27;s standard. 1 is perfect agreement, 0 none</div></div><div class="fact"><div class="k">Calibration</div><div class="v">rouge1 0.1487 vs 0.1500 published; rouge2 0.1578 vs 0.1610 published; rougeL 0.1435 vs 0.1280 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$7.03 for the whole sweep</div></div></div>
+  <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_SUMMEVAL.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
+</div></section>
+<section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
+  <h2>Every system, one axis.</h2>
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><rect x="828.0" y="28" width="106.6" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/31
+billed $0.6350 for 100 items</title></circle><circle cx="926.6" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/31
+billed $0.6350 for 100 items"/><circle cx="920.7" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/31
+billed $0.0278 for 100 items</title></circle><circle cx="920.7" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/31
+billed $0.0278 for 100 items"/><circle cx="874.3" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/31
+billed $1.42 for 100 items</title></circle><circle cx="874.3" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/31
+billed $1.42 for 100 items"/><circle cx="841.2" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/31
+billed $0.4436 for 100 items</title></circle><circle cx="841.2" cy="50.0" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/31
+billed $0.4436 for 100 items"/><circle cx="836.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/31
+billed $0.0385 for 100 items</title></circle><circle cx="836.0" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/31
+billed $0.0385 for 100 items"/><circle cx="826.0" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/31
+billed $0.1144 for 100 items</title></circle><circle cx="826.0" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/31
+billed $0.1144 for 100 items"/><circle cx="784.2" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/31
+billed $0.1084 for 100 items</title></circle><circle cx="784.2" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/31
+billed $0.1084 for 100 items"/><circle cx="714.0" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/31
+billed $0.2451 for 100 items</title></circle><circle cx="714.0" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/31
+billed $0.2451 for 100 items"/><circle cx="689.9" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/31
+billed $0.0771 for 100 items</title></circle><circle cx="689.9" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/31
+billed $0.0771 for 100 items"/><circle cx="678.9" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/31
+billed $0.3237 for 100 items</title></circle><circle cx="678.9" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/31
+billed $0.3237 for 100 items"/><circle cx="663.8" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/31
+billed $0.8048 for 100 items</title></circle><circle cx="663.8" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/31
+billed $0.8048 for 100 items"/><circle cx="649.4" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/31
+billed $0.0252 for 100 items</title></circle><circle cx="649.4" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/31
+billed $0.0252 for 100 items"/><circle cx="616.4" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/31
+billed $0.0258 for 100 items</title></circle><circle cx="616.4" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/31
+billed $0.0258 for 100 items"/><circle cx="608.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/31
+billed $0.1191 for 100 items</title></circle><circle cx="608.6" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/31
+billed $0.1191 for 100 items"/><circle cx="570.2" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/31
+billed $0.0307 for 100 items</title></circle><circle cx="570.2" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/31
+billed $0.0307 for 100 items"/><circle cx="554.0" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/31
+billed $0.1257 for 100 items</title></circle><circle cx="554.0" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/31
+billed $0.1257 for 100 items"/><circle cx="546.6" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/31
+billed $0.0594 for 100 items</title></circle><circle cx="546.6" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/31
+billed $0.0594 for 100 items"/><circle cx="511.0" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/31
+billed $0.0481 for 100 items</title></circle><circle cx="511.0" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/31
+billed $0.0481 for 100 items"/><circle cx="430.8" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/31
+billed $0.0283 for 100 items</title></circle><circle cx="430.8" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/31
+billed $0.0283 for 100 items"/><circle cx="396.0" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/31
+billed $0.0279 for 100 items</title></circle><circle cx="396.0" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/31
+billed $0.0279 for 100 items"/><circle cx="358.7" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/31
+billed $0.2124 for 100 items</title></circle><circle cx="358.7" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/31
+billed $0.2124 for 100 items"/><circle cx="337.9" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/31
+billed $0.0517 for 100 items</title></circle><circle cx="337.9" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/31
+billed $0.0517 for 100 items"/><circle cx="103.4" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 24/31
+billed $0.0297 for 100 items</title></circle><circle cx="103.4" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 24/31
+billed $0.0297 for 100 items"/><circle cx="20.0" cy="50.0" r="5.5" class="dot k-local"><title>bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 25/31
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="20.0" cy="50.0" r="12" class="hit" data-tip="bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 25/31
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="875.9" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/31
+billed $2.01 for 100 items</title></circle><circle cx="875.9" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/31
+billed $2.01 for 100 items"/><circle cx="875.9" cy="50" r="11" class="ring"/><text x="875.9" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.528</text><text x="926.6" y="80" text-anchor="end" class="t-ink" font-size="11">openai_l · 1st · 0.540</text></svg></div><div class="vn"><svg viewBox="0 0 400 98" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><rect x="326.7" y="26" width="49.2" height="44" rx="10" class="band"/><line x1="48" x2="386" y1="48" y2="48" class="axis"/><line x1="14" x2="28" y1="48" y2="48" class="axis"/><text x="37" y="53" text-anchor="middle" class="t-muted" font-size="17">⫽</text><circle cx="367.9" cy="48.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/31
+billed $0.6350 for 100 items</title></circle><circle cx="367.9" cy="48.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/31
+billed $0.6350 for 100 items"/><circle cx="365.7" cy="48.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/31
+billed $0.0278 for 100 items</title></circle><circle cx="365.7" cy="48.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/31
+billed $0.0278 for 100 items"/><circle cx="348.7" cy="48.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/31
+billed $1.42 for 100 items</title></circle><circle cx="348.7" cy="48.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/31
+billed $1.42 for 100 items"/><circle cx="336.6" cy="48.0" r="5.5" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/31
+billed $0.4436 for 100 items</title></circle><circle cx="336.6" cy="48.0" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/31
+billed $0.4436 for 100 items"/><circle cx="334.7" cy="48.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/31
+billed $0.0385 for 100 items</title></circle><circle cx="334.7" cy="48.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/31
+billed $0.0385 for 100 items"/><circle cx="331.0" cy="48.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/31
+billed $0.1144 for 100 items</title></circle><circle cx="331.0" cy="48.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/31
+billed $0.1144 for 100 items"/><circle cx="315.7" cy="48.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/31
+billed $0.1084 for 100 items</title></circle><circle cx="315.7" cy="48.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/31
+billed $0.1084 for 100 items"/><circle cx="290.0" cy="48.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/31
+billed $0.2451 for 100 items</title></circle><circle cx="290.0" cy="48.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/31
+billed $0.2451 for 100 items"/><circle cx="281.1" cy="48.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/31
+billed $0.0771 for 100 items</title></circle><circle cx="281.1" cy="48.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/31
+billed $0.0771 for 100 items"/><circle cx="277.1" cy="48.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/31
+billed $0.3237 for 100 items</title></circle><circle cx="277.1" cy="48.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/31
+billed $0.3237 for 100 items"/><circle cx="271.6" cy="48.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/31
+billed $0.8048 for 100 items</title></circle><circle cx="271.6" cy="48.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/31
+billed $0.8048 for 100 items"/><circle cx="266.3" cy="48.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/31
+billed $0.0252 for 100 items</title></circle><circle cx="266.3" cy="48.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/31
+billed $0.0252 for 100 items"/><circle cx="254.2" cy="48.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/31
+billed $0.0258 for 100 items</title></circle><circle cx="254.2" cy="48.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/31
+billed $0.0258 for 100 items"/><circle cx="251.3" cy="48.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/31
+billed $0.1191 for 100 items</title></circle><circle cx="251.3" cy="48.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/31
+billed $0.1191 for 100 items"/><circle cx="237.2" cy="48.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/31
+billed $0.0307 for 100 items</title></circle><circle cx="237.2" cy="48.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/31
+billed $0.0307 for 100 items"/><circle cx="231.3" cy="48.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/31
+billed $0.1257 for 100 items</title></circle><circle cx="231.3" cy="48.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/31
+billed $0.1257 for 100 items"/><circle cx="228.6" cy="48.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/31
+billed $0.0594 for 100 items</title></circle><circle cx="228.6" cy="48.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/31
+billed $0.0594 for 100 items"/><circle cx="215.5" cy="48.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/31
+billed $0.0481 for 100 items</title></circle><circle cx="215.5" cy="48.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/31
+billed $0.0481 for 100 items"/><circle cx="186.1" cy="48.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/31
+billed $0.0283 for 100 items</title></circle><circle cx="186.1" cy="48.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/31
+billed $0.0283 for 100 items"/><circle cx="173.4" cy="48.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/31
+billed $0.0279 for 100 items</title></circle><circle cx="173.4" cy="48.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/31
+billed $0.0279 for 100 items"/><circle cx="159.7" cy="48.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/31
+billed $0.2124 for 100 items</title></circle><circle cx="159.7" cy="48.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/31
+billed $0.2124 for 100 items"/><circle cx="152.1" cy="48.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/31
+billed $0.0517 for 100 items</title></circle><circle cx="152.1" cy="48.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/31
+billed $0.0517 for 100 items"/><circle cx="66.1" cy="48.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 24/31
+billed $0.0297 for 100 items</title></circle><circle cx="66.1" cy="48.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 24/31
+billed $0.0297 for 100 items"/><circle cx="14.0" cy="48.0" r="5.5" class="dot k-local"><title>bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 25/31
+free: runs locally, nothing billed
+off the scale: far below the field</title></circle><circle cx="14.0" cy="48.0" r="12" class="hit" data-tip="bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 25/31
+free: runs locally, nothing billed
+off the scale: far below the field"/><circle cx="349.3" cy="48.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/31
+billed $2.01 for 100 items</title></circle><circle cx="349.3" cy="48.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/31
+billed $2.01 for 100 items"/><circle cx="349.3" cy="48" r="11" class="ring"/><text x="286.0" y="30" text-anchor="middle" class="t-ink" font-size="15">dearest · 3rd · 0.528</text><text x="367.9" y="78" text-anchor="end" class="t-ink" font-size="15">openai_l · 1st · 0.540</text></svg></div><figcaption>Each dot is one system, by Kendall tau vs experts. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from. A dot left of the ⫽ break sits far below the rest, off the scale; tap it for its score.</figcaption></div>
+</div></section>
+<section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
+  <h2>What the money bought.</h2>
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="SummEval: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="360" class="grid"/><text x="150.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="423.3" x2="423.3" y1="34" y2="360" class="grid"/><text x="423.3" y="412" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="696.7" x2="696.7" y1="34" y2="360" class="grid"/><text x="696.7" y="412" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="970.0" x2="970.0" y1="34" y2="360" class="grid"/><text x="970.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$100</text><line x1="40" x2="970" y1="337.5" y2="337.5" class="grid"/><text x="34" y="341.5" text-anchor="end" class="t-muted" font-size="10">0.353</text><line x1="40" x2="970" y1="197.0" y2="197.0" class="grid"/><text x="34" y="201.0" text-anchor="end" class="t-muted" font-size="10">0.447</text><line x1="40" x2="970" y1="56.5" y2="56.5" class="grid"/><text x="34" y="60.5" text-anchor="end" class="t-muted" font-size="10">0.540</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ Kendall tau vs experts</text><text x="76" y="412" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="360" class="axis"/><text x="120" y="380.0" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="76.0" cy="390.0" r="6" class="dot k-local"><title>bartscore · local · free
+Kendall tau vs experts 0.2562 · $0
+off the scale: far below the field</title></circle><circle cx="76.0" cy="390.0" r="12" class="hit" data-tip="bartscore · local · free
+Kendall tau vs experts 0.2562 · $0
+off the scale: far below the field"/><circle cx="642.8" cy="56.5" r="6" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398
+$6.35 per 1,000 items</title></circle><circle cx="642.8" cy="56.5" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398
+$6.35 per 1,000 items"/><circle cx="271.5" cy="58.5" r="6" class="dot k-open"><title>gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384
+$0.2784 per 1,000 items</title></circle><circle cx="271.5" cy="58.5" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384
+$0.2784 per 1,000 items"/><circle cx="779.4" cy="73.8" r="6" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283
+$20.08 per 1,000 items</title></circle><circle cx="779.4" cy="73.8" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283
+$20.08 per 1,000 items"/><circle cx="737.9" cy="74.3" r="6" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279
+$14.15 per 1,000 items</title></circle><circle cx="737.9" cy="74.3" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279
+$14.15 per 1,000 items"/><circle cx="600.2" cy="85.6" r="6" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204
+$4.44 per 1,000 items</title></circle><circle cx="600.2" cy="85.6" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204
+$4.44 per 1,000 items"/><circle cx="309.9" cy="87.4" r="6" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192
+$0.3845 per 1,000 items</title></circle><circle cx="309.9" cy="87.4" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192
+$0.3845 per 1,000 items"/><circle cx="439.3" cy="90.8" r="6" class="dot k-open"><title>glm_m · hosted · open weights
+Kendall tau vs experts 0.5170
+$1.14 per 1,000 items</title></circle><circle cx="439.3" cy="90.8" r="12" class="hit" data-tip="glm_m · hosted · open weights
+Kendall tau vs experts 0.5170
+$1.14 per 1,000 items"/><circle cx="432.9" cy="105.1" r="6" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075
+$1.08 per 1,000 items</title></circle><circle cx="432.9" cy="105.1" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075
+$1.08 per 1,000 items"/><circle cx="529.8" cy="129.1" r="6" class="dot k-open"><title>glm_l · hosted · open weights
+Kendall tau vs experts 0.4916
+$2.45 per 1,000 items</title></circle><circle cx="529.8" cy="129.1" r="12" class="hit" data-tip="glm_l · hosted · open weights
+Kendall tau vs experts 0.4916
+$2.45 per 1,000 items"/><circle cx="392.5" cy="137.3" r="6" class="dot k-open"><title>deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861
+$0.7711 per 1,000 items</title></circle><circle cx="392.5" cy="137.3" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861
+$0.7711 per 1,000 items"/><circle cx="562.8" cy="141.1" r="6" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836
+$3.24 per 1,000 items</title></circle><circle cx="562.8" cy="141.1" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836
+$3.24 per 1,000 items"/><circle cx="670.9" cy="146.2" r="6" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802
+$8.05 per 1,000 items</title></circle><circle cx="670.9" cy="146.2" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802
+$8.05 per 1,000 items"/><circle cx="259.6" cy="151.1" r="6" class="dot k-open"><title>gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770
+$0.2517 per 1,000 items</title></circle><circle cx="259.6" cy="151.1" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770
+$0.2517 per 1,000 items"/><circle cx="262.7" cy="162.4" r="6" class="dot k-open"><title>deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695
+$0.2584 per 1,000 items</title></circle><circle cx="262.7" cy="162.4" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695
+$0.2584 per 1,000 items"/><circle cx="444.1" cy="165.0" r="6" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677
+$1.19 per 1,000 items</title></circle><circle cx="444.1" cy="165.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677
+$1.19 per 1,000 items"/><circle cx="283.1" cy="178.2" r="6" class="dot k-open"><title>deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590
+$0.3070 per 1,000 items</title></circle><circle cx="283.1" cy="178.2" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590
+$0.3070 per 1,000 items"/><circle cx="450.5" cy="183.7" r="6" class="dot k-open"><title>mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554
+$1.26 per 1,000 items</title></circle><circle cx="450.5" cy="183.7" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554
+$1.26 per 1,000 items"/><circle cx="361.4" cy="186.2" r="6" class="dot k-open"><title>llama_l · hosted · open weights
+Kendall tau vs experts 0.4537
+$0.5937 per 1,000 items</title></circle><circle cx="361.4" cy="186.2" r="12" class="hit" data-tip="llama_l · hosted · open weights
+Kendall tau vs experts 0.4537
+$0.5937 per 1,000 items"/><circle cx="336.4" cy="198.4" r="6" class="dot k-open"><title>glm_s · hosted · open weights
+Kendall tau vs experts 0.4456
+$0.4808 per 1,000 items</title></circle><circle cx="336.4" cy="198.4" r="12" class="hit" data-tip="glm_s · hosted · open weights
+Kendall tau vs experts 0.4456
+$0.4808 per 1,000 items"/><circle cx="273.5" cy="225.8" r="6" class="dot k-open"><title>mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275
+$0.2831 per 1,000 items</title></circle><circle cx="273.5" cy="225.8" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275
+$0.2831 per 1,000 items"/><circle cx="271.8" cy="237.6" r="6" class="dot k-open"><title>gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196
+$0.2791 per 1,000 items</title></circle><circle cx="271.8" cy="237.6" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196
+$0.2791 per 1,000 items"/><circle cx="512.8" cy="250.3" r="6" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111
+$2.12 per 1,000 items</title></circle><circle cx="512.8" cy="250.3" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111
+$2.12 per 1,000 items"/><circle cx="344.9" cy="257.4" r="6" class="dot k-open"><title>llama_m · hosted · open weights
+Kendall tau vs experts 0.4064
+$0.5167 per 1,000 items</title></circle><circle cx="344.9" cy="257.4" r="12" class="hit" data-tip="llama_m · hosted · open weights
+Kendall tau vs experts 0.4064
+$0.5167 per 1,000 items"/><circle cx="279.3" cy="337.5" r="6" class="dot k-open"><title>llama_s · hosted · open weights
+Kendall tau vs experts 0.3533
+$0.2973 per 1,000 items</title></circle><circle cx="279.3" cy="337.5" r="12" class="hit" data-tip="llama_s · hosted · open weights
+Kendall tau vs experts 0.3533
+$0.2973 per 1,000 items"/><circle cx="779.4" cy="73.8" r="11" class="ring"/><text x="779.4" y="55.8" text-anchor="middle" class="t-ink" font-size="11">anthropic_l · dearest</text><text x="642.8" y="42.5" text-anchor="middle" class="t-ink" font-size="11">openai_l · 1st</text></svg></div><div class="vn"><svg viewBox="0 0 400 430" role="img" aria-label="SummEval: cost against quality"><line x1="140.0" x2="140.0" y1="36" y2="338" class="grid"/><text x="140.0" y="390" text-anchor="middle" class="t-muted" font-size="14">$0.1</text><line x1="222.0" x2="222.0" y1="36" y2="338" class="grid"/><text x="222.0" y="390" text-anchor="middle" class="t-muted" font-size="14">$1</text><line x1="304.0" x2="304.0" y1="36" y2="338" class="grid"/><text x="304.0" y="390" text-anchor="middle" class="t-muted" font-size="14">$10</text><line x1="386.0" x2="386.0" y1="36" y2="338" class="grid"/><text x="386.0" y="390" text-anchor="middle" class="t-muted" font-size="14">$100</text><line x1="62" x2="386" y1="317.2" y2="317.2" class="grid"/><text x="56" y="321.2" text-anchor="end" class="t-muted" font-size="14">0.353</text><line x1="62" x2="386" y1="187.0" y2="187.0" class="grid"/><text x="56" y="191.0" text-anchor="end" class="t-muted" font-size="14">0.447</text><line x1="62" x2="386" y1="56.8" y2="56.8" class="grid"/><text x="56" y="60.8" text-anchor="end" class="t-muted" font-size="14">0.540</text><text x="263" y="424" text-anchor="middle" class="t-muted" font-size="15">cost per 1,000 items (log)</text><text x="0" y="26" class="t-muted" font-size="15">↑ Kendall tau vs experts</text><text x="98" y="390" text-anchor="middle" class="t-muted" font-size="14">free</text><line x1="110" x2="110" y1="36" y2="338" class="axis"/><text x="110" y="358.0" text-anchor="middle" class="t-muted" font-size="17">⫽</text><circle cx="98.0" cy="368.0" r="6" class="dot k-local"><title>bartscore · local · free
+Kendall tau vs experts 0.2562 · $0
+off the scale: far below the field</title></circle><circle cx="98.0" cy="368.0" r="12" class="hit" data-tip="bartscore · local · free
+Kendall tau vs experts 0.2562 · $0
+off the scale: far below the field"/><circle cx="287.8" cy="56.8" r="6" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398
+$6.35 per 1,000 items</title></circle><circle cx="287.8" cy="56.8" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398
+$6.35 per 1,000 items"/><circle cx="176.5" cy="58.7" r="6" class="dot k-open"><title>gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384
+$0.2784 per 1,000 items</title></circle><circle cx="176.5" cy="58.7" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384
+$0.2784 per 1,000 items"/><circle cx="328.8" cy="72.9" r="6" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283
+$20.08 per 1,000 items</title></circle><circle cx="328.8" cy="72.9" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283
+$20.08 per 1,000 items"/><circle cx="316.4" cy="73.4" r="6" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279
+$14.15 per 1,000 items</title></circle><circle cx="316.4" cy="73.4" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279
+$14.15 per 1,000 items"/><circle cx="275.1" cy="83.8" r="6" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204
+$4.44 per 1,000 items</title></circle><circle cx="275.1" cy="83.8" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204
+$4.44 per 1,000 items"/><circle cx="188.0" cy="85.5" r="6" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192
+$0.3845 per 1,000 items</title></circle><circle cx="188.0" cy="85.5" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192
+$0.3845 per 1,000 items"/><circle cx="226.8" cy="88.6" r="6" class="dot k-open"><title>glm_m · hosted · open weights
+Kendall tau vs experts 0.5170
+$1.14 per 1,000 items</title></circle><circle cx="226.8" cy="88.6" r="12" class="hit" data-tip="glm_m · hosted · open weights
+Kendall tau vs experts 0.5170
+$1.14 per 1,000 items"/><circle cx="224.9" cy="101.9" r="6" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075
+$1.08 per 1,000 items</title></circle><circle cx="224.9" cy="101.9" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075
+$1.08 per 1,000 items"/><circle cx="253.9" cy="124.1" r="6" class="dot k-open"><title>glm_l · hosted · open weights
+Kendall tau vs experts 0.4916
+$2.45 per 1,000 items</title></circle><circle cx="253.9" cy="124.1" r="12" class="hit" data-tip="glm_l · hosted · open weights
+Kendall tau vs experts 0.4916
+$2.45 per 1,000 items"/><circle cx="212.7" cy="131.7" r="6" class="dot k-open"><title>deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861
+$0.7711 per 1,000 items</title></circle><circle cx="212.7" cy="131.7" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861
+$0.7711 per 1,000 items"/><circle cx="263.8" cy="135.2" r="6" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836
+$3.24 per 1,000 items</title></circle><circle cx="263.8" cy="135.2" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836
+$3.24 per 1,000 items"/><circle cx="296.3" cy="139.9" r="6" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802
+$8.05 per 1,000 items</title></circle><circle cx="296.3" cy="139.9" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802
+$8.05 per 1,000 items"/><circle cx="172.9" cy="144.5" r="6" class="dot k-open"><title>gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770
+$0.2517 per 1,000 items</title></circle><circle cx="172.9" cy="144.5" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770
+$0.2517 per 1,000 items"/><circle cx="173.8" cy="154.9" r="6" class="dot k-open"><title>deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695
+$0.2584 per 1,000 items</title></circle><circle cx="173.8" cy="154.9" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695
+$0.2584 per 1,000 items"/><circle cx="228.2" cy="157.4" r="6" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677
+$1.19 per 1,000 items</title></circle><circle cx="228.2" cy="157.4" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677
+$1.19 per 1,000 items"/><circle cx="179.9" cy="169.5" r="6" class="dot k-open"><title>deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590
+$0.3070 per 1,000 items</title></circle><circle cx="179.9" cy="169.5" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590
+$0.3070 per 1,000 items"/><circle cx="230.1" cy="174.7" r="6" class="dot k-open"><title>mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554
+$1.26 per 1,000 items</title></circle><circle cx="230.1" cy="174.7" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554
+$1.26 per 1,000 items"/><circle cx="203.4" cy="177.0" r="6" class="dot k-open"><title>llama_l · hosted · open weights
+Kendall tau vs experts 0.4537
+$0.5937 per 1,000 items</title></circle><circle cx="203.4" cy="177.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+Kendall tau vs experts 0.4537
+$0.5937 per 1,000 items"/><circle cx="195.9" cy="188.3" r="6" class="dot k-open"><title>glm_s · hosted · open weights
+Kendall tau vs experts 0.4456
+$0.4808 per 1,000 items</title></circle><circle cx="195.9" cy="188.3" r="12" class="hit" data-tip="glm_s · hosted · open weights
+Kendall tau vs experts 0.4456
+$0.4808 per 1,000 items"/><circle cx="177.1" cy="213.6" r="6" class="dot k-open"><title>mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275
+$0.2831 per 1,000 items</title></circle><circle cx="177.1" cy="213.6" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275
+$0.2831 per 1,000 items"/><circle cx="176.5" cy="224.6" r="6" class="dot k-open"><title>gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196
+$0.2791 per 1,000 items</title></circle><circle cx="176.5" cy="224.6" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196
+$0.2791 per 1,000 items"/><circle cx="248.8" cy="236.4" r="6" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111
+$2.12 per 1,000 items</title></circle><circle cx="248.8" cy="236.4" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111
+$2.12 per 1,000 items"/><circle cx="198.5" cy="243.0" r="6" class="dot k-open"><title>llama_m · hosted · open weights
+Kendall tau vs experts 0.4064
+$0.5167 per 1,000 items</title></circle><circle cx="198.5" cy="243.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+Kendall tau vs experts 0.4064
+$0.5167 per 1,000 items"/><circle cx="178.8" cy="317.2" r="6" class="dot k-open"><title>llama_s · hosted · open weights
+Kendall tau vs experts 0.3533
+$0.2973 per 1,000 items</title></circle><circle cx="178.8" cy="317.2" r="12" class="hit" data-tip="llama_s · hosted · open weights
+Kendall tau vs experts 0.3533
+$0.2973 per 1,000 items"/><circle cx="328.8" cy="72.9" r="11" class="ring"/><text x="288.4" y="102.9" text-anchor="middle" class="t-ink" font-size="15">anthropic_l · dearest</text><text x="287.8" y="42.8" text-anchor="middle" class="t-ink" font-size="15">openai_l · 1st</text></svg></div><figcaption>Billed cost per 1,000 items, read from the provider's response, against Kendall tau vs experts. Free models sit in the left lane. A dot below the ⫽ break sits far below the rest, off the scale; tap it for its score.</figcaption></div>
+</div></section>
+<section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
+  <h2>What this experiment found.</h2>
+  <ol class="findings"><li><div><h3>Every LLM judge beats BARTScore, the best free metric measured.</h3><p>The weakest judge, llama_s, scores 0.3533; the best free scorer, bartscore, 0.2562. In the paired test BARTScore is separated from all 24 judges, all of them ahead.</p></div></li><li><div><h3>An open-weight judge ties the leader.</h3><p>gemma_l scores 0.5384 against openai_l&#x27;s 0.5398, and the leader cannot be separated from it or from 4 others.</p></div></li><li><div><h3>The dearest model finished 3rd of 31.</h3><p>anthropic_l billed $2.01 for 100 items. The cheapest model statistically tied with the leader, gemma_l, cost 72× less.</p></div></li><li><div><h3>The best judges come close to a single expert, and stay below one.</h3><p>Scored against the mean of two experts, as one expert is against the other two, the best judge reaches 0.5195 — 93% of one expert&#x27;s 0.5587 (95% interval 89–97%), and the gap excludes zero. It is the best of 24, chosen on the same articles. BARTScore reaches 44%.</p></div></li><li><div><h3>The order is stable; the winner is not.</h3><p>Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, but name the same unique winner only 21% of the time.</p></div></li><li><div><h3>This repository&#x27;s own metric agrees with experts less than ROUGE does.</h3><p>coverage agrees with the experts at τ 0.1011, below ROUGE-1&#x27;s 0.1487.</p></div></li></ol>
+</div></section>
+
+<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>
+  <div class="lesson"><h2>Silver is not gold.</h2><p>The best of the 24 judges agrees with the experts at τ 0.5398 — better than any free scorer measured, and, against two experts, 93% of one expert's agreement with the other two. An LLM judge is a silver reference. This experiment is what checking one against a gold set looks like.</p><a class="btn" href="../method.html#gold">This habit, in the method →</a></div>
+</div></section>
+<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
+  <h2>Check it yourself.</h2>
+  <div class="cols">
+    <div class="prose">
+      <p>The 7 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$7.03</strong> when measured and rerun with one OpenRouter key.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/summeval-judging">This example's code</a></div>
+    </div>
+<pre class="term"><span class="p">$ </span>make plan      EXP=summeval
+<span class="p">$ </span>make data      EXP=summeval
+<span class="p">$ </span>make reproduce EXP=summeval LEVEL=local
+<span class="c"># with OPENROUTER_API_KEY set</span>
+<span class="p">$ </span>make reproduce EXP=summeval LEVEL=hosted
+<span class="p">$ </span>make compare   EXP=summeval</pre>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap foot">
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="26" height="26"><span>eval-harness</span></a>
+      <p>Is the ranking real, or a lucky sample?<br>Every number here is recomputed from the committed runs on each build.</p>
+    </div>
+    <nav class="foot-col" aria-label="Personal projects">
+      <h2>Personal projects</h2>
+      <a href="https://www.orrerylearn.com/?utm_source=eval-harness&amp;utm_medium=referral&amp;utm_content=footer" data-umami-event="outbound" data-umami-event-target="orrery" rel="noopener"><b>Orrery</b><span>A solar system explorer for the browser</span></a><a href="https://www.humancopilot.eu/?utm_source=eval-harness&amp;utm_medium=referral&amp;utm_content=footer" data-umami-event="outbound" data-umami-event-target="humancopilot" rel="noopener"><b>Human Copilot</b><span>Advisory for technology leaders</span></a><a href="https://devwhateverops.com/?utm_source=eval-harness&amp;utm_medium=referral&amp;utm_content=footer" data-umami-event="outbound" data-umami-event-target="devwhateverops" rel="noopener"><b>DevWhateverOps</b><span>A manifesto for engineers who build end to end</span></a>
+    </nav>
+    <nav class="foot-col" aria-label="Elsewhere">
+      <h2>Elsewhere</h2>
+      <a href="https://www.linkedin.com/in/markodragoljevic" data-umami-event="outbound" data-umami-event-target="linkedin" rel="noopener me">LinkedIn</a><a href="https://medium.com/@marko.dragoljevic" data-umami-event="outbound" data-umami-event-target="medium" rel="noopener me">Medium</a><a href="https://github.com/chipi" data-umami-event="outbound" data-umami-event-target="github" rel="noopener me">GitHub</a><a href="https://www.markodragoljevic.com/" data-umami-event="outbound" data-umami-event-target="underwater-photography" rel="noopener me">Underwater photography</a>
+      <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
+    </nav>
+  </div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="../docs/DATA/">Data &amp; licences</a></span><span>Cookieless, self-hosted analytics. No cookies, no tracking across sites.</span></div>
+</div></footer>
+<div id="tip" role="tooltip"></div>
+<script>
+document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
+const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
+const tip=document.getElementById('tip');
+function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
+document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
+document.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'||!tip.classList.contains('on'))return;place(ev.clientX,ev.clientY);});
+document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='touch'&&ev.target.closest('[data-tip]'))tip.classList.remove('on');});
+// Touch: a tap shows the tip where the finger is; the next tap elsewhere, or a scroll, hides it.
+document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='touch')return;const t=ev.target.closest('[data-tip]');if(!t){tip.classList.remove('on');return;}tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
+addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
+const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
+</script>
+</body>
+</html>

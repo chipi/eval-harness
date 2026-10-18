@@ -19,8 +19,8 @@
 > the result.
 
 
-> **This is one of five experiments.** What all five agree on — and the four
-> places they disagree with the conventional reading of a leaderboard — is in
+> **This is one of six experiments.** What all six agree on — and where they disagree
+> with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ---
@@ -70,7 +70,7 @@ scores at 52 GB and GLM-4.6 at 714 GB**, and like them it is not separated from 
 winner. So DBpedia now has a $0 answer at every size: a 438 MB classifier on a CPU, or a
 52 GB open-weight LLM. Neither needs a proprietary model.
 
-*Cross-cutting context for all five experiments:
+*Cross-cutting context for all six experiments:
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
 
 ### What these experiments specifically found

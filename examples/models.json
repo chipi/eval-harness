@@ -1,7 +1,7 @@
 {
   "_comment": [
     "Every hosted alias the example configs use, and the OpenRouter model it named when",
-    "the committed runs were measured. One table for all five examples.",
+    "the committed runs were measured. One table for all six examples.",
     "",
     "Two ways to reach these models, chosen by `_shared/gateway.py` at call time:",
     "  * your own LiteLLM proxy -- LITELLM_BASE_URL + LITELLM_API_KEY; the proxy owns the",
@@ -36,6 +36,7 @@
     "eval-opus-5": "openrouter/anthropic/claude-opus-5",
     "eval-qwen-37plus": "openrouter/qwen/qwen3.7-plus",
     "eval-qwen-3max": "openrouter/qwen/qwen3-max",
-    "eval-qwen-flash": "openrouter/qwen/qwen3.8-flash"
+    "eval-qwen-flash": "openrouter/qwen/qwen3.8-flash",
+    "eval-qwen-37max": "openrouter/qwen/qwen3.7-max"
   }
 }

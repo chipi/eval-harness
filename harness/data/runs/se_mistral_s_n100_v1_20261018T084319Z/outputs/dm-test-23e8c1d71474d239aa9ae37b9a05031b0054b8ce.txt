@@ -1,0 +1,27 @@
+Here is the JSON object with the ratings for each summary:
+
+```json
+{
+  "coherence": [2, 4, 5, 4, 4, 4, 5, 4, 2, 3, 5, 5, 4, 5, 4, 2],
+  "consistency": [2, 5, 5, 5, 5, 5, 5, 5, 3, 5, 5, 5, 5, 5, 5, 2],
+  "fluency": [3, 5, 5, 5, 5, 5, 4, 5, 3, 5, 5, 5, 5, 5, 5, 3],
+  "relevance": [3, 4, 5, 4, 5, 4, 5, 4, 2, 4, 5, 5, 5, 5, 4, 2]
+}
+```
+
+### Explanation of key ratings:
+- **Summary 1**: Low coherence (repetition of "the foxes host the foxes") and consistency (incorrect match day).
+- **Summary 2**: High consistency and fluency but lacks some key details (e.g., Pearson's quotes).
+- **Summary 3**: Excellent coherence, consistency, and relevance.
+- **Summary 4**: Good but slightly less detailed than others.
+- **Summary 5**: High relevance but slightly less coherent due to missing Pearson's quotes.
+- **Summary 6**: Good but lacks some context (e.g., back-to-back wins).
+- **Summary 7**: Excellent but slightly less fluent due to excessive hyphens.
+- **Summary 8**: Good but lacks some key details (e.g., Vardy's goal).
+- **Summary 9**: Low coherence (repetitive) and consistency (hallucinated quote).
+- **Summary 10**: Good but slightly less detailed than others.
+- **Summary 11 & 12**: Nearly identical, excellent in all dimensions.
+- **Summary 13**: Good but slightly less fluent (e.g., "West Brom on Saturday" is ambiguous).
+- **Summary 14**: Excellent but slightly less relevant (omits "bottom of the table").
+- **Summary 15**: Good but slightly less coherent (missing Pearson's full message).
+- **Summary 16**: Low coherence (repetition of "Swansea") and consistency (incorrect host team).
