@@ -5,6 +5,15 @@ __pycache__/
 *.pyc
 .DS_Store
 
+# Secrets: no env file is ever committed, anywhere in the tree. harness/.gitignore covered
+# only harness/.env, so a .env beside an example, at the root or named .env.local was
+# committable. The templates are the one exception.
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
 # Each example provisions its own interpreter (uv: pyproject + uv.lock + .python-version),
 # so an example cannot bleed into a sibling. The environments themselves are not artifacts.
 examples/*/.venv/
