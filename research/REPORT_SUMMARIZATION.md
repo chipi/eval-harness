@@ -733,6 +733,10 @@ higher price tier does not buy cleaner output — worth checking before paying f
 
 ## 5. What this experiment cannot say
 
+- **How well `coverage` tracks what a person prefers.** Measured since on SummEval, against
+  expert judgement of 1,600 summaries, it agrees at τ 0.1011, below plain ROUGE-1 (0.1487)
+  ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) §3.3). The comparisons here are separations under
+  `coverage`; a lead under it is weaker evidence of a better summary than its size suggests.
 - **Which model is best.** 34 of 276 pairs separate on the primary facet, and none of them
   are inside the top six. The output is a set, not a winner.
 - **Whether the ordering would hold on another 200 articles.** Measured, and it largely

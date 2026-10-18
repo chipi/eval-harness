@@ -106,7 +106,8 @@ def chapters(H, f: dict) -> list:
          "title": "An eval is an experiment.",
          "short": "Vary one thing. Record everything else.",
          "story": (f"<p>The same {max(x['n_hosted'] for x in exps)} hosted models (the cheapest twelve on SciFact) ran on {H.word(len(exps))} tasks with one prompt per "
-                   "task, at temperature 0 with reasoning off — so when a model's score differs "
+                   "task, at temperature 0 with reasoning off (on SummEval, Qwen's large slot is "
+                   "a stand-in, qwen37max) — so when a model's score differs "
                    "between two tasks, the task is the only thing that changed.</p>"
                    "<p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the "
                    "prompt and the scoring code, the model behind the alias, library versions, "
@@ -129,7 +130,7 @@ def chapters(H, f: dict) -> list:
                    "<p>No check in the harness could see it: every one compared the repository "
                    "with itself. One <strong>calibration row</strong> — a known baseline against its "
                    "published value — caught it. Now every experiment has one, and "
-                   f"{f['calibration_consistent']} of {len(f['calibration'])} match the literature.</p>"),
+                   f"{f['calibration_consistent']} of {len(f['calibration'])} match the literature on their averages.</p>"),
          "habit": "Freeze the data and hash it, so a number always means the same items. Then "
                   "check your sample against the population it claims to represent.",
          "tool": ("make dataset-create · make dataset-materialize",
@@ -471,8 +472,9 @@ def experiment_lesson(H, x: dict) -> tuple:
                 "annotation, not the task.")
     if slug == "summeval":
         return ("gold", "Silver is not gold.",
-                H.q("The best of the 24 judges agrees with the experts at τ 0.5398: better than "
-                    "any free metric, and still far from agreement.", JUDGE)
+                H.q("The best of the 24 judges agrees with the experts at τ 0.5398 — better than "
+                    "any free scorer measured, and, against two experts, 93% of one expert's "
+                    "agreement with the other two.", JUDGE)
                 + " An LLM judge is a silver reference. This experiment is what checking one "
                 "against a gold set looks like.")
     return ("noise", "Measure the noise before the difference.",

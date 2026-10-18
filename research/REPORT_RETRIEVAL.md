@@ -420,7 +420,8 @@ twelve are within 4 points of one another — and none is within 4 points of the
 Money spent on a better reranker there buys almost
 nothing; money spent on the retriever raises the cap itself.
 
-**The tie is the recurring result across all four examples in this repo.** Summarisation:
+**The tie is the recurring result across the four examples that existed when this was
+written** (five of the six experiments now; see the synthesis). Summarisation:
 the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with three others. DBpedia: a leader
 tied with nineteen, across a 115× price range (both per
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs). NER:

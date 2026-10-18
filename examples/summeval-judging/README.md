@@ -43,7 +43,7 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 
 | arm | what it is |
 |---|---|
-| 24 hosted LLM judges | the same 24 models as every other experiment; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
+| 24 hosted LLM judges | the same 24 models as the other experiments, with `qwen37max` in place of `qwen_l`, whose model is no longer served; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
 | `rouge1`, `rouge2`, `rougeL` | ROUGE F1 of each summary against each of the 11 human references, averaged |
 | `coverage` | this repository's summarisation metric, imported from that example's own scorer, averaged over the references |
 | `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation experiment measured; local, CPU |
@@ -87,9 +87,11 @@ Three things already worth saying:
   `bart-large-cnn`, source → summary. So it is reported as measured, not counted as a
   calibration row. (ROUGE-2 reproduces too:
   τ 0.158 against 0.161 published. ROUGE-L does not quite: 0.143 against 0.128 on average,
-  and 0.153 against 0.099 on coherence. That is inside the interval over articles, but G-Eval
-  scored these same articles, so the gap is one of protocol rather than sample; the paper does
-  not say which ROUGE-L it ran.)
+  and 0.153 against 0.099 on coherence. The average is inside the 95% interval over
+  articles; the coherence gap (0.054) is outside its interval (±0.042) and passes only with
+  the 0.02 allowance the repository's calibration rule adds for protocol differences. G-Eval
+  scored these same articles, so the gap is one of protocol, not sample; the paper does not
+  say which ROUGE-L it ran.)
 
 - **This repository's own `coverage` agrees with the experts less than plain ROUGE-1**
   (τ 0.101 against 0.149), most of the gap in consistency and fluency. Coverage was built to
@@ -102,8 +104,8 @@ Three things already worth saying:
 All 24 hosted judges are measured ($7.03 billed). Every one is separated from, and ahead of,
 BARTScore; the top is a six-way tie led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
-expert is against the other two, the best judges reach 93% of a human's agreement
-([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
+expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
+articles) ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
 what changed while measuring (a retired model, a model that forces reasoning, moved prices)
 are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
 
@@ -121,6 +123,12 @@ make leaderboard DATASET_ID=summeval_100
 ```
 
 ## What this cannot say
+
+- **No evaluator trained to judge summaries was run.** The free arms are metrics, a length
+  and a random floor, and BARTScore, a summariser scored by likelihood. UniEval, a free
+  trained evaluator, reports τ 0.377 in G-Eval's table and is the next arm to run.
+- **How the prompt was developed is not recorded.** There is no dev slice, so nothing here
+  is reported on articles the prompt and parser were not written against.
 
 - **n = 100 articles**, and every summary is from a 2019-era system; modern summaries are
   more fluent, so a judge's skill at catching 2019 failures may not transfer.

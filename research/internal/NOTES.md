@@ -2611,3 +2611,47 @@ and only two cite the 20 articles; nothing in this journal names a third.
 were wrong (a copied cell, a mislabelled rate), one had the wrong unit, and the rest held. The
 open-items list was worth closing for the ones that held, too: they are now stated with their
 evidence instead of carried.
+
+### 2026-10-18 · 65 — SummEval, the sixth experiment, and what reviewing it corrected
+
+SummEval asks the 24 hosted models to *judge* summaries against three experts (Kendall
+τ-b per article), beside seven free scorers. It is the first experiment where every free
+arm measured is separated below every LLM: the best judge reaches τ 0.5398 and the best
+free scorer, BARTScore, 0.2562. A human ceiling, computed from the original release's
+per-expert scores, puts the best judges at 93% (89–97%) of one expert's agreement with the
+other two. `REPORT_SUMMEVAL.md`, `docs/evidence/summeval_human_ceiling.json`.
+
+Bringing it into the synthesis and the site meant recomputing every cross-experiment count,
+and that recomputation, plus two independent reviews of the branch, found these:
+
+1. **CORRECTION.** "A 64 GB machine matched the unlimited-hardware answer on four of five
+   tasks" was three of five: four was the 128 GB count. It is four of six now. The sentence
+   was on the site's home page and in the README.
+2. **CORRECTION.** The experiments page said the dearest model finished "in four, behind
+   something free". It was three. The count is computed from the runs now, not typed.
+3. **CORRECTION.** The README's "52× the price" for summarisation is 143× ($1.9652 /
+   $0.0137, billed).
+4. **CORRECTION.** Few-NERD's cost slope had been fitted to the un-rescored runs (+0.0405,
+   r = 0.49) while every other Few-NERD figure is rescored (+0.0407, r = 0.50).
+5. **CORRECTION.** The papers index said 24 cited works while listing 25. It is 28 now.
+6. **CORRECTION, of my own draft.** `qwen_l`'s model was said to be "retired on
+   2026-10-09". No source for the date was found. What is known is that the endpoint list is
+   empty (2026-10-18) and it was unlisted on 2026-10-15; the report says only that.
+7. **CORRECTION, of my own draft.** SummEval's stability was compared with the
+   summarisation experiment's all-arm figure (0.443). The like-for-like figure for the same
+   24 hosted models is 0.333.
+8. **CORRECTION, of my own draft.** "Nothing was trained for this task" was false: UniEval
+   is a free evaluator trained for exactly these dimensions, and it was not run. Every
+   statement now says "every free scorer measured", and UniEval is the next arm.
+9. **CORRECTION, of my own draft.** ROUGE-L's coherence gap (0.054) was said to sit inside
+   its 95% interval (±0.042). It does not, and passes only with the rule's 0.02 allowance.
+10. **OPEN.** The summarisation experiment ranks by `coverage`, which on SummEval agrees
+    with experts at τ 0.1011, below ROUGE-1's 0.1487. Its findings are separations under
+    that metric; how far a `coverage` lead tracks a person's preference is now a stated
+    limitation, not a measured one.
+
+**The lesson.** Items 1–5 were in published copy and had survived earlier reviews; adding
+an experiment forced every count to be recomputed, and a recomputed count does not inherit
+an old mistake. Items 6–9 were mine, written while adding the experiment, and each was
+caught by a check or a review before merge — the same instrument this repository exists
+to build, pointed at its own prose.

@@ -136,7 +136,8 @@ judge is separated from, and ahead of, the best free scorer: BARTScore, a model 
 on this corpus to write summaries, reaches τ **0.2562** against `openai_l`'s **0.5398**. The
 top is a six-way tie, and `gemma_l` — open weights, $0.0278 for all 100 articles — sits
 0.0013 behind the leader. Scored against the mean of two experts, as one expert is against
-the other two, the best judges reach 93% of a human's agreement, BARTScore 44%.
+the other two, the best judges reach 93% of a human's agreement (interval 89–97%, the best
+of 24 chosen on the same articles), BARTScore 44%.
 
 It also measures the instrument: ROUGE agrees with the experts at τ 0.14–0.16, and this
 repository's own `coverage` at **0.1011**, below ROUGE-1. One model could not run as
@@ -196,7 +197,8 @@ Every example has a handover for what was not run and why, in
 [`../research/`](../research). What remains is five frontier rerankers on SciFact, about
 $12 against the retrieval sweep's $1.94 billed, and the four hosted summarisation arms on
 the DailyMail slice. The rate-limited NER arm ran on 2026-10-01, and the six local ML arms
-that needed a machine able to load pickle checkpoints ran on 2026-09-30.
+that needed a machine able to load pickle checkpoints ran on 2026-09-30. SummEval has not
+run a free evaluator trained to judge summaries (UniEval); it is the next arm there.
 
 ---
 

@@ -20,8 +20,8 @@ prediction and the three hosted repeat runs, the repo has spent $20.10.*
 
 > **Updated 2026-09-30 with the six local arms that could not run on the original machine.**
 > They changed two headline claims. "Every model fine-tuned on its dataset ranked first"
-> was 3 of 3; with eight such arms it is *the best one in each experiment ranked first or
-> tied for it* — DBpedia's fine-tune ties the top group, it does not beat it. And on AG
+> was 3 of 3; with eight such arms it is *the best one in each experiment ranked first, or
+> not separable from first* — DBpedia's fine-tune ties the top group, it does not beat it. And on AG
 > News the fine-tuned lead is now measured as mostly agreement with disputed gold labels.
 > No conclusion about price reversed.
 
@@ -81,7 +81,8 @@ between −0.4% and +7.4% of quality — and a 64 GB machine reached the same an
 unlimited hardware on four of the six tasks** (two of the four at int8 or int4, which was
 not measured). On the one task where no free arm measured
 was trained for the job — judging summaries — the best LLM judges reached 93% of a human
-expert's agreement, and the best free metric measured 44%.
+expert's agreement (95% interval 89–97%; the best of 24, chosen on the same articles), and
+the best free metric measured 44%.
 
 **The production question — should you fine-tune a small model instead of paying an
 LLM?** Yes, for a task you can define and label: in all four experiments with a model
@@ -117,7 +118,7 @@ models, not workstation ones. But capping the budget costs almost no quality:
 (summarisation, a 510 GB model replaced by a 70 GB one) and nothing on the other five;
 halving it again to 64 GB also costs SciFact **0.0074** (`glm_s` 0.7437 → `gemma_m` 0.7363,
 a gap its own test cannot resolve). So a 64 GB machine matched the unlimited-hardware
-answer on four of the six tasks.
+answer on four of the six tasks, two of them at int8 or int4, which was not measured.
 
 The counter-argument is measured too: one hosted model covers all six tasks at the 71st
 percentile with a prompt change, where each local model does exactly one. Full reasoning,
@@ -130,7 +131,7 @@ the three-tier breakdown, the memory budgets, and four ways it could be wrong:
 |---|---|---|
 | **1** | **The dearest arm is never first** | 6 of 6. It ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD), 2nd of 19 (SciFact) and 3rd of 31 (SummEval). But the dearest still beats the *cheapest* in 5 of 6 — price separates bad from mediocre, then stops. The best paid arm was **mid-tier** in four of six; the large tier won once, on SummEval, inside a six-way tie. |
 | **2** | **The top is a group, not a podium** | Every winner leads on the point estimate against **100%** of its declared family, and separates from only **30–100%**. Few-NERD produced a real podium (separated from 27 of 27) and AG News nearly one (26 of 29); DBpedia's winner separates from 8 of 27. |
-| **3** | **The axis is trained-on-your-task, not free-vs-paid** | A free arm ranks first in 3 of 6 (one by 0.0001) and is statistically tied with first in 2 more — it never loses once a free arm *trained for the task* can run. Where none exists, it loses to everything: on SummEval the best free scorer is separated below all 24 judges. Two matched pairs at price zero on both sides: `span_marker` 0.7674 vs `gliner` 0.4540 — **+0.3134 from exposure alone** — and BART fine-tuned on CNN/DailyMail vs on XSum, **1st vs 29th of 29**. |
+| **3** | **The axis is trained-on-your-task, not free-vs-paid** | A free arm ranks first in 3 of 6 (one by 0.0001) and is statistically tied with first in 2 more — it never loses once a free arm *trained for the task* can run. Where none was measured, it loses to everything: on SummEval the best free scorer measured is separated below all 24 judges (a free evaluator trained for the task, UniEval, was not run). Two matched pairs at price zero on both sides: `span_marker` 0.7674 vs `gliner` 0.4540 — **+0.3134 from exposure alone** — and BART fine-tuned on CNN/DailyMail vs on XSum, **1st vs 29th of 29**. |
 | **4** | **A pilot correlates beautifully and picks the wrong winner** | ρ(dev, full) = **0.72–0.90** in every experiment that ran a pilot, and the pilot chose wrong in **3 of 5** (SummEval ran none). On SciFact it chose the **tenth-best of nineteen**; on AG News, now, the fifth of thirty. |
 | **5** | **The gold is wrong, in every corpus that was checked** | 4 for 4 where anyone looked; 2 were never checked. SummEval's experts gave different scores to 41 of 44 groups of identical summaries. Few-NERD: **34 of 768** gold entity types rejected by ≥80% of the 26 learned arms. DBpedia's top eleven are separated by four items, three of which the field disputes. On AG News the fine-tuned lead sits almost entirely in **17 items** the hosted field disputes — fine-tunes agree with the gold on 12–14, `anthropic_l` on 0 (a set selected by the hosted arms' own errors; classification §3.4 says what it does and does not show). |
 | **6** | **The instrument broke before the models got interesting** | In five of six. 8 defects tabulated; **3 moved a single arm further than the gap separating most of the field** — the label parser (8.6 accuracy points), the unparsed-as-empty rule (+0.0214 f1), the reasoning flag (0.6124 → 0.6991). |
@@ -161,7 +162,7 @@ Four more findings that travel:
 - **The cheapest paid arm you cannot statistically separate from the best is 7.6×–143×
   cheaper than the dearest** in four experiments (72× on SummEval) — and on AG News, where
   the fine-tuned leader now ties with only one paid arm, 2.5×. Few-NERD has none.
-- **Cost does not buy speed.** log(cost) vs latency correlates at **r = −0.19 to +0.20** in
+- **Cost rarely buys speed.** log(cost) vs latency correlates at **r = −0.19 to +0.20** in
   five experiments — uncorrelated, negative twice. On SummEval it is **−0.47**: the dearer
   judges answered faster there, which this report does not explain. `bert_mini`
   (7 ms) runs 61× to 1,078× faster than the hosted field, timed on the same Mac. The bert-base fine-tunes (76–90 ms) come out roughly
@@ -182,7 +183,8 @@ Four more findings that travel:
    another corpus's summaries finished last.
 3. **If you cannot, self-host an open-weight LLM before renting one.** A proprietary model
    never separated from the best open-weight arm in any experiment, and **a 64 GB machine
-   matched the unlimited-hardware answer on four of the six tasks** (128 GB on five).
+   matched the unlimited-hardware answer on four of the six tasks** (128 GB on five; two of
+   the four at int8 or int4, unmeasured).
 4. **Never buy the most expensive arm.** In three experiments it was *worse* than free, and
    on SummEval a judge tied with the leader cost 1/72 of it.
 5. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
@@ -190,7 +192,8 @@ Four more findings that travel:
 6. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
 
 **When paying more is right:** you cannot label data; the task is unlike anything a small
-model has seen — SummEval is one such case; a wrong answer is expensive; your volume
+model has seen — on SummEval no free scorer measured was trained for it; a wrong answer is
+expensive; your volume
 is low enough that the whole spread is rounding error (at 1,000 items/month the entire DBpedia range is $1.35); or
 engineering time costs more than the API. The claim is not that expensive models are bad —
 it is that **price stops predicting quality long before it stops rising.**
@@ -205,8 +208,8 @@ reports carry the per-task detail, the corrections, and what each one could not 
 
 ## 0. The production question: should you fine-tune a small model instead of paying an LLM?
 
-**Yes — for a task you can define and label. The best fine-tuned model is first or tied for
-first in 4 of 4, and it is not close on cost. But the answer depends entirely on one
+**Yes — for a task you can define and label. The best fine-tuned model is first, or not
+separable from first, in 4 of 4, and it is not close on cost. But the answer depends entirely on one
 variable, it is not model size, and on a saturated task it buys a tie rather than a win.
 On SummEval no model trained to judge was measured, and the only local model there — a
 summariser used as a judge — is separated below every LLM.**
@@ -749,7 +752,7 @@ tied (§2).
 Related, from the summarisation study: BART's lead over the best LLM was **0.0737 at n=20**
 and **0.00008 at n=200** — a 900× shrink. Same arms, same metric, more data.
 
-### 5. The gold is wrong, in every corpus that was checked
+### 5. The gold is wrong or noisy, in every corpus that was checked
 
 *Sources:* [NER §3.6](REPORT_NER.md) · [classification §3.4](REPORT_CLASSIFICATION.md)
 
@@ -786,7 +789,7 @@ under-counts label errors — and a leaderboard that includes them over-counts t
 
 ### 6. The instrument was broken before the models got interesting — in five of six
 
-*Sources: the Corrections section of each report, and [`NOTES.md`](internal/NOTES.md), 59 entries*
+*Sources: the Corrections section of each report, and [`NOTES.md`](internal/NOTES.md), 65 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -928,9 +931,10 @@ One row per experiment, since each says something different:
 - **SciFact: $2,288/month buys −0.2%** against $711/month, and the $711 arm buys **+3.4%
   over free** — a case where paying is defensible, and even there the free arm is not
   statistically separated from it.
-- **SummEval: $20,077/month buys −2.1%** against $6,350/month, and free is **−52.5%** — the
-  one experiment where paying is not optional. It does not have to be paid at that price:
-  `gemma_l`, tied with the leader, bills $278/month.
+- **SummEval: $20,077/month buys −2.1%** against $6,350/month, and the best free scorer
+  measured is **−52.5%** — the one experiment where no free arm measured comes close. Even
+  there the answer need not be rented: `gemma_l`, tied with the leader, has open weights and
+  bills $278/month rented.
 
 In no experiment did the most expensive option win. In three of six the free option
 ranked first, and on Few-NERD it is separated from everything.
@@ -1020,14 +1024,14 @@ cannot detect the difference.** AG News read "9 arms, `gemma_s`, 82× cheaper" u
 `anthropic_m`, the second-dearest, so the saving there is 2.5× — and the real answer on
 AG News is the free arm, as on Few-NERD, where no paid arm is indistinguishable from it.
 
-### Cost does not buy speed
+### Cost rarely buys speed
 
 Sorted by r. Latencies are mean seconds per item from the stored runs, except the
 re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-linux/`.
 
 | experiment | Pearson r, log(cost) vs latency (hosted) | hosted latency per item, min–max | fastest local arm, latency per item |
 |---|---|---|---|
-| Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `bartscore` 15.66 s (the rule-based ROUGE, 0.18 s) |
+| Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `bartscore` 15.66 s, the only learned local arm (the rule-based scorers take 0.18 s or less) |
 | Extraction · Few-NERD | **r = −0.19** | 0.79 – 10.25 s | `gliner` 0.17 s |
 | Summarisation · CNN/DM | r = −0.18 | 1.28 – 25.04 s | `bart_s` 3.39 s (`bart_l` 6.26 s), one Linux machine; `bart_l` 11.01 s on the Mac |
 | Classification · DBpedia | r = +0.02 | 0.44 – 12.35 s | `bert_base_fy` **0.087 s** |
@@ -1081,7 +1085,8 @@ Ordered by what they are worth, not by how obvious they are.
    architectural, and no model choice could recover it.
 2. **If you can label a few thousand examples, fine-tune a small model — on your own
    data.** The best fine-tune ranked first in three of six and third-equal, not separable
-   from the leader, in a fourth (DBpedia); SciFact and SummEval had none. It costs
+   from the leader, in a fourth (DBpedia); SciFact and SummEval had none fine-tuned for the
+   task. It costs
    **$0/month against up to $9,826/month**, with lower latency on classification —
    61×–1,078× for `bert_mini` against the hosted field on the same Mac, roughly 5×–140× for
    the bert-base fine-tunes timed elsewhere. On someone else's data of the same task it
@@ -1104,7 +1109,8 @@ Ordered by what they are worth, not by how obvious they are.
 
 **When paying more IS right**, and this report should not be read as saying never: when
 you cannot label data and the task is unlike anything a small model was trained on
-(SummEval measures that case: every LLM judge beat the best free metric measured); when the
+(on SummEval, where no free scorer measured was trained for it, every LLM judge beat the
+best one); when the
 quality
 difference is worth more than the bill (at 1,000 items/month the entire
 DBpedia spread is $1.35 and the analysis is not worth your time); when a single wrong
@@ -1145,6 +1151,10 @@ something other than the leaderboard.
 - **Each fine-tuned arm is one checkpoint.** DBpedia's tie and AG News's win are each a
   statement about one or three public fine-tunes, not about fine-tuning in general, and
   every one of them was tested on the distribution it was trained on.
+- **The summarisation experiment's own metric agrees with experts less than ROUGE-1.**
+  Measured on SummEval, `coverage` reaches τ 0.1011 against the experts, below ROUGE-1's
+  0.1487 (REPORT_SUMMEVAL §3.3). The summarisation findings are separations under that
+  metric; how far a `coverage` lead tracks what a person would prefer is that much weaker.
 - **Nothing here measures factual accuracy, safety, or instruction-following.** ROUGE is
   n-gram overlap; accuracy is label match. A confident, fluent, wrong answer scores well on
   several of these metrics, and the reports say so individually.
@@ -1188,4 +1198,4 @@ python scripts/summeval_analysis.py
 
 Terms, models, datasets and tests are defined in
 [`../docs/REFERENCE.md`](../docs/REFERENCE.md). The append-only journal of how each finding
-arrived — including the ones that were retracted — is [`NOTES.md`](internal/NOTES.md), 59 entries.
+arrived — including the ones that were retracted — is [`NOTES.md`](internal/NOTES.md), 65 entries.

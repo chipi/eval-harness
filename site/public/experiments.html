@@ -40,7 +40,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
     <div class="stat"><div class="n">6<small>/6</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">5<small>/6</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in 5 of the 6</div></div>
-    <div class="stat"><div class="n">10<small>/10</small></div><div class="l">calibration checks that match the published numbers</div></div>
+    <div class="stat"><div class="n">10<small>/10</small></div><div class="l">calibration checks that match the published numbers on average</div></div>
   </div>
 </div></section>
 
@@ -1290,7 +1290,7 @@ billed $2.01 for 100 items"/><circle cx="349.3" cy="74" r="11" class="ring"/><te
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not separable from first, in 5 of 6.</h3><p>Every one is under 2 GB and needs no GPU — $0 per item — against hosted models billing up to $2.01 for 100 items (anthropic_l, SummEval).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.</p></div></li>
-    <li><div><h3>Where no small model trained for your task exists, an LLM can earn its bill — but not the dearest one.</h3><p>Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%. The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader. One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
+    <li><div><h3>Where no free model measured was trained for your task, an LLM can earn its bill — but not the dearest one.</h3><p>Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%. The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader. One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes. On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus. The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -1505,7 +1505,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
         <a class="btn" href="docs/PROTOCOL/">The protocol</a>
         <a class="btn" href="docs/">Full documentation</a>
       </div>
-      <p class="note" style="margin-top:32px">Reviewed in five adversarial rounds, every correction kept: the <a href="https://github.com/chipi/eval-harness/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
+      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds, every correction kept: the <a href="https://github.com/chipi/eval-harness/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
     </div>
   </div>
 </div></section>

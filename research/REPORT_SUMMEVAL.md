@@ -27,7 +27,7 @@
 | **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries at once while an expert scored them one by one (§3.7). |
 | **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 25 arms. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
-| **Do I need an LLM here at all?** | **Yes, against every free scorer measured** — the first of six experiments where every free arm is separated below every LLM. Every one of the 24 judges is separated from BARTScore (§3.3). No evaluator trained on human ratings of summaries was run; UniEval, the free one G-Eval reports, has a published τ of 0.377, which would put it above the weakest judge here (§7). |
+| **Do I need an LLM here at all?** | **Yes, against every free scorer measured** — the first of six experiments where every free arm is separated below every LLM. Every one of the 24 judges is separated from BARTScore (§3.3). No evaluator trained to judge summaries was run; UniEval, the free one G-Eval reports, has a published τ of 0.377, which would put it above the weakest judge here (§7). |
 | **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there. But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
@@ -47,8 +47,8 @@
 - **The top is a crowd.** `openai_l` leads at τ 0.5398 and cannot be separated from five
   others; `gemma_l` sits 0.0013 behind it at 1/23 of the price. Four of the six are tied by
   a wide margin; the other two sit on a Holm boundary (§3.2).
-- **The large tier beats the small one in all eight families, but the ladder rises steadily
-  in only three.** Llama, Gemma and OpenAI rise with tier; DeepSeek, GLM and Mistral peak at
+- **The large tier beats the small one in all eight families — Qwen's by 0.0012, and with a
+  substituted model — but the ladder rises steadily in only three.** Llama, Gemma and OpenAI rise with tier; DeepSeek, GLM and Mistral peak at
   the medium tier, Anthropic's medium sits below its small, and Qwen's small leads its
   medium (§3.4). Tier is a price label, not a size: OpenAI's medium now costs more than its
   large.
@@ -179,10 +179,11 @@ METRIC=tau`): separated from all 30, behind every one of the 24 judges and ahead
 other free scorer. The weakest judge, `llama_s`, leads it by 0.0971; BARTScore wins only 33
 of 100 articles against it.
 
-This is the first of the six experiments where no free option is first or tied for first.
-In the other five, a free local model was. Here nothing in the field was trained to judge
-summaries — no arm was fine-tuned on SummEval — and a model that scores only how likely the
-summary is given the article (BARTScore) is far behind one asked to assess it.
+This is the first of the six experiments where no free arm measured is first, or not
+separable from first. In the other five, a free local model was. Here no arm measured was
+trained to judge summaries — none was fine-tuned on SummEval, and UniEval, a free trained
+evaluator, was not run — and a model that scores only how likely the summary is given the
+article (BARTScore) is far behind one asked to assess it.
 
 The free scorers rank as the summarisation experiment's own analysis would predict:
 BARTScore, which never sees a reference, beats every reference-based metric; plain ROUGE-1
@@ -355,11 +356,11 @@ between this experiment and the earlier five mix September and October prices.
 
 ## 7. NOT covered, NOT measured, NOT verified
 
-- **No evaluator trained on human ratings was run.** The free arms are reference metrics
+- **No evaluator trained to judge summaries was run.** The free arms are reference metrics
   (ROUGE, `coverage`), a length and a random floor, and BARTScore, a summariser scored by
   likelihood; none was trained to judge summaries. UniEval, the free trained evaluator in
   G-Eval's table, reports τ 0.377 (ρ 0.474) there, which would put it above the weakest
-  judges here. "Every judge beats every free scorer" is about the seven measured. UniEval is
+  judge here (`llama_s`, 0.3533), though under G-Eval's protocol, not this one. "Every judge beats every free scorer" is about the seven measured. UniEval is
   the next arm to run.
 
 - **n = 100 articles**, below the usual 200, and every summary is from a 2019-era system.

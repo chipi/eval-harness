@@ -590,7 +590,7 @@ def home(f: dict) -> str:
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers on average</div></div>
   </div>
   <div class="cards" style="margin-top:48px">{cards}</div>
   <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
@@ -660,7 +660,7 @@ def landing(f: dict) -> str:
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that match the published numbers on average</div></div>
   </div>
 </div></section>
 
@@ -694,7 +694,7 @@ def landing(f: dict) -> str:
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
-    <li><div><h3>Where no small model trained for your task exists, an LLM can earn its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
+    <li><div><h3>Where no free model measured was trained for your task, an LLM can earn its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -749,7 +749,7 @@ def landing(f: dict) -> str:
         <a class="btn" href="docs/PROTOCOL/">The protocol</a>
         <a class="btn" href="docs/">Full documentation</a>
       </div>
-      <p class="note" style="margin-top:32px">Reviewed in five adversarial rounds, every correction kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
+      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds, every correction kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
     </div>
   </div>
 </div></section>
@@ -868,10 +868,11 @@ def findings_for(x: dict, f: dict) -> list:
              f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
              f"the leader cannot be separated from it or from {x['n_tied'] - 1} others."),
             *common,
-            ("The best judges come close to a single expert.",
+            ("The best judges come close to a single expert, and stay below one.",
              q("Scored against the mean of two experts, as one expert is against the other two, "
-               "the best judge reaches 0.5195 — 93% of one expert's 0.5587. BARTScore reaches 44%.",
-               rep)),
+               "the best judge reaches 0.5195 — 93% of one expert's 0.5587 (95% interval 89–97%), "
+               "and the gap excludes zero. It is the best of 24, chosen on the same articles. "
+               "BARTScore reaches 44%.", rep)),
             ("The order is stable; the winner is not.",
              q("Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
                "but name the same unique winner only 21% of the time.", rep)),
@@ -950,7 +951,7 @@ OFF_NOTE = " A dot left of the ⫽ break sits far below the rest, off the scale;
 OFF_NOTE_Y = " A dot below the ⫽ break sits far below the rest, off the scale; tap it for its score."
 
 METRIC_GLOSS = {
-    "summarization": " — how much of the reference summary's wording the summary recovers, at the reference's length (ROUGE-Lsum recall, clipped); this repo's own, see the protocol. Higher is better",
+    "summarization": " — how much of the reference summary's wording the summary recovers, at the reference's length (ROUGE-Lsum recall, clipped); this repo's own, see the protocol. Higher is better. Measured against human experts on SummEval, it agrees with them less than ROUGE-1 does",
     "few-nerd": " — entities found with the right type, set-matched per sentence and averaged, on 8 coarse types; this repo's own, see the protocol. Higher is better",
     "summeval": " — how well a judge's scores order the 16 summaries of an article the way the experts' do (Kendall τ-b per article, averaged over four dimensions); the field's standard. 1 is perfect agreement, 0 none",
 }

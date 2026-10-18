@@ -117,7 +117,8 @@ def main() -> int:
         # A row is consistent only if the average AND every dimension are. The intervals
         # are over articles, and G-Eval scored these same 100, so a gap inside the interval
         # can still be a protocol difference rather than sampling: ROUGE-L's coherence sits
-        # 0.054 above the paper and inside its interval. The per-dimension values are kept
+        # 0.054 above the paper, outside its interval and inside interval + TOLERANCE. The
+        # per-dimension values are kept
         # so the reports can say so.
         ok = (cal.verdict(value, ci95, pub, TOLERANCE) == "consistent"
               and all(x["verdict"] == "consistent" for x in dims.values()))

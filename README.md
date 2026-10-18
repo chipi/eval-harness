@@ -35,7 +35,7 @@ It was built to answer four questions anyone building with AI ends up asking:
    GPU was first, or not separable from first, in five of the six experiments, but only on
    text like the text it was trained on. On the sixth, judging summaries, no free model
    measured was trained for the task, and the LLM earned its bill: the best judges reach 93% of a human expert's
-   agreement, the best free metric 44%.
+   agreement (the best of 24, interval 89–97%), the best free metric 44%.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
    quality. Here a proprietary model never separated from the best open-weight one, and
    a 64 GB machine matched the unlimited-hardware answer on four of the six tasks (two of
@@ -93,7 +93,7 @@ There are three separate environments. Install only the ones you need.
 | for | install once | then |
 | --- | --- | --- |
 | **the harness**: the demo, your own evals, `make verify` | `make -C harness install` | `make verify` from the repository root |
-| **the five worked examples** | [uv](https://docs.astral.sh/uv/). Each example gets its own uv environment, so its pinned libraries cannot disturb another's | `make data EXP=<name>` runs `uv sync` and fetches the data ([docs/REPRODUCE.md](docs/REPRODUCE.md)) |
+| **the six worked examples** | [uv](https://docs.astral.sh/uv/). Each example gets its own uv environment, so its pinned libraries cannot disturb another's | `make data EXP=<name>` runs `uv sync` and fetches the data ([docs/REPRODUCE.md](docs/REPRODUCE.md)) |
 | **the documentation site** | `harness/.venv/bin/pip install -r site/requirements-docs.txt` (MkDocs + Material, into the harness venv) | `source harness/.venv/bin/activate && make docs` writes `build/docs-site/` |
 
 `make docs` is the exception: it calls `mkdocs` from your `PATH`, which is why the venv

@@ -51,7 +51,9 @@ SummEval's rows need a note. Its sample is the benchmark, so the "±" there is t
 over the same 100 articles the paper scored, not sampling error against it: a gap inside it
 can still be a difference of protocol. ROUGE-1 and ROUGE-2 agree with the paper within 0.01
 on every one of the four dimensions; ROUGE-L agrees on average but is 0.054 above it on
-coherence, and the paper does not say which ROUGE-L it ran.
+coherence, outside that dimension's interval (±0.042) and inside it only with the 0.02
+allowance the rule adds for protocol differences; the paper does not say which ROUGE-L it
+ran.
 
 ## The hardware
 
