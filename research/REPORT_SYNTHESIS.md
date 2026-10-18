@@ -139,7 +139,8 @@ On summarisation the slope is *negative* across 24 arms and a 143× price range;
 the steepest, it is +7.4%.
 
 What the dearest arm in each experiment buys, at **1,000,000 items/month** as billed,
-sorted by its bill (highest first). The last column is its score relative to the cheaper
+sorted by its bill (highest first). An item is one call: on SummEval that is a whole
+article with its 16 summaries, which is why its bills lead the table. The last column is its score relative to the cheaper
 option named, so −8.9% means 8.9% below it:
 
 | experiment | dearest arm, $/month at 1M items | its quality vs the cheaper option (relative; − = worse) |

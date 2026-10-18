@@ -101,7 +101,9 @@ Three things already worth saying:
 
 All 24 hosted judges are measured ($7.03 billed). Every one is separated from, and ahead of,
 BARTScore; the top is a six-way tie led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
-cheapest member at $0.03 for all 100 articles. The full results, the significance tests and
+cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
+expert is against the other two, the best judges reach 93% of a human's agreement
+([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
 what changed while measuring (a retired model, a model that forces reasoning, moved prices)
 are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
 

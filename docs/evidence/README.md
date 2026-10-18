@@ -52,3 +52,14 @@ params. The `.json` records the results from 2026-09-30:
 
 The usage line is in the script's docstring. It needs the datasets materialised under
 `harness/data/materialized/` and network access to the Hub.
+
+## `summeval_human_ceiling.json` — how well one SummEval expert agrees with the other two
+
+Written by `examples/summeval-judging/human_ceiling.py` from the original SummEval release's
+per-expert scores (`model_annotations.aligned.jsonl`, MIT; its sha256 is in the file). It
+records one expert's Kendall τ against the mean of the other two, and every SummEval arm's τ
+against the same two-expert references, so that a judge's agreement can be read against a
+human's (REPORT_SUMMEVAL §3.7). The script refuses to write it unless the experts' means
+reproduce the experiment's gold on all 100 articles and every arm's committed outputs
+re-score to their committed τ; `check_report_claims.py` checks the report against it.
+

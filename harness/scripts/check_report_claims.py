@@ -1157,17 +1157,23 @@ _judges = sorted(a for a in _se_arms if a not in _sea.FREE)
 _bft = _sp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", _sea.DATASET,
                 "--a", "se_bartscore_n100_v1", "--against", "_n100_v1", "--metric", "tau",
                 "--runs-dir", str(DATA)], capture_output=True, text=True)
-_bart = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1]) for ln in _bft.stdout.splitlines()
+_bart = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2])
+         for ln in _bft.stdout.splitlines()
          if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")}
 _not_sep = [a for a in _judges if a not in _bart or _bart[a][1] != "SEPARATED" or _bart[a][0] >= 0]
 check(f"SummEval: BARTScore is separated from all {len(_judges)} judges, every one ahead of it",
       len(_judges) == 24 and not _not_sep and f"separated from all {len(_judges)} judges" in _SEV,
       f"not separated, or not behind: {_not_sep}")
+_weakest = min(_judges, key=lambda a: _se_arms[a]["scores"]["tau"])
+_bw = _bart.get(_weakest, (0, "", "?/100"))[2].split("/")[0]
+check(f"SummEval: against the weakest judge, {_weakest}, BARTScore wins {_bw} of 100 articles",
+      f"`{_weakest}`" in _SEV and f"BARTScore wins only {_bw} of 100 articles" in _SEV,
+      f"the family test gives {_bw}/100 against {_weakest}")
 _per_m = lambda a: f"${_se_arms[a]['billed'] / _SE['n_items'] * 1e6:,.0f}"  # noqa: E731
 _cheap_tie = min((_t[0][3:-8] for _t in _tied_rows), key=lambda a: _se_arms[a]["billed"])
 check(f"SummEval cheapest tied judge {_cheap_tie} at {_per_m(_cheap_tie)} per million, "
       f"the leader at {_per_m(_lead)}, 1/{round(_se_arms[_lead]['billed'] / _se_arms[_cheap_tie]['billed'])}",
-      f"**{_per_m(_cheap_tie)} per million**" in _SEV and _per_m(_lead) in _SEV
+      f"**{_per_m(_cheap_tie)} per million articles**" in _SEV and _per_m(_lead) in _SEV
       and f"1/{round(_se_arms[_lead]['billed'] / _se_arms[_cheap_tie]['billed'])}" in _SEV,
       "the decision table's per-million figures or the ratio do not match the bills")
 _bill = f"${_SE['total_billed']:.2f}"
@@ -1205,6 +1211,53 @@ check("SummEval names ROUGE-L's coherence gap where it calls ROUGE-L not quite r
       f"{_rl['value']:.4f} against {_rl['published']:.3f}" in _SEV
       and f"{_rl['value']:.3f} against {_rl['published']:.3f}" in _SER,
       f"coherence {_rl['value']:.4f} vs {_rl['published']}")
+
+# The human ceiling (REPORT_SUMMEVAL §3.7), from the original release's per-expert scores.
+# The evidence file is written by examples/summeval-judging/human_ceiling.py, which
+# refuses to write it unless the experts' means reproduce the gold and every arm re-scores
+# to its committed tau -- so those two flags are part of the claim, not decoration.
+_hc_path = ROOT / "docs" / "evidence" / "summeval_human_ceiling.json"
+_hc = json.loads(_hc_path.read_text()) if _hc_path.is_file() else {}
+check("SummEval human ceiling: the evidence exists, reproduced the gold and re-scored every arm",
+      bool(_hc) and _hc.get("gold_reproduced") and _hc.get("arms_rescored_exactly")
+      and _hc.get("duplicate_groups_with_more_than_one_fitting_assignment") == 0
+      and set(_hc.get("arms", {})) == set(_se_arms),
+      f"{_hc_path.relative_to(ROOT)} missing, or its arms differ from the runs")
+if _hc:
+    _ceil = _hc["tau_mean"]
+    _bad_hc = []
+    for _ln in _SEV.splitlines():
+        _m = re.match(r"^\| `([a-z0-9_]+)`(?: \([^)]*\))? \| (0\.\d{4}) \| \*{0,2}(\d+)%\*{0,2} \|$", _ln)
+        if not _m:
+            continue
+        _a, _v, _pct = _m.group(1), float(_m.group(2)), int(_m.group(3))
+        _want = _hc["arms"].get(_a, {}).get("tau_vs_two_experts")
+        if _want is None or abs(_v - _want) > 0.00005 or _pct != round(100 * _want / _ceil):
+            _bad_hc.append(f"{_a} {_v} {_pct}% vs {_want} {round(100 * (_want or 0) / _ceil)}%")
+    _n_hc = sum(1 for _ln in _SEV.splitlines()
+                if re.match(r"^\| `[a-z0-9_]+`(?: \([^)]*\))? \| 0\.\d{4} \| \*{0,2}\d+%", _ln))
+    check(f"SummEval §3.7: the {_n_hc} arm rows against two experts match the evidence",
+          _n_hc >= 5 and not _bad_hc, "; ".join(_bad_hc[:3]))
+    _best = max((a for a in _hc["arms"] if a not in _sea.FREE),
+                key=lambda a: _hc["arms"][a]["tau_vs_two_experts"])
+    _bv = _hc["arms"][_best]["tau_vs_two_experts"]
+    _bp = round(100 * _bv / _ceil)
+    _bart_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
+    check(f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
+          f"BARTScore {_bart_p}%",
+          f"**{_bv:.4f}**, **{_bp}%** of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
+          and f"BARTScore reaches {_bart_p}%" in _SEV and f"| **{_ceil:.4f}** |" in _SEV,
+          "the decision table or §3.7 does not state the evidence's figures")
+    _pos = _hc["tau_per_position"]
+    check(f"SummEval §3.7: positions {min(_pos):.4f}-{max(_pos):.4f}; {_hc['duplicate_summary_groups']} "
+          f"identical-text groups in {_hc['duplicate_articles']} articles, "
+          f"{_hc['duplicate_groups_scored_differently']} scored differently",
+          f"give {min(_pos):.4f}–{max(_pos):.4f}" in _SEV
+          and f"{_hc['duplicate_summary_groups']} groups of identical texts" in _SEV
+          and f"In {_hc['duplicate_articles']} of the 100 articles" in _SEV
+          and " ".join(_SEV.split()).count(f"{_hc['duplicate_groups_scored_differently']} of those") >= 2
+          and f"in {_hc['duplicate_articles']} articles two or more systems" in _SEV,
+          "a count in §3.7 or the findings does not match the evidence")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

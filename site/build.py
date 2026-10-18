@@ -844,6 +844,10 @@ def findings_for(x: dict, f: dict) -> list:
              f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
              f"the leader cannot be separated from it or from {x['n_tied'] - 1} others."),
             *common,
+            ("The best judges come close to a single expert.",
+             q("Scored against the mean of two experts, as one expert is against the other two, "
+               "the best judge reaches 0.5195 — 93% of one expert's 0.5587. BARTScore reaches 44%.",
+               rep)),
             ("The order is stable; the winner is not.",
              q("Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
                "but name the same unique winner only 21% of the time.", rep)),

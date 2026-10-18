@@ -24,9 +24,9 @@
 
 | the choice | what the data says |
 |---|---|
-| **Can an LLM judge summaries like an expert?** | **Better than any free metric, not perfectly.** The best judges reach τ **0.5398** against the experts; the best free scorer, BARTScore, reaches **0.2562**, and ROUGE-1 **0.1487**. |
+| **Can an LLM judge summaries like an expert?** | **Nearly as well as one expert does, and far better than any free metric.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44% (§3.7). |
 | **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 25 arms. |
-| **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million**, against $6,350 for the leader and $20,077 for `anthropic_l`. |
+| **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
 | **Do I need an LLM here at all?** | **Yes — the first time in six experiments.** Every one of the 24 judges is separated from BARTScore (§3.3). |
 | **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range. But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
@@ -37,8 +37,14 @@
 - **Every hosted judge beats every free scorer.** In the paired test, BARTScore is
   separated from all 24 judges, all of them ahead (`make family-test`, Holm-corrected, §3.3).
   Against the weakest judge, `llama_s` (τ 0.3533), BARTScore wins only 33 of 100 articles.
+- **The best judges come close to a single expert.** Scored against the mean of two experts,
+  as one expert is against the other two, the best judges reach 93% of a human's agreement
+  (§3.7). The experts themselves are noisy: in 37 articles two or more systems wrote the
+  same summary word for word, and 41 of those 44 groups of identical texts received
+  different expert scores.
 - **The top is a crowd.** `openai_l` leads at τ 0.5398 and cannot be separated from five
-  others; `gemma_l` sits 0.0013 behind it at 1/23 of the price.
+  others; `gemma_l` sits 0.0013 behind it at 1/23 of the price. Four of the six are tied by
+  a wide margin; the other two sit on a Holm boundary (§3.2).
 - **Model size helps in three families, not in the other five.** Llama, Gemma and OpenAI
   rise with tier; DeepSeek, GLM and Mistral peak at the medium tier, Anthropic's medium
   sits below its small, and Qwen's small leads its medium (§3.4).
@@ -148,6 +154,16 @@ METRIC=tau`):
 articles either way would move them in or out. `glm_m` is the nearest arm outside
 (p 0.0072, threshold 0.0083).
 
+How fragile is that boundary? Not to the permutation draw: at 400,000 permutations, under
+three seeds (`--permutations 400000 --seed 0/1/2`), `qwen37max` gets p = 0.0105–0.0112
+against its 0.0100 and stays tied every time, and `glm_m` (0.0063–0.0066) stays separated.
+The two edge members move *together*: Holm stops at the first opponent it cannot separate,
+so if `qwen37max` were separated, `qwen_s` (p ≈ 0.012 against 0.0125) would be too, and
+the group would shrink to the four that hold by a wide margin — `openai_l`, `gemma_l`
+(p 0.86), `anthropic_l` (0.13) and `openai_m` (0.079). So the honest reading is **a core of
+four, and possibly six**. What a different sample of articles would do to the edge is not
+measured here; n = 100 is the whole benchmark.
+
 The cheapest member of the tie is `gemma_l` at $0.0278, 1/23 of the leader and 1/72 of
 `anthropic_l`. A tie is not proof of equality — it is a difference this sample cannot
 detect — so it makes `gemma_l` the first candidate, not the answer.
@@ -228,6 +244,45 @@ Consistency — whether the summary's facts are supported by the article — is 
 agree with experts most, and it is the dimension that matters most for factuality. A
 judge's tie rate barely predicts its quality (Spearman +0.10 across the 24).
 
+### 3.7 How close to an expert?
+
+τ 0.54 says how well a judge orders summaries the way the experts do, not how close that is
+to expert-level. That needs the experts' agreement with each other, and the gold here keeps
+only their mean. SummEval's original release publishes each expert's own scores
+([`model_annotations.aligned.jsonl`](https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl),
+MIT), so `examples/summeval-judging/human_ceiling.py` computes it: for every article and
+dimension, Kendall τ-b between one expert and the mean of the other two, averaged exactly as
+a judge's τ is. Before using the file it checks that its three-expert means reproduce this
+experiment's gold on every article, and that re-scoring every arm's committed outputs
+reproduces its committed τ.
+
+A judge scored against all three experts has an easier target than one expert scored
+against two, so every arm is also scored against the same two-expert references, averaged
+over which expert is left out:
+
+| | τ against two experts | share of one expert's |
+|---|---|---|
+| **one expert, against the other two** | **0.5587** | — |
+| `gemma_l` | 0.5195 | **93%** |
+| `openai_l` | 0.5181 | 93% |
+| `anthropic_l` | 0.5083 | 91% |
+| `llama_s` (the weakest judge) | 0.3423 | 61% |
+| `bartscore` | 0.2447 | 44% |
+| `rouge1` | 0.1454 | 26% |
+| `coverage` | 0.0955 | 17% |
+
+**The best judges agree with the experts about 93% as well as an expert does.** The order at
+the top changes on this footing (`gemma_l` above `openai_l`), which is the tie of §3.2
+showing again. The three positions in the file give 0.5213–0.5812 for "one expert against
+the other two"; whether those are three people depends on the file keeping one annotator
+order on every row, which its documentation does not say, so only the mean is reported as
+the ceiling.
+
+The experts are not a noiseless target either. In 37 of the 100 articles, two or more of the
+16 systems produced the same summary word for word — 44 groups of identical texts — and 41
+of those groups received different expert scores. Whether the gap between 93% and 100% is
+the judges falling short or the experts' own noise is not something this sample can split.
+
 ## 4. Discussion
 
 **For anyone using an LLM as a judge.** On this task a hosted judge is clearly better than
@@ -304,8 +359,12 @@ between this experiment and the earlier five mix September and October prices.
   across the three.
 - **Within-family steps are not pair-tested** (§3.4); the size pattern is descriptive.
 - **Costs are October 2026 bills**; the earlier five experiments' costs are September bills.
-- **The tie in §3.2 has two boundary members**; a different sample could move `qwen37max`
-  and `qwen_s` in or out.
+- **The tie in §3.2 has two boundary members.** They are stable to the permutation draw
+  (§3.2); what a different sample of articles would do to them is not measured.
+- **The human ceiling is one expert against two.** It is computed from the original
+  release's per-expert scores (§3.7) and is somewhat pessimistic, since two experts are a
+  noisier reference than three; whether the gap between the judges and it is significant is
+  not tested.
 
 ## 8. Reproduction
 
@@ -317,6 +376,7 @@ cd harness && make leaderboard DATASET_ID=summeval_100
 make family-test DATASET_ID=summeval_100 A=se_openai_l_n100_v1 AGAINST=se_ METRIC=tau
 python scripts/summeval_analysis.py            # §3.4–§3.6: split-half, price, ladders, dimensions
 cd .. && examples/summeval-judging/.venv/bin/python examples/summeval-judging/calibrate.py   # §5
+examples/summeval-judging/.venv/bin/python examples/summeval-judging/human_ceiling.py       # §3.7
 ```
 
 `make ci` checks every figure in this report against those two scripts and the committed

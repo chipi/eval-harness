@@ -1,0 +1,151 @@
+{
+  "what": "Kendall tau-b per article between one SummEval expert and the mean of the other two (leave-one-out), averaged over the four dimensions and then over the 100 articles; and every arm scored against the same two-expert references",
+  "source": "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl",
+  "source_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab",
+  "n_articles": 100,
+  "gold_reproduced": true,
+  "arms_rescored_exactly": true,
+  "duplicate_summary_groups": 44,
+  "duplicate_groups_with_more_than_one_fitting_assignment": 0,
+  "duplicate_groups_scored_differently": 41,
+  "duplicate_articles": 37,
+  "tau_per_position": [
+    0.5736,
+    0.5812,
+    0.5213
+  ],
+  "note": "tau_per_position is per position in each row's expert_annotations list; it is per annotator only if the file keeps one annotator order, which its documentation does not state. tau_mean does not depend on it.",
+  "tau_mean": 0.5587,
+  "tau_by_dimension": {
+    "coherence": 0.5896,
+    "consistency": 0.6811,
+    "fluency": 0.551,
+    "relevance": 0.4129
+  },
+  "arms": {
+    "gemma_l": {
+      "tau": 0.5384,
+      "tau_vs_two_experts": 0.5195
+    },
+    "openai_l": {
+      "tau": 0.5398,
+      "tau_vs_two_experts": 0.5181
+    },
+    "anthropic_l": {
+      "tau": 0.5283,
+      "tau_vs_two_experts": 0.5083
+    },
+    "openai_m": {
+      "tau": 0.5279,
+      "tau_vs_two_experts": 0.5061
+    },
+    "glm_m": {
+      "tau": 0.517,
+      "tau_vs_two_experts": 0.5015
+    },
+    "qwen37max": {
+      "tau": 0.5204,
+      "tau_vs_two_experts": 0.5009
+    },
+    "qwen_s": {
+      "tau": 0.5192,
+      "tau_vs_two_experts": 0.4991
+    },
+    "qwen_m": {
+      "tau": 0.5075,
+      "tau_vs_two_experts": 0.4899
+    },
+    "glm_l": {
+      "tau": 0.4916,
+      "tau_vs_two_experts": 0.4758
+    },
+    "anthropic_s": {
+      "tau": 0.4836,
+      "tau_vs_two_experts": 0.467
+    },
+    "deepseek_m": {
+      "tau": 0.4861,
+      "tau_vs_two_experts": 0.4668
+    },
+    "anthropic_m": {
+      "tau": 0.4802,
+      "tau_vs_two_experts": 0.4634
+    },
+    "gemma_m": {
+      "tau": 0.477,
+      "tau_vs_two_experts": 0.4631
+    },
+    "deepseek_l": {
+      "tau": 0.4695,
+      "tau_vs_two_experts": 0.4516
+    },
+    "mistral_m": {
+      "tau": 0.4677,
+      "tau_vs_two_experts": 0.4488
+    },
+    "llama_l": {
+      "tau": 0.4537,
+      "tau_vs_two_experts": 0.4407
+    },
+    "deepseek_s": {
+      "tau": 0.459,
+      "tau_vs_two_experts": 0.4392
+    },
+    "mistral_l": {
+      "tau": 0.4554,
+      "tau_vs_two_experts": 0.4383
+    },
+    "glm_s": {
+      "tau": 0.4456,
+      "tau_vs_two_experts": 0.4322
+    },
+    "mistral_s": {
+      "tau": 0.4275,
+      "tau_vs_two_experts": 0.4143
+    },
+    "gemma_s": {
+      "tau": 0.4196,
+      "tau_vs_two_experts": 0.4137
+    },
+    "openai_s": {
+      "tau": 0.4111,
+      "tau_vs_two_experts": 0.3967
+    },
+    "llama_m": {
+      "tau": 0.4064,
+      "tau_vs_two_experts": 0.3936
+    },
+    "llama_s": {
+      "tau": 0.3533,
+      "tau_vs_two_experts": 0.3423
+    },
+    "bartscore": {
+      "tau": 0.2562,
+      "tau_vs_two_experts": 0.2447
+    },
+    "rouge2": {
+      "tau": 0.1578,
+      "tau_vs_two_experts": 0.152
+    },
+    "rouge1": {
+      "tau": 0.1487,
+      "tau_vs_two_experts": 0.1454
+    },
+    "rougeL": {
+      "tau": 0.1435,
+      "tau_vs_two_experts": 0.141
+    },
+    "coverage": {
+      "tau": 0.1011,
+      "tau_vs_two_experts": 0.0955
+    },
+    "length": {
+      "tau": 0.0388,
+      "tau_vs_two_experts": 0.0338
+    },
+    "random": {
+      "tau": 0.0025,
+      "tau_vs_two_experts": 0.0055
+    }
+  }
+}
