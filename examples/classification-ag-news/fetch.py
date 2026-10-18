@@ -62,6 +62,7 @@ import collections
 import hashlib
 import json
 import sys
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -90,12 +91,20 @@ def fetch_rows(limit: int, split: str) -> list[dict]:
             {"dataset": DATASET, "config": CONFIG, "split": split,
              "offset": len(rows), "length": want}
         )
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
-                payload = json.loads(resp.read())
-        except Exception as exc:  # noqa: BLE001 - one message, not a traceback
+        # Retried, as every other fetcher here is: the datasets-server returns transient
+        # 502s, and one failed CI's replication job on its first page (2026-10-18).
+        payload, last = None, None
+        for attempt in range(6):
+            try:
+                with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
+                    payload = json.loads(resp.read())
+                break
+            except Exception as exc:  # noqa: BLE001 - retried, then one message
+                last = exc
+                time.sleep(2 * (attempt + 1))
+        if payload is None:
             sys.exit(
-                f"could not reach the datasets-server: {type(exc).__name__}: {exc}\n"
+                f"could not reach the datasets-server: {type(last).__name__}: {last}\n"
                 "  it is an HTTPS API; check connectivity, then retry."
             )
         page = payload.get("rows") or []
