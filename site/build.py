@@ -518,6 +518,29 @@ SYN = "research/REPORT_SYNTHESIS.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
 
 
+#: The benchmark the front page opens on: its field shows the answer most plainly -- the
+#: largest group the leader cannot be separated from, and the dearest model well inside it.
+HERO_BENCH = "summarization"
+
+
+def hero_chart(x: dict) -> str:
+    """The answer before the reading: one committed run's field, every learned arm on one
+    axis, the group the leader cannot be separated from shaded, the dearest model ringed.
+    The caption is the chart's finding in words, and doubles as its text alternative."""
+    learned = [a for a in x["arms"] if a["kind"] != "baseline"]
+    d = x["dearest"]
+    require(x["n_tied"] > 0 and d["arm"] != x["top"]["arm"],
+            f"hero: {x['bench']} has a tie band and a dearest model that is not first")
+    finding = (f"{x['bench']}, {len(learned)} systems on one axis by {x['metric_label']}. "
+               f"Shaded: the leader and the {x['n_tied']} it cannot be separated from at "
+               f"{x['n_items']} items. The most expensive model came {ordinal(d['rank'])} of "
+               f"{x['n_arms']}.")
+    return (f'<figure class="chart hero-chart reveal" aria-label="{e(finding)}">'
+            f'{legend(baseline=False)}{both(strip(x), strip(x, compact=True))}'
+            f'<figcaption>{e(finding)} <a href="experiments/{x["slug"]}.html">The experiment →</a>'
+            f'</figcaption></figure>')
+
+
 def home(f: dict) -> str:
     """The front door: the harness -- what it is, what it asks, how to start -- and then
     what it found when pointed at 24 LLMs, which is the reason to believe it."""
@@ -598,11 +621,12 @@ def home(f: dict) -> str:
         f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} systems</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
         for x in exps)
     body = f"""
-<section class="hero"><div class="wrap">
+<section class="hero hero-grid"><div class="wrap">
   <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample. This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
+  {hero_chart(next(x for x in exps if x["slug"] == HERO_BENCH))}
 </div></section>
 
 <section class="block" id="why"><div class="wrap">

@@ -16,6 +16,7 @@
   --open: #199e70;            /* slot 3 */
   --baseline: #6f6d66;
   --band: rgba(200, 255, 61, 0.09);
+  --grid-line: rgba(240, 239, 236, 0.035);
   --display: "Inter Tight", "Inter", "Helvetica Neue", system-ui, -apple-system, "Segoe UI", sans-serif;
   --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -28,6 +29,7 @@
     --accent: #3d5c00; --accent-ink: #f6f5f1;
     --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
     --band: rgba(61, 92, 0, 0.16);
+    --grid-line: rgba(11, 11, 11, 0.045);
   }
 }
 :root[data-theme="light"] {
@@ -37,6 +39,7 @@
   --accent: #3d5c00; --accent-ink: #f6f5f1;
   --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
   --band: rgba(61, 92, 0, 0.16);
+  --grid-line: rgba(11, 11, 11, 0.045);
 }
 
 * { box-sizing: border-box; }
@@ -78,6 +81,14 @@ a:hover { color: var(--accent); }
 h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .hero h1 { font-size: clamp(48px, 9vw, 128px); line-height: .92; font-weight: 800; margin: 28px 0 32px; max-width: 13ch; }
 .hero h1 em { font-style: normal; color: var(--accent); }
+/* The data signature: faint graph paper behind the front page's hero, and its chart. */
+.hero-grid { background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px; }
+.hero-chart { margin-top: 56px; }
+.hero-chart figcaption { margin-top: 10px; font: 500 13px/1.5 var(--mono); color: var(--ink-2); }
+.hero-chart figcaption a { color: var(--accent); white-space: nowrap; }
 .dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 60ch; margin: 0; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }
