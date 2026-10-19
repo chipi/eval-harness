@@ -100,7 +100,13 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }
 .stat:last-child { border-right: 0; }
-.stat .n { font: 700 clamp(36px, 5vw, 60px)/1 var(--display); letter-spacing: -0.04em; }
+.stat .n { font: 600 clamp(34px, 4.6vw, 56px)/1 var(--mono); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.stat .marks { display: block; margin-top: 12px; }
+.stat .marks .on { fill: var(--ink); }
+.stat .marks .off { fill: none; stroke: var(--axis); stroke-width: 1.5; }
+.benches .bench-row { display: block; color: inherit; border-top: 1px solid var(--hair); padding: 6px 0; }
+.benches .bench-row:first-of-type { border-top: 0; }
+.benches .bench-row:hover { background: var(--surface-2); }
 .stat .n small { font-size: .45em; color: var(--muted); letter-spacing: 0; }
 .stat .l { margin-top: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.45; }
 @media (max-width: 760px) { .stats { grid-template-columns: 1fr 1fr; } .stat:nth-child(2) { border-right: 0; } .stat { padding-bottom: 20px; } }
