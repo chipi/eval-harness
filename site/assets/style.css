@@ -89,6 +89,13 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .hero-chart { margin-top: 56px; }
 .hero-chart figcaption { margin-top: 10px; font: 500 13px/1.5 var(--mono); color: var(--ink-2); }
 .hero-chart figcaption a { color: var(--accent); white-space: nowrap; }
+.chart svg.sketch .tick { stroke: var(--muted); stroke-width: 1.5; opacity: .55; }
+.chart svg.sketch .lead { fill: var(--ink); }
+.chart svg.sketch .hit-row { fill: transparent; }
+.chart svg.sketch .sketch-row:hover .hit-row { fill: var(--surface-2); }
+.chart svg.sketch .ring { stroke-width: 2; }
+.sketch-key .lead-i { background: var(--ink); }
+.sketch-key .ring-i { background: transparent; border: 2px solid var(--ink); width: 12px; height: 12px; }
 .dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 60ch; margin: 0; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }

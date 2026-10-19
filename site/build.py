@@ -518,26 +518,64 @@ SYN = "research/REPORT_SYNTHESIS.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
 
 
-#: The benchmark the front page opens on: its field shows the answer most plainly -- the
-#: largest group the leader cannot be separated from, and the dearest model well inside it.
-HERO_BENCH = "summarization"
+def sketch(exps: list, compact: bool = False) -> str:
+    """Six benchmarks as one picture: each row on its own scale, from its weakest learned
+    system to its best, so rows compare by shape, not score. Every other system is a faint
+    tick; what carries the story is the shaded band (the systems the leader cannot be
+    separated from), the leader, and the ringed most expensive model."""
+    width = 400 if compact else 1000
+    row = 50 if compact else 40
+    top = 8
+    height = top + row * len(exps) + 4
+    if compact:
+        left, right = 10, width - 10
+    else:
+        left, right = 170, width - 150
+    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-hidden="true" class="sketch">']
+    for i, x in enumerate(exps):
+        learned = [a for a in x["arms"] if a["kind"] != "baseline"]
+        on, off = off_scale(learned)
+        lo, hi = min(a["score"] for a in on), max(a["score"] for a in on)
+        y = top + row * i + (row - 14 if compact else row // 2)
+
+        def px(v, lo=lo, hi=hi):
+            return left if v <= lo else left + (v - lo) / (hi - lo) * (right - left)
+        tied = [a for a in learned if a["arm"] in x["tied"]] + [x["leader_row"]]
+        tag = (f'leader + {x["n_tied"]}' if x["n_tied"] else "clear winner")
+        out.append(f'<a href="experiments/{x["slug"]}.html" class="sketch-row"><title>{e(x["bench"])}: '
+                   f'the experiment</title><rect x="0" y="{top + row * i}" width="{width}" height="{row}" class="hit-row"/>')
+        if compact:
+            out.append(f'<text x="{left}" y="{y - 14}" class="t-head" font-size="15">{e(x["bench"])}</text>'
+                       f'<text x="{right}" y="{y - 14}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>')
+        else:
+            out.append(f'<text x="0" y="{y + 5}" class="t-head" font-size="16">{e(x["bench"])}</text>'
+                       f'<text x="{width}" y="{y + 5}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>')
+        out.append(f'<line x1="{left}" x2="{right}" y1="{y}" y2="{y}" class="axis"/>')
+        if len(tied) > 1:
+            x0, x1 = px(min(a["score"] for a in tied)), px(max(a["score"] for a in tied))
+            out.append(f'<rect x="{x0 - 6:.1f}" y="{y - 9}" width="{x1 - x0 + 12:.1f}" height="18" rx="9" class="band"/>')
+        for a in learned:
+            if a["arm"] not in (x["top"]["arm"], x["dearest"]["arm"]):
+                out.append(f'<line x1="{px(a["score"]):.1f}" x2="{px(a["score"]):.1f}" y1="{y - 4}" y2="{y + 4}" class="tick"/>')
+        out.append(f'<circle cx="{px(x["dearest"]["score"]):.1f}" cy="{y}" r="7" class="ring"/>')
+        out.append(f'<circle cx="{px(x["top"]["score"]):.1f}" cy="{y}" r="5" class="lead"/></a>')
+    out.append("</svg>")
+    return "".join(out)
 
 
-def hero_chart(x: dict) -> str:
-    """The answer before the reading: one committed run's field, every learned arm on one
-    axis, the group the leader cannot be separated from shaded, the dearest model ringed.
-    The caption is the chart's finding in words, and doubles as its text alternative."""
-    learned = [a for a in x["arms"] if a["kind"] != "baseline"]
-    d = x["dearest"]
-    require(x["n_tied"] > 0 and d["arm"] != x["top"]["arm"],
-            f"hero: {x['bench']} has a tie band and a dearest model that is not first")
-    finding = (f"{x['bench']}, {len(learned)} systems on one axis by {x['metric_label']}. "
-               f"Shaded: the leader and the {x['n_tied']} it cannot be separated from at "
-               f"{x['n_items']} items. The most expensive model came {ordinal(d['rank'])} of "
-               f"{x['n_arms']}.")
-    return (f'<figure class="chart hero-chart reveal" aria-label="{e(finding)}">'
-            f'{legend(baseline=False)}{both(strip(x), strip(x, compact=True))}'
-            f'<figcaption>{e(finding)} <a href="experiments/{x["slug"]}.html">The experiment →</a>'
+def hero_sketch(exps: list) -> str:
+    ties = sum(x["n_tied"] > 0 for x in exps)
+    dear_first = sum(x["dearest"]["arm"] == x["top"]["arm"] for x in exps)
+    finding = (f"In {ties} of {len(exps)} benchmarks the leader cannot be separated from a "
+               f"group of others; the most expensive model came first in "
+               f"{word(dear_first) if dear_first else 'none'}.")
+    key = ('<div class="legend sketch-key"><span><i class="lead-i"></i>the leader</span>'
+           '<span><i class="sw-band"></i>not separated from it</span>'
+           '<span><i class="ring-i"></i>the most expensive model</span>'
+           '<span class="read">each row: worst to best, on its own scale →</span></div>')
+    return (f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
+            f'{key}{both(sketch(exps), sketch(exps, compact=True))}'
+            f'<figcaption>{e(finding)} <a href="experiments.html#findings">See each one →</a>'
             f'</figcaption></figure>')
 
 
@@ -626,7 +664,7 @@ def home(f: dict) -> str:
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample. This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
-  {hero_chart(next(x for x in exps if x["slug"] == HERO_BENCH))}
+  {hero_sketch(exps)}
 </div></section>
 
 <section class="block" id="why"><div class="wrap">
