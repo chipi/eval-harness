@@ -22,26 +22,15 @@
 
 **Build `e5_base` retrieval first; add an LLM reranker on its top 20 only if about +0.07
 nDCG@10 is worth about $732 per 1M queries.** `e5_base` (e5-base-v2, MIT, 438 MB, CPU, $0
-per query, plus a one-off CPU index build of ~1,386 s against BM25's 1.2 s, §3.6) scores
-**0.7191**, +0.0740 over BM25, and is not separated from any of the twelve BM25-then-rerank
-pipelines (p 0.27–0.97), whose best, `glm_s`, scores 0.7437 (§3.2). `glm_s` reranking
-`e5_base`'s candidates scores **0.7891**, the highest point estimate here: +0.0700 over
-`e5_base` alone (p 0.0001, separated), billed $0.1464 per 200 queries. That is one run
-under a different adapter from the main table, and it is not separated from 6 of the 22
-arms in its family (§3.4). Adding a reranker to BM25 (+0.0566 to +0.0986) and swapping the
-retriever (+0.0740) are comparable moves that this data cannot tell apart; **do both** and
-they stack to +0.1441 over BM25 (§3.3). A BM25-first reranker is capped at 0.8163 at
-depth 20; a stronger first stage raises the cap (0.8747 for `e5_base`).
+per query) scores **0.7191**, +0.0740 over BM25, and is not separated from any of the twelve
+BM25-then-rerank pipelines (§3.2). `glm_s` reranking `e5_base`'s candidates scores
+**0.7891**, +0.0700 over `e5_base` alone (p 0.0001, separated), billed $0.1464 per 200
+queries: one run, under a different adapter from the main table (§3.4). A reranker and a
+better retriever are comparable moves; **do both** and they stack to +0.1441 over BM25 (§3.3).
 
-**As run here:** the 12 cheapest of 24 hosted LLMs, zero-shot, one prompt, temperature 0,
-one run per arm, 200 SciFact claims, contamination not measured. Not tested: the five
-frontier models (~$12; one proprietary arm, `qwen_s`, ran and no Anthropic or OpenAI arm
-did), any self-hosted run, fine-tuning on SciFact, other prompts, rerank depths other than
-20. The registered prediction — a reranker on `e5_base`'s candidates reaches 0.786–0.797 —
-hit for one of two rerankers (`glm_s` 0.7891 inside, `qwen_s` 0.7713 outside); the range
-was built from those same two rerankers, `qwen_s`'s end from a pre-fix share, so it tests
-whether each one's headroom share transfers, not any other reranker (§3.4). Corrections
-and their dates: §6.
+**As run here:** the 12 cheapest of 24 hosted LLMs (no Anthropic or OpenAI arm), zero-shot,
+one prompt, one run per arm, 200 SciFact claims. Frontier models, fine-tuning on SciFact and
+other rerank depths were not tested (§7). Corrections and their dates: §6.
 
 ### Supporting facts
 

@@ -557,8 +557,9 @@ def home(f: dict) -> str:
          "Run five, ten or twenty-four models on your own frozen data and see quality, cost and "
          "latency side by side, with a test that says whether the ranking is real.",
          f"The most expensive model was not the best in {f['dearest_never_best']} of "
-         f"{len(exps)} experiments (five times the same model), and in {ties} of {len(exps)} "
-         "the leader could not be separated from a group of others — at 100–280 items, which "
+         f"{len(exps)} experiments (five times the same model; on SciFact only the twelve cheapest "
+         f"hosted models ran), and in {ties} of {len(exps)} "
+         "the leader could not be separated from other arms — at 100–280 items, which "
          "is not the same as equal.",
          "experiments.html", "The experiments"),
         ("Do I need an LLM — or a GPU — at all?",
@@ -567,19 +568,23 @@ def home(f: dict) -> str:
          f"A free model that needs no GPU was first, or not separable from first, in "
          f"{f['local_first_or_tied']} of {len(exps)}, against LLMs run with one prompt and no "
          "examples; the clearest wins were on text like the text it was trained on. On judging "
-         "summaries even a free model trained for the task lost, and the LLM earned its bill: "
+         "summaries even a free model trained for the task lost, and an LLM judge beat every "
+         "free scorer measured: "
          + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement "
-             "(the best of 24, on the same articles), and UniEval, the best free scorer, 64%.", JUDGE)
+             "(the best of 24, chosen on the same articles; 92% held out), and UniEval, the best "
+             "free scorer, 64%.", JUDGE)
+         + " " + q("A no-model lookup of which system wrote each summary reaches 63%; the "
+                   "summaries are 2019-era and the judges ran with reasoning off.", JUDGE)
          + " One task, so the direction, not the size.",
          "experiments.html#experiments", "Per experiment"),
         ("Own it or rent it?",
          "Every cost is read off the provider's bill and set beside quality, so renting an API "
          "can be weighed against running open weights on hardware you own.",
-         q("A proprietary model never separated from the best open-weight model in any of the "
-           "six experiments", SYN) + ", and on four of the six tasks the best model that fits a "
-         "64 GB machine scored the same as the unlimited-hardware answer — two of them at int8 "
-         "or int4 precision, which was not measured, and as the providers served them: nothing "
-         "was run on a 64 GB machine.",
+         q("The best proprietary arm never separated from the best open-weight arm in any of the "
+           "six experiments", SYN) + ". At native precision the best model that fits a 64 GB machine matched the "
+         "unlimited-hardware answer on two of the six tasks, was not separated from it on two "
+         "more, and was separated below it on summarisation and SummEval — as the providers "
+         "served them: nothing was run on a 64 GB machine.",
          f"{BLOB}/research/REPORT_SYNTHESIS.md", "The synthesis"),
     ]
     why_html = "".join(
@@ -632,7 +637,7 @@ def home(f: dict) -> str:
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
   <p class="lede">To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
   <div class="stats">
-    <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best (five times the same model)</div></div>
+    <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best (five times the same model; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
@@ -703,7 +708,7 @@ def landing(f: dict) -> str:
   <h1>The most expensive model <em>never won.</em></h1>
   <p class="dek">{hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
-    <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best (five times the same model)</div></div>
+    <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best (five times the same model; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
@@ -713,7 +718,7 @@ def landing(f: dict) -> str:
 <section class="block" id="findings"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
   <h2>The dearest model was never the best.</h2>
-  <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In {in_all} it finished behind something cheaper</strong> — and in {word(behind_free)}, behind something free.</p>
+  <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In {in_all} it finished behind something cheaper</strong> — and in {word(behind_free)}, behind something free. On SciFact only the twelve cheapest hosted models ran, so there it is the dearest of those; no Anthropic or OpenAI arm was run.</p>
   <div class="chart reveal">{legend(reading="higher score: further right →", baseline=False)}{strips}
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
@@ -740,7 +745,7 @@ def landing(f: dict) -> str:
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
-    <li><div><h3>On one task, even a free model trained for it lost, and an LLM earned its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, on the same articles); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
+    <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong — about half a learnable convention, half mislabels.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -819,8 +824,8 @@ CARD = {
     "ag-news": "Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.",
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
-    "scifact": "Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.",
-    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of a free evaluator trained for the task (64%), and an open-weight judge ties the leader.",
+    "scifact": "Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers. The pick: build the free e5_base first.",
+    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), and an open-weight judge is not separated from the leader.",
 }
 
 
@@ -851,6 +856,7 @@ def findings_for(x: dict, f: dict) -> list:
             "SummEval: the cheapest judge tied with the leader has open weights")
     common = [(f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
                f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
+               + ("Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. " if s == "scifact" else "")
                + (f"The cheapest model not separated from the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
                   if x["cheapest_tied"] else "No paid model is not separated from the leader: the leader is separated from every one."))]
     if x["slug"] == "summarization":
@@ -876,7 +882,7 @@ def findings_for(x: dict, f: dict) -> list:
             *common,
             ("The lead is concentrated in 17 items the hosted field mostly gets wrong.",
              q("17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them.", rep)
-             + " " + q("On the other 183 items the order reverses — anthropic_l 0.984, bert_base_ta 0.973 — though that cut is selected by the hosted arms' own errors and so flatters them.", rep)),
+             + " " + q("On the other 183 items the arms cannot be told apart — anthropic_l 0.984, bert_base_ta 0.973 (discordant 3 vs 1, exact sign p = 0.625) — and that cut is selected by the hosted arms' own errors, so it flatters them.", rep)),
         ]
     if x["slug"] == "dbpedia":
         return [
@@ -884,7 +890,7 @@ def findings_for(x: dict, f: dict) -> list:
              f"{t['arm']} leads at {t['score']:.4f}, not separated from {x['n_tied']} others, including the free fine-tune."),
             *common,
             ("The benchmark is saturated, and the gold is sometimes wrong.",
-             q("Three items are disputed by 24 to 25 of 26 arms, and reading them, the gold label is the error.", rep)),
+             q("Three items are disputed by 24 to 25 of 26 arms, and on one rater's reading, unadjudicated, the gold label is the error.", rep)),
         ]
     if x["slug"] == "few-nerd":
         return [
@@ -912,8 +918,10 @@ def findings_for(x: dict, f: dict) -> list:
              f"The best free scorer, {best_free['arm']} (UniEval, on its own inputs), scores "
              f"{best_free['score']:.4f}; the weakest judge, {weakest['arm']}, {weakest['score']:.4f}. "
              + q("In the paired test UniEval is separated below 23 of the 24 judges and cannot "
-                 "be separated from the weakest, on either set of inputs.", rep)),
-            ("An open-weight judge ties the leader.",
+                 "be separated from the weakest, on either set of inputs.", rep)
+             + " " + q("The judges rank all 16 summaries in one call while UniEval scores one at a time, "
+                       "and a pointwise LLM judge was not run.", rep)),
+            ("An open-weight judge is not separated from the leader.",
              f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
              f"the leader cannot be separated from it or from {x['n_tied'] - 1} others. "
              + q("No provider was pinned: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.", rep)),
@@ -921,8 +929,10 @@ def findings_for(x: dict, f: dict) -> list:
             ("The best judges come close to a single expert, and stay below one.",
              q("Scored against the mean of two experts, as one expert is against the other two, "
                "the best judge reaches 0.5195 — 93% of one expert's 0.5587 (95% interval 89–97%), "
-               "and the gap excludes zero. It is the best of 24, chosen on the same articles. "
-               "UniEval reaches 64%, BARTScore 44%.", rep)),
+               "and the gap excludes zero. It is the best of 24, chosen on the same articles "
+               "(92% when chosen on half and scored on the other half). "
+               "UniEval reaches 64%, BARTScore 44%; a no-model lookup of which system wrote each "
+               "summary reaches 63%. The summaries are 2019-era and reasoning was off.", rep)),
             ("The order is stable; the winner is not.",
              q("Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
                "but name the same unique winner only 21% of the time.", rep)),
@@ -959,12 +969,13 @@ def experiment_page(x: dict, f: dict) -> str:
   <div class="kicker"><b>{e(x["task"])}</b> · {e(x["bench"])}</div>
   <h1 style="max-width:16ch">{e(HEADLINE[x["slug"]])}</h1>
   <p class="dek">{e(CARD[x["slug"]])}</p>
+  <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>
   <div class="facts">{facts_html}</div>
   <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
+  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
@@ -1014,13 +1025,21 @@ QUESTION = {
     "scifact": "Rank 5,183 scientific abstracts by how well they bear on a claim.",
     "summeval": "Score 16 summaries of a news article on coherence, consistency, fluency and relevance, as three experts did.",
 }
+PICK = {
+    "summarization": q("Use bart_l if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent deepseek_m ($191 per 1M articles) if you need speed; do not buy anthropic_l.", "research/REPORT_SUMMARIZATION.md"),
+    "ag-news": q("If you have labels, fine-tune: start with bert_mini. If you must rent, start with gemma_m ($8 per 1M items).", "research/REPORT_CLASSIFICATION.md"),
+    "dbpedia": q("Take the cheapest arm you can run at 0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy.", "research/REPORT_CLASSIFICATION.md"),
+    "few-nerd": q("If you have labelled data in a fixed taxonomy, fine-tune a small tagger (span_marker); do not rent a zero-shot hosted LLM for this job. If you do rent, take the cheapest, gemma_m.", "research/REPORT_NER.md"),
+    "scifact": q("Build e5_base retrieval first (0.7191, $0 per query); add an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.", "research/REPORT_RETRIEVAL.md"),
+    "summeval": q("Use an LLM judge, and start with gemma_l; before relying on any judge, check it against a small set of human judgements on your own outputs.", "research/REPORT_SUMMEVAL.md"),
+}
 HEADLINE = {
     "summarization": "A free model level with the best paid one — on CNN's news.",
     "ag-news": "Small models lead, largely on disputed labels.",
-    "dbpedia": "Twenty-way tie at the top.",
+    "dbpedia": "The leader cannot be separated from 19 others.",
     "few-nerd": "The one clean win.",
-    "scifact": "Rerankers lead a crowd.",
-    "summeval": "On mean τ, 23 of 24 LLM judges beat a trained free evaluator.",
+    "scifact": "Free retrieval first; a reranker adds about +0.07.",
+    "summeval": "On mean τ, 23 of 24 LLM judges score above a trained free evaluator.",
 }
 
 

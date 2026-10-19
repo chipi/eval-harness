@@ -152,8 +152,8 @@ def chapters(H, f: dict) -> list:
                    "mislabels. Disputed gold is a finding, not noise.</p>"
                    "<p>" + H.q("An AI judge is silver too, and SummEval measures how good: scored "
                    "against the mean of two experts, as one expert is against the other two, the "
-                   "best judges reach 93% of a human's agreement (the best of 24, on the same "
-                   "articles). The experts are not noiseless "
+                   "best judges reach 93% of a human's agreement (the best of 24, chosen on the same "
+                   "articles; 92% held out). The experts are not noiseless "
                    "either: 41 of 44 groups of word-for-word identical summaries got different "
                    "expert scores.", JUDGE) + " Close to a person is not the same as a person.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
@@ -303,7 +303,7 @@ def patterns(H, f: dict) -> list:
         ("Use an LLM as a judge", "arms = judges, scored against people",
          H.q("Score a few dozen outputs yourself, then measure how well each judge orders them "
              "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
-             "(the best of 24, on the same articles), and an open-weight one at 1/23 of the "
+             "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
              "leader's price tied it.", JUDGE)
          + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
          "summeval-judging", "Kendall τ · human ceiling"),

@@ -22,31 +22,20 @@
 ## Executive summary
 
 **If you have labelled data in a fixed taxonomy, fine-tune a small tagger; do not rent a
-zero-shot hosted LLM for this job.** `span_marker` — a published SpanMarker checkpoint
-trained on Few-NERD's own training split and scored in-distribution on the same taxonomy;
-499 MB, CPU, 0.76 s/item on this run's machine — scores **0.7674** against **0.6864** for the
-best of 24 zero-shot hosted LLMs (`openai_m`, $2,324/month per 1M items). A paired
-permutation test with Holm correction separates it from all 27 other arms: the one separated
-win in the six experiments. It costs $0 to run; labelling and training cost were not
-measured. The best self-hostable LLM by point estimate, `gemma_m` (Gemma-4-26B-A4B: 25.8B
-parameters of which about 4B are active, ~52 GB of weights; 0.6733 as served by 13 OpenRouter
-providers, never run locally), trails by 0.0941 and is **103× larger to download**; on weight
-size alone it fits a 64 GB box with ~12 GB left, which was not tested. If you do rent, the data
-cannot choose among `openai_m` and the seven hosted arms it is not separated from (gaps up to 0.0383
-F1; 78× price range at the routed mix billed in this run): take the cheapest, `gemma_m`
-(≈$32/month per 1M items, +0.0131 F1 behind, p = 0.43). Do not buy `anthropic_l`, the dearest
-arm ($2,463/month, 0.0066 behind `openai_m`, not separated).
+zero-shot hosted LLM for this job.** `span_marker` (a published checkpoint trained on
+Few-NERD's own training split; 499 MB, CPU, $0 to run) scores **0.7674** against **0.6864**
+for the best of 24 zero-shot hosted LLMs (`openai_m`, $2,324/month per 1M items), and is
+separated from all 27 other arms: the one separated win in the six experiments. If you do
+rent, the data cannot choose among `openai_m` and the seven hosted arms it is not separated
+from: take the cheapest, `gemma_m` (≈$32/month per 1M items, +0.0131 F1 behind, p = 0.43),
+not the dearest, `anthropic_l` ($2,463/month, 0.0066 behind `openai_m`, not separated).
 
-Part of the lead is learned convention, which is what fine-tuning is for. Against `openai_m`,
-57% of the lead (30–57% across the hosted arms) is on one catch-all type, `other`, that the
-prompt never defined; separately, up to 38% is agreement with 34 gold labels that at least
-80% of the learned arms reject — one reader's judgement, no second annotator. The two overlap
-and cannot be added. What survives: under the annotation bound the lead over `openai_m` falls
-from 0.0810 to 0.0503 and stays ahead (separation was not retested under the bound). What
-the result does not show: that a small model beats an LLM at NER in general, or an LLM given
-definitions or labelled examples (not run). The hosted arms were never scored the standard
-micro-F1 way (only `span_marker` is calibrated: 0.7047 vs 0.7040 published), and Few-NERD
-contamination of the hosted models is unmeasured.
+Part of the lead is the corpus's own convention, which is what fine-tuning buys: against
+`openai_m`, 57% of it is on `other`, a type the prompt never defined, and up to 38% is
+agreement with gold labels most other arms reject (the two overlap). Under that bound the
+lead falls from 0.0810 to 0.0503 and stays ahead (separation not retested). Not measured:
+labelling and training cost, an LLM given definitions or examples, and contamination of the
+hosted models (§5).
 
 Corrections and their dates: §6.
 

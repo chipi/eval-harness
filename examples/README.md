@@ -46,7 +46,7 @@ Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extrac
 
 **[`../research/REPORT_SYNTHESIS.md`](../research/REPORT_SYNTHESIS.md)** — the
 cross-cutting report. Seven findings, each tested in every experiment that could test it
-and computed from the stored runs rather than quoted: the dearest arm is never first (6/6),
+and computed from the stored runs rather than quoted: the dearest arm is never first (6/6; on SciFact only the twelve cheapest hosted models ran),
 five of six leaderboard tops are statistical ties (not separable at 100–280 items, which
 is not the same as equal), a pilot with ρ ≈ 0.8 picked the wrong
 winner three times in the five experiments that ran one, and the scoring code moved single
@@ -54,12 +54,13 @@ arms further than most model swaps did.
 
 It also answers the deployment question directly. **Every experiment has a $0 answer**:
 the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal (not
-separable from the leader) on saturated DBpedia, a
-proprietary model never separated from the best open-weight one in any of the six, and
-**on four of the six tasks the best model that fits a 64 GB machine scores the same as the
-unlimited-hardware answer** (two at int8 or int4, unmeasured; provider-served scores). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
+separable from the leader) on saturated DBpedia, the
+best proprietary arm never separated from the best open-weight arm in any of the six, and
+**at native precision the best model that fits a 64 GB machine matches the
+unlimited-hardware answer on two of the six tasks** and is not separated from it on two more
+(provider-served scores; nothing was run on a 64 GB machine). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
 a free evaluator trained for the task sits far below the judges — the best judges reach 93% of a
-human expert's agreement (the best of 24, on the same articles), UniEval 64% — so the LLM earns its bill, and the $0 answer is an open-weight LLM judge.
+human expert's agreement (the best of 24, on the same articles), UniEval 64%, though the judges ranked all 16 summaries at once and UniEval scores one at a time — so the $0 answer is an open-weight LLM judge.
 
 ## What each one actually found
 
