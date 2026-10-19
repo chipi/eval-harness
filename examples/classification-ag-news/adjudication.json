@@ -1,0 +1,332 @@
+{
+ "dataset_id": "ag_news_200",
+ "base_reference": "gold/ag_news_200",
+ "reference_id": "gold/ag_news_200_adj1",
+ "adjudicator": "the operator (Marko Dragoljevic), one reader",
+ "date": "2026-10-19",
+ "selection": "every item at least 80% of the 24 hosted LLMs got wrong; then, so the review is not one-sided, every item at least one of the 3 fine-tuned arm(s) got wrong",
+ "shown": "the item text, the gold label and the hosted field's majority answer",
+ "items": [
+  {
+   "item_id": "140dde2385069c681d1aa7e19c4c226156093ebe",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "245ae975100c97fdda508d74949fe454b9a9bbd6",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "23/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "491ef4ad76773231100c76d765b4ab7f29301759",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "23/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "60e988784da49895cae380ae88159982f249a726",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "23/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "68c748b011e5f42626ec0570046ef39096c8fe50",
+   "gold": "Sci/Tech",
+   "field": "World",
+   "field_votes": "20/24",
+   "adjudicated": "World",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "691e365934ca483344c3b70cfbaccac18ae8a456",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "7ca35b0da28444ef73fecfa8250841b4f61d4357",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "9483c4539f67403dbad7481d338000268d838d70",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "96a62d687de1ca3eb8961c6ce0e969848c0a35ef",
+   "gold": "World",
+   "field": "Sports",
+   "field_votes": "24/24",
+   "adjudicated": "Sports",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "a7351c655a7d9182ae92d8d31aa49e874407cfb7",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "23/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "aaa6ebe38c883068510e8d5a1a88ac0517bda315",
+   "gold": "World",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "ad7b5f9ba89bf2f187fb0dba75f82a86438888a3",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "c3f0285427e1ba7e99dbcd2b70e9aa98a341a276",
+   "gold": "World",
+   "field": "Sports",
+   "field_votes": "24/24",
+   "adjudicated": "Sports",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "c6a575ccb29dc0fd1ffbe1a55cd002c09a8ad8da",
+   "gold": "Sci/Tech",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "e56e546b689622d48dfa8e5b931a4a63b46fe8ad",
+   "gold": "World",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "e7a7d5b784746700a0e88951ecbe5583faf1c94b",
+   "gold": "World",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "f82b4a28bb3628e2965c8f0e0a44e9c71423804f",
+   "gold": "World",
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold wrong",
+   "why": "AG News labels follow the source feed's section, not the article's topic: company news from a technology desk is filed Sci/Tech, and non-US news, including sport, World. Read by topic, this item is the field's label."
+  },
+  {
+   "item_id": "29f23af92664854ecde1a0b4686d3fb75a3bd09c",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "Business",
+    "bert_base_ta": "Sci/Tech",
+    "bert_mini": "Business"
+   },
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "2f94a88e9176f7bed89756697a1ed2e8b6ff8a56",
+   "gold": "Sports",
+   "fine_tunes": {
+    "bert_base_fy": "Sports",
+    "bert_base_ta": "Sports",
+    "bert_mini": "World"
+   },
+   "field": "Sports",
+   "field_votes": "19/24",
+   "adjudicated": "Sports",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "416fc273495b1a666fab41899ed00cdadec0e981",
+   "gold": "World",
+   "fine_tunes": {
+    "bert_base_fy": "World",
+    "bert_base_ta": "World",
+    "bert_mini": "Business"
+   },
+   "field": "World",
+   "field_votes": "23/24",
+   "adjudicated": "World",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "569e05407babd63f43dff65019d472fcd625ea57",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "Sci/Tech",
+    "bert_base_ta": "Business",
+    "bert_mini": "Business"
+   },
+   "field": "Business",
+   "field_votes": "24/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "5957a2131813c139217cd238b2ec68828adb0a3e",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "Business",
+    "bert_base_ta": "Business",
+    "bert_mini": "Sci/Tech"
+   },
+   "field": "Business",
+   "field_votes": "23/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "71798121010a3585a1be401f138a1ecbeaa5b454",
+   "gold": "Sports",
+   "fine_tunes": {
+    "bert_base_fy": "Sports",
+    "bert_base_ta": "Sports",
+    "bert_mini": "World"
+   },
+   "field": "Sports",
+   "field_votes": "24/24",
+   "adjudicated": "Sports",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "845e57c28757b0d0c36bda37db2bec180cb4a26c",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "World",
+    "bert_base_ta": "Business",
+    "bert_mini": "Business"
+   },
+   "field": "Business",
+   "field_votes": "18/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "a47fd64a48792944c7acf6964cf2421904a54456",
+   "gold": "Sci/Tech",
+   "fine_tunes": {
+    "bert_base_fy": "Sci/Tech",
+    "bert_base_ta": "Business",
+    "bert_mini": "Sci/Tech"
+   },
+   "field": "Sci/Tech",
+   "field_votes": "18/24",
+   "adjudicated": "Sci/Tech",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "c0905bc32a0c827b740172aa33777f6baf729c61",
+   "gold": "Sci/Tech",
+   "fine_tunes": {
+    "bert_base_fy": "Sports",
+    "bert_base_ta": "Sports",
+    "bert_mini": "Sci/Tech"
+   },
+   "field": "Sci/Tech",
+   "field_votes": "17/24",
+   "adjudicated": "Sci/Tech",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "d130bd61f0913cb6353073cd854c3dd032b497ff",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "Sci/Tech",
+    "bert_base_ta": "Business",
+    "bert_mini": "Business"
+   },
+   "field": "World",
+   "field_votes": "16/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "db0cbf3780633492d18f87bee7c102e87e1ad919",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "Sci/Tech",
+    "bert_base_ta": "Sci/Tech",
+    "bert_mini": "Sci/Tech"
+   },
+   "field": "Sci/Tech",
+   "field_votes": "12/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "e32c7cd15a925e2d26e5b7dce3b8171953902364",
+   "gold": "Business",
+   "fine_tunes": {
+    "bert_base_fy": "Sci/Tech",
+    "bert_base_ta": "Sci/Tech",
+    "bert_mini": "Sci/Tech"
+   },
+   "field": "Business",
+   "field_votes": "23/24",
+   "adjudicated": "Business",
+   "verdict": "gold right",
+   "why": ""
+  }
+ ]
+}
