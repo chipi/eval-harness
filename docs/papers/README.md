@@ -6,13 +6,8 @@ on 2026-09-29 rather than assumed.
 
 [`fetch_papers.py`](fetch_papers.py) downloads the redistributable ones into this
 directory for offline reading. **Thirteen of the twenty-nine are committed here**; the
-other sixteen are gitignored so `--all` cannot commit them by accident. (This said
-"twelve of the twenty-four" until 2026-10-18, while the tables below listed 25.) See
+other sixteen are gitignored so `--all` cannot commit them by accident. See
 [What is committed here](#what-is-committed-here).
-
-(This paragraph and the heading above used to say nothing was mirrored, which was true
-only before the mirroring was done. The body of this file was right and the header was
-stale — corrected 2026-09-29.)
 
 ```bash
 python docs/papers/fetch_papers.py          # the 13 that permit redistribution

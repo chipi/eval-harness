@@ -65,8 +65,9 @@ and the full table: [REFERENCE, datasets](REFERENCE.md#datasets) and
 
 ## Models
 
-Model weights have licences too, and they differ: two of the local models state no licence
-at all, which is a reuse blocker rather than a permission, and several open-weight LLMs
+Model weights have licences too, and they differ: three of the local models state no
+licence at all (`bert_mini`, `textattack/bert-base-uncased-ag-news` and UniEval's
+`MingZhong/unieval-sum`), which is a reuse blocker rather than a permission, and several open-weight LLMs
 carry use conditions. Each is listed, read from the publisher, in
 [REFERENCE, models](REFERENCE.md#models). Check before you deploy one.
 

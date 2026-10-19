@@ -425,8 +425,9 @@ written** (five of the six experiments now; see the synthesis). Summarisation:
 the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with three others. DBpedia: a leader
 tied with nineteen, across a 115× price range (both per
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs). NER:
-eight hosted arms across 78×. Here: twelve or thirteen, two of which are free. Four unrelated tasks, the same shape — at the top of a field, price stops
-predicting quality well before quality stops varying.
+eight hosted arms across 78×. Here: twelve or thirteen, two of which are free. Five unrelated tasks, the same shape — at the top of a field, the leader cannot be
+separated from a group spanning a wide price range (not shown different, which is not the
+same as equal).
 
 ---
 

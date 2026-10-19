@@ -64,8 +64,11 @@ Model weights download from Hugging Face on first use, at the revision the commi
 pinned (sizes in [REFERENCE](REFERENCE.md)). Five of them were measured from pickle
 checkpoints (`pytorch_model.bin`), which execute code when loaded and which torch < 2.6
 refuses; for those a rerun loads the model's **safetensors conversion** instead, pinned by
-commit in `examples/local_models.json`. Each was rerun that way and scored identically to its
-committed run on every item (all 200 or 280). On Linux, `uv` installs the CUDA build of
+commit in `examples/local_models.json`. Each was rerun that way on 2026-10-15 and scored
+identically to its committed run on every item, all 200 or 280 (lab notebook entry 63; an
+earlier adapter-level check covered the two BARTs on 20 items only). The sixth pickle model,
+`bart_s`, has no exact conversion; rerun at the fp32 its config declares, it matches 199 of
+200 items on CNN and 187 of 200 on DailyMail. On Linux, `uv` installs the CUDA build of
 PyTorch, about 5 GB; nothing here needs a GPU.
 
 **What to expect.** A local model with pinned weights and a fixed input should give the

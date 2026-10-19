@@ -162,5 +162,9 @@
     "article_same_ignoring_case_and_punctuation": 1600,
     "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81",
     "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab"
+  },
+  "position_lookup": {
+    "tau_leave_one_article_out": 0.3637,
+    "each_position_one_system_on_every_article": true
   }
 }

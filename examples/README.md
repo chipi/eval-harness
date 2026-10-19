@@ -59,7 +59,7 @@ proprietary model never separated from the best open-weight one in any of the si
 **on four of the six tasks the best model that fits a 64 GB machine scores the same as the
 unlimited-hardware answer** (two at int8 or int4, unmeasured; provider-served scores). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
 a free evaluator trained for the task sits far below the judges — the best judges reach 93% of a
-human expert's agreement, UniEval 64% — so the LLM earns its bill, and the $0 answer is an open-weight LLM judge.
+human expert's agreement (the best of 24, on the same articles), UniEval 64% — so the LLM earns its bill, and the $0 answer is an open-weight LLM judge.
 
 ## What each one actually found
 
@@ -109,7 +109,7 @@ Both corpora carry systematic label noise, and on DBpedia it is the size of the 
 the top eleven are separated by four items, three of which 24–25 of the 26 learned arms
 dispute because the gold label is wrong.
 
-### Few-NERD — task-specific training, isolated
+### Few-NERD — task-specific training, against a zero-shot control
 A 499 MB span tagger fine-tuned on the corpus beat all 24 LLMs and separated from **27 of
 27** — the only unambiguous winner in the repo. But **57% of its margin is one entity
 type**, `other`, whose membership you cannot infer from the label because it is a
@@ -122,7 +122,7 @@ whole field; resolving them moves every hosted arm ~+0.03 and the fine-tuned mod
 so **38% of its lead is agreeing with the annotator rather than being right**.
 
 ### SciFact — pipelines have a ceiling they did not choose
-The leading LLM reranker cannot be separated from twelve other arms: ten rerankers **and two
+The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary): ten rerankers **and two
 free local encoders**. `e5_base`
 (0.7191, $0, CPU) is not statistically distinguishable from any paid arm.
 
@@ -138,7 +138,7 @@ best free scorer is UniEval, a T5 evaluator trained for these four dimensions: �
 on its own published inputs, against `openai_l`'s **0.5398**. 23 of the 24 judges are
 separated from, and ahead of, it; the weakest, `llama_s`, cannot be told apart from it.
 BARTScore, a model fine-tuned on this corpus to write summaries, reaches **0.2562**, below
-every judge. The top is a six-way tie, and `gemma_l` — open weights, $0.0278 for all 100
+every judge. The leader cannot be separated from five other judges, and `gemma_l` — open weights, $0.0278 for all 100
 articles — sits 0.0013 behind the leader. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement
 (interval 89–97%, the best of 24 chosen on the same articles), UniEval 64%, BARTScore 44%.
@@ -153,7 +153,7 @@ planned: `qwen_l`'s is no longer served, so `qwen37max` stands in
 ## The pattern across all six
 
 **At the top of a field, the dearest model did not win, and the leader could not be told
-apart from cheaper rivals.** In five of the six examples the leader cannot be statistically separated
+apart from a group of others, most of them cheaper.** In five of the six examples the leader cannot be statistically separated
 (Holm step-down, α = 0.05) from a group of other arms — and that group spans a large price
 range. Few-NERD is the exception: it has a clear winner, and the same tie appears one rank
 down.
@@ -171,7 +171,7 @@ Counts and ratios are from each experiment's report; "dearest" is the most expen
 the whole experiment, which is not always inside the group.
 
 And every example before SummEval found something wrong with the instrument before it found
-anything about the models. The append-only journal, [`../research/NOTES.md`](../research/internal/NOTES.md), is the
+anything about the models. The append-only journal, [`../research/internal/NOTES.md`](../research/internal/NOTES.md), is the
 record of that — including the retractions.
 
 ---
@@ -214,7 +214,7 @@ per-experiment at the bottom of each `METHOD.md`.
 
 Every cited paper's redistribution licence is recorded in
 [`../docs/papers/README.md`](../docs/papers/README.md), with a fetcher for the thirteen
-mirrored there. All citations were verified by fetching them and comparing titles.
+mirrored there. All citations but one were verified by fetching them and comparing titles; Holm (1979) could not be fetched and is given as a full reference.
 
 **No corpus, model weights or papers are redistributed here.** Each example ships a
 download recipe, and dataset identity travels as a content hash (`items_sha256`,

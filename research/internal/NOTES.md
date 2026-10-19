@@ -2743,8 +2743,9 @@ reports did. All of it was in published copy before this branch.
    and on SciFact the dearest of only the twelve cheapest. The best hosted arm was among
    the four dearest in three of six (3rd of 24 on AG News, 2nd on Few-NERD, 4th on
    SummEval; recomputed here — the review had said 2nd on AG News). "Price stops predicting
-   quality" is gone from the headline copy, and SummEval, where price predicts quality most,
-   no longer "confirms the price findings".
+   quality" is gone from the headline copy, and SummEval — the largest price slope as a share
+   of the best score, though not the highest correlation — no longer "confirms the price
+   findings".
 4. **The Few-NERD "matched pair" was not one.** `span_marker` runs on a RoBERTa encoder,
    `gliner` on DeBERTa-v3; "+0.3134 from exposure alone" is exposure plus architecture. The
    BART CNN/DM-vs-XSum pair is the matched one.
@@ -2768,3 +2769,37 @@ of this size is in every hosted score and measured for one judge only.
 
 Mine in this round: the synthesis still said "ten calibration figures" after I added the
 eleventh, and I dated the UniEval runs 2026-10-19; they ran on 2026-10-18 (UTC).
+
+### 2026-10-19 · 69 — Third review: fixes that did not travel, and two claims I overstated
+
+A third pair of independent reviews read everything again: one the reports against the
+evidence, one the site, READMEs and docs. Every number they recomputed held. What they found:
+
+1. **Round-two fixes that landed in the reports but not where readers meet them.** The
+   Few-NERD "matched pair / exactly one variable" claim survived in the example's README and
+   METHOD, REFERENCE and the examples index (and AG News's METHOD called `bart_mnli` a
+   matched control too); the experiments page was still headed "The price tag told you
+   nothing"; the Method and Use pages still said a tie makes the cheap arm the answer without
+   "check the gap". All fixed, and a phrase-by-phrase sweep of every earlier finding is clean.
+2. **My provider claim was overstated (CORRECTION to entry 68).** I wrote "the provider moves
+   them" and "every hosted score here carries that much provider spread". It is one judge,
+   one run per provider, a pair chosen after the first result, and hosted temperature-0
+   runs vary on their own; and most judges were served by one provider throughout (11 of 24
+   on every call, 18 of 24 on at least 98). The p is 0.0133 by the pair test at 400,000
+   permutations, not the 0.0125 I quoted from a two-arm family test. Now: "consistent with a
+   provider effect, not separated from run-to-run noise".
+3. **The fixed summary order is a confound I under-described.** Each position is the same
+   system on all 100 articles, so a prior that only knows which system wrote a summary
+   reaches τ 0.3637 (leave one article out) — above the weakest judge and UniEval on this
+   experiment's text. My earlier "τ 0.042, not a shortcut" tested a linear position index,
+   the wrong test. `calibrate.py` now computes it and the checker reads it.
+4. **The finding-3 box still said a model not trained on your task loses to everything.**
+   SciFact's retrieval encoders tie without SciFact. Rewritten with both exceptions.
+5. Smaller: calibration is eleven of eleven within the allowance and ten inside their own
+   interval; SummEval has the steepest price slope, not the strongest price correlation;
+   the paired-run costs, dates, NOTES count, §0 Holm thresholds, 103× (not 109×), GLM price
+   rise (~2.5×, not tripled), DATA.md's licence count (three), SciFact's "eleven or twelve",
+   "leader plus nineteen", REPRODUCE's rerun claim (correct, now cited to entry 63).
+
+One reviewer finding was wrong: REPRODUCE's "scored identically on every item" is the
+2026-10-15 full rerun (entry 63), not the 20-item adapter check it was compared against.

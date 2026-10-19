@@ -1362,6 +1362,13 @@ check(f"SummEval §3.3: gemma_l on UniEval's text {_gp:.4f} (CoreWeave) and {_gs
       and f"to SambaNova, scored {_gs:.4f}; on the same text the two providers differ by {_gs - _gp:.4f}" in _SEVn
       and f"{_go - _tau['unieval']:.4f} on this experiment's text and {_gp - _tau['unievalpub']:.4f} on" in _SEVn,
       f"pair run taus {_gp} {_gs}")
+_pl = _cal_se.get("position_lookup") or {}
+_plt = _pl.get("tau_leave_one_article_out") or 0.0
+check(f"SummEval §7: a system-identity prior (position lookup) reaches {_plt}",
+      _pl.get("each_position_one_system_on_every_article") is True
+      and f"reaches τ {_plt:.4f}" in _SEVn
+      and f"reaches τ {_plt:.3f}" in " ".join(_SER.split())
+      and _tau["llama_s"] < _plt < _tau["unievalpub"], str(_pl))
 _ui = _cal_se.get("unievalpub_inputs_vs_ours") or {}
 check("SummEval §3.3: how UniEval's published inputs differ from ours, as calibrate.py counted it",
       bool(_ui) and _ui["summaries"] - _ui["same_ignoring_case_and_punctuation"] == _ui["differ_only_in_bracket_tokens"]

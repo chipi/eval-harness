@@ -4,7 +4,7 @@
 **Protocol** Kendall τ-b per article between a judge's scores and the expert means, averaged over coherence, consistency, fluency and relevance · Spearman ρ beside it · calibration: ROUGE-1 τ 0.1487 vs G-Eval's published 0.150, UniEval 0.3717 vs 0.377 — [docs/PROTOCOL.md](../docs/PROTOCOL.md)
 **Arms** 24 hosted LLM judges (8 vendors × 3 tiers, one replacement) · UniEval, a trained evaluator, on two sets of inputs · BARTScore · ROUGE-1/2/L · this repository's `coverage` · `length` · `random`
 **Design** 1 pass per arm · one call per article, all 16 summaries in one prompt · temperature 0, reasoning off, `max_tokens` 1500 · **$7.03 billed**
-**Date** 2026-10-18 · **Harness** [`../harness`](../harness) · **Example** [`../examples/summeval-judging`](../examples/summeval-judging)
+**Date** free arms 2026-10-15, judges and UniEval 2026-10-18, paired side runs 2026-10-19 · **Harness** [`../harness`](../harness) · **Example** [`../examples/summeval-judging`](../examples/summeval-judging)
 **Costs** are what the provider billed (`usage.cost`), not the price in each config — see §6
 
 > **The first experiment where the model grades instead of answers.** Every other
@@ -28,7 +28,7 @@
 | **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**; UniEval, the best free scorer, **0.3717** on its own inputs (0.3476 on this experiment's), BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); UniEval reaches 64% (60% on this experiment's inputs), BARTScore 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries in one prompt, which a per-article rank correlation rewards (§3.7). |
 | **Which judge?** | **Six judges the leader cannot be separated from** — `openai_l` itself, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 27 arms. A tie is relative to the arm tested: from `gemma_l` the set also takes in `glm_m`. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
-| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges on mean τ and cannot be told apart from the weakest, `llama_s` (§3.3). Dimension by dimension it is closer: on coherence alone it is above seven judges. |
+| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges on mean τ and cannot be told apart from the weakest, `llama_s` (§3.3). Dimension by dimension it is closer: on coherence alone `unievalpub` is above seven judges. |
 | **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there. But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
@@ -45,10 +45,12 @@
   `unievalpub` is above four judges, and on coherence alone above seven.
 - **How the text is written moves the trained evaluator.** The two UniEval arms score the
   same articles, summaries and reference, cased, tokenised and bracketed differently; that
-  difference is 0.0241 τ, separated (p 0.0002, §3.3). It does not move a judge: `gemma_l`,
-  re-run on UniEval's text from the same provider, scores 0.0013 higher, not separated. The
-  provider does: served by SambaNova instead, the same run scores 0.0113 higher still. Its calibration row, on its own inputs, reproduces
-  G-Eval's 0.377 (§5).
+  difference is 0.0241 τ, separated (p 0.0002, §3.3). UniEval's calibration row, on its own
+  inputs, reproduces G-Eval's 0.377 (§5).
+- **The same text change does not measurably move a judge.** `gemma_l`, re-run on UniEval's
+  text from the provider that served its original run, scores 0.0013 higher, not separated.
+  One re-run served by another provider scored 0.0113 higher — consistent with a provider
+  effect, from one judge and one run per provider (§3.3).
 - **The best judges come close to a single expert, and stay measurably below one.** Scored
   against the mean of two experts, as one expert is against the other two, the best judges
   reach 93% of a human's agreement (95% interval 89–97%; the gap to the expert excludes zero,
@@ -156,7 +158,7 @@ coherence and relevance and one per sentence for consistency and fluency.
 **Is the ordering real?** Yes: the global permutation test on within-article ranks gives
 p = 0.0002, and 334 of 528 pairs are distinguishable (`make leaderboard`).
 
-### 3.2 A six-way tie at the top
+### 3.2 Six judges the leader cannot be separated from
 
 The leader tested against every other arm on the same articles — paired sign-flip
 permutation, Holm step-down over the 32 opponents (`make family-test A=se_openai_l_n100_v1
@@ -242,17 +244,23 @@ sentence-cased summaries. This experiment's has the article as published and the
 lower-cased, as SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
 wins 66 of 100 articles). Which part of it does the work is not tested.
 
-**The text does not hold the judges back; the provider moves them.** The judges were given
-this experiment's text as well, lower-cased summaries and bracket tokens included. `gemma_l`
-was re-run twice on UniEval's text as paired side runs (`harness/data/runs-pair/`, not on the
-leaderboard). Pinned to CoreWeave, the provider that served the original run (fp4), it
-scores 0.5397 against its 0.5384 here: +0.0013, not separated (p 0.7658; it wins 49 of 100
-articles). So the text that is worth 0.0241 to UniEval is worth nothing measurable to the
-judge, and the judge's lead over UniEval is 0.1908 on this experiment's text and 0.1680 on
-UniEval's. The first re-run, routed by OpenRouter to SambaNova, scored 0.5510; on the same
-text the two providers differ by 0.0113, separated (p 0.0125). The original runs did not
-pin a provider, so every hosted score here carries that much provider spread, unmeasured
-for the other 23 judges.
+**The text does not measurably move the one judge tested.** The judges were given this
+experiment's text as well, lower-cased summaries and bracket tokens included. `gemma_l` was
+re-run twice on UniEval's text as paired side runs (`harness/data/runs-pair/`, not on the
+leaderboard). Pinned to CoreWeave, which served 99 of the original run's 100 calls (the
+other went to DeepInfra), it scores 0.5397 against its 0.5384 here: +0.0013, not separated
+(p 0.7689; it wins 49 of 100 articles). So the text that is worth 0.0241 to UniEval is
+worth nothing measurable to this judge, and its lead over UniEval is 0.1908 on this
+experiment's text and 0.1680 on UniEval's.
+
+The first re-run, routed by OpenRouter to SambaNova, scored 0.5510; on the same
+text the two providers differ by 0.0113 (p 0.0133, uncorrected, and a pair chosen after the
+first result was seen), and SambaNova billed 3.7× what CoreWeave did for the same calls. That
+is consistent with a provider effect, but it is one judge and one run per provider, and
+hosted runs at temperature 0 also vary from run to run, so the two are not separated here.
+Most judges were served by one provider throughout (11 of 24 on every call, 18 of 24 on at
+least 98 of 100, as each call's record shows), so the leaderboard is not a blend of
+providers; what another provider would score for them is not measured.
 
 Among the free scorers not trained to judge, BARTScore, which never sees a reference,
 beats every reference-based metric, and plain ROUGE-1 beats this repository's `coverage`
@@ -428,7 +436,7 @@ and runs as `qwen37max` — its own config, never read as `qwen_l`.
 **Prices moved since the configs were written.** Each config carries the per-token price
 the earlier experiments used (September 2026); OpenRouter's prices on the day of this run
 differ, in both directions — GPT-5.5 is now $5/$30 per million tokens against $1.25/$10 in
-its config, the three GLM models roughly tripled, DeepSeek V4 Pro and Claude Sonnet 5 fell.
+its config, the three GLM models rose about 2.5×, DeepSeek V4 Pro and Claude Sonnet 5 fell.
 The costs in this report are the bills, so they are right; the dry-run estimates, which use
 the config prices, were not. One consequence: within OpenAI the medium tier now costs more
 than the large one, so "price tier" here is a label, not a price order. Cost comparisons
@@ -451,10 +459,13 @@ between this experiment and the earlier five mix September and October prices.
 - **n = 100 articles**, below the usual 200, and every summary is from a 2019-era system.
   Modern summaries are more fluent; a judge's skill at catching 2019 failures may not
   transfer.
-- **The 16 summaries are always shown in the same order**, the dataset's own. The expert
-  mean varies by position (3.09 at the first, up to 4.57), but position alone orders the
-  summaries at τ 0.042, so it is not a shortcut a judge could exploit much; a judge's own
-  position bias is not measured.
+- **The 16 summaries are always shown in the same order**, the dataset's own, and each
+  position is the same system on every one of the 100 articles. So position stands for which
+  system wrote the summary, and systems differ in quality: scoring each summary by the mean
+  expert score its position got on the other 99 articles reaches τ 0.3637 (`calibrate.py`),
+  above the weakest judge (0.3533) and UniEval on this experiment's text (0.3476), below
+  every other judge. Part of any arm's τ can be a system-level prior rather than a reading of
+  the summary; how much, for the judges, and their own position bias, are not measured.
 - **One prompt, all 16 summaries in one call, four dimensions together.** Scoring one
   summary per call, one dimension per call, or with token probabilities (G-Eval's method)
   are different judges and are not measured.
@@ -465,9 +476,10 @@ between this experiment and the earlier five mix September and October prices.
   the summarisation experiment found for model-written references.
 - **The annotations are public** and may be in some judges' training data; memorising
   per-summary scores for 1,600 summaries is unlikely but not ruled out.
-- **No provider was pinned.** OpenRouter chose the provider for every judge. For `gemma_l`
-  two providers differ by 0.0113 on the same text (§3.3); for the other 23 it is not
-  measured, and it is the same size as several gaps in the tie table.
+- **No leaderboard run pinned a provider.** OpenRouter chose the provider for every judge;
+  most were served by one throughout. For `gemma_l` two providers scored 0.0113 apart on the
+  same text in one run each (§3.3), a gap the size of several in the tie table; for the
+  other 23 judges it is not measured.
 - **One pass per judge.** Run-to-run variance at temperature 0 is not measured here; in the
   summarisation experiment's three-run sweep only 9.8% of hosted outputs were byte-identical
   across the three.

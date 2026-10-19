@@ -1,6 +1,7 @@
 # This repository's own summarisation metric (ROUGE-Lsum recall with the summary clipped to
 # the reference's length), from that example's scorer, averaged over the 11 references.
-# How well it agrees with experts is how far the summarisation leaderboard can be believed.
+# How well it agrees with experts bounds what a lead on the summarisation leaderboard means
+# to a person (on 2019-era summaries, not the LLM-written ones that leaderboard ranks).
 config_id: se_coverage_n100_v1
 dataset_id: summeval_100
 adapter: ../adapter.py

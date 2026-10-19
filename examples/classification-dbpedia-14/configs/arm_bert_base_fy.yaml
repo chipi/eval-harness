@@ -1,7 +1,8 @@
 # fabriceyhc/bert-base-uncased-dbpedia_14 — the fine-tuned specialist this example lacks.
 #
 # WHY IT MATTERS MORE HERE THAN ON AG NEWS. AG News could run its fine-tuned arm:
-# bert_mini (44MB, safetensors) scored 0.9450 and beat all 24 hosted models. DBpedia
+# bert_mini (44MB, safetensors) scored 0.9450, above all 24 hosted models (not separated
+# from the best of them). DBpedia
 # cannot run ANY of them. Every credible DBpedia-14 fine-tune on the Hub — fabriceyhc,
 # Danni/distilbert, kundank/roberta, TheChickenAgent — ships pytorch_model.bin and no
 # safetensors, because they were uploaded in 2021-2023 before safetensors became default.

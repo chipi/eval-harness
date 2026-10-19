@@ -196,7 +196,8 @@ def chapters(H, f: dict) -> list:
          "tool": ("make family-test · make leaderboard",
                   f"separated from {sf['n_arms'] - 1 - sf['n_tied']} of {sf['n_arms'] - 1} opponents"
                   f"   ← SciFact's leader, {sf['leader_row']['arm']}"),
-         "yours": "When the answer is “tied”, the cheapest member of the tie is the decision."},
+         "yours": "When the answer is “tied”, look at the gap and the sample size first: if the "
+                  "gap is one you can live with, the cheapest member of the tie is the decision."},
         {"id": "record", "nodes": "baseline", "kicker": "The record",
          "title": "Decide on the record.",
          "short": "The scorer is part of the experiment. So is the reason.",
@@ -281,7 +282,8 @@ def patterns(H, f: dict) -> list:
     return [
         ("Is the cheaper model good enough?", "arms = models, same prompt",
          f"On DBpedia a {H.times(db['tied_ratio'])} price difference bought nothing measurable. "
-         "Run both on your items; if they tie, the cheap one wins.",
+         "Run both on your items; if they tie and the gap is one you can live with, the cheap "
+         "one wins.",
          "classification-dbpedia-14", "accuracy · cost per item"),
         ("Did my prompt change help?", "arms = prompts, same model",
          "Name the pair before you look, tune on a dev slice, confirm on the held-out rest.",
@@ -302,7 +304,8 @@ def patterns(H, f: dict) -> list:
          H.q("Score a few dozen outputs yourself, then measure how well each judge orders them "
              "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
              "(the best of 24, on the same articles), and an open-weight one at 1/23 of the "
-             "leader's price tied it.", JUDGE),
+             "leader's price tied it.", JUDGE)
+         + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
          "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",
          "Score against references, clip for length so verbosity cannot buy recall, and check "

@@ -12,7 +12,8 @@ WHAT THIS EXPERIMENT BREAKS THAT THE OTHER FIVE DID NOT
      harness's paired permutation tests and Holm apply unchanged.
   2. It measures the instrument. Two of the arms are METRICS the rest of this repository
      ranks by: ROUGE, and `coverage`, the summarisation experiment's own primary metric. How
-     well they agree with experts is how far that experiment's leaderboard can be believed.
+     well they agree with experts bounds what a lead on that experiment's leaderboard means
+     to a person (measured on 2019-era summaries, not the LLM-written ones it ranks).
   3. It is the LLM-as-judge question in measurable form: when a model grades text, does it
      grade like a person? That is the question behind every silver reference.
 

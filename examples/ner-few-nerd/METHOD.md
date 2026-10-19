@@ -63,12 +63,15 @@ The pair is the whole point of this example:
 **Why this pair and not an off-the-shelf NER model.** Most predict their own taxonomy —
 CoNLL's four types, OntoNotes' eighteen — and using one would need a lossy mapping onto
 Few-NERD's eight, confounding *model quality* with *mapping loss*. GLiNER takes the labels
-as input, so the comparison is clean **and** the model has never seen this dataset. That is
+as input, so there is no mapping loss **and** the model has never seen this dataset. That is
 why spaCy is not here.
 
 The DBpedia example could not load a fine-tuned ML arm at all, so its ML-vs-LLM question
-went unanswered. This pair exists to answer it: the two differ in **exactly one variable**,
-exposure to the training split, and it is worth **+0.3134 F1**.
+went unanswered. This pair exists to answer it: `span_marker` leads `gliner` by **+0.3134
+F1**. The two differ in exposure to the training split and also in architecture and encoder
+(a SpanMarker span classifier on RoBERTa against GLiNER's label-prompted matcher on
+DeBERTa-v3), so that is exposure plus architecture, not exposure alone. Summarisation has the
+matched pair: the same BART fine-tuned on CNN/DailyMail and on XSum.
 
 Plus two floors: `nothing` (the empty set, always) and `capitalized` (every capitalised
 run minus an orthography stoplist).
@@ -76,7 +79,7 @@ run minus an orthography stoplist).
 > **`gliner`'s threshold is untuned** — 0.5, the library default. It is this arm's decision
 > boundary and is in the fingerprint. Tuning it on the dev slice would be legitimate, but
 > it would then be a *tuned* arm and would have to say so. A tuned GLiNER might close some
-> of that +0.3134, and nothing here bounds how much.
+> of the +0.3134 gap, and nothing here bounds how much.
 
 ## Why these success criteria
 

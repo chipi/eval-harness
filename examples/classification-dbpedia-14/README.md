@@ -12,9 +12,9 @@ conclusion the pair does.
 | --- | --- | --- |
 | classes | 4 | 14 |
 | hosted field | 0.835 – 0.910 | 0.939 – 0.993 |
-| fine-tuned ML arm | beat all 24 | **0.9857 — tied with the top group, not above it** (needs torch ≥ 2.6) |
+| fine-tuned ML arm | ahead of all 24 on the point estimate, not separated from `anthropic_m` | **0.9857 — tied with the top group, not above it** (needs torch ≥ 2.6) |
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
-| outcome | a winner | no winner: the leader is tied with 19 of the 27 others |
+| outcome | a leader separated from 26 of 29, tied with two other fine-tunes and `anthropic_m` | no winner: the leader is tied with 19 of the 27 others |
 
 > **Rerun this experiment** from the repository root — `EXP=dbpedia`:
 >

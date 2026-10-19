@@ -118,6 +118,35 @@ def unieval_inputs() -> dict:
             "original_release_sha256": ad.ORIGINAL_SHA256}
 
 
+def position_lookup() -> dict:
+    """The 16 summaries sit in the dataset's order, and each position is one system on every
+    article. Scoring a summary by the mean expert score its position got on the OTHER 99
+    articles is a prior that knows only which system wrote it; its tau is the bar below
+    which an arm could be reading system identity rather than the summary."""
+    ad = _adapter()
+    data = ROOT / "harness" / "data"
+    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    golds = [(data / "references" / "gold" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
+             for it in items]
+    g = [json.loads(x) for x in golds]
+    loo = []
+    for k, gold in enumerate(golds):
+        pred = {d: [statistics.fmean(g[j][d][i] for j in range(len(g)) if j != k) for i in range(16)]
+                for d in ad.DIMS}
+        loo.append(ad.score(json.dumps(pred), gold)["tau"])
+    norm, by_text, _ = ad._unieval_published()
+    systems = [set() for _ in range(16)]
+    for it in items:
+        item = ad._item((data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8"))
+        keys = [by_text.get(norm(x), set()) for x in item["summaries"]]
+        doc = set.intersection(*[{d for d, _ in k} for k in keys]).pop()
+        for i, k in enumerate(keys):
+            systems[i].add(frozenset(m for d, m in k if d == doc))
+    one_system = all(len(set.intersection(*[set(x) for x in sy])) >= 1 for sy in systems)
+    return {"tau_leave_one_article_out": round(statistics.fmean(loo), 4),
+            "each_position_one_system_on_every_article": one_system}
+
+
 def reference_combinations() -> dict:
     """ROUGE-1 rho and tau under three ways of combining the 11 references."""
     adapter = _adapter()
@@ -174,7 +203,8 @@ def main() -> int:
                 "Kendall tau-b against the expert means",
         "split_rows": 100, "arms": arms,
         "rouge1_reference_combination": reference_combinations(),
-        "unievalpub_inputs_vs_ours": unieval_inputs()})
+        "unievalpub_inputs_vs_ours": unieval_inputs(),
+        "position_lookup": position_lookup()})
     for arm, r in arms.items():
         print(f"  {arm:10s} tau {r['value']:.4f} +/-{r['ci95']:.4f}  vs {r['published']:.3f} published  {r['verdict']}")
         for d, x in r["by_dimension"].items():
@@ -186,6 +216,7 @@ def main() -> int:
     print("  UniEval's inputs against ours: " + json.dumps(
         {k: v for k, v in json.loads(path.read_text())["unievalpub_inputs_vs_ours"].items()
          if not k.endswith("sha256")}))
+    print("  position lookup: " + json.dumps(json.loads(path.read_text())["position_lookup"]))
     print(f"wrote {path.relative_to(ROOT)}")
     return 0
 

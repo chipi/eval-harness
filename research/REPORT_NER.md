@@ -26,7 +26,7 @@
 | the choice | what the data says |
 |---|---|
 | **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **499 MB**, CPU, 0.76 s/item. **0.7674 — separated from 27 of 27**, the only unambiguous winner in this repo. |
-| **Self-host · open-weight LLM, absolute** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B / ~52 GB**. **0.6733** — **0.0941 worse** than a model **109× smaller**. The clearest ML-beats-LLM result in the set. |
+| **Self-host · open-weight LLM, absolute** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B / ~52 GB**. **0.6733** — **0.0941 worse** than a model **103× smaller**. The clearest ML-beats-LLM result in the set. |
 | **Self-host · open-weight LLM, ≤128 GB** | **The same model.** At 52 GB native it fits with room to spare — **the absolute open-weight winner here is already the practical one.** |
 | **Self-host · open-weight LLM, ≤64 GB** | **Still the same model**, 52 GB native. Memory is not the constraint on this task at any budget — **and it still loses by 0.0941 to a 499 MB tagger.** |
 | **Deploy — rented API** | **`openai_m`** at **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. There is no reason to choose this row unless you cannot run a 499 MB model. |
@@ -56,7 +56,7 @@ one type that means the same thing everywhere, a frontier LLM beats it.**
 
 **On deployment:** this is the task where a small model wins by the widest margin. The
 best open-weight LLM you could self-host, Gemma-4-26B at 52 GB, scores **0.6733** — a
-model **109× larger** than `span_marker` and **0.0941 worse**. Memory budget changes
+model **103× larger** than `span_marker` and **0.0941 worse**. Memory budget changes
 nothing here: 52 GB fits a 64 GB box natively, and the answer is the same at every budget
 from 64 GB to unlimited.
 

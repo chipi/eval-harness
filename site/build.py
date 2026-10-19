@@ -643,7 +643,7 @@ def home(f: dict) -> str:
 
 {method.landing_teaser(H, f, "04")}
 <section class="block"><div class="wrap">
-  <p class="note"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+  <p class="note"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>
 {author("home")}"""
     return page("eval-harness — is the ranking real, or a lucky sample?",
@@ -712,7 +712,7 @@ def landing(f: dict) -> str:
 
 <section class="block" id="findings"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
-  <h2>The price tag told you nothing.</h2>
+  <h2>The dearest model was never the best.</h2>
   <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In {in_all} it finished behind something cheaper</strong> — and in {word(behind_free)}, behind something free.</p>
   <div class="chart reveal">{legend(reading="higher score: further right →", baseline=False)}{strips}
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
@@ -759,7 +759,7 @@ def landing(f: dict) -> str:
     </div>
     <figure class="chart reveal">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}<figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
-  <p class="note" style="margin-top:48px"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+  <p class="note" style="margin-top:48px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>
 
 <section class="block" id="experiments"><div class="wrap">
@@ -840,7 +840,7 @@ def findings_for(x: dict, f: dict) -> list:
     require(s != "ag-news" or all(a["kind"] == "local" for a in x["arms"][:3]),
             "AG News: the top three are local fine-tunes")
     require(s != "dbpedia" or ("bert_base_fy" in x["tied"] and x["n_tied"] == 19),
-            "DBpedia: a group of nineteen including the fine-tune")
+            "DBpedia: the leader plus nineteen others, including the fine-tune")
     require(s != "few-nerd" or x["n_tied"] == 0, "Few-NERD: span_marker separated from all")
     require(s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
             "SciFact: twelve tied, including e5_base")
@@ -895,7 +895,7 @@ def findings_for(x: dict, f: dict) -> list:
         ]
     if x["slug"] == "scifact":
         return [
-            ("LLM rerankers lead — inside a twelve-way tie.",
+            ("LLM rerankers lead — and cannot be separated from eleven or twelve others.",
              f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_tied']} arms cannot be separated from it, including the free retrievers e5_base and bge_small."),
             *common,
             ("The dev slice picked the wrong winner.",
@@ -914,7 +914,8 @@ def findings_for(x: dict, f: dict) -> list:
                  "be separated from the weakest, on either set of inputs.", rep)),
             ("An open-weight judge ties the leader.",
              f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
-             f"the leader cannot be separated from it or from {x['n_tied'] - 1} others."),
+             f"the leader cannot be separated from it or from {x['n_tied'] - 1} others. "
+             + q("No provider was pinned: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.", rep)),
             *common,
             ("The best judges come close to a single expert, and stay below one.",
              q("Scored against the mean of two experts, as one expert is against the other two, "
@@ -1014,7 +1015,7 @@ QUESTION = {
 }
 HEADLINE = {
     "summarization": "A free model ties the frontier — on CNN's news.",
-    "ag-news": "Small models win by learning the labels.",
+    "ag-news": "Small models lead by learning the labels.",
     "dbpedia": "Twenty-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",

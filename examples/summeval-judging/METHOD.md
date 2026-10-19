@@ -18,7 +18,8 @@ It came after the other five because it measures the instrument they rely on. Ev
 reference in this repository, and every automated eval that uses a model as the judge,
 assumes that a model's judgement of text tracks a person's. Here that assumption is a number
 with an interval. And two of the arms are metrics this repository ranks by, so the same run
-says how far the summarisation leaderboard can be believed.
+bounds how much a lead on the summarisation leaderboard means to a person — measured on
+2019-era summaries, not the LLM-written ones that leaderboard ranks.
 
 ## Why SummEval
 

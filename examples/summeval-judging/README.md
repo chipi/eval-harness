@@ -45,7 +45,7 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 | arm | what it is |
 |---|---|
 | 24 hosted LLM judges | the same 24 models as the other experiments, with `qwen37max` in place of `qwen_l`, whose model is no longer served; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
-| `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197) (Zhong et al. 2022), a T5-large evaluator trained to answer one yes/no question per dimension, for exactly these four; `MingZhong/unieval-sum`, pinned, licence not stated on its model card; local, CPU. `unieval` scores the text every other arm saw; `unievalpub` scores UniEval's own published SummEval inputs (the same articles, summaries and reference, cased and tokenised differently), the protocol behind its published figures |
+| `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197) (Zhong et al. 2022), a T5-large evaluator trained to answer one yes/no question per dimension, for exactly these four; `MingZhong/unieval-sum`, pinned, licence not stated on its model card; local, CPU. `unieval` scores the text every other arm saw, plus one human reference for relevance; `unievalpub` scores UniEval's own published SummEval inputs (the same articles, summaries and reference, cased and tokenised differently), the protocol behind its published figures |
 | `rouge1`, `rouge2`, `rougeL` | ROUGE F1 of each summary against each of the 11 human references, averaged |
 | `coverage` | this repository's summarisation metric, imported from that example's own scorer, averaged over the references |
 | `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation experiment measured; local, CPU |
@@ -135,6 +135,17 @@ make leaderboard DATASET_ID=summeval_100
 
 ## What this cannot say
 
+- **No leaderboard run pinned a provider.** OpenRouter chose who served every judge, though
+  most were served by one throughout. For `gemma_l`, two providers scored 0.0113 apart on
+  the same text in one run each, and billed 3.7× apart; for the other 23 judges this is not
+  measured. Renting a judge through default routing may give a different score and bill.
+- **Each position is the same system on every article.** A prior that only knows which
+  system wrote a summary reaches τ 0.364 against the experts, above UniEval on this text and
+  the weakest judge; read the free arms, and the bottom of the field, against it.
+- **Judges and UniEval are not scored the same way.** A judge sees all 16 summaries in one
+  call and can rank them against each other, which a per-article rank correlation rewards;
+  UniEval scores one summary at a time and is given one human reference for relevance,
+  which no judge sees.
 - **One trained evaluator.** UniEval is the only free arm trained to judge. Part of its
   training data is built from CNN/DailyMail, and its paper does not say from which split, so
   it may have seen these articles' text; its paper does not train on their expert scores.

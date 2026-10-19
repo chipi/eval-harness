@@ -16,7 +16,7 @@ Freeze a dataset, run your system against it, and get an answer that says whethe
 system is actually better than another, or only ahead on this sample. To show it doing
 something real, it measured 24 LLMs, small fine-tuned models and baselines on six public
 benchmarks. The most expensive model never won, and in five of six the leader could not be
-separated from a group of cheaper rivals at 100–280 items — not shown different, which is
+separated from a group of others, most of them cheaper, at 100–280 items — not shown different, which is
 not the same as equal.
 
 ### Why it exists
@@ -171,15 +171,16 @@ What they found, and what a plain leaderboard would have hidden:
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
-- **Retrieval.** The leading LLM reranker cannot be separated from twelve other arms,
+- **Retrieval.** The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary),
   ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
 - **Judging.** Asked to grade summaries the way three experts did, 23 of the 24 LLMs are
   separated from, and ahead of, the best free scorer measured — UniEval, an evaluator
   trained for exactly this — and all 24 from BARTScore and ROUGE: the first task here where
   the LLM clearly earns its bill. Scored against two experts, as one expert is against the
-  other two, the best judges reach 93% of a human's agreement and UniEval 64%. The top is a
-  six-way tie, and an open-weight judge sits 0.0013 behind the leader for $0.0278 per 100
+  other two, the best judges reach 93% of a human's agreement (the best of 24, on the same
+  articles) and UniEval 64%. The leader
+  cannot be separated from five other judges, and an open-weight one sits 0.0013 behind it for $0.0278 per 100
   articles. ROUGE agrees with the experts at τ 0.14–0.16, and
   this repository's own summarisation metric below that.
 
