@@ -7,6 +7,224 @@
 > will not be built in this repository. The confidence add-on (5) stays a candidate.
 
 
+---
+
+# Round 2 (2026-10-19): run the open models ourselves, and turn the judge into an instrument
+
+*Written after reading the site as it stands on `main` (9454f191) and the `NOT measured`
+lists of REPORT_SUMMEVAL §7 and REPORT_SYNTHESIS. Same rule as round 1: each candidate must
+add a different **kind** of evaluation, not one more benchmark. New this round: the focus
+is local serving on the two 128 GB machines, the GMKtec EVO-X3 (Strix Halo, Radeon 8060S)
+and the DGX Spark (GB10). Model sizes and licences below were read from the HF API on
+2026-10-19.*
+
+## What SummEval opened
+
+SummEval did two things the first five could not. It **measured an instrument**: it showed
+that this repo's own `coverage` agrees with experts less than ROUGE-1. And it **validated a
+replacement**: judges reach 93% of an expert, and an open-weight one (`gemma_l`, Gemma 4
+31B) can't be separated from the leader. That opens three gates:
+
+1. A validated judge can **score** other experiments, starting with summarisation, whose
+   metric we now know is weak.
+2. The judge's own caveats become experiments of their own. §7 lists position, pointwise
+   vs listwise, probability-weighted scoring, reasoning, own-family bias and provider
+   drift. Most of them need many runs, or logprobs, and a model we serve ourselves gives
+   both for free.
+3. The site's biggest hedge becomes measurable. Today it says: *"No open-weight LLM was
+   run on any of these machines … the 'own it' figures elsewhere are provider-served
+   scores."* Two 128 GB machines can serve 7 of the 24 hosted arms locally, with **the
+   same weights** the provider serves.
+
+## The seven arms that can be "owned" on 128 GB
+
+| arm | model | params | licence | fits 128 GB as |
+|---|---|---|---|---|
+| `gemma_s` | Gemma 3 27B it | 27.4B | Gemma terms (gated) | bf16 (~55 GB) |
+| `gemma_m` | Gemma 4 26B-A4B it (MoE) | 25.8B | Apache-2.0 | bf16 (~52 GB); Google also ships an official QAT Q4 GGUF |
+| `gemma_l` | Gemma 4 31B it | 31.3B | Apache-2.0 | bf16 (~63 GB) |
+| `mistral_s` | Mistral Small 3.2 24B | 24.0B | Apache-2.0 | bf16 (~48 GB) |
+| `llama_m` | Llama 3.3 70B | 70.6B | Llama 3.3 (gated) | FP8 / Q8 (~71 GB); bf16 does not fit |
+| `llama_s` | Llama 4 Scout (MoE) | 108.6B | Llama 4 (gated) | Q4 (~60 GB) only |
+| `glm_s` | GLM-4.5-Air (MoE) | 110.5B | MIT | Q4 (~62 GB); FP8 (~110 GB) is tight |
+
+The other 17 are proprietary, or too large to run unquantised: GLM-4.6/5, Llama 4
+Maverick, DeepSeek V4, Mistral Medium/Large, Qwen.
+
+**Serving.** The harness already routes per config (`params.base_url` in
+`_shared/gateway.py`), so an OpenAI-compatible local server plugs in today:
+- **EVO-X3:** llama.cpp `llama-server` (Vulkan or ROCm).
+- **DGX Spark:** vLLM or SGLang for bf16/FP8, and llama.cpp (CUDA) for the same GGUFs.
+
+Check each stack's support for Strix Halo (gfx1151) and GB10 when setting up; it moves
+fast.
+
+## Prerequisite for all of it: a serving fingerprint (harness work, ~1 day)
+
+A run against a local server records the endpoint but not what made the numbers. Before
+any local LLM run is committed, the fingerprint needs:
+- the engine and its version (llama.cpp build, vLLM version);
+- the weights' format and **content hash** (GGUF sha256, or the safetensors revision);
+- quantisation, context length and batch size;
+- the hardware, read from the machine, as `docs/evidence/hardware.json` already does;
+- optionally, wall power during the run.
+
+Without it, "Q4 on the X3" and "bf16 on the Spark" would look identical in every recorded
+field. That is the corpus-fingerprint lesson of the retrieval experiment, one level down.
+Also capture **logprobs** whenever the server returns them; R2-2 and R2-5 depend on it.
+
+## Candidates
+
+### R2-1. Own it, measured: the same weights, served by the provider vs served by you
+
+**New kind of evaluation: fidelity and equivalence.** The question is not "which model is
+best" but "is my copy the same model?" It is also the first experiment to set an
+**equivalence margin and test it** (TOST, two one-sided tests). REPORT_SYNTHESIS lists
+*"Not separated is not equal … no equivalence margin is set or tested"* as a limit of every
+experiment so far.
+
+- **Arms.** The 7 ownable models above, on the frozen datasets of all six experiments with
+  the committed prompts unchanged. Each runs as:
+  - native precision where it fits (bf16 on the Spark);
+  - FP8;
+  - Q8 and Q4 GGUF, on both machines.
+- **Measured against.**
+  - Each arm's committed provider-served run, item by item. Hosted outputs already exist,
+    so the comparison costs nothing.
+  - A **quantisation ladder** on `gemma_l` (bf16 → FP8 → Q8 → Q6 → Q4 → Q3): where each
+    task breaks. Judging, a fine-grained ordering task, should break before AG News.
+  - **Cross-hardware:** the same GGUF on the X3 and on the Spark. Does a different backend
+    give the same bytes, or the same verdicts?
+  - **Determinism:** each local config run twice. Hosted outputs were byte-identical only
+    9.8% of the time across three runs; is local better, and does it matter?
+  - **Provider spread,** for the hosted side: `gemma_l` pinned to two or three providers.
+    SummEval saw one judge score 0.0113 apart and bill 3.7× apart across two providers.
+- **Answers.** The "Own it or rent it?" card on the homepage with measured numbers instead
+  of provider-served ones, and real economics:
+  - throughput and latency per machine;
+  - cost per million items from electricity plus amortised hardware, against the provider
+    bill. The synthesis currently prices inference only.
+- **Cost.** $0 inference; perhaps $5 for pinned-provider reruns. The time cost is serving
+  and runtime: ~7 models × ~4 precisions × 6 tasks, all on hardware you own.
+- **Risks.** Chat templates differ between serving stacks; a wrong template looks like a
+  quantisation loss. Mitigation: run bf16 locally first. If bf16 local ≠ provider, it's the
+  template or the provider, not the quantisation.
+
+### R2-2. The judge, stress-tested: an invariance battery on SummEval
+
+**New kind of evaluation: metamorphic (invariance) testing.** Change something that should
+not matter and measure how far the answer moves. No gold labels are needed. The perturbed
+item's expected answer is the original answer, so the test transfers to any judge you
+deploy.
+
+Each probe closes a named line of REPORT_SUMMEVAL §7:
+
+| probe | what changes | closes |
+|---|---|---|
+| order | the 16 summaries shuffled (5 seeded permutations) | "always shown in the same order … position stands for which system wrote the summary" |
+| pointwise | one summary per call instead of 16 | "pointwise LLM judge was not run" (and the UniEval comparison's design gap) |
+| per-dimension | one dimension per call | "four dimensions together" |
+| probability-weighted | G-Eval's logprob-weighted score | "token probabilities (G-Eval's method) … not measured" |
+| reasoning | reasoning on, for judges that have it | "Reasoning off for every judge" |
+| repeat | same input, 5 runs at T = 0 and at T = 0.7 | "One pass per judge" |
+
+- **Arms.** Local `gemma_l`, `gemma_m`, `mistral_s` and `glm_s` (Q4). Logprobs are only
+  available locally: none of the Anthropic or OpenAI arms returns them. Plus one or two
+  hosted judges for the cheap probes (order, repeat), for contrast.
+- **Answers.** How much of the 93% survives shuffling? Position bias is the headline risk,
+  given the 63% "which system wrote it" baseline. Does pointwise close the gap to UniEval
+  or widen it? Does probability-weighting beat integer scores, as G-Eval claims?
+- **Cost.** $0 local. Under ~$5 for hosted contrast arms on two probes. It's many runs,
+  which is exactly why it has to be local.
+
+### R2-3. Judge-scored summarisation: the validated judge as the metric, with a bias audit
+
+**New kind of evaluation: a reference-free metric with a trust chain.** The metric earns
+its trust on gold (SummEval, against experts) before it is applied where there is no gold.
+This is the summariser follow-up SummEval pointed at.
+
+- **Design.**
+  - Score the 29 committed summarisation outputs, plus the 5 local DailyMail runs, with the
+    local `gemma_l` judge. Use the same prompt and the same listwise setup that scored 93%
+    on SummEval, re-validated locally on SummEval first, which is R2-1's bf16 row.
+  - Re-rank with the family test, and compare against `coverage` and ROUGE-1. Do the CNN
+    verdicts survive a better metric? Does `bart_l` stay tied with the best paid model?
+    And "on ROUGE-1 the LLMs lead": which metric does the expert-validated judge side with?
+- **The bias audit, now possible.** SummEval could not test own-family bias, because none
+  of its 16 summarisers comes from a judge's family. Here the summaries come from the same
+  8 families as the judges. Run 3 judges from different families (local `gemma_l`, local
+  `mistral_s`, one hosted) over the same summaries, and measure self-preference: does a
+  judge rank its own family's summaries higher than the other judges do? The summarisation
+  report found exactly this bias for model-written references.
+- **Cost.** $0 for the local judges, plus a few dollars for the hosted one.
+- **Changes on the site** if verdicts move: the summarisation page's headline, the
+  "coverage" caveat, and REPORT_SYNTHESIS §3.
+
+### R2-4. Claim verification on SciFact: the first factual-accuracy experiment
+
+**New answer shape: a verdict with its evidence.** The system labels a claim SUPPORTS,
+REFUTES or NOT ENOUGH INFO, and cites the sentences that justify the label. Scoring follows
+the SciFact paper: label accuracy, rationale-sentence F1, and "label correct **and**
+evidence correct". It fills *"Nothing here measures factual accuracy"* in
+REPORT_SYNTHESIS.
+
+- **Data.** It reuses the SciFact corpus already fetched, hashed and fingerprinted. The
+  labels and rationales ship with SciFact (CC BY-SA 4.0); the claims are the test claims
+  already sampled. Verify that the 200-claim sample has label annotations before building.
+- **Arms.**
+  - Oracle setting: the gold abstracts are given, so only verification is scored.
+  - Open setting: the system gets the retrieval experiment's best free retriever's
+    (`e5_base`) top-k, so the retrieval and verification errors compound. That makes it a
+    small RAG eval.
+  - Local open-weight LLMs (the 7) and hosted arms, plus a free NLI baseline (an MNLI
+    cross-encoder, CPU).
+- **Calibration.** The SciFact paper and its leaderboard publish label and rationale F1 for
+  their baselines (VeriSci).
+- **Cost.** About 500 tokens in (abstracts) per claim × 200 claims, so under $5 for all 24
+  hosted arms; local is free.
+
+### R2-5. Confidence you can act on: calibration and selective prediction (round 1's #5, now cheap)
+
+**New metric family: proper scoring rules** (Brier score, log-loss) **and risk-coverage.**
+The question is "when can I auto-accept the model's answer?" Round 1 parked it because only
+12 of 23 hosted arms return logprobs. All 7 local arms do. Run it on the frozen AG News and
+DBpedia sets: token-probability confidence vs the fine-tunes' softmax, and accuracy at 80%
+coverage. That's a deployable number, and almost free once R2-1 has the models served.
+
+### R2-6. Tool calling: BFCL (round 1's alternative, kept as a later candidate)
+
+**New answer shape: function calls, matched by AST.** This is the "can my local model drive
+an agent?" question, and BFCL ships an Apache-2.0 test set. It is kept behind R2-1 to R2-5
+because the leaderboard moves (a weak calibration row) and the best small fine-tune is
+CC-BY-NC.
+
+## In flight already
+
+**MBPP+ (experiment 7, PR #9).** The sandbox, a calibration that reproduces (0.5B: 44.2 vs
+43.7) and 18 local coder configs are done. The 17 remaining local arms are DGX Spark jobs,
+in bf16 on CUDA, which is what `device: auto` will pick; the EVO-X3 needs a ROCm build of
+torch, or a llama.cpp route. Running them is the cheapest next result in the repository.
+
+## Recommended order
+
+| # | experiment | new kind of evaluation | where it runs | cost | depends on |
+|---|---|---|---|---|---|
+| 0 | serving fingerprint | — (harness) | either | 0 | — |
+| 1 | MBPP+ local sweep | execution | Spark | 0 | nothing (ready) |
+| 2 | R2-1 own it, measured | fidelity + **equivalence (TOST)** | both | ~$5 | 0 |
+| 3 | R2-2 judge invariance | **metamorphic** | both (logprobs local) | <$5 | 0, R2-1 bf16 `gemma_l` |
+| 4 | R2-3 judge-scored summarisation | **reference-free metric with a trust chain**, self-preference | either | few $ | R2-2 (which judge setup to trust) |
+| 5 | R2-4 SciFact verification | **verdict + evidence**, factuality | either | <$5 | 0 |
+| 6 | R2-5 confidence | **proper scoring rules**, risk-coverage | either | 0 | R2-1 serving |
+
+**Why this order.**
+- R2-1 turns the site's one big hedge into a measurement, and it builds the serving that
+  R2-2, R2-3 and R2-5 reuse.
+- R2-2 has to come before R2-3: before a judge scores anything new, find out what it is
+  sensitive to.
+- R2-4 is independent, and fills the only gap the synthesis states in capitals.
+
+
 *I checked every licence, model id and size against the HF Hub API or the source page on that date. The prices behind the cost estimates come from OpenRouter's live `/api/v1/models` for the 23 hosted arms in `examples/models.json` that are still listed. `qwen/qwen3-max` is no longer listed, so I estimated its price.*
 
 ## What the existing five leave open
