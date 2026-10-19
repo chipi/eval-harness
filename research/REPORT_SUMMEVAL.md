@@ -187,10 +187,13 @@ detect — so it makes `gemma_l` the first candidate, not the answer.
 ### 3.3 The best free scorer, a trained evaluator, ties only the weakest judge
 
 UniEval ([Zhong et al. 2022](https://arxiv.org/abs/2210.07197)) is a T5-large evaluator
-trained to answer one yes/no question per dimension, for exactly these four dimensions. Its
-training data is built from CNN/DailyMail: reference summaries as the positive examples, and
-rule-based corruptions of them as the negative ones. Its paper uses SummEval to evaluate it,
-not to train it, so it never saw these expert scores. It is the free trained evaluator in
+trained to answer one yes/no question per dimension, for exactly these four dimensions. It
+is trained in two stages: first on existing datasets for related tasks — inference,
+paraphrase, sentence acceptability, yes/no questions — and an opening-sentence task on
+CNN/DailyMail; then on each dimension, with CNN/DailyMail reference summaries as the
+positive examples and rule-based corruptions of them as the negative ones. Its paper uses
+SummEval to evaluate it and does not use these expert scores for training; the checkpoint's
+training data is not checked here beyond the paper. It is the free trained evaluator in
 G-Eval's table, and it runs here twice: on the text every other arm saw (`unieval`), and on
 UniEval's own published SummEval inputs (`unievalpub`), the protocol its published figures
 come from (§5).
@@ -217,9 +220,10 @@ agreement against the best judges' 93% (§3.7).
 
 **The inputs move UniEval.** The two UniEval arms score the same articles, summaries and
 reference — 1,528 of the 1,600 summaries match word for word once case and punctuation are
-ignored — written differently. UniEval's file has a tokenised article and sentence-cased
-summaries. This experiment's has the article as published and the summaries lower-cased, as
-SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
+ignored, and the other 72 differ only in how brackets are written (`-lrb-` and `-rrb-` in
+this experiment's text) — written differently. UniEval's file has a tokenised article and
+sentence-cased summaries. This experiment's has the article as published and the summaries
+lower-cased, as SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
 wins 66 of 100 articles). Which part of it does the work is not tested. The LLM judges were
 given the lower-cased summaries too, and how they would score the cased ones is not
 measured, so the 0.3717 is UniEval at its best and the 0.3476 is UniEval on equal terms.
@@ -406,10 +410,10 @@ between this experiment and the earlier five mix September and October prices.
   "Free scorers measured" means these nine; an evaluator fine-tuned on SummEval's own
   scores would need articles held out from its training to be measured fairly here, and
   none was run.
-- **UniEval may have seen these articles.** Its training data is built from CNN/DailyMail,
-  and its paper does not say from which split; SummEval's articles are from the CNN/DailyMail
-  test split. It did not see the expert scores. SummEval is also the benchmark its authors
-  reported on.
+- **UniEval may have seen these articles.** Part of its training data is built from
+  CNN/DailyMail, and its paper does not say from which split; SummEval's articles are from
+  the CNN/DailyMail test split. Its paper does not use the expert scores for training.
+  SummEval is also the benchmark its authors reported on.
 - **UniEval's weights state no licence.** The model card of `MingZhong/unieval-sum` gives
   none; its code is MIT. It is run here by pinned revision, and nothing of it is
   redistributed.

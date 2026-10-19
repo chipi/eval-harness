@@ -1302,7 +1302,7 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><te
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not separable from first, in 5 of 6.</h3><p>Every one is under 2 GB and needs no GPU — $0 per item — against hosted models billing up to $2.01 for 100 items (anthropic_l, SummEval).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.</p></div></li>
-    <li><div><h3>Where the free model trained for your task has no real labels, an LLM can earn its bill — but not the dearest one.</h3><p>Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; UniEval, the best free scorer and an evaluator trained for the task on synthetic labels, reaches 64%. The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader. One task and one trained evaluator: the direction, not the size.</p></div></li>
+    <li><div><h3>On one task, even a free model trained for it lost, and an LLM earned its bill — but not the dearest one.</h3><p>Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; UniEval, the best free scorer and an evaluator trained for the task, reaches 64%. The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader. One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes. On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus. The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -1493,7 +1493,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="196" 
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
-  <p class="note" style="margin-top:48px"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies 126 claims against the runs on every commit.</p>
+  <p class="note" style="margin-top:48px"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies 134 claims against the runs on every commit.</p>
 </div></section>
 
 <section class="block" id="experiments"><div class="wrap">

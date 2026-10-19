@@ -2699,13 +2699,19 @@ What it changed:
 2. **The best free scorer is UniEval, not BARTScore**: 64% of one expert's agreement on its
    own inputs (60% on ours), against BARTScore's 44% and the best judges' 93%.
 3. **Synthesis finding 3 was wrong as worded.** It said a free arm "never loses once a free
-   arm trained for the task can run". UniEval is trained for the task and loses. The line is
-   now drawn at training on the task's own labels — UniEval's are rule-based corruptions,
-   not judgements — and the synthesis says that distinction was drawn after the result,
-   from one case.
+   arm trained for the task can run". UniEval is trained for the task and loses. The finding
+   now names it as the one exception and says why is not tested.
 4. **The inputs alone move UniEval by 0.0241 τ, separated (p 0.0002).** The two files hold
    the same articles, summaries and reference, cased and tokenised differently. Which part
    does it is not tested.
 
-Not settled: UniEval's training data is CNN/DailyMail and its paper does not name the
-split, so it may have seen these articles' text; its weights state no licence.
+Not settled: part of UniEval's training data is CNN/DailyMail and its paper does not name
+the split, so it may have seen these articles' text; its weights state no licence.
+
+**CORRECTION, same day, before merge.** The first draft of this change redrew finding 3 as
+"trained on the task's own labels", saying UniEval's labels were "rule-based corruptions,
+not anyone's judgements". The independent review read the paper's first training stage —
+existing datasets for inference, paraphrase, sentence acceptability and yes/no questions —
+which makes that false, and SciFact's two retrieval-trained encoders, tied without SciFact's
+labels, contradicted the new rule anyway. I had read that section of the paper and still
+wrote the claim. The rule is withdrawn; UniEval is reported as an unexplained exception.

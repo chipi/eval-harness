@@ -564,8 +564,8 @@ def home(f: dict) -> str:
          "same data, same scoring, same test.",
          f"A free model that needs no GPU was first, or not separable from first, in "
          f"{f['local_first_or_tied']} of {len(exps)} — but only on text like the text it was "
-         "trained on, with labels made for the task. Where the free model trained for the task "
-         "learned from synthetic labels, the LLM earned its bill: "
+         "trained on. On judging summaries even a free model trained for the task lost, and "
+         "the LLM earned its bill: "
          + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement, "
              "and UniEval, the best free scorer, 64%.", JUDGE)
          + " One task, so the direction, not the size.",
@@ -737,7 +737,7 @@ def landing(f: dict) -> str:
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
-    <li><div><h3>Where the free model trained for your task has no real labels, an LLM can earn its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; UniEval, the best free scorer and an evaluator trained for the task on synthetic labels, reaches 64%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator: the direction, not the size.</p></div></li>
+    <li><div><h3>On one task, even a free model trained for it lost, and an LLM earned its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -1014,7 +1014,7 @@ HEADLINE = {
     "dbpedia": "Nineteen-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",
-    "summeval": "LLM judges beat a trained free evaluator.",
+    "summeval": "23 of 24 LLM judges beat a trained free evaluator.",
 }
 
 

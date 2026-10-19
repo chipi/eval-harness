@@ -1270,15 +1270,15 @@ if _hc:
                 key=lambda a: _hc["arms"][a]["tau_vs_two_experts"])
     _bv = _hc["arms"][_best]["tau_vs_two_experts"]
     _bp = round(100 * _bv / _ceil)
-    _bart_p = round(100 * _hc["arms"]["unievalpub"]["tau_vs_two_experts"] / _ceil)
+    _ue_pub_p = round(100 * _hc["arms"]["unievalpub"]["tau_vs_two_experts"] / _ceil)
     _ue_p = round(100 * _hc["arms"]["unieval"]["tau_vs_two_experts"] / _ceil)
     _bs_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
     check(f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
-          f"UniEval {_bart_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%",
+          f"UniEval {_ue_pub_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%",
           f"**{_bv:.4f}**, **{_bp}%** (95% interval "
           f"{round(100 * _hc['arms'][_best]['share_ci95'][0])}–{round(100 * _hc['arms'][_best]['share_ci95'][1])}%) "
           f"of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
-          and f"UniEval reaches {_bart_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%" in _SEV
+          and f"UniEval reaches {_ue_pub_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%" in _SEV
           and f"| **{_ceil:.4f}** |" in _SEV,
           "the decision table or §3.7 does not state the evidence's figures")
     # The same two figures, repeated where the conclusions are drawn. A copy is checked
@@ -1288,8 +1288,9 @@ if _hc:
                "examples/README.md": f"reach {_bp}% of a\nhuman expert's agreement"}
     _stale_copy = [f for f, t in _copies.items()
                    if " ".join(t.split()) not in " ".join((ROOT / f).read_text().split())
-                   or f"{_bart_p}%" not in (ROOT / f).read_text()]
-    check(f"SummEval's {_bp}% / {_bart_p}% stated the same in the synthesis and both READMEs",
+                   or not re.findall(r"UniEval,? (\d+)%", " ".join((ROOT / f).read_text().split()))
+                   or any(int(x) not in (_ue_pub_p, _ue_p) for x in re.findall(r"UniEval,? (\d+)%", " ".join((ROOT / f).read_text().split())))]
+    check(f"SummEval's {_bp}% / {_ue_pub_p}% stated the same in the synthesis and both READMEs",
           not _stale_copy, f"stale or missing in {_stale_copy}")
     _gap = _hc["arms"][_best]["gap_ci95"]
     check(f"SummEval §3.7: the gap to one expert, {_gap[0]:.4f} to {_gap[1]:.4f}, as the evidence says",
@@ -1306,6 +1307,58 @@ if _hc:
           and " ".join(_SEV.split()).count(f"{_hc['duplicate_groups_scored_differently']} of those") >= 2
           and f"in {_hc['duplicate_articles']} articles two or more systems" in _SEV,
           "a count in §3.7 or the findings does not match the evidence")
+
+# UniEval's derived figures (REPORT_SUMMEVAL §3.3, §5; the synthesis' tables), each computed
+# here from the runs, the family tests above and the evidence, so a copied figure cannot drift.
+_SYN = " ".join((ROOT / "research" / "REPORT_SYNTHESIS.md").read_text().split())
+_SEVn = " ".join(_SEV.split())
+_tau = {a: v["scores"]["tau"] for a, v in _se_arms.items()}
+_order = sorted(_tau, key=lambda a: -_tau[a])
+_ord = lambda n: f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"  # noqa: E731
+_bad_rank = [a for a in ("unievalpub", "unieval", "bartscore")
+             if f"{_ord(_order.index(a) + 1)} of {len(_order)}" not in _SYN]
+check("SummEval ranks of the free learned arms in the synthesis' exposure table", not _bad_rank,
+      f"{_bad_rank}: {[(a, _order.index(a) + 1) for a in _bad_rank]}")
+_n_above = sum(1 for a in _judges if _ue["unievalpub"].get(a, (0, ""))[1] == "SEPARATED"
+               and _ue["unievalpub"][a][0] < 0)
+_pw = (_ue["unievalpub"][_weakest][3], _ue["unieval"][_weakest][3])
+check(f"SummEval: {_n_above} of the {len(_judges)} judges are separated above UniEval; "
+      f"p {_pw[0]:.2f} and {_pw[1]:.2f} against {_weakest}",
+      f"below {_n_above} of the {len(_judges)} judges" in _SEVn
+      and f"p {_pw[0]:.2f} and {_pw[1]:.2f}" in _SEVn and f"{_n_above} of 24 judges" in _SYN,
+      "the headline counts or p-values do not match the family tests")
+check(f"SummEval: both UniEval arms are separated above BARTScore, by "
+      f"{-_bart['unieval'][0]:.4f} and {-_bart['unievalpub'][0]:.4f}",
+      _bart["unieval"][1] == _bart["unievalpub"][1] == "SEPARATED"
+      and f"(by {-_bart['unieval'][0]:.4f} and {-_bart['unievalpub'][0]:.4f})" in _SEVn, "")
+_lt, _pt = _tau[_lead], _tau["unievalpub"]
+check(f"SummEval: UniEval {_lt - _pt:.3f} below the leader; free vs paid "
+      f"−{100 * (1 - _pt / _lt):.1f}% and +{100 * (_lt / _pt - 1):.1f}%; gemma_l by {_tau['gemma_l'] - _pt:.4f}",
+      f"{_lt - _pt:.3f} below the leader" in _SEVn
+      and _SYN.count(f"**−{100 * (1 - _pt / _lt):.1f}%**") == 2
+      and f"**paid wins +{100 * (_lt / _pt - 1):.1f}%**" in _SYN
+      and f"**LLM wins by {_tau['gemma_l'] - _pt:.4f}, separated**" in _SYN
+      and f"by {_tau['gemma_l'] - _pt:.4f}, scored on UniEval's" in _SYN, "")
+_sep_lead = sum(1 for ln in _ft.stdout.splitlines() if ln.strip().endswith("SEPARATED"))
+_m_lead = sum(1 for ln in _ft.stdout.splitlines() if ln.strip().endswith(("SEPARATED", "--"))
+              and ln.split()[0].endswith("_n100_v1"))
+check(f"SummEval leader separated from {_sep_lead} of {_m_lead} in the synthesis' table",
+      f"| {_m_lead} of {_m_lead} | {_sep_lead} of {_m_lead} ({round(100 * _sep_lead / _m_lead)}%) |" in _SYN, "")
+_lat = sorted(_se_arms[a]["scores"]["latency_ms"] / 1000 for a in ("unieval", "unievalpub"))
+check(f"SummEval: UniEval latency {_lat[0]:.2f}–{_lat[1]:.2f} s in the synthesis",
+      f"UniEval {_lat[0]:.2f}–{_lat[1]:.2f} s" in _SYN, "")
+_ued = _cal_se["arms"]["unievalpub"]["by_dimension"]
+_worst = max(_ued, key=lambda d: abs(_ued[d]["value"] - _ued[d]["published"]))
+check(f"SummEval calibration: UniEval's largest dimension gap is {_worst}'s "
+      f"{abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}, every dimension inside its interval",
+      f"{_worst}'s {abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}" in _SEVn
+      and all(abs(x["value"] - x["published"]) <= x["ci95"] for x in _ued.values()), str(_ued))
+_rs = _sp.run([sys.executable, str(HERE / "rank_stability.py"), "--dataset-id", _sea.DATASET,
+               "--metric", "tau"], capture_output=True, text=True, cwd=str(HERE.parent))
+_rs20 = [ln.split() for ln in _rs.stdout.splitlines() if ln.split()[:1] == ["20"]]
+check("SummEval: all-arm split-half rho at 20 per half, as rank_stability gives it",
+      bool(_rs20) and f"({float(_rs20[0][1]):.3f} at 20" in _SEVn,
+      f"rank_stability gives {_rs20[:1]}; stderr {_rs.stderr[-200:]}")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

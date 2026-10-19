@@ -9,13 +9,13 @@ SummEval's 31 arms were run for $7.03; and 165 until 2026-10-19, when SummEval's
 arms were added at $0. Including the four paired runs behind the registered
 prediction and the three hosted repeat runs, the repo has spent $20.10.*
 
-> **Updated 2026-10-18 with a sixth experiment, SummEval** ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md)):
+> **Updated 2026-10-18 with a sixth experiment, SummEval, and 2026-10-19 with its UniEval arms** ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md)):
 > 24 LLMs judging summaries against expert scores. It confirms the price findings and adds
 > the first experiment where the free option loses: the best free scorer, UniEval — an
 > evaluator trained for the task — is separated below 23 of the 24 judges and ties only the
-> weakest. Run on 2026-10-19, after the rest, UniEval also changed finding 3: a free arm
-> trained for the task can lose, and the line is now drawn at training on the task's own
-> labels (§3). Two figures stated here before it were wrong, and are
+> weakest. Run on 2026-10-19, after the rest, UniEval also broke finding 3 as it was
+> worded — "a free arm trained for the task never loses" — and the finding now says so
+> (§3). Two figures stated here before it were wrong, and are
 > corrected below: a 64 GB machine matched the unlimited-hardware answer on **three** of the
 > five tasks, not four (the 128 GB budget is the one that matched on four), and Few-NERD's
 > cost slope was computed on the un-rescored runs (+0.0405, r = 0.49) while every other
@@ -134,7 +134,7 @@ the three-tier breakdown, the memory budgets, and four ways it could be wrong:
 |---|---|---|
 | **1** | **The dearest arm is never first** | 6 of 6. It ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD), 2nd of 19 (SciFact) and 3rd of 33 (SummEval). But the dearest still beats the *cheapest* in 5 of 6 — price separates bad from mediocre, then stops. The best paid arm was **mid-tier** in four of six; the large tier won once, on SummEval, inside a six-way tie. |
 | **2** | **The top is a group, not a podium** | Every winner leads on the point estimate against **100%** of its declared family, and separates from only **30–100%**. Few-NERD produced a real podium (separated from 27 of 27) and AG News nearly one (26 of 29); DBpedia's winner separates from 8 of 27. |
-| **3** | **The axis is trained-on-your-task's-labels, not free-vs-paid** | A free arm ranks first in 3 of 6 (one by 0.0001) and is statistically tied with first in 2 more, every one trained on real labels for its task. On SummEval the one free arm trained for the task, UniEval, learned from synthetic labels and loses: separated below 23 of the 24 judges, tied only with the weakest. Until 2026-10-19 this row said a free arm never loses once one trained for the task can run; UniEval had not run, and the narrower line is drawn after its result (§3). Two matched pairs at price zero on both sides: `span_marker` 0.7674 vs `gliner` 0.4540 — **+0.3134 from exposure alone** — and BART fine-tuned on CNN/DailyMail vs on XSum, **1st vs 29th of 29**. |
+| **3** | **The axis is training exposure, not free-vs-paid — with one exception** | A free arm ranks first in 3 of 6 (one by 0.0001) and is statistically tied with first in 2 more. Until 2026-10-19 this row said a free arm never loses once one trained for the task can run. That is false: on SummEval UniEval, a free evaluator trained for the task, is separated below 23 of the 24 judges and ties only the weakest. Why it loses where the other trained arms win is not tested here (§3). Two matched pairs at price zero on both sides: `span_marker` 0.7674 vs `gliner` 0.4540 — **+0.3134 from exposure alone** — and BART fine-tuned on CNN/DailyMail vs on XSum, **1st vs 29th of 29**. |
 | **4** | **A pilot correlates beautifully and picks the wrong winner** | ρ(dev, full) = **0.72–0.90** in every experiment that ran a pilot, and the pilot chose wrong in **3 of 5** (SummEval ran none). On SciFact it chose the **tenth-best of nineteen**; on AG News, now, the fifth of thirty. |
 | **5** | **The gold is wrong, in every corpus that was checked** | 4 for 4 where anyone looked; 2 were never checked. SummEval's experts gave different scores to 41 of 44 groups of identical summaries. Few-NERD: **34 of 768** gold entity types rejected by ≥80% of the 26 learned arms. DBpedia's top eleven are separated by four items, three of which the field disputes. On AG News the fine-tuned lead sits almost entirely in **17 items** the hosted field disputes — fine-tunes agree with the gold on 12–14, `anthropic_l` on 0 (a set selected by the hosted arms' own errors; classification §3.4 says what it does and does not show). |
 | **6** | **The instrument broke before the models got interesting** | In five of six. 8 defects tabulated; **3 moved a single arm further than the gap separating most of the field** — the label parser (8.6 accuracy points), the unparsed-as-empty rule (+0.0214 f1), the reasoning flag (0.6124 → 0.6991). |
@@ -214,12 +214,12 @@ reports carry the per-task detail, the corrections, and what each one could not 
 **Yes — for a task you can define and label. The best fine-tuned model is first, or not
 separable from first, in 4 of 4, and it is not close on cost. But the answer depends entirely on one
 variable, it is not model size, and on a saturated task it buys a tie rather than a win.
-On SummEval no model trained to judge was measured, and the only local model there — a
-summariser used as a judge — is separated below every LLM.**
+On SummEval the best local model, UniEval, was trained to judge, and it is separated below
+23 of the 24 LLMs.**
 
 ### What actually predicts whether a free local model wins
 
-Sorting all seventeen local arms by how much training on *this* data they had produces a
+Sorting all nineteen local arms by how much training on *this* data they had produces a
 **monotonic** relationship — and the boundary is sharp. One row per arm, grouped from most
 to least exposure. "Learned arms", here and below, means every arm that is a trained model:
 all arms except the rule-based baselines (`constant`, `keyword`, `nothing`, `capitalized`,
@@ -241,7 +241,7 @@ whole field).
 | | Summarisation · CNN/DM | `bart_s` | 10th of 29 | −0.0185, not separated (p = 0.054 vs 0.0023) |
 | | Classification · DBpedia | `bert_base_fy` | 3rd= of 28 (five-way tie) | −0.0071, not separated (p = 0.62 vs 0.0050) |
 | Fine-tuned on the task, **another corpus** | Summarisation · CNN/DM | `bart_l_xsum` (XSum → CNN/DM) | **29th of 29 — last** | **−0.1390**, separated (p < 0.0001 vs 0.0024), and from all 28 opponents |
-| Trained for the task, on this corpus, from **synthetic labels** | Judging · SummEval | `unievalpub` (UniEval, on its own inputs) | 24th of 33 | **−0.1680**, separated (p < 0.0001 vs 0.0063), and below 23 of 24 judges |
+| Trained for the task, **no human judgements of it** | Judging · SummEval | `unievalpub` (UniEval, on its own inputs) | 24th of 33 | **−0.1680**, separated (p < 0.0001 vs 0.0063), and below 23 of 24 judges |
 | | Judging · SummEval | `unieval` (UniEval, on this experiment's inputs) | 26th of 33 | **−0.1922**, separated (p < 0.0001 vs 0.0056), and below 23 of 24 judges |
 | Fine-tuned on this corpus, **another task** | Judging · SummEval | `bartscore` (a CNN/DM summariser, used as a judge) | 27th of 33 — **last learned arm** | **−0.2836**, separated (p < 0.0001 vs 0.0017), and below all 24 judges |
 | Trained for the task *type* | Retrieval · SciFact | `e5_base` | 8th of 19 | −0.0246, not separated (p = 0.27 vs 0.0038) |
@@ -269,10 +269,9 @@ whether they saw Few-NERD's training split: **+0.3134 F1**, larger than the spre
 24 hosted arms on that task. And `bart_l` against `bart_l_xsum`: the same BART-large,
 fine-tuned for summarisation both times, one on CNN/DailyMail and one on XSum — **1st and
 29th of 29**. The XSum model scores below LEAD-3. "Trained for the task" is not the
-variable; "trained on text like yours" is — and SummEval narrows it further. UniEval was
-trained for the task, on CNN/DailyMail text, and still loses to 23 of 24 judges; its labels
-were rule-based corruptions of reference summaries, not anyone's judgements. What every
-winning free arm had is labels made for its task on text like yours.
+variable; "trained on text like yours" is — with one exception this report cannot explain.
+UniEval was trained for the task, partly on CNN/DailyMail text, and still loses to 23 of
+24 judges. UniEval trains in two stages: first on existing datasets for related tasks (inference, paraphrase, sentence acceptability, yes/no questions) and an opening-sentence task on CNN/DailyMail, then on each dimension with reference summaries as positives and rule-based corruptions of them as negatives. Its paper names no human judgements of summaries in either stage. Whether that, its size, or something else is why it loses is not tested.
 
 ### What that is worth in production
 
@@ -320,7 +319,7 @@ Verified against the HuggingFace API on 2026-09-29.
 
 | tier | arms | what you can do with it |
 |---|---|---|
-| **1 · Local ML** | 18 local models: 16 task-specific (10 until 2026-09-30), and BARTScore and UniEval on SummEval | download, fine-tune, self-host. $0 at the margin |
+| **1 · Local ML** | 19 local arms: 16 task-specific (10 until 2026-09-30), and on SummEval BARTScore and UniEval on two sets of inputs | download, fine-tune, self-host. $0 at the margin |
 | **2 · Open-weight LLM** | **14 of the 24** — DeepSeek ×3 (MIT), GLM ×3 (MIT), Gemma ×3, Llama ×3, `mistral_s` and **`mistral_l`** (Apache-2.0) | download and self-host, **or** rent. We rented |
 | **3 · Proprietary** | **10 of the 24** — Anthropic ×3, OpenAI ×3, Qwen ×3, `mistral_m` (and `qwen37max`, which replaced `qwen_l` on SummEval) | rent only. No floor below the API price |
 
@@ -519,8 +518,8 @@ price** (`qwen_m`, one vendor, no published weights; SummEval's `openai_l` is th
 answer used to need a 52 GB open-weight LLM; since 2026-09-30 a 438 MB classifier on a CPU
 reaches the same score. SummEval costs 0.0013 τ against `openai_l`, also unresolvable, and
 it is the one experiment whose $0 answer has no CPU-sized alternative: SciFact's is an
-LLM too, but `e5_base` on a CPU is tied with it, while on SummEval the only small model is
-separated below every judge.
+LLM too, but `e5_base` on a CPU is tied with it, while on SummEval the best small model,
+UniEval, is separated below 23 of the 24 judges.
 
 **This is the finding a hardware owner should read first.** Not "free models are
 competitive" but: *across six unrelated tasks, the best configuration you can run
@@ -566,10 +565,10 @@ crossover depends entirely on volume.
 averaged; 70th across the first five). The best fine-tuned local model sits at or tied with
 the top on **one task each** and cannot perform the others at all — and, the XSum
 control shows, cannot even perform its *own* task on someone else's data. On the sixth,
-judging, the one local model measured — a summariser used as a judge — finished below every
-hosted judge; no small model trained to judge was run.
+judging, the best local model — UniEval, trained to judge — finished below 23 of the 24
+hosted judges, and a summariser used as a judge below all of them.
 
-That is seventeen local models to cover five of the six tasks, against what twelve hosted
+That is sixteen task-specific local arms to cover five of the six tasks, against what twelve hosted
 arms covered with one configuration. If you have many tasks, a moving target, or no
 labelled data, the generalist is not a compromise — it is the only thing that works.
 
@@ -669,7 +668,7 @@ threshold — close to a podium, and a podium of three fine-tuned models of one 
 "the best model" would have been wrong five times. The gap between "ahead of everything"
 and "distinguishable from a third of it" is the single most repeated result here.
 
-### 3. A free local model wins or ties, whenever one trained on the task's own labels can run
+### 3. A free local model wins or ties, whenever one trained for the task can run — except on SummEval
 
 *Sources:* [NER](REPORT_NER.md) · [classification](REPORT_CLASSIFICATION.md) · [summarisation](REPORT_SUMMARIZATION.md) · [retrieval](REPORT_RETRIEVAL.md) · [SummEval](REPORT_SUMMEVAL.md)
 
@@ -683,7 +682,7 @@ column is the free arm's score minus the best paid arm's, in that experiment's m
 | Summarisation · CNN/DM | `bart_l`, 1.6 GB | **1 of 29** | **+0.0001** over `deepseek_m` |
 | Retrieval · SciFact | `e5_base`, 438 MB | 8 of 19 | −0.0246 vs `glm_s`, **not separated** |
 | Classification · DBpedia | `bert_base_fy`, 438 MB | 3= of 28 | −0.0071 vs `qwen_m`, **not separated** (p = 0.62) |
-| Judging · SummEval | `unievalpub`, 3.1 GB (UniEval, trained for the task on synthetic labels, on its own inputs) | 24 of 33 | −0.1680 vs `openai_l`, **separated**, and from 23 of 24 judges |
+| Judging · SummEval | `unievalpub`, 3.1 GB (UniEval, trained for the task, on its own inputs) | 24 of 33 | −0.1680 vs `openai_l`, **separated**, and from 23 of 24 judges |
 
 Read the third row before the first two. **`bart_l` "wins" summarisation by 0.0001** — it
 is first on the leaderboard and tied with a hosted model in every sense that matters. An
@@ -693,21 +692,21 @@ apparent win into the winner's-curse case of §4.
 
 So: **one separated win (Few-NERD), four statistical ties — two led by the free arm (AG
 News, summarisation) and two trailed by it (SciFact, DBpedia) — and one loss, SummEval,
-where the one free arm trained for the task learned from synthetic labels.** Until
-2026-10-19 that clause read "where no free arm measured was trained for the task"; UniEval,
-run since, is trained for it. Until 2026-09-30 this line read "two clear
+where the free arm was trained for the task and still lost.** Until 2026-10-19 that clause
+read "where no free arm measured was trained for the task"; UniEval, run since, is trained
+for it. Until 2026-09-30 this line read "two clear
 wins, two ties, one loss", and the loss was DBpedia — where the only free arm that had run
 was `bart_mnli`, a zero-shot NLI model, because the fine-tuned checkpoint would not load.
 Run on a machine with torch ≥ 2.6, the fine-tune ties the top group. The pattern is
 narrower and stronger than "small models win":
 
-> **A small model fine-tuned on your data — your inputs, labelled for your task — wins or
-> ties against every frontier LLM at that task, for $0** — a separated win on Few-NERD, a
-> statistical tie everywhere else. A small model *not* trained that way loses — one
-> trained for the same task on a different corpus (to all of them), one trained on the
-> same corpus for a different task (BARTScore on SummEval, below all 24 judges), and one
-> trained for the same task on the same corpus from synthetic labels (UniEval, below 23 of
-> the 24).
+> **A small model fine-tuned on your data wins or ties against every frontier LLM at that
+> task, for $0** — a separated win on Few-NERD, a statistical tie everywhere else.
+> A small model *not* trained on your data loses to all of them — including one trained
+> for the same task on a different corpus, and one trained on the same corpus for a
+> different task (BARTScore on SummEval, below all 24 judges). **The exception:** UniEval,
+> trained for SummEval's task, partly on its corpus, loses to 23 of the 24 judges, and
+> why is not tested here.
 
 Few-NERD isolates this with a matched pair — `span_marker` and `gliner` are the same model
 class differing only in exposure to the training split — and the difference is **+0.3134
@@ -842,7 +841,7 @@ Not which model wins — which *tools* work.
 | binary per item (accuracy) | constantly | two different models report identical means; ρ degenerates |
 | set (F1 per item) | rarely | per-item F1 is legitimate, so permutation tests work directly |
 | ranked list (nDCG) | rarely | but **corpus ≠ items**, which breaks fingerprinting |
-| rank correlation per item (Kendall τ-b) | never here (no two of the 31 SummEval arms share a mean τ to four decimals) | the *judge's* scores tie constantly (integer 1–5), so the τ-b tie correction is part of the instrument; per-item τ makes the paired tests apply directly, and split-half rankings are readable (ρ 0.90 at 20 articles per half) |
+| rank correlation per item (Kendall τ-b) | never here (no two of the 33 SummEval arms share a mean τ to four decimals) | the *judge's* scores tie constantly (integer 1–5), so the τ-b tie correction is part of the instrument; per-item τ makes the paired tests apply directly, and split-half rankings are readable (ρ 0.90 at 20 articles per half) |
 
 Concretely: on DBpedia at n=10, **19.9 of 28 arms tied** (19.8 of 27 before the fine-tuned arm), so the rank statistic was
 correlating *arm names*. Requiring a unique winner, **354–399 of 400 resampling draws are
@@ -952,9 +951,8 @@ ranked first, and on Few-NERD it is separated from everything.
 
 ### What "free" actually gets you, in all six
 
-The free-vs-paid comparison in full. Free loses once: on SummEval, where the one free arm
-trained for the task learned from synthetic labels, and there by a margin no test was
-needed to see.
+The free-vs-paid comparison in full. Free loses once: on SummEval, where even the free arm
+trained for the task lost, and there by a margin no test was needed to see.
 
 The verdict's percentage is the winner's lead **relative to the lower of the two scores**
 (+11.8% = 0.7674 ÷ 0.6864 − 1), whereas the table above measures everything relative to the
@@ -985,17 +983,15 @@ difference between the best and the fifteenth paid arm is under 0.02.
 
 So the axis is not free-versus-paid. It is:
 
-> **trained on your task's own labels** → beats or ties everything, at $0
-> **not trained that way** → loses, also at $0
+> **trained on your task** → beats or ties everything, at $0 — in five of six experiments
+> **not trained on your task** → loses to everything, also at $0
 
-SummEval tests the line from two sides. BARTScore was fine-tuned on this very corpus, to
-*write* summaries, and asked to *judge* them it finishes below every one of the 24 hosted
-judges. UniEval was trained *to judge* these four dimensions on this corpus's text, but from
-rule-based corruptions of reference summaries rather than anyone's judgements, and it
+SummEval is where the first line fails, and the second holds. BARTScore was fine-tuned on
+this very corpus, to *write* summaries, and asked to *judge* them it finishes below every
+one of the 24 hosted judges. UniEval was trained *to judge* these four dimensions, and it
 finishes below 23 of the 24 (`unievalpub` 0.3717 on its own inputs; the SummEval row above
-uses it). Until 2026-10-19 the first line read "trained on your task"; UniEval is trained
-for the task and loses, and "own labels" is drawn after that result, from one case, so read
-it as the best current description rather than a tested finding.
+uses it). UniEval trains in two stages: first on existing datasets for related tasks (inference, paraphrase, sentence acceptability, yes/no questions) and an opening-sentence task on CNN/DailyMail, then on each dimension with reference summaries as positives and rule-based corruptions of them as negatives. Its paper names no human judgements of summaries in either stage. Why it loses is not tested, and one case is not enough to draw a
+new rule from.
 
 Few-NERD proves it directly with a matched pair: `span_marker` (fine-tuned on Few-NERD)
 scores 0.7674 and `gliner` (same model class, never trained on it) scores 0.4540 — a
@@ -1048,7 +1044,7 @@ re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-
 
 | experiment | Pearson r, log(cost) vs latency (hosted) | hosted latency per item, min–max | fastest local arm, latency per item |
 |---|---|---|---|
-| Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `length` and `random`, ~0 s (the rule-based ROUGE and `coverage` 0.18–0.89 s; the learned local arms, BARTScore 15.66 s and UniEval 41.68–44.69 s) |
+| Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `length` and `random`, ~0 s (the rule-based ROUGE and `coverage` 0.18–0.89 s; the learned local arms, BARTScore 15.66 s on the cloud runner and UniEval 41.68–44.69 s on the EVO-X3, different machines) |
 | Extraction · Few-NERD | **r = −0.19** | 0.79 – 10.25 s | `gliner` 0.17 s |
 | Summarisation · CNN/DM | r = −0.18 | 1.28 – 25.04 s | `bart_s` 3.39 s (`bart_l` 6.26 s), one Linux machine; `bart_l` 11.01 s on the Mac |
 | Classification · DBpedia | r = +0.02 | 0.44 – 12.35 s | `bert_base_fy` **0.087 s** |

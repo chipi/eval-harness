@@ -33,10 +33,10 @@ It was built to answer four questions anyone building with AI ends up asking:
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
    GPU was first, or not separable from first, in five of the six experiments, but only on
-   text like the text it was trained on, with labels made for the task. On the sixth,
-   judging summaries, the free model trained for the task learned from synthetic labels, and
-   the LLM earned its bill: the best judges reach 93% of a human expert's agreement (the
-   best of 24, interval 89–97%), the best free scorer, UniEval, 64%.
+   text like the text it was trained on. On the sixth, judging summaries, even a free model
+   trained for the task lost, and the LLM earned its bill: the best judges reach 93% of a
+   human expert's agreement (the best of 24, interval 89–97%), the best free scorer,
+   UniEval, 64%. Why the trained model lost there is not tested; one task, one model.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
    quality. Here a proprietary model never separated from the best open-weight one, and
    a 64 GB machine matched the unlimited-hardware answer on four of the six tasks (two of

@@ -135,9 +135,9 @@ make leaderboard DATASET_ID=summeval_100
 
 ## What this cannot say
 
-- **One trained evaluator.** UniEval is the only free arm trained to judge; it learned from
-  synthetic corruptions of CNN/DailyMail summaries, and its paper does not say from which
-  split, so it may have seen these articles' text (not their expert scores).
+- **One trained evaluator.** UniEval is the only free arm trained to judge. Part of its
+  training data is built from CNN/DailyMail, and its paper does not say from which split, so
+  it may have seen these articles' text; its paper does not train on their expert scores.
 - **How the prompt was developed is not recorded.** There is no dev slice, so nothing here
   is reported on articles the prompt and parser were not written against.
 
