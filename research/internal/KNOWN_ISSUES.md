@@ -17,7 +17,7 @@ quotes the results and `check_report_claims.py` pins them.
 | finding | status |
 |---|---|
 | **The summarisation sample is all CNN.** `fetch.py --n 200` takes the first 200 test rows, and the split puts CNN's 1,093 articles (of 11,490) first. So every summarisation result is about CNN-style news, not CNN/DailyMail. LEAD-3 scores ROUGE-1 30.20 on the slice and 39.94 on the full test set (published 40.34): CNN articles 29.59, DailyMail 41.02. The repo's absolute ROUGE had sat ~0.09 below published values and nobody had asked why | **Scoped, partly measured.** Every report states the scope. A seeded DailyMail slice (`cnn_dailymail_dm200`) re-ran the five local arms. The four hosted arms in the CNN top six have configs on it but need an API endpoint this environment did not have, so whether the *paid* comparisons transfer is unmeasured |
-| **The instrument itself is sound.** Ten calibration figures across all six experiments, all consistent with the published value on their averages (SummEval's three ROUGE rows added 2026-10-18; ROUGE-L's coherence only within the 0.02 protocol allowance): LEAD-3 R1 39.94 vs 40.34; `bert_mini` 0.9338 vs 0.9339, `bert_base_ta` 0.9514 vs 0.9514, `bert_base_fy` 0.9375 vs 0.9375 (AG News, full test); DBpedia `bert_base_fy` 0.9879 vs 0.9903 (5,600 seeded); Few-NERD `span_marker` 0.7047 vs 0.7040 (standard micro-F1, 2,000 seeded); SciFact BM25 0.6523 vs 0.665 (all 300 queries); SummEval ROUGE-1 0.1487 vs 0.150, ROUGE-2 0.1578 vs 0.161, ROUGE-L 0.1435 vs 0.128 (all 100 articles) | **Checked**, 10 claims |
+| **The instrument itself is sound.** Eleven calibration figures across all six experiments, all consistent with the published value on their averages within the protocol allowance, ten inside their own interval (LEAD-3 is not) (SummEval's three ROUGE rows added 2026-10-18, its UniEval row 2026-10-19; ROUGE-L's coherence only within the 0.02 protocol allowance): LEAD-3 R1 39.94 vs 40.34; `bert_mini` 0.9338 vs 0.9339, `bert_base_ta` 0.9514 vs 0.9514, `bert_base_fy` 0.9375 vs 0.9375 (AG News, full test); DBpedia `bert_base_fy` 0.9879 vs 0.9903 (5,600 seeded); Few-NERD `span_marker` 0.7047 vs 0.7040 (standard micro-F1, 2,000 seeded); SciFact BM25 0.6523 vs 0.665 (all 300 queries); SummEval ROUGE-1 0.1487 vs 0.150, ROUGE-2 0.1578 vs 0.161, ROUGE-L 0.1435 vs 0.128, UniEval on its own inputs 0.3717 vs 0.377 (all 100 articles) | **Checked**, 11 claims |
 | **AG News's unseeded "first 50 per class" slice** has the same shape as the CNN slice. Checked for order bias: `bert_mini` 0.9450 on the slice vs 0.9400 on a seeded random class-balanced 200 (±0.033); `keyword` 0.670 vs 0.605 (±0.065) | **No material bias**; stated in PROTOCOL.md |
 | Few-NERD's primary metric (mean per-sentence coarse F1, string-matched) and summarisation's (`coverage`) are this repo's own; no published number is comparable to them | **By design**, now stated per experiment in PROTOCOL.md, with the standard metric used for calibration |
 
@@ -261,14 +261,16 @@ of us thought to check.
 ## Known weaknesses in what *was* measured
 
 - **One pass per arm, temperature 0.** Every interval is over *items*, never over *runs*.
-  Temperature 0 is not reproducible here: two runs of an identical SciFact config scored
-  0.6691 and 0.6617, because OpenRouter routes across providers.
+  Temperature 0 is not reproducible here: repeated SciFact configs differ by σ ≈ 0.0045 per
+  run (REPORT_RETRIEVAL, "Between-run variance"); which upstream served each call is not
+  recorded for those runs.
 - **Hosted model identity is unverifiable.** Runs record `identity_declared: true`, not
   proof. A provider can change weights behind an alias.
 - **Boundary vs detection errors are not separated in NER.** Few-NERD's IO tagging makes
   some gold spans unrecoverable by construction; that share is unquantified.
-- **`gliner`'s 0.5 threshold is untuned**, so the +0.3134 training effect is an upper
-  bound on that comparison.
+- **`gliner`'s 0.5 threshold is untuned**, one more confound on top of architecture: the
+  +0.3134 gap is exposure plus architecture plus an untuned threshold, not a training
+  effect alone.
 - **No confidence anywhere hosted.** Logprobs were never requested, so calibration exists
   only for the three local arms that supply a probability.
 - ~~**Nemenyi above k=25 prints no pairwise verdict.**~~ **CLOSED 2026-09-30.** This

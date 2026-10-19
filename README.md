@@ -13,10 +13,15 @@
 most leaderboards skip: is this ranking real, or a lucky sample?**
 
 Freeze a dataset, run your system against it, and get an answer that says whether one
-system is actually better than another, or only ahead on this sample. To show it doing
-something real, it measured 24 LLMs, small fine-tuned models and baselines on six public
-benchmarks. The most expensive model never won, and five of six leaderboard tops were
-statistical ties.
+system is actually better than another, or only ahead on this sample.
+
+This is ongoing work. The harness and its method are the point; the six experiments below are
+worked examples of them, not a benchmark, and they are still being extended. As those
+examples, it measured 24 LLMs, small fine-tuned models and baselines on six public
+benchmarks. The most expensive hosted model never won (on SciFact only the twelve cheapest
+hosted models ran), and in five of six the leader could not be separated from other arms,
+each time including one that cost less than the dearest hosted model, at 100–280 items — not
+shown different, which is not the same as equal.
 
 ### Why it exists
 
@@ -32,14 +37,21 @@ It was built to answer four questions anyone building with AI ends up asking:
    side by side, with a test that says whether the ranking is real.
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
-   GPU was first, or not separable from first, in five of the six experiments, but only on
-   text like the text it was trained on. On the sixth, judging summaries, no free model
-   measured was trained for the task, and the LLM earned its bill: the best judges reach 93% of a human expert's
-   agreement (the best of 24, interval 89–97%), the best free metric 44%.
+   GPU was first, or not separable from first, in five of the six experiments, against LLMs
+   run with one prompt and no examples; the clearest wins were on text like the text it was
+   trained on. On the sixth, judging summaries, even a free model
+   trained for the task lost, and an LLM judge beat every free scorer measured: the best judges
+   reach 93% of a human expert's agreement (the best of 24, chosen on the same 100
+   articles; 92% held out; 2019-era summaries, all 16 ranked in one call, reasoning off),
+   the best free scorer, UniEval, 64%. A no-model lookup of which system wrote each summary
+   reaches 63%, so how much of a score is reading the summary is not measured. Why the
+   trained model lost there is not tested; one task, one model.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
-   quality. Here a proprietary model never separated from the best open-weight one, and
-   a 64 GB machine matched the unlimited-hardware answer on four of the six tasks (two of
-   them at int8 or int4, which was not measured).
+   quality. Here the best proprietary arm never separated from the best open-weight arm, and
+   at native precision the best model that fits a 64 GB machine matched the
+   unlimited-hardware answer on two of the six tasks, was not separated from it on two more,
+   and was separated below it on summarisation and SummEval (scores as the providers served
+   them; nothing was run on a 64 GB machine).
 
 **Start where you are:**
 
@@ -148,34 +160,52 @@ what all six agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHE
 | `retrieval-scifact` | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | [`REPORT_RETRIEVAL.md`](research/REPORT_RETRIEVAL.md) |
 | `summeval-judging` | grade summaries the way experts do | **a vector of judgements**, scored by rank correlation | [`REPORT_SUMMEVAL.md`](research/REPORT_SUMMEVAL.md) |
 
-What they found, and what a plain leaderboard would have hidden:
+What they found, and what a plain leaderboard would have hidden. Each report opens with its
+pick, as run here:
+
+- **Summarisation:** `bart_l` if you can run a free 1.6 GB model on CPU and your text looks
+  like CNN news; `deepseek_m` ($191 per 1M articles) if you need speed; not `anthropic_l`.
+- **AG News:** fine-tune, starting with `bert_mini`; if you must rent, `gemma_m` ($8 per 1M).
+- **DBpedia-14:** the cheapest arm you can run at 0.9857: `gemma_m` (~$12), `qwen_s` (~$26)
+  or the fine-tuned `bert_base_fy`.
+- **Few-NERD:** with labelled data, fine-tune `span_marker`; if you rent, `gemma_m`.
+- **SciFact:** `e5_base` first (0.7191, $0); add an LLM reranker on its top 20 only if about
+  +0.07 nDCG@10 is worth about $732 per 1M queries.
+- **SummEval:** an LLM judge, starting with `gemma_l`; check it against a small set of your
+  own human judgements first.
 
 - **Summarisation.** The dearest arm, at **143× the price** of the cheapest, ranks **18th of
   29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**;
-  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus ties the best LLM for $0;
-  the same BART fine-tuned on XSum finishes **last**, below copying the first three
-  sentences. *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
+  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus is not separated from the
+  best LLM (0.0001 apart), for $0; the same BART fine-tuned on XSum finishes **last** on
+  `coverage`, below copying the first three sentences (it also decodes shorter). *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
   the local models keep every verdict; the paid ones were not re-run
   ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
-- **Classification.** Three small fine-tuned models took the top three places on AG News
-  from 24 frontier LLMs, and their lead turns out to live almost entirely in 17 items
-  whose gold labels nearly the whole LLM field disputes (8 a labelling convention, 7
-  mislabels, 2 ambiguous). On DBpedia a **115× price difference** bought nothing
-  measurable, and the fine-tuned model bought a tie, not a win: the top eleven arms are
-  separated by four items, three of which the field disputes because the gold label is
-  wrong.
+- **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
+  the point estimate, LLMs as run here; only the first is separated from all but one paid
+  arm. The lead is concentrated in 17 items the hosted field mostly gets wrong — about half
+  a learnable convention, half mislabels, on one rater's reading. On DBpedia a **115× price
+  difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
+  the top group: the top eleven arms are within four items, three of them items whose
+  label the field disputes, unadjudicated.
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
-  its margin is one entity type whose meaning exists only inside that corpus, and **38%**
-  of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
-- **Retrieval.** The leading LLM reranker cannot be separated from twelve other arms,
+  its margin over the best LLM is one entity type whose meaning exists only inside that
+  corpus, and **up to 38%** of that lead is agreeing with annotation the rest of the field
+  rejects: an upper bound, one reader's judgement. The two overlap and cannot be added.
+- **Retrieval.** The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary),
   ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
-  first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
-- **Judging.** Asked to grade summaries the way three experts did, every one of the 24 LLMs
-  is separated from, and ahead of, BARTScore, the best free metric measured — the first
-  task here where the LLM clearly earns its bill (a free evaluator trained for the job,
-  UniEval, was not run). Scored against two experts, as one expert
-  is against the other two, the best judges reach 93% of a human's agreement. The top is a
-  six-way tie, and an open-weight judge sits 0.0013 behind the leader for $0.0278 per 100
+  first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891** for
+  one of the two rerankers tested; the other landed outside the range.
+- **Judging.** Asked to grade summaries the way three experts did, 23 of the 24 LLMs are
+  separated from, and ahead of, the best free scorer measured — UniEval, an evaluator
+  trained for exactly this — and all 24 from BARTScore and ROUGE. That is against free
+  scorers that were measured: the judges rank all 16 summaries in one call while UniEval
+  scores one at a time, and a pointwise LLM judge was not run. Scored against two experts, as one expert is against the
+  other two, the best judges reach 93% of a human's agreement (the best of 24, on the same
+  articles; 92% held out) and UniEval 64%, on 2019-era summaries with reasoning off. A
+  no-model lookup of which system wrote each summary reaches 63%, so how much of a judge's
+  score is reading the summary is not measured. The leader
+  cannot be separated from five other judges, and an open-weight one sits 0.0013 behind it for $0.0278 per 100
   articles. ROUGE agrees with the experts at τ 0.14–0.16, and
   this repository's own summarisation metric below that.
 

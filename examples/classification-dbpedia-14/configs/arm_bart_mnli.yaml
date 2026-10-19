@@ -2,7 +2,8 @@
 # x86_64 macOS for this corpus.
 #
 # WHY THAT SENTENCE MATTERS. On AG News the fine-tuned arm (bert_mini, 44MB) shipped
-# safetensors and ran here, and it beat all 24 hosted models. DBpedia has no such arm:
+# safetensors and ran here, and it scored above all 24 hosted models (not separated from
+# the best of them). DBpedia has no such arm:
 # every credible DBpedia-14 fine-tune on the Hub — fabriceyhc, Danni, kundank,
 # TheChickenAgent — ships pytorch_model.bin and nothing else, because they were uploaded
 # in 2021-2023, before safetensors became the default. So the in-distribution specialist

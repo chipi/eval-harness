@@ -2682,3 +2682,156 @@ and they are recorded here rather than folded into it.
 **The lesson.** Each review round found fewer and smaller things, and every round still
 found something in text written to fix the previous round. A sentence written in a hurry to
 close a finding is as unreviewed as any other.
+
+### 2026-10-19 · 67 — UniEval, the free evaluator trained for the task, and the finding it narrowed
+
+SummEval shipped (entry 65) without UniEval, the free trained evaluator in G-Eval's table,
+and every page said "free scorers measured" so that its result could not falsify the copy.
+It ran on 2026-10-18 on the EVO-X3, twice: on the text every other arm sees (`unieval`,
+τ 0.3476) and on UniEval's own published SummEval inputs (`unievalpub`, τ 0.3717). The
+second reproduces G-Eval's 0.377 on every dimension and is a calibration row.
+
+What it changed:
+
+1. **"Every judge beats every free scorer" is no longer true.** Both arms are separated
+   from 31 of their 32 opponents; the exception is `llama_s`, the weakest judge (p 0.18 and
+   0.70). 23 of the 24 judges beat every free scorer. Every judge still beats BARTScore.
+2. **The best free scorer is UniEval, not BARTScore**: 64% of one expert's agreement on its
+   own inputs (60% on ours), against BARTScore's 44% and the best judges' 93%.
+3. **Synthesis finding 3 was wrong as worded.** It said a free arm "never loses once a free
+   arm trained for the task can run". UniEval is trained for the task and loses. The finding
+   now names it as the one exception and says why is not tested.
+4. **The inputs alone move UniEval by 0.0241 τ, separated (p 0.0002).** The two files hold
+   the same articles, summaries and reference, cased and tokenised differently. Which part
+   does it is not tested.
+
+Not settled: part of UniEval's training data is CNN/DailyMail and its paper does not name
+the split, so it may have seen these articles' text; its weights state no licence.
+
+**CORRECTION, same day, before merge.** The first draft of this change redrew finding 3 as
+"trained on the task's own labels", saying UniEval's labels were "rule-based corruptions,
+not anyone's judgements". The independent review read the paper's first training stage —
+existing datasets for inference, paraphrase, sentence acceptability and yes/no questions —
+which makes that false, and SciFact's two retrieval-trained encoders, tied without SciFact's
+labels, contradicted the new rule anyway. I had read that section of the paper and still
+wrote the claim. The rule is withdrawn; UniEval is reported as an unexplained exception.
+
+**Pinned after the runs, 2026-10-19.** The UniEval arms read three downloads that no URL
+versions: UniEval's SummEval inputs, the original SummEval release (to match summaries to
+rows), and nltk's punkt_tab sentence splitter. The adapter now checks each against the sha256
+of the files the runs read, and stops on a mismatch. That edit came after the runs, so their
+recorded adapter file hash is the earlier file's; the scorer's own code hash
+(`_unieval`, its scoring function and questions) is unchanged, which was checked.
+`calibrate.py` now also records how UniEval's inputs differ from ours (1,528 of 1,600
+summaries the same text, the other 72 only bracket tokens), and the checker reads the
+report against that.
+
+### 2026-10-19 · 68 — Second review of the whole story: what the headlines said beyond the data
+
+Two independent reviews read the six-experiment story end to end: one SummEval as a whole,
+one the site and the synthesis against all six reports. Nothing was contradicted and every
+recomputed number held; what they found was headline wording that said more than the
+reports did. All of it was in published copy before this branch.
+
+1. **"Beats every LLM" never said how the LLMs were run.** One prompt, no examples,
+   temperature 0, reasoning off, public benchmarks with contamination unmeasured. The
+   synthesis's limits now start with that, and the headlines say "as run here".
+2. **"Statistical tie" read as "equal".** It means not separated at 100–280 items. On AG
+   News a paid arm five points behind the leader is still a tie; recommendation 5 now says
+   so, and the site's labels say what the test can and cannot show.
+3. **"The dearest model is never the best, 6/6" is five times one model** (`anthropic_l`)
+   and on SciFact the dearest of only the twelve cheapest. The best hosted arm was among
+   the four dearest in three of six (3rd of 24 on AG News, 2nd on Few-NERD, 4th on
+   SummEval; recomputed here — the review had said 2nd on AG News). "Price stops predicting
+   quality" is gone from the headline copy, and SummEval — the largest price slope as a share
+   of the best score, though not the highest correlation — no longer "confirms the price
+   findings".
+4. **The Few-NERD "matched pair" was not one.** `span_marker` runs on a RoBERTa encoder,
+   `gliner` on DeBERTa-v3; "+0.3134 from exposure alone" is exposure plus architecture. The
+   BART CNN/DM-vs-XSum pair is the matched one.
+5. **"A 64 GB machine matched the answer"** — nothing was run on a 64 GB machine; it is the
+   best model that fits, scored as the provider served it.
+6. **"Only on text like the text it was trained on"** — SciFact's `e5_base` ties without
+   SciFact. Now "the clearest wins were on text like it".
+7. SummEval: the 23-of-24 result is on mean τ (on coherence UniEval is above seven
+   judges); "six-way tie" is relative to the leader (from `gemma_l` the set includes
+   `glm_m`); UniEval gets a human reference the judges never see; summary order is fixed.
+
+**Paid runs, $0.13, approved:** `gemma_l` re-run on UniEval's cased text
+(`data/runs-pair/`). The first scored 0.5510 against 0.5384, +0.0126, p 0.0141, and I first
+wrote that up as "the text holds the judges back too". OpenRouter had served it from
+SambaNova, the original from CoreWeave, and it cost 3.6× the original for the same work. A
+second run pinned to CoreWeave (fp4, fallbacks off) scored 0.5397: +0.0013, p 0.7658, not
+separated. The text does not move the judge; the provider moved it by 0.0113 (p 0.0125).
+The first write-up was wrong, and only the pinned rerun, which the operator approved after
+I flagged the confound, showed it. No hosted run here pinned a provider, so provider spread
+of this size is in every hosted score and measured for one judge only.
+
+Mine in this round: the synthesis still said "ten calibration figures" after I added the
+eleventh, and I dated the UniEval runs 2026-10-19; they ran on 2026-10-18 (UTC).
+
+### 2026-10-19 · 69 — Third review: fixes that did not travel, and two claims I overstated
+
+A third pair of independent reviews read everything again: one the reports against the
+evidence, one the site, READMEs and docs. Every number they recomputed held. What they found:
+
+1. **Round-two fixes that landed in the reports but not where readers meet them.** The
+   Few-NERD "matched pair / exactly one variable" claim survived in the example's README and
+   METHOD, REFERENCE and the examples index (and AG News's METHOD called `bart_mnli` a
+   matched control too); the experiments page was still headed "The price tag told you
+   nothing"; the Method and Use pages still said a tie makes the cheap arm the answer without
+   "check the gap". All fixed, and a phrase-by-phrase sweep of every earlier finding is clean.
+2. **My provider claim was overstated (CORRECTION to entry 68).** I wrote "the provider moves
+   them" and "every hosted score here carries that much provider spread". It is one judge,
+   one run per provider, a pair chosen after the first result, and hosted temperature-0
+   runs vary on their own; and most judges were served by one provider throughout (11 of 24
+   on every call, 18 of 24 on at least 98). The p is 0.0133 by the pair test at 400,000
+   permutations, not the 0.0125 I quoted from a two-arm family test. Now: "consistent with a
+   provider effect, not separated from run-to-run noise".
+3. **The fixed summary order is a confound I under-described.** Each position is the same
+   system on all 100 articles, so a prior that only knows which system wrote a summary
+   reaches τ 0.3637 (leave one article out) — above the weakest judge and UniEval on this
+   experiment's text. My earlier "τ 0.042, not a shortcut" tested a linear position index,
+   the wrong test. `calibrate.py` now computes it and the checker reads it.
+4. **The finding-3 box still said a model not trained on your task loses to everything.**
+   SciFact's retrieval encoders tie without SciFact. Rewritten with both exceptions.
+5. Smaller: calibration is eleven of eleven within the allowance and ten inside their own
+   interval; SummEval has the steepest price slope, not the strongest price correlation;
+   the paired-run costs, dates, NOTES count, §0 Holm thresholds, 103× (not 109×), GLM price
+   rise (~2.5×, not tripled), DATA.md's licence count (three), SciFact's "eleven or twelve",
+   "leader plus nineteen", REPRODUCE's rerun claim (correct, now cited to entry 63).
+
+One reviewer finding was wrong: REPRODUCE's "scored identically on every item" is the
+2026-10-15 full rerun (entry 63), not the 20-item adapter check it was compared against.
+
+### 2026-10-19 · 70 — Stage one: each report reviewed alone, against what the later rounds taught
+
+Five independent reviewers each read one report as if it were the only document a reader
+sees, applying the lessons of entries 65–69 (as run here; not separated is not equal;
+matched pairs only when matched; interval vs allowance; selection effects; contamination;
+provider and run variance). Every recomputed number held in all five. What changed was
+claims beyond the numbers; each report carries dated notes for them. The largest:
+
+- **Summarisation:** "`bart_l` wins outright" was a 0.0001 margin (p 0.99); "price carried
+  no information" rested on r −0.07 whose interval (−0.46 to +0.34) excludes nothing
+  moderate; a false sentence about the n=20 shortlist; int8/int4 rows that were never run.
+- **Classification:** "three fine-tunes beat 24 frontier LLMs" held for the leader only
+  (`bert_mini` is not separated from 11 hosted arms); "the order reverses on the other 183"
+  was 1 against 3 discordant items (p 0.625); DBpedia's "full test set" calibration is a
+  5,600-row sample.
+- **NER:** the 57% and 38% figures are the extremes of 30–57% and 7–53%; `gliner`'s zero on
+  `other` comes from predicting the label 3 times; the "frontier LLM wins on person" is a
+  0.007 edge, untested.
+- **Retrieval:** the "biggest lever" sentence contradicted its own table (adding the best
+  reranker, +0.0986, beats swapping the retriever, +0.0740); the registered prediction hit
+  for one of two rerankers, not both.
+- **SummEval:** large beats small separated in six of eight families, not all eight; the
+  93% is 92% when the best judge is chosen on held-out halves; a system-identity prior
+  reaches τ 0.3637.
+
+The reviewers were wrong in places, and each fixer kept the evidence-backed text there:
+a "0.5 calibration allowance" that does not exist, a wrong item-win count, which three arms
+are dearest, and pilot figures called unrecomputable that could be recomputed.
+
+Mine: briefing the NER fixer, I had it download the Few-NERD gold again instead of reusing
+the reviewer's copy — twelve minutes of a run spent re-fetching data already on disk.

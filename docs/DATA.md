@@ -44,6 +44,7 @@ the datasets, so each one's licence follows its data:
 | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | CC BY-SA 4.0 | Attribute the authors; derived text you redistribute is share-alike (CC BY-SA 4.0). |
 | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | CC BY-SA 4.0 | The same: attribute, and share-alike for redistributed text. |
 | [SummEval](https://huggingface.co/datasets/mteb/summeval) | MIT ([original repo](https://github.com/Yale-LILY/SummEval) also MIT) | Keep the MIT notice when you redistribute the annotations. Each item also carries a CNN/DailyMail article and its human references, so those follow CNN/DailyMail's terms. |
+| [UniEval's SummEval inputs](https://github.com/maszhongming/UniEval/tree/d33e7b6cfebe97b2bafe435adbd818230d5a416a/reproduce/data/summarization) | MIT (the UniEval repository) | Downloaded by the SummEval adapter for its `unievalpub` arm, pinned to a commit and hashed into the run. It is SummEval's own text, tokenised and cased differently, so SummEval's and CNN/DailyMail's terms apply to its content as well. |
 
 Licence was a selection criterion, not an afterthought: Few-NERD was chosen over a corpus
 closer to the original application because that one is licensed `other`. Sources, papers
@@ -64,8 +65,9 @@ and the full table: [REFERENCE, datasets](REFERENCE.md#datasets) and
 
 ## Models
 
-Model weights have licences too, and they differ: two of the local models state no licence
-at all, which is a reuse blocker rather than a permission, and several open-weight LLMs
+Model weights have licences too, and they differ: three of the local models state no
+licence at all (`bert_mini`, `textattack/bert-base-uncased-ag-news` and UniEval's
+`MingZhong/unieval-sum`), which is a reuse blocker rather than a permission, and several open-weight LLMs
 carry use conditions. Each is listed, read from the publisher, in
 [REFERENCE, models](REFERENCE.md#models). Check before you deploy one.
 

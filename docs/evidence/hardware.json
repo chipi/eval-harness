@@ -25,7 +25,7 @@
     {
       "id": "evo_x3",
       "name": "GMKtec EVO-X3",
-      "role": "the workstation SummEval's 24 hosted judges were called from; local LLMs for a planned next experiment are run here, and none is in the committed results",
+      "role": "the workstation SummEval's 24 hosted judges were called from, and where its two UniEval arms ran on CPU; local LLMs for a planned next experiment are run here, and none is in the committed results",
       "captured_output": {
         "cpu": "AMD RYZEN AI MAX+ 395 w/ Radeon 8060S", "threads": 32,
         "memory_kb": 130485068, "vendor": "GMKtec", "product": "EVO-X3",

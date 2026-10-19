@@ -37,7 +37,7 @@ one sampling defect found so far was found.
 | Classification · DBpedia | accuracy | accuracy | `bert_base_fy`, seeded 5,600 of 70,000: **0.9879** ±0.003 vs 0.9903 (card) |
 | Extraction · Few-NERD | mean per-sentence F1, 8 coarse types, string match — ours | entity micro-F1, 66 fine types, token spans | `span_marker`, seeded 2,000 sentences: **0.7047** ±0.016 vs 0.7040 (card) |
 | Retrieval · SciFact | nDCG@10 | nDCG@10 | BM25, all 300 queries: **0.6523** ±0.045 vs 0.665 (BEIR) |
-| Judging · SummEval | Kendall τ-b per article against the expert means | Kendall τ-b | the ROUGE arms, all 100 articles, vs G-Eval: ROUGE-1 **0.1487** ±0.032 vs 0.150 · ROUGE-2 **0.1578** ±0.028 vs 0.161 · ROUGE-L **0.1435** ±0.032 vs 0.128 |
+| Judging · SummEval | Kendall τ-b per article against the expert means | Kendall τ-b | the ROUGE arms and UniEval, all 100 articles, vs G-Eval: ROUGE-1 **0.1487** ±0.032 vs 0.150 · ROUGE-2 **0.1578** ±0.028 vs 0.161 · ROUGE-L **0.1435** ±0.032 vs 0.128 · UniEval, on its own inputs, **0.3717** ±0.022 vs 0.377 |
 
 How to read it: **bold** is this repo's own run; the figure after "vs" is the published
 one. **±** is the half-width of a 95% confidence interval on our run. **"— ours"** marks a
@@ -53,7 +53,10 @@ can still be a difference of protocol. ROUGE-1 and ROUGE-2 agree with the paper 
 on every one of the four dimensions; ROUGE-L agrees on average but is 0.054 above it on
 coherence, outside that dimension's interval (±0.042) and inside it only with the 0.02
 allowance the rule adds for protocol differences; the paper does not say which ROUGE-L it
-ran.
+ran. UniEval's row is the arm scored on UniEval's own published inputs, the protocol behind
+the paper's figure; it agrees on every dimension. On this experiment's own text the same
+weights score 0.3476, outside the interval, and the report treats that gap as a finding
+about the inputs ([REPORT_SUMMEVAL §3.3](../research/REPORT_SUMMEVAL.md)).
 
 ## The hardware
 
@@ -65,7 +68,7 @@ described from the machine itself:
 |---|---|---|
 | Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
 | cloud runner | 4-core Linux (x86_64) containers; the operator's cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
-| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls. No open-weight LLM was run on any of these machines for the committed results |
+| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls, and its two UniEval arms on CPU. No open-weight LLM was run on any of these machines for the committed results |
 | NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs |
 | MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs |
 
@@ -91,7 +94,9 @@ they compare them.
 - **A dev slice, nested inside the sample.** Prompts and parsers may be tuned on it and
   on nothing else; every headline is also reported on the held-out remainder. SummEval has
   no dev slice, and so no held-out remainder.
-- **One pass per arm, temperature 0, one prompt per task.** An *arm* is one system under
+- **One pass per arm, temperature 0, one prompt per task.** Hosted LLMs ran zero-shot with
+  reasoning off and no provider pinned, as run here; contamination of the public benchmarks
+  was not measured. An *arm* is one system under
   test: a model plus its configuration (prompt, decoding, provider). Between-run variance
   of hosted models is not measured except where stated (five SciFact repeat pairs).
 - **Comparisons are tested, not read.** Separation between arms is a paired permutation
@@ -107,7 +112,7 @@ they compare them.
   CNN and 10,397 DailyMail** (published counts), with CNN's articles first.
 - **Sample.** `cnn_dailymail_200` is the **first 200 rows**: all CNN — 196 with CNN's dateline, 4 partner pieces CNN
   republished. It is a
-  sample of the benchmark's CNN portion (9% of the split), and every committed summarisation finding is scoped
+  sample of the benchmark's CNN portion (9.5% of the split), and every committed summarisation finding is scoped
   to CNN-style news. `cnn_dailymail_dm200` is 200 DailyMail articles drawn at random
   (seed 20261014) to test whether findings travel. It was run for the five local arms, and
   every comparison among them held; the hosted arms were not re-run on it.
@@ -117,8 +122,8 @@ they compare them.
   reference's length, so a model cannot buy recall with words. It is ours and not
   comparable to any published number. ROUGE-1 and ROUGE-Lsum F1 are reported beside it.
 - **Comparability.** Absolute scores on the committed slice are **not** comparable to the
-  literature — not because of the scorer (calibrated within 0.4 ROUGE-1 on the full test
-  set) but because of the slice: CNN articles score ~11 ROUGE-1 lower than DailyMail ones.
+  literature, mainly because of the slice (the scorer reads LEAD-3 0.40 ROUGE-1 below the
+  published figure on the full test set, outside its ±0.22 interval): CNN articles score ~11 ROUGE-1 lower than DailyMail ones.
 - **Reproduce.** `examples/summarization-cnn-dailymail/README.md`; calibration:
   `calibrate.py` in the same directory.
 
@@ -132,7 +137,7 @@ they compare them.
 - **Dev slice.** `ag_news_20`, the first 5 per class (nested).
 - **Reference.** Dataset labels — gold, and disputed: 17 items are labelled against the
   judgement of ≥80% of the hosted field; they stay in the score and are analysed apart
-  (REPORT_CLASSIFICATION §3.4).
+  (REPORT_CLASSIFICATION §3.4); one rater reads about half as convention, half as mislabels.
 - **Metric.** Accuracy — the standard one.
 - **Comparability.** Comparable in kind to published accuracy; at n=200 a single figure
   carries ±0.03.
@@ -144,7 +149,7 @@ they compare them.
 - **Sample.** `dbpedia_280`: 20 per class from a seeded per-class permutation (seed
   20260927). Dev slice `dbpedia_56`, nested.
 - **Reference.** Dataset labels — gold; three items' gold is disputed by 24–25 of 26 arms
-  and analysed apart (REPORT_CLASSIFICATION §3.4).
+  and analysed apart (REPORT_CLASSIFICATION §3.4); one rater's reading, unadjudicated.
 - **Metric.** Accuracy — the standard one. The benchmark is saturated: the top group is
   separated from the rest, not ordered within itself.
 - **Reproduce.** `examples/classification-dbpedia-14/README.md`; calibration: `calibrate.py`.

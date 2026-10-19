@@ -172,6 +172,19 @@ def main() -> int:
 
     ceiling = statistics.fmean(experts)
 
+    # A no-model reference row. Each of the 16 positions is the same system on every
+    # article, so score each summary by the mean expert score its position got on the OTHER
+    # 99 articles, against the same leave-one-out two-expert references as the arms.
+    stems_all = sorted(items)
+    prior_by_item = []
+    for stem in stems_all:
+        pred = json.dumps({d: [statistics.fmean(items[o]["gold"][d][i] for o in stems_all if o != stem)
+                               for i in range(ad.N_SUMMARIES)] for d in ad.DIMS})
+        prior_by_item.append(statistics.fmean(ad.score(pred, rest_of(items[stem], k))["tau"]
+                                              for k in range(3)))
+    position_prior = {"tau_vs_two_experts": round(statistics.fmean(prior_by_item), 4),
+                      "share_of_one_expert": round(statistics.fmean(prior_by_item) / ceiling, 4)}
+
     # How sure is "93%"? A paired bootstrap over articles (seeded), for the two best judges:
     # the ratio judge / expert and the gap expert - judge, resampling the same articles on
     # both sides. The best judge is chosen on these same articles, so its interval is the
@@ -180,8 +193,8 @@ def main() -> int:
     expert_item = {st: statistics.fmean(expert_by_item[st]) for st in stems}
     rng = random.Random(20261018)
     draws = [[rng.choice(stems) for _ in stems] for _ in range(10000)]
-    top = sorted((a for a in arms if a not in ("bartscore", "rouge1", "rouge2", "rougeL",
-                                               "coverage", "length", "random")),
+    top = sorted((a for a in arms if a not in ("bartscore", "unieval", "unievalpub", "rouge1",
+                                               "rouge2", "rougeL", "coverage", "length", "random")),
                  key=lambda a: -arms[a]["tau_vs_two_experts"])[:2]
     for arm in top:
         ratios, gaps = [], []
@@ -194,7 +207,23 @@ def main() -> int:
         gaps.sort()
         arms[arm]["share_ci95"] = [round(ratios[250], 3), round(ratios[9749], 3)]
         arms[arm]["gap_ci95"] = [round(gaps[250], 4), round(gaps[9749], 4)]
+    # And how much of "93%" is picking the best of 24 on these same articles? Split the
+    # articles in half at random, pick the best judge on one half, and score it on the other:
+    # the held-out share is what choosing on the same items cannot inflate.
+    judges = [a for a in arms if a not in ("bartscore", "unieval", "unievalpub", "rouge1", "rouge2",
+                                           "rougeL", "coverage", "length", "random")]
+    picked_in, picked_out = [], []
+    for _ in range(2000):
+        half = rng.sample(stems, len(stems) // 2)
+        rest = [st for st in stems if st not in set(half)]
+        best = max(judges, key=lambda a: statistics.fmean(judge_by_item[a][st] for st in half))
+        ea, eb = (statistics.fmean(expert_item[st] for st in h) for h in (half, rest))
+        picked_in.append(statistics.fmean(judge_by_item[best][st] for st in half) / ea)
+        picked_out.append(statistics.fmean(judge_by_item[best][st] for st in rest) / eb)
+    selection = {"splits": 2000, "share_in_sample": round(statistics.fmean(picked_in), 4),
+                 "share_held_out": round(statistics.fmean(picked_out), 4)}
     result = {
+        "selection_corrected_best_judge": selection,
         "what": "Kendall tau-b per article between one SummEval expert and the mean of the other "
                 "two (leave-one-out), averaged over the four dimensions and then over the 100 "
                 "articles; and every arm scored against the same two-expert references",
@@ -211,6 +240,7 @@ def main() -> int:
                 "documentation does not state. tau_mean does not depend on it.",
         "tau_mean": round(ceiling, 4),
         "tau_by_dimension": {d: round(statistics.fmean(v), 4) for d, v in per_dim.items()},
+        "position_prior": position_prior,
         "arms": dict(sorted(arms.items(), key=lambda kv: -kv[1]["tau_vs_two_experts"])),
     }
     OUT.write_text(json.dumps(result, indent=2) + "\n")
@@ -222,6 +252,8 @@ def main() -> int:
           f"(by position in the file: {', '.join(f'{x:.4f}' for x in experts)})")
     for d, v in result["tau_by_dimension"].items():
         print(f"  {d:11s} {v:.4f}")
+    print(f"position prior (other 99 articles only): {position_prior['tau_vs_two_experts']:.4f} "
+          f"= {position_prior['share_of_one_expert']:.0%} of one expert")
     print("\narms against the same two-expert references (tau vs all three in brackets):")
     for arm, r in result["arms"].items():
         extra = (f"  share 95% CI {r['share_ci95'][0]:.0%}-{r['share_ci95'][1]:.0%}, "

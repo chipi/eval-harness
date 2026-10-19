@@ -33,22 +33,22 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <main>
 
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>The experiments</b> · 6 tasks · 165 measured runs · $19.07 billed</div>
+  <div class="kicker"><b>The experiments</b> · worked examples, ongoing · 6 tasks · 167 measured runs · $19.07 billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
-  <p class="dek">24 frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through six public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
+  <p class="dek">24 hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through six public benchmarks as worked examples of the harness and its method. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
-    <div class="stat"><div class="n">6<small>/6</small></div><div class="l">experiments where the dearest model was not the best</div></div>
-    <div class="stat"><div class="n">5<small>/6</small></div><div class="l">leaderboards where first place is a statistical tie</div></div>
+    <div class="stat"><div class="n">5<small>/5</small></div><div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
+    <div class="stat"><div class="n">5<small>/6</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in 5 of the 6</div></div>
-    <div class="stat"><div class="n">10<small>/10</small></div><div class="l">calibration checks that agree with the published numbers, 9 inside their own interval</div></div>
+    <div class="stat"><div class="n">11<small>/11</small></div><div class="l">calibration checks that agree with the published numbers, 10 inside their own interval</div></div>
   </div>
 </div></section>
 
 <section class="block" id="findings"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
-  <h2>The price tag told you nothing.</h2>
-  <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In all six it finished behind something cheaper</strong> — and in three, behind something free.</p>
-  <div class="chart reveal"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="44" class="t-head" font-size="17">CNN/DailyMail</text><text x="0" y="64" class="t-muted" font-size="11">summarisation · coverage</text><rect x="527.7" y="28" width="416.0" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
+  <h2>The dearest model was never the best.</h2>
+  <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In all six it finished behind something cheaper</strong> — and in three, behind something free. On SciFact only the twelve cheapest hosted models ran, so there it is the dearest of those; no Anthropic or OpenAI arm was run.</p>
+  <div class="chart reveal"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="44" class="t-head" font-size="17">CNN/DailyMail</text><text x="0" y="64" class="t-muted" font-size="11">summarisation · coverage</text><rect x="527.7" y="28" width="416.0" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
 coverage 0.3461 · rank 1/29
 free: runs locally, nothing billed</title></circle><circle cx="935.7" cy="50.0" r="12" class="hit" data-tip="bart_l · local · free
 coverage 0.3461 · rank 1/29
@@ -1060,211 +1060,223 @@ off the scale: far below the field"/><circle cx="361.8" cy="74.0" r="7" class="d
 nDCG@10 0.7419 · rank 2/19
 billed $0.4576 for 200 items</title></circle><circle cx="361.8" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 nDCG@10 0.7419 · rank 2/19
-billed $0.4576 for 200 items"/><circle cx="361.8" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 2nd · 0.742</text><text x="367.9" y="104" text-anchor="end" class="t-ink" font-size="15">glm_s · 1st · 0.744</text></svg></div></figure><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><text x="0" y="44" class="t-head" font-size="17">SummEval</text><text x="0" y="64" class="t-muted" font-size="11">judging · Kendall tau vs experts</text><rect x="853.8" y="28" width="89.9" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
-Kendall tau vs experts 0.5398 · rank 1/31
-billed $0.6350 for 100 items</title></circle><circle cx="935.7" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
-Kendall tau vs experts 0.5398 · rank 1/31
-billed $0.6350 for 100 items"/><circle cx="930.9" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
-Kendall tau vs experts 0.5384 · rank 2/31
-billed $0.0278 for 100 items</title></circle><circle cx="930.9" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
-Kendall tau vs experts 0.5384 · rank 2/31
-billed $0.0278 for 100 items"/><circle cx="893.1" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
-Kendall tau vs experts 0.5279 · rank 4/31
-billed $1.42 for 100 items</title></circle><circle cx="893.1" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
-Kendall tau vs experts 0.5279 · rank 4/31
-billed $1.42 for 100 items"/><circle cx="866.1" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
-Kendall tau vs experts 0.5204 · rank 5/31
-billed $0.4436 for 100 items</title></circle><circle cx="866.1" cy="50.0" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
-Kendall tau vs experts 0.5204 · rank 5/31
-billed $0.4436 for 100 items"/><circle cx="861.8" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
-Kendall tau vs experts 0.5192 · rank 6/31
-billed $0.0385 for 100 items</title></circle><circle cx="861.8" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
-Kendall tau vs experts 0.5192 · rank 6/31
-billed $0.0385 for 100 items"/><circle cx="853.7" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
-Kendall tau vs experts 0.5170 · rank 7/31
-billed $0.1144 for 100 items</title></circle><circle cx="853.7" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
-Kendall tau vs experts 0.5170 · rank 7/31
-billed $0.1144 for 100 items"/><circle cx="819.5" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
-Kendall tau vs experts 0.5075 · rank 8/31
-billed $0.1084 for 100 items</title></circle><circle cx="819.5" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
-Kendall tau vs experts 0.5075 · rank 8/31
-billed $0.1084 for 100 items"/><circle cx="762.3" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
-Kendall tau vs experts 0.4916 · rank 9/31
-billed $0.2451 for 100 items</title></circle><circle cx="762.3" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
-Kendall tau vs experts 0.4916 · rank 9/31
-billed $0.2451 for 100 items"/><circle cx="742.7" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
-Kendall tau vs experts 0.4861 · rank 10/31
-billed $0.0771 for 100 items</title></circle><circle cx="742.7" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
-Kendall tau vs experts 0.4861 · rank 10/31
-billed $0.0771 for 100 items"/><circle cx="733.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
-Kendall tau vs experts 0.4836 · rank 11/31
-billed $0.3237 for 100 items</title></circle><circle cx="733.6" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
-Kendall tau vs experts 0.4836 · rank 11/31
-billed $0.3237 for 100 items"/><circle cx="721.4" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
-Kendall tau vs experts 0.4802 · rank 12/31
-billed $0.8048 for 100 items</title></circle><circle cx="721.4" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
-Kendall tau vs experts 0.4802 · rank 12/31
-billed $0.8048 for 100 items"/><circle cx="709.6" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
-Kendall tau vs experts 0.4770 · rank 13/31
-billed $0.0252 for 100 items</title></circle><circle cx="709.6" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
-Kendall tau vs experts 0.4770 · rank 13/31
-billed $0.0252 for 100 items"/><circle cx="682.7" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
-Kendall tau vs experts 0.4695 · rank 14/31
-billed $0.0258 for 100 items</title></circle><circle cx="682.7" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
-Kendall tau vs experts 0.4695 · rank 14/31
-billed $0.0258 for 100 items"/><circle cx="676.3" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
-Kendall tau vs experts 0.4677 · rank 15/31
-billed $0.1191 for 100 items</title></circle><circle cx="676.3" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
-Kendall tau vs experts 0.4677 · rank 15/31
-billed $0.1191 for 100 items"/><circle cx="645.0" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
-Kendall tau vs experts 0.4590 · rank 16/31
-billed $0.0307 for 100 items</title></circle><circle cx="645.0" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
-Kendall tau vs experts 0.4590 · rank 16/31
-billed $0.0307 for 100 items"/><circle cx="631.8" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
-Kendall tau vs experts 0.4554 · rank 17/31
-billed $0.1257 for 100 items</title></circle><circle cx="631.8" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
-Kendall tau vs experts 0.4554 · rank 17/31
-billed $0.1257 for 100 items"/><circle cx="625.8" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
-Kendall tau vs experts 0.4537 · rank 18/31
-billed $0.0594 for 100 items</title></circle><circle cx="625.8" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
-Kendall tau vs experts 0.4537 · rank 18/31
-billed $0.0594 for 100 items"/><circle cx="596.7" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
-Kendall tau vs experts 0.4456 · rank 19/31
-billed $0.0481 for 100 items</title></circle><circle cx="596.7" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
-Kendall tau vs experts 0.4456 · rank 19/31
-billed $0.0481 for 100 items"/><circle cx="531.3" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
-Kendall tau vs experts 0.4275 · rank 20/31
-billed $0.0283 for 100 items</title></circle><circle cx="531.3" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
-Kendall tau vs experts 0.4275 · rank 20/31
-billed $0.0283 for 100 items"/><circle cx="502.9" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
-Kendall tau vs experts 0.4196 · rank 21/31
-billed $0.0279 for 100 items</title></circle><circle cx="502.9" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
-Kendall tau vs experts 0.4196 · rank 21/31
-billed $0.0279 for 100 items"/><circle cx="472.5" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
-Kendall tau vs experts 0.4111 · rank 22/31
-billed $0.2124 for 100 items</title></circle><circle cx="472.5" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
-Kendall tau vs experts 0.4111 · rank 22/31
-billed $0.2124 for 100 items"/><circle cx="455.6" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
-Kendall tau vs experts 0.4064 · rank 23/31
-billed $0.0517 for 100 items</title></circle><circle cx="455.6" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
-Kendall tau vs experts 0.4064 · rank 23/31
-billed $0.0517 for 100 items"/><circle cx="264.3" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
-Kendall tau vs experts 0.3533 · rank 24/31
-billed $0.0297 for 100 items</title></circle><circle cx="264.3" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
-Kendall tau vs experts 0.3533 · rank 24/31
-billed $0.0297 for 100 items"/><circle cx="190.0" cy="50.0" r="5.5" class="dot k-local"><title>bartscore · local · free
-Kendall tau vs experts 0.2562 · rank 25/31
-free: runs locally, nothing billed
-off the scale: far below the field</title></circle><circle cx="190.0" cy="50.0" r="12" class="hit" data-tip="bartscore · local · free
-Kendall tau vs experts 0.2562 · rank 25/31
-free: runs locally, nothing billed
-off the scale: far below the field"/><circle cx="894.4" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
-Kendall tau vs experts 0.5283 · rank 3/31
-billed $2.01 for 100 items</title></circle><circle cx="894.4" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
-Kendall tau vs experts 0.5283 · rank 3/31
-billed $2.01 for 100 items"/><circle cx="894.4" cy="50" r="11" class="ring"/><text x="894.4" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.528</text><text x="935.7" y="80" text-anchor="end" class="t-ink" font-size="11">openai_l · 1st · 0.540</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><text x="0" y="20" class="t-head" font-size="20">SummEval</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">judging · Kendall tau vs experts</text><rect x="326.7" y="52" width="49.2" height="44" rx="10" class="band"/><line x1="48" x2="386" y1="74" y2="74" class="axis"/><line x1="14" x2="28" y1="74" y2="74" class="axis"/><text x="37" y="79" text-anchor="middle" class="t-muted" font-size="17">⫽</text><circle cx="367.9" cy="74.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
-Kendall tau vs experts 0.5398 · rank 1/31
-billed $0.6350 for 100 items</title></circle><circle cx="367.9" cy="74.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
-Kendall tau vs experts 0.5398 · rank 1/31
-billed $0.6350 for 100 items"/><circle cx="365.7" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
-Kendall tau vs experts 0.5384 · rank 2/31
-billed $0.0278 for 100 items</title></circle><circle cx="365.7" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
-Kendall tau vs experts 0.5384 · rank 2/31
-billed $0.0278 for 100 items"/><circle cx="348.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
-Kendall tau vs experts 0.5279 · rank 4/31
-billed $1.42 for 100 items</title></circle><circle cx="348.7" cy="74.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
-Kendall tau vs experts 0.5279 · rank 4/31
-billed $1.42 for 100 items"/><circle cx="336.6" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
-Kendall tau vs experts 0.5204 · rank 5/31
-billed $0.4436 for 100 items</title></circle><circle cx="336.6" cy="74.0" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
-Kendall tau vs experts 0.5204 · rank 5/31
-billed $0.4436 for 100 items"/><circle cx="334.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
-Kendall tau vs experts 0.5192 · rank 6/31
-billed $0.0385 for 100 items</title></circle><circle cx="334.7" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
-Kendall tau vs experts 0.5192 · rank 6/31
-billed $0.0385 for 100 items"/><circle cx="331.0" cy="74.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
-Kendall tau vs experts 0.5170 · rank 7/31
-billed $0.1144 for 100 items</title></circle><circle cx="331.0" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
-Kendall tau vs experts 0.5170 · rank 7/31
-billed $0.1144 for 100 items"/><circle cx="315.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
-Kendall tau vs experts 0.5075 · rank 8/31
-billed $0.1084 for 100 items</title></circle><circle cx="315.7" cy="74.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
-Kendall tau vs experts 0.5075 · rank 8/31
-billed $0.1084 for 100 items"/><circle cx="290.0" cy="74.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
-Kendall tau vs experts 0.4916 · rank 9/31
-billed $0.2451 for 100 items</title></circle><circle cx="290.0" cy="74.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
-Kendall tau vs experts 0.4916 · rank 9/31
-billed $0.2451 for 100 items"/><circle cx="281.1" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
-Kendall tau vs experts 0.4861 · rank 10/31
-billed $0.0771 for 100 items</title></circle><circle cx="281.1" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
-Kendall tau vs experts 0.4861 · rank 10/31
-billed $0.0771 for 100 items"/><circle cx="277.1" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
-Kendall tau vs experts 0.4836 · rank 11/31
-billed $0.3237 for 100 items</title></circle><circle cx="277.1" cy="74.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
-Kendall tau vs experts 0.4836 · rank 11/31
-billed $0.3237 for 100 items"/><circle cx="271.6" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
-Kendall tau vs experts 0.4802 · rank 12/31
-billed $0.8048 for 100 items</title></circle><circle cx="271.6" cy="74.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
-Kendall tau vs experts 0.4802 · rank 12/31
-billed $0.8048 for 100 items"/><circle cx="266.3" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
-Kendall tau vs experts 0.4770 · rank 13/31
-billed $0.0252 for 100 items</title></circle><circle cx="266.3" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
-Kendall tau vs experts 0.4770 · rank 13/31
-billed $0.0252 for 100 items"/><circle cx="254.2" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
-Kendall tau vs experts 0.4695 · rank 14/31
-billed $0.0258 for 100 items</title></circle><circle cx="254.2" cy="74.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
-Kendall tau vs experts 0.4695 · rank 14/31
-billed $0.0258 for 100 items"/><circle cx="251.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
-Kendall tau vs experts 0.4677 · rank 15/31
-billed $0.1191 for 100 items</title></circle><circle cx="251.3" cy="74.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
-Kendall tau vs experts 0.4677 · rank 15/31
-billed $0.1191 for 100 items"/><circle cx="237.2" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
-Kendall tau vs experts 0.4590 · rank 16/31
-billed $0.0307 for 100 items</title></circle><circle cx="237.2" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
-Kendall tau vs experts 0.4590 · rank 16/31
-billed $0.0307 for 100 items"/><circle cx="231.3" cy="74.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
-Kendall tau vs experts 0.4554 · rank 17/31
-billed $0.1257 for 100 items</title></circle><circle cx="231.3" cy="74.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
-Kendall tau vs experts 0.4554 · rank 17/31
-billed $0.1257 for 100 items"/><circle cx="228.6" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
-Kendall tau vs experts 0.4537 · rank 18/31
-billed $0.0594 for 100 items</title></circle><circle cx="228.6" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
-Kendall tau vs experts 0.4537 · rank 18/31
-billed $0.0594 for 100 items"/><circle cx="215.5" cy="74.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
-Kendall tau vs experts 0.4456 · rank 19/31
-billed $0.0481 for 100 items</title></circle><circle cx="215.5" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
-Kendall tau vs experts 0.4456 · rank 19/31
-billed $0.0481 for 100 items"/><circle cx="186.1" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
-Kendall tau vs experts 0.4275 · rank 20/31
-billed $0.0283 for 100 items</title></circle><circle cx="186.1" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
-Kendall tau vs experts 0.4275 · rank 20/31
-billed $0.0283 for 100 items"/><circle cx="173.4" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
-Kendall tau vs experts 0.4196 · rank 21/31
-billed $0.0279 for 100 items</title></circle><circle cx="173.4" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
-Kendall tau vs experts 0.4196 · rank 21/31
-billed $0.0279 for 100 items"/><circle cx="159.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
-Kendall tau vs experts 0.4111 · rank 22/31
-billed $0.2124 for 100 items</title></circle><circle cx="159.7" cy="74.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
-Kendall tau vs experts 0.4111 · rank 22/31
-billed $0.2124 for 100 items"/><circle cx="152.1" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
-Kendall tau vs experts 0.4064 · rank 23/31
-billed $0.0517 for 100 items</title></circle><circle cx="152.1" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
-Kendall tau vs experts 0.4064 · rank 23/31
-billed $0.0517 for 100 items"/><circle cx="66.1" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
-Kendall tau vs experts 0.3533 · rank 24/31
-billed $0.0297 for 100 items</title></circle><circle cx="66.1" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
-Kendall tau vs experts 0.3533 · rank 24/31
-billed $0.0297 for 100 items"/><circle cx="14.0" cy="74.0" r="5.5" class="dot k-local"><title>bartscore · local · free
-Kendall tau vs experts 0.2562 · rank 25/31
-free: runs locally, nothing billed
-off the scale: far below the field</title></circle><circle cx="14.0" cy="74.0" r="12" class="hit" data-tip="bartscore · local · free
-Kendall tau vs experts 0.2562 · rank 25/31
-free: runs locally, nothing billed
-off the scale: far below the field"/><circle cx="349.3" cy="74.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
-Kendall tau vs experts 0.5283 · rank 3/31
-billed $2.01 for 100 items</title></circle><circle cx="349.3" cy="74.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
-Kendall tau vs experts 0.5283 · rank 3/31
-billed $2.01 for 100 items"/><circle cx="349.3" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 3rd · 0.528</text><text x="367.9" y="104" text-anchor="end" class="t-ink" font-size="15">openai_l · 1st · 0.540</text></svg></div></figure>
+billed $0.4576 for 200 items"/><circle cx="361.8" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 2nd · 0.742</text><text x="367.9" y="104" text-anchor="end" class="t-ink" font-size="15">glm_s · 1st · 0.744</text></svg></div></figure><figure class="reveal" style="margin-bottom:10px"><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><text x="0" y="44" class="t-head" font-size="17">SummEval</text><text x="0" y="64" class="t-muted" font-size="11">judging · Kendall tau vs experts</text><rect x="875.1" y="28" width="66.8" height="44" rx="10" class="band"/><line x1="190" x2="976" y1="50" y2="50" class="axis"/><circle cx="933.9" cy="50.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/33
+billed $0.6350 for 100 items</title></circle><circle cx="933.9" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/33
+billed $0.6350 for 100 items"/><circle cx="930.6" cy="50.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/33
+billed $0.0278 for 100 items</title></circle><circle cx="930.6" cy="50.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/33
+billed $0.0278 for 100 items"/><circle cx="904.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/33
+billed $1.42 for 100 items</title></circle><circle cx="904.6" cy="50.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/33
+billed $1.42 for 100 items"/><circle cx="886.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/33
+billed $0.4436 for 100 items</title></circle><circle cx="886.0" cy="50.0" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/33
+billed $0.4436 for 100 items"/><circle cx="883.1" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/33
+billed $0.0385 for 100 items</title></circle><circle cx="883.1" cy="50.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/33
+billed $0.0385 for 100 items"/><circle cx="877.5" cy="50.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/33
+billed $0.1144 for 100 items</title></circle><circle cx="877.5" cy="50.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/33
+billed $0.1144 for 100 items"/><circle cx="854.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/33
+billed $0.1084 for 100 items</title></circle><circle cx="854.0" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/33
+billed $0.1084 for 100 items"/><circle cx="814.7" cy="50.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/33
+billed $0.2451 for 100 items</title></circle><circle cx="814.7" cy="50.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/33
+billed $0.2451 for 100 items"/><circle cx="801.2" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/33
+billed $0.0771 for 100 items</title></circle><circle cx="801.2" cy="50.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/33
+billed $0.0771 for 100 items"/><circle cx="795.0" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/33
+billed $0.3237 for 100 items</title></circle><circle cx="795.0" cy="50.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/33
+billed $0.3237 for 100 items"/><circle cx="786.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/33
+billed $0.8048 for 100 items</title></circle><circle cx="786.6" cy="50.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/33
+billed $0.8048 for 100 items"/><circle cx="778.5" cy="50.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/33
+billed $0.0252 for 100 items</title></circle><circle cx="778.5" cy="50.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/33
+billed $0.0252 for 100 items"/><circle cx="760.0" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/33
+billed $0.0258 for 100 items</title></circle><circle cx="760.0" cy="50.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/33
+billed $0.0258 for 100 items"/><circle cx="755.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/33
+billed $0.1191 for 100 items</title></circle><circle cx="755.6" cy="50.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/33
+billed $0.1191 for 100 items"/><circle cx="734.1" cy="50.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/33
+billed $0.0307 for 100 items</title></circle><circle cx="734.1" cy="50.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/33
+billed $0.0307 for 100 items"/><circle cx="725.1" cy="50.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/33
+billed $0.1257 for 100 items</title></circle><circle cx="725.1" cy="50.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/33
+billed $0.1257 for 100 items"/><circle cx="720.9" cy="50.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/33
+billed $0.0594 for 100 items</title></circle><circle cx="720.9" cy="50.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/33
+billed $0.0594 for 100 items"/><circle cx="700.9" cy="50.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/33
+billed $0.0481 for 100 items</title></circle><circle cx="700.9" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/33
+billed $0.0481 for 100 items"/><circle cx="656.0" cy="50.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/33
+billed $0.0283 for 100 items</title></circle><circle cx="656.0" cy="50.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/33
+billed $0.0283 for 100 items"/><circle cx="636.5" cy="50.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/33
+billed $0.0279 for 100 items</title></circle><circle cx="636.5" cy="50.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/33
+billed $0.0279 for 100 items"/><circle cx="615.6" cy="50.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/33
+billed $0.2124 for 100 items</title></circle><circle cx="615.6" cy="50.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/33
+billed $0.2124 for 100 items"/><circle cx="604.0" cy="50.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/33
+billed $0.0517 for 100 items</title></circle><circle cx="604.0" cy="50.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/33
+billed $0.0517 for 100 items"/><circle cx="518.0" cy="50.0" r="5.5" class="dot k-local"><title>unievalpub · local · free
+Kendall tau vs experts 0.3717 · rank 24/33
+free: runs locally, nothing billed</title></circle><circle cx="518.0" cy="50.0" r="12" class="hit" data-tip="unievalpub · local · free
+Kendall tau vs experts 0.3717 · rank 24/33
+free: runs locally, nothing billed"/><circle cx="472.5" cy="50.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 25/33
+billed $0.0297 for 100 items</title></circle><circle cx="472.5" cy="50.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 25/33
+billed $0.0297 for 100 items"/><circle cx="458.3" cy="50.0" r="5.5" class="dot k-local"><title>unieval · local · free
+Kendall tau vs experts 0.3476 · rank 26/33
+free: runs locally, nothing billed</title></circle><circle cx="458.3" cy="50.0" r="12" class="hit" data-tip="unieval · local · free
+Kendall tau vs experts 0.3476 · rank 26/33
+free: runs locally, nothing billed"/><circle cx="232.1" cy="50.0" r="5.5" class="dot k-local"><title>bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 27/33
+free: runs locally, nothing billed</title></circle><circle cx="232.1" cy="50.0" r="12" class="hit" data-tip="bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 27/33
+free: runs locally, nothing billed"/><circle cx="905.5" cy="50.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/33
+billed $2.01 for 100 items</title></circle><circle cx="905.5" cy="50.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/33
+billed $2.01 for 100 items"/><circle cx="905.5" cy="50" r="11" class="ring"/><text x="905.5" y="32" text-anchor="middle" class="t-ink" font-size="11">dearest · 3rd · 0.528</text><text x="933.9" y="80" text-anchor="end" class="t-ink" font-size="11">openai_l · 1st · 0.540</text></svg></div><div class="vn"><svg viewBox="0 0 400 124" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><text x="0" y="20" class="t-head" font-size="20">SummEval</text><text x="400" y="20" text-anchor="end" class="t-muted" font-size="14">judging · Kendall tau vs experts</text><rect x="334.0" y="52" width="40.0" height="44" rx="10" class="band"/><line x1="14" x2="386" y1="74" y2="74" class="axis"/><circle cx="366.1" cy="74.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/33
+billed $0.6350 for 100 items</title></circle><circle cx="366.1" cy="74.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
+Kendall tau vs experts 0.5398 · rank 1/33
+billed $0.6350 for 100 items"/><circle cx="364.5" cy="74.0" r="5.5" class="dot k-open"><title>gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/33
+billed $0.0278 for 100 items</title></circle><circle cx="364.5" cy="74.0" r="12" class="hit" data-tip="gemma_l · hosted · open weights
+Kendall tau vs experts 0.5384 · rank 2/33
+billed $0.0278 for 100 items"/><circle cx="352.2" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/33
+billed $1.42 for 100 items</title></circle><circle cx="352.2" cy="74.0" r="12" class="hit" data-tip="openai_m · hosted · proprietary
+Kendall tau vs experts 0.5279 · rank 4/33
+billed $1.42 for 100 items"/><circle cx="343.4" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/33
+billed $0.4436 for 100 items</title></circle><circle cx="343.4" cy="74.0" r="12" class="hit" data-tip="qwen37max · hosted · proprietary
+Kendall tau vs experts 0.5204 · rank 5/33
+billed $0.4436 for 100 items"/><circle cx="342.0" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/33
+billed $0.0385 for 100 items</title></circle><circle cx="342.0" cy="74.0" r="12" class="hit" data-tip="qwen_s · hosted · proprietary
+Kendall tau vs experts 0.5192 · rank 6/33
+billed $0.0385 for 100 items"/><circle cx="339.4" cy="74.0" r="5.5" class="dot k-open"><title>glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/33
+billed $0.1144 for 100 items</title></circle><circle cx="339.4" cy="74.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
+Kendall tau vs experts 0.5170 · rank 7/33
+billed $0.1144 for 100 items"/><circle cx="328.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/33
+billed $0.1084 for 100 items</title></circle><circle cx="328.3" cy="74.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
+Kendall tau vs experts 0.5075 · rank 8/33
+billed $0.1084 for 100 items"/><circle cx="309.7" cy="74.0" r="5.5" class="dot k-open"><title>glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/33
+billed $0.2451 for 100 items</title></circle><circle cx="309.7" cy="74.0" r="12" class="hit" data-tip="glm_l · hosted · open weights
+Kendall tau vs experts 0.4916 · rank 9/33
+billed $0.2451 for 100 items"/><circle cx="303.3" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/33
+billed $0.0771 for 100 items</title></circle><circle cx="303.3" cy="74.0" r="12" class="hit" data-tip="deepseek_m · hosted · open weights
+Kendall tau vs experts 0.4861 · rank 10/33
+billed $0.0771 for 100 items"/><circle cx="300.3" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/33
+billed $0.3237 for 100 items</title></circle><circle cx="300.3" cy="74.0" r="12" class="hit" data-tip="anthropic_s · hosted · proprietary
+Kendall tau vs experts 0.4836 · rank 11/33
+billed $0.3237 for 100 items"/><circle cx="296.4" cy="74.0" r="5.5" class="dot k-proprietary"><title>anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/33
+billed $0.8048 for 100 items</title></circle><circle cx="296.4" cy="74.0" r="12" class="hit" data-tip="anthropic_m · hosted · proprietary
+Kendall tau vs experts 0.4802 · rank 12/33
+billed $0.8048 for 100 items"/><circle cx="292.5" cy="74.0" r="5.5" class="dot k-open"><title>gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/33
+billed $0.0252 for 100 items</title></circle><circle cx="292.5" cy="74.0" r="12" class="hit" data-tip="gemma_m · hosted · open weights
+Kendall tau vs experts 0.4770 · rank 13/33
+billed $0.0252 for 100 items"/><circle cx="283.8" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/33
+billed $0.0258 for 100 items</title></circle><circle cx="283.8" cy="74.0" r="12" class="hit" data-tip="deepseek_l · hosted · open weights
+Kendall tau vs experts 0.4695 · rank 14/33
+billed $0.0258 for 100 items"/><circle cx="281.7" cy="74.0" r="5.5" class="dot k-proprietary"><title>mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/33
+billed $0.1191 for 100 items</title></circle><circle cx="281.7" cy="74.0" r="12" class="hit" data-tip="mistral_m · hosted · proprietary
+Kendall tau vs experts 0.4677 · rank 15/33
+billed $0.1191 for 100 items"/><circle cx="271.5" cy="74.0" r="5.5" class="dot k-open"><title>deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/33
+billed $0.0307 for 100 items</title></circle><circle cx="271.5" cy="74.0" r="12" class="hit" data-tip="deepseek_s · hosted · open weights
+Kendall tau vs experts 0.4590 · rank 16/33
+billed $0.0307 for 100 items"/><circle cx="267.2" cy="74.0" r="5.5" class="dot k-open"><title>mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/33
+billed $0.1257 for 100 items</title></circle><circle cx="267.2" cy="74.0" r="12" class="hit" data-tip="mistral_l · hosted · open weights
+Kendall tau vs experts 0.4554 · rank 17/33
+billed $0.1257 for 100 items"/><circle cx="265.3" cy="74.0" r="5.5" class="dot k-open"><title>llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/33
+billed $0.0594 for 100 items</title></circle><circle cx="265.3" cy="74.0" r="12" class="hit" data-tip="llama_l · hosted · open weights
+Kendall tau vs experts 0.4537 · rank 18/33
+billed $0.0594 for 100 items"/><circle cx="255.8" cy="74.0" r="5.5" class="dot k-open"><title>glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/33
+billed $0.0481 for 100 items</title></circle><circle cx="255.8" cy="74.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
+Kendall tau vs experts 0.4456 · rank 19/33
+billed $0.0481 for 100 items"/><circle cx="234.5" cy="74.0" r="5.5" class="dot k-open"><title>mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/33
+billed $0.0283 for 100 items</title></circle><circle cx="234.5" cy="74.0" r="12" class="hit" data-tip="mistral_s · hosted · open weights
+Kendall tau vs experts 0.4275 · rank 20/33
+billed $0.0283 for 100 items"/><circle cx="225.3" cy="74.0" r="5.5" class="dot k-open"><title>gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/33
+billed $0.0279 for 100 items</title></circle><circle cx="225.3" cy="74.0" r="12" class="hit" data-tip="gemma_s · hosted · open weights
+Kendall tau vs experts 0.4196 · rank 21/33
+billed $0.0279 for 100 items"/><circle cx="215.4" cy="74.0" r="5.5" class="dot k-proprietary"><title>openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/33
+billed $0.2124 for 100 items</title></circle><circle cx="215.4" cy="74.0" r="12" class="hit" data-tip="openai_s · hosted · proprietary
+Kendall tau vs experts 0.4111 · rank 22/33
+billed $0.2124 for 100 items"/><circle cx="209.9" cy="74.0" r="5.5" class="dot k-open"><title>llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/33
+billed $0.0517 for 100 items</title></circle><circle cx="209.9" cy="74.0" r="12" class="hit" data-tip="llama_m · hosted · open weights
+Kendall tau vs experts 0.4064 · rank 23/33
+billed $0.0517 for 100 items"/><circle cx="169.2" cy="74.0" r="5.5" class="dot k-local"><title>unievalpub · local · free
+Kendall tau vs experts 0.3717 · rank 24/33
+free: runs locally, nothing billed</title></circle><circle cx="169.2" cy="74.0" r="12" class="hit" data-tip="unievalpub · local · free
+Kendall tau vs experts 0.3717 · rank 24/33
+free: runs locally, nothing billed"/><circle cx="147.7" cy="74.0" r="5.5" class="dot k-open"><title>llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 25/33
+billed $0.0297 for 100 items</title></circle><circle cx="147.7" cy="74.0" r="12" class="hit" data-tip="llama_s · hosted · open weights
+Kendall tau vs experts 0.3533 · rank 25/33
+billed $0.0297 for 100 items"/><circle cx="141.0" cy="74.0" r="5.5" class="dot k-local"><title>unieval · local · free
+Kendall tau vs experts 0.3476 · rank 26/33
+free: runs locally, nothing billed</title></circle><circle cx="141.0" cy="74.0" r="12" class="hit" data-tip="unieval · local · free
+Kendall tau vs experts 0.3476 · rank 26/33
+free: runs locally, nothing billed"/><circle cx="33.9" cy="74.0" r="5.5" class="dot k-local"><title>bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 27/33
+free: runs locally, nothing billed</title></circle><circle cx="33.9" cy="74.0" r="12" class="hit" data-tip="bartscore · local · free
+Kendall tau vs experts 0.2562 · rank 27/33
+free: runs locally, nothing billed"/><circle cx="352.6" cy="74.0" r="7" class="dot k-proprietary"><title>anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/33
+billed $2.01 for 100 items</title></circle><circle cx="352.6" cy="74.0" r="12" class="hit" data-tip="anthropic_l · hosted · proprietary
+Kendall tau vs experts 0.5283 · rank 3/33
+billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><text x="286.0" y="56" text-anchor="middle" class="t-ink" font-size="15">dearest · 3rd · 0.528</text><text x="366.1" y="104" text-anchor="end" class="t-ink" font-size="15">openai_l · 1st · 0.540</text></svg></div></figure>
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each experiment's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
 
@@ -1279,7 +1291,7 @@ billed $2.01 for 100 items"/><circle cx="349.3" cy="74" r="11" class="ring"/><te
     </div>
     <div class="chart scroll-x reveal"><table class="data ties">
       <thead><tr><th>experiment</th><th>first place</th><th>tied with 1st</th><th>…of which paid</th><th>cheapest paid tie</th><th>cheaper than dearest</th><th>dearest model</th></tr></thead>
-      <tbody><tr><td class="exp"><a href="experiments/summarization.html">Summarisation · CNN/DailyMail</a></td><td class="num" data-label="first place">bart_l</td><td class="num big" data-label="tied with 1st">15</td><td class="num" data-label="…of which paid">13</td><td class="num" data-label="cheapest paid tie">deepseek_s</td><td class="num" data-label="cheaper than dearest">143×</td><td class="num" data-label="dearest model">anthropic_l · 18th of 29</td></tr><tr><td class="exp"><a href="experiments/ag-news.html">Classification · AG News</a></td><td class="num" data-label="first place">bert_base_ta</td><td class="num big" data-label="tied with 1st">3</td><td class="num" data-label="…of which paid">1</td><td class="num" data-label="cheapest paid tie">anthropic_m</td><td class="num" data-label="cheaper than dearest">2.5×</td><td class="num" data-label="dearest model">anthropic_l · 5th of 30</td></tr><tr><td class="exp"><a href="experiments/dbpedia.html">Classification · DBpedia-14</a></td><td class="num" data-label="first place">qwen_m</td><td class="num big" data-label="tied with 1st">19</td><td class="num" data-label="…of which paid">18</td><td class="num" data-label="cheapest paid tie">gemma_m</td><td class="num" data-label="cheaper than dearest">115×</td><td class="num" data-label="dearest model">anthropic_l · 2nd of 28</td></tr><tr><td class="exp"><a href="experiments/few-nerd.html">Extraction · Few-NERD</a></td><td class="num" data-label="first place">span_marker</td><td class="num big" data-label="tied with 1st">0</td><td class="num" data-label="…of which paid">0</td><td class="num" data-label="cheapest paid tie">—</td><td class="num" data-label="cheaper than dearest">no paid model ties</td><td class="num" data-label="dearest model">anthropic_l · 3rd of 28</td></tr><tr><td class="exp"><a href="experiments/scifact.html">Retrieval · SciFact</a></td><td class="num" data-label="first place">glm_s</td><td class="num big" data-label="tied with 1st">12</td><td class="num" data-label="…of which paid">10</td><td class="num" data-label="cheapest paid tie">deepseek_s</td><td class="num" data-label="cheaper than dearest">7.6×</td><td class="num" data-label="dearest model">glm_m · 2nd of 19</td></tr><tr><td class="exp"><a href="experiments/summeval.html">Judging · SummEval</a></td><td class="num" data-label="first place">openai_l</td><td class="num big" data-label="tied with 1st">5</td><td class="num" data-label="…of which paid">5</td><td class="num" data-label="cheapest paid tie">gemma_l</td><td class="num" data-label="cheaper than dearest">72×</td><td class="num" data-label="dearest model">anthropic_l · 3rd of 31</td></tr></tbody></table>
+      <tbody><tr><td class="exp"><a href="experiments/summarization.html">Summarisation · CNN/DailyMail</a></td><td class="num" data-label="first place">bart_l</td><td class="num big" data-label="tied with 1st">15</td><td class="num" data-label="…of which paid">13</td><td class="num" data-label="cheapest paid tie">deepseek_s</td><td class="num" data-label="cheaper than dearest">143×</td><td class="num" data-label="dearest model">anthropic_l · 18th of 29</td></tr><tr><td class="exp"><a href="experiments/ag-news.html">Classification · AG News</a></td><td class="num" data-label="first place">bert_base_ta</td><td class="num big" data-label="tied with 1st">3</td><td class="num" data-label="…of which paid">1</td><td class="num" data-label="cheapest paid tie">anthropic_m</td><td class="num" data-label="cheaper than dearest">2.5×</td><td class="num" data-label="dearest model">anthropic_l · 5th of 30</td></tr><tr><td class="exp"><a href="experiments/dbpedia.html">Classification · DBpedia-14</a></td><td class="num" data-label="first place">qwen_m</td><td class="num big" data-label="tied with 1st">19</td><td class="num" data-label="…of which paid">18</td><td class="num" data-label="cheapest paid tie">gemma_m</td><td class="num" data-label="cheaper than dearest">115×</td><td class="num" data-label="dearest model">anthropic_l · 2nd of 28</td></tr><tr><td class="exp"><a href="experiments/few-nerd.html">Extraction · Few-NERD</a></td><td class="num" data-label="first place">span_marker</td><td class="num big" data-label="tied with 1st">0</td><td class="num" data-label="…of which paid">0</td><td class="num" data-label="cheapest paid tie">—</td><td class="num" data-label="cheaper than dearest">no paid model ties</td><td class="num" data-label="dearest model">anthropic_l · 3rd of 28</td></tr><tr><td class="exp"><a href="experiments/scifact.html">Retrieval · SciFact</a></td><td class="num" data-label="first place">glm_s</td><td class="num big" data-label="tied with 1st">12</td><td class="num" data-label="…of which paid">10</td><td class="num" data-label="cheapest paid tie">deepseek_s</td><td class="num" data-label="cheaper than dearest">7.6×</td><td class="num" data-label="dearest model">glm_m · 2nd of 19</td></tr><tr><td class="exp"><a href="experiments/summeval.html">Judging · SummEval</a></td><td class="num" data-label="first place">openai_l</td><td class="num big" data-label="tied with 1st">5</td><td class="num" data-label="…of which paid">5</td><td class="num" data-label="cheapest paid tie">gemma_l</td><td class="num" data-label="cheaper than dearest">72×</td><td class="num" data-label="dearest model">anthropic_l · 3rd of 33</td></tr></tbody></table>
       <figcaption><b>Tied with 1st</b>: other systems the leader cannot be statistically separated from (paired permutation test, Holm-corrected). <b>…of which paid</b>: how many of those are hosted models that bill per call; the rest are free. <b>Cheapest paid tie</b>: the cheapest of them, and how many times less it cost than the most expensive model in the field. <b>0 tied</b> means a clean winner: separated from every rival.</figcaption></div>
   </div>
 </div></section>
@@ -1288,10 +1300,10 @@ billed $2.01 for 100 items"/><circle cx="349.3" cy="74" r="11" class="ring"/><te
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
-    <li><div><h3>A free local model was first, or not separable from first, in 5 of 6.</h3><p>Every one is under 2 GB and needs no GPU — $0 per item — against hosted models billing up to $2.01 for 100 items (anthropic_l, SummEval).</p></div></li>
-    <li><div><h3>But only on text like the text it was trained on.</h3><p>The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.</p></div></li>
-    <li><div><h3>Where no free model measured was trained for your task, an LLM can earn its bill — but not the dearest one.</h3><p>Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%. The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader. One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
-    <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes. On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus. The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
+    <li><div><h3>A free local model was first, or not separable from first, in 5 of 6.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. Every one is under 2 GB and needs no GPU — $0 per item — against hosted models billing up to $2.01 for 100 items (anthropic_l, SummEval).</p></div></li>
+    <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.</p></div></li>
+    <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%. The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%. The cheapest judge the leader cannot be separated from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader. One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
+    <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong — about half a learnable convention, half mislabels. That split is one rater's reading. On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms). The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
 
@@ -1299,7 +1311,7 @@ billed $2.01 for 100 items"/><circle cx="349.3" cy="74" r="11" class="ring"/><te
   <div class="eyebrow"><span class="num">04</span>Trust</div>
   <h2>Can you trust any of this?</h2>
   <p class="lede">Five experiments score a sample of 200–280 items, not a full test set, and SummEval scores the whole of its 100. So each one also runs a <strong>calibration</strong>: one well-known model or metric, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
-  <div class="chart reveal"><div class="vw"><svg viewBox="0 0 1000 520" role="img" aria-label="Calibration: this repo against published values"><line x1="330.0" x2="330.0" y1="22" y2="494" class="grid"/><text x="330.0" y="512" text-anchor="middle" class="t-muted" font-size="10">-4</text><line x1="460.0" x2="460.0" y1="22" y2="494" class="grid"/><text x="460.0" y="512" text-anchor="middle" class="t-muted" font-size="10">-2</text><line x1="590.0" x2="590.0" y1="22" y2="494" class="axis"/><text x="590.0" y="512" text-anchor="middle" class="t-muted" font-size="10">+0</text><line x1="720.0" x2="720.0" y1="22" y2="494" class="grid"/><text x="720.0" y="512" text-anchor="middle" class="t-muted" font-size="10">+2</text><line x1="850.0" x2="850.0" y1="22" y2="494" class="grid"/><text x="850.0" y="512" text-anchor="middle" class="t-muted" font-size="10">+4</text><text x="590.0" y="14" text-anchor="middle" class="t-muted" font-size="10">published value</text><text x="0" y="50.0" class="t-ink" font-size="13">CNN/DailyMail</text><text x="0" y="66.0" class="t-muted" font-size="11">LEAD-3, ROUGE-1</text><line x1="549.7" x2="578.3" y1="53.0" y2="53.0" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="564.0" cy="53.0" r="6.5" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
+  <div class="chart reveal"><div class="vw"><svg viewBox="0 0 1000 566" role="img" aria-label="Calibration: this repo against published values"><line x1="330.0" x2="330.0" y1="22" y2="540" class="grid"/><text x="330.0" y="558" text-anchor="middle" class="t-muted" font-size="10">-4</text><line x1="460.0" x2="460.0" y1="22" y2="540" class="grid"/><text x="460.0" y="558" text-anchor="middle" class="t-muted" font-size="10">-2</text><line x1="590.0" x2="590.0" y1="22" y2="540" class="axis"/><text x="590.0" y="558" text-anchor="middle" class="t-muted" font-size="10">+0</text><line x1="720.0" x2="720.0" y1="22" y2="540" class="grid"/><text x="720.0" y="558" text-anchor="middle" class="t-muted" font-size="10">+2</text><line x1="850.0" x2="850.0" y1="22" y2="540" class="grid"/><text x="850.0" y="558" text-anchor="middle" class="t-muted" font-size="10">+4</text><text x="590.0" y="14" text-anchor="middle" class="t-muted" font-size="10">published value</text><text x="0" y="50.0" class="t-ink" font-size="13">CNN/DailyMail</text><text x="0" y="66.0" class="t-muted" font-size="11">LEAD-3, ROUGE-1</text><line x1="549.7" x2="578.3" y1="53.0" y2="53.0" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="564.0" cy="53.0" r="6.5" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
 ours 39.94 ± 0.22
 published 40.34
 n = 11490"><title>CNN/DailyMail · LEAD-3, ROUGE-1
@@ -1359,7 +1371,13 @@ published 0.1280
 n = 100"><title>SummEval · rougeL
 ours 0.1435 ± 0.0322
 published 0.1280
-n = 100</title></circle><text x="868" y="471.0" class="t-ink" font-size="12">0.1435</text><text x="932" y="471.0" class="t-muted" font-size="12">0.1280</text><text x="868" y="14" class="t-muted" font-size="10">ours</text><text x="932" y="14" class="t-muted" font-size="10">published</text></svg></div><div class="vn"><svg viewBox="0 0 400 906" role="img" aria-label="Calibration: this repo against published values"><line x1="14.0" x2="14.0" y1="30" y2="880" class="grid"/><text x="14.0" y="898" text-anchor="middle" class="t-muted" font-size="14">-4</text><line x1="107.0" x2="107.0" y1="30" y2="880" class="grid"/><text x="107.0" y="898" text-anchor="middle" class="t-muted" font-size="14">-2</text><line x1="200.0" x2="200.0" y1="30" y2="880" class="axis"/><text x="200.0" y="898" text-anchor="middle" class="t-muted" font-size="14">+0</text><line x1="293.0" x2="293.0" y1="30" y2="880" class="grid"/><text x="293.0" y="898" text-anchor="middle" class="t-muted" font-size="14">+2</text><line x1="386.0" x2="386.0" y1="30" y2="880" class="grid"/><text x="386.0" y="898" text-anchor="middle" class="t-muted" font-size="14">+4</text><text x="200.0" y="22" text-anchor="middle" class="t-muted" font-size="14">published value</text><text x="0" y="52" class="t-ink" font-size="16">CNN/DailyMail <tspan class="t-muted" font-size="14">LEAD-3, ROUGE-1</tspan></text><text x="0" y="102" class="t-muted" font-size="14">ours <tspan class="t-ink">39.94</tspan> · published 40.34</text><line x1="171.2" x2="191.6" y1="74" y2="74" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="181.4" cy="74" r="7" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
+n = 100</title></circle><text x="868" y="471.0" class="t-ink" font-size="12">0.1435</text><text x="932" y="471.0" class="t-muted" font-size="12">0.1280</text><text x="0" y="510.0" class="t-ink" font-size="13">SummEval</text><text x="0" y="526.0" class="t-muted" font-size="11">unievalpub</text><line x1="411.9" x2="699.2" y1="513.0" y2="513.0" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="555.5" cy="513.0" r="6.5" class="dot accent" data-tip="SummEval · unievalpub
+ours 0.3717 ± 0.0221
+published 0.3770
+n = 100"><title>SummEval · unievalpub
+ours 0.3717 ± 0.0221
+published 0.3770
+n = 100</title></circle><text x="868" y="517.0" class="t-ink" font-size="12">0.3717</text><text x="932" y="517.0" class="t-muted" font-size="12">0.3770</text><text x="868" y="14" class="t-muted" font-size="10">ours</text><text x="932" y="14" class="t-muted" font-size="10">published</text></svg></div><div class="vn"><svg viewBox="0 0 400 990" role="img" aria-label="Calibration: this repo against published values"><line x1="14.0" x2="14.0" y1="30" y2="964" class="grid"/><text x="14.0" y="982" text-anchor="middle" class="t-muted" font-size="14">-4</text><line x1="107.0" x2="107.0" y1="30" y2="964" class="grid"/><text x="107.0" y="982" text-anchor="middle" class="t-muted" font-size="14">-2</text><line x1="200.0" x2="200.0" y1="30" y2="964" class="axis"/><text x="200.0" y="982" text-anchor="middle" class="t-muted" font-size="14">+0</text><line x1="293.0" x2="293.0" y1="30" y2="964" class="grid"/><text x="293.0" y="982" text-anchor="middle" class="t-muted" font-size="14">+2</text><line x1="386.0" x2="386.0" y1="30" y2="964" class="grid"/><text x="386.0" y="982" text-anchor="middle" class="t-muted" font-size="14">+4</text><text x="200.0" y="22" text-anchor="middle" class="t-muted" font-size="14">published value</text><text x="0" y="52" class="t-ink" font-size="16">CNN/DailyMail <tspan class="t-muted" font-size="14">LEAD-3, ROUGE-1</tspan></text><text x="0" y="102" class="t-muted" font-size="14">ours <tspan class="t-ink">39.94</tspan> · published 40.34</text><line x1="171.2" x2="191.6" y1="74" y2="74" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="181.4" cy="74" r="7" class="dot accent" data-tip="CNN/DailyMail · LEAD-3, ROUGE-1
 ours 39.94 ± 0.22
 published 40.34
 n = 11490"><title>CNN/DailyMail · LEAD-3, ROUGE-1
@@ -1419,8 +1437,14 @@ published 0.1280
 n = 100"><title>SummEval · rougeL
 ours 0.1435 ± 0.0322
 published 0.1280
+n = 100</title></circle><text x="0" y="892" class="t-ink" font-size="16">SummEval <tspan class="t-muted" font-size="14">unievalpub</tspan></text><text x="0" y="942" class="t-muted" font-size="14">ours <tspan class="t-ink">0.3717</tspan> · published 0.3770</text><line x1="72.6" x2="278.1" y1="914" y2="914" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/><circle cx="175.4" cy="914" r="7" class="dot accent" data-tip="SummEval · unievalpub
+ours 0.3717 ± 0.0221
+published 0.3770
+n = 100"><title>SummEval · unievalpub
+ours 0.3717 ± 0.0221
+published 0.3770
 n = 100</title></circle></svg></div>
-    <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation; accuracy, micro-F1, nDCG@10 or Kendall τ ×100 elsewhere). Bars are our 95% interval. 10 of 10 agree with the published value within that interval plus a 2-point allowance for protocol differences; 9 are inside the interval itself.</figcaption></div>
+    <figcaption>Our figure minus the published one, in points of the metric (ROUGE-1 F1 for summarisation; accuracy, micro-F1, nDCG@10 or Kendall τ ×100 elsewhere). Bars are our 95% interval. 11 of 11 agree with the published value within that interval plus a 2-point allowance for protocol differences; 10 are inside the interval itself.</figcaption></div>
   <div class="cols" style="margin-top:64px">
     <div class="prose">
       <h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Calibration found one real error — in our sample, not our scorer.</h3>
@@ -1469,14 +1493,14 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="196" 
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
-  <p class="note" style="margin-top:48px"><b>Nothing on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies 120 claims against the runs on every commit.</p>
+  <p class="note" style="margin-top:48px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies 175 claims against the runs on every commit.</p>
 </div></section>
 
 <section class="block" id="experiments"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>The experiments</div>
   <h2>Six benchmarks, one harness.</h2>
   <p class="lede">The same 24 hosted models — eight vendors, three price tiers each — on every task (the cheapest twelve on SciFact), beside the strongest free models each task allows.</p>
-  <div class="cards"><a class="card reveal" href="experiments/summarization.html"><div class="task">Summarisation</div><h3>CNN/DailyMail</h3><p>Summarise a news article in two or three sentences. A 1.6 GB fine-tune ties the best paid model — on CNN&#x27;s articles.</p><div class="meta"><span>200 items · 29 arms</span><span>1st <b>bart_l</b></span></div></a><a class="card reveal" href="experiments/ag-news.html"><div class="task">Classification</div><h3>AG News</h3><p>Four-way topic labels. Three small fine-tunes take the top three places, largely by learning the dataset&#x27;s labelling conventions.</p><div class="meta"><span>200 items · 30 arms</span><span>1st <b>bert_base_ta</b></span></div></a><a class="card reveal" href="experiments/dbpedia.html"><div class="task">Classification</div><h3>DBpedia-14</h3><p>Fourteen-way ontology labels on a saturated benchmark: the top is a group of nineteen, and the gold label is sometimes the error.</p><div class="meta"><span>280 items · 28 arms</span><span>1st <b>qwen_m</b></span></div></a><a class="card reveal" href="experiments/few-nerd.html"><div class="task">Extraction</div><h3>Few-NERD</h3><p>Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.</p><div class="meta"><span>280 items · 28 arms</span><span>1st <b>span_marker</b></span></div></a><a class="card reveal" href="experiments/scifact.html"><div class="task">Retrieval</div><h3>SciFact</h3><p>Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.</p><div class="meta"><span>200 items · 19 arms</span><span>1st <b>glm_s</b></span></div></a><a class="card reveal" href="experiments/summeval.html"><div class="task">Judging</div><h3>SummEval</h3><p>Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert&#x27;s agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.</p><div class="meta"><span>100 items · 31 arms</span><span>1st <b>openai_l</b></span></div></a></div>
+  <div class="cards"><a class="card reveal" href="experiments/summarization.html"><div class="task">Summarisation</div><h3>CNN/DailyMail</h3><p>Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not separated from the best paid model (0.0001 apart) — on CNN&#x27;s articles.</p><div class="meta"><span>200 items · 29 arms</span><span>1st <b>bart_l</b></span></div></a><a class="card reveal" href="experiments/ag-news.html"><div class="task">Classification</div><h3>AG News</h3><p>Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.</p><div class="meta"><span>200 items · 30 arms</span><span>1st <b>bert_base_ta</b></span></div></a><a class="card reveal" href="experiments/dbpedia.html"><div class="task">Classification</div><h3>DBpedia-14</h3><p>Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.</p><div class="meta"><span>280 items · 28 arms</span><span>1st <b>qwen_m</b></span></div></a><a class="card reveal" href="experiments/few-nerd.html"><div class="task">Extraction</div><h3>Few-NERD</h3><p>Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.</p><div class="meta"><span>280 items · 28 arms</span><span>1st <b>span_marker</b></span></div></a><a class="card reveal" href="experiments/scifact.html"><div class="task">Retrieval</div><h3>SciFact</h3><p>Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not separated from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.</p><div class="meta"><span>200 items · 19 arms</span><span>1st <b>glm_s</b></span></div></a><a class="card reveal" href="experiments/summeval.html"><div class="task">Judging</div><h3>SummEval</h3><p>Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert&#x27;s agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), which scores one summary at a time while the judges rank all 16 at once; and an open-weight judge is not separated from the leader.</p><div class="meta"><span>100 items · 33 arms</span><span>1st <b>openai_l</b></span></div></a></div>
 </div></section>
 
 <section class="block" id="reproduce"><div class="wrap">
@@ -1487,7 +1511,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
     <ol class="ladder">
       <li><span class="lvl">00</span><div><h3>Verify</h3><p>Every number in every report, recomputed from the committed predictions.</p></div><span class="cost">$0 · one command</span></li>
       <li><span class="lvl">01</span><div><h3>Data</h3><p>Fetch the public benchmarks and hash-check every item against what was measured.</p></div><span class="cost">$0</span></li>
-      <li><span class="lvl">02</span><div><h3>Local</h3><p>Rerun the 33 free arms — local models and baselines — on your CPU, pinned to the same weights.</p></div><span class="cost">$0 · CPU hours</span></li>
+      <li><span class="lvl">02</span><div><h3>Local</h3><p>Rerun the 35 free arms — local models and baselines — on your CPU, pinned to the same weights.</p></div><span class="cost">$0 · CPU hours</span></li>
       <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the 24 LLMs with one OpenRouter key. The test: does every separation still hold?</p></div><span class="cost">$19.07 billed, all six</span></li>
       <li><span class="lvl">04</span><div><h3>Extend</h3><p>Add a model of your own and test it against the whole committed field.</p></div><span class="cost">one config</span></li>
     </ol>
@@ -1515,7 +1539,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
   <p class="lede">Every run on this site records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself. Most of it is a 2018 Mac mini. No open-weight LLM was run on any of these machines for these results: the "own it" figures elsewhere are provider-served scores, set against what would fit a given memory budget.</p>
   <div class="chart scroll-x reveal"><table class="data">
     <thead><tr><th>machine</th><th>what it is</th><th>runs on this site it measured</th><th>role</th></tr></thead>
-    <tbody><tr><td class="exp">Mac mini (2018)</td><td data-label="what it is">Intel Core i7-8700B, 6 cores / 12 threads, 32 GB</td><td class="num" data-label="committed runs">128 (20 local, 108 hosted)</td><td data-label="role">the homelab host: it ran the first five experiments, local arms on its CPU and hosted arms as API calls through a LiteLLM gateway it also hosts</td></tr><tr><td class="exp">Cloud runner</td><td data-label="what it is">4-core Linux (x86_64) containers; a session&#x27;s container, so not captured</td><td class="num" data-label="committed runs">13 (13 local, 0 hosted)</td><td data-label="role">4-core Linux containers from the operator&#x27;s cloud coding sessions (the fingerprints record two kernel releases); they ran the six local models that need torch 2.6 or later (the distilled and XSum BARTs, the three bert-base fine-tunes) and SummEval&#x27;s seven free scorers, and re-ran nine local arms on one machine for timing (harness/data/runs-linux)</td></tr><tr><td class="exp">GMKtec EVO-X3</td><td data-label="what it is">AMD Ryzen AI Max+ 395 (Strix Halo) with Radeon 8060S, 32 threads, 128 GB unified memory</td><td class="num" data-label="committed runs">24 (0 local, 24 hosted)</td><td data-label="role">the workstation SummEval&#x27;s 24 hosted judges were called from; local LLMs for a planned next experiment are run here, and none is in the committed results</td></tr><tr><td class="exp">NVIDIA DGX Spark</td><td data-label="what it is">NVIDIA GB10, 20 Arm cores, 128 GB unified memory</td><td class="num" data-label="committed runs">none</td><td data-label="role">owned, and serves local models in the homelab; no committed run here was measured on it</td></tr><tr><td class="exp">MacBook Pro (M4 Pro)</td><td data-label="what it is">Apple M4 Pro, 14 cores, 48 GB unified memory</td><td class="num" data-label="committed runs">none</td><td data-label="role">the laptop the work is driven from; no committed run here was measured on it</td></tr></tbody></table>
+    <tbody><tr><td class="exp">Mac mini (2018)</td><td data-label="what it is">Intel Core i7-8700B, 6 cores / 12 threads, 32 GB</td><td class="num" data-label="committed runs">128 (20 local, 108 hosted)</td><td data-label="role">the homelab host: it ran the first five experiments, local arms on its CPU and hosted arms as API calls through a LiteLLM gateway it also hosts</td></tr><tr><td class="exp">Cloud runner</td><td data-label="what it is">4-core Linux (x86_64) containers; a session&#x27;s container, so not captured</td><td class="num" data-label="committed runs">13 (13 local, 0 hosted)</td><td data-label="role">4-core Linux containers from the operator&#x27;s cloud coding sessions (the fingerprints record two kernel releases); they ran the six local models that need torch 2.6 or later (the distilled and XSum BARTs, the three bert-base fine-tunes) and SummEval&#x27;s seven free scorers, and re-ran nine local arms on one machine for timing (harness/data/runs-linux)</td></tr><tr><td class="exp">GMKtec EVO-X3</td><td data-label="what it is">AMD Ryzen AI Max+ 395 (Strix Halo) with Radeon 8060S, 32 threads, 128 GB unified memory</td><td class="num" data-label="committed runs">26 (2 local, 24 hosted)</td><td data-label="role">the workstation SummEval&#x27;s 24 hosted judges were called from, and where its two UniEval arms ran on CPU; local LLMs for a planned next experiment are run here, and none is in the committed results</td></tr><tr><td class="exp">NVIDIA DGX Spark</td><td data-label="what it is">NVIDIA GB10, 20 Arm cores, 128 GB unified memory</td><td class="num" data-label="committed runs">none</td><td data-label="role">owned, and serves local models in the homelab; no committed run here was measured on it</td></tr><tr><td class="exp">MacBook Pro (M4 Pro)</td><td data-label="what it is">Apple M4 Pro, 14 cores, 48 GB unified memory</td><td class="num" data-label="committed runs">none</td><td data-label="role">the laptop the work is driven from; no committed run here was measured on it</td></tr></tbody></table>
     <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of these runs. Captured 2026-10-18: <a href="https://github.com/chipi/eval-harness/blob/main/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
 </div></section>
 

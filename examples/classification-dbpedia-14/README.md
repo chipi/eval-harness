@@ -12,9 +12,9 @@ conclusion the pair does.
 | --- | --- | --- |
 | classes | 4 | 14 |
 | hosted field | 0.835 – 0.910 | 0.939 – 0.993 |
-| fine-tuned ML arm | beat all 24 | **0.9857 — tied with the top group, not above it** (needs torch ≥ 2.6) |
+| fine-tuned ML arm | ahead of all 24 on the point estimate; the best one is not separated from `anthropic_m`, the others from more | **0.9857 — in the top group, not above it** (needs torch ≥ 2.6) |
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
-| outcome | a winner | no winner: the leader is tied with 19 of the 27 others |
+| outcome | a leader separated from 26 of 29, not from two other fine-tunes and `anthropic_m` | no winner: the leader is not separated from 19 of the 27 others |
 
 > **Rerun this experiment** from the repository root — `EXP=dbpedia`:
 >
@@ -90,18 +90,24 @@ which the result says you do not need.
 
 ## What this example shows that AG News could not
 
-**A 115× price difference buys nothing measurable.** `qwen_m` leads at 0.9929 for
+**A 115× price difference buys nothing this slice can detect.** `qwen_m` leads at 0.9929 for
 **$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**, and
-`gemma_m` ties the fine-tuned arm at 0.9857 for $0.0033 — 115× cheaper. Holm over a family
-of 27 declared in advance: the leader is ahead of 27 of 27 and **separated from only 8**.
-It is tied with the other 19, one of them the free fine-tuned classifier; the top eleven sit within four items of each other.
+`gemma_m` scores the same 0.9857 as the fine-tuned arm for $0.0033 — 115× cheaper. Holm over a family
+of 27 declared before the p-values were read (the leader was picked because it led): the
+leader is ahead of 27 of 27 and **separated from only 8**. It is not separated from the other
+19, one of them the free fine-tuned classifier, at gaps of 1 to 8 items; the top eleven sit
+within four items of each other. The smallest gap Holm separated is 10 items (+0.0357), so a
+benefit of paying of up to about 3 points cannot be ruled out.
 
-**Label noise is the same size as the signal.** Three items are disputed by 24–25 of the 26
+**Label noise is the same size as the signal.** Three items are missed by 24–25 of the 26
 learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `Building`
-rather than `EducationalInstitution`; the one arm that sides with the gold on the canal is
-the one trained on DBpedia. The top eleven arms are separated by four items in total. Any
-ranking within that group is a ranking of which model best reproduces DBpedia's ontology
-quirks, not of which classifies better.
+rather than `EducationalInstitution`, Bharhut labelled `Building`. Each has a dissenter that
+sides with the gold: the arm trained on DBpedia on the canal, `qwen_m` and zero-shot
+`bart_mnli` on Bharhut, `bart_mnli` on the school. On one rater's reading the field's answer is defensible on all
+three and nobody has adjudicated them. The leader's one-item lead over `anthropic_l` is Bharhut.
+The top eleven arms are separated by four items in total. Any ranking within that
+group ranks which model best reproduces DBpedia's ontology quirks; this data cannot say
+whether it also ranks which classifies better.
 
 **Fourteen CamelCase labels make the parser load-bearing.** On AG News one arm of 24 ever
 needed `_parse_label`; here it is worth 8.6 points to `glm_l`, 4.3 to `gemma_s`. And the
@@ -111,9 +117,9 @@ first unparseable answers in either example appear here — including one empty 
 credible DBpedia-14 fine-tune on the Hub ships `pytorch_model.bin` without safetensors;
 they predate safetensors becoming default, and `transformers` refuses a pickle below torch
 2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch 2.14 and it runs
-unmodified. Measured 2026-09-30: **0.9857 at $0, 87 ms/item on CPU — statistically tied
-with the $0.0143 leader (p = 0.62), not above it.** AG News's "fine-tune beats paying" does
-not carry over to a saturated task; "fine-tune costs nothing" does.
+unmodified. Measured 2026-09-30: **0.9857 at $0 marginal, 87 ms/item on CPU — not separated
+from the $0.0143 leader (p = 0.62), not above it.** AG News's fine-tuned lead does not
+carry over to a saturated task; a $0 marginal inference cost does (training and hosting cost were not measured).
 
 ---
 

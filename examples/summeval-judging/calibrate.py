@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the instrument against the literature: ROUGE against the SummEval experts.
+"""Check the instrument against the literature: ROUGE and UniEval against the SummEval experts.
 
     examples/summeval-judging/.venv/bin/python examples/summeval-judging/calibrate.py
 
@@ -12,9 +12,11 @@ WHY NO NEW RUN
 
 WHAT IT COMPARES
   Kendall tau-b per article against the expert means, averaged over the four dimensions,
-  for ROUGE-1, ROUGE-2 and ROUGE-L F1 (each averaged over the 11 references), against
-  G-Eval (Liu et al. 2023), Table 1. The interval is the normal-approximation 95%
-  half-width over the 100 per-article values.
+  for ROUGE-1, ROUGE-2 and ROUGE-L F1 (each averaged over the 11 references) and for
+  UniEval on UniEval's own published inputs (the `unievalpub` arm), against G-Eval (Liu
+  et al. 2023), Table 1. The interval is the normal-approximation 95% half-width over the
+  100 per-article values. The `unieval` arm, on this experiment's inputs, is not a
+  calibration row: its inputs differ from the published protocol on purpose.
 
 WHY AVERAGED OVER THE REFERENCES
   Each article has 11 human references, and the paper does not say how it combined them.
@@ -44,7 +46,8 @@ SOURCE = "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensio
 #: coherence, consistency, fluency, relevance. Read from arXiv 2303.16634v3, Table 1.
 PUBLISHED = {"rouge1": (0.150, 0.126, 0.130, 0.094, 0.252),
              "rouge2": (0.161, 0.139, 0.155, 0.128, 0.219),
-             "rougeL": (0.128, 0.099, 0.092, 0.084, 0.237)}
+             "rougeL": (0.128, 0.099, 0.092, 0.084, 0.237),
+             "unievalpub": (0.377, 0.442, 0.371, 0.371, 0.325)}
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 #: For protocol differences the paper leaves unstated: how the 11 references are combined
 #: and which ROUGE implementation and stemming were used. The same allowance as the other
@@ -72,12 +75,81 @@ def per_article(arm: str, key: str = "tau") -> list:
     return [json.loads(ln)[key] for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
 
 
+def _adapter():
+    if "se_adapter" not in sys.modules:
+        spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["se_adapter"] = mod
+        spec.loader.exec_module(mod)
+    return sys.modules["se_adapter"]
+
+
+def unieval_inputs() -> dict:
+    """How UniEval's published SummEval inputs differ from this experiment's items.
+
+    The two UniEval arms score the same summaries from two files; the report says they hold
+    the same text written differently. This counts it, through the adapter's own matching
+    (and its hash-pinned downloads), so the report's figures are evidence, not a reading."""
+    import re  # noqa: PLC0415
+
+    ad = _adapter()
+    data = ROOT / "harness" / "data"
+    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    norm, by_text, rows = ad._unieval_published()
+    alnum = lambda t: re.sub(r"[^a-z0-9]", "", t.lower())  # noqa: E731
+    nobr = lambda t: alnum(t.lower().replace("-lrb-", "(").replace("-rrb-", ")"))  # noqa: E731
+    n = exact = same = brackets = ref = src = 0
+    for it in items:
+        item = ad._item((data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8"))
+        keys = [by_text.get(norm(x), set()) for x in item["summaries"]]
+        doc = set.intersection(*[{d for d, _ in k} for k in keys]).pop()
+        for x, k in zip(item["summaries"], keys):
+            row = rows[(doc, sorted(m for d, m in k if d == doc)[0])]
+            n += 1
+            exact += row["system_output"] == x
+            same += alnum(row["system_output"]) == alnum(x)
+            brackets += alnum(row["system_output"]) != alnum(x) and nobr(row["system_output"]) == nobr(x)
+            ref += alnum(row["reference"]) == alnum(item["references"][0])
+            src += alnum(row["source"]) == alnum(item["article"])
+    return {"summaries": n, "identical": exact, "same_ignoring_case_and_punctuation": same,
+            "differ_only_in_bracket_tokens": brackets, "reference_is_the_first_of_11": ref,
+            "article_same_ignoring_case_and_punctuation": src,
+            "unieval_inputs_sha256": ad.UNIEVAL_INPUTS_SHA256,
+            "original_release_sha256": ad.ORIGINAL_SHA256}
+
+
+def position_lookup() -> dict:
+    """The 16 summaries sit in the dataset's order, and each position is one system on every
+    article. Scoring a summary by the mean expert score its position got on the OTHER 99
+    articles is a prior that knows only which system wrote it; its tau is the bar below
+    which an arm could be reading system identity rather than the summary."""
+    ad = _adapter()
+    data = ROOT / "harness" / "data"
+    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    golds = [(data / "references" / "gold" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
+             for it in items]
+    g = [json.loads(x) for x in golds]
+    loo = []
+    for k, gold in enumerate(golds):
+        pred = {d: [statistics.fmean(g[j][d][i] for j in range(len(g)) if j != k) for i in range(16)]
+                for d in ad.DIMS}
+        loo.append(ad.score(json.dumps(pred), gold)["tau"])
+    norm, by_text, _ = ad._unieval_published()
+    systems = [set() for _ in range(16)]
+    for it in items:
+        item = ad._item((data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8"))
+        keys = [by_text.get(norm(x), set()) for x in item["summaries"]]
+        doc = set.intersection(*[{d for d, _ in k} for k in keys]).pop()
+        for i, k in enumerate(keys):
+            systems[i].add(frozenset(m for d, m in k if d == doc))
+    one_system = all(len(set.intersection(*[set(x) for x in sy])) >= 1 for sy in systems)
+    return {"tau_leave_one_article_out": round(statistics.fmean(loo), 4),
+            "each_position_one_system_on_every_article": one_system}
+
+
 def reference_combinations() -> dict:
     """ROUGE-1 rho and tau under three ways of combining the 11 references."""
-    spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
-    adapter = importlib.util.module_from_spec(spec)
-    sys.modules["se_adapter"] = adapter
-    spec.loader.exec_module(adapter)
+    adapter = _adapter()
     from rouge_score import rouge_scorer  # noqa: PLC0415 - the example's own dependency
 
     data = ROOT / "harness" / "data"
@@ -126,18 +198,25 @@ def main() -> int:
                      "published": pub, "source": SOURCE,
                      "verdict": "consistent" if ok else "differs", "by_dimension": dims}
     path = cal.write("summeval", {
-        "what": "ROUGE-1/2/L F1 arms on all 100 SummEval articles (the committed runs), "
+        "what": "ROUGE-1/2/L F1 and UniEval (published inputs) arms on all 100 SummEval "
+                "articles (the committed runs), "
                 "Kendall tau-b against the expert means",
         "split_rows": 100, "arms": arms,
-        "rouge1_reference_combination": reference_combinations()})
+        "rouge1_reference_combination": reference_combinations(),
+        "unievalpub_inputs_vs_ours": unieval_inputs(),
+        "position_lookup": position_lookup()})
     for arm, r in arms.items():
-        print(f"  {arm:7s} tau {r['value']:.4f} +/-{r['ci95']:.4f}  vs {r['published']:.3f} published  {r['verdict']}")
+        print(f"  {arm:10s} tau {r['value']:.4f} +/-{r['ci95']:.4f}  vs {r['published']:.3f} published  {r['verdict']}")
         for d, x in r["by_dimension"].items():
             print(f"          {d:11s} {x['value']:.4f} +/-{x['ci95']:.4f} vs {x['published']:.3f}"
                   f"  ({x['value'] - x['published']:+.4f})  {x['verdict']}")
     combos = json.loads(path.read_text())["rouge1_reference_combination"]
     print("  ROUGE-1 by reference combination: " + "  ".join(
         f"{k} rho {v['rho']:.4f} tau {v['tau']:.4f}" for k, v in combos.items()))
+    print("  UniEval's inputs against ours: " + json.dumps(
+        {k: v for k, v in json.loads(path.read_text())["unievalpub_inputs_vs_ours"].items()
+         if not k.endswith("sha256")}))
+    print("  position lookup: " + json.dumps(json.loads(path.read_text())["position_lookup"]))
     print(f"wrote {path.relative_to(ROOT)}")
     return 0
 

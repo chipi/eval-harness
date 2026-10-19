@@ -1,5 +1,5 @@
 {
-  "what": "ROUGE-1/2/L F1 arms on all 100 SummEval articles (the committed runs), Kendall tau-b against the expert means",
+  "what": "ROUGE-1/2/L F1 and UniEval (published inputs) arms on all 100 SummEval articles (the committed runs), Kendall tau-b against the expert means",
   "split_rows": 100,
   "arms": {
     "rouge1": {
@@ -103,6 +103,40 @@
           "verdict": "consistent"
         }
       }
+    },
+    "unievalpub": {
+      "n": 100,
+      "value": 0.3717,
+      "ci95": 0.0221,
+      "published": 0.377,
+      "source": "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions",
+      "verdict": "consistent",
+      "by_dimension": {
+        "coherence": {
+          "value": 0.4423,
+          "ci95": 0.0337,
+          "published": 0.442,
+          "verdict": "consistent"
+        },
+        "consistency": {
+          "value": 0.3565,
+          "ci95": 0.039,
+          "published": 0.371,
+          "verdict": "consistent"
+        },
+        "fluency": {
+          "value": 0.3638,
+          "ci95": 0.0385,
+          "published": 0.371,
+          "verdict": "consistent"
+        },
+        "relevance": {
+          "value": 0.3243,
+          "ci95": 0.0377,
+          "published": 0.325,
+          "verdict": "consistent"
+        }
+      }
     }
   },
   "rouge1_reference_combination": {
@@ -118,5 +152,19 @@
       "rho": 0.1586,
       "tau": 0.1264
     }
+  },
+  "unievalpub_inputs_vs_ours": {
+    "summaries": 1600,
+    "identical": 103,
+    "same_ignoring_case_and_punctuation": 1528,
+    "differ_only_in_bracket_tokens": 72,
+    "reference_is_the_first_of_11": 1600,
+    "article_same_ignoring_case_and_punctuation": 1600,
+    "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81",
+    "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab"
+  },
+  "position_lookup": {
+    "tau_leave_one_article_out": 0.3637,
+    "each_position_one_system_on_every_article": true
   }
 }

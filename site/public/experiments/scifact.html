@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Retrieval · SciFact — eval-harness</title>
-<meta name="description" content="Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.">
+<meta name="description" content="Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not separated from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.">
 <meta property="og:title" content="Retrieval · SciFact — eval-harness">
-<meta property="og:description" content="Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.">
+<meta property="og:description" content="Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not separated from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="eval-harness">
 <meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">
@@ -34,14 +34,15 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Retrieval</b> · SciFact</div>
-  <h1 style="max-width:16ch">Rerankers lead a crowd.</h1>
-  <p class="dek">Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.</p>
+  <h1 style="max-width:16ch">Free retrieval first; a reranker adds about +0.07.</h1>
+  <p class="dek">Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not separated from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.</p>
+  <p class="note"><b>The report's pick, as run here.</b> Build e5_base retrieval first (0.7191, $0 per query); add an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.</p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Rank 5,183 scientific abstracts by how well they bear on a claim.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the SciFact test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">19 compared: 12 hosted models billed per call; 7 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">nDCG@10 — the field&#x27;s standard; higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bm25 0.6523 vs 0.6650 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$1.94 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_RETRIEVAL.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="SciFact: every learned arm by nDCG@10"><rect x="536.0" y="28" width="398.6" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-open"><title>glm_s · hosted · open weights
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="SciFact: every learned arm by nDCG@10"><rect x="536.0" y="28" width="398.6" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-open"><title>glm_s · hosted · open weights
 nDCG@10 0.7437 · rank 1/19
 billed $0.1421 for 200 items</title></circle><circle cx="926.6" cy="50.0" r="12" class="hit" data-tip="glm_s · hosted · open weights
 nDCG@10 0.7437 · rank 1/19
@@ -181,7 +182,7 @@ off the scale: far below the field"/><circle cx="361.8" cy="48.0" r="7" class="d
 nDCG@10 0.7419 · rank 2/19
 billed $0.4576 for 200 items</title></circle><circle cx="361.8" cy="48.0" r="12" class="hit" data-tip="glm_m · hosted · open weights
 nDCG@10 0.7419 · rank 2/19
-billed $0.4576 for 200 items"/><circle cx="361.8" cy="48" r="11" class="ring"/><text x="286.0" y="30" text-anchor="middle" class="t-ink" font-size="15">dearest · 2nd · 0.742</text><text x="367.9" y="78" text-anchor="end" class="t-ink" font-size="15">glm_s · 1st · 0.744</text></svg></div><figcaption>Each dot is one system, by nDCG@10. The ringed dot is the most expensive hosted model; the shaded band is the group the leader cannot be statistically separated from. A dot left of the ⫽ break sits far below the rest, off the scale; tap it for its score.</figcaption></div>
+billed $0.4576 for 200 items"/><circle cx="361.8" cy="48" r="11" class="ring"/><text x="286.0" y="30" text-anchor="middle" class="t-ink" font-size="15">dearest · 2nd · 0.742</text><text x="367.9" y="78" text-anchor="end" class="t-ink" font-size="15">glm_s · 1st · 0.744</text></svg></div><figcaption>Each dot is one system, by nDCG@10. The ringed dot is the most expensive hosted model (of the twelve cheapest hosted models, the only ones run here); the shaded band is the group the leader cannot be statistically separated from. A dot left of the ⫽ break sits far below the rest, off the scale; tap it for its score.</figcaption></div>
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
@@ -309,7 +310,7 @@ $0.4811 per 1,000 items"/><circle cx="307.2" cy="62.1" r="11" class="ring"/><tex
 </div></section>
 <section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
-  <ol class="findings"><li><div><h3>LLM rerankers lead — inside a twelve-way tie.</h3><p>glm_s reranking BM25&#x27;s top 20 scores 0.7437 nDCG@10; 12 arms cannot be separated from it, including the free retrievers e5_base and bge_small.</p></div></li><li><div><h3>The dearest model finished 2nd of 19.</h3><p>glm_m billed $0.4576 for 200 items. The cheapest model statistically tied with the leader, deepseek_s, cost 7.6× less.</p></div></li><li><div><h3>The dev slice picked the wrong winner.</h3><p>Tuned on a 40-query dev slice, the leaderboard&#x27;s winner there was not the winner on the 160 queries it never saw.</p></div></li></ol>
+  <ol class="findings"><li><div><h3>LLM rerankers lead — and cannot be separated from eleven or twelve others.</h3><p>glm_s reranking BM25&#x27;s top 20 scores 0.7437 nDCG@10; 12 arms cannot be separated from it, including the free retrievers e5_base and bge_small.</p></div></li><li><div><h3>The dearest model finished 2nd of 19.</h3><p>glm_m billed $0.4576 for 200 items. Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. The cheapest model not separated from the leader, deepseek_s, cost 7.6× less.</p></div></li><li><div><h3>The dev slice picked the wrong winner.</h3><p>Tuned on a 40-query dev slice, the leaderboard&#x27;s winner there was not the winner on the 160 queries it never saw.</p></div></li></ol>
 </div></section>
 
 <section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>

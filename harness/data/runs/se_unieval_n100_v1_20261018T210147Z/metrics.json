@@ -1,0 +1,131 @@
+{
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "607e7e521f8ac3aa13f5004ad0ee53f08fd8a091",
+    "source": "git"
+  },
+  "config_id": "se_unieval_n100_v1",
+  "created_at": "2026-10-18T22:11:22Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_unieval_n100_v1",
+      "params": {
+        "batch_size": 8,
+        "family": "unieval",
+        "inputs": "ours",
+        "model": "MingZhong/unieval-sum",
+        "price_tier": "free",
+        "provider": "unieval",
+        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0"
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "hash": "82b3e3de29260ef1c577a47c97a2a913344787dbebe1015a9dee091b2b6aa491",
+    "host": {
+      "cpu_count": 32,
+      "label": "omarchy",
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "4a77c2c0755db4aebb830c807ca65fac815b8cb3108ac0017f6068468e98629b"
+      },
+      "harness": {
+        "commit": "607e7e521f8a",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "code_sha256": "a5209e0ff486b6997a9b17a86952e1271d6f904896c278f4f7582320ef4af739",
+        "device": "cpu",
+        "id": "MingZhong/unieval-sum",
+        "identity_declared": true,
+        "inputs": "ours",
+        "loaded_dtype": "float32",
+        "loaded_revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
+        "nltk": "3.10.3",
+        "pin_satisfied": true,
+        "precision": "fp32",
+        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
+        "revision_source": "hf-snapshot",
+        "weight_files": [
+          "pytorch_model.bin:3132623525"
+        ],
+        "weights_licence": "not stated on the model card (MingZhong/unieval-sum)"
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "input_truncated": "descriptive",
+    "parsed": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "rho": "quality",
+    "rho_coherence": "quality",
+    "rho_consistency": "quality",
+    "rho_fluency": "quality",
+    "rho_relevance": "quality",
+    "tau": "quality",
+    "tau_coherence": "quality",
+    "tau_consistency": "quality",
+    "tau_fluency": "quality",
+    "tau_relevance": "quality",
+    "tie_rate": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 100,
+  "params": {
+    "batch_size": 8,
+    "family": "unieval",
+    "inputs": "ours",
+    "model": "MingZhong/unieval-sum",
+    "price_tier": "free",
+    "provider": "unieval",
+    "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0"
+  },
+  "primary_metric": "tau",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "se_unieval_n100_v1_20261018T210147Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 41676.13155,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "rho": 0.438735,
+    "rho_coherence": 0.551736,
+    "rho_consistency": 0.407642,
+    "rho_fluency": 0.375362,
+    "rho_relevance": 0.420202,
+    "tau": 0.347577,
+    "tau_coherence": 0.4242,
+    "tau_consistency": 0.338009,
+    "tau_fluency": 0.307592,
+    "tau_relevance": 0.320505,
+    "tie_rate": 0.005208,
+    "total_cost_usd": 0.0
+  },
+  "warmup_ms": 2566.659
+}

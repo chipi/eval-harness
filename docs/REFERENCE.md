@@ -51,7 +51,7 @@ Implementation: [`google-research/rouge`](https://github.com/google-research/goo
 |---|---|---|
 | **`correct`** ← primary | quality | 1 if the predicted label equals the gold label, else 0. Its mean **is** accuracy. |
 | `parsed` | quality | Whether the output could be read as a label at all. Quality, not descriptive: an arm that cannot be parsed cannot be deployed, whatever it knows. |
-| `correct_after_repair` | descriptive | Whether a lenient re-parse would have rescued it. The gap between this and `correct` is **what the parser is worth** — 8.6 accuracy points to one arm. |
+| `correct_after_repair` | descriptive | Whether a lenient re-parse would have rescued it. The gap between this and `correct` is **what the parser is worth** — 8.6 accuracy points to one arm on DBpedia (7.5 on AG News). |
 | `confidence` | descriptive | The model's own probability for its answer. Only the local ML arms supply it; no hosted arm does, because logprobs were never requested. |
 | `answer_words`, `fmt_verbose`, `fmt_markdown` | descriptive | Did it answer with one word, or a paragraph containing one. |
 
@@ -101,7 +101,7 @@ than one that is merely wrong.
 | `parsed` *(descriptive)* | share of the four dimensions the reply returned as 16 numbers; a missing dimension scores 0 rather than being dropped |
 | `tie_rate` *(descriptive)* | share of the 120 summary pairs the system scored equal |
 
-Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here.
+Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here. UniEval on its own inputs, ρ 0.474 / τ 0.377 there; 0.467 / 0.372 here.
 
 ### Shared across all examples
 
@@ -127,7 +127,7 @@ it.
 | Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
-| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
+| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by; UniEval as the free evaluator trained for the task — a judge worth its bill should be separated above it | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
 
 **Why each example has floors that are not models.** A *floor* is any non-model arm — a
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
@@ -142,7 +142,8 @@ normaliser deleted (the currency symbol `£`), which moved the floor by 1/280.
 
 ### Hosted — 24 arms, 8 vendors × 3 price tiers
 
-Every example runs the same 24, at temperature 0 with reasoning disabled, so a difference
+Five of the six examples run the same 24 (SciFact ran only the twelve cheapest), zero-shot
+with one prompt, at temperature 0 with reasoning disabled and no provider pinned, so a difference
 between examples is the **task** and not the configuration. Measured through a
 [LiteLLM](https://docs.litellm.ai/) proxy routing to [OpenRouter](https://openrouter.ai/); a
 rerun can go to OpenRouter directly with one key, through the same alias table
@@ -186,12 +187,11 @@ price tier.
 
 > **14 of these 24 have downloadable weights and could be self-hosted.** Verified on
 > 2026-09-29 against the HuggingFace API. Ten are unrestricted (MIT / Apache-2.0); four
-> are gated behind licence acceptance and carry use conditions. An earlier version said
-> 13 and inferred openness from OpenRouter's endpoint count — *one provider implies
-> closed* — which is **not a valid test**: `mistral_l` is served only by Mistral and its
+> are gated behind licence acceptance and carry use conditions. OpenRouter's endpoint
+> count is not a test of openness: `mistral_l` is served only by Mistral and its
 > weights are on HuggingFace under Apache-2.0. What that is worth is measured in
-> [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **no proprietary model
-> separated from the best open-weight model in any of the six experiments.**
+> [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **the best proprietary
+> arm was never separated from the best open-weight arm in any of the six experiments.**
 
 > **A hosted model has no verifiable identity.** The fingerprint records
 > `identity_declared: true` and `revision_source: unavailable` — we record the alias we
@@ -202,7 +202,7 @@ price tier.
 
 ### Local — downloaded weights, pinned by revision
 
-Every one is loaded from [HuggingFace](https://huggingface.co/). For the first ten, the
+Every one is loaded from [HuggingFace](https://huggingface.co/). For the first nine, the
 commit SHA and `model.safetensors` byte size are recorded in the run fingerprint, so a
 silent upstream change is detectable. **For five of the last six they are not** (all but
 `bert_base_ta`): their runs record `revision: null` and no weight files (two snapshots in the cache — see
@@ -213,9 +213,9 @@ the cache by hand and are a record, not a fingerprint.
 |---|---|---|---|---|
 | `bart_l` | [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | 1.6 GB | `37f520fa929c` | BART fine-tuned on CNN/DailyMail — the in-distribution summariser |
 | `bart_mnli` | [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) | 1.6 GB | `d7645e127eaf` | Zero-shot classification by [NLI entailment](https://arxiv.org/abs/1909.00161) — no training on the task |
-| `bert_mini` | [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | 44 MB | `e94b474cce6f` | Fine-tuned on AG News. The 44 MB model that beat 24 LLMs |
+| `bert_mini` | [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | 44 MB | `e94b474cce6f` | Fine-tuned on AG News. The 44 MB model that led the 24 hosted LLMs on the point estimate, not separated from 11 of them |
 | `span_marker` | [`guishe/span-marker-generic-ner-v1-fewnerd-fine-super`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | 499 MB | `f836dfa9b6b0` | [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER) fine-tuned **on Few-NERD**, predicting the 66 fine types mapped down to 8 |
-| `gliner` | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | 781 MB | `40ec419335d0` | [GLiNER](https://arxiv.org/abs/2311.08526) — zero-shot NER where the **caller supplies the label set**. The matched control for `span_marker` |
+| `gliner` | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | 781 MB | `40ec419335d0` | [GLiNER](https://arxiv.org/abs/2311.08526) — zero-shot NER where the **caller supplies the label set**. The zero-shot control for `span_marker`: never trained on Few-NERD, and a different architecture and encoder |
 | `minilm` | [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | 91 MB | `1110a243fdf4` | General [sentence-similarity](https://www.sbert.net/) encoder, symmetric, no prefix |
 | `mpnet` | [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) | 438 MB | `e8c3b32edf54` | The larger general encoder. Same recipe as MiniLM, so the pair isolates **size** |
 | `bge_small` | [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) | 133 MB | `5c38ec7c405e` | Trained **for retrieval**, with an asymmetric query instruction. Pairs with MiniLM to isolate **training objective** |
@@ -230,6 +230,16 @@ the cache by hand and are a record, not a fingerprint.
 SummEval's `bartscore` arm loads the same checkpoint as `bart_l`, at the same revision
 (`37f520fa929c`), and scores a summary by its log-likelihood given the article
 ([BARTScore](https://arxiv.org/abs/2106.11520)); it is not a separate model.
+
+SummEval's two UniEval arms, `unieval` and `unievalpub`, load one model:
+
+| arm | HuggingFace model | weights size | revision (HF commit) | role |
+|---|---|---|---|---|
+| `unieval`, `unievalpub` | [`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum) | 3.1 GB | `ed8da5a8aa01` | [UniEval](https://arxiv.org/abs/2210.07197): T5-large trained to answer one yes/no question per summary dimension — the free evaluator trained for the task |
+
+It ships only `pytorch_model.bin`, so it needs torch ≥ 2.6; it ran on 2026-10-18 on Linux
+(the EVO-X3), and its runs record the revision they loaded. Its model card states no
+licence (below).
 
 **The last six need torch ≥ 2.6**, and ran on 2026-09-30 on Linux. Their `main` branches
 ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` below torch 2.6
@@ -262,7 +272,7 @@ model weights.
 | `capitalized` | every capitalised run, minus a stoplist | high untyped recall, near-random types |
 | `random` | a seeded permutation of the corpus | ≈ k/N for recall@k |
 | `first_k` | the corpus in id order | ≈ 0 |
-| `bm25` | [Okapi BM25](https://en.wikipedia.org/wiki/Okapi_BM25) via [`rank_bm25`](https://github.com/dorianbrown/rank_bm25) | no fixed prediction — a strong baseline that beats weak dense models on SciFact (calibrated: 0.6523 vs BEIR's 0.665) |
+| `bm25` | [Okapi BM25](https://en.wikipedia.org/wiki/Okapi_BM25) via [`rank_bm25`](https://github.com/dorianbrown/rank_bm25) | no fixed prediction — a strong lexical baseline: 0.6451 on the 200 queries, under all four dense retrievers (0.6533–0.7191); calibrated on all 300 queries at 0.6523 against BEIR's 0.665 |
 
 ---
 
@@ -376,8 +386,8 @@ run fingerprints, not the ones a lockfile would prefer.
 
 ### Models
 
-Licences below were read from the HuggingFace API on 2026-09-29, not assumed. **Two state
-no licence at all**, which is a reuse blocker rather than a permission — follow each link
+Licences below were read from the HuggingFace API on 2026-09-29 (UniEval's on 2026-10-19),
+not assumed. **Three state no licence at all**, which is a reuse blocker rather than a permission — follow each link
 and check before reusing any of them commercially.
 
 | model | licence |
@@ -397,10 +407,9 @@ and check before reusing any of them commercially.
 | [`guishe/span-marker-generic-ner-v1-fewnerd-fine-super`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | **CC-BY-SA-4.0** |
 | [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | **none stated** |
 | [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | **none stated** |
+| [`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum) | **none stated** (its code, [maszhongming/UniEval](https://github.com/maszhongming/UniEval), is MIT) |
 
-An earlier version of this line claimed the set was "variously MIT, Apache-2.0 and
-CC-BY-NC-4.0". No model here is CC-BY-NC-4.0; one is CC-BY-SA-4.0 and two state nothing.
-That was asserted rather than checked, and it is the same error the paper citations had.
+No model here is CC-BY-NC-4.0: one is CC-BY-SA-4.0 and three state nothing.
 
 [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) ·
 [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) ·
@@ -410,14 +419,16 @@ That was asserted rather than checked, and it is the same error the paper citati
 [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) ·
 [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) ·
 [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) ·
-[`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2)
+[`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2) ·
+[`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum)
 
 Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 [BERT](https://arxiv.org/abs/1810.04805), [MPNet](https://arxiv.org/abs/2004.09297),
 [DeBERTa-v3](https://arxiv.org/abs/2111.09543) (GLiNER's encoder),
 [Sentence-BERT](https://arxiv.org/abs/1908.10084),
 [E5](https://arxiv.org/abs/2212.03533), [BGE, in *C-Pack*](https://arxiv.org/abs/2309.07597),
-[GLiNER](https://arxiv.org/abs/2311.08526), [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER).
+[GLiNER](https://arxiv.org/abs/2311.08526), [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER),
+[UniEval](https://arxiv.org/abs/2210.07197).
 
 ### Software
 
@@ -457,12 +468,12 @@ NLP*](https://aclanthology.org/P18-1128/).
 a download recipe instead. Two things are committed on purpose: the models' outputs, which
 are the evidence every score is recomputed from, and thirteen CC-licensed papers,
 mirrored under their licences. [`papers/README.md`](papers/README.md) records the licence of
-each of the twenty-eight cited works — thirteen mirrored, fifteen that may not be — and the
-split follows publisher policy rather than importance. (This paragraph said no paper and no provider output was redistributed until
-2026-10-18; both were committed long before.)
+each of the twenty-nine cited works — thirteen mirrored, sixteen that may not be — and the
+split follows publisher policy rather than importance.
 
 **Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
-BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18) by fetching it
+BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18; UniEval's paper,
+model and code on 2026-10-19) by fetching it
 and comparing the real title to the claim made about it. That check found four errors in the first draft: a
 fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
 credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could

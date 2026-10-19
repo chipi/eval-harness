@@ -22,8 +22,9 @@ cd /path/to/your-project/eval
 make demo        # proves the plumbing, no API key
 ```
 
-Add `eval/data/runs/` and `eval/data/materialized/` to your `.gitignore` (the
-bundled `.gitignore` already does this if you keep it).
+Keep `eval/data/materialized/` out of git (derived; the bundled `.gitignore` already does
+this) and decide whether to commit runs: the bundled rules keep each run's `metrics.json`,
+`predictions.jsonl` and `outputs/` so scores can be recomputed, and ignore the rest.
 
 It has **no dependency on your project** and your project has none on it. It
 shells out to nothing, imports nothing of yours until you tell it to. That
@@ -129,11 +130,11 @@ Most projects do not have it. The sequence that works:
    Re-run with `TIER=gold` once a human has actually checked them.
 
 3. **Never let the distinction blur.** A run records which tier it scored
-   against, and `make runs-list` shows it. Silver-scored numbers are for
+   against (`reference_tier` in its `metrics.json`). Silver-scored numbers are for
    ranking arms against each other; they are not a claim about correctness, and
    publishing them as one is how eval loses credibility internally.
 
-Cost control: `--limit 10`. Ten references is enough to rank four arms, and you
+Cost control: `ARGS="--limit 10"`. Ten references is enough to rank four arms, and you
 can extend later without re-authoring what you have.
 
 ---

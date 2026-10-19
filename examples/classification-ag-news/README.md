@@ -1,12 +1,18 @@
-# Classifying news, 24 models and four things that are not models
+# Classifying news, 24 models and six other arms
 
 One task — put a news article into one of four topics — measured across 24 hosted models
 from 8 vendors, three fine-tuned classifiers (44 MB and 2 × 438 MB), a zero-shot NLI
 model, a hand-written rule set, and a constant.
 
-> **Result, updated 2026-09-30:** the three fine-tunes take 1st–3rd (`bert_base_ta` 0.9600,
-> `bert_base_fy` 0.9500, `bert_mini` 0.9450) against a hosted field of 0.835–0.910 — and
-> nearly the whole lead sits in 17 items whose gold labels the hosted field disputes. See
+> **Result, updated 2026-09-30, corrected 2026-10-19:** the three fine-tunes lead on the
+> point estimate (`bert_base_ta` 0.9600, `bert_base_fy` 0.9500, `bert_mini` 0.9450) against
+> a hosted field of 0.835–0.910. Only `bert_base_ta` is separated from 26 of the 29 other
+> arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` is separated from 16
+> and not from `anthropic_l`. The lead is concentrated in 17 items the hosted field mostly
+> gets wrong; on one rater's reading about half are a learnable convention and half
+> mislabels. As run here: hosted
+> models zero-shot, one prompt, no label definitions or examples, temperature 0, reasoning
+> off, no provider pinned. See
 > [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md) §3.1 and §3.4. The
 > two bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves it everywhere but
 > x86_64 macOS).
@@ -79,6 +85,9 @@ says it is *"provided by the academic community for research purposes … and an
 non-commercial activity."* That is a statement of intent by the people who assembled it,
 not a grant of rights.
 
+The fine-tuned checkpoints carry their own licences (Hub pages, checked 2026-10-19):
+`bert_base_fy` is apache-2.0; `bert_base_ta` and `bert_mini` state none.
+
 This repo ships a download recipe and redistributes nothing, which is the same posture the
 summarisation example takes with CNN/DailyMail. The difference is that CNN/DailyMail
 carried an explicit apache-2.0 grant behind it and this does not. **Do not read permission
@@ -89,9 +98,10 @@ to resolve that themselves.
 
 Many AG News texts carry their syndication tag inline: `(AP)`, `(Reuters)`, `(SPACE.com)`.
 Those tags correlate with the label — SPACE.com is Sci/Tech essentially always — so an arm
-can score well by reading the byline rather than the article. It affects every arm equally,
-so the comparison stands, but it caps how much "understanding" any accuracy figure here
-can be said to demonstrate.
+can score well by reading the byline rather than the article. It need not affect every arm
+equally: a fine-tune can learn the tags as a shortcut, a zero-shot prompt is not told to, and
+whether the fine-tuned lead uses them was not measured. It caps how much "understanding" any
+accuracy figure here can be said to demonstrate.
 
 ---
 
@@ -111,10 +121,10 @@ $PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n
 ```
 
 The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy
-`.env.example`), or your own LiteLLM proxy. The four free arms need nothing, and two of them need no model either.
+`.env.example`), or your own LiteLLM proxy. The six free arms need nothing, and two of them need no model either.
 
-**Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 28 come
-to **$0.58** — well under a dollar — two orders of magnitude cheaper than the summarisation sweep, because the
+**Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 24 come
+to **$0.58** — about a tenth of the summarisation sweep's $5.74 — because the
 answer is one word. That is why no arm is selected on its dev score: selecting would save
 nothing and buy a bias.
 
@@ -175,7 +185,7 @@ summarisation metric could have asked.
 
 ## The arms
 
-| arm | what it is | cost |
+| arm | what it is | cost (marginal inference) |
 | --- | --- | --- |
 | 24 hosted | 8 vendors × small/mid/large, same aliases and prices as the summarisation example | $0.0014–$0.1750 per 200, billed |
 | `bert_mini` | 44MB BERT fine-tuned on AG News | 0 |
@@ -186,7 +196,7 @@ summarisation metric could have asked.
 | `constant` | always answers World | 0 |
 
 `bart_mnli` is the control the summarisation study could not run. That study ended with
-BART tied for first against 24 hosted models, and the objection was that it had been
+`bart_l` not separated from the best of 24 hosted models, and the objection was that it had been
 fine-tuned on exactly that corpus. This is the same architecture family with **no**
 exposure to AG News, run beside a model that was fine-tuned on it — so "BART is good" and
 "that checkpoint saw the test distribution" stop being the same hypothesis.

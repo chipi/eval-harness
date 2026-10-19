@@ -58,7 +58,7 @@ data/runs/
 data/baselines/      make run-promote — the number future work is judged against
 ```
 
-`make validate` checks the whole tree — six integrity rules, exits non-zero, so
+`make validate` checks the whole tree — ten integrity rules, exits non-zero, so
 it can gate CI.
 
 ### The three inputs
@@ -233,7 +233,7 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | six integrity checks |
+| `scripts/validate_tree.py` | ten integrity checks |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the three contracts: dataset, metrics, baseline |
 | `runner.py`, `judges.py` | the judge panel |
@@ -250,8 +250,3 @@ and call one function.
   what each one broke in this harness.
 - [`../research/`](../research) — the reports, the append-only journal, and a
   handover per example for the work that was not finished.
-
-Two links used to sit here, to `docs/cloud-ai-workflow.md` and
-`examples/claude-api-with-caching/`. Both pointed outside this repository and
-survived the extraction of the harness from the project it was carved out of;
-nothing here can satisfy them, so they are removed rather than left dangling.

@@ -14,8 +14,8 @@
 > bytes, within 0.01% of it, which only fp16 fits — and it **ran at fp16**, not upcast as its config's
 > `precision: fp32` implies: the pipeline keeps the stored dtype and the adapter records
 > `precision` without applying it (`next(model.parameters()).dtype` is float16 on torch
-> 2.14; this sentence first said "upcast to fp32", unmeasured — see `KNOWN_ISSUES.md`) — `weight_files` did not settle it,
-> because these runs recorded none; (3) `bart_l_xsum` writes 21-word summaries against a
+> 2.14; see `KNOWN_ISSUES.md`) — `weight_files` did not settle it, because these runs
+> recorded none; (3) `bart_l_xsum` writes 21-word summaries against a
 > 35-word reference (`length_vs_reference` 0.66), so its last place mixes training
 > distribution with length exactly as warned. Results:
 > [`REPORT_SUMMARIZATION.md`](../../research/REPORT_SUMMARIZATION.md). Two traps found on
@@ -71,7 +71,6 @@ arms' speed column incomparable with each other.
 ```bash
 git clone https://github.com/chipi/eval-harness.git
 cd eval-harness
-git checkout ml-arms-bart-lead3
 
 cd examples/summarization-cnn-dailymail
 uv sync --extra local
@@ -173,8 +172,8 @@ Three things are worth looking at before any ranking:
    all three should report 0.23 on this corpus. A different figure means a different
    tokenisation and is a bug, not a finding.
 2. **`bart_s`'s `weight_files` sizes** in `metrics.json`. Its checkpoint is 460MB against
-   `bart_m`'s 1.22GB, which the layer counts do not fully explain — it may be stored at half
-   precision. The fingerprint settles it; see the note in `arm_bart_s_n200.yaml`.
+   `bart_m`'s 1.22GB, which the layer counts do not fully explain — it is stored at half
+   precision (the note at the top of this page; `arm_bart_s_n200.yaml` records it too).
 3. **`bart_l_xsum`'s `summary_words` and `length_vs_reference`.** It is decoded at
    `max_length: 62` because that is what XSum trained it to produce. If it scores badly on
    `coverage`, length is at least as plausible an explanation as training distribution, and
@@ -191,6 +190,6 @@ $PY scripts/experiment_run.py --config ../examples/summarization-cnn-dailymail/c
 Its numbers are already known from the Intel Mac (`coverage` 0.346121, `grounding`
 0.883821, `input_truncated` 0.23). Greedy-free beam search at `do_sample: false` is
 deterministic, so a second run on different hardware, a different torch and a different
-NumPy is a real cross-platform reproducibility check — the kind this harness claims to
-support and has never actually been asked to demonstrate. If the numbers move, that is a
-more interesting result than any of the three new arms.
+NumPy is a real cross-platform reproducibility check. It has been run once: the Linux
+re-run in `harness/data/runs-linux/` gave `coverage` 0.346121, identical to the Mac's. If
+your numbers move, that is a more interesting result than any of the three new arms.

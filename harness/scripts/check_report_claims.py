@@ -88,6 +88,8 @@ CLAIMS = [
     ("SummEval gemma_l tau",      DATA,     "se_gemma_l_n100_v1",       "tau",      0.5384),
     ("SummEval qwen37max tau",    DATA,     "se_qwen37max_n100_v1",     "tau",      0.5204),
     ("SummEval llama_s tau",      DATA,     "se_llama_s_n100_v1",       "tau",      0.3533),
+    ("SummEval unievalpub tau",   DATA,     "se_unievalpub_n100_v1",    "tau",      0.3717),
+    ("SummEval unieval tau",      DATA,     "se_unieval_n100_v1",       "tau",      0.3476),
     ("SummEval bartscore tau",    DATA,     "se_bartscore_n100_v1",     "tau",      0.2562),
     ("SummEval rouge1 tau",       DATA,     "se_rouge1_n100_v1",        "tau",      0.1487),
     ("SummEval coverage tau",     DATA,     "se_coverage_n100_v1",      "tau",      0.1011),
@@ -119,6 +121,14 @@ DELTAS = [
      (PAIR, "sf_glm_s_bm25first_n200_v1", "ndcg_10")),
     ("SciFact worst -> best reranker = +0.0420", 0.0420,
      (DATA, "sf_glm_s_n200_v1", "ndcg_10"), (DATA, "sf_gemma_s_n200_v1", "ndcg_10")),
+    ("SciFact BM25 -> best reranker (glm_s) = +0.0986", 0.0986,
+     (DATA, "sf_glm_s_n200_v1", "ndcg_10"), (DATA, "sf_bm25_n200_v1", "ndcg_10")),
+    ("SciFact BM25 -> worst reranker (gemma_s) = +0.0566", 0.0566,
+     (DATA, "sf_gemma_s_n200_v1", "ndcg_10"), (DATA, "sf_bm25_n200_v1", "ndcg_10")),
+    ("SciFact glm_s on e5_base over main-table BM25 = +0.1441", 0.1441,
+     (PAIR, "sf_glm_s_e5first_n200_v1", "ndcg_10"), (DATA, "sf_bm25_n200_v1", "ndcg_10")),
+    ("SciFact glm_s on e5_base over e5_base alone = +0.0700", 0.0700,
+     (PAIR, "sf_glm_s_e5first_n200_v1", "ndcg_10"), (DATA, "sf_e5_base_n200_v1", "ndcg_10")),
 ]
 
 TOL = 5e-4
@@ -751,6 +761,200 @@ for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
           f"the row says {n} ({n_paid} paid), cheapest {named}; the family test gives "
           f"{len(tied)} ({len(paid)} paid), cheapest {got_name}")
 
+# ---- THE CLASSIFICATION REPORT'S "NOT SEPARATED" AND LABEL-NOISE FIGURES --------------
+#
+# Review 2026-10-19: the report called all three AG News fine-tunes "clearly separated
+# from all but one" hosted arm. That is true of the leader only. The per-arm separation
+# counts, the 17-item set and the "other 183" comparison below are DERIVED from the
+# committed runs and then looked for in the report, so a sentence that drifts from them
+# fails here instead of surviving on the tie-group row alone.
+import math as _math  # noqa: E402
+
+_CLS = " ".join((ROOT / "research" / "REPORT_CLASSIFICATION.md").read_text().split())
+_AG_FAMILY = 29
+for _arm, _name in (("ag_bert_base_ta_n200_v1", "bert_base_ta"),
+                    ("ag_bert_base_fy_n200_v1", "bert_base_fy"),
+                    ("ag_bert_mini_n200_v1", "bert_mini")):
+    _tied = _not_separated(_arm, DATA, "ag_news_200", "correct")
+    if _tied is None:
+        missing += 1
+        print(f"  --   classification: family test for {_name} did not run — skipped")
+        continue
+    _sep = _AG_FAMILY - len(_tied)
+    check(f"classification: {_name} is separated from {_sep} of {_AG_FAMILY} and the report says so",
+          f"separated from **{_sep}**" in _CLS or f"separated from {_sep} of" in _CLS
+          or f"(separated from {_sep}" in _CLS,
+          f"family_test gives {_sep} of {_AG_FAMILY}; the report does not state it")
+
+
+def _cls_correct(prefix, ds_glob_suffix="_n200_v1"):
+    out = {}
+    for _d in sorted(DATA.glob(f"{prefix}_*{ds_glob_suffix}_2*")):
+        _arm = _d.name.rsplit("_2026", 1)[0][len(prefix) + 1:-len(ds_glob_suffix)]
+        out[_arm] = {(_r := json.loads(_l))["item_id"]: _r
+                     for _l in (_d / "predictions.jsonl").read_text().splitlines() if _l.strip()}
+    return out
+
+
+_AG = _cls_correct("ag")
+_NOT_HOSTED = {"bert_base_ta", "bert_base_fy", "bert_mini", "bart_mnli", "keyword", "constant"}
+_HOSTED = [_a for _a in _AG if _a not in _NOT_HOSTED]
+if len(_HOSTED) == 24:
+    _ids = list(_AG["bert_mini"])
+    _ok = lambda a, i: _AG[a][i]["correct"] == 1.0  # noqa: E731
+    _cut = {_t: [_i for _i in _ids if sum(not _ok(_h, _i) for _h in _HOSTED) / 24 >= _t]
+            for _t in (0.8, 0.75, 0.7)}
+    check("classification: the 17 / 19 / 20 items at 80% / 75% / 70% of hosted arms wrong",
+          f"{len(_cut[0.8])} items at ≥80%" in _CLS or f"{len(_cut[0.8])} items are missed by ≥80%" in _CLS,
+          f"derived {[len(_cut[t]) for t in (0.8, 0.75, 0.7)]}")
+    check("classification: the 75% and 70% cuts are stated",
+          f"{len(_cut[0.75])} at 75%, {len(_cut[0.7])} at 70%" in _CLS,
+          f"derived {len(_cut[0.75])} at 75%, {len(_cut[0.7])} at 70%")
+    _rest = [_i for _i in _ids if _i not in set(_cut[0.8])]
+    _rows = []
+    for _o in ("anthropic_l", "anthropic_m"):
+        _b = sum(_ok("bert_base_ta", _i) and not _ok(_o, _i) for _i in _rest)
+        _c = sum(not _ok("bert_base_ta", _i) and _ok(_o, _i) for _i in _rest)
+        _n = _b + _c
+        _p = min(1.0, 2 * sum(_math.comb(_n, _k) for _k in range(min(_b, _c) + 1)) / 2 ** _n) if _n else 1.0
+        _rows.append((_o, _b, _c, _p))
+    _o, _b, _c, _p = _rows[0]
+    check(f"classification: on the other {len(_rest)} items {_o} wins {_c} to {_b}, sign p = {_p:.3f}",
+          f"discordant items {_c} vs {_b}, exact sign p = {_p:.3f}" in _CLS
+          and f"{len(_rest)} items" in _CLS,
+          f"derived {_c} vs {_b}, p = {_p:.3f}")
+    _o, _b, _c, _p = _rows[1]
+    check(f"classification: against {_o} on the other {len(_rest)}: {_b} vs {_c}, p = {_p:.1f}",
+          f"`anthropic_m` {_b} vs {_c} (p = {_p:.1f})" in _CLS,
+          f"derived {_b} vs {_c}, p = {_p:.1f}")
+    _conf = [(_AG["bert_mini"][_i]["confidence"], _ok("bert_mini", _i)) for _i in _ids]
+    _hi = [_k for _c_, _k in _conf if _c_ >= 0.8]
+    _errs = [_c_ for _c_, _k in _conf if not _k]
+    _low_err = sum(_c_ < 0.8 for _c_ in _errs)
+    check("classification: bert_mini's confidence buckets and errors above 0.8",
+          f"{len(_hi)} items above 0.8 confidence were {sum(_hi) / len(_hi):.1%} correct ({sum(_hi)})" in _CLS
+          and f"Of its {len(_errs)} errors, {len(_errs) - _low_err} sit above 0.8" in _CLS
+          and f"catch {_low_err} of the {len(_errs)} errors" in _CLS,
+          f"derived {len(_hi)} above 0.8 with {sum(_hi)} correct; {len(_errs)} errors, "
+          f"{_low_err} below 0.8")
+
+_DB = _cls_correct("db")
+if "qwen_m" in _DB and "anthropic_l" in _DB:
+    _dids = list(_DB["qwen_m"])
+    _learned = [_a for _a in _DB if _a not in ("constant", "keyword")]
+    _dok = lambda a, i: _DB[a][i]["correct"] == 1.0  # noqa: E731
+    _dis = [_i for _i in _dids if sum(not _dok(_a, _i) for _a in _learned) / len(_learned) >= 0.8]
+    _diff = [_i for _i in _dids if _dok("qwen_m", _i) != _dok("anthropic_l", _i)]
+    check("classification: qwen_m's one-item lead over anthropic_l is a disputed item, "
+          "its only errors are the other disputed items, anthropic_l misses all three",
+          len(_dis) == 3 and _diff == [_i for _i in _diff if _i in _dis] and len(_diff) == 1
+          and _dok("qwen_m", _diff[0]) and sum(not _dok("qwen_m", _i) for _i in _dids) == 2
+          and all(not _dok("qwen_m", _i) for _i in _dis if _i != _diff[0])
+          and all(not _dok("anthropic_l", _i) for _i in _dis)
+          and "`qwen_m` leads `anthropic_l` by exactly one disputed item" in _CLS,
+          f"disputed {len(_dis)}, qwen_m/anthropic_l differ on {len(_diff)}")
+
+# ---- THE CLASSIFICATION SUMMARY'S RENTED-API PICKS, MINIMUM GAP AND PILOT FIGURES --------
+#
+# Stage-two review 2026-10-19. The summary names the cheapest HOSTED arm the best paid arm
+# cannot be separated from, the smallest gap Holm separated on DBpedia, and the pilot's
+# tie-aware rho. None of those had a producer. Each is derived here and then looked for
+# in the report. The rho is Pearson on midranks (ties share a rank), dev-slice accuracy
+# against 200-item accuracy over every arm, which is what the report's footnote states.
+import subprocess as _clsp  # noqa: E402
+
+
+def _cl_midranks(v):
+    o = sorted(range(len(v)), key=lambda i: -v[i])
+    r, i = [0.0] * len(v), 0
+    while i < len(o):
+        j = i
+        while j + 1 < len(o) and v[o[j + 1]] == v[o[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            r[o[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return r
+
+
+def _cl_pearson(a, b):
+    ma, mb = statistics.fmean(a), statistics.fmean(b)
+    return (sum((x - ma) * (y - mb) for x, y in zip(a, b))
+            / (sum((x - ma) ** 2 for x in a) * sum((y - mb) ** 2 for y in b)) ** 0.5)
+
+
+def _cl_pilot(runs, dev_file, drop=()):
+    _ids = {(_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
+            for _i in json.loads((ROOT / "harness" / "data" / "datasets" / dev_file)
+                                 .read_text())["items"]}
+    _arms = sorted(a for a in runs if a not in drop)
+    _dev = [statistics.fmean(runs[a][i]["correct"] for i in _ids) for a in _arms]
+    _all = [statistics.fmean(r["correct"] for r in runs[a].values()) for a in _arms]
+    _top = max(_dev)
+    _tied = [a for a, m in zip(_arms, _dev) if m == _top]
+    return _cl_pearson(_cl_midranks(_dev), _cl_midranks(_all)), _tied, len(_arms)
+
+
+if "bert_mini" in _AG and "qwen_m" in _DB:
+    _r28, _t28, _n28 = _cl_pilot(_AG, "ag_news_20.json", drop=("bert_base_ta", "bert_base_fy"))
+    _r30, _t30, _n30 = _cl_pilot(_AG, "ag_news_20.json")
+    _d27, _dt27, _dn27 = _cl_pilot(_DB, "dbpedia_56.json", drop=("bert_base_fy",))
+    _d28, _dt28, _dn28 = _cl_pilot(_DB, "dbpedia_56.json")
+    check("classification: pilot rho (midranks) and the tie at the top of the dev slice",
+          (_n28, _n30, _dn27, _dn28) == (28, 30, 27, 28)
+          and f"AG News {_r28:.3f} at the 28 arms that existed then, {_r30:.3f} at today's 30"
+          in _CLS
+          and f"DBpedia {_d27:.3f} at 27, {_d28:.3f} at 28" in _CLS
+          and f"{len(_t28)} of 28 arms ({len(_t30)} of 30)" in _CLS
+          and f"{len(_dt27)} of 27 arms tied at the top of the 56-item dev slice" in _CLS
+          and sorted(_t28)[0] == sorted(_dt27)[0] == "anthropic_l",
+          f"derived AG {_r28:.3f}/{_r30:.3f}, ties {len(_t28)}/{len(_t30)}; "
+          f"DB {_d27:.3f}/{_d28:.3f}, tie {len(_dt27)}, first {sorted(_dt27)[0]}")
+
+    # AG News: the best paid arm's own family test, not the leader's.
+    _am = _not_separated("ag_anthropic_m_n200_v1", DATA, "ag_news_200", "correct")
+    if _am is None or len(_HOSTED) != 24:
+        missing += 1
+        print("  --   classification: anthropic_m family test did not run — skipped")
+    else:
+        _am_ns = {_arm_name(_a, "ag_") for _a in _am}
+        _hosted_ns = [_h for _h in _HOSTED if _h != "anthropic_m" and _h in _am_ns]
+        _ag_cost = _arm_costs("ag_", "ag_news_200")
+        _cheap = min(_hosted_ns, key=lambda h: _ag_cost[h])
+        _acc = lambda a: statistics.fmean(r["correct"] for r in _AG[a].values())  # noqa: E731
+        _sep_h = 23 - len(_hosted_ns)
+        _per_m = lambda a: round(_ag_cost[a] / 200 * 1e6)  # noqa: E731
+        check("classification: anthropic_m is separated from 3 of the 23 other hosted arms; "
+              "the cheapest hosted arm it is not separated from, with its gap",
+              f"separated from {_sep_h} of the 23 other hosted arms" in _CLS
+              and f"is `{_cheap}`, at ${_per_m(_cheap)} and {_acc(_cheap):.4f}, "
+                  f"{_acc('anthropic_m') - _acc(_cheap):.4f} behind" in _CLS
+              and f"`qwen_m`, at ${_per_m('qwen_m')} and {_acc('qwen_m'):.4f}" in _CLS
+              and f"`anthropic_m`, at ${_per_m('anthropic_m')} per 1M items and "
+                  f"{_acc('anthropic_m'):.4f}" in _CLS,
+              f"derived: separated from {_sep_h}, cheapest not separated {_cheap} "
+              f"${_per_m(_cheap)} {_acc(_cheap):.4f}")
+
+    # DBpedia: the smallest gap the leader's Holm test separated.
+    _fo = _clsp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", "dbpedia_280",
+                     "--a", "db_qwen_m_n200_v1", "--against", "_n200_v1", "--metric", "correct",
+                     "--runs-dir", str(DATA)], capture_output=True, text=True)
+    _rows_f = [ln.split() for ln in _fo.stdout.splitlines()
+               if ln.strip().startswith("db_") and ln.split()[-1] in ("SEPARATED", "--")]
+    if _fo.returncode != 0 or not _rows_f:
+        missing += 1
+        print("  --   classification: qwen_m family test did not run — skipped")
+    else:
+        _lo_sep = min(abs(float(r[1])) for r in _rows_f if r[-1] == "SEPARATED")
+        _hi_ns = max(abs(float(r[1])) for r in _rows_f
+                     if r[-1] == "--" and r[0] not in ("db_bert_base_fy_n200_v1",))
+        check("classification: DBpedia, no gap under 10 items separated; 8 items are not",
+              round(_lo_sep * 280) == 10 and round(_hi_ns * 280) == 8
+              and "smallest gap Holm separated from `qwen_m` is 10 items" in _CLS
+              and "8 items (+0.0286" in _CLS and "10 items (+0.0357" in _CLS,
+              f"derived smallest separated {round(_lo_sep * 280)} items, "
+              f"largest not separated {round(_hi_ns * 280)}")
+
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
@@ -801,6 +1005,119 @@ if len(_hosted) == 24:
 else:
     missing += 1
     print(f"  --   Pareto frontier: {len(_hosted)} hosted arms, not 24 — skipped")
+
+# ---- SUMMARISATION: PRICE AGAINST QUALITY, PROVIDER MIX, THE PILOT OVERLAP ------------
+#
+# Review 2026-10-19: "price carried no information" and "demonstrably" rested on r = -0.07
+# over 24 arms, which cannot exclude a moderate effect, and nothing here computed the
+# correlation, so the report's figures were checked against nothing. Derived from the
+# committed runs and looked for in the report: the correlation and its interval, how many
+# arms were served by several providers, the pilot-overlap rho, and the cost gap of the
+# three dominated arms whose dominator's quality lead is not separated.
+import math as _pqm  # noqa: E402
+
+
+def _pq_ranks(v):
+    o = sorted(range(len(v)), key=lambda i: v[i])
+    r = [0.0] * len(v)
+    i = 0
+    while i < len(o):
+        j = i
+        while j + 1 < len(o) and v[o[j + 1]] == v[o[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            r[o[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return r
+
+
+def _pq_pearson(x, y):
+    mx, my = statistics.fmean(x), statistics.fmean(y)
+    return (sum((a - mx) * (b - my) for a, b in zip(x, y))
+            / _pqm.sqrt(sum((a - mx) ** 2 for a in x) * sum((b - my) ** 2 for b in y)))
+
+
+def _pq_sg(x, nd=2):
+    return f"+{x:.{nd}f}" if x >= 0 else f"−{-x:.{nd}f}"
+
+
+_PQ = " ".join(SUMM.split())
+if len(_hosted) == 24 and all(CNN.get(_a) for _a in _hosted):
+    _pn = sorted(_hosted)
+    _cov = [_hosted[_a][0] for _a in _pn]
+    _lcost = [_pqm.log10(CNN[_a]) for _a in _pn]
+    _r = _pq_pearson(_lcost, _cov)
+    _z, _se = _pqm.atanh(_r), 1 / _pqm.sqrt(len(_pn) - 3)
+    _lo, _hi = _pqm.tanh(_z - 1.96 * _se), _pqm.tanh(_z + 1.96 * _se)
+    _sp = _pq_pearson(_pq_ranks(_lcost), _pq_ranks(_cov))
+    _slope = (sum((a - statistics.fmean(_lcost)) * (b - statistics.fmean(_cov))
+                  for a, b in zip(_lcost, _cov))
+              / sum((a - statistics.fmean(_lcost)) ** 2 for a in _lcost))
+    _pct = 100 * _slope / statistics.fmean(_cov)
+    _stated = (f"r = {_pq_sg(_r)} (95% CI {_pq_sg(_lo)} to {_pq_sg(_hi)}, "
+               f"Spearman {_pq_sg(_sp)}")
+    check(f"Summarisation price vs coverage: {_stated.replace('(', '').strip()}, "
+          f"{_pq_sg(_pct, 1)}% per 10x, stated in the exec row and in section 4",
+          _PQ.count(_stated) >= 2 and f"{_pq_sg(_pct, 1)}%** quality per 10× cost" in _PQ,
+          f"derived {_stated}), {_pq_sg(_pct, 1)}% per 10x cost")
+
+    _prov = {}
+    for _a, _dirs in _runs_for(DATA, "cnn_dailymail_200", "cnn_").items():
+        if _a in _hosted:
+            _prov[_a] = len(json.load(open(_dirs[0] / "metrics.json")).get("providers_seen") or {})
+    _multi = [_a for _a in _prov if _prov[_a] > 1]
+    _one = [_a for _a in _prov if _prov[_a] == 1]
+    _dear7 = sorted(_hosted, key=lambda a: -CNN[a])[:7]
+    _maxmulti = max(CNN[_a] for _a in _multi) if _multi else 0
+    _want = (f"{len(_multi)} of the 24 hosted arms were served by {min(_prov[_a] for _a in _multi)} "
+             f"to {max(_prov.values())} providers within one run (`deepseek_m` {_prov['deepseek_m']}, "
+             f"`llama_m` {_prov['llama_m']}, `deepseek_l` {_prov['deepseek_l']}, "
+             f"`gemma_m` {_prov['gemma_m']}); the other {len(_one)}")
+    check(f"Summarisation provider mix: {len(_multi)} multi-provider arms, the seven dearest "
+          f"all single-provider, multi-provider arms cost at most ${_maxmulti:.4f}",
+          _want in _PQ and all(_prov[_a] == 1 for _a in _dear7)
+          and _PQ.count(f"${_maxmulti:.4f} or less") >= 2,
+          f"derived: {_want}; seven dearest providers {[_prov[_a] for _a in _dear7]}; "
+          f"multi-provider max ${_maxmulti:.4f}")
+
+    # The three dominated arms whose dominator's quality lead is not separated (p in the
+    # report comes from pair_test.py; here only that the dominance holds and the cost gap).
+    _dom_ok, _dom_say = True, []
+    for _a, _b in (("llama_l", "deepseek_m"), ("mistral_s", "deepseek_s"), ("gemma_l", "llama_s")):
+        _holds = (_hosted[_b][0] > _hosted[_a][0] and CNN[_b] < CNN[_a]
+                  and _hosted[_b][2] < _hosted[_a][2])
+        _gap = 100 * (CNN[_a] / CNN[_b] - 1)
+        _dom_ok = _dom_ok and _holds and f"(+{_gap:.0f}%)" in _PQ
+        _dom_say.append(f"{_a} by {_b} +{_gap:.0f}%")
+    check("Summarisation dominated arms: llama_l, mistral_s and gemma_l are dominated, at the "
+          "cost gaps the report states", _dom_ok, "; ".join(_dom_say))
+
+    _d20f = ROOT / "harness" / "data" / "datasets" / "cnn_dailymail_20.json"
+    if _d20f.is_file():
+        _ids20 = {(_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
+                  for _i in json.loads(_d20f.read_text())["items"]}
+        _pi = {}
+        for _a, _dirs in _runs_for(DATA, "cnn_dailymail_200", "cnn_").items():
+            if _a in _hosted:
+                _pi[_a] = {(_row := json.loads(_l))["item_id"]: float(_row["coverage"])
+                           for _l in (_dirs[0] / "predictions.jsonl").read_text().splitlines()
+                           if _l.strip()}
+        _m20 = [statistics.fmean(_pi[_a][_i] for _i in _ids20) for _a in _pn]
+        _m180 = [statistics.fmean(v for _i, v in _pi[_a].items() if _i not in _ids20) for _a in _pn]
+        _m200 = [statistics.fmean(_pi[_a].values()) for _a in _pn]
+        _r180 = _pq_pearson(_pq_ranks(_m20), _pq_ranks(_m180))
+        _r200 = _pq_pearson(_pq_ranks(_m20), _pq_ranks(_m200))
+        check(f"Summarisation pilot overlap: rho {_r180:.3f} on the 180 other articles, "
+              f"{_r200:.3f} with the overlap",
+              f"ρ = {_r180:.3f} over the 24 hosted arms, against all 200 at {_r200:.3f}" in _PQ
+              and f"ρ = {_r180:.3f} ({_r200:.3f} with the overlap)" in _PQ,
+              f"derived {_r180:.3f} and {_r200:.3f}")
+    else:
+        missing += 1
+        print("  --   Summarisation pilot overlap: cnn_dailymail_20.json absent — skipped")
+else:
+    missing += 1
+    print("  --   Summarisation price vs coverage: not 24 hosted arms with a bill — skipped")
 
 # ---- THE RE-TIMED LATENCY TABLE ------------------------------------------------
 #
@@ -1162,13 +1479,39 @@ _bart = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[
          if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")}
 _not_sep = [a for a in _judges if a not in _bart or _bart[a][1] != "SEPARATED" or _bart[a][0] >= 0]
 check(f"SummEval: BARTScore is separated from all {len(_judges)} judges, every one ahead of it",
-      len(_judges) == 24 and not _not_sep and f"separated from all {len(_judges)} judges" in _SEV,
+      len(_judges) == 24 and not _not_sep
+      and "Every judge is separated from, and ahead of, BARTScore" in " ".join(_SEV.split()),
       f"not separated, or not behind: {_not_sep}")
 _weakest = min(_judges, key=lambda a: _se_arms[a]["scores"]["tau"])
 _bw = _bart.get(_weakest, (0, "", "?/100"))[2].split("/")[0]
 check(f"SummEval: against the weakest judge, {_weakest}, BARTScore wins {_bw} of 100 articles",
       f"`{_weakest}`" in _SEV and f"BARTScore wins only {_bw} of 100 articles" in _SEV,
       f"the family test gives {_bw}/100 against {_weakest}")
+# UniEval, the free evaluator trained for the task, on both sets of inputs (§3.3): separated
+# from every judge but the weakest, and the §3.3 table row against that one as the test gives it.
+_ue = {}
+for _u in ("unievalpub", "unieval"):
+    _uft = _sp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", _sea.DATASET,
+                    "--a", f"se_{_u}_n100_v1", "--against", "_n100_v1", "--metric", "tau",
+                    "--runs-dir", str(DATA)], capture_output=True, text=True)
+    _ue[_u] = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], float(ln.split()[3]))
+               for ln in _uft.stdout.splitlines()
+               if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")}
+    _unsep = sorted(a for a, v in _ue[_u].items() if v[1] != "SEPARATED")
+    _behind = [a for a in _judges if a != _weakest and (_ue[_u].get(a, (1,))[0] >= 0)]
+    _d, _, _w, _pv = _ue[_u].get(_weakest, (0, "", "?/100", 1))
+    _row = (f"| `{_u}` | {_se_arms[_u]['scores']['tau']:.4f} | {'+' if _d > 0 else ''}{_signed(_d)} | {_w.split('/')[0]} of 100 "
+            f"| {_pv:.4f} | {len(_ue[_u]) - len(_unsep)} of {len(_ue[_u])}, all but `{_weakest}` |")
+    check(f"SummEval: {_u} is separated from every arm but the weakest judge, {_weakest}, and §3.3 says so",
+          _unsep == [_weakest] and not _behind and _row in _SEV,
+          f"not separated from {_unsep}; ahead of {_behind}; or §3.3 lacks {_row}")
+_dpub = _ue["unievalpub"].get("unieval", (0, "", "?/100", 1))
+check(f"SummEval: the inputs move UniEval by {_dpub[0]:.4f}, p {_dpub[3]:.4f}, "
+      f"{_dpub[2].split('/')[0]} of 100 articles",
+      _dpub[1] == "SEPARATED" and f"worth {_dpub[0]:.4f} τ, separated (p {_dpub[3]:.4f}; `unievalpub`"
+      f" wins {_dpub[2].split('/')[0]} of 100 articles)" in " ".join(_SEV.split()),
+      "§3.3 does not state the paired difference between the two UniEval arms")
+
 _per_m = lambda a: f"${_se_arms[a]['billed'] / _SE['n_items'] * 1e6:,.0f}"  # noqa: E731
 _cheap_tie = min((_t[0][3:-8] for _t in _tied_rows), key=lambda a: _se_arms[a]["billed"])
 check(f"SummEval cheapest tied judge {_cheap_tie} at {_per_m(_cheap_tie)} per million, "
@@ -1242,13 +1585,16 @@ if _hc:
                 key=lambda a: _hc["arms"][a]["tau_vs_two_experts"])
     _bv = _hc["arms"][_best]["tau_vs_two_experts"]
     _bp = round(100 * _bv / _ceil)
-    _bart_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
+    _ue_pub_p = round(100 * _hc["arms"]["unievalpub"]["tau_vs_two_experts"] / _ceil)
+    _ue_p = round(100 * _hc["arms"]["unieval"]["tau_vs_two_experts"] / _ceil)
+    _bs_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
     check(f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
-          f"BARTScore {_bart_p}%",
+          f"UniEval {_ue_pub_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%",
           f"**{_bv:.4f}**, **{_bp}%** (95% interval "
           f"{round(100 * _hc['arms'][_best]['share_ci95'][0])}–{round(100 * _hc['arms'][_best]['share_ci95'][1])}%) "
           f"of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
-          and f"BARTScore reaches {_bart_p}%" in _SEV and f"| **{_ceil:.4f}** |" in _SEV,
+          and f"UniEval reaches {_ue_pub_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%" in _SEV
+          and f"| **{_ceil:.4f}** |" in _SEV,
           "the decision table or §3.7 does not state the evidence's figures")
     # The same two figures, repeated where the conclusions are drawn. A copy is checked
     # where it is stated, or it drifts from the report it was copied from.
@@ -1257,8 +1603,9 @@ if _hc:
                "examples/README.md": f"reach {_bp}% of a\nhuman expert's agreement"}
     _stale_copy = [f for f, t in _copies.items()
                    if " ".join(t.split()) not in " ".join((ROOT / f).read_text().split())
-                   or f"{_bart_p}%" not in (ROOT / f).read_text()]
-    check(f"SummEval's {_bp}% / {_bart_p}% stated the same in the synthesis and both READMEs",
+                   or not re.findall(r"UniEval,? (\d+)%", " ".join((ROOT / f).read_text().split()))
+                   or any(int(x) not in (_ue_pub_p, _ue_p) for x in re.findall(r"UniEval,? (\d+)%", " ".join((ROOT / f).read_text().split())))]
+    check(f"SummEval's {_bp}% / {_ue_pub_p}% stated the same in the synthesis and both READMEs",
           not _stale_copy, f"stale or missing in {_stale_copy}")
     _gap = _hc["arms"][_best]["gap_ci95"]
     check(f"SummEval §3.7: the gap to one expert, {_gap[0]:.4f} to {_gap[1]:.4f}, as the evidence says",
@@ -1275,6 +1622,288 @@ if _hc:
           and " ".join(_SEV.split()).count(f"{_hc['duplicate_groups_scored_differently']} of those") >= 2
           and f"in {_hc['duplicate_articles']} articles two or more systems" in _SEV,
           "a count in §3.7 or the findings does not match the evidence")
+    # The system-identity prior on the two-expert footing (leave-one-article-out lookup).
+    _pp = _hc.get("position_prior") or {}
+    _pp_v, _pp_p = _pp.get("tau_vs_two_experts"), round(100 * _pp.get("share_of_one_expert", 0))
+    _sev_n = " ".join(_SEV.split())
+    check(f"SummEval §3.7: the position prior {_pp_v}, {_pp_p}% of one expert, in the table and the summary",
+          bool(_pp) and _pp_p == round(100 * _pp_v / _ceil)
+          and f"| position prior (no model: other 99 articles' mean per position) | {_pp_v:.4f} | {_pp_p}% |" in _SEV
+          and f"reaches {_pp_p}% of one expert" in _sev_n
+          and f"lookup of which system wrote each summary reaches {_pp_p}% of an expert" in _sev_n,
+          f"evidence says {_pp}")
+
+# UniEval's derived figures (REPORT_SUMMEVAL §3.3, §5; the synthesis' tables), each computed
+# here from the runs, the family tests above and the evidence, so a copied figure cannot drift.
+_SYN = " ".join((ROOT / "research" / "REPORT_SYNTHESIS.md").read_text().split())
+_SEVn = " ".join(_SEV.split())
+_tau = {a: v["scores"]["tau"] for a, v in _se_arms.items()}
+_order = sorted(_tau, key=lambda a: -_tau[a])
+_ord = lambda n: f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"  # noqa: E731
+_bad_rank = [a for a in ("unievalpub", "unieval", "bartscore")
+             if f"{_ord(_order.index(a) + 1)} of {len(_order)}" not in _SYN]
+check("SummEval ranks of the free learned arms in the synthesis' exposure table", not _bad_rank,
+      f"{_bad_rank}: {[(a, _order.index(a) + 1) for a in _bad_rank]}")
+_n_above = sum(1 for a in _judges if _ue["unievalpub"].get(a, (0, ""))[1] == "SEPARATED"
+               and _ue["unievalpub"][a][0] < 0)
+_pw = (_ue["unievalpub"][_weakest][3], _ue["unieval"][_weakest][3])
+check(f"SummEval: {_n_above} of the {len(_judges)} judges are separated above UniEval; "
+      f"p {_pw[0]:.2f} and {_pw[1]:.2f} against {_weakest}",
+      f"below {_n_above} of the {len(_judges)} judges" in _SEVn
+      and f"p {_pw[0]:.2f} and {_pw[1]:.2f}" in _SEVn and f"{_n_above} of 24 judges" in _SYN,
+      "the headline counts or p-values do not match the family tests")
+check(f"SummEval: both UniEval arms are separated above BARTScore, by "
+      f"{-_bart['unieval'][0]:.4f} and {-_bart['unievalpub'][0]:.4f}",
+      _bart["unieval"][1] == _bart["unievalpub"][1] == "SEPARATED"
+      and f"(by {-_bart['unieval'][0]:.4f} and {-_bart['unievalpub'][0]:.4f})" in _SEVn, "")
+_lt, _pt = _tau[_lead], _tau["unievalpub"]
+check(f"SummEval: UniEval {_lt - _pt:.3f} below the leader; free vs paid "
+      f"−{100 * (1 - _pt / _lt):.1f}% and +{100 * (_lt / _pt - 1):.1f}%; gemma_l by {_tau['gemma_l'] - _pt:.4f}",
+      f"{_lt - _pt:.3f} below the leader" in _SEVn
+      and _SYN.count(f"**−{100 * (1 - _pt / _lt):.1f}%**") == 2
+      and f"**paid wins +{100 * (_lt / _pt - 1):.1f}%**" in _SYN
+      and f"**LLM wins by {_tau['gemma_l'] - _pt:.4f}, separated**" in _SYN
+      and f"by {_tau['gemma_l'] - _pt:.4f}, scored on UniEval's" in _SYN, "")
+_sep_lead = sum(1 for ln in _ft.stdout.splitlines() if ln.strip().endswith("SEPARATED"))
+_m_lead = sum(1 for ln in _ft.stdout.splitlines() if ln.strip().endswith(("SEPARATED", "--"))
+              and ln.split()[0].endswith("_n100_v1"))
+check(f"SummEval leader separated from {_sep_lead} of {_m_lead} in the synthesis' table",
+      f"| {_m_lead} of {_m_lead} | {_sep_lead} of {_m_lead} ({round(100 * _sep_lead / _m_lead)}%) |" in _SYN, "")
+_lat = sorted(_se_arms[a]["scores"]["latency_ms"] / 1000 for a in ("unieval", "unievalpub"))
+check(f"SummEval: UniEval latency {_lat[0]:.2f}–{_lat[1]:.2f} s in the synthesis",
+      f"UniEval {_lat[0]:.2f}–{_lat[1]:.2f} s" in _SYN, "")
+_ued = _cal_se["arms"]["unievalpub"]["by_dimension"]
+_worst = max(_ued, key=lambda d: abs(_ued[d]["value"] - _ued[d]["published"]))
+check(f"SummEval calibration: UniEval's largest dimension gap is {_worst}'s "
+      f"{abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}, every dimension inside its interval",
+      f"{_worst}'s {abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}" in _SEVn
+      and all(abs(x["value"] - x["published"]) <= x["ci95"] for x in _ued.values()), str(_ued))
+_gp = score(PAIR, "se_gemma_l_pubtextcw_n100_v1", "tau")
+_gs, _go = score(PAIR, "se_gemma_l_pubtext_n100_v1", "tau"), _tau["gemma_l"]
+check(f"SummEval §3.3: gemma_l on UniEval's text {_gp:.4f} (CoreWeave) and {_gs:.4f} (SambaNova) vs "
+      f"{_go:.4f}; its lead over UniEval {_go - _tau['unieval']:.4f} and {_gp - _tau['unievalpub']:.4f}",
+      None not in (_gp, _gs)
+      and f"scores {_gp:.4f} against its {_go:.4f} here: +{_gp - _go:.4f}" in _SEVn
+      and f"to SambaNova, scored {_gs:.4f}; on the same text the two providers differ by {_gs - _gp:.4f}" in _SEVn
+      and f"{_go - _tau['unieval']:.4f} on this experiment's text and {_gp - _tau['unievalpub']:.4f} on" in _SEVn,
+      f"pair run taus {_gp} {_gs}")
+_pl = _cal_se.get("position_lookup") or {}
+_plt = _pl.get("tau_leave_one_article_out") or 0.0
+check(f"SummEval §7: a system-identity prior (position lookup) reaches {_plt}",
+      _pl.get("each_position_one_system_on_every_article") is True
+      and f"reaches τ {_plt:.4f}" in _SEVn
+      and f"reaches τ {_plt:.3f}" in " ".join(_SER.split())
+      and _tau["llama_s"] < _plt < _tau["unievalpub"], str(_pl))
+_rank_pl = 1 + sum(v > _plt for v in _tau.values())
+check(f"SummEval §3.1: the identity prior would rank {_ord(_rank_pl)} of the field",
+      f"would rank {_ord(_rank_pl)} here" in _SEVn, f"rank {_rank_pl}")
+_tt = _SE["tier_tests"]
+_sep_t = sorted(f for f, v in _tt.items() if v["separated"])
+_not_t = sorted(f for f, v in _tt.items() if not v["separated"])
+check(f"SummEval §3.4: large tier separated above small in {len(_sep_t)} of {len(_tt)} families, "
+      f"not in {', '.join(_not_t)}",
+      ("separated in " + "zero one two three four five six seven eight".split()[len(_sep_t)]) in _SEVn
+      and all(f"{f.capitalize() if f != 'openai' else 'OpenAI'} +{_tt[f]['delta']:.4f}" in _SEVn
+              for f in _sep_t if f not in ("glm",))
+      and all(f"+{_tt[f]['delta']:.4f} (p {_tt[f]['p']:.4f})" in _SEVn for f in _not_t),
+      str({f: (round(v["delta"], 4), round(v["p"], 4), v["separated"]) for f, v in _tt.items()}))
+_sel = _hc.get("selection_corrected_best_judge") or {}
+check(f"SummEval §3.7: best judge held out {_sel.get('share_held_out')} vs in sample {_sel.get('share_in_sample')}",
+      bool(_sel) and f"gives {round(100 * _sel['share_held_out'])}% held out against "
+      f"{round(100 * _sel['share_in_sample'])}% in sample" in _SEVn, str(_sel))
+_ui = _cal_se.get("unievalpub_inputs_vs_ours") or {}
+check("SummEval §3.3: how UniEval's published inputs differ from ours, as calibrate.py counted it",
+      bool(_ui) and _ui["summaries"] - _ui["same_ignoring_case_and_punctuation"] == _ui["differ_only_in_bracket_tokens"]
+      and _ui["reference_is_the_first_of_11"] == _ui["article_same_ignoring_case_and_punctuation"] == _ui["summaries"]
+      and f"{_ui['same_ignoring_case_and_punctuation']:,} of the {_ui['summaries']:,} summaries match" in _SEVn
+      and f"the other {_ui['differ_only_in_bracket_tokens']} differ only in how brackets" in _SEVn,
+      str(_ui))
+_rs = _sp.run([sys.executable, str(HERE / "rank_stability.py"), "--dataset-id", _sea.DATASET,
+               "--metric", "tau"], capture_output=True, text=True, cwd=str(HERE.parent))
+_rs20 = [ln.split() for ln in _rs.stdout.splitlines() if ln.split()[:1] == ["20"]]
+check("SummEval: all-arm split-half rho at 20 per half, as rank_stability gives it",
+      bool(_rs20) and f"({float(_rs20[0][1]):.3f} at 20" in _SEVn,
+      f"rank_stability gives {_rs20[:1]}; stderr {_rs.stderr[-200:]}")
+
+# NER: how often each arm emitted the `other` type. The report rests its reading of gliner's
+# 0.0000 on `other` on this count, and it needs no gold, so it runs wherever the runs do.
+_NERT = " ".join((ROOT / "research" / "REPORT_NER.md").read_text().split())
+_oth = {}
+for _a in ("gliner", "openai_m", "anthropic_l", "span_marker"):
+    _d = glob.glob(str(RESCORED / f"fn_{_a}_n200_v1_*"))
+    _oth[_a] = sum(1 for _ln in open(Path(_d[0]) / "predictions.jsonl") if _ln.strip()
+                   for _e in (json.loads(_ln).get("_meta", {}).get("predicted") or [])
+                   if (_e.get("type") or "").lower() == "other") if _d else None
+check("NER: emitted-`other` counts (gliner 3, openai_m 93, anthropic_l 131, span_marker 97) match the report",
+      _oth == {"gliner": 3, "openai_m": 93, "anthropic_l": 131, "span_marker": 97}
+      and "emitted `other` 3 times in 280 sentences (`openai_m` 93, `anthropic_l` 131, "
+          "`span_marker` 97)" in _NERT,
+      str(_oth))
+
+# ---- THE PRICE-QUALITY SLOPE OF EVERY EXPERIMENT, AND THE ONE-MODEL PERCENTILE --------
+#
+# Review 2026-10-19: only summarisation's fit was checked; the synthesis slope table, the
+# exec-summary range built from it and the sentences in the other reports that repeat a
+# slope were "recomputed by hand" and a drift in any of them would have passed. Likewise
+# the 67th / 72nd percentile of `glm_m`. Both are recomputed from the committed runs and
+# the stated figures are looked for, by shape, in the text.
+#
+# THE FIT (synthesis section 8): over the experiment's PAID arms (a nonzero billed cost),
+# ordinary least squares of the primary metric on log10(billed cost). The slope is the
+# change per 10x, the percentage divides it by the best paid arm's score, r is Pearson.
+_SLOPE_EXPS = [
+    # (row key in the synthesis table, prefix, dataset, primary metric, runs dir)
+    ("| Judging · SummEval |", "se_", "summeval_100", "tau", DATA),
+    ("| Extraction · Few-NERD |", "fn_", "few_nerd_280", "f1", RESCORED),
+    ("| Retrieval · SciFact |", "sf_", "scifact_200", "ndcg_10", REPARSED),
+    ("| Classification · AG News |", "ag_", "ag_news_200", "correct", DATA),
+    ("| Classification · DBpedia |", "db_", "dbpedia_280", "correct", DATA),
+    ("| Summarisation · CNN/DM |", "cnn_", "cnn_dailymail_200", "coverage", DATA),
+]
+_SYN = " ".join(SYNTH.split())
+
+
+def _sx(x, nd):
+    return f"{x:+.{nd}f}".replace("-", "−")
+
+
+def _r2(x):
+    return f"{x:.2f}".replace("-", "−")
+
+
+def _r_p_value(r, n):
+    """Two-sided p of Pearson r over n points: t = r sqrt((n-2)/(1-r^2)), n-2 df."""
+    df = n - 2
+    t = abs(r) * _math.sqrt(df / (1 - r * r))
+    c = _math.exp(_math.lgamma((df + 1) / 2) - _math.lgamma(df / 2)) / _math.sqrt(df * _math.pi)
+    steps, hi = 200000, 60.0
+    h = (hi - t) / steps
+    return 2 * h * sum(c * (1 + (t + (k + 0.5) * h) ** 2 / df) ** (-(df + 1) / 2)
+                       for k in range(steps))
+
+
+_fits = {}
+for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
+    _x, _y = [], []
+    for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
+        _bill = _billed_of(_dirs[0])
+        _v = (json.load(open(_dirs[0] / "metrics.json")).get("scores") or {}).get(_metric)
+        if _bill > 0 and _v is not None:
+            _x.append(_math.log10(_bill))
+            _y.append(_v)
+    if len(_x) < 3:
+        missing += 1
+        print(f"  --   slope {_ds}: only {len(_x)} paid arms — skipped")
+        continue
+    _mx, _my = statistics.fmean(_x), statistics.fmean(_y)
+    _sxx = sum((a - _mx) ** 2 for a in _x)
+    _syy = sum((b - _my) ** 2 for b in _y)
+    _sl = sum((a - _mx) * (b - _my) for a, b in zip(_x, _y)) / _sxx
+    _f = _fits[_ds] = dict(n=len(_x), slope=_sl, pct=100 * _sl / max(_y),
+                           r=_sl * _math.sqrt(_sxx / _syy), best=max(_y))
+    _row = next((ln for ln in SYNTH.splitlines() if ln.startswith(_key) and "| r = " in ln), None)
+    _cells = [c.replace("*", "").strip() for c in _row.strip("|").split("|")] if _row else []
+    _want = [str(_f["n"]), _sx(_f["slope"], 4), _sx(_f["pct"], 1) + "%", f"r = {_r2(_f['r'])}"]
+    _got = [_cells[1], _cells[2], _cells[3], _cells[4].split(" (")[0]] if len(_cells) >= 5 else []
+    check(f"price slope, synthesis table, {_ds}: {_want[1]} per 10x = {_want[2]} of the best "
+          f"paid arm, {_want[3]}, {_want[0]} paid arms",
+          _got == _want, f"the table row says {_got}, the runs give {_want}")
+
+if len(_fits) == len(_SLOPE_EXPS):
+    _pcts = {d: f["pct"] for d, f in _fits.items()}
+    _lo_ds, _hi_ds = min(_pcts, key=_pcts.get), max(_pcts, key=_pcts.get)
+    _range = f"{_sx(_pcts[_lo_ds], 1)}% to {_sx(_pcts[_hi_ds], 1)}%"
+    _steep = (f"Steepest on SummEval ({_sx(_fits['summeval_100']['pct'], 1)}%, "
+              f"r = {_r2(_fits['summeval_100']['r'])}); negative on summarisation "
+              f"({_sx(_fits['cnn_dailymail_200']['pct'], 1)}%, "
+              f"r = {_r2(_fits['cnn_dailymail_200']['r'])})")
+    check(f"price slope range {_range}, steepest SummEval, lowest summarisation, in the "
+          "synthesis exec row",
+          (_hi_ds, _lo_ds) == ("summeval_100", "cnn_dailymail_200")
+          and f"{_range} of the best paid arm's score" in _SYN and _steep in _SYN,
+          f"derived {_range}, steepest {_hi_ds}, lowest {_lo_ds}; {_steep}")
+    _f = _fits["summeval_100"]
+    _ratio = f"slope {_f['slope']:.5f} ÷ best paid score {_f['best']:.4f} = {_f['pct']:.2f}%"
+    check("price slope worked example (SummEval) in the synthesis footnote",
+          _ratio in _SYN, f"derived: {_ratio}")
+
+    _ner = _fits["few_nerd_280"]
+    _spm = score(RESCORED, "fn_span_marker_n200_v1", "f1")
+    _z, _se = _math.atanh(_ner["r"]), 1 / _math.sqrt(_ner["n"] - 3)
+    _ner_say = (f"{_sx(_ner['slope'], 4)} F1 per 10× in cost (r = {_r2(_ner['r'])}, 95% Fisher "
+                f"interval {_math.tanh(_z - 1.96 * _se):.2f} to {_math.tanh(_z + 1.96 * _se):.2f}): "
+                f"{_ner['pct']:.1f}% of the best hosted F1, {100 * _ner['slope'] / _spm:.1f}% of "
+                "`span_marker`'s")
+    check("price slope, NER report: slope, r, interval and shares", _ner_say in _NERT,
+          f"derived: {_ner_say}")
+    _ag, _db = _fits["ag_news_200"], _fits["dbpedia_280"]
+    _cls_say = [f"{_sx(_ag['pct'], 1)}%** per 10× cost (log-cost fit over the {_ag['n']} hosted "
+                f"arms: {_sx(_ag['slope'], 4)} accuracy per decade ÷ the best hosted score, "
+                f"{_ag['best']:.4f}; r = {_r2(_ag['r'])})",
+                f"{_sx(_db['pct'], 1)}%** per 10× cost ({_sx(_db['slope'], 4)} ÷ "
+                f"{_db['best']:.4f}; r = {_r2(_db['r'])})"]
+    check("price slope, classification report: AG News and DBpedia exec cells",
+          all(s_ in _CLS for s_ in _cls_say), "derived: " + " / ".join(_cls_say))
+    _sf = _fits["scifact_200"]
+    _sf_say = (f"{_sx(_sf['slope'], 4)} nDCG@10 per 10× billed cost (r = {_r2(_sf['r'])}, "
+               f"n = {_sf['n']}, p ≈ {_r_p_value(_sf['r'], _sf['n']):.1f})")
+    check("price slope, retrieval report: slope, r, n and p",
+          _sf_say in " ".join((ROOT / "research" / "REPORT_RETRIEVAL.md").read_text().split()),
+          f"derived: {_sf_say}")
+
+# THE ONE-MODEL PERCENTILE (synthesis section 8, "the strongest argument on the other side").
+# Method, as the text states it: the hosted arms of each experiment (provider litellm, or
+# rerank for SciFact's rerankers); the arms that ran all six; an arm's percentile in an
+# experiment is the share of that experiment's hosted arms it scores above, ITSELF
+# INCLUDED as a tie, ties counted half (or fully in its favour for the second figure);
+# averaged over the six; the best arm by the first figure.
+_hosted_by_exp = {}
+for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
+    _hosted_by_exp[_ds] = {}
+    for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
+        _m = json.load(open(_dirs[0] / "metrics.json"))
+        if (_m.get("params") or {}).get("provider") in ("litellm", "rerank") \
+                and (_m.get("scores") or {}).get(_metric) is not None:
+            _hosted_by_exp[_ds][_arm] = _m["scores"][_metric]
+_common = set.intersection(*[set(v) for v in _hosted_by_exp.values()])
+
+
+def _pct_rank(arm, half):
+    out = []
+    for v in _hosted_by_exp.values():
+        below = sum(x < v[arm] for x in v.values())
+        tied = sum(x == v[arm] for x in v.values())
+        out.append((below + (0.5 if half else 1.0) * tied) / len(v))
+    return 100 * statistics.fmean(out)
+
+
+def _ordinal(n):
+    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
+if _common:
+    _best = max(_common, key=lambda a: _pct_rank(a, True))
+    _mid, _weak = _pct_rank(_best, True), _pct_rank(_best, False)
+    _exec = (f"`{_best}`, the best of the twelve hosted arms that ran all six experiments, "
+             f"sits at the {_ordinal(round(_mid))} percentile among hosted arms (the share it "
+             f"scores above, itself included as a tie, ties counted half, averaged over the "
+             f"six; {_ordinal(round(_weak))} if ties are counted fully in its favour)")
+    _sec8 = (f"**{_ordinal(round(_mid))} percentile across all six** (the share of each "
+             f"experiment's hosted arms, itself included as a tie, that it scores above, ties "
+             f"counted half, averaged; {_ordinal(round(_weak))} if ties are counted fully in "
+             f"its favour")
+    check(f"one-model percentile: `{_best}` is best of {len(_common)} common hosted arms, "
+          f"{_ordinal(round(_mid))} (ties half) / {_ordinal(round(_weak))} (ties fully), "
+          "stated in the exec row",
+          len(_common) == 12 and _exec in _SYN, f"derived {len(_common)} common arms, best "
+          f"{_best}, {_mid:.2f} / {_weak:.2f}")
+    check(f"one-model percentile: section 8 states the {_ordinal(round(_mid))} / "
+          f"{_ordinal(round(_weak))} and the method",
+          _sec8 in _SYN and "Twelve of the 24 hosted arms ran every experiment" in _SYN,
+          f"derived {_mid:.2f} / {_weak:.2f}")
+else:
+    missing += 1
+    print("  --   one-model percentile: no hosted arm ran all six experiments — skipped")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

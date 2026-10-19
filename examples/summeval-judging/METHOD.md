@@ -18,7 +18,8 @@ It came after the other five because it measures the instrument they rely on. Ev
 reference in this repository, and every automated eval that uses a model as the judge,
 assumes that a model's judgement of text tracks a person's. Here that assumption is a number
 with an interval. And two of the arms are metrics this repository ranks by, so the same run
-says how far the summarisation leaderboard can be believed.
+bounds how much a lead on the summarisation leaderboard means to a person — measured on
+2019-era summaries, not the LLM-written ones that leaderboard ranks.
 
 ## Why SummEval
 
@@ -32,7 +33,7 @@ says how far the summarisation leaderboard can be believed.
 - **A published protocol to check against.** G-Eval (Liu et al. 2023) reports
   summary-level correlations on these 100 articles for ROUGE, BARTScore and GPT-4 judges,
   so a number here can be checked against a published one directly — which
-  `calibrate.py` does for ROUGE-1/2/L.
+  `calibrate.py` does for ROUGE-1/2/L and UniEval.
 - **No sample.** The 100 annotated articles are the whole benchmark, so there is no slice
   to bias, and nothing is seeded.
 
@@ -55,6 +56,7 @@ says how far the summarisation leaderboard can be believed.
 | 24 hosted LLMs | The same 8 vendors × 3 price tiers as every other experiment, so a model's judging can be set beside its doing. One call per article: the article and the 16 numbered summaries, and a request for JSON scores ([`prompt.txt`](prompt.txt)). The judge never sees the human references. |
 | `qwen37max` | Replaces `qwen_l`, whose model is no longer served. A different model under its own arm name, never read as `qwen_l` ([report §6](../../research/REPORT_SUMMEVAL.md#6-what-changed-while-measuring)). |
 | `bartscore` | [BARTScore](https://arxiv.org/abs/2106.11520), the log-likelihood of the summary given the article under `facebook/bart-large-cnn`, pinned to the revision the summarisation experiment measured. In G-Eval's Table 1 it is the strongest of the metrics G-Eval does not group with those that learn from human ratings (τ 0.305; UniEval, a trained evaluator, reaches 0.377 there). It is also a model fine-tuned on this very corpus — to write summaries, not to grade them. |
+| `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197), the free evaluator in G-Eval's table that was trained for these four dimensions, re-implemented from its MIT code (`adapter.py` says how). The bar a judge must clear to earn its bill. Run twice, because its published figures come from its own copy of SummEval, cased and tokenised differently from the text the other arms see: `unievalpub` is the calibration row, `unieval` the comparison on this experiment's text (still with one human reference for relevance, which no judge is shown). |
 | `rouge1`, `rouge2`, `rougeL` | The reference-based metrics the field still ranks summarisers by, against each of the 11 references and averaged. They are also the calibration rows. |
 | `coverage` | **This repository's own** summarisation metric, imported from that example's scorer. How well it agrees with experts is how much a `coverage` lead means. |
 | `length` | The summary's word count. A confound to rule out: if it agreed with the experts, anything that rewards length would too. |
@@ -105,7 +107,11 @@ Not redistributed; [`fetch.py`](fetch.py) downloads it.
 
 **Models** — [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn)
 ([BART](https://arxiv.org/abs/1910.13461), Lewis et al. 2019) as
-[BARTScore](https://arxiv.org/abs/2106.11520) (Yuan et al. 2021). Hosted models are credited
+[BARTScore](https://arxiv.org/abs/2106.11520) (Yuan et al. 2021);
+[`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum) as
+[UniEval](https://arxiv.org/abs/2210.07197) (Zhong et al. 2022), its code
+[maszhongming/UniEval](https://github.com/maszhongming/UniEval) MIT, its weights' licence not
+stated. Hosted models are credited
 in [`docs/REFERENCE.md`](../../docs/REFERENCE.md#hosted--24-arms-8-vendors--3-price-tiers).
 
 **Metric** — [ROUGE](https://aclanthology.org/W04-1013/) (Lin, 2004), via

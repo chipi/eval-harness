@@ -21,7 +21,7 @@ never touched:
    entities gets caught, and it fixes the floor.
 3. **An unreadable answer looked like an empty one.** The first version of the scorer took
    only the parsed set, so a model whose output could not be read arrived as `[]` and
-   collected **1.0** on every empty-gold item. `glm_s`'s predecessor `glm_l` did exactly
+   collected **1.0** on every empty-gold item. `glm_l` did exactly
    that six times. `parsed` is now passed *through* to the scorer, not merely reported
    beside it.
 4. **The scorer itself was unfingerprinted.** `normalizer_sha256` covered the string
@@ -32,7 +32,7 @@ never touched:
 
 [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd),
 [Ding et al. 2021](https://aclanthology.org/2021.acl-long.248/), **CC BY-SA 4.0** — an
-actual grant, and the cleanest licence of the five corpora here.
+actual grant, and the cleanest licence of the first five corpora here.
 
 The alternatives do not offer one: CoNLL-2003's Reuters text needs a separate agreement,
 [`tner/wnut2017`](https://huggingface.co/datasets/tner/wnut2017) is licensed `other`, and
@@ -53,7 +53,8 @@ Two properties of the data that shape every number:
 
 ## Why these arms
 
-The pair is the whole point of this example:
+The pair is the control in this example, though not a matched pair (they differ in
+architecture as well as in training exposure):
 
 | Arm | Trained on Few-NERD? | Why it is here |
 |---|---|---|
@@ -63,12 +64,15 @@ The pair is the whole point of this example:
 **Why this pair and not an off-the-shelf NER model.** Most predict their own taxonomy —
 CoNLL's four types, OntoNotes' eighteen — and using one would need a lossy mapping onto
 Few-NERD's eight, confounding *model quality* with *mapping loss*. GLiNER takes the labels
-as input, so the comparison is clean **and** the model has never seen this dataset. That is
+as input, so there is no mapping loss **and** the model has never seen this dataset. That is
 why spaCy is not here.
 
 The DBpedia example could not load a fine-tuned ML arm at all, so its ML-vs-LLM question
-went unanswered. This pair exists to answer it: the two differ in **exactly one variable**,
-exposure to the training split, and it is worth **+0.3134 F1**.
+went unanswered. This pair is the control for it: `span_marker` leads `gliner` by **+0.3134
+F1**, and the ML-vs-LLM answer itself rests on `span_marker` against the hosted arms. The two differ in exposure to the training split and also in architecture and encoder
+(a SpanMarker span classifier on RoBERTa against GLiNER's label-prompted matcher on
+DeBERTa-v3), so that is exposure plus architecture, not exposure alone. Summarisation has the
+matched pair: the same BART fine-tuned on CNN/DailyMail and on XSum.
 
 Plus two floors: `nothing` (the empty set, always) and `capitalized` (every capitalised
 run minus an orthography stoplist).
@@ -76,7 +80,7 @@ run minus an orthography stoplist).
 > **`gliner`'s threshold is untuned** — 0.5, the library default. It is this arm's decision
 > boundary and is in the fingerprint. Tuning it on the dev slice would be legitimate, but
 > it would then be a *tuned* arm and would have to say so. A tuned GLiNER might close some
-> of that +0.3134, and nothing here bounds how much.
+> of the +0.3134 gap, and nothing here bounds how much.
 
 ## Why these success criteria
 
@@ -116,9 +120,11 @@ different task. The whole rule is hashed into `scorer_sha256`.
 **The consensus pass is the label-noise instrument**, and for sets it has *two* directions
 that are not symmetric: a gold span almost nobody found (often an IO artifact), and a span
 almost everybody predicted that is not in gold — the stronger signal, because independent
-models do not agree on a hallucination. A span in **both** lists differs only in type, and
-that is the highest-confidence annotation error available: 34 of 768 gold types are
-unanimously rejected by all 25 learned arms.
+models do not agree on a hallucination (though the 24 hosted arms share zero-shot priors).
+A span in **both** lists differs only in type, and that is the strongest annotation-error
+candidate available: 34 of 768 gold types are rejected by at least 80% of the 26 learned
+arms, agreeing on one alternative. The report treats the resulting score change as an upper
+bound, not a correction.
 
 ---
 

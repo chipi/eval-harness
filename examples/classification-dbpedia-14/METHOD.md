@@ -12,8 +12,9 @@ before any result was seen, to sit in the opposite regime. Read together or not 
 
 ## Why a second classification task
 
-AG News produced a clean story: a 44 MB fine-tuned model beat 24 frontier LLMs. That story
-is only trustworthy if you know what the *other* regime looks like, because a single
+AG News produced a clean-looking story: a 44 MB fine-tuned model led all 24 hosted LLMs on
+the point estimate (separated from 16 of the 29 other arms, not from the best paid ones).
+That story is only trustworthy if you know what the *other* regime looks like, because a single
 corpus supports whatever conclusion it happens to produce.
 
 So DBpedia-14 was picked for the properties AG News lacks:
@@ -51,11 +52,11 @@ ships a pickle checkpoint, which `transformers` refuses below torch 2.6
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and x86_64 macOS has
 no torch above 2.2.2 — see
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/internal/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
-absence is precisely why the NER example was built with a *matched pair* of local arms.
-**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, tied with
-the top group (p = 0.62 against the leader), label order confirmed by a diagonal confusion
-matrix. The ML-vs-LLM question is now answered here too, and the answer differs from AG
-News's: a tie, at $0.
+absence is precisely why the NER example was built with a zero-shot control beside its fine-tune.
+**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, not separated
+from the top group (p = 0.62 against the leader), label order confirmed by a diagonal
+confusion matrix. The ML-vs-LLM question has an answer here too, and it differs
+from AG News's: not separated, at $0.
 
 `bart_mnli` did run, and its calibration is the interesting result: confidence 0.317
 against accuracy 0.629, an ECE of 0.311 — badly underconfident, because zero-shot NLI
@@ -76,8 +77,8 @@ What differs is **what the criteria can do**:
   task the field's consensus errors *are* the ceiling. Fourteen arms reported byte-identical
   accuracy, macro-F1 **and** worst class — traced to one item: *"Dukart's Canal"*, gold
   `NaturalPlace`, which 20 of 24 arms called `MeanOfTransportation`. It is a man-made
-  waterway built to move coal. The models are right and the ontology's label is the odd one
-  out.
+  waterway built to move coal. On one rater's reading the models' answer is defensible and
+  the ontology's label is the odd one out; nobody has adjudicated it.
 - **And rank-stability stops being readable.** With 19.8 of 27 arms tied at n=10 (19.9 of
   28 with the fine-tuned arm), Spearman's ρ was correlating *arm names*. That is what drove
   the `arms tied 1st` column into the tool, and later the tie-correct ρ. Requiring a unique

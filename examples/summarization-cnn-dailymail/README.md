@@ -45,11 +45,11 @@ instrument.
 
 **Which articles.** `--n` takes the *first* n rows of the test split, and the split is
 CNN-first, so `cnn_dailymail_200` is **all CNN** (196 with CNN's dateline, 4 partner pieces) while the split is
-91% DailyMail. Every committed summarisation result is therefore about CNN-style news. The
-sanity check above was finally run on 2026-10-14 and is what showed it: LEAD-3 scores
-ROUGE-1 39.94 on the full test set (published 40.34) but 30.20 on the CNN slice
-(`calibrate.py`, `docs/evidence/calibration/summarization.json`). For a sample of the
-whole benchmark, draw at random:
+91% DailyMail. Every committed hosted-model result is therefore about CNN-style news. The
+sanity check above is what shows it: LEAD-3 scores ROUGE-1 39.94 on the full test set
+(published 40.34) but 30.20 on the CNN slice (`calibrate.py`,
+`docs/evidence/calibration/summarization.json`). For a sample of the whole benchmark, draw
+at random:
 
 ```bash
 uv run fetch.py --n 200 --draw random --seed 20261014                    # both outlets
@@ -67,21 +67,21 @@ what makes the silver experiment below possible.
 cp ../../harness/.env.example ../../harness/.env      # OPENROUTER_API_KEY, or your proxy
 cd ../../harness
 
-make experiment-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s.yaml
-make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*.yaml" REPEAT=3
-
-# scores are written rounded; regenerate them at full precision before testing ties
-make rescore DATASET_ID=cnn_dailymail_20 MATCH=_v2
-EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=cnn_dailymail_20
+make experiment-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s_n200.yaml
+make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*_n200.yaml" REPEAT=1
+make leaderboard DATASET_ID=cnn_dailymail_200
 ```
 
-The `rescore` step is not optional for the numbers below. Run scores land on disk rounded
-to 6 decimals, which is enough to report and not enough to tell a genuine tie from a
-rounding artifact — and the significance test cares. `make leaderboard` says so when it
-sees low-precision runs.
+`arm_*_n200.yaml` matches all 29 arms on the 200-article slice, the five local ones included
+(those need `uv sync --extra local`). A sweep refuses configs that do not share one
+`dataset_id`, so the unsuffixed `arm_*.yaml` files (the 20-article dev slice) cannot be mixed in.
 
-Dry-run first; it costs nothing and tells you what the sweep will. The full 24-arm sweep
-at `REPEAT=3` is **1440 calls, ~$1.45, ~80 minutes** — most of it waiting on providers.
+Dry-run first; it costs nothing and tells you what the sweep will. The committed result is
+one pass per arm: 24 hosted arms × 200 articles = 4,800 calls, **$5.74 billed**. The
+earlier 20-article pilot, three repeats, was 1,440 calls, $1.45 and 80 minutes; its runs are
+not committed. Run scores are written at 10 decimals, so no `make rescore` step is needed
+(`make rescore` exists for runs written at lower precision; `make leaderboard` warns when
+it sees them).
 
 Validating a change rather than measuring something? Use four cheap arms and a scratch
 directory, so a smoke pass cannot add repeats to a real sweep's arms:
@@ -94,14 +94,16 @@ EVAL_RUNS_DIR=/tmp/smoke make sweep REPEAT=1 \
 ## What is held constant
 
 Every arm shares the dataset, the prompt file, temperature 0, `max_tokens: 1200` and
-`reasoning: {enabled: false}`.
+`reasoning: {enabled: false}`. The hosted models run zero-shot on that one prompt. The
+upstream **provider is not pinned**: OpenRouter routes each call, and 13 of the 24 hosted
+arms were served by 2 to 14 providers within one run (`providers_seen` in each run's
+`metrics.json`), so a hosted score is that mix's, as served.
 
-One exception, disclosed because the fingerprint records it: `mistral_l` was rate-limited
-out of the sweep and re-run afterwards, by which time the adapter had changed — so its
-three runs carry a different `adapter.sha256` than the other 69. Every run also carries
-`harness.dirty: true`, meaning the recorded commit does not identify the code that ran. Only the model varies — and the run
-fingerprint records all of it, so "we varied one thing" is *checkable* rather than
-asserted.
+All 24 hosted runs carry the same `adapter.sha256`. 23 of them also carry `harness.dirty: true`,
+meaning the recorded commit does not identify the code that ran (the cause is the sweep's own
+untracked configs, REPORT_SUMMARIZATION §1); the fingerprint stores content, not pointers.
+Only the model varies — and the run fingerprint records all of it, so "we varied one thing"
+is *checkable* rather than asserted.
 
 The prompt lives in `prompt.txt`, is 119 bytes, and its sha256 is in every fingerprint:
 
@@ -140,7 +142,8 @@ fingerprint stores the upstream model and a gateway alias is not one.
 ## Quality, in two facets that disagree on purpose
 
 ROUGE F1 against a single reference is a **length ranking wearing a quality costume**:
-across these 24 arms, ρ(output words, precision) = −0.73 and ρ(words, recall) = +0.81.
+across the 24 hosted arms in the n=20 pilot, ρ(output words, precision) = −0.73 and
+ρ(words, recall) = +0.81.
 Choosing recall over F1 does not remove the bias, it flips it. So both ends are measured
 deliberately:
 
@@ -150,7 +153,7 @@ deliberately:
 - **`concision`** — precision over the whole output. Padding is punished here exactly as
   raw recall rewards it.
 
-ρ(coverage, concision) = **+0.36** (+0.25 at n=20) — related but far from the same
+ρ(coverage, concision) = **+0.36** — related but far from the same
 ordering, which is the point of carrying both. Which one you want is a product decision the
 eval refuses to make for you. `PRIMARY_METRIC = "coverage"`; pass `--sort concision` for the
 other view.
@@ -186,16 +189,21 @@ among them held, the XSum control is still last, and the hosted arms were not re
 - **Temperature 0 is not deterministic.** In the earlier three-repeat sweep (n=20), only
   **9.8%** of outputs were byte-identical across repeats and **12 of 24 arms produced zero
   identical outputs**.
-- **Price buys very little on this task.** The dearest arm (`anthropic_l`, **$1.9652**
-  billed) costs **143×** the cheapest paid arm (`deepseek_s`, $0.0137) and ranks **18th of
-  29** on coverage (15th of the 24 hosted). The Pareto frontier keeps **8 of 24** hosted
-  arms; the other 16 are beaten on quality *and* cost *and* speed simultaneously. (The n=20
-  pilot's figures for this bullet were wrong in three ways; the report's §6 lists them.)
+- **Price did not buy quality here, as run.** Across the 24 hosted arms price and `coverage`
+  were uncorrelated (r = −0.07, 95% CI −0.46 to +0.34): at n = 24 that does not exclude a
+  moderate effect. The dearest arm (`anthropic_l`, **$1.9652** billed) costs **143×** the
+  cheapest paid arm (`deepseek_s`, $0.0137), ranks **18th of 29** on coverage (15th of the 24
+  hosted) and is separated below the best paid arm. The Pareto frontier keeps **8 of 24**
+  hosted arms; the other 16 are dominated on the point estimates — behind another arm on
+  quality *and* cost *and* speed — and for three of them (`llama_l`, `mistral_s`, `gemma_l`)
+  the dominator's quality lead is not separated, so the case is a 2%–30% cost difference.
+  (The n=20 pilot's frontier was 10 arms, not 8, and its price wording was stronger than the
+  data; REPORT_SUMMARIZATION §3.4 and §6.)
 - **A model-authored reference is biased, not just noisy.** See below.
 
 **Few specific comparisons survive.** At n=200, **34 of 276** hosted pairs separate on
 `coverage` after correcting for 276 comparisons (1 of 276 at n=20). The top six cannot be
-told apart, and a leaderboard that printed a confident 1-to-24 ordering from this data
+separated, and a leaderboard that printed a confident 1-to-24 ordering from this data
 would be overstating it.
 
 **Beware the metric that separates most.** Ranked by pairs distinguished —
@@ -206,7 +214,9 @@ length. A facet that resolves many pairs is not thereby the more informative one
 ## Can you trust a model-written reference?
 
 Usually there is no gold, so a strong model writes the references — "silver" — and you
-rank candidates against those. Here gold exists, so the proxy can be *measured*:
+rank candidates against those. Here gold exists, so the proxy can be *measured*. This
+measurement is from the n=20 pilot, whose runs are not committed (not re-measured at n=200;
+REPORT_SUMMARIZATION §3.5):
 
 ```bash
 make silver-calibrate DATASET_ID=cnn_dailymail_20 REF_MATCH=_v1 ARM_MATCH=_v2
@@ -238,10 +248,9 @@ Two caveats on that number, because a single mean hides them:
 - **Family and output length are entangled** — models of a family write similar amounts —
   so part of this is length preference rather than "style". Not fully separated here.
 
-And the part that matters outside this example: **the best author was `llama_s`, which
-ranks 14th of 24 as a summariser.** Being good at the task and being good at judging it
-are only loosely related, so "use your strongest model to write the references" is a
-weaker heuristic than it sounds — and in the case silver is actually *for*, no gold
+And the part that matters outside this example: **the best author was `llama_s`** (ρ 0.697,
+then `deepseek_m` and `llama_m`) and the worst `mistral_m` (−0.013). That spread is across
+authors drawn from the same 24 models, and in the case silver is actually *for*, no gold
 exists, so you cannot check which author you got.
 
 ## Files
@@ -251,16 +260,22 @@ exists, so you cannot check which author you got.
 | `fetch.py` | download recipe — stdlib only, writes sources + gold |
 | `prompt.txt` | the one prompt, shared by every arm, hashed into every fingerprint |
 | `adapter.py` | the integration seam: `call_system`, `score`, `warmup`, `fingerprint` |
-| `configs/arm_*.yaml` | 24 arms; only `model` and the price fields differ |
+| `configs/arm_*_n200.yaml` | the 29 arms on the 200-article slice (24 hosted, 5 local); among the hosted, only `model` and the price fields differ |
+| `configs/arm_*.yaml` | the 20-article dev slice: 24 hosted arms plus `bart_l` and `lead3` |
+| `configs/arm_*_dm200.yaml` | the DailyMail slice: five local arms, which were run, and four hosted (`deepseek_m`, `llama_l`, `llama_m`, `llama_s`), which were not |
 | `model_provenance.json` | what each proxy alias resolved to upstream |
 | `reference/` | configs for authoring a reference tier, and when not to |
 | `pyproject.toml`, `uv.lock` | isolated environment; `uv sync` provisions its own Python |
 
 ## Not covered
 
-- **200 articles, not 20.** This section said "everything above rests on a 20-article
-  sample" long after the n=200 sweep replaced it. The dev slice is 20; every number
-  above is n=200 unless it says n=20.
+- **Zero-shot, one prompt, unpinned providers, one run per arm.** The hosted arms were not
+  tried few-shot, with a different prompt or with reasoning on, were served by whichever
+  providers OpenRouter chose, and ran once each. CNN/DailyMail is public and
+  contamination was not measured.
+- **200 articles, not a large sample.** The dev slice is 20; every number above is n=200
+  unless it says n=20. At 200 articles 34 of 276 hosted pairs separate and the top six do
+  not.
 - **One reference per article.** ROUGE against a single human summary is a weak proxy; two
   valid summaries can share few n-grams.
 - **`grounding` is ours**, ~20 lines, not a standard metric and not comparable to any
@@ -270,9 +285,10 @@ exists, so you cannot check which author you got.
   deliberate: the same experiment measures how fast *your* machine is at *this* task.
   The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
   ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
-- ~~**No local model arm yet.**~~ **Built.** `bart_l` (BART fine-tuned on this corpus,
-  1.6 GB) and `lead3` are measured, and `bart_l` ties the best hosted arm to 0.0001.
-  This bullet outlived the work it described. Since 2026-09-30 three more local arms
-  have run (they need torch ≥ 2.6): two distillations, `bart_m` 0.3367 and `bart_s`
-  0.3276, neither separated from `bart_l`; and `bart_l_xsum` — the same architecture
-  trained on XSum — last of 29 at 0.2071, below `lead3`.
+- **Local arms.** `bart_l` (BART fine-tuned on this corpus, 1.6 GB) is not separated from
+  the best hosted arm (gap 0.0001, p = 0.99). `lead3` ran too. Three more local arms need
+  torch ≥ 2.6: two distillations, `bart_m` 0.3367 (not separated from `bart_l`) and
+  `bart_s` 0.3276 (not separated in the 28-arm family; separated in the five-arm family of
+  the report's §3.7 and on DailyMail); and `bart_l_xsum` — the same architecture trained
+  on XSum, with different decode settings — last of 29 on `coverage` at 0.2071, below
+  `lead3`. No hosted arm was run on DailyMail.

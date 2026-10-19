@@ -9,7 +9,7 @@ commands from the repository root.
 | **0 · verify** | every number in every report, recomputed from the committed predictions | a clone | $0, ~15 min |
 | **1 · data** | the public data still matches what was measured, byte for byte | network | $0, minutes |
 | **2 · local** | rerun every local model and baseline on your own CPU | disk for models | $0, CPU hours |
-| **3 · hosted** | rerun the 24 hosted LLMs | one OpenRouter key | what `make plan` says, ≈ $0.60–$7.03 per experiment as billed when measured; prices move |
+| **3 · hosted** | rerun the hosted LLMs (24 per experiment, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per experiment as billed when measured; prices move |
 | **4 · extend** | measure a model of your own against the whole committed field | a config file | your model |
 
 You need `git`, `make`, Python ≥ 3.11 and [uv](https://docs.astral.sh/uv/) (`curl -LsSf
@@ -64,8 +64,11 @@ Model weights download from Hugging Face on first use, at the revision the commi
 pinned (sizes in [REFERENCE](REFERENCE.md)). Five of them were measured from pickle
 checkpoints (`pytorch_model.bin`), which execute code when loaded and which torch < 2.6
 refuses; for those a rerun loads the model's **safetensors conversion** instead, pinned by
-commit in `examples/local_models.json`. Each was rerun that way and scored identically to its
-committed run on every item (all 200 or 280). On Linux, `uv` installs the CUDA build of
+commit in `examples/local_models.json`. Each was rerun that way on 2026-10-15 and scored
+identically to its committed run on every item, all 200 or 280 (lab notebook entry 63; an
+earlier adapter-level check covered the two BARTs on 20 items only). The sixth pickle model,
+`bart_s`, has no exact conversion; rerun at the fp32 its config declares, it matches 199 of
+200 items on CNN and 187 of 200 on DailyMail. On Linux, `uv` installs the CUDA build of
 PyTorch, about 5 GB; nothing here needs a GPU.
 
 **What to expect.** A local model with pinned weights and a fixed input should give the
@@ -99,7 +102,7 @@ it has, and prints a `--resume` line so nothing is paid for twice.
 **What to expect.** Not the same digits. A hosted model is not deterministic even at
 temperature 0; OpenRouter may route the request to a different provider than it did; and
 a model can be updated or retired under the same id. So the card asks the question the
-reports actually make claims about: **does every separation and every tie still hold?** It
+reports actually make claims about: **does every separation and every non-separation still hold?** It
 substitutes your reruns for the committed runs and re-tests the leader against the same
 family, with the same Holm correction. Per arm it also reports whether your rerun is
 distinguishable from the committed one, whether the upstream model id changed, and which
@@ -133,7 +136,7 @@ system that is not an OpenAI-compatible endpoint, write an adapter instead:
 | upstream | for a hosted arm, whether the model id behind the alias changed |
 | status | `exact` · `consistent` (hosted, not distinguishable) · `within noise, not exact` (local) · `DIFFERS` |
 
-Then the verdicts: how many arms are separated from the leader and how many tied, in the
+Then the verdicts: how many arms are separated from the leader and how many are not, in the
 committed record and with your reruns substituted in, and any arm that moved. `make
 compare` exits non-zero when a verdict moved or an arm differs.
 

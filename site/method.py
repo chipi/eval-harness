@@ -146,13 +146,14 @@ def chapters(H, f: dict) -> list:
                    "scores a perfect 1.000 against them and ranks first. Re-scored against six "
                    "summaries a person wrote, it falls to second — and no arm can be told apart "
                    "from any other (p = 0.2124).", GUIDE) + "</p>"
-                   "<p>" + H.q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 "
-                   "items whose gold labels most of the hosted field disputes.", CLASS)
-                   + " Read, many of those labels were wrong. Disputed gold is a finding, not "
-                   "noise.</p>"
+                   "<p>" + H.q("On AG News, the lead of the three fine-tunes is concentrated in 17 "
+                   "items the hosted field mostly gets wrong.", CLASS)
+                   + " Read by one person, about half are a learnable convention and half "
+                   "mislabels. Disputed gold is a finding, not noise.</p>"
                    "<p>" + H.q("An AI judge is silver too, and SummEval measures how good: scored "
                    "against the mean of two experts, as one expert is against the other two, the "
-                   "best judges reach 93% of a human's agreement. The experts are not noiseless "
+                   "best judges reach 93% of a human's agreement (the best of 24, chosen on the same "
+                   "articles; 92% held out). The experts are not noiseless "
                    "either: 41 of 44 groups of word-for-word identical summaries got different "
                    "expert scores.", JUDGE) + " Close to a person is not the same as a person.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
@@ -185,18 +186,24 @@ def chapters(H, f: dict) -> list:
                    f"{len(exps)} experiments here the leader cannot be separated from a group of "
                    f"others — on summarisation, from {s['n_tied']} of them, the cheapest paid one "
                    f"{H.times(s['tied_ratio'])} cheaper than the dearest model in the field.</p>"
-                   "<p>Every claim on this site rests on a paired permutation test per item, "
-                   "with a Holm correction for the number of comparisons made at once.</p>"),
+                   "<p>Every separation claim on this site rests on a paired permutation test "
+                   "per item, with a Holm correction for the number of comparisons made at "
+                   "once. A tie means the test could not separate two arms at this many items, "
+                   "not that they are equal. Intervals elsewhere (the human ceiling) are "
+                   "bootstrapped, and the price slopes are fits, not tests.</p>"),
          "habit": "Decide the comparisons before reading the table, correct for how many you "
                   "made, and report a tie as a tie.",
          "tool": ("make family-test · make leaderboard",
                   f"separated from {sf['n_arms'] - 1 - sf['n_tied']} of {sf['n_arms'] - 1} opponents"
                   f"   ← SciFact's leader, {sf['leader_row']['arm']}"),
-         "yours": "When the answer is “tied”, the cheapest member of the tie is the decision."},
+         "yours": "When the answer is “tied”, look at the gap and the sample size first: if the "
+                  "gap is one you can live with, the cheapest member of the tie is the decision."},
         {"id": "record", "nodes": "baseline", "kicker": "The record",
          "title": "Decide on the record.",
          "short": "The scorer is part of the experiment. So is the reason.",
-         "story": ("<p>" + H.q("Three of these — the parser, the unparsed-as-empty rule, the "
+         "story": ("<p>Running the experiments found eight defects in the harness's own "
+                   "instrument, each of which changed published numbers or would have. "
+                   + H.q("Three of these — the parser, the unparsed-as-empty rule, the "
                    "reasoning flag — moved a single arm by more than the gap separating most of "
                    "the field.", SYN) + " The scoring code is a model-sized lever.</p>"
                    "<p>Every correction is kept: the lab notebook records the findings that were "
@@ -276,15 +283,16 @@ def patterns(H, f: dict) -> list:
     db = by["dbpedia"]
     return [
         ("Is the cheaper model good enough?", "arms = models, same prompt",
-         f"On DBpedia a {H.times(db['tied_ratio'])} price difference bought nothing measurable. "
-         "Run both on your items; if they tie, the cheap one wins.",
+         f"On DBpedia a {H.times(db['tied_ratio'])} price difference was not shown to buy accuracy. "
+         "Run both on your items; if they tie and the gap is one you can live with, the cheap "
+         "one wins.",
          "classification-dbpedia-14", "accuracy · cost per item"),
         ("Did my prompt change help?", "arms = prompts, same model",
          "Name the pair before you look, tune on a dev slice, confirm on the held-out rest.",
          "summarization-cnn-dailymail", "pair-test · holdout"),
         ("Route or label tickets", "arms = LLMs vs. a small fine-tune",
-         "A small model trained on your labels can beat every LLM — and part of its lead can be "
-         "learning your labels' quirks. Read the disputed items.",
+         "A small model trained on your labels can match or beat LLMs run with one prompt — and "
+         "part of its lead can be learning your labels' quirks. Read the disputed items.",
          "classification-ag-news", "accuracy · disputed gold"),
         ("Search and RAG retrieval", "arms = retrievers and rerankers",
          "The answer is a ranked list over a corpus; the corpus is hashed into every fingerprint "
@@ -296,8 +304,10 @@ def patterns(H, f: dict) -> list:
          "ner-few-nerd", "set F1 · parse rate"),
         ("Use an LLM as a judge", "arms = judges, scored against people",
          H.q("Score a few dozen outputs yourself, then measure how well each judge orders them "
-             "the way you do. On SummEval the best judges reached 93% of an expert's agreement, "
-             "and an open-weight one at 1/23 of the leader's price tied it.", JUDGE),
+             "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
+             "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
+             "leader's price was not separated from it.", JUDGE)
+         + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
          "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",
          "Score against references, clip for length so verbosity cannot buy recall, and check "
@@ -469,8 +479,8 @@ def experiment_lesson(H, x: dict) -> tuple:
                 "sorts; it does not rank — and the table still prints them first, second, third.")
     if slug == "few-nerd":
         return ("gold", "Silver is not gold.",
-                H.q("57% of the winner's margin is one entity type whose meaning exists only in "
-                    "that corpus.", NER) + " A clean win can still be partly a win at the "
+                H.q("57% of the winner's margin over openai_m is one entity type the prompt "
+                    "never defined (30–57% across the hosted arms).", NER) + " A clean win can still be partly a win at the "
                 "annotation, not the task.")
     if slug == "summeval":
         return ("gold", "Silver is not gold.",

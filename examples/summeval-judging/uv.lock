@@ -325,6 +325,7 @@ dependencies = [
 
 [package.optional-dependencies]
 local = [
+    { name = "nltk" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.2.2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.14.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
@@ -333,6 +334,7 @@ local = [
 
 [package.metadata]
 requires-dist = [
+    { name = "nltk", marker = "extra == 'local'", specifier = ">=3.8" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin' and extra == 'local'", specifier = "<2" },
     { name = "openai", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },

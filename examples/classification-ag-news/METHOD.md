@@ -24,7 +24,7 @@ that discreteness broke three things the continuous summarisation metric never t
    no per-item number whose mean is macro-F1, and it lives in a report script instead of
    pretending to be a metric.
 3. **Parsing became load-bearing.** "Which topic?" invites a sentence, not a word. The
-   label parser turned out to be worth **8.6 accuracy points** to one arm — wider than the
+   label parser turned out to be worth **7.5 accuracy points** to one arm — wider than the
    gap separating most of the field.
 
 ## Why AG News
@@ -52,9 +52,9 @@ that discreteness broke three things the continuous summarisation metric never t
 | Arm | Why it is here |
 |---|---|
 | 24 hosted LLMs | The same 24 as every other example, so a difference between examples is the **task**. |
-| [`bert_mini`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | **44 MB**, fine-tuned on AG News. The in-distribution specialist — and the arm that beat all 24. |
-| [`bert_base_ta`](https://huggingface.co/textattack/bert-base-uncased-ag-news), [`bert_base_fy`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | **438 MB** each, two independent BERT-base fine-tunes on AG News. They ask whether 44 MB was a floor or a ceiling (it was close to the ceiling: 0.9450 vs 0.9600, not separated), and check each other (192 of 200 labels agree). Needed torch ≥ 2.6; ran 2026-09-30. Together with `bert_mini` they made the label-convention effect measurable — see the report's §3.4. |
-| [`bart_mnli`](https://huggingface.co/facebook/bart-large-mnli) | Zero-shot via [NLI entailment](https://arxiv.org/abs/1909.00161). The **matched control**: same "small model" class, but never trained on this task. Without it, `bert_mini` winning would confound *small* with *trained on this*. |
+| [`bert_mini`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | **44 MB**, fine-tuned on AG News. The in-distribution specialist — ahead of all 24 hosted arms on the point estimate, not separated from the best of them. |
+| [`bert_base_ta`](https://huggingface.co/textattack/bert-base-uncased-ag-news), [`bert_base_fy`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | **438 MB** each, two BERT-base fine-tunes of AG News's labels by different authors. They ask whether 44 MB was a floor or a ceiling (it was close to the ceiling: 0.9450 vs 0.9600, not separated), and check each other (192 of 200 labels agree). Needed torch ≥ 2.6; ran 2026-09-30. Together with `bert_mini` they made the label-convention effect measurable — see the report's §3.4. |
+| [`bart_mnli`](https://huggingface.co/facebook/bart-large-mnli) | Zero-shot via [NLI entailment](https://arxiv.org/abs/1909.00161). The **zero-shot control**: also a local model, but never trained on this task. Without it, `bert_mini` winning would confound *small* with *trained on this*. It is not a matched pair — BART-large (1.6 GB) against BERT-mini (44 MB) — so the gap is training plus architecture. |
 | `keyword` | ~20 hand-written regex rules. Establishes what rules alone are worth before any model is credited. |
 | `constant` | Always one class. Must score ≈0.25 — a **calibration check on the scorer**, not a baseline. |
 
@@ -69,17 +69,18 @@ Everything else is read *after* the ranking:
 - **`parsed` is a quality metric, not descriptive.** An arm whose output cannot be read as
   a label cannot be deployed, whatever it knows.
 - **`correct_after_repair` minus `correct` is what the parser is worth.** Recording both is
-  how the 8.6-point finding was possible at all; a single number would have hidden it
+  how the 7.5-point finding was possible at all; a single number would have hidden it
   inside "model quality".
 - **Macro-F1** ([scikit-learn's definition](https://scikit-learn.org/stable/modules/model_evaluation.html#precision-recall-f-measure-metrics))
   weights every class equally, so it disagrees with accuracy exactly when an arm has a
   *concentrated blind spot* rather than a uniform error rate. The gap is the signal.
 - **`confidence` and calibration.** Only the local arms supply a probability. `bert_mini`'s
-  [expected calibration error](https://arxiv.org/abs/1706.04599) is 0.025 — a reliable
-  "I am not sure" you can route on, which is what makes a cheap classifier *deployable*
-  rather than merely accurate. No hosted arm has this: logprobs were never requested.
-- **The label-noise pass.** Items nearly the whole field gets "wrong" are usually items
-  whose gold label is wrong. This was added *after* the AG News report was first published
+  [expected calibration error](https://arxiv.org/abs/1706.04599) is 0.025 — honest on
+  average, but a partial router: 7 of its 11 errors sit above 0.8 confidence, so sending
+  everything under 0.8 to something dearer catches 4 of 11. No hosted arm has a confidence
+  at all: logprobs were never requested.
+- **The label-noise pass.** Items nearly the whole field gets "wrong" are candidates for a
+  wrong gold label (unadjudicated; some are a convention a zero-shot prompt does not state). This was added *after* the AG News report was first published
   and revised it — the ranking survived, the interpretation did not.
 
 ---

@@ -77,9 +77,8 @@ for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
 done
 ```
 
-The whole 19-arm measurement sweep is **$1.94 as the provider billed it** — $1.04 by
-this repo's price table, which understates it by 1.87×, the widest gap of the five
-experiments (see the report §7). The local arms are free; the dense ones cost time
+The whole 19-arm measurement sweep is **$1.94 as the provider billed it**, not by this
+repo's price table, which was wrong per arm in every example (see the report §7). The local arms are free; the dense ones cost time
 instead, and that cost is reported rather than hidden.
 
 ---
@@ -102,7 +101,7 @@ mpnet     1659 s
 ```
 
 Dense embeddings are cached to disk keyed on **corpus hash**, model, prefix and device, so
-a rerun loads in ~6 s instead of rebuilding. Keyed on the hash and not the path, so a
+a rerun loads in 6–9 s instead of rebuilding. Keyed on the hash and not the path, so a
 corpus change misses every cache rather than silently searching the wrong haystack;
 `index_built_this_run` is in the fingerprint, because 1386 s and 6 s of warmup are both
 honest and the number alone cannot say which.
@@ -140,7 +139,7 @@ made it return the literal string `["a","b"]` as a document id.
 | `bm25` | `rank_bm25.BM25Okapi`, defaults, no stemming or stoplist | $0, 1.2 s build |
 | `minilm` / `mpnet` | general sentence-similarity encoders, symmetric, no prefix | $0 |
 | `bge_small` / `e5_base` | **retrieval-trained**, asymmetric query/document prefixes | $0 |
-| 12 hosted ⟳ | reranking BM25's top-20, temperature 0, reasoning off | ~$0.05–0.15 |
+| 12 hosted ⟳ | reranking BM25's top-20, temperature 0, reasoning off | $0.06–0.46 |
 | `random` / `first_k` | a seeded permutation; the corpus in id order | $0 |
 
 **The query prefix is part of the model, not a style choice.** BGE and e5 are trained with
@@ -155,22 +154,31 @@ part of the index cache key so a prefixed arm cannot silently reuse an unprefixe
 Full write-up: [`../../research/REPORT_RETRIEVAL.md`](../../research/REPORT_RETRIEVAL.md).
 
 ```
-glm_s   ⟳ BM25      0.7437   $0.055    best overall, separates from only 6 of 18
-e5_base             0.7191   $0        FREE, and in the tie group
-bge_small           0.7097   $0        FREE, and in the tie group
-bm25                0.6451   $0        every reranker beats it
+glm_s   ⟳ BM25      0.7437   $0.142    best of the 12 cheapest hosted LLMs, separates from only 6–7 of 18
+e5_base             0.7191   $0        FREE, 0.0246 behind glm_s, not separated
+bge_small           0.7097   $0        FREE, 0.0340 behind glm_s, not separated
+bm25                0.6451   $0        every reranker scores above it
 random              0.0005   $0
 
-glm_s   ⟳ e5_base   0.7891   $0.055    the registered prediction: 0.786-0.797
+glm_s   ⟳ e5_base   0.7891   $0.146    inside the registered range 0.786-0.797
+qwen_s  ⟳ e5_base   0.7713   —         outside it (0.7799 as printed, before the parser fix)
 ```
+
+All of it as run here (report §3.4): the 12
+cheapest of 24 hosted LLMs, zero-shot, one prompt, temperature 0, reasoning off, no
+provider pinned, on a public benchmark (contamination unmeasured).
 
 Four things worth reading the report for:
 
-1. **A tie of twelve or thirteen arms, and two of them are free.** `e5_base` and `bge_small` — local,
-   CPU, $0 — are not statistically distinguishable from any paid reranker.
-2. **A prediction registered before the arm existed.** The ceiling analysis said swapping
-   only the first stage would reach 0.786–0.797. It reached **0.7891**, and the *mechanism*
-   transferred too: headroom-used moved 90.9% → 90.2%.
-3. **The dev slice picked the wrong winner** — its leader finished 10th of 19.
+1. **A top group of twelve or thirteen arms the data cannot separate, and two of them are free.** `e5_base` and `bge_small` — local,
+   CPU, $0 — are not separated from any of the twelve rerankers (p 0.27–0.97 and
+   0.12–0.97, uncorrected); n = 200 cannot resolve their 0.0246 and 0.0340 deficits.
+2. **A prediction registered before the arm existed, and one of two hit.** The ceiling
+   analysis said a reranker on `e5_base`'s candidates would reach 0.786–0.797. `glm_s`
+   reached **0.7891**, inside; `qwen_s` reached 0.7713 under the corrected parser (0.7799
+   as printed), outside. Headroom-used moved 90.9% → 90.2% for `glm_s` and 87.4% → 88.2%
+   for `qwen_s`.
+3. **The dev slice's leader finished 10th of 19** by point estimate, 0.0265 behind `glm_s`
+   — not separated. The dev runs are not committed.
 4. **One arm looked broken and was misconfigured by me:** this adapter never disabled
    reasoning, which the other three examples all do.

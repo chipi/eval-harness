@@ -117,7 +117,7 @@ Baselines are frozen. Promoting a new one archives the old under
 
 ## Two arms cannot agree to full precision
 
-`make validate` fails when two different configs report byte-identical scores on
+`make validate` fails when two different configs report byte-identical scores and per-item results on
 the same dataset. Independent arms do not agree to seventeen significant
 figures; when they do, one of them is not its own measurement — a copied number,
 a mis-wired arm, a cached result.
