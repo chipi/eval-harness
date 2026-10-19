@@ -518,6 +518,76 @@ SYN = "research/REPORT_SYNTHESIS.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
 
 
+def marks(k: int, n: int) -> str:
+    """k of n as n small marks, k filled: the count itself as data."""
+    gap = 14
+    dots = "".join(f'<circle cx="{6 + i * gap}" cy="6" r="4.5" class="{"on" if i < k else "off"}"/>'
+                   for i in range(n))
+    return (f'<svg class="marks" viewBox="0 0 {12 + (n - 1) * gap} 12" width="{12 + (n - 1) * gap}" '
+            f'height="12" aria-hidden="true">{dots}</svg>')
+
+
+def sketch(exps: list, compact: bool = False) -> str:
+    """Six benchmarks as one picture: each row on its own scale, from its weakest learned
+    system to its best, so rows compare by shape, not score. Every other system is a faint
+    tick; what carries the story is the shaded band (the systems the leader cannot be
+    separated from), the leader, and the ringed most expensive model."""
+    width = 400 if compact else 1000
+    row = 50 if compact else 40
+    top = 8
+    height = top + row * len(exps) + 4
+    if compact:
+        left, right = 10, width - 10
+    else:
+        left, right = 170, width - 150
+    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-hidden="true" class="sketch">']
+    for i, x in enumerate(exps):
+        learned = [a for a in x["arms"] if a["kind"] != "baseline"]
+        on, off = off_scale(learned)
+        lo, hi = min(a["score"] for a in on), max(a["score"] for a in on)
+        y = top + row * i + (row - 14 if compact else row // 2)
+
+        def px(v, lo=lo, hi=hi):
+            return left if v <= lo else left + (v - lo) / (hi - lo) * (right - left)
+        tied = [a for a in learned if a["arm"] in x["tied"]] + [x["leader_row"]]
+        tag = (f'leader + {x["n_tied"]}' if x["n_tied"] else "clear winner")
+        out.append(f'<a href="experiments/{x["slug"]}.html" class="sketch-row"><title>{e(x["bench"])}: '
+                   f'the experiment</title><rect x="0" y="{top + row * i}" width="{width}" height="{row}" class="hit-row"/>')
+        if compact:
+            out.append(f'<text x="{left}" y="{y - 14}" class="t-head" font-size="15">{e(x["bench"])}</text>'
+                       f'<text x="{right}" y="{y - 14}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>')
+        else:
+            out.append(f'<text x="0" y="{y + 5}" class="t-head" font-size="16">{e(x["bench"])}</text>'
+                       f'<text x="{width}" y="{y + 5}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>')
+        out.append(f'<line x1="{left}" x2="{right}" y1="{y}" y2="{y}" class="axis"/>')
+        if len(tied) > 1:
+            x0, x1 = px(min(a["score"] for a in tied)), px(max(a["score"] for a in tied))
+            out.append(f'<rect x="{x0 - 6:.1f}" y="{y - 9}" width="{x1 - x0 + 12:.1f}" height="18" rx="9" class="band"/>')
+        for a in learned:
+            if a["arm"] not in (x["top"]["arm"], x["dearest"]["arm"]):
+                out.append(f'<line x1="{px(a["score"]):.1f}" x2="{px(a["score"]):.1f}" y1="{y - 4}" y2="{y + 4}" class="tick"/>')
+        out.append(f'<circle cx="{px(x["dearest"]["score"]):.1f}" cy="{y}" r="7" class="ring"/>')
+        out.append(f'<circle cx="{px(x["top"]["score"]):.1f}" cy="{y}" r="5" class="lead"/></a>')
+    out.append("</svg>")
+    return "".join(out)
+
+
+def hero_sketch(exps: list) -> str:
+    ties = sum(x["n_tied"] > 0 for x in exps)
+    dear_first = sum(x["dearest"]["arm"] == x["top"]["arm"] for x in exps)
+    finding = (f"In {ties} of {len(exps)} benchmarks the leader cannot be separated from a "
+               f"group of others; the most expensive model came first in "
+               f"{word(dear_first) if dear_first else 'none'}.")
+    key = ('<div class="legend sketch-key"><span><i class="lead-i"></i>the leader</span>'
+           '<span><i class="sw-band"></i>not separated from it</span>'
+           '<span><i class="ring-i"></i>the most expensive model</span>'
+           '<span class="read">each row: worst to best, on its own scale →</span></div>')
+    return (f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
+            f'{key}{both(sketch(exps), sketch(exps, compact=True))}'
+            f'<figcaption>{e(finding)} <a href="experiments.html#findings">See each one →</a>'
+            f'</figcaption></figure>')
+
+
 def home(f: dict) -> str:
     """The front door: the harness -- what it is, what it asks, how to start -- and then
     what it found when pointed at 24 LLMs, which is the reason to believe it."""
@@ -543,19 +613,16 @@ def home(f: dict) -> str:
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
         for n, t, d in ideas)
-    # Why it exists: the questions it was built to answer, each with what the harness gives
-    # and what the experiments found -- numbers computed, quoted prose checked by q().
+    # Why it exists: the questions it was built to answer, each with what the experiments
+    # found -- numbers computed, quoted prose checked by q(). How the harness answers them
+    # is the method page's job.
     why = [
         ("Agentic AI can do months of work in days. How do I trust what it builds?",
-         "Frozen data, a fingerprint on every run, refusals when a comparison is unsound — so "
-         "an agent can iterate at full speed without a regression slipping through as progress.",
          f"This project was built that way, with AI agents. A checker re-verifies "
          f"{f['claims_checked']} claims against the runs on every commit, and the lab notebook "
          "keeps every finding that had to be retracted along the way.",
          f"{REPO}/tree/main/research/internal", "The lab notebook"),
         ("Which model is best for what I need — not for someone else's benchmark?",
-         "Run five, ten or twenty-four models on your own frozen data and see quality, cost and "
-         "latency side by side, with a test that says whether the ranking is real.",
          f"The most expensive model was not the best in any of the {f['frontier_exps']} "
          f"experiments where frontier models ran (the same model each time; SciFact ran only the "
          f"twelve cheapest hosted models), and in {ties} of {len(exps)} "
@@ -563,12 +630,10 @@ def home(f: dict) -> str:
          "is not the same as equal.",
          "experiments.html", "The experiments"),
         ("Do I need an LLM — or a GPU — at all?",
-         "Put a small classic model, or a plain baseline, in the same comparison as the LLMs: "
-         "same data, same scoring, same test.",
          f"A free model that needs no GPU was first, or not separable from first, in "
          f"{f['local_first_or_tied']} of {len(exps)}, against LLMs run with one prompt and no "
          "examples; the clearest wins were on text like the text it was trained on. On judging "
-         "summaries even a free model trained for the task lost, and an LLM judge beat every "
+         "summaries even a free model trained for the task lost, and an LLM judge scored above every "
          "free scorer measured: "
          + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement "
              "(the best of 24, chosen on the same articles; 92% held out), and UniEval, the best "
@@ -578,8 +643,6 @@ def home(f: dict) -> str:
          + " One task, so the direction, not the size.",
          "experiments.html#experiments", "Per experiment"),
         ("Own it or rent it?",
-         "Every cost is read off the provider's bill and set beside quality, so renting an API "
-         "can be weighed against running open weights on hardware you own.",
          q("The best proprietary arm never separated from the best open-weight arm in any of the "
            "six experiments", SYN) + ". At native precision the best model that fits a 64 GB machine matched the "
          "unlimited-hardware answer on two of the six tasks, was not separated from it on two "
@@ -589,26 +652,26 @@ def home(f: dict) -> str:
     ]
     why_html = "".join(
         f'<div class="why-q reveal"><span class="n">{i:02d}</span><h3>{e(qn)}</h3>'
-        f'<p><b>The harness</b>{e(gives)}</p><p><b>What it found</b>{found}</p>'
+        f'<p><b>What it found</b>{found}</p>'
         f'<a href="{href}">{e(label)} →</a></div>'
-        for i, (qn, gives, found, href, label) in enumerate(why, 1))
-    cards = "".join(
-        f'<a class="card reveal" href="experiments/{x["slug"]}.html"><div class="task">{e(x["task"])}</div>'
-        f'<h3>{e(x["bench"])}</h3><p>{e(CARD[x["slug"]])}</p>'
-        f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} systems</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
-        for x in exps)
+        for i, (qn, found, href, label) in enumerate(why, 1))
+    # Step 2: each benchmark as its own field, the same strips as the experiments page.
+    benches = "".join(
+        f'<a class="bench-row reveal" href="experiments/{x["slug"]}.html" aria-label="{e(x["bench"])}: '
+        f'{e(CARD[x["slug"]])}">{both(strip(x), strip(x, compact=True))}</a>' for x in exps)
     body = f"""
-<section class="hero"><div class="wrap">
+<section class="hero hero-grid"><div class="wrap">
   <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample. This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
+  {hero_sketch(exps)}
 </div></section>
 
 <section class="block" id="why"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Why it exists</div>
   <h2>Four questions anyone building with AI ends up asking.</h2>
-  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. This harness exists to answer these on your own data — and the experiments are what it answered when pointed at 24 LLMs.</p>
+  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. This harness answers these on your own data; here is what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
   <div class="why">{why_html}</div>
 </div></section>
 
@@ -637,12 +700,12 @@ def home(f: dict) -> str:
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
   <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
   <div class="stats">
-    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
-    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
+    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
+    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
+    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_tied"], len(exps))}<div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
-  <div class="cards" style="margin-top:48px">{cards}</div>
+  <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
   <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
 </div></section>
 
