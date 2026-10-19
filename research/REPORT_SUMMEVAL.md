@@ -26,24 +26,27 @@
 | the choice | what the data says |
 |---|---|
 | **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**; UniEval, the best free scorer, **0.3717** on its own inputs (0.3476 on this experiment's), BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); UniEval reaches 64% (60% on this experiment's inputs), BARTScore 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries in one prompt, which a per-article rank correlation rewards (§3.7). |
-| **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 27 arms. |
+| **Which judge?** | **Six judges the leader cannot be separated from** — `openai_l` itself, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 27 arms. A tie is relative to the arm tested: from `gemma_l` the set also takes in `glm_m`. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
-| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges and cannot be told apart from the weakest, `llama_s` (§3.3). The first of six experiments where no free arm is first, or tied for first. |
+| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges on mean τ and cannot be told apart from the weakest, `llama_s` (§3.3). Dimension by dimension it is closer: on coherence alone it is above seven judges. |
 | **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there. But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
 
 ### What this experiment specifically found
 
-- **23 of the 24 judges beat every free scorer, including one trained for the task.**
+- **On mean τ, 23 of the 24 judges beat every free scorer, including one trained for the task.**
   UniEval ([Zhong et al. 2022](https://arxiv.org/abs/2210.07197)), a T5 evaluator trained
   for these four dimensions, is the best free scorer: τ 0.3717 on its own published inputs,
   0.3476 on this experiment's. On either, the paired test separates it below 23 judges and
-  cannot separate it from the weakest, `llama_s` (τ 0.3533; p 0.18 and 0.70, Holm-corrected,
-  §3.3). Every judge is separated from, and ahead of, BARTScore and every reference metric.
+  cannot separate it from the weakest, `llama_s` (τ 0.3533; raw p 0.18 and 0.70, the last
+  step of the Holm order, §3.3). Every judge is separated from, and ahead of, BARTScore and
+  every reference metric. The separations are on the four-dimension mean: on Spearman ρ
+  `unievalpub` is above four judges, and on coherence alone above seven.
 - **How the text is written moves the trained evaluator.** The two UniEval arms score the
-  same articles, summaries and reference, cased and tokenised differently; that alone is
-  0.0241 τ, separated (p 0.0002, §3.3). Its calibration row, on its own inputs, reproduces
+  same articles, summaries and reference, cased, tokenised and bracketed differently; that
+  difference is 0.0241 τ, separated (p 0.0002, §3.3). It moves a judge too: `gemma_l`,
+  re-run on UniEval's text, gains 0.0126, so the judge's lead over UniEval holds on either. Its calibration row, on its own inputs, reproduces
   G-Eval's 0.377 (§5).
 - **The best judges come close to a single expert, and stay measurably below one.** Scored
   against the mean of two experts, as one expert is against the other two, the best judges
@@ -52,7 +55,7 @@
   same summary word for word, and 41 of those 44 groups of identical texts received
   different expert scores.
 - **The top is a crowd.** `openai_l` leads at τ 0.5398 and cannot be separated from five
-  others; `gemma_l` sits 0.0013 behind it at 1/23 of the price. Four of the six are tied by
+  others (a set that depends on which arm is tested: from `gemma_l` it differs); `gemma_l` sits 0.0013 behind it at 1/23 of the price. Four of the six are tied by
   a wide margin; the other two sit on a Holm boundary (§3.2).
 - **The large tier beats the small one in all eight families — Qwen's by 0.0012, and with a
   substituted model — but the ladder rises steadily in only three.** Llama, Gemma and OpenAI rise with tier; DeepSeek, GLM and Mistral peak at
@@ -61,7 +64,8 @@
   large.
 - **The order is stable; the winner is not.** Rankings agree across disjoint halves far
   more than on the summarisation experiment: ρ 0.90 at 20 articles per half, against 0.333
-  for the same 24 models there, by the same method — but the top is close enough that the
+  for the same 24 models there, by the same method — though the judges are also far more
+  spread out, and a wider field is easier to order (§3.5). The top is close enough that the
   unique winner changes most of the time.
 - **Two models could not run as planned**, and both are findings about renting models:
   `qwen_l`'s model is no longer served by the provider, and its successor refuses to run
@@ -165,7 +169,11 @@ METRIC=tau`):
 | `qwen_s` | −0.0205 | 61 of 100 | 0.0112 | 0.0125 |
 | `qwen37max` | −0.0193 | 58 of 100 | 0.0108 | 0.0100 |
 
-`openai_l` is separated from the other 27. Two members sit on the boundary: `qwen37max`
+`openai_l` is separated from the other 27. "Tie" here means the leader cannot be separated
+from an arm, not that the six cannot be separated from each other: tested from `gemma_l`
+instead (`make family-test A=se_gemma_l_n100_v1 METRIC=tau`), the arms it cannot be
+separated from are `openai_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` and also
+`glm_m` (p 0.0107 against 0.0083). Two members sit on the boundary: `qwen37max`
 (p 0.0108 against a threshold of 0.0100) and `qwen_s` (0.0112 against 0.0125) — a few
 articles either way would move them in or out. `glm_m` is the nearest arm outside
 (p 0.0072, threshold 0.0083).
@@ -218,20 +226,35 @@ separable from first. In the other five, a free local model was. Here the best f
 trained for these very dimensions, and it sits 0.168 below the leader: 64% of one expert's
 agreement against the best judges' 93% (§3.7).
 
+These separations are on the mean over the four dimensions, which every test here uses. One
+dimension or one statistic at a time the free scorers come closer: on Spearman ρ `unievalpub`
+(0.4671) is above four judges, on coherence τ (0.4423) above seven, and BARTScore's coherence
+(0.3799) is above four. The comparison is also not on equal footing in UniEval's favour:
+it is given one human reference for relevance, which no judge sees.
+
 **The inputs move UniEval.** The two UniEval arms score the same articles, summaries and
-reference — 1,528 of the 1,600 summaries match word for word once case and punctuation are
-ignored, and the other 72 differ only in how brackets are written (`-lrb-` and `-rrb-` in
-this experiment's text; counted by `calibrate.py`, which also finds the same article and the
-same reference on every row) — written differently. UniEval's file has a tokenised article and
+reference, written differently. 1,528 of the 1,600 summaries match character for character
+once case, spacing and punctuation are ignored, and the other 72 differ only in how brackets
+are written (`-lrb-` and `-rrb-` in this experiment's text); `calibrate.py` counts this, and
+finds the same article and the same reference on every row. UniEval's file has a tokenised article and
 sentence-cased summaries. This experiment's has the article as published and the summaries
 lower-cased, as SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
-wins 66 of 100 articles). Which part of it does the work is not tested. The LLM judges were
-given the lower-cased summaries too, and how they would score the cased ones is not
-measured, so the 0.3717 is UniEval at its best and the 0.3476 is UniEval on equal terms.
+wins 66 of 100 articles). Which part of it does the work is not tested.
 
-Among the free scorers not trained to judge, BARTScore, which never sees a reference, beats every reference-based metric; plain ROUGE-1
-beats this repository's `coverage` (0.1011, against ROUGE-1's 0.1487), most of the gap in consistency
-and fluency; and the experts were not rewarding length (τ 0.0388).
+**The text holds the judges back too.** The judges were given this experiment's text as
+well, lower-cased summaries and bracket tokens included. One judge was re-run on UniEval's
+text as a paired side run (`harness/data/runs-pair/`, not on the leaderboard): `gemma_l`
+scores 0.5510 there against its 0.5384 here, +0.0126, separated in a single paired test
+(p 0.0141; it wins 55 of 100 articles), about half what the same change is worth to
+UniEval. The comparison is not clean: OpenRouter served the re-run from a different provider
+(SambaNova, where CoreWeave served the original), so the gap is text plus provider. Either
+way the judge's lead over UniEval barely moves: 0.1908 on this experiment's text, 0.1793 on
+UniEval's.
+
+Among the free scorers not trained to judge, BARTScore, which never sees a reference,
+beats every reference-based metric, and plain ROUGE-1 beats this repository's `coverage`
+(0.1011, against ROUGE-1's 0.1487), most of the gap in consistency and fluency. The experts
+were not rewarding length on average (τ 0.0388), though a little on relevance (0.0997).
 
 ### 3.4 Tier, by family: large beats small in all eight, steadily in three
 
@@ -290,7 +313,10 @@ another way.
 | relevance | `openai_l` | 0.5099 | `llama_s` | 0.3396 |
 
 Consistency — whether the summary's facts are supported by the article — is where judges
-agree with experts most, and it is the dimension that matters most for factuality. A
+agree with experts most, and it is the dimension that matters most for factuality. It is
+also where the experts agree with each other most (one expert against the other two:
+consistency 0.6811, coherence 0.5896, fluency 0.551, relevance 0.4129), so part of that is
+an easier target, not a better judge. A
 judge's tie rate barely predicts its quality (Spearman +0.10 across the 24).
 
 ### 3.7 How close to an expert?
@@ -350,10 +376,10 @@ member of the top group, and check it against a small set of human judgements on
 outputs — which is exactly what this experiment does at scale.
 
 **For this repository's other experiments.** The summarisation experiment ranks its arms by
-`coverage`. Here `coverage` agrees with experts at τ 0.1011, below plain ROUGE-1. That does
-not invalidate the summarisation results, which test separations rather than read absolute
-quality, but it says how much a `coverage` lead can be taken to mean about what a person
-would prefer.
+`coverage`. Here `coverage` agrees with experts at τ 0.1011, below plain ROUGE-1. That
+bounds how much a `coverage` lead can be taken to mean about what a person would prefer. It
+was measured on 2019-era summaries, not on the LLM-written ones that experiment ranks, so
+how far it transfers there is not measured.
 
 **Against the literature.** G-Eval reports GPT-4 at τ 0.418 on this data with its own
 prompt and probability-weighted scoring. Most judges here exceed that with plain integer
@@ -422,6 +448,10 @@ between this experiment and the earlier five mix September and October prices.
 - **n = 100 articles**, below the usual 200, and every summary is from a 2019-era system.
   Modern summaries are more fluent; a judge's skill at catching 2019 failures may not
   transfer.
+- **The 16 summaries are always shown in the same order**, the dataset's own. The expert
+  mean varies by position (3.09 at the first, up to 4.57), but position alone orders the
+  summaries at τ 0.042, so it is not a shortcut a judge could exploit much; a judge's own
+  position bias is not measured.
 - **One prompt, all 16 summaries in one call, four dimensions together.** Scoring one
   summary per call, one dimension per call, or with token probabilities (G-Eval's method)
   are different judges and are not measured.

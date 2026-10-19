@@ -34,7 +34,7 @@
 | **Does paying more help?** | **A little, and not enough.** Each 10× in cost buys **+5.9%** of the best arm's F1 across the paid arms — the steepest absolute price–quality slope of the six experiments, though SummEval's is larger as a share of its best score ([synthesis](REPORT_SYNTHESIS.md)) — yet the free tagger still beats every paid arm. |
 | **How much of the win is real?** | **57% of its margin is one entity type** (`other`) whose meaning exists only in this corpus, and **38% of its lead** is agreeing with annotation the field rejects. On `person`, a frontier LLM **wins**. |
 | **Is a pilot enough?** | Here yes — ρ = 0.895 over the 27 arms measured at the time (0.903 with all 28, §3.8), right winner. It was wrong in 3 of the other 4 experiments. |
-| **Fine-tune or pay?** | **Fine-tune.** The matched pair isolates it: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 F1 from exposure alone**, at $0 on both sides. |
+| **Fine-tune or pay?** | **Fine-tune.** Against the zero-shot control: `span_marker` (saw the training split) 0.7674 vs `gliner` (did not) 0.4540 — **+0.3134 F1**, at $0 on both sides. The two also differ in architecture, so that is exposure plus architecture (§3.5). |
 
 *How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
 higher is better; §2). **Free** = `span_marker`, self-hosted at $0. **% below free** is the
@@ -317,14 +317,19 @@ line up exactly by exposure:
 **On `person` — the one label that means the same thing in every corpus — the frontier
 hosted model wins.** That is the whole result in one row.
 
-### 3.5 Task-specific training, isolated
+### 3.5 Task-specific training, against a zero-shot control
 
-`span_marker` 0.7674 vs `gliner` 0.4540 — same model class, same label set, same CPU, same
-harness. The one variable is exposure to Few-NERD's training split, and it is worth
-**+0.3134 F1**.
+`span_marker` 0.7674 vs `gliner` 0.4540 — same label set, same CPU, same harness, and a gap
+of **+0.3134 F1**. It is not one variable. `span_marker` saw Few-NERD's training split and
+`gliner` did not, but they are also different models: a SpanMarker span classifier on a
+RoBERTa encoder (`numind/generic-entity_recognition-v1`, per its config) against GLiNER's
+label-prompted matcher on DeBERTa-v3-base. An earlier version of this section called them
+the same model class with exposure as "the one variable"; that was wrong. The gap is
+exposure plus architecture, and how it splits is not measured.
 
-This is the question the summarisation and AG News examples kept running into and could not
-answer, because neither had a matched zero-shot control. `gliner` is that control.
+This is the question the summarisation and AG News examples kept running into, and
+summarisation has the cleaner answer: the same BART-large fine-tuned on CNN/DailyMail and on
+XSum, first and last of 29.
 
 ### 3.6 Annotation noise, and an upper bound on what it costs
 
@@ -504,7 +509,8 @@ look.** `span_marker` wins outright and separates from all 27 opponents. But dec
 - On the type with a corpus-independent meaning, it loses.
 
 So the defensible claim is: **if your labels are a fixed in-house taxonomy and you can
-label training data, a 499 MB model on CPU beats every frontier LLM at 0.76 s/item and $0.**
+label training data, a 499 MB model on CPU beats every frontier LLM as run here (one prompt,
+no examples) at 0.76 s/item and $0.**
 That is a real and useful claim — it is the podcast-product case. The claim it does *not*
 support is that the small model is better at named-entity recognition in general.
 

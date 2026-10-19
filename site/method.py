@@ -152,7 +152,8 @@ def chapters(H, f: dict) -> list:
                    "noise.</p>"
                    "<p>" + H.q("An AI judge is silver too, and SummEval measures how good: scored "
                    "against the mean of two experts, as one expert is against the other two, the "
-                   "best judges reach 93% of a human's agreement. The experts are not noiseless "
+                   "best judges reach 93% of a human's agreement (the best of 24, on the same "
+                   "articles). The experts are not noiseless "
                    "either: 41 of 44 groups of word-for-word identical summaries got different "
                    "expert scores.", JUDGE) + " Close to a person is not the same as a person.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
@@ -185,8 +186,11 @@ def chapters(H, f: dict) -> list:
                    f"{len(exps)} experiments here the leader cannot be separated from a group of "
                    f"others — on summarisation, from {s['n_tied']} of them, the cheapest paid one "
                    f"{H.times(s['tied_ratio'])} cheaper than the dearest model in the field.</p>"
-                   "<p>Every claim on this site rests on a paired permutation test per item, "
-                   "with a Holm correction for the number of comparisons made at once.</p>"),
+                   "<p>Every separation claim on this site rests on a paired permutation test "
+                   "per item, with a Holm correction for the number of comparisons made at "
+                   "once. A tie means the test could not separate two arms at this many items, "
+                   "not that they are equal. Intervals elsewhere (the human ceiling) are "
+                   "bootstrapped, and the price slopes are fits, not tests.</p>"),
          "habit": "Decide the comparisons before reading the table, correct for how many you "
                   "made, and report a tie as a tie.",
          "tool": ("make family-test · make leaderboard",
@@ -283,8 +287,8 @@ def patterns(H, f: dict) -> list:
          "Name the pair before you look, tune on a dev slice, confirm on the held-out rest.",
          "summarization-cnn-dailymail", "pair-test · holdout"),
         ("Route or label tickets", "arms = LLMs vs. a small fine-tune",
-         "A small model trained on your labels can beat every LLM — and part of its lead can be "
-         "learning your labels' quirks. Read the disputed items.",
+         "A small model trained on your labels can match or beat LLMs run with one prompt — and "
+         "part of its lead can be learning your labels' quirks. Read the disputed items.",
          "classification-ag-news", "accuracy · disputed gold"),
         ("Search and RAG retrieval", "arms = retrievers and rerankers",
          "The answer is a ranked list over a corpus; the corpus is hashed into every fingerprint "
@@ -296,8 +300,9 @@ def patterns(H, f: dict) -> list:
          "ner-few-nerd", "set F1 · parse rate"),
         ("Use an LLM as a judge", "arms = judges, scored against people",
          H.q("Score a few dozen outputs yourself, then measure how well each judge orders them "
-             "the way you do. On SummEval the best judges reached 93% of an expert's agreement, "
-             "and an open-weight one at 1/23 of the leader's price tied it.", JUDGE),
+             "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
+             "(the best of 24, on the same articles), and an open-weight one at 1/23 of the "
+             "leader's price tied it.", JUDGE),
          "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",
          "Score against references, clip for length so verbosity cannot buy recall, and check "

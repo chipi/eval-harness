@@ -51,7 +51,7 @@ ships a pickle checkpoint, which `transformers` refuses below torch 2.6
 ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)), and x86_64 macOS has
 no torch above 2.2.2 — see
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/internal/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
-absence is precisely why the NER example was built with a *matched pair* of local arms.
+absence is precisely why the NER example was built with a zero-shot control beside its fine-tune.
 **It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, tied with
 the top group (p = 0.62 against the leader), label order confirmed by a diagonal confusion
 matrix. The ML-vs-LLM question is now answered here too, and the answer differs from AG

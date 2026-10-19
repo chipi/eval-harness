@@ -12,7 +12,8 @@ Two questions this repository already asks, made measurable:
   rests on it.
 - **How good are the metrics we rank by?** ROUGE and this repository's own `coverage` (the
   summarisation experiment's primary metric) are arms here. How well they agree with experts
-  is how far that leaderboard can be believed.
+  bounds how much that leaderboard's lead means to a person — measured on 2019-era
+  summaries, not the LLM-written ones it ranks.
 
 ## What it breaks that the other five did not
 
@@ -55,15 +56,14 @@ A reference-based metric gives one number per summary; it stands for all four di
 
 ## Calibration
 
-UniEval reproduces as well, on its own inputs: τ 0.372 against G-Eval's 0.377, inside the
-interval on every dimension (on this experiment's text it scores 0.348; see the report, §3.3).
-
 [G-Eval](https://arxiv.org/abs/2303.16634), Table 1, reports ROUGE-1 against these experts at
 **ρ 0.192, τ 0.150** (averaged over the four dimensions). Measured here, on the same 100
 articles, with ROUGE-1 F1 averaged over the references: **ρ 0.190, τ 0.149**, and per
 dimension within 0.01 of every published value. (Max over references gives ρ 0.198 and the
 first reference alone 0.159; neither reproduces the published row, so averaging is the
-setup.) The instrument reproduces the literature before anything new is read off it.
+setup.) UniEval reproduces as well, on its own inputs: τ 0.372 against G-Eval's 0.377, inside the
+interval on every dimension (on this experiment's text it scores 0.348; see the report,
+§3.3). The instrument reproduces the literature before anything new is read off it.
 [`calibrate.py`](calibrate.py) recomputes all of this from the committed runs and writes
 [`docs/evidence/calibration/summeval.json`](../../docs/evidence/calibration/summeval.json),
 which `make ci` checks this page against.
@@ -106,14 +106,14 @@ Four things already worth saying:
 - **This repository's own `coverage` agrees with the experts less than plain ROUGE-1**
   (τ 0.101 against 0.149), most of the gap in consistency and fluency. Coverage was built to
   stop rewarding length, and it does that; what it gives up is visible here.
-- **The experts were not rewarding length** (τ 0.039), so agreement here is not a length
-  effect in disguise.
+- **The experts were not rewarding length** on average (τ 0.039; 0.100 on relevance), so
+  agreement here is mostly not a length effect in disguise.
 
 ## Results: the hosted judges
 
 All 24 hosted judges are measured ($7.03 billed). 23 of them are separated from, and ahead
 of, UniEval on either set of inputs; the weakest, `llama_s`, cannot be told apart from it.
-Every one is ahead of BARTScore. The top is a six-way tie led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
+Every one is ahead of BARTScore. The leader cannot be separated from five others, led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
 articles), UniEval 64% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and

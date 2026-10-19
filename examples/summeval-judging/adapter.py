@@ -163,7 +163,10 @@ def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> O
 def _litellm(text: str, params: Dict[str, Any]) -> Result:
     client, route = gateway.client(params)
     extra_body = gateway.extra_body(params, route)
-    content = text if params.get("_raw_message") else _judge_message(_item(text), params)
+    item = _item(text) if not params.get("_raw_message") else None
+    if item is not None and params.get("inputs") == "published":
+        item = _published_item(item)
+    content = text if item is None else _judge_message(item, params)
     max_tokens = int(params.get("max_tokens", 1500))
     resp = client.chat.completions.create(
         model=route["model"],
@@ -418,6 +421,22 @@ def _unieval_published() -> Any:
     return _UE_PUBLISHED
 
 
+def _published_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    """The item rewritten in UniEval's published copy of SummEval: the same article and
+    summaries, cased and tokenised as that file has them. For the paired judge run that asks
+    whether the judges were held back by this experiment's lower-cased text."""
+    norm, by_text, rows = _unieval_published()
+    keys = [by_text.get(norm(s), set()) for s in item["summaries"]]
+    docs = set.intersection(*[{d for d, _ in k} for k in keys]) if all(keys) else set()
+    if len(docs) != 1:
+        raise RuntimeError(f"this item matches {len(docs)} articles in the original release")
+    doc = docs.pop()
+    picked = [rows[(doc, sorted(m for d, m in k if d == doc)[0])] for k in keys]
+    if len({r["source"] for r in picked}) != 1:
+        raise RuntimeError("UniEval's rows for one article carry different source texts")
+    return {**item, "article": picked[0]["source"], "summaries": [r["system_output"] for r in picked]}
+
+
 def _unieval(text: str, params: Dict[str, Any]) -> Result:
     item = _item(text)
     if params.get("inputs") == "published":
@@ -530,7 +549,6 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         fp["punkt_english_sha256"] = PUNKT_ENGLISH_SHA256
         if fp["inputs"] == "published":
             fp["original_release_sha256"] = ORIGINAL_SHA256
-        if fp["inputs"] == "published":
             ue = SOURCES / "summeval_unieval" / "summeval.json"
             fp["unieval_inputs_url"] = UNIEVAL_INPUTS_URL
             fp["unieval_inputs_sha256"] = hashlib.sha256(ue.read_bytes()).hexdigest() if ue.is_file() else None
@@ -541,7 +559,10 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             "revision": None, "revision_source": "api-model-string",
             "endpoint": gateway.endpoint(), "provider_routing": params.get("provider_routing"),
             "temperature": params.get("temperature"), "prompt_sha256": _prompt_sha256(params),
-            "reasoning": params.get("reasoning")}
+            "reasoning": params.get("reasoning"),
+            **({"inputs": "published", "unieval_inputs_sha256": UNIEVAL_INPUTS_SHA256,
+                "original_release_sha256": ORIGINAL_SHA256}
+               if params.get("inputs") == "published" else {})}
 
 
 # ── the scorer ───────────────────────────────────────────────────────────────

@@ -201,7 +201,7 @@ Full write-up: [`../../research/REPORT_NER.md`](../../research/REPORT_NER.md).
 span_marker   0.7674   $0        separated from 27 of 27 under Holm
 openai_m      0.6864   $0.6507   best hosted; separated from only 20 of 27
 gemma_m       0.6733   $0.0088   inside the top group, 78x cheaper than anthropic_l
-gliner        0.4540   $0        same model class, no training-split exposure
+gliner        0.4540   $0        zero-shot, different architecture, no training-split exposure
 capitalized   0.1913   $0
 nothing       0.1250   $0        = the rate at which an empty answer is correct
 ```

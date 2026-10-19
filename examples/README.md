@@ -47,7 +47,8 @@ Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extrac
 **[`../research/REPORT_SYNTHESIS.md`](../research/REPORT_SYNTHESIS.md)** — the
 cross-cutting report. Seven findings, each tested in every experiment that could test it
 and computed from the stored runs rather than quoted: the dearest arm is never first (6/6),
-five of six leaderboard tops are statistical ties, a pilot with ρ ≈ 0.8 picked the wrong
+five of six leaderboard tops are statistical ties (not separable at 100–280 items, which
+is not the same as equal), a pilot with ρ ≈ 0.8 picked the wrong
 winner three times in the five experiments that ran one, and the scoring code moved single
 arms further than most model swaps did.
 
@@ -55,8 +56,8 @@ It also answers the deployment question directly. **Every experiment has a $0 an
 the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal (not
 separable from the leader) on saturated DBpedia, a
 proprietary model never separated from the best open-weight one in any of the six, and
-**a 64 GB machine reaches the same answer as unlimited hardware on four of the six
-tasks** (two at int8 or int4, unmeasured). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
+**on four of the six tasks the best model that fits a 64 GB machine scores the same as the
+unlimited-hardware answer** (two at int8 or int4, unmeasured; provider-served scores). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
 a free evaluator trained for the task sits far below the judges — the best judges reach 93% of a
 human expert's agreement, UniEval 64% — so the LLM earns its bill, and the $0 answer is an open-weight LLM judge.
 
@@ -115,7 +116,7 @@ type**, `other`, whose membership you cannot infer from the label because it is 
 convention of that corpus. On `person` — the one type that means the same thing everywhere
 — a frontier LLM beats it.
 
-A matched zero-shot control (`gliner`, same model class, never trained on Few-NERD) scores
+A zero-shot control (`gliner`, a different architecture, never trained on Few-NERD) scores
 **0.0000** on `other`, 0 of 86. And 34 of 768 gold types are unanimously rejected by the
 whole field; resolving them moves every hosted arm ~+0.03 and the fine-tuned model +0.006,
 so **38% of its lead is agreeing with the annotator rather than being right**.
@@ -151,8 +152,8 @@ planned: `qwen_l`'s is no longer served, so `qwen37max` stands in
 
 ## The pattern across all six
 
-**At the top of a field, price stops predicting quality well before quality stops
-varying.** In five of the six examples the leader cannot be statistically separated
+**At the top of a field, the dearest model did not win, and the leader could not be told
+apart from cheaper rivals.** In five of the six examples the leader cannot be statistically separated
 (Holm step-down, α = 0.05) from a group of other arms — and that group spans a large price
 range. Few-NERD is the exception: it has a clear winner, and the same tie appears one rank
 down.

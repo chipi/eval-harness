@@ -252,6 +252,7 @@ data/runs-pair/*/*
 !data/runs-pair/*/predictions.jsonl
 !data/runs-pair/*/outputs
 !data/runs-pair/*/outputs/**
+data/runs-pair/*/outputs/_rows.jsonl
 
 # Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
 # same reason, plus one the last sweep learned the hard way -- an untracked directory under

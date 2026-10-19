@@ -15,8 +15,9 @@ most leaderboards skip: is this ranking real, or a lucky sample?**
 Freeze a dataset, run your system against it, and get an answer that says whether one
 system is actually better than another, or only ahead on this sample. To show it doing
 something real, it measured 24 LLMs, small fine-tuned models and baselines on six public
-benchmarks. The most expensive model never won, and five of six leaderboard tops were
-statistical ties.
+benchmarks. The most expensive model never won, and in five of six the leader could not be
+separated from a group of cheaper rivals at 100–280 items — not shown different, which is
+not the same as equal.
 
 ### Why it exists
 
@@ -32,15 +33,17 @@ It was built to answer four questions anyone building with AI ends up asking:
    side by side, with a test that says whether the ranking is real.
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
-   GPU was first, or not separable from first, in five of the six experiments, but only on
-   text like the text it was trained on. On the sixth, judging summaries, even a free model
+   GPU was first, or not separable from first, in five of the six experiments, against LLMs
+   run with one prompt and no examples; the clearest wins were on text like the text it was
+   trained on. On the sixth, judging summaries, even a free model
    trained for the task lost, and the LLM earned its bill: the best judges reach 93% of a
    human expert's agreement (the best of 24, interval 89–97%), the best free scorer,
    UniEval, 64%. Why the trained model lost there is not tested; one task, one model.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
    quality. Here a proprietary model never separated from the best open-weight one, and
-   a 64 GB machine matched the unlimited-hardware answer on four of the six tasks (two of
-   them at int8 or int4, which was not measured).
+   on four of the six tasks the best model that fits a 64 GB machine scored the same as the
+   unlimited-hardware answer (two of them at int8 or int4, which was not measured; scores as
+   the providers served them, since nothing was run on a 64 GB machine).
 
 **Start where you are:**
 

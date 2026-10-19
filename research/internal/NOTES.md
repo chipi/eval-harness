@@ -2725,3 +2725,41 @@ recorded adapter file hash is the earlier file's; the scorer's own code hash
 `calibrate.py` now also records how UniEval's inputs differ from ours (1,528 of 1,600
 summaries the same text, the other 72 only bracket tokens), and the checker reads the
 report against that.
+
+### 2026-10-19 · 68 — Second review of the whole story: what the headlines said beyond the data
+
+Two independent reviews read the six-experiment story end to end: one SummEval as a whole,
+one the site and the synthesis against all six reports. Nothing was contradicted and every
+recomputed number held; what they found was headline wording that said more than the
+reports did. All of it was in published copy before this branch.
+
+1. **"Beats every LLM" never said how the LLMs were run.** One prompt, no examples,
+   temperature 0, reasoning off, public benchmarks with contamination unmeasured. The
+   synthesis's limits now start with that, and the headlines say "as run here".
+2. **"Statistical tie" read as "equal".** It means not separated at 100–280 items. On AG
+   News a paid arm five points behind the leader is still a tie; recommendation 5 now says
+   so, and the site's labels say what the test can and cannot show.
+3. **"The dearest model is never the best, 6/6" is five times one model** (`anthropic_l`)
+   and on SciFact the dearest of only the twelve cheapest. The best hosted arm was among
+   the four dearest in three of six (3rd of 24 on AG News, 2nd on Few-NERD, 4th on
+   SummEval; recomputed here — the review had said 2nd on AG News). "Price stops predicting
+   quality" is gone from the headline copy, and SummEval, where price predicts quality most,
+   no longer "confirms the price findings".
+4. **The Few-NERD "matched pair" was not one.** `span_marker` runs on a RoBERTa encoder,
+   `gliner` on DeBERTa-v3; "+0.3134 from exposure alone" is exposure plus architecture. The
+   BART CNN/DM-vs-XSum pair is the matched one.
+5. **"A 64 GB machine matched the answer"** — nothing was run on a 64 GB machine; it is the
+   best model that fits, scored as the provider served it.
+6. **"Only on text like the text it was trained on"** — SciFact's `e5_base` ties without
+   SciFact. Now "the clearest wins were on text like it".
+7. SummEval: the 23-of-24 result is on mean τ (on coherence UniEval is above seven
+   judges); "six-way tie" is relative to the leader (from `gemma_l` the set includes
+   `glm_m`); UniEval gets a human reference the judges never see; summary order is fixed.
+
+**Paid run, $0.10, approved:** `gemma_l` re-run on UniEval's cased text
+(`data/runs-pair/`) scores 0.5510 against 0.5384, +0.0126, p 0.0141. OpenRouter served it
+from SambaNova, the original from CoreWeave, so the gap is text plus provider. It cost 3.6×
+the original run for the same work — the provider, not the text. My estimate was ~$0.03.
+
+Mine in this round: the synthesis still said "ten calibration figures" after I added the
+eleventh, and I dated the UniEval runs 2026-10-19; they ran on 2026-10-18 (UTC).
