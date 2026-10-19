@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the instrument against the literature: ROUGE against the SummEval experts.
+"""Check the instrument against the literature: ROUGE and UniEval against the SummEval experts.
 
     examples/summeval-judging/.venv/bin/python examples/summeval-judging/calibrate.py
 
@@ -12,9 +12,11 @@ WHY NO NEW RUN
 
 WHAT IT COMPARES
   Kendall tau-b per article against the expert means, averaged over the four dimensions,
-  for ROUGE-1, ROUGE-2 and ROUGE-L F1 (each averaged over the 11 references), against
-  G-Eval (Liu et al. 2023), Table 1. The interval is the normal-approximation 95%
-  half-width over the 100 per-article values.
+  for ROUGE-1, ROUGE-2 and ROUGE-L F1 (each averaged over the 11 references) and for
+  UniEval on UniEval's own published inputs (the `unievalpub` arm), against G-Eval (Liu
+  et al. 2023), Table 1. The interval is the normal-approximation 95% half-width over the
+  100 per-article values. The `unieval` arm, on this experiment's inputs, is not a
+  calibration row: its inputs differ from the published protocol on purpose.
 
 WHY AVERAGED OVER THE REFERENCES
   Each article has 11 human references, and the paper does not say how it combined them.
@@ -44,7 +46,8 @@ SOURCE = "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensio
 #: coherence, consistency, fluency, relevance. Read from arXiv 2303.16634v3, Table 1.
 PUBLISHED = {"rouge1": (0.150, 0.126, 0.130, 0.094, 0.252),
              "rouge2": (0.161, 0.139, 0.155, 0.128, 0.219),
-             "rougeL": (0.128, 0.099, 0.092, 0.084, 0.237)}
+             "rougeL": (0.128, 0.099, 0.092, 0.084, 0.237),
+             "unievalpub": (0.377, 0.442, 0.371, 0.371, 0.325)}
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 #: For protocol differences the paper leaves unstated: how the 11 references are combined
 #: and which ROUGE implementation and stemming were used. The same allowance as the other
@@ -126,12 +129,13 @@ def main() -> int:
                      "published": pub, "source": SOURCE,
                      "verdict": "consistent" if ok else "differs", "by_dimension": dims}
     path = cal.write("summeval", {
-        "what": "ROUGE-1/2/L F1 arms on all 100 SummEval articles (the committed runs), "
+        "what": "ROUGE-1/2/L F1 and UniEval (published inputs) arms on all 100 SummEval "
+                "articles (the committed runs), "
                 "Kendall tau-b against the expert means",
         "split_rows": 100, "arms": arms,
         "rouge1_reference_combination": reference_combinations()})
     for arm, r in arms.items():
-        print(f"  {arm:7s} tau {r['value']:.4f} +/-{r['ci95']:.4f}  vs {r['published']:.3f} published  {r['verdict']}")
+        print(f"  {arm:10s} tau {r['value']:.4f} +/-{r['ci95']:.4f}  vs {r['published']:.3f} published  {r['verdict']}")
         for d, x in r["by_dimension"].items():
             print(f"          {d:11s} {x['value']:.4f} +/-{x['ci95']:.4f} vs {x['published']:.3f}"
                   f"  ({x['value'] - x['published']:+.4f})  {x['verdict']}")

@@ -2682,3 +2682,30 @@ and they are recorded here rather than folded into it.
 **The lesson.** Each review round found fewer and smaller things, and every round still
 found something in text written to fix the previous round. A sentence written in a hurry to
 close a finding is as unreviewed as any other.
+
+### 2026-10-19 · 67 — UniEval, the free evaluator trained for the task, and the finding it narrowed
+
+SummEval shipped (entry 65) without UniEval, the free trained evaluator in G-Eval's table,
+and every page said "free scorers measured" so that its result could not falsify the copy.
+It ran on 2026-10-18 on the EVO-X3, twice: on the text every other arm sees (`unieval`,
+τ 0.3476) and on UniEval's own published SummEval inputs (`unievalpub`, τ 0.3717). The
+second reproduces G-Eval's 0.377 on every dimension and is a calibration row.
+
+What it changed:
+
+1. **"Every judge beats every free scorer" is no longer true.** Both arms are separated
+   from 31 of their 32 opponents; the exception is `llama_s`, the weakest judge (p 0.18 and
+   0.70). 23 of the 24 judges beat every free scorer. Every judge still beats BARTScore.
+2. **The best free scorer is UniEval, not BARTScore**: 64% of one expert's agreement on its
+   own inputs (60% on ours), against BARTScore's 44% and the best judges' 93%.
+3. **Synthesis finding 3 was wrong as worded.** It said a free arm "never loses once a free
+   arm trained for the task can run". UniEval is trained for the task and loses. The line is
+   now drawn at training on the task's own labels — UniEval's are rule-based corruptions,
+   not judgements — and the synthesis says that distinction was drawn after the result,
+   from one case.
+4. **The inputs alone move UniEval by 0.0241 τ, separated (p 0.0002).** The two files hold
+   the same articles, summaries and reference, cased and tokenised differently. Which part
+   does it is not tested.
+
+Not settled: UniEval's training data is CNN/DailyMail and its paper does not name the
+split, so it may have seen these articles' text; its weights state no licence.

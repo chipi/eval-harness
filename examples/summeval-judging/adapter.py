@@ -294,8 +294,137 @@ def _bartscore(text: str, params: Dict[str, Any]) -> Result:
                   extra={"input_truncated": 1.0 if full > 1024 else 0.0})
 
 
+# ── UniEval (Zhong et al. 2022): a T5 evaluator trained for these four dimensions ─────
+# Re-implemented from its MIT code (maszhongming/UniEval at d33e7b6c, metric/scorer.py and
+# metric/evaluator.py), not imported: each dimension is a yes/no question, the score is
+# P("Yes") / (P("Yes") + P("No")) at the first decoder step, inputs truncated to 1,024
+# tokens, and consistency and fluency are scored per sentence (nltk's sent_tokenize) and
+# averaged. `inputs` picks the text it scores:
+#   ours       this experiment's items -- the text every other arm saw -- with the first of
+#              the 11 references for relevance (UniEval asks for one);
+#   published  UniEval's own SummEval inputs (its reproduce/ file, cased text and its one
+#              reference), each summary matched to its row through the original release.
+SOURCES = HERE.parents[1] / "harness" / "data" / "sources"
+UNIEVAL_INPUTS_URL = ("https://raw.githubusercontent.com/maszhongming/UniEval/"
+                      "d33e7b6cfebe97b2bafe435adbd818230d5a416a/reproduce/data/summarization/summeval.json")
+ORIGINAL_URL = "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl"
+_UE_QUESTIONS = {
+    "coherence": "question: Is this a coherent summary to the document? </s> summary: {out} </s> document: {src}",
+    "consistency": "question: Is this claim consistent with the document? </s> claim: {out} </s> document: {src}",
+    "fluency": "question: Is this a fluent paragraph? </s> paragraph: {out}",
+    "relevance": "question: Is this summary relevant to the reference? </s> summary: {out} </s> reference: {ref}",
+}
+_UE: Any = None
+_UE_KEY: Optional[tuple] = None
+_UE_PUBLISHED: Any = None
+
+
+def _cached(path: Path, url: str) -> Path:
+    if not path.is_file():
+        import urllib.request  # noqa: PLC0415
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with urllib.request.urlopen(url, timeout=120) as r:
+            path.write_bytes(r.read())
+    return path
+
+
+def _sentences(text: str) -> List[str]:
+    import nltk  # noqa: PLC0415
+
+    data = SOURCES / "summeval_nltk"
+    if str(data) not in nltk.data.path:
+        nltk.data.path.insert(0, str(data))
+    try:
+        nltk.data.find("tokenizers/punkt_tab")
+    except LookupError:
+        nltk.download("punkt_tab", download_dir=str(data), quiet=True)
+    return nltk.sent_tokenize(text) or [text]
+
+
+def _unieval_model(params: Dict[str, Any]) -> Any:
+    global _UE, _UE_KEY
+    key = (params.get("model"), params.get("revision"))
+    if _UE_KEY != key:
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer  # noqa: PLC0415
+
+        kw = {"revision": params["revision"]} if params.get("revision") else {}
+        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
+        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()
+        _UE, _UE_KEY = (tok, model, tok("Yes")["input_ids"][0], tok("No")["input_ids"][0]), key
+    return _UE
+
+
+def _unieval_score(inputs: List[str], params: Dict[str, Any]) -> List[float]:
+    """UniEval's UniEvaluator.score: P(Yes) / (P(Yes) + P(No)), batched."""
+    import torch  # noqa: PLC0415
+
+    tok, model, yes, no = _unieval_model(params)
+    bs, out = int(params.get("batch_size", 8)), []
+    with torch.no_grad():
+        for i in range(0, len(inputs), bs):
+            src = tok(inputs[i:i + bs], max_length=1024, truncation=True, padding=True, return_tensors="pt")
+            tgt = tok(["No"] * len(inputs[i:i + bs]), return_tensors="pt", padding=True)["input_ids"][:, :1]
+            logits = model(input_ids=src["input_ids"], attention_mask=src["attention_mask"], labels=tgt).logits
+            p = torch.softmax(logits.view(-1, model.config.vocab_size), dim=1)
+            out += [float(a / (a + b)) for a, b in zip(p[:, yes], p[:, no])]
+    return out
+
+
+def _unieval_published() -> Any:
+    """(our normalised summary text -> {(doc, model_id)}, (doc, system_id) -> UniEval row)."""
+    global _UE_PUBLISHED
+    if _UE_PUBLISHED is None:
+        norm = lambda t: " ".join(t.split()).lower()  # noqa: E731
+        by_text: Dict[str, set] = {}
+        orig = _cached(SOURCES / "summeval_original" / "model_annotations.aligned.jsonl", ORIGINAL_URL)
+        for line in orig.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                by_text.setdefault(norm(r["decoded"]), set()).add((r["id"].split("-test-")[1], r["model_id"]))
+        rows = {}
+        ue = _cached(SOURCES / "summeval_unieval" / "summeval.json", UNIEVAL_INPUTS_URL)
+        for r in json.loads(ue.read_text(encoding="utf-8")):
+            rows[(r["doc_id"].split("-test-")[1], r["system_id"])] = r
+        _UE_PUBLISHED = (norm, by_text, rows)
+    return _UE_PUBLISHED
+
+
+def _unieval(text: str, params: Dict[str, Any]) -> Result:
+    item = _item(text)
+    if params.get("inputs") == "published":
+        norm, by_text, rows = _unieval_published()
+        keys = [by_text.get(norm(s), set()) for s in item["summaries"]]
+        docs = set.intersection(*[{d for d, _ in k} for k in keys]) if all(keys) else set()
+        if len(docs) != 1:
+            raise RuntimeError(f"this item matches {len(docs)} articles in the original release")
+        doc = docs.pop()
+        picked = [rows[(doc, sorted(m for d, m in k if d == doc)[0])] for k in keys]
+        srcs = [r["source"] for r in picked]
+        outs = [r["system_output"] for r in picked]
+        refs = [r["reference"] for r in picked]
+    else:
+        srcs = [item["article"]] * N_SUMMARIES
+        outs = list(item["summaries"])
+        refs = [item["references"][0]] * N_SUMMARIES
+    scores: Dict[str, List[float]] = {}
+    for d in ("coherence", "relevance"):
+        scores[d] = _unieval_score([_UE_QUESTIONS[d].format(out=o, src=s, ref=r)
+                                    for o, s, r in zip(outs, srcs, refs)], params)
+    for d in ("consistency", "fluency"):
+        sents = [_sentences(o) for o in outs]
+        flat = _unieval_score([_UE_QUESTIONS[d].format(out=x, src=s, ref="")
+                               for ss, s in zip(sents, srcs) for x in ss], params)
+        vals, k = [], 0
+        for ss in sents:
+            vals.append(sum(flat[k:k + len(ss)]) / len(ss))
+            k += len(ss)
+        scores[d] = vals
+    return Result(output=json.dumps({d: [round(v, 10) for v in scores[d]] for d in DIMS}), cost_usd=0.0)
+
+
 PROVIDERS = {"litellm": _litellm, "rouge": _rouge, "coverage": _coverage,
-             "bartscore": _bartscore, "length": _length, "random": _random}
+             "bartscore": _bartscore, "unieval": _unieval, "length": _length, "random": _random}
 
 
 def call_system(text: str, params: Dict[str, Any]) -> Result:
@@ -321,6 +450,12 @@ def warmup(params: Dict[str, Any]) -> None:
     provider = params.get("provider", "litellm")
     if provider == "bartscore":
         _bartscore(_SAMPLE, params)
+    elif provider == "unieval":
+        _unieval_model(params)
+        _sentences("A first sentence. A second one.")
+        if params.get("inputs") == "published":
+            _unieval_published()
+        _unieval_score([_UE_QUESTIONS["fluency"].format(out="The council approved the budget.")], params)
     elif provider == "coverage":
         _summarisation_scorer()
     elif provider == "litellm":
@@ -348,6 +483,26 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
                                   device="cpu", precision="fp32",
                                   loaded_model=_BART[1] if _BART is not None and _BART_KEY == key else None)
         fp["code_sha256"] = code_digest(_bartscore)
+        return fp
+    if provider == "unieval":
+        import hashlib  # noqa: PLC0415
+
+        import nltk  # noqa: PLC0415
+        from hf_identity import hf_model_fingerprint  # noqa: PLC0415
+
+        key = (params.get("model"), params.get("revision"))
+        fp = hf_model_fingerprint(params["model"], revision=params.get("revision"),
+                                  device="cpu", precision="fp32",
+                                  loaded_model=_UE[1] if _UE is not None and _UE_KEY == key else None)
+        fp["code_sha256"] = code_digest(_unieval, consts={
+            "score": code_digest(_unieval_score), "questions": json.dumps(_UE_QUESTIONS, sort_keys=True)})
+        fp["inputs"] = params.get("inputs", "ours")
+        fp["nltk"] = nltk.__version__
+        fp["weights_licence"] = "not stated on the model card (MingZhong/unieval-sum)"
+        if fp["inputs"] == "published":
+            ue = SOURCES / "summeval_unieval" / "summeval.json"
+            fp["unieval_inputs_url"] = UNIEVAL_INPUTS_URL
+            fp["unieval_inputs_sha256"] = hashlib.sha256(ue.read_bytes()).hexdigest() if ue.is_file() else None
         return fp
     alias = params.get("model")
     upstream, id_source = gateway.resolve_upstream(alias)

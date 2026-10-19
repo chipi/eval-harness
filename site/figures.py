@@ -29,7 +29,7 @@ EXPERIMENTS = [e for e in json.loads((ROOT / "examples" / "experiments.json").re
                ["experiments"] if e.get("site")]
 
 #: Arms that are not models at all — calibration floors for the scorer. On SummEval that
-#: is every free scorer but BARTScore: ROUGE, `coverage` and length are rules, not models.
+#: is every free scorer but BARTScore and UniEval: ROUGE, `coverage` and length are rules, not models.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k",
              "random_rank", "first20", "length", "rouge1", "rouge2", "rougeL", "coverage"}
 

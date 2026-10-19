@@ -1,8 +1,8 @@
-# Evaluation report — 24 LLM judges and seven free scorers on SummEval
+# Evaluation report — 24 LLM judges and nine free scorers on SummEval
 
 **Dataset** `summeval_100` · 100 CNN/DailyMail test articles (87 DailyMail, 13 CNN) · 16 machine summaries each · expert scores on four dimensions
-**Protocol** Kendall τ-b per article between a judge's scores and the expert means, averaged over coherence, consistency, fluency and relevance · Spearman ρ beside it · calibration: ROUGE-1 τ 0.1487 vs G-Eval's published 0.150 — [docs/PROTOCOL.md](../docs/PROTOCOL.md)
-**Arms** 24 hosted LLM judges (8 vendors × 3 tiers, one replacement) · BARTScore · ROUGE-1/2/L · this repository's `coverage` · `length` · `random`
+**Protocol** Kendall τ-b per article between a judge's scores and the expert means, averaged over coherence, consistency, fluency and relevance · Spearman ρ beside it · calibration: ROUGE-1 τ 0.1487 vs G-Eval's published 0.150, UniEval 0.3717 vs 0.377 — [docs/PROTOCOL.md](../docs/PROTOCOL.md)
+**Arms** 24 hosted LLM judges (8 vendors × 3 tiers, one replacement) · UniEval, a trained evaluator, on two sets of inputs · BARTScore · ROUGE-1/2/L · this repository's `coverage` · `length` · `random`
 **Design** 1 pass per arm · one call per article, all 16 summaries in one prompt · temperature 0, reasoning off, `max_tokens` 1500 · **$7.03 billed**
 **Date** 2026-10-18 · **Harness** [`../harness`](../harness) · **Example** [`../examples/summeval-judging`](../examples/summeval-judging)
 **Costs** are what the provider billed (`usage.cost`), not the price in each config — see §6
@@ -13,8 +13,9 @@
 > experts did. It is the LLM-as-judge question every silver reference and every automated
 > eval pipeline rests on, made measurable.
 
-> **This is the sixth experiment.** It is also the first where the free option lost: every
-> hosted judge is separated from, and ahead of, the best free scorer.
+> **This is the sixth experiment.** It is also the first where the free option lost: the
+> best free scorer, UniEval — an evaluator trained for these four dimensions — is separated
+> below 23 of the 24 judges and ties only the weakest.
 
 ---
 
@@ -24,20 +25,26 @@
 
 | the choice | what the data says |
 |---|---|
-| **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**, BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); BARTScore reaches 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries in one prompt, which a per-article rank correlation rewards (§3.7). |
-| **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 25 arms. |
+| **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**; UniEval, the best free scorer, **0.3717** on its own inputs (0.3476 on this experiment's), BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); UniEval reaches 64% (60% on this experiment's inputs), BARTScore 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries in one prompt, which a per-article rank correlation rewards (§3.7). |
+| **Which judge?** | **A six-way tie at the top**: `openai_l`, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 27 arms. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
-| **Do I need an LLM here at all?** | **Yes, against every free scorer measured** — the first of six experiments where every free arm is separated below every LLM. Every one of the 24 judges is separated from BARTScore (§3.3). No evaluator trained to judge summaries was run; UniEval, the free one G-Eval reports, has a published τ of 0.377, which would put it above the weakest judge here (§7). |
+| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges and cannot be told apart from the weakest, `llama_s` (§3.3). The first of six experiments where no free arm is first, or tied for first. |
 | **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there. But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
 
 ### What this experiment specifically found
 
-- **Every hosted judge beats every free scorer measured.** In the paired test, BARTScore is
-  separated from all 24 judges, all of them ahead (`make family-test`, Holm-corrected, §3.3).
-  The free scorers here are metrics and one summariser; none was trained to judge (§7).
-  Against the weakest judge, `llama_s` (τ 0.3533), BARTScore wins only 33 of 100 articles.
+- **23 of the 24 judges beat every free scorer, including one trained for the task.**
+  UniEval ([Zhong et al. 2022](https://arxiv.org/abs/2210.07197)), a T5 evaluator trained
+  for these four dimensions, is the best free scorer: τ 0.3717 on its own published inputs,
+  0.3476 on this experiment's. On either, the paired test separates it below 23 judges and
+  cannot separate it from the weakest, `llama_s` (τ 0.3533; p 0.18 and 0.70, Holm-corrected,
+  §3.3). Every judge is separated from, and ahead of, BARTScore and every reference metric.
+- **How the text is written moves the trained evaluator.** The two UniEval arms score the
+  same articles, summaries and reference, cased and tokenised differently; that alone is
+  0.0241 τ, separated (p 0.0002, §3.3). Its calibration row, on its own inputs, reproduces
+  G-Eval's 0.377 (§5).
 - **The best judges come close to a single expert, and stay measurably below one.** Scored
   against the mean of two experts, as one expert is against the other two, the best judges
   reach 93% of a human's agreement (95% interval 89–97%; the gap to the expert excludes zero,
@@ -77,9 +84,11 @@ summaries, and a request for 1–5 scores per summary on the four dimensions, as
 The judge never sees the human reference summaries.
 
 **Arms.** The same 24 hosted models as the other experiments — eight vendors, three price
-tiers — with one replacement (§6), plus seven free scorers that need no model call:
-BARTScore (`facebook/bart-large-cnn`, local, CPU), ROUGE-1/2/L and this repository's
-`coverage` against the 11 human references, the summary's length, and seeded random scores.
+tiers — with one replacement (§6), plus nine free scorers that need no model call:
+UniEval (`MingZhong/unieval-sum`, local, CPU), run twice — on this experiment's text and on
+UniEval's own published SummEval inputs (§3.3) — BARTScore (`facebook/bart-large-cnn`, local,
+CPU), ROUGE-1/2/L and this repository's `coverage` against the 11 human references, the
+summary's length, and seeded random scores.
 
 ## 2. How a judge is scored
 
@@ -124,25 +133,28 @@ any: `gemma_m` parsed three of four dimensions on two articles, and `qwen_s` was
 | 21 | `gemma_s` | Gemma 3 27B | 0.4196 | 0.4623 | $0.0279 | 11,572 |
 | 22 | `openai_s` | GPT-5.4 mini | 0.4111 | 0.4614 | $0.2124 | 1,551 |
 | 23 | `llama_m` | Llama 3.3 70B | 0.4064 | 0.4553 | $0.0517 | 4,834 |
-| 24 | `llama_s` | Llama 4 Scout | 0.3533 | 0.3976 | $0.0297 | 7,141 |
-| 25 | `bartscore` | BART-large-CNN, local | **0.2562** | 0.3246 | $0 | 15,662 |
-| 26 | `rouge2` | ROUGE-2 F1 | 0.1578 | 0.2009 | $0 | 181 |
-| 27 | `rouge1` | ROUGE-1 F1 | 0.1487 | 0.1896 | $0 | 196 |
-| 28 | `rougeL` | ROUGE-L F1 | 0.1435 | 0.1842 | $0 | 274 |
-| 29 | `coverage` | this repo's summarisation metric | 0.1011 | 0.1303 | $0 | 892 |
-| 30 | `length` | word count | 0.0388 | 0.0476 | $0 | 0 |
-| 31 | `random` | seeded random | 0.0025 | 0.0029 | $0 | 0 |
+| 24 | `unievalpub` | UniEval, its own published inputs, local | **0.3717** | 0.4671 | $0 | 44,694 |
+| 25 | `llama_s` | Llama 4 Scout | 0.3533 | 0.3976 | $0.0297 | 7,141 |
+| 26 | `unieval` | UniEval, this experiment's inputs, local | 0.3476 | 0.4387 | $0 | 41,676 |
+| 27 | `bartscore` | BART-large-CNN, local | 0.2562 | 0.3246 | $0 | 15,662 |
+| 28 | `rouge2` | ROUGE-2 F1 | 0.1578 | 0.2009 | $0 | 181 |
+| 29 | `rouge1` | ROUGE-1 F1 | 0.1487 | 0.1896 | $0 | 196 |
+| 30 | `rougeL` | ROUGE-L F1 | 0.1435 | 0.1842 | $0 | 274 |
+| 31 | `coverage` | this repo's summarisation metric | 0.1011 | 0.1303 | $0 | 892 |
+| 32 | `length` | word count | 0.0388 | 0.0476 | $0 | 0 |
+| 33 | `random` | seeded random | 0.0025 | 0.0029 | $0 | 0 |
 
-Hosted latency is mostly waiting on the provider; BARTScore's is a CPU forward pass per
-summary on the machine that measured it.
+Hosted latency is mostly waiting on the provider; BARTScore's and UniEval's are CPU forward
+passes on the machine that measured each — UniEval asks one question per summary for
+coherence and relevance and one per sentence for consistency and fluency.
 
 **Is the ordering real?** Yes: the global permutation test on within-article ranks gives
-p = 0.0002, and 289 of 465 pairs are distinguishable (`make leaderboard`).
+p = 0.0002, and 334 of 528 pairs are distinguishable (`make leaderboard`).
 
 ### 3.2 A six-way tie at the top
 
 The leader tested against every other arm on the same articles — paired sign-flip
-permutation, Holm step-down over the 30 opponents (`make family-test A=se_openai_l_n100_v1
+permutation, Holm step-down over the 32 opponents (`make family-test A=se_openai_l_n100_v1
 METRIC=tau`):
 
 | tied with the leader | Δτ vs leader | articles the leader wins | p | Holm threshold |
@@ -153,7 +165,7 @@ METRIC=tau`):
 | `qwen_s` | −0.0205 | 61 of 100 | 0.0112 | 0.0125 |
 | `qwen37max` | −0.0193 | 58 of 100 | 0.0108 | 0.0100 |
 
-`openai_l` is separated from the other 25. Two members sit on the boundary: `qwen37max`
+`openai_l` is separated from the other 27. Two members sit on the boundary: `qwen37max`
 (p 0.0108 against a threshold of 0.0100) and `qwen_s` (0.0112 against 0.0125) — a few
 articles either way would move them in or out. `glm_m` is the nearest arm outside
 (p 0.0072, threshold 0.0083).
@@ -172,20 +184,47 @@ The cheapest member of the tie is `gemma_l` at $0.0278, 1/23 of the leader and 1
 `anthropic_l`. A tie is not proof of equality — it is a difference this sample cannot
 detect — so it makes `gemma_l` the first candidate, not the answer.
 
-### 3.3 Every judge beats every free scorer
+### 3.3 The best free scorer, a trained evaluator, ties only the weakest judge
 
-BARTScore tested against all 30 other arms (`make family-test A=se_bartscore_n100_v1
-METRIC=tau`): separated from all 30, behind every one of the 24 judges and ahead of every
-other free scorer. The weakest judge, `llama_s`, leads it by 0.0971; BARTScore wins only 33
-of 100 articles against it.
+UniEval ([Zhong et al. 2022](https://arxiv.org/abs/2210.07197)) is a T5-large evaluator
+trained to answer one yes/no question per dimension, for exactly these four dimensions. Its
+training data is built from CNN/DailyMail: reference summaries as the positive examples, and
+rule-based corruptions of them as the negative ones. Its paper uses SummEval to evaluate it,
+not to train it, so it never saw these expert scores. It is the free trained evaluator in
+G-Eval's table, and it runs here twice: on the text every other arm saw (`unieval`), and on
+UniEval's own published SummEval inputs (`unievalpub`), the protocol its published figures
+come from (§5).
+
+Each was tested against the other 32 arms (`make family-test A=se_unieval_n100_v1
+METRIC=tau`, and the same for `unievalpub`):
+
+| arm | τ | Δτ vs `llama_s`, the weakest judge | articles UniEval wins | p | separated from |
+|---|---|---|---|---|---|
+| `unievalpub` | 0.3717 | +0.0184 | 56 of 100 | 0.1848 | 31 of 32, all but `llama_s` |
+| `unieval` | 0.3476 | −0.0057 | 51 of 100 | 0.7048 | 31 of 32, all but `llama_s` |
+
+So 23 of the 24 judges are separated from, and ahead of, the best free scorer, and the
+weakest judge cannot be told apart from it under either set of inputs. Every judge,
+`llama_s` included, is separated from BARTScore, the best free scorer not trained to judge
+(`make family-test A=se_bartscore_n100_v1 METRIC=tau`: separated from all 32). `llama_s`
+leads BARTScore by 0.0971, and BARTScore wins only 33 of 100 articles against it. Both
+UniEval arms are separated above BARTScore (by 0.0914 and 0.1155) and every reference metric.
 
 This is the first of the six experiments where no free arm measured is first, or not
-separable from first. In the other five, a free local model was. Here no arm measured was
-trained to judge summaries — none was fine-tuned on SummEval, and UniEval, a free trained
-evaluator, was not run — and a model that scores only how likely the summary is given the
-article (BARTScore) is far behind one asked to assess it.
+separable from first. In the other five, a free local model was. Here the best free arm was
+trained for these very dimensions, and it sits 0.168 below the leader: 64% of one expert's
+agreement against the best judges' 93% (§3.7).
 
-Among the free scorers, BARTScore, which never sees a reference, beats every reference-based metric; plain ROUGE-1
+**The inputs move UniEval.** The two UniEval arms score the same articles, summaries and
+reference — 1,528 of the 1,600 summaries match word for word once case and punctuation are
+ignored — written differently. UniEval's file has a tokenised article and sentence-cased
+summaries. This experiment's has the article as published and the summaries lower-cased, as
+SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
+wins 66 of 100 articles). Which part of it does the work is not tested. The LLM judges were
+given the lower-cased summaries too, and how they would score the cased ones is not
+measured, so the 0.3717 is UniEval at its best and the 0.3476 is UniEval on equal terms.
+
+Among the free scorers not trained to judge, BARTScore, which never sees a reference, beats every reference-based metric; plain ROUGE-1
 beats this repository's `coverage` (0.1011, against ROUGE-1's 0.1487), most of the gap in consistency
 and fluency; and the experts were not rewarding length (τ 0.0388).
 
@@ -224,8 +263,8 @@ from the committed runs):
 | 20 | 0.902 | 0.837 | 21% |
 | 50 | 0.960 | 0.933 | 12% |
 
-With all 31 arms included (`make rank-stability METRIC=tau`) ρ is higher still (0.953 at 20
-per half), because the free scorers sit far below the judges and are easy to agree on.
+With all 33 arms included (`make rank-stability METRIC=tau`) ρ is higher still (0.960 at 20
+per half), because most free scorers sit far below the judges and are easy to agree on.
 
 The order of the judges is far more stable than the summarisation experiment's. The same
 24 hosted models, ranked there by the same split-half method at 20 articles per half, agree
@@ -271,7 +310,9 @@ over which expert is left out:
 | `gemma_l` | 0.5195 | **93%** |
 | `openai_l` | 0.5181 | 93% |
 | `anthropic_l` | 0.5083 | 91% |
+| `unievalpub` (UniEval, its own inputs) | 0.3589 | 64% |
 | `llama_s` (the weakest judge) | 0.3423 | 61% |
+| `unieval` (UniEval, this experiment's inputs) | 0.3352 | 60% |
 | `bartscore` | 0.2447 | 44% |
 | `rouge1` | 0.1454 | 26% |
 | `coverage` | 0.0955 | 17% |
@@ -297,8 +338,8 @@ the judges falling short or the experts' own noise is not something this sample 
 
 ## 4. Discussion
 
-**For anyone using an LLM as a judge.** On this task a hosted judge is clearly better than
-any free metric, and a cheap open-weight one cannot be told apart from the dearest
+**For anyone using an LLM as a judge.** On this task almost any hosted judge is clearly
+better than any free scorer, a trained evaluator included, and a cheap open-weight one cannot be told apart from the dearest
 proprietary ones on this sample. The practical reading: use a judge, start with the cheapest
 member of the top group, and check it against a small set of human judgements on your own
 outputs — which is exactly what this experiment does at scale.
@@ -326,8 +367,14 @@ over articles (±0.0322); the coherence gap (0.054) does not (±0.0422), and pas
 the 0.02 allowance this repository's rule adds for protocol differences (`calibrate.py`,
 as for NER and SciFact). So it counts as consistent by the rule and is not a reproduction:
 G-Eval scored these same 100 articles, so a gap of that size is a difference of protocol rather than of sample; the paper
-does not say which ROUGE-L it ran, and this is `rouge_score`'s `rougeL` with stemming. The
-three rows, with their intervals, are in
+does not say which ROUGE-L it ran, and this is `rouge_score`'s `rougeL` with stemming.
+
+UniEval reproduces on its own inputs: **τ 0.3717 against G-Eval's 0.377** (ρ 0.4671 against
+0.474), inside the interval (±0.0221) on the average and on every dimension, the largest gap
+consistency's 0.0145. On this experiment's inputs it scores 0.3476, outside that interval,
+which is why the calibration row is the published-input arm and the gap is reported as a
+finding about the inputs (§3.3), not as an error. The
+four rows, with their intervals, are in
 [`docs/evidence/calibration/summeval.json`](../docs/evidence/calibration/summeval.json),
 written by `examples/summeval-judging/calibrate.py`.
 BARTScore comes out at τ 0.2562 against G-Eval's 0.305; G-Eval does not state its variant,
@@ -355,12 +402,17 @@ between this experiment and the earlier five mix September and October prices.
 
 ## 7. NOT covered, NOT measured, NOT verified
 
-- **No evaluator trained to judge summaries was run.** The free arms are reference metrics
-  (ROUGE, `coverage`), a length and a random floor, and BARTScore, a summariser scored by
-  likelihood; none was trained to judge summaries. UniEval, the free trained evaluator in
-  G-Eval's table, reports τ 0.377 (ρ 0.474) there, which would put it above the weakest
-  judge here (`llama_s`, 0.3533), though under G-Eval's protocol, not this one. "Every judge beats every free scorer" is about the seven measured. UniEval is
-  the next arm to run.
+- **One trained evaluator.** UniEval is the only free arm trained to judge summaries.
+  "Free scorers measured" means these nine; an evaluator fine-tuned on SummEval's own
+  scores would need articles held out from its training to be measured fairly here, and
+  none was run.
+- **UniEval may have seen these articles.** Its training data is built from CNN/DailyMail,
+  and its paper does not say from which split; SummEval's articles are from the CNN/DailyMail
+  test split. It did not see the expert scores. SummEval is also the benchmark its authors
+  reported on.
+- **UniEval's weights state no licence.** The model card of `MingZhong/unieval-sum` gives
+  none; its code is MIT. It is run here by pinned revision, and nothing of it is
+  redistributed.
 
 - **n = 100 articles**, below the usual 200, and every summary is from a 2019-era system.
   Modern summaries are more fluent; a judge's skill at catching 2019 failures may not
@@ -393,7 +445,7 @@ between this experiment and the earlier five mix September and October prices.
 
 ```bash
 make data EXP=summeval                     # environment, fetch, hash check
-make reproduce EXP=summeval LEVEL=local    # the seven free arms, $0
+make reproduce EXP=summeval LEVEL=local    # the nine free arms, $0
 make reproduce EXP=summeval LEVEL=hosted   # the 24 judges, one LiteLLM or OpenRouter key
 cd harness && make leaderboard DATASET_ID=summeval_100
 make family-test DATASET_ID=summeval_100 A=se_openai_l_n100_v1 AGAINST=se_ METRIC=tau

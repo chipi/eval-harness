@@ -564,9 +564,10 @@ def home(f: dict) -> str:
          "same data, same scoring, same test.",
          f"A free model that needs no GPU was first, or not separable from first, in "
          f"{f['local_first_or_tied']} of {len(exps)} — but only on text like the text it was "
-         "trained on. Where no free model measured was trained for the task, the LLM earned "
-         "its bill: " + q("judging summaries, the best LLM judges reach 93% of a human expert's "
-                          "agreement, and the best free metric measured 44%.", JUDGE)
+         "trained on, with labels made for the task. Where the free model trained for the task "
+         "learned from synthetic labels, the LLM earned its bill: "
+         + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement, "
+             "and UniEval, the best free scorer, 64%.", JUDGE)
          + " One task, so the direction, not the size.",
          "experiments.html#experiments", "Per experiment"),
         ("Own it or rent it?",
@@ -736,7 +737,7 @@ def landing(f: dict) -> str:
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>{q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>But only on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
-    <li><div><h3>Where no free model measured was trained for your task, an LLM can earn its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; BARTScore, the best free metric measured, reaches 44%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task, and a free evaluator trained for it (UniEval) was not run: the direction, not the size.</p></div></li>
+    <li><div><h3>Where the free model trained for your task has no real labels, an LLM can earn its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement; UniEval, the best free scorer and an evaluator trained for the task on synthetic labels, reaches 64%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -816,7 +817,7 @@ CARD = {
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the top is a group of nineteen, and the gold label is sometimes the error.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
     "scifact": "Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.",
-    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement, far ahead of every free metric measured, and an open-weight judge ties the leader.",
+    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement, far ahead of a free evaluator trained for the task (64%), and an open-weight judge ties the leader.",
 }
 
 
@@ -840,9 +841,9 @@ def findings_for(x: dict, f: dict) -> list:
     require(s != "few-nerd" or x["n_tied"] == 0, "Few-NERD: span_marker separated from all")
     require(s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
             "SciFact: twelve tied, including e5_base")
-    require(s != "summeval" or (max(a["rank"] for a in x["arms"] if a["kind"] == "hosted")
-                                < min(a["rank"] for a in x["arms"] if a["kind"] != "hosted")),
-            "SummEval: every hosted judge ranks above every free arm")
+    require(s != "summeval" or sum(a["rank"] < min(b["rank"] for b in x["arms"] if b["kind"] != "hosted")
+                                   for a in x["arms"] if a["kind"] == "hosted") == 23,
+            "SummEval: 23 of the 24 hosted judges rank above every free arm")
     require(s != "summeval" or (x["cheapest_tied"] and x["cheapest_tied"]["weights"] == "open"),
             "SummEval: the cheapest judge tied with the leader has open weights")
     common = [(f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
@@ -902,10 +903,11 @@ def findings_for(x: dict, f: dict) -> list:
         weakest = max((a for a in x["arms"] if a["kind"] == "hosted"), key=lambda a: a["rank"])
         ct = x["cheapest_tied"]
         return [
-            ("Every LLM judge beats BARTScore, the best free metric measured.",
-             f"The weakest judge, {weakest['arm']}, scores {weakest['score']:.4f}; the best free "
-             f"scorer, {best_free['arm']}, {best_free['score']:.4f}. "
-             + q("In the paired test BARTScore is separated from all 24 judges, all of them ahead.", rep)),
+            ("23 of 24 LLM judges beat a free evaluator trained for the task.",
+             f"The best free scorer, {best_free['arm']} (UniEval, on its own inputs), scores "
+             f"{best_free['score']:.4f}; the weakest judge, {weakest['arm']}, {weakest['score']:.4f}. "
+             + q("In the paired test UniEval is separated below 23 of the 24 judges and cannot "
+                 "be separated from the weakest, on either set of inputs.", rep)),
             ("An open-weight judge ties the leader.",
              f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
              f"the leader cannot be separated from it or from {x['n_tied'] - 1} others."),
@@ -914,7 +916,7 @@ def findings_for(x: dict, f: dict) -> list:
              q("Scored against the mean of two experts, as one expert is against the other two, "
                "the best judge reaches 0.5195 — 93% of one expert's 0.5587 (95% interval 89–97%), "
                "and the gap excludes zero. It is the best of 24, chosen on the same articles. "
-               "BARTScore reaches 44%.", rep)),
+               "UniEval reaches 64%, BARTScore 44%.", rep)),
             ("The order is stable; the winner is not.",
              q("Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
                "but name the same unique winner only 21% of the time.", rep)),
@@ -1012,7 +1014,7 @@ HEADLINE = {
     "dbpedia": "Nineteen-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",
-    "summeval": "LLM judges beat every free scorer measured.",
+    "summeval": "LLM judges beat a trained free evaluator.",
 }
 
 

@@ -56,9 +56,9 @@ the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal
 separable from the leader) on saturated DBpedia, a
 proprietary model never separated from the best open-weight one in any of the six, and
 **a 64 GB machine reaches the same answer as unlimited hardware on four of the six
-tasks** (two at int8 or int4, unmeasured). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, where no
-free arm measured was trained for the task, the LLM earns its bill — the best judges reach 93% of a
-human expert's agreement — and the $0 answer is an open-weight LLM judge.
+tasks** (two at int8 or int4, unmeasured). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
+a free evaluator trained for the task sits far below the judges — the best judges reach 93% of a
+human expert's agreement, UniEval 64% — so the LLM earns its bill, and the $0 answer is an open-weight LLM judge.
 
 ## What each one actually found
 
@@ -130,15 +130,17 @@ produced a **prediction registered before the arm existed**: swapping only the f
 should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891**, and the mechanism
 transferred too — the share of available headroom taken moved 90.9% → 90.2%.
 
-### SummEval — LLM judges beat every free scorer measured
+### SummEval — LLM judges beat a free evaluator trained for the task
 The 24 hosted models as **judges**, scoring 16 summaries per article on four dimensions,
-graded by how well they order the summaries the way three experts did (Kendall τ-b). Every
-judge is separated from, and ahead of, the best free scorer: BARTScore, a model fine-tuned
-on this corpus to write summaries, reaches τ **0.2562** against `openai_l`'s **0.5398**. The
-top is a six-way tie, and `gemma_l` — open weights, $0.0278 for all 100 articles — sits
-0.0013 behind the leader. Scored against the mean of two experts, as one expert is against
-the other two, the best judges reach 93% of a human's agreement (interval 89–97%, the best
-of 24 chosen on the same articles), BARTScore 44%.
+graded by how well they order the summaries the way three experts did (Kendall τ-b). The
+best free scorer is UniEval, a T5 evaluator trained for these four dimensions: τ **0.3717**
+on its own published inputs, against `openai_l`'s **0.5398**. 23 of the 24 judges are
+separated from, and ahead of, it; the weakest, `llama_s`, cannot be told apart from it.
+BARTScore, a model fine-tuned on this corpus to write summaries, reaches **0.2562**, below
+every judge. The top is a six-way tie, and `gemma_l` — open weights, $0.0278 for all 100
+articles — sits 0.0013 behind the leader. Scored against the mean of two experts, as one
+expert is against the other two, the best judges reach 93% of a human's agreement
+(interval 89–97%, the best of 24 chosen on the same articles), UniEval 64%, BARTScore 44%.
 
 It also measures the instrument: ROUGE agrees with the experts at τ 0.14–0.16, and this
 repository's own `coverage` at **0.1011**, below ROUGE-1. One model could not run as
@@ -162,7 +164,7 @@ down.
 | Classification · DBpedia | `qwen_m` | 19 of 27 — one of them the $0 fine-tune | 115× |
 | Extraction · Few-NERD | `span_marker` ($0) | **none** — separated from all 27 | no tie at the top; the 8 hosted arms tied for 2nd span 78× |
 | Retrieval · SciFact | `glm_s` | 11–12 of 18 (the count sits on a Holm boundary) — **2 of them free** encoders | 7.6× (billed) |
-| Judging · SummEval | `openai_l` | 5 of 30 — all hosted judges; every free scorer is separated below them | 72× |
+| Judging · SummEval | `openai_l` | 5 of 32 — all hosted judges; every free scorer is separated below them | 72× |
 
 Counts and ratios are from each experiment's report; "dearest" is the most expensive arm in
 the whole experiment, which is not always inside the group.
@@ -198,8 +200,8 @@ Every example has a handover for what was not run and why, in
 [`../research/`](../research). What remains is five frontier rerankers on SciFact, about
 $12 against the retrieval sweep's $1.94 billed, and the four hosted summarisation arms on
 the DailyMail slice. The rate-limited NER arm ran on 2026-10-01, and the six local ML arms
-that needed a machine able to load pickle checkpoints ran on 2026-09-30. SummEval has not
-run a free evaluator trained to judge summaries (UniEval); it is the next arm there.
+that needed a machine able to load pickle checkpoints ran on 2026-09-30. SummEval's free
+trained evaluator, UniEval, ran on 2026-10-18.
 
 ---
 

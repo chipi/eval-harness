@@ -101,7 +101,7 @@ than one that is merely wrong.
 | `parsed` *(descriptive)* | share of the four dimensions the reply returned as 16 numbers; a missing dimension scores 0 rather than being dropped |
 | `tie_rate` *(descriptive)* | share of the 120 summary pairs the system scored equal |
 
-Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here.
+Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](https://arxiv.org/abs/2303.16634) Table 1; 0.190 / 0.149 here. UniEval on its own inputs, ρ 0.474 / τ 0.377 there; 0.467 / 0.372 here.
 
 ### Shared across all examples
 
@@ -127,7 +127,7 @@ it.
 | Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
-| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
+| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by; UniEval as the free evaluator trained for the task — a judge worth its bill should beat it | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
 
 **Why each example has floors that are not models.** A *floor* is any non-model arm — a
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
@@ -230,6 +230,16 @@ the cache by hand and are a record, not a fingerprint.
 SummEval's `bartscore` arm loads the same checkpoint as `bart_l`, at the same revision
 (`37f520fa929c`), and scores a summary by its log-likelihood given the article
 ([BARTScore](https://arxiv.org/abs/2106.11520)); it is not a separate model.
+
+SummEval's two UniEval arms, `unieval` and `unievalpub`, load one model:
+
+| arm | HuggingFace model | weights size | revision (HF commit) | role |
+|---|---|---|---|---|
+| `unieval`, `unievalpub` | [`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum) | 3.1 GB | `ed8da5a8aa01` | [UniEval](https://arxiv.org/abs/2210.07197): T5-large trained to answer one yes/no question per summary dimension — the free evaluator trained for the task |
+
+It ships only `pytorch_model.bin`, so it needs torch ≥ 2.6; it ran on 2026-10-18 on Linux
+(the EVO-X3), and its runs record the revision they loaded. Its model card states no
+licence (below).
 
 **The last six need torch ≥ 2.6**, and ran on 2026-09-30 on Linux. Their `main` branches
 ship only `pytorch_model.bin`, which `transformers` refuses to `torch.load` below torch 2.6
@@ -376,8 +386,8 @@ run fingerprints, not the ones a lockfile would prefer.
 
 ### Models
 
-Licences below were read from the HuggingFace API on 2026-09-29, not assumed. **Two state
-no licence at all**, which is a reuse blocker rather than a permission — follow each link
+Licences below were read from the HuggingFace API on 2026-09-29 (UniEval's on 2026-10-19),
+not assumed. **Three state no licence at all**, which is a reuse blocker rather than a permission — follow each link
 and check before reusing any of them commercially.
 
 | model | licence |
@@ -397,9 +407,10 @@ and check before reusing any of them commercially.
 | [`guishe/span-marker-generic-ner-v1-fewnerd-fine-super`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | **CC-BY-SA-4.0** |
 | [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | **none stated** |
 | [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | **none stated** |
+| [`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum) | **none stated** (its code, [maszhongming/UniEval](https://github.com/maszhongming/UniEval), is MIT) |
 
 An earlier version of this line claimed the set was "variously MIT, Apache-2.0 and
-CC-BY-NC-4.0". No model here is CC-BY-NC-4.0; one is CC-BY-SA-4.0 and two state nothing.
+CC-BY-NC-4.0". No model here is CC-BY-NC-4.0; one is CC-BY-SA-4.0 and two state nothing (a third, UniEval, was added later and states nothing too).
 That was asserted rather than checked, and it is the same error the paper citations had.
 
 [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) ·
@@ -410,14 +421,16 @@ That was asserted rather than checked, and it is the same error the paper citati
 [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) ·
 [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) ·
 [`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) ·
-[`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2)
+[`intfloat/e5-base-v2`](https://huggingface.co/intfloat/e5-base-v2) ·
+[`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum)
 
 Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 [BERT](https://arxiv.org/abs/1810.04805), [MPNet](https://arxiv.org/abs/2004.09297),
 [DeBERTa-v3](https://arxiv.org/abs/2111.09543) (GLiNER's encoder),
 [Sentence-BERT](https://arxiv.org/abs/1908.10084),
 [E5](https://arxiv.org/abs/2212.03533), [BGE, in *C-Pack*](https://arxiv.org/abs/2309.07597),
-[GLiNER](https://arxiv.org/abs/2311.08526), [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER).
+[GLiNER](https://arxiv.org/abs/2311.08526), [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER),
+[UniEval](https://arxiv.org/abs/2210.07197).
 
 ### Software
 
@@ -457,12 +470,13 @@ NLP*](https://aclanthology.org/P18-1128/).
 a download recipe instead. Two things are committed on purpose: the models' outputs, which
 are the evidence every score is recomputed from, and thirteen CC-licensed papers,
 mirrored under their licences. [`papers/README.md`](papers/README.md) records the licence of
-each of the twenty-eight cited works — thirteen mirrored, fifteen that may not be — and the
+each of the twenty-nine cited works — thirteen mirrored, sixteen that may not be — and the
 split follows publisher policy rather than importance. (This paragraph said no paper and no provider output was redistributed until
 2026-10-18; both were committed long before.)
 
 **Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
-BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18) by fetching it
+BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18; UniEval's paper,
+model and code on 2026-10-19) by fetching it
 and comparing the real title to the claim made about it. That check found four errors in the first draft: a
 fabricated paper title, a GitHub advisory ID pointing at an unrelated NuGet CVE, a dataset
 credited to the wrong authors, and a moved repository. One citation — Holm (1979) — could

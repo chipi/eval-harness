@@ -180,8 +180,8 @@ def main() -> int:
     expert_item = {st: statistics.fmean(expert_by_item[st]) for st in stems}
     rng = random.Random(20261018)
     draws = [[rng.choice(stems) for _ in stems] for _ in range(10000)]
-    top = sorted((a for a in arms if a not in ("bartscore", "rouge1", "rouge2", "rougeL",
-                                               "coverage", "length", "random")),
+    top = sorted((a for a in arms if a not in ("bartscore", "unieval", "unievalpub", "rouge1",
+                                               "rouge2", "rougeL", "coverage", "length", "random")),
                  key=lambda a: -arms[a]["tau_vs_two_experts"])[:2]
     for arm in top:
         ratios, gaps = [], []

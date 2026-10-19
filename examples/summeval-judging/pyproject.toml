@@ -70,6 +70,10 @@ local = [
     # found", and every tensor->array conversion raises "Numpy is not available". Scoped to
     # the same platform as the torch cap so no other machine inherits a two-year-old NumPy.
     "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # The UniEval arms (Zhong et al. 2022): its published scorer splits a summary into
+    # sentences with nltk's sent_tokenize for consistency and fluency. A hand-rolled splitter
+    # would be a different scorer from the one whose numbers we compare against.
+    "nltk>=3.8",
 ]
 
 [tool.uv]

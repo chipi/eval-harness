@@ -88,6 +88,8 @@ CLAIMS = [
     ("SummEval gemma_l tau",      DATA,     "se_gemma_l_n100_v1",       "tau",      0.5384),
     ("SummEval qwen37max tau",    DATA,     "se_qwen37max_n100_v1",     "tau",      0.5204),
     ("SummEval llama_s tau",      DATA,     "se_llama_s_n100_v1",       "tau",      0.3533),
+    ("SummEval unievalpub tau",   DATA,     "se_unievalpub_n100_v1",    "tau",      0.3717),
+    ("SummEval unieval tau",      DATA,     "se_unieval_n100_v1",       "tau",      0.3476),
     ("SummEval bartscore tau",    DATA,     "se_bartscore_n100_v1",     "tau",      0.2562),
     ("SummEval rouge1 tau",       DATA,     "se_rouge1_n100_v1",        "tau",      0.1487),
     ("SummEval coverage tau",     DATA,     "se_coverage_n100_v1",      "tau",      0.1011),
@@ -1162,13 +1164,39 @@ _bart = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[
          if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")}
 _not_sep = [a for a in _judges if a not in _bart or _bart[a][1] != "SEPARATED" or _bart[a][0] >= 0]
 check(f"SummEval: BARTScore is separated from all {len(_judges)} judges, every one ahead of it",
-      len(_judges) == 24 and not _not_sep and f"separated from all {len(_judges)} judges" in _SEV,
+      len(_judges) == 24 and not _not_sep
+      and "Every judge is separated from, and ahead of, BARTScore" in " ".join(_SEV.split()),
       f"not separated, or not behind: {_not_sep}")
 _weakest = min(_judges, key=lambda a: _se_arms[a]["scores"]["tau"])
 _bw = _bart.get(_weakest, (0, "", "?/100"))[2].split("/")[0]
 check(f"SummEval: against the weakest judge, {_weakest}, BARTScore wins {_bw} of 100 articles",
       f"`{_weakest}`" in _SEV and f"BARTScore wins only {_bw} of 100 articles" in _SEV,
       f"the family test gives {_bw}/100 against {_weakest}")
+# UniEval, the free evaluator trained for the task, on both sets of inputs (§3.3): separated
+# from every judge but the weakest, and the §3.3 table row against that one as the test gives it.
+_ue = {}
+for _u in ("unievalpub", "unieval"):
+    _uft = _sp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", _sea.DATASET,
+                    "--a", f"se_{_u}_n100_v1", "--against", "_n100_v1", "--metric", "tau",
+                    "--runs-dir", str(DATA)], capture_output=True, text=True)
+    _ue[_u] = {ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], float(ln.split()[3]))
+               for ln in _uft.stdout.splitlines()
+               if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")}
+    _unsep = sorted(a for a, v in _ue[_u].items() if v[1] != "SEPARATED")
+    _behind = [a for a in _judges if a != _weakest and (_ue[_u].get(a, (1,))[0] >= 0)]
+    _d, _, _w, _pv = _ue[_u].get(_weakest, (0, "", "?/100", 1))
+    _row = (f"| `{_u}` | {_se_arms[_u]['scores']['tau']:.4f} | {'+' if _d > 0 else ''}{_signed(_d)} | {_w.split('/')[0]} of 100 "
+            f"| {_pv:.4f} | {len(_ue[_u]) - len(_unsep)} of {len(_ue[_u])}, all but `{_weakest}` |")
+    check(f"SummEval: {_u} is separated from every arm but the weakest judge, {_weakest}, and §3.3 says so",
+          _unsep == [_weakest] and not _behind and _row in _SEV,
+          f"not separated from {_unsep}; ahead of {_behind}; or §3.3 lacks {_row}")
+_dpub = _ue["unievalpub"].get("unieval", (0, "", "?/100", 1))
+check(f"SummEval: the inputs move UniEval by {_dpub[0]:.4f}, p {_dpub[3]:.4f}, "
+      f"{_dpub[2].split('/')[0]} of 100 articles",
+      _dpub[1] == "SEPARATED" and f"worth {_dpub[0]:.4f} τ, separated (p {_dpub[3]:.4f}; `unievalpub`"
+      f" wins {_dpub[2].split('/')[0]} of 100 articles)" in " ".join(_SEV.split()),
+      "§3.3 does not state the paired difference between the two UniEval arms")
+
 _per_m = lambda a: f"${_se_arms[a]['billed'] / _SE['n_items'] * 1e6:,.0f}"  # noqa: E731
 _cheap_tie = min((_t[0][3:-8] for _t in _tied_rows), key=lambda a: _se_arms[a]["billed"])
 check(f"SummEval cheapest tied judge {_cheap_tie} at {_per_m(_cheap_tie)} per million, "
@@ -1242,13 +1270,16 @@ if _hc:
                 key=lambda a: _hc["arms"][a]["tau_vs_two_experts"])
     _bv = _hc["arms"][_best]["tau_vs_two_experts"]
     _bp = round(100 * _bv / _ceil)
-    _bart_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
+    _bart_p = round(100 * _hc["arms"]["unievalpub"]["tau_vs_two_experts"] / _ceil)
+    _ue_p = round(100 * _hc["arms"]["unieval"]["tau_vs_two_experts"] / _ceil)
+    _bs_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
     check(f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
-          f"BARTScore {_bart_p}%",
+          f"UniEval {_bart_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%",
           f"**{_bv:.4f}**, **{_bp}%** (95% interval "
           f"{round(100 * _hc['arms'][_best]['share_ci95'][0])}–{round(100 * _hc['arms'][_best]['share_ci95'][1])}%) "
           f"of one expert's agreement with the other two (**{_ceil:.4f}**)" in _SEV
-          and f"BARTScore reaches {_bart_p}%" in _SEV and f"| **{_ceil:.4f}** |" in _SEV,
+          and f"UniEval reaches {_bart_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%" in _SEV
+          and f"| **{_ceil:.4f}** |" in _SEV,
           "the decision table or §3.7 does not state the evidence's figures")
     # The same two figures, repeated where the conclusions are drawn. A copy is checked
     # where it is stated, or it drifts from the report it was copied from.

@@ -1,5 +1,5 @@
 {
-  "what": "ROUGE-1/2/L F1 arms on all 100 SummEval articles (the committed runs), Kendall tau-b against the expert means",
+  "what": "ROUGE-1/2/L F1 and UniEval (published inputs) arms on all 100 SummEval articles (the committed runs), Kendall tau-b against the expert means",
   "split_rows": 100,
   "arms": {
     "rouge1": {
@@ -100,6 +100,40 @@
           "value": 0.2097,
           "ci95": 0.0469,
           "published": 0.237,
+          "verdict": "consistent"
+        }
+      }
+    },
+    "unievalpub": {
+      "n": 100,
+      "value": 0.3717,
+      "ci95": 0.0221,
+      "published": 0.377,
+      "source": "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions",
+      "verdict": "consistent",
+      "by_dimension": {
+        "coherence": {
+          "value": 0.4423,
+          "ci95": 0.0337,
+          "published": 0.442,
+          "verdict": "consistent"
+        },
+        "consistency": {
+          "value": 0.3565,
+          "ci95": 0.039,
+          "published": 0.371,
+          "verdict": "consistent"
+        },
+        "fluency": {
+          "value": 0.3638,
+          "ci95": 0.0385,
+          "published": 0.371,
+          "verdict": "consistent"
+        },
+        "relevance": {
+          "value": 0.3243,
+          "ci95": 0.0377,
+          "published": 0.325,
           "verdict": "consistent"
         }
       }

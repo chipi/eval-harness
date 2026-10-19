@@ -19,6 +19,7 @@
     "facebook/bart-large-xsum": "2179ab81d3f133e639f2957aec5380e9d56b2783",
     "guishe/span-marker-generic-ner-v1-fewnerd-fine-super": "f836dfa9b6b0e6a6379607a8e35166103ac41aee",
     "intfloat/e5-base-v2": "f52bf8ec8c7124536f0efb74aca902b2995e5bcd",
+    "MingZhong/unieval-sum": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
     "mrm8488/bert-mini-finetuned-age_news-classification": "e94b474cce6f842ee5a90daa7352f5152fac4572",
     "sentence-transformers/all-MiniLM-L6-v2": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
     "sentence-transformers/all-mpnet-base-v2": "e8c3b32edf5434bc2275fc9bab85f82640a19130",

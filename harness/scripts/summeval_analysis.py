@@ -23,7 +23,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 RUNS = HERE.parent / "data" / "runs"
 DATASET, PREFIX, SUFFIX = "summeval_100", "se_", "_n100_v1"
-FREE = {"bartscore", "rouge1", "rouge2", "rougeL", "coverage", "length", "random"}
+FREE = {"bartscore", "unieval", "unievalpub", "rouge1", "rouge2", "rougeL", "coverage", "length",
+        "random"}
 DIMENSIONS = ("coherence", "consistency", "fluency", "relevance")
 FAMILIES = ("anthropic", "deepseek", "gemma", "glm", "llama", "mistral", "openai", "qwen")
 #: qwen_l's model was withdrawn before this run; qwen37max is the large Qwen judge here.

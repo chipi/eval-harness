@@ -37,7 +37,7 @@ one sampling defect found so far was found.
 | Classification · DBpedia | accuracy | accuracy | `bert_base_fy`, seeded 5,600 of 70,000: **0.9879** ±0.003 vs 0.9903 (card) |
 | Extraction · Few-NERD | mean per-sentence F1, 8 coarse types, string match — ours | entity micro-F1, 66 fine types, token spans | `span_marker`, seeded 2,000 sentences: **0.7047** ±0.016 vs 0.7040 (card) |
 | Retrieval · SciFact | nDCG@10 | nDCG@10 | BM25, all 300 queries: **0.6523** ±0.045 vs 0.665 (BEIR) |
-| Judging · SummEval | Kendall τ-b per article against the expert means | Kendall τ-b | the ROUGE arms, all 100 articles, vs G-Eval: ROUGE-1 **0.1487** ±0.032 vs 0.150 · ROUGE-2 **0.1578** ±0.028 vs 0.161 · ROUGE-L **0.1435** ±0.032 vs 0.128 |
+| Judging · SummEval | Kendall τ-b per article against the expert means | Kendall τ-b | the ROUGE arms and UniEval, all 100 articles, vs G-Eval: ROUGE-1 **0.1487** ±0.032 vs 0.150 · ROUGE-2 **0.1578** ±0.028 vs 0.161 · ROUGE-L **0.1435** ±0.032 vs 0.128 · UniEval, on its own inputs, **0.3717** ±0.022 vs 0.377 |
 
 How to read it: **bold** is this repo's own run; the figure after "vs" is the published
 one. **±** is the half-width of a 95% confidence interval on our run. **"— ours"** marks a
@@ -53,7 +53,10 @@ can still be a difference of protocol. ROUGE-1 and ROUGE-2 agree with the paper 
 on every one of the four dimensions; ROUGE-L agrees on average but is 0.054 above it on
 coherence, outside that dimension's interval (±0.042) and inside it only with the 0.02
 allowance the rule adds for protocol differences; the paper does not say which ROUGE-L it
-ran.
+ran. UniEval's row is the arm scored on UniEval's own published inputs, the protocol behind
+the paper's figure; it agrees on every dimension. On this experiment's own text the same
+weights score 0.3476, outside the interval, and the report treats that gap as a finding
+about the inputs ([REPORT_SUMMEVAL §3.3](../research/REPORT_SUMMEVAL.md)).
 
 ## The hardware
 
@@ -65,7 +68,7 @@ described from the machine itself:
 |---|---|---|
 | Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
 | cloud runner | 4-core Linux (x86_64) containers; the operator's cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
-| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls. No open-weight LLM was run on any of these machines for the committed results |
+| GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls, and its two UniEval arms on CPU. No open-weight LLM was run on any of these machines for the committed results |
 | NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs |
 | MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs |
 

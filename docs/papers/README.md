@@ -5,8 +5,8 @@ Every work cited in [`../REFERENCE.md`](../REFERENCE.md) and the per-experiment
 on 2026-09-29 rather than assumed.
 
 [`fetch_papers.py`](fetch_papers.py) downloads the redistributable ones into this
-directory for offline reading. **Thirteen of the twenty-eight are committed here**; the
-other fifteen are gitignored so `--all` cannot commit them by accident. (This said
+directory for offline reading. **Thirteen of the twenty-nine are committed here**; the
+other sixteen are gitignored so `--all` cannot commit them by accident. (This said
 "twelve of the twenty-four" until 2026-10-18, while the tables below listed 25.) See
 [What is committed here](#what-is-committed-here).
 
@@ -16,7 +16,7 @@ stale — corrected 2026-09-29.)
 
 ```bash
 python docs/papers/fetch_papers.py          # the 13 that permit redistribution
-python docs/papers/fetch_papers.py --all    # all 25 with an open PDF, for personal use only
+python docs/papers/fetch_papers.py --all    # all 26 with an open PDF, for personal use only
 ```
 
 ---
@@ -57,6 +57,7 @@ requires nothing, and gets the same attribution anyway.
 | Song et al. (2020), *MPNet* | arXiv non-exclusive 1.0 | same |
 | Xiao et al. (2023), *C-Pack* (BGE) | arXiv non-exclusive 1.0 | same |
 | Fabbri et al. (2021), *SummEval: Re-evaluating Summarization Evaluation* | [arXiv non-exclusive 1.0](https://arxiv.org/abs/2007.12626) | same |
+| Zhong et al. (2022), *Towards a Unified Multi-Dimensional Evaluator for Text Generation* (UniEval) | [arXiv non-exclusive 1.0](https://arxiv.org/abs/2210.07197) | same |
 | Liu et al. (2023), *G-Eval: NLG Evaluation using GPT-4 with Better Human Alignment* | [CC BY-NC-ND 4.0](https://arxiv.org/abs/2303.16634) | Redistribution is permitted only non-commercially and unmodified; this repository is MIT, so it is linked rather than mirrored |
 | Järvelin & Kekäläinen (2002), *Cumulated gain-based evaluation of IR techniques* | © ACM | [ACM DL](https://dl.acm.org/doi/10.1145/582415.582418), subscription |
 | Holm (1979), *A Simple Sequentially Rejective Multiple Test Procedure* | © Scandinavian Journal of Statistics | Paywalled. **Also the one citation in this repo that could not be verified programmatically** — JSTOR serves a bot challenge and Crossref does not index the 1979 volume, so the reference is given in full text instead of linked |
@@ -64,7 +65,7 @@ requires nothing, and gets the same attribution anyway.
 
 > **The arXiv non-exclusive licence is the common trap.** It reads like an open licence and
 > is not: it grants arXiv a perpetual right to distribute the work. It says nothing about
-> anyone else mirroring it. Eleven of the nineteen arXiv papers cited here are under it.
+> anyone else mirroring it. Twelve of the twenty arXiv papers cited here are under it.
 
 ---
 
@@ -75,7 +76,7 @@ requires nothing, and gets the same attribution anyway.
 which is what CC BY and CC BY-SA require of anyone redistributing them. None is modified;
 each is the publisher's PDF byte-for-byte.
 
-The other fifteen are **not** here: twelve that `--all` can fetch for reading, which are
+The other sixteen are **not** here: thirteen that `--all` can fetch for reading, which are
 gitignored so they cannot be committed by accident, and the three with no open PDF.
 
 Two caveats a reader of this directory should have:

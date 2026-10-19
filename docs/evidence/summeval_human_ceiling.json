@@ -131,9 +131,17 @@
       "tau": 0.4064,
       "tau_vs_two_experts": 0.3936
     },
+    "unievalpub": {
+      "tau": 0.3717,
+      "tau_vs_two_experts": 0.3589
+    },
     "llama_s": {
       "tau": 0.3533,
       "tau_vs_two_experts": 0.3423
+    },
+    "unieval": {
+      "tau": 0.3476,
+      "tau_vs_two_experts": 0.3352
     },
     "bartscore": {
       "tau": 0.2562,

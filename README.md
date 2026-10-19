@@ -33,9 +33,10 @@ It was built to answer four questions anyone building with AI ends up asking:
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
    GPU was first, or not separable from first, in five of the six experiments, but only on
-   text like the text it was trained on. On the sixth, judging summaries, no free model
-   measured was trained for the task, and the LLM earned its bill: the best judges reach 93% of a human expert's
-   agreement (the best of 24, interval 89–97%), the best free metric 44%.
+   text like the text it was trained on, with labels made for the task. On the sixth,
+   judging summaries, the free model trained for the task learned from synthetic labels, and
+   the LLM earned its bill: the best judges reach 93% of a human expert's agreement (the
+   best of 24, interval 89–97%), the best free scorer, UniEval, 64%.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
    quality. Here a proprietary model never separated from the best open-weight one, and
    a 64 GB machine matched the unlimited-hardware answer on four of the six tasks (two of
@@ -170,11 +171,11 @@ What they found, and what a plain leaderboard would have hidden:
 - **Retrieval.** The leading LLM reranker cannot be separated from twelve other arms,
   ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
-- **Judging.** Asked to grade summaries the way three experts did, every one of the 24 LLMs
-  is separated from, and ahead of, BARTScore, the best free metric measured — the first
-  task here where the LLM clearly earns its bill (a free evaluator trained for the job,
-  UniEval, was not run). Scored against two experts, as one expert
-  is against the other two, the best judges reach 93% of a human's agreement. The top is a
+- **Judging.** Asked to grade summaries the way three experts did, 23 of the 24 LLMs are
+  separated from, and ahead of, the best free scorer measured — UniEval, an evaluator
+  trained for exactly this — and all 24 from BARTScore and ROUGE: the first task here where
+  the LLM clearly earns its bill. Scored against two experts, as one expert is against the
+  other two, the best judges reach 93% of a human's agreement and UniEval 64%. The top is a
   six-way tie, and an open-weight judge sits 0.0013 behind the leader for $0.0278 per 100
   articles. ROUGE agrees with the experts at τ 0.14–0.16, and
   this repository's own summarisation metric below that.

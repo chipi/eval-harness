@@ -35,7 +35,7 @@ such obligation, which is one reason they are mirrored unmodified.
 
 ## What is NOT here, and why
 
-Fifteen further works cited by this repo are **not** in this directory: eleven arXiv
+Sixteen further works cited by this repo are **not** in this directory: twelve arXiv
 papers under `arxiv.org/licenses/nonexclusive-distrib/1.0` (which grants arXiv a
 distribution right and says nothing about third parties), G-Eval under CC BY-NC-ND 4.0
 (non-commercial only), Järvelin & Kekäläinen (2002) behind the ACM Digital Library, Holm

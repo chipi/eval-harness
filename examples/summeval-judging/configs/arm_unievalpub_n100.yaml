@@ -1,0 +1,17 @@
+# UniEval (Zhong et al. 2022, "Towards a Unified Multi-Dimensional Evaluator for Text
+# Generation"), the T5 evaluator trained for these four dimensions, scored on UniEval's
+# OWN published SummEval inputs (its reproduce/ data file: cased text and its one
+# reference) -- the protocol its published figures were measured on. Each summary is
+# matched to its row through the original SummEval release. Weights
+# MingZhong/unieval-sum, pinned; licence not stated on the model card. Local, CPU, $0.
+config_id: se_unievalpub_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: unieval
+  inputs: published
+  model: MingZhong/unieval-sum
+  revision: ed8da5a8aa01b19d49a5f8738d382ced54b73ad0
+  batch_size: 8
+  family: unieval
+  price_tier: free
