@@ -63,20 +63,22 @@ human expert's agreement (the best of 24, on the same articles), UniEval 64% —
 
 ## What each one actually found
 
-### Summarisation — price does not predict quality
+### Summarisation — price and quality were uncorrelated here
 24 hosted models over 200 news articles — **all of them CNN's** (the first 200 test rows; the
 benchmark is 91% DailyMail). The dearest arm, at **143× the price** of the
 cheapest, ranks **18th of 29** (15th of the 24 hosted). Two *independent* 100-article evals of the same models
-agree at only **ρ = 0.79**, and at 20 articles at **ρ = 0.44** (29 arms).
+agree at only **ρ = 0.79**, and at 20 articles at **ρ = 0.44** (29 arms). Price and
+quality were uncorrelated across the 24 hosted arms (r −0.07, 95% interval −0.46 to +0.34),
+which does not exclude a moderate effect.
 
 Later, ML arms were added and BART took the lead — by **0.00008** over the best LLM across
-200 articles. Its lead at n=20 had been 0.0737. That is the cleanest winner's-curse
-demonstration in the repo, and it turns up twice: in the leaderboard, and in
+200 articles. Its lead at n=20 had been 0.0737. That illustrates the winner's curse, and it turns up twice: in the leaderboard, and in
 `P(both halves crown the same arm)` collapsing to 0.01.
 
 Then the control: the same BART fine-tuned on **XSum** instead of CNN/DailyMail finishes
-**last of 29** — below LEAD-3. BART's tie with the frontier is this corpus's house style,
-learned. Its distillations keep most of it at 1.5–1.8× the speed on the same machine (`bart_m`
+**last of 29** on `coverage` — below LEAD-3. BART's level with the best paid arm is
+consistent with this corpus's house style, learned; the XSum control also decodes shorter,
+so it does not isolate style. Its distillations keep most of it at 1.5–1.8× the speed on the same machine (`bart_m`
 0.3367 at 4.1 s against `bart_l`'s 6.3 s, not separated from `bart_l`).
 
 On 200 DailyMail articles drawn at random, the five local arms keep every verdict they
@@ -84,14 +86,16 @@ had on CNN — the fine-tune still beats LEAD-3 by +0.07, the XSum control is st
 The hosted arms were not re-run there, so the price findings are about CNN's articles
 ([REPORT_SUMMARIZATION §3.7](../research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 
-### AG News — small models win, on a task with headroom — by learning its labels
-Three fine-tuned classifiers take the top three places: `bert_base_ta` **0.9600**,
+### AG News — small models lead, on a task with headroom — largely on its labels
+Three fine-tuned classifiers lead on the point estimate: `bert_base_ta` **0.9600**,
 `bert_base_fy` 0.9500, the 44 MB `bert_mini` 0.9450, against a hosted field of
-0.835–0.910. The leader separates from 26 of 29. But nearly the whole lead sits in **17
-items the hosted field disputes** — the fine-tunes agree with the gold on 12–14 of them,
-the best LLM on none. 8 of the 17 follow a learnable AG News convention, 7 are plain
-mislabels and 2 are ambiguous: what fine-tuning bought here is the corpus's labelling.
-(The 17 are selected by the LLMs' own errors, which flatters the LLMs on the rest — see the
+0.835–0.910, LLMs as run here (zero-shot, one prompt, no label definitions). The leader
+separates from 26 of 29, not from `anthropic_m` (0.0500 behind); `bert_mini` is not
+separated from 11 hosted arms. The lead is concentrated in **17 items the hosted field
+mostly gets wrong** — the fine-tunes agree with the gold on 12–14 of them, `anthropic_l` on
+none — and on the other 183 there is no difference. Read by one person, about half follow a
+learnable AG News convention and half are mislabels: what fine-tuning bought here is
+reproducing the corpus's labelling. (The 17 are selected by the LLMs' own errors — see the
 report's §3.4.)
 
 The example also found that **the scoring code is a bigger lever than the model choice for
@@ -110,26 +114,27 @@ the top eleven are separated by four items, three of which 24–25 of the 26 lea
 dispute because the gold label is wrong.
 
 ### Few-NERD — task-specific training, against a zero-shot control
-A 499 MB span tagger fine-tuned on the corpus beat all 24 LLMs and separated from **27 of
-27** — the only unambiguous winner in the repo. But **57% of its margin is one entity
-type**, `other`, whose membership you cannot infer from the label because it is a
-convention of that corpus. On `person` — the one type that means the same thing everywhere
-— a frontier LLM beats it.
+A 499 MB span tagger fine-tuned on the corpus beat all 24 hosted LLMs as run here
+(zero-shot, bare type names) and separated from **all 27 other arms** — the only
+unambiguous winner in the repo. But **57% of its margin over `openai_m` is one entity
+type**, `other` (30–57% across the 24 hosted arms), which the prompt never defined. On
+`person`, three of the 24 hosted arms edge it, by at most 0.0067 (untested).
 
 A zero-shot control (`gliner`, a different architecture, never trained on Few-NERD) scores
-**0.0000** on `other`, 0 of 86. And 34 of 768 gold types are unanimously rejected by the
-whole field; resolving them moves every hosted arm ~+0.03 and the fine-tuned model +0.006,
-so **38% of its lead is agreeing with the annotator rather than being right**.
+**0.0000** on `other`, having predicted the label 3 times. And 34 of 768 gold types are
+rejected by at least 80% of the 26 learned arms; resolving them moves every hosted arm
+~+0.03 and the fine-tuned model +0.006, so **up to 38% of its lead over `openai_m` is
+agreement with the annotation** — an upper bound, since the arms being scored cast the vote.
 
 ### SciFact — pipelines have a ceiling they did not choose
 The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary): ten rerankers **and two
-free local encoders**. `e5_base`
-(0.7191, $0, CPU) is not statistically distinguishable from any paid arm.
+free local encoders**, among the twelve cheapest hosted LLMs as run here. `e5_base`
+(0.7191, $0, CPU) is not separated from any of the twelve, and trails the best by 0.0246.
 
 A reranker cannot rank a document its first stage never returned, so the ceiling analysis
 produced a **prediction registered before the arm existed**: swapping only the first stage
-should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891**, and the mechanism
-transferred too — the share of available headroom taken moved 90.9% → 90.2%.
+should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891** for `glm_s`, inside
+the range; `qwen_s` landed outside it (0.7713 under the corrected parser). One of two.
 
 ### SummEval — LLM judges beat a free evaluator trained for the task
 The 24 hosted models as **judges**, scoring 16 summaries per article on four dimensions,

@@ -93,7 +93,7 @@ def legend(band: bool = True, reading: str = "", baseline: bool = True) -> str:
     kinds = ("proprietary", "open", "local") + (("baseline",) if baseline else ())
     items = "".join(f'<span><i style="background:var(--{k})"></i>{KIND_LABEL[k]}</span>' for k in kinds)
     if band:
-        items += '<span><i class="sw-band"></i>statistically tied with the leader</span>'
+        items += '<span><i class="sw-band"></i>not separated from the leader</span>'
     if reading:
         items += f'<span class="read">{reading}</span>'
     return f'<div class="legend">{items}</div>'
@@ -630,7 +630,7 @@ def home(f: dict) -> str:
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Pointed at {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
-  <p class="lede">To show the harness doing something real, it measured {hosted_n} frontier and open-weight LLMs, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
+  <p class="lede">To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best (five times the same model)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
@@ -701,7 +701,7 @@ def landing(f: dict) -> str:
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>The experiments</b> · {len(exps)} tasks · {f["total_arms"]} measured runs · {money(f["total_billed"])} billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
-  <p class="dek">{hosted_n} frontier and open-weight LLMs, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
+  <p class="dek">{hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_never_best"]}<small>/{len(exps)}</small></div><div class="l">experiments where the dearest model was not the best (five times the same model)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
@@ -741,7 +741,7 @@ def landing(f: dict) -> str:
     <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
     <li><div><h3>On one task, even a free model trained for it lost, and an LLM earned its bill — but not the dearest one.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, on the same articles); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The cheapest judge in the top tie, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
-    <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 items whose gold labels most of the hosted field disputes.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin is one entity type whose meaning exists only in that corpus.", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
+    <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong — about half a learnable convention, half mislabels.", "research/REPORT_CLASSIFICATION.md")} {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
 
@@ -815,9 +815,9 @@ def landing(f: dict) -> str:
 
 
 CARD = {
-    "summarization": "Summarise a news article in two or three sentences. A 1.6 GB fine-tune ties the best paid model — on CNN's articles.",
-    "ag-news": "Four-way topic labels. Three small fine-tunes take the top three places, their lead almost all in 17 items whose gold labels the hosted field disputes.",
-    "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others, and the gold label is sometimes the error.",
+    "summarization": "Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not separated from the best paid model (0.0001 apart) — on CNN's articles.",
+    "ag-news": "Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.",
+    "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
     "scifact": "Retrieve the abstracts that support a scientific claim. An LLM reranker leads, tied with twelve others; two of them are free retrievers.",
     "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of a free evaluator trained for the task (64%), and an open-weight judge ties the leader.",
@@ -851,17 +851,18 @@ def findings_for(x: dict, f: dict) -> list:
             "SummEval: the cheapest judge tied with the leader has open weights")
     common = [(f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
                f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
-               + (f"The cheapest model statistically tied with the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
-                  if x["cheapest_tied"] else "No paid model is statistically tied with the leader."))]
+               + (f"The cheapest model not separated from the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
+                  if x["cheapest_tied"] else "No paid model is not separated from the leader: the leader is separated from every one."))]
     if x["slug"] == "summarization":
         dm = {r["arm"]: r for r in f["dailymail"]}
         return [
-            ("A 1.6 GB model fine-tuned on this corpus ties the best paid model.",
+            ("A 1.6 GB model fine-tuned on this corpus is not separated from the best paid model.",
              f"bart_l scores {t['score']:.4f} on coverage, {b['arm']} {b['score']:.4f} — "
              + q("a gap of 0.0001.", rep) + f" It cannot be separated from {x['n_tied']} of the other {x['n_arms'] - 1} arms."),
             *common,
             ("The same architecture trained on another corpus finishes last.",
-             q("BART fine-tuned on XSum's one-sentence BBC summaries scores 0.2071 — 29th of 29, below lead-3. What bart_l has is CNN's house style.", rep)),
+             q("BART fine-tuned on XSum's one-sentence BBC summaries scores 0.2071 — 29th of 29, below lead-3.", rep)
+             + " bart_l's lead is consistent with learning CNN's house style; the XSum control also decodes shorter, so it does not isolate style."),
             ("The winner depends on the metric.",
              q("On ROUGE-2 the three CNN-trained BARTs take the top three places; on ROUGE-1 the LLMs lead and bart_l is 12th.", rep)),
             ("Scope: these are CNN's articles.",
@@ -870,17 +871,17 @@ def findings_for(x: dict, f: dict) -> list:
         ]
     if x["slug"] == "ag-news":
         return [
-            ("Three small fine-tuned classifiers take the top three places.",
+            ("Three small fine-tuned classifiers lead on the point estimate; only the first is separated from all but one paid arm.",
              f"bert_base_ta leads at {t['score']:.4f}; the best hosted model, {b['arm']}, scores {b['score']:.4f}."),
             *common,
-            ("Most of the lead sits in 17 disputed items.",
+            ("The lead is concentrated in 17 items the hosted field mostly gets wrong.",
              q("17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them.", rep)
              + " " + q("On the other 183 items the order reverses — anthropic_l 0.984, bert_base_ta 0.973 — though that cut is selected by the hosted arms' own errors and so flatters them.", rep)),
         ]
     if x["slug"] == "dbpedia":
         return [
             ("No winner: the leader and nineteen others.",
-             f"{t['arm']} leads at {t['score']:.4f}, statistically tied with {x['n_tied']} others, including the free fine-tune."),
+             f"{t['arm']} leads at {t['score']:.4f}, not separated from {x['n_tied']} others, including the free fine-tune."),
             *common,
             ("The benchmark is saturated, and the gold is sometimes wrong.",
              q("Three items are disputed by 24 to 25 of 26 arms, and reading them, the gold label is the error.", rep)),
@@ -891,7 +892,7 @@ def findings_for(x: dict, f: dict) -> list:
              f"span_marker, fine-tuned on Few-NERD's training split, scores {t['score']:.4f} and is separated from all {x['n_arms'] - 1} other arms."),
             *common,
             ("But its margin is partly the corpus's own conventions.",
-             q("57% of its margin is one entity type, other, whose meaning exists only in this corpus, and 38% of its lead over the best hosted model is agreeing with annotation the rest of the field rejects.", rep)),
+             q("Against openai_m, 57% of its margin is one entity type, other, which the prompt never defined (30–57% across the hosted arms), and up to 38% of its lead is agreement with annotation the rest of the field rejects.", rep)),
         ]
     if x["slug"] == "scifact":
         return [
@@ -1014,8 +1015,8 @@ QUESTION = {
     "summeval": "Score 16 summaries of a news article on coherence, consistency, fluency and relevance, as three experts did.",
 }
 HEADLINE = {
-    "summarization": "A free model ties the frontier — on CNN's news.",
-    "ag-news": "Small models lead by learning the labels.",
+    "summarization": "A free model level with the best paid one — on CNN's news.",
+    "ag-news": "Small models lead, largely on disputed labels.",
     "dbpedia": "Twenty-way tie at the top.",
     "few-nerd": "The one clean win.",
     "scifact": "Rerankers lead a crowd.",

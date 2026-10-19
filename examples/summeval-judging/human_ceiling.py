@@ -194,7 +194,23 @@ def main() -> int:
         gaps.sort()
         arms[arm]["share_ci95"] = [round(ratios[250], 3), round(ratios[9749], 3)]
         arms[arm]["gap_ci95"] = [round(gaps[250], 4), round(gaps[9749], 4)]
+    # And how much of "93%" is picking the best of 24 on these same articles? Split the
+    # articles in half at random, pick the best judge on one half, and score it on the other:
+    # the held-out share is what choosing on the same items cannot inflate.
+    judges = [a for a in arms if a not in ("bartscore", "unieval", "unievalpub", "rouge1", "rouge2",
+                                           "rougeL", "coverage", "length", "random")]
+    picked_in, picked_out = [], []
+    for _ in range(2000):
+        half = rng.sample(stems, len(stems) // 2)
+        rest = [st for st in stems if st not in set(half)]
+        best = max(judges, key=lambda a: statistics.fmean(judge_by_item[a][st] for st in half))
+        ea, eb = (statistics.fmean(expert_item[st] for st in h) for h in (half, rest))
+        picked_in.append(statistics.fmean(judge_by_item[best][st] for st in half) / ea)
+        picked_out.append(statistics.fmean(judge_by_item[best][st] for st in rest) / eb)
+    selection = {"splits": 2000, "share_in_sample": round(statistics.fmean(picked_in), 4),
+                 "share_held_out": round(statistics.fmean(picked_out), 4)}
     result = {
+        "selection_corrected_best_judge": selection,
         "what": "Kendall tau-b per article between one SummEval expert and the mean of the other "
                 "two (leave-one-out), averaged over the four dimensions and then over the 100 "
                 "articles; and every arm scored against the same two-expert references",

@@ -42,8 +42,9 @@ is scored on. Three consequences:
   honest `warmup_ms` column possible at all. MS MARCO or HotpotQA would need a vector
   database and turn this into an infrastructure exercise.
 - **CC BY-SA 4.0**, and BM25's published nDCG@10 on it (0.665) gives an **external
-  check**: this repo measures 0.6451, close, and lower in the direction a plainer
-  tokeniser predicts (no stemming, no stopword list, no Lucene).
+  check**: this repo's BM25 on all 300 test queries reads 0.6523 ± 0.0453, and 0.665 lies inside that
+  interval (the 200-query slice reads 0.6451). No cause for the gap is
+  established; this BM25 has no stemming, no stopword list and no Lucene.
 
 **The corpus is never sliced.** `--n` slices the *queries*; all 5,183 documents are
 searched whatever `--n` says. Sampling the haystack would raise every arm's nDCG — most of
@@ -110,7 +111,8 @@ is worth more than rank 10.
   sorts an arm's own candidates perfectly and scores that. It reads the gold labels, so
   nobody can deploy it — it is the only honest denominator for *"how much better could this
   get without a better retriever"*. It is what produced this repo's first **pre-registered
-  quantitative prediction**.
+  quantitative prediction** — a range, 0.786–0.797, which one of the two rerankers tested
+  landed inside.
 - **`unknown_ids`** counts document ids the model invented. Those **keep their slot** in
   the ranking: dropping them would slide real documents up and make invention a scoring
   strategy.

@@ -1,4 +1,9 @@
 {
+  "selection_corrected_best_judge": {
+    "splits": 2000,
+    "share_in_sample": 0.9338,
+    "share_held_out": 0.9227
+  },
   "what": "Kendall tau-b per article between one SummEval expert and the mean of the other two (leave-one-out), averaged over the four dimensions and then over the 100 articles; and every arm scored against the same two-expert references",
   "source": "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl",
   "source_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab",

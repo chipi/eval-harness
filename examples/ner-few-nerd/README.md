@@ -93,8 +93,9 @@ for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
 done
 ```
 
-~14 minutes and ~$0.09 per hosted arm; the two ML arms are free and run on CPU. The whole
-measurement sweep is **$2.05**.
+~14 minutes per hosted arm; the two ML arms are free and run on CPU. The whole measurement
+sweep billed **$2.61** ($2.05 by the configs' price tables, which were wrong — see the
+report's Correction).
 
 Then the analysis — all of it $0, all of it from stored outputs:
 
@@ -167,7 +168,7 @@ recover the intended ones. **This report does not quantify how much of each arm'
 that.**
 
 **Annotation noise, and rather a lot of it.** 34 of 768 gold entities carry a coarse type
-that ≥80% of the 25 learned arms unanimously reject — "Georgia Dome" as `location`, "Nazis"
+that ≥80% of the 26 learned arms reject, agreeing on one alternative — "Georgia Dome" as `location`, "Nazis"
 as `person`, a football league as an `event`, a diuretic as `other`.
 `extraction_report.py`'s TYPE DISAGREEMENTS section is the tool for it.
 
@@ -187,11 +188,12 @@ as `person`, a football league as an `event`, a diuretic as `other`.
 a JSON array of ~2.7 objects rather than one word. One arm still ran out of it — see the
 report §3.7.
 
-**The GLiNER/SpanMarker pair is the point of this example.** The DBpedia example could not
-run a fine-tuned ML arm at all, so its ML-vs-LLM question went unanswered. Here both load.
-They differ in exposure to Few-NERD's training split, and also in architecture and encoder
-(a span classifier on RoBERTa against a label-prompted matcher on DeBERTa-v3), so the gap
-between them is exposure plus architecture; how it splits is not measured.
+**The GLiNER/SpanMarker pair is the control in this example, not a matched pair.** The
+DBpedia example could not run a fine-tuned ML arm at all, so its ML-vs-LLM question went
+unanswered. Here both load. They differ in exposure to Few-NERD's training split, and also
+in architecture and encoder (a span classifier on RoBERTa against a label-prompted matcher
+on DeBERTa-v3), so the gap between them is exposure plus architecture; how it splits is
+not measured. The ML-vs-LLM answer rests on `span_marker` against the 24 hosted arms.
 
 ---
 
@@ -200,9 +202,9 @@ between them is exposure plus architecture; how it splits is not measured.
 Full write-up: [`../../research/REPORT_NER.md`](../../research/REPORT_NER.md).
 
 ```
-span_marker   0.7674   $0        separated from 27 of 27 under Holm
-openai_m      0.6864   $0.6507   best hosted; separated from only 20 of 27
-gemma_m       0.6733   $0.0088   inside the top group, 78x cheaper than anthropic_l
+span_marker   0.7674   $0        separated from all 27 other arms under Holm
+openai_m      0.6864   $0.6507   best hosted; separated from 16 of the 23 other hosted arms
+gemma_m       0.6733   $0.0088   not separated from openai_m (gap 0.0131); 78x cheaper than anthropic_l
 gliner        0.4540   $0        zero-shot, different architecture, no training-split exposure
 capitalized   0.1913   $0
 nothing       0.1250   $0        = the rate at which an empty answer is correct
@@ -214,10 +216,12 @@ spread to 121×.
 
 Three things worth reading the report for:
 
-1. **The first unambiguous winner in this repo.** Both classification corpora produced a
-   tied group at the top. This produced a podium.
-2. **57% of that winner's lead is one entity type** — `other`, Few-NERD's catch-all, whose
-   membership you cannot infer from the label. On `person`, the one type that means the
-   same thing everywhere, the frontier LLM **wins**.
-3. **38% of its lead over the nearest hosted arm survives only because it agrees with
-   annotation the rest of the field rejects.**
+1. **The first unambiguous winner in this repo — as run here:** 24 hosted arms on one
+   zero-shot prompt of bare type names, no definitions, no examples, provider unpinned.
+   Both classification corpora produced a tied group at the top. This produced a podium.
+2. **57% of that winner's lead over `openai_m` is one entity type** — `other`, Few-NERD's
+   catch-all (30–57% across the 24 hosted arms, for a prompt that defines no type). On
+   `person`, three hosted arms edge it by at most 0.0067 (untested).
+3. **Up to 38% of its lead over `openai_m` is agreement with annotation the rest of the
+   field rejects** — an upper bound that moves from 7% to 53% with the selection threshold
+   and the arm compared.

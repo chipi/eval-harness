@@ -146,10 +146,10 @@ def chapters(H, f: dict) -> list:
                    "scores a perfect 1.000 against them and ranks first. Re-scored against six "
                    "summaries a person wrote, it falls to second — and no arm can be told apart "
                    "from any other (p = 0.2124).", GUIDE) + "</p>"
-                   "<p>" + H.q("On AG News, nearly the whole lead of the three fine-tunes sits in 17 "
-                   "items whose gold labels most of the hosted field disputes.", CLASS)
-                   + " Read, many of those labels were wrong. Disputed gold is a finding, not "
-                   "noise.</p>"
+                   "<p>" + H.q("On AG News, the lead of the three fine-tunes is concentrated in 17 "
+                   "items the hosted field mostly gets wrong.", CLASS)
+                   + " Read by one person, about half are a learnable convention and half "
+                   "mislabels. Disputed gold is a finding, not noise.</p>"
                    "<p>" + H.q("An AI judge is silver too, and SummEval measures how good: scored "
                    "against the mean of two experts, as one expert is against the other two, the "
                    "best judges reach 93% of a human's agreement (the best of 24, on the same "
@@ -477,8 +477,8 @@ def experiment_lesson(H, x: dict) -> tuple:
                 "sorts; it does not rank — and the table still prints them first, second, third.")
     if slug == "few-nerd":
         return ("gold", "Silver is not gold.",
-                H.q("57% of the winner's margin is one entity type whose meaning exists only in "
-                    "that corpus.", NER) + " A clean win can still be partly a win at the "
+                H.q("57% of the winner's margin over openai_m is one entity type the prompt "
+                    "never defined (30–57% across the hosted arms).", NER) + " A clean win can still be partly a win at the "
                 "annotation, not the task.")
     if slug == "summeval":
         return ("gold", "Silver is not gold.",

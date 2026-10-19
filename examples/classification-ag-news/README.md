@@ -4,9 +4,14 @@ One task — put a news article into one of four topics — measured across 24 h
 from 8 vendors, three fine-tuned classifiers (44 MB and 2 × 438 MB), a zero-shot NLI
 model, a hand-written rule set, and a constant.
 
-> **Result, updated 2026-09-30:** the three fine-tunes take 1st–3rd (`bert_base_ta` 0.9600,
-> `bert_base_fy` 0.9500, `bert_mini` 0.9450) against a hosted field of 0.835–0.910 — and
-> nearly the whole lead sits in 17 items whose gold labels the hosted field disputes. See
+> **Result, updated 2026-09-30, corrected 2026-10-19:** the three fine-tunes lead on the
+> point estimate (`bert_base_ta` 0.9600, `bert_base_fy` 0.9500, `bert_mini` 0.9450) against
+> a hosted field of 0.835–0.910. Only `bert_base_ta` is separated from 26 of the 29 other
+> arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` is separated from 16
+> and not from `anthropic_l`. The lead is concentrated in 17 items the hosted field mostly
+> gets wrong, about half a learnable convention and half mislabels. As run here: hosted
+> models zero-shot, one prompt, no label definitions or examples, temperature 0, reasoning
+> off, no provider pinned. See
 > [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md) §3.1 and §3.4. The
 > two bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves it everywhere but
 > x86_64 macOS).
@@ -79,6 +84,9 @@ says it is *"provided by the academic community for research purposes … and an
 non-commercial activity."* That is a statement of intent by the people who assembled it,
 not a grant of rights.
 
+The fine-tuned checkpoints carry their own licences (Hub pages, checked 2026-10-19):
+`bert_base_fy` is apache-2.0; `bert_base_ta` and `bert_mini` state none.
+
 This repo ships a download recipe and redistributes nothing, which is the same posture the
 summarisation example takes with CNN/DailyMail. The difference is that CNN/DailyMail
 carried an explicit apache-2.0 grant behind it and this does not. **Do not read permission
@@ -89,9 +97,10 @@ to resolve that themselves.
 
 Many AG News texts carry their syndication tag inline: `(AP)`, `(Reuters)`, `(SPACE.com)`.
 Those tags correlate with the label — SPACE.com is Sci/Tech essentially always — so an arm
-can score well by reading the byline rather than the article. It affects every arm equally,
-so the comparison stands, but it caps how much "understanding" any accuracy figure here
-can be said to demonstrate.
+can score well by reading the byline rather than the article. It need not affect every arm
+equally: a fine-tune can learn the tags as a shortcut, a zero-shot prompt is not told to, and
+whether the fine-tuned lead uses them was not measured. It caps how much "understanding" any
+accuracy figure here can be said to demonstrate.
 
 ---
 

@@ -12,8 +12,9 @@ before any result was seen, to sit in the opposite regime. Read together or not 
 
 ## Why a second classification task
 
-AG News produced a clean story: a 44 MB fine-tuned model beat 24 frontier LLMs. That story
-is only trustworthy if you know what the *other* regime looks like, because a single
+AG News produced a clean-looking story: a 44 MB fine-tuned model led all 24 hosted LLMs on
+the point estimate (separated from 16 of the 29 other arms, not from the best paid ones).
+That story is only trustworthy if you know what the *other* regime looks like, because a single
 corpus supports whatever conclusion it happens to produce.
 
 So DBpedia-14 was picked for the properties AG News lacks:
@@ -52,10 +53,10 @@ ships a pickle checkpoint, which `transformers` refuses below torch 2.6
 no torch above 2.2.2 — see
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/internal/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
 absence is precisely why the NER example was built with a zero-shot control beside its fine-tune.
-**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, tied with
-the top group (p = 0.62 against the leader), label order confirmed by a diagonal confusion
-matrix. The ML-vs-LLM question is now answered here too, and the answer differs from AG
-News's: a tie, at $0.
+**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, not separated
+from the top group (p = 0.62 against the leader), label order confirmed by a diagonal
+confusion matrix. The ML-vs-LLM question is now answered here too, and the answer differs
+from AG News's: not separated, at $0.
 
 `bart_mnli` did run, and its calibration is the interesting result: confidence 0.317
 against accuracy 0.629, an ECE of 0.311 — badly underconfident, because zero-shot NLI

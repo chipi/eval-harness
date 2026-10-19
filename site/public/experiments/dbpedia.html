@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Classification · DBpedia-14 — eval-harness</title>
-<meta name="description" content="Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others, and the gold label is sometimes the error.">
+<meta name="description" content="Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.">
 <meta property="og:title" content="Classification · DBpedia-14 — eval-harness">
-<meta property="og:description" content="Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others, and the gold label is sometimes the error.">
+<meta property="og:description" content="Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="eval-harness">
 <meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">
@@ -35,13 +35,13 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Classification</b> · DBpedia-14</div>
   <h1 style="max-width:16ch">Twenty-way tie at the top.</h1>
-  <p class="dek">Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others, and the gold label is sometimes the error.</p>
+  <p class="dek">Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.</p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Label a Wikipedia abstract with one of 14 ontology classes.</div></div><div class="fact"><div class="k">Data</div><div class="v">280 items from the DBpedia-14 test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">28 compared: 24 hosted models billed per call; 4 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">accuracy — the field&#x27;s standard; higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bert_base_fy 0.9879 vs 0.9903 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$1.17 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_CLASSIFICATION.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="DBpedia-14: every learned arm by accuracy"><rect x="479.6" y="28" width="455.0" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="DBpedia-14: every learned arm by accuracy"><rect x="479.6" y="28" width="455.0" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-proprietary"><title>qwen_m · hosted · proprietary
 accuracy 0.9929 · rank 1/28
 billed $0.0143 for 280 items</title></circle><circle cx="926.6" cy="50.0" r="12" class="hit" data-tip="qwen_m · hosted · proprietary
 accuracy 0.9929 · rank 1/28
@@ -465,7 +465,7 @@ $0.0185 per 1,000 items"/><circle cx="314.7" cy="74.2" r="11" class="ring"/><tex
 </div></section>
 <section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
-  <ol class="findings"><li><div><h3>No winner: the leader and nineteen others.</h3><p>qwen_m leads at 0.9929, statistically tied with 19 others, including the free fine-tune.</p></div></li><li><div><h3>The dearest model finished 2nd of 28.</h3><p>anthropic_l billed $0.3784 for 280 items. The cheapest model statistically tied with the leader, gemma_m, cost 115× less.</p></div></li><li><div><h3>The benchmark is saturated, and the gold is sometimes wrong.</h3><p>Three items are disputed by 24 to 25 of 26 arms, and reading them, the gold label is the error.</p></div></li></ol>
+  <ol class="findings"><li><div><h3>No winner: the leader and nineteen others.</h3><p>qwen_m leads at 0.9929, not separated from 19 others, including the free fine-tune.</p></div></li><li><div><h3>The dearest model finished 2nd of 28.</h3><p>anthropic_l billed $0.3784 for 280 items. The cheapest model not separated from the leader, gemma_m, cost 115× less.</p></div></li><li><div><h3>The benchmark is saturated, and the gold is sometimes wrong.</h3><p>Three items are disputed by 24 to 25 of 26 arms, and reading them, the gold label is the error.</p></div></li></ol>
 </div></section>
 
 <section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>

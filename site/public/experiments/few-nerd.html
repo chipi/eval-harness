@@ -41,7 +41,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="Few-NERD: every learned arm by F1"><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50.0" r="7" class="dot k-local"><title>span_marker · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="Few-NERD: every learned arm by F1"><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50.0" r="7" class="dot k-local"><title>span_marker · local · free
 F1 0.7674 · rank 1/28
 free: runs locally, nothing billed</title></circle><circle cx="924.8" cy="50.0" r="12" class="hit" data-tip="span_marker · local · free
 F1 0.7674 · rank 1/28
@@ -457,11 +457,11 @@ $0.0273 per 1,000 items"/><circle cx="336.1" cy="138.9" r="11" class="ring"/><te
 </div></section>
 <section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
-  <ol class="findings"><li><div><h3>The only unambiguous winner in the repo.</h3><p>span_marker, fine-tuned on Few-NERD&#x27;s training split, scores 0.7674 and is separated from all 27 other arms.</p></div></li><li><div><h3>The dearest model finished 3rd of 28.</h3><p>anthropic_l billed $0.6897 for 280 items. No paid model is statistically tied with the leader.</p></div></li><li><div><h3>But its margin is partly the corpus&#x27;s own conventions.</h3><p>57% of its margin is one entity type, other, whose meaning exists only in this corpus, and 38% of its lead over the best hosted model is agreeing with annotation the rest of the field rejects.</p></div></li></ol>
+  <ol class="findings"><li><div><h3>The only unambiguous winner in the repo.</h3><p>span_marker, fine-tuned on Few-NERD&#x27;s training split, scores 0.7674 and is separated from all 27 other arms.</p></div></li><li><div><h3>The dearest model finished 3rd of 28.</h3><p>anthropic_l billed $0.6897 for 280 items. No paid model is not separated from the leader: the leader is separated from every one.</p></div></li><li><div><h3>But its margin is partly the corpus&#x27;s own conventions.</h3><p>Against openai_m, 57% of its margin is one entity type, other, which the prompt never defined (30–57% across the hosted arms), and up to 38% of its lead is agreement with annotation the rest of the field rejects.</p></div></li></ol>
 </div></section>
 
 <section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>
-  <div class="lesson"><h2>Silver is not gold.</h2><p>57% of the winner's margin is one entity type whose meaning exists only in that corpus. A clean win can still be partly a win at the annotation, not the task.</p><a class="btn" href="../method.html#gold">This habit, in the method →</a></div>
+  <div class="lesson"><h2>Silver is not gold.</h2><p>57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms). A clean win can still be partly a win at the annotation, not the task.</p><a class="btn" href="../method.html#gold">This habit, in the method →</a></div>
 </div></section>
 <section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
   <h2>Check it yourself.</h2>

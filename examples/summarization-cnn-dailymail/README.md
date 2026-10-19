@@ -94,7 +94,10 @@ EVAL_RUNS_DIR=/tmp/smoke make sweep REPEAT=1 \
 ## What is held constant
 
 Every arm shares the dataset, the prompt file, temperature 0, `max_tokens: 1200` and
-`reasoning: {enabled: false}`.
+`reasoning: {enabled: false}`. The hosted models run zero-shot on that one prompt. The
+upstream **provider is not pinned**: OpenRouter routes each call, and 13 of the 24 hosted
+arms were served by 2 to 14 providers within one run (`providers_seen` in each run's
+`metrics.json`), so a hosted score is that mix's, as served.
 
 One exception, disclosed because the fingerprint records it: `mistral_l` was rate-limited
 out of the sweep and re-run afterwards, by which time the adapter had changed — so its
@@ -186,16 +189,21 @@ among them held, the XSum control is still last, and the hosted arms were not re
 - **Temperature 0 is not deterministic.** In the earlier three-repeat sweep (n=20), only
   **9.8%** of outputs were byte-identical across repeats and **12 of 24 arms produced zero
   identical outputs**.
-- **Price buys very little on this task.** The dearest arm (`anthropic_l`, **$1.9652**
-  billed) costs **143×** the cheapest paid arm (`deepseek_s`, $0.0137) and ranks **18th of
-  29** on coverage (15th of the 24 hosted). The Pareto frontier keeps **8 of 24** hosted
-  arms; the other 16 are beaten on quality *and* cost *and* speed simultaneously. (The n=20
-  pilot's figures for this bullet were wrong in three ways; the report's §6 lists them.)
+- **Price did not buy quality here, as run.** Across the 24 hosted arms price and `coverage`
+  were uncorrelated (r = −0.07, 95% CI −0.46 to +0.34): at n = 24 that does not exclude a
+  moderate effect. The dearest arm (`anthropic_l`, **$1.9652** billed) costs **143×** the
+  cheapest paid arm (`deepseek_s`, $0.0137), ranks **18th of 29** on coverage (15th of the 24
+  hosted) and is separated below the best paid arm. The Pareto frontier keeps **8 of 24**
+  hosted arms; the other 16 are dominated on the point estimates — behind another arm on
+  quality *and* cost *and* speed — and for three of them (`llama_l`, `mistral_s`, `gemma_l`)
+  the dominator's quality lead is not separated, so the case is a 2%–30% cost difference.
+  (The n=20 pilot's figures for this bullet were wrong in three ways; the report's §6 lists
+  them.)
 - **A model-authored reference is biased, not just noisy.** See below.
 
 **Few specific comparisons survive.** At n=200, **34 of 276** hosted pairs separate on
 `coverage` after correcting for 276 comparisons (1 of 276 at n=20). The top six cannot be
-told apart, and a leaderboard that printed a confident 1-to-24 ordering from this data
+separated, and a leaderboard that printed a confident 1-to-24 ordering from this data
 would be overstating it.
 
 **Beware the metric that separates most.** Ranked by pairs distinguished —
@@ -258,6 +266,10 @@ exists, so you cannot check which author you got.
 
 ## Not covered
 
+- **Zero-shot, one prompt, unpinned providers, one run per arm.** The hosted arms were not
+  tried few-shot, with a different prompt or with reasoning on, were served by whichever
+  providers OpenRouter chose, and ran once each. CNN/DailyMail is public and
+  contamination was not measured.
 - **200 articles, not 20.** This section said "everything above rests on a 20-article
   sample" long after the n=200 sweep replaced it. The dev slice is 20; every number
   above is n=200 unless it says n=20.
@@ -271,8 +283,11 @@ exists, so you cannot check which author you got.
   The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
   ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
 - ~~**No local model arm yet.**~~ **Built.** `bart_l` (BART fine-tuned on this corpus,
-  1.6 GB) and `lead3` are measured, and `bart_l` ties the best hosted arm to 0.0001.
+  1.6 GB) and `lead3` are measured, and `bart_l` is not separated from the best hosted arm
+  (gap 0.0001, p = 0.99).
   This bullet outlived the work it described. Since 2026-09-30 three more local arms
-  have run (they need torch ≥ 2.6): two distillations, `bart_m` 0.3367 and `bart_s`
-  0.3276, neither separated from `bart_l`; and `bart_l_xsum` — the same architecture
-  trained on XSum — last of 29 at 0.2071, below `lead3`.
+  have run (they need torch ≥ 2.6): two distillations, `bart_m` 0.3367
+  (not separated from `bart_l`) and `bart_s` 0.3276 (not separated in the 28-arm family;
+  separated in the five-arm family of the report's §3.7 and on DailyMail); and
+  `bart_l_xsum` — the same architecture trained on XSum, with different decode settings —
+  last of 29 on `coverage` at 0.2071, below `lead3`.

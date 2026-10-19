@@ -2803,3 +2803,35 @@ evidence, one the site, READMEs and docs. Every number they recomputed held. Wha
 
 One reviewer finding was wrong: REPRODUCE's "scored identically on every item" is the
 2026-10-15 full rerun (entry 63), not the 20-item adapter check it was compared against.
+
+### 2026-10-19 · 70 — Stage one: each report reviewed alone, against what the later rounds taught
+
+Five independent reviewers each read one report as if it were the only document a reader
+sees, applying the lessons of entries 65–69 (as run here; not separated is not equal;
+matched pairs only when matched; interval vs allowance; selection effects; contamination;
+provider and run variance). Every recomputed number held in all five. What changed was
+claims beyond the numbers; each report carries dated notes for them. The largest:
+
+- **Summarisation:** "`bart_l` wins outright" was a 0.0001 margin (p 0.99); "price carried
+  no information" rested on r −0.07 whose interval (−0.46 to +0.34) excludes nothing
+  moderate; a false sentence about the n=20 shortlist; int8/int4 rows that were never run.
+- **Classification:** "three fine-tunes beat 24 frontier LLMs" held for the leader only
+  (`bert_mini` is not separated from 11 hosted arms); "the order reverses on the other 183"
+  was 1 against 3 discordant items (p 0.625); DBpedia's "full test set" calibration is a
+  5,600-row sample.
+- **NER:** the 57% and 38% figures are the extremes of 30–57% and 7–53%; `gliner`'s zero on
+  `other` comes from predicting the label 3 times; the "frontier LLM wins on person" is a
+  0.007 edge, untested.
+- **Retrieval:** the "biggest lever" sentence contradicted its own table (adding the best
+  reranker, +0.0986, beats swapping the retriever, +0.0740); the registered prediction hit
+  for one of two rerankers, not both.
+- **SummEval:** large beats small separated in six of eight families, not all eight; the
+  93% is 92% when the best judge is chosen on held-out halves; a system-identity prior
+  reaches τ 0.3637.
+
+The reviewers were wrong in places, and each fixer kept the evidence-backed text there:
+a "0.5 calibration allowance" that does not exist, a wrong item-win count, which three arms
+are dearest, and pilot figures called unrecomputable that could be recomputed.
+
+Mine: briefing the NER fixer, I had it download the Few-NERD gold again instead of reusing
+the reviewer's copy — twelve minutes of a run spent re-fetching data already on disk.

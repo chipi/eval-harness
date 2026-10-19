@@ -120,8 +120,8 @@ they compare them.
   reference's length, so a model cannot buy recall with words. It is ours and not
   comparable to any published number. ROUGE-1 and ROUGE-Lsum F1 are reported beside it.
 - **Comparability.** Absolute scores on the committed slice are **not** comparable to the
-  literature — not because of the scorer (calibrated within 0.4 ROUGE-1 on the full test
-  set) but because of the slice: CNN articles score ~11 ROUGE-1 lower than DailyMail ones.
+  literature, mainly because of the slice (the scorer reads LEAD-3 0.40 ROUGE-1 below the
+  published figure on the full test set, outside its ±0.22 interval): CNN articles score ~11 ROUGE-1 lower than DailyMail ones.
 - **Reproduce.** `examples/summarization-cnn-dailymail/README.md`; calibration:
   `calibrate.py` in the same directory.
 

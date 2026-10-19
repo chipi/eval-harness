@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Classification · AG News — eval-harness</title>
-<meta name="description" content="Four-way topic labels. Three small fine-tunes take the top three places, their lead almost all in 17 items whose gold labels the hosted field disputes.">
+<meta name="description" content="Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.">
 <meta property="og:title" content="Classification · AG News — eval-harness">
-<meta property="og:description" content="Four-way topic labels. Three small fine-tunes take the top three places, their lead almost all in 17 items whose gold labels the hosted field disputes.">
+<meta property="og:description" content="Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="eval-harness">
 <meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">
@@ -34,14 +34,14 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Classification</b> · AG News</div>
-  <h1 style="max-width:16ch">Small models lead by learning the labels.</h1>
-  <p class="dek">Four-way topic labels. Three small fine-tunes take the top three places, their lead almost all in 17 items whose gold labels the hosted field disputes.</p>
+  <h1 style="max-width:16ch">Small models lead, largely on disputed labels.</h1>
+  <p class="dek">Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.</p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Label a news snippet World, Sports, Business or Sci/Tech.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the AG News test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">30 compared: 24 hosted models billed per call; 6 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">accuracy — the field&#x27;s standard; higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bert_mini 0.9338 vs 0.9339 published; bert_base_ta 0.9514 vs 0.9514 published; bert_base_fy 0.9375 vs 0.9375 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$0.5808 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_CLASSIFICATION.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>statistically tied with the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="AG News: every learned arm by accuracy"><rect x="752.6" y="28" width="180.1" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50.0" r="7" class="dot k-local"><title>bert_base_ta · local · free
+  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="AG News: every learned arm by accuracy"><rect x="752.6" y="28" width="180.1" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50.0" r="7" class="dot k-local"><title>bert_base_ta · local · free
 accuracy 0.9600 · rank 1/30
 free: runs locally, nothing billed</title></circle><circle cx="924.8" cy="50.0" r="12" class="hit" data-tip="bert_base_ta · local · free
 accuracy 0.9600 · rank 1/30
@@ -481,7 +481,7 @@ $0.0127 per 1,000 items"/><circle cx="381.2" cy="124.9" r="11" class="ring"/><te
 </div></section>
 <section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
-  <ol class="findings"><li><div><h3>Three small fine-tuned classifiers take the top three places.</h3><p>bert_base_ta leads at 0.9600; the best hosted model, anthropic_m, scores 0.9100.</p></div></li><li><div><h3>The dearest model finished 5th of 30.</h3><p>anthropic_l billed $0.1750 for 200 items. The cheapest model statistically tied with the leader, anthropic_m, cost 2.5× less.</p></div></li><li><div><h3>Most of the lead sits in 17 disputed items.</h3><p>17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them. On the other 183 items the order reverses — anthropic_l 0.984, bert_base_ta 0.973 — though that cut is selected by the hosted arms&#x27; own errors and so flatters them.</p></div></li></ol>
+  <ol class="findings"><li><div><h3>Three small fine-tuned classifiers lead on the point estimate; only the first is separated from all but one paid arm.</h3><p>bert_base_ta leads at 0.9600; the best hosted model, anthropic_m, scores 0.9100.</p></div></li><li><div><h3>The dearest model finished 5th of 30.</h3><p>anthropic_l billed $0.1750 for 200 items. The cheapest model not separated from the leader, anthropic_m, cost 2.5× less.</p></div></li><li><div><h3>The lead is concentrated in 17 items the hosted field mostly gets wrong.</h3><p>17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them. On the other 183 items the order reverses — anthropic_l 0.984, bert_base_ta 0.973 — though that cut is selected by the hosted arms&#x27; own errors and so flatters them.</p></div></li></ol>
 </div></section>
 
 <section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>

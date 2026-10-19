@@ -156,24 +156,25 @@ What they found, and what a plain leaderboard would have hidden:
 
 - **Summarisation.** The dearest arm, at **143× the price** of the cheapest, ranks **18th of
   29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**;
-  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus ties the best LLM for $0;
-  the same BART fine-tuned on XSum finishes **last**, below copying the first three
-  sentences. *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
+  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus is not separated from the
+  best LLM (0.0001 apart), for $0; the same BART fine-tuned on XSum finishes **last** on
+  `coverage`, below copying the first three sentences (it also decodes shorter). *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
   the local models keep every verdict; the paid ones were not re-run
   ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
-- **Classification.** Three small fine-tuned models took the top three places on AG News
-  from 24 frontier LLMs, and their lead turns out to live almost entirely in 17 items
-  whose gold labels nearly the whole LLM field disputes (8 a labelling convention, 7
-  mislabels, 2 ambiguous). On DBpedia a **115× price difference** bought nothing
-  measurable, and the fine-tuned model bought a tie, not a win: the top eleven arms are
-  separated by four items, three of which the field disputes because the gold label is
-  wrong.
+- **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
+  the point estimate, LLMs as run here; only the first is separated from all but one paid
+  arm. The lead is concentrated in 17 items the hosted field mostly gets wrong — about half
+  a learnable convention, half mislabels, read by one person. On DBpedia a **115× price
+  difference** bought nothing measurable, and the fine-tuned model is not separated from
+  the top group: the top eleven arms are within four items, three of them items whose
+  label the field disputes, unadjudicated.
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
   its margin is one entity type whose meaning exists only inside that corpus, and **38%**
   of its lead over the best LLM is agreeing with annotation the rest of the field rejects.
 - **Retrieval.** The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary),
   ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
-  first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891**.
+  first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891** for
+  one of the two rerankers tested; the other landed outside the range.
 - **Judging.** Asked to grade summaries the way three experts did, 23 of the 24 LLMs are
   separated from, and ahead of, the best free scorer measured — UniEval, an evaluator
   trained for exactly this — and all 24 from BARTScore and ROUGE: the first task here where

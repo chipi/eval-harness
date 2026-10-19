@@ -75,11 +75,12 @@ Everything else is read *after* the ranking:
   weights every class equally, so it disagrees with accuracy exactly when an arm has a
   *concentrated blind spot* rather than a uniform error rate. The gap is the signal.
 - **`confidence` and calibration.** Only the local arms supply a probability. `bert_mini`'s
-  [expected calibration error](https://arxiv.org/abs/1706.04599) is 0.025 — a reliable
-  "I am not sure" you can route on, which is what makes a cheap classifier *deployable*
-  rather than merely accurate. No hosted arm has this: logprobs were never requested.
-- **The label-noise pass.** Items nearly the whole field gets "wrong" are usually items
-  whose gold label is wrong. This was added *after* the AG News report was first published
+  [expected calibration error](https://arxiv.org/abs/1706.04599) is 0.025 — honest on
+  average, but a partial router: 7 of its 11 errors sit above 0.8 confidence, so sending
+  everything under 0.8 to something dearer catches 4 of 11. No hosted arm has a confidence
+  at all: logprobs were never requested.
+- **The label-noise pass.** Items nearly the whole field gets "wrong" are candidates for a
+  wrong gold label (unadjudicated; some are a convention a zero-shot prompt does not state). This was added *after* the AG News report was first published
   and revised it — the ranking survived, the interpretation did not.
 
 ---

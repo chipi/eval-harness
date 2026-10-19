@@ -26,10 +26,10 @@
 | the choice | what the data says |
 |---|---|
 | **Can an LLM judge summaries like an expert?** | **Close to one expert, measurably below, and far ahead of every free scorer measured.** Against the three experts the best judges reach τ **0.5398**; UniEval, the best free scorer, **0.3717** on its own inputs (0.3476 on this experiment's), BARTScore **0.2562** and ROUGE-1 **0.1487**. Measured on the same footing as a human — against the mean of two experts — the best judge reaches **0.5195**, **93%** (95% interval 89–97%) of one expert's agreement with the other two (**0.5587**); UniEval reaches 64% (60% on this experiment's inputs), BARTScore 44%. The 93% is the best of 24 judges chosen on these same articles, and each judge sees all 16 summaries in one prompt, which a per-article rank correlation rewards (§3.7). |
-| **Which judge?** | **Six judges the leader cannot be separated from** — `openai_l` itself, `gemma_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` (§3.2). The leader is separated from the other 27 arms. A tie is relative to the arm tested: from `gemma_l` the set also takes in `glm_m`. |
+| **Which judge?** | **A core of four, possibly six**: the leader `openai_l` and the arms it cannot be separated from — `gemma_l`, `anthropic_l` and `openai_m` by a wide margin, `qwen37max` and `qwen_s` on a Holm boundary (§3.2). The leader is separated from the other 27 arms. A tie is relative to the arm tested: from `gemma_l` the set also takes in `glm_m`. |
 | **Cheapest judge in the tie?** | **`gemma_l`** (Gemma 4 31B, open weights) — **$0.0278** for 100 articles, **$278 per million articles** (each one call that judges 16 summaries), against $6,350 for the leader and $20,077 for `anthropic_l`. |
-| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges on mean τ and cannot be told apart from the weakest, `llama_s` (§3.3). Dimension by dimension it is closer: on coherence alone `unievalpub` is above seven judges. |
-| **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there. But the cheapest member of the top tie costs 1/23 of the leader. |
+| **Do I need an LLM here at all?** | **Yes — even against a free evaluator trained for the task.** UniEval, trained for exactly these four dimensions, is separated below 23 of the 24 judges on mean τ and cannot be told apart from the weakest, `llama_s` (§3.3). Two cautions: the judges rank all 16 summaries in one call while UniEval scores one at a time (a pointwise LLM judge was not run), so the gap is a design difference as well as a model one; and a prior that knows only which system wrote each summary reaches τ 0.3637, between the two UniEval arms. Dimension by dimension it is closer: on coherence alone `unievalpub` is above seven judges. |
+| **Does paying more help?** | **Somewhat, unlike summarisation.** Spearman(billed cost, τ) = **+0.437** over an 80× price range, against −0.037 there (October bills here, September there). But the cheapest member of the top tie costs 1/23 of the leader. |
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, but name the same unique winner only **21%** of the time (§3.5). |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
 
@@ -47,7 +47,7 @@
   same articles, summaries and reference, cased, tokenised and bracketed differently; that
   difference is 0.0241 τ, separated (p 0.0002, §3.3). UniEval's calibration row, on its own
   inputs, reproduces G-Eval's 0.377 (§5).
-- **The same text change does not measurably move a judge.** `gemma_l`, re-run on UniEval's
+- **The same text change does not measurably move the one judge tested.** `gemma_l`, re-run on UniEval's
   text from the provider that served its original run, scores 0.0013 higher, not separated.
   One re-run served by another provider scored 0.0113 higher — consistent with a provider
   effect, from one judge and one run per provider (§3.3).
@@ -60,8 +60,9 @@
 - **The top is a crowd.** `openai_l` leads at τ 0.5398 and cannot be separated from five
   others (a set that depends on which arm is tested: from `gemma_l` it differs); `gemma_l` sits 0.0013 behind it at 1/23 of the price. Four of the six are tied by
   a wide margin; the other two sit on a Holm boundary (§3.2).
-- **The large tier beats the small one in all eight families — Qwen's by 0.0012, and with a
-  substituted model — but the ladder rises steadily in only three.** Llama, Gemma and OpenAI rise with tier; DeepSeek, GLM and Mistral peak at
+- **The large tier is separated above the small one in six of eight families; DeepSeek and
+  Qwen are not separated, and Qwen's large is a substituted model. The ladder rises
+  steadily in only three.** Llama, Gemma and OpenAI rise with tier; DeepSeek, GLM and Mistral peak at
   the medium tier, Anthropic's medium sits below its small, and Qwen's small leads its
   medium (§3.4). Tier is a price label, not a size: OpenAI's medium now costs more than its
   large.
@@ -158,7 +159,14 @@ coherence and relevance and one per sentence for consistency and fluency.
 **Is the ordering real?** Yes: the global permutation test on within-article ranks gives
 p = 0.0002, and 334 of 528 pairs are distinguishable (`make leaderboard`).
 
-### 3.2 Six judges the leader cannot be separated from
+**A reference row that is not an arm.** Each of the 16 positions is the same system on every
+article (§7), so a prior that scores each summary by the mean expert score its position got
+on the other 99 articles needs no model at all. It reaches τ 0.3637 (`calibrate.py`): it
+would rank 25th here, between `unievalpub` and `llama_s`. The separations in this report are
+on that pooled τ, which includes telling good systems from bad ones as well as reading each
+summary; this report does not split the two.
+
+### 3.2 The leader and five arms it cannot be separated from
 
 The leader tested against every other arm on the same articles — paired sign-flip
 permutation, Holm step-down over the 32 opponents (`make family-test A=se_openai_l_n100_v1
@@ -229,6 +237,12 @@ separable from first. In the other five, a free local model was. Here the best f
 trained for these very dimensions, and it sits 0.168 below the leader: 64% of one expert's
 agreement against the best judges' 93% (§3.7).
 
+Two qualifications travel with that. The judges see all 16 summaries in one call and rank
+them against each other; UniEval scores one summary at a time, and a pointwise LLM judge was
+not run, so the gap is a design difference as well as a model one. And the system-identity
+prior of §3.1 (τ 0.3637) sits between the two UniEval arms: the free trained evaluator is at
+the level of a lookup that knows only which system wrote the summary.
+
 These separations are on the mean over the four dimensions, which every test here uses. One
 dimension or one statistic at a time the free scorers come closer: on Spearman ρ `unievalpub`
 (0.4671) is above four judges, on coherence τ (0.4423) above seven, and BARTScore's coherence
@@ -267,7 +281,7 @@ beats every reference-based metric, and plain ROUGE-1 beats this repository's `c
 (0.1011, against ROUGE-1's 0.1487), most of the gap in consistency and fluency. The experts
 were not rewarding length on average (τ 0.0388), though a little on relevance (0.0997).
 
-### 3.4 Tier, by family: large beats small in all eight, steadily in three
+### 3.4 Tier, by family: large is separated above small in six of eight, steady in three
 
 τ by price tier within each vendor:
 
@@ -282,13 +296,19 @@ were not rewarding length on average (τ 0.0388), though a little on relevance (
 | Anthropic | 0.4836 | 0.4802 | 0.5283 |
 | Qwen | 0.5192 | 0.5075 | 0.5204 (`qwen37max`) |
 
-The large tier beats the small one in every family. The ladder rises steadily in three; in
-the other five the middle or the smallest tier is at least as good as the next one up. Whether any single step is a real difference is a pair
-test this report has not run; the pattern is the finding.
+Large against small, paired over the 100 articles, Holm over the eight families
+(`summeval_analysis.py`): separated in six — OpenAI +0.1286, Gemma +0.1188, Llama +0.1004,
+GLM +0.0460, Anthropic +0.0446, Mistral +0.0279 — and not in two: DeepSeek +0.0105
+(p 0.1078) and Qwen +0.0012 (p 0.8952), where the large tier is a substituted model. The
+ladder rises steadily in three; in the other five the middle or the smallest tier is at
+least as good as the next one up. The medium steps were not pair-tested. Several of these
+arms were served by two or more providers in roughly even shares (`gemma_s`, `llama_l`,
+`mistral_s`), which these tests do not separate from the model.
 
 Across all 24, more expensive judges do score somewhat higher: Spearman(billed cost, τ) =
-+0.437 over an 80× range. In the summarisation experiment price carried no information
-about quality (Spearman −0.037 across its 24 hosted arms, by the same statistic).
++0.437 over an 80× range. In the summarisation experiment the same statistic is −0.037
+across its 24 hosted arms, which cannot exclude a moderate effect either way; the two use
+September and October prices respectively.
 
 ### 3.5 The order is stable, the winner is not
 
@@ -312,7 +332,10 @@ at ρ **0.333**; that report's own figure, over its whole 29-arm field, is 0.443
 is also more spread out (the judges span τ 0.35–0.54, where the summarisation arms sit
 within about 0.04 of each other), and a wider field is easier to order. The winner is a
 different matter: the top six are close enough that the unique leader changes in most draws, which is what §3.2's tie says in
-another way.
+another way. Agreement on the winner is no higher at 50 per half (12%) than at 10 or 20: at
+50 the two halves split all 100 articles between them, so their noise runs in opposite
+directions, and with four to six near-tied leaders a figure in this range is about what
+chance gives.
 
 ### 3.6 By dimension
 
@@ -363,7 +386,9 @@ over which expert is left out:
 interval 89–97% by a paired bootstrap over articles, and the gap to the expert (0.0152 to
 0.0624 for `gemma_l`) excludes zero, so they are close and measurably below. Two cautions
 on reading it as "an LLM is nearly an expert". The best judge is the best of 24 chosen on
-these same articles, which the interval does not correct for. And a judge sees all 16
+these same articles. Picking the best judge on a random half of the articles and scoring it
+on the other half, 2,000 times, gives 92% held out against 93% in sample
+(`human_ceiling.py`), so the selection is worth about a point. And a judge sees all 16
 summaries in one prompt and can rank them against each other, which is what a per-article
 rank correlation rewards; how the experts were shown the summaries is not recorded here. The order at
 the top changes on this footing (`gemma_l` above `openai_l`), which is the tie of §3.2
@@ -380,8 +405,9 @@ the judges falling short or the experts' own noise is not something this sample 
 
 ## 4. Discussion
 
-**For anyone using an LLM as a judge.** On this task almost any hosted judge is clearly
-better than any free scorer, a trained evaluator included, and a cheap open-weight one cannot be told apart from the dearest
+**For anyone using an LLM as a judge.** On this task almost any hosted judge, ranking all 16
+summaries in one call, is clearly better on mean τ than any free scorer, a pointwise trained
+evaluator included, and a cheap open-weight one cannot be told apart from the dearest
 proprietary ones on this sample. The practical reading: use a judge, start with the cheapest
 member of the top group, and check it against a small set of human judgements on your own
 outputs — which is exactly what this experiment does at scale.
@@ -488,11 +514,12 @@ between this experiment and the earlier five mix September and October prices.
 - **The tie in §3.2 has two boundary members.** They are stable to the permutation draw
   (§3.2); what a different sample of articles would do to them is not measured.
 - **The human ceiling is one expert against two.** It is computed from the original
-  release's per-expert scores (§3.7) and is somewhat pessimistic, since two experts are a
-  noisier reference than three. The judges' 93% has a bootstrap interval, but the best judge
-  is selected on the same articles, and the judge sees all 16 summaries at once, which a
-  per-article rank correlation rewards; neither is corrected for, and how the experts were
-  shown the summaries is not recorded here.
+  release's per-expert scores (§3.7). Two experts are a noisier reference than three, which
+  lowers the ceiling's absolute value; the judges are scored against the same two-expert
+  references, so it does not make the 93% ratio conservative. The best judge is selected
+  on the same articles (held out, 92%), and the judge sees all 16 summaries at once, which a
+  per-article rank correlation rewards — not corrected for; how the experts were shown the
+  summaries is not recorded here.
 
 ## 8. Reproduction
 

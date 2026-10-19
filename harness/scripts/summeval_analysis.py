@@ -91,6 +91,33 @@ def summarisation_hosted(n: int = 20) -> dict:
     return {"n_arms": len(scores), **split_half(scores, items, n, random.Random(SEED))}
 
 
+def sign_flip(deltas: list, permutations: int, rng: random.Random) -> float:
+    """Two-sided paired sign-flip permutation p, as scripts/family_test.py computes it."""
+    obs = abs(statistics.fmean(deltas))
+    hits = sum(1 for _ in range(permutations)
+               if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= obs)
+    return (hits + 1) / (permutations + 1)
+
+
+def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
+    """Large tier against small, per family: paired over articles, Holm over the eight."""
+    rng = random.Random(SEED)
+    out = {}
+    for fam in FAMILIES:
+        lg, sm = LARGE.get(fam, f"{fam}_l"), f"{fam}_s"
+        if lg in per_item and sm in per_item:
+            d = [per_item[lg][i] - per_item[sm][i] for i in items]
+            out[fam] = {"delta": statistics.fmean(d), "p": sign_flip(d, permutations, rng)}
+    m = len(out)
+    for k, (fam, v) in enumerate(sorted(out.items(), key=lambda kv: kv[1]["p"])):
+        v["holm_threshold"] = 0.05 / (m - k)
+    stop = False
+    for fam, v in sorted(out.items(), key=lambda kv: kv[1]["p"]):
+        stop = stop or v["p"] > v["holm_threshold"]
+        v["separated"] = not stop
+    return out
+
+
 def load() -> dict:
     """arm -> {"scores", "rows" (item_id -> prediction row), "billed"}."""
     arms = {}
@@ -146,6 +173,7 @@ def compute() -> dict:
         "dearest": dearest, "cheapest": cheapest,
         "spearman_tie_rate_tau": spearman([judges[a]["scores"]["tie_rate"] for a in names], tau),
         "ladders": ladders,
+        "tier_tests": tier_tests(per_item, items),
         "dimensions": dims,
         "total_billed": sum(cost),
     }
@@ -169,6 +197,10 @@ def main() -> int:
     print("\nfamily ladders, tau by tier")
     for fam, lad in f["ladders"].items():
         print(f"  {fam:9s} " + "  ".join(f"{t} {v:.4f}" for t, v in lad.items()))
+    print("\nlarge tier against small, paired over articles, Holm over the eight")
+    for fam, t in sorted(f["tier_tests"].items(), key=lambda kv: kv[1]["p"]):
+        print(f"  {fam:9s} {t['delta']:+.4f}  p {t['p']:.4f}  threshold {t['holm_threshold']:.4f}  "
+              f"{'separated' if t['separated'] else 'not separated'}")
     print("\nper-dimension leaders among the judges")
     for d, r in f["dimensions"].items():
         print(f"  {d:11s} best {r['best']} {r['best_tau']:.4f}   worst {r['worst']} {r['worst_tau']:.4f}")

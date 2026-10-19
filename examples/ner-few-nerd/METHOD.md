@@ -53,7 +53,8 @@ Two properties of the data that shape every number:
 
 ## Why these arms
 
-The pair is the whole point of this example:
+The pair is the control in this example, though not a matched pair (they differ in
+architecture as well as in training exposure):
 
 | Arm | Trained on Few-NERD? | Why it is here |
 |---|---|---|
@@ -67,8 +68,8 @@ as input, so there is no mapping loss **and** the model has never seen this data
 why spaCy is not here.
 
 The DBpedia example could not load a fine-tuned ML arm at all, so its ML-vs-LLM question
-went unanswered. This pair exists to answer it: `span_marker` leads `gliner` by **+0.3134
-F1**. The two differ in exposure to the training split and also in architecture and encoder
+went unanswered. This pair is the control for it: `span_marker` leads `gliner` by **+0.3134
+F1**, and the ML-vs-LLM answer itself rests on `span_marker` against the hosted arms. The two differ in exposure to the training split and also in architecture and encoder
 (a SpanMarker span classifier on RoBERTa against GLiNER's label-prompted matcher on
 DeBERTa-v3), so that is exposure plus architecture, not exposure alone. Summarisation has the
 matched pair: the same BART fine-tuned on CNN/DailyMail and on XSum.
@@ -119,9 +120,11 @@ different task. The whole rule is hashed into `scorer_sha256`.
 **The consensus pass is the label-noise instrument**, and for sets it has *two* directions
 that are not symmetric: a gold span almost nobody found (often an IO artifact), and a span
 almost everybody predicted that is not in gold — the stronger signal, because independent
-models do not agree on a hallucination. A span in **both** lists differs only in type, and
-that is the highest-confidence annotation error available: 34 of 768 gold types are
-unanimously rejected by all 25 learned arms.
+models do not agree on a hallucination (though the 24 hosted arms share zero-shot priors).
+A span in **both** lists differs only in type, and that is the strongest annotation-error
+candidate available: 34 of 768 gold types are rejected by at least 80% of the 26 learned
+arms, agreeing on one alternative. The report treats the resulting score change as an upper
+bound, not a correction.
 
 ---
 

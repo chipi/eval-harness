@@ -29,7 +29,8 @@ not itself in question.
   The committed 200-article slice is not that protocol: it is the first 200 test rows,
   all of them CNN's, and CNN articles score ~11 ROUGE-1 below DailyMail ones. The check
   itself is `calibrate.py`: LEAD-3 on the full 11,490-article test set, ROUGE-1 39.94
-  against a published 40.34 (`docs/evidence/calibration/summarization.json`).
+  ±0.22 against a published 40.34 — close, not exact: 0.40 below, outside that interval,
+  cause not isolated (`docs/evidence/calibration/summarization.json`).
 
 **What it gives up:** CNN/DailyMail is famously *extractive-biased* — the highlights often
 reuse article sentences nearly verbatim. A model that copies scores well. That is why
@@ -39,12 +40,12 @@ reuse article sentences nearly verbatim. A model that copies scores well. That i
 
 | Arm | Why it is here |
 |---|---|
-| 24 hosted LLMs | 8 vendors × 3 price tiers. The price tiers are the point: the experiment is as much about **what money buys** as about which model wins. |
+| 24 hosted LLMs | 8 vendors × 3 price tiers, zero-shot on one prompt, upstream provider not pinned. The price tiers are the point: the experiment is as much about **what money buys** as about which model wins. |
 | [`bart_l`](https://huggingface.co/facebook/bart-large-cnn) | Fine-tuned **on this exact dataset**. The in-distribution ceiling — what a small model does when it has seen the training split. |
 | `lead3` | The first three sentences. **Not a joke baseline.** On CNN/DailyMail it is famously hard to beat, and an LLM that does not clear it has not earned its inference cost. |
 
-| [`bart_m`](https://huggingface.co/sshleifer/distilbart-cnn-12-6), [`bart_s`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | `bart_l` distilled (306M params fp32; 230M stored and run at fp16). The **size** axis inside one model family: does distillation cost quality? (No separable loss; on one machine `bart_m` takes 0.66× `bart_l`'s time and `bart_s` 0.54×.) |
-| [`bart_l_xsum`](https://huggingface.co/facebook/bart-large-xsum) | Same architecture as `bart_l`, fine-tuned on **XSum**. The **out-of-distribution** control: is `bart_l` good at summarising, or at CNN/DailyMail? (Last of 29, below `lead3`.) |
+| [`bart_m`](https://huggingface.co/sshleifer/distilbart-cnn-12-6), [`bart_s`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | `bart_l` distilled (306M params fp32; 230M stored and run at fp16). The **size** axis inside one model family: does distillation cost quality? (`bart_m`: not separated from `bart_l`, gap 0.0095. `bart_s`: gap 0.0186 — not separated in the 28-arm family, separated in the five-arm family and on DailyMail, 0.0391. On one machine `bart_m` takes 0.66× `bart_l`'s time and `bart_s` 0.54×.) |
+| [`bart_l_xsum`](https://huggingface.co/facebook/bart-large-xsum) | Same architecture as `bart_l`, fine-tuned on **XSum**. The **out-of-distribution** control: is `bart_l` good at summarising, or at CNN/DailyMail? (Last of 29 on `coverage`, below `lead3`. Its decode settings differ too — 62/11 tokens, 6 beams, no length penalty against 142/56, 4 and 2.0 — so it is a control, not a single-variable test.) |
 
 **Why those three needed another machine:** they ship pickle checkpoints on `main`, which
 `transformers` refuses to `torch.load` below torch 2.6

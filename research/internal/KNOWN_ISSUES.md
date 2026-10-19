@@ -261,14 +261,16 @@ of us thought to check.
 ## Known weaknesses in what *was* measured
 
 - **One pass per arm, temperature 0.** Every interval is over *items*, never over *runs*.
-  Temperature 0 is not reproducible here: two runs of an identical SciFact config scored
-  0.6691 and 0.6617, because OpenRouter routes across providers.
+  Temperature 0 is not reproducible here: repeated SciFact configs differ by σ ≈ 0.0045 per
+  run (REPORT_RETRIEVAL, "Between-run variance"); which upstream served each call is not
+  recorded for those runs.
 - **Hosted model identity is unverifiable.** Runs record `identity_declared: true`, not
   proof. A provider can change weights behind an alias.
 - **Boundary vs detection errors are not separated in NER.** Few-NERD's IO tagging makes
   some gold spans unrecoverable by construction; that share is unquantified.
-- **`gliner`'s 0.5 threshold is untuned**, so the +0.3134 training effect is an upper
-  bound on that comparison.
+- **`gliner`'s 0.5 threshold is untuned**, one more confound on top of architecture: the
+  +0.3134 gap is exposure plus architecture plus an untuned threshold, not a training
+  effect alone.
 - **No confidence anywhere hosted.** Logprobs were never requested, so calibration exists
   only for the three local arms that supply a probability.
 - ~~**Nemenyi above k=25 prints no pairwise verdict.**~~ **CLOSED 2026-09-30.** This
