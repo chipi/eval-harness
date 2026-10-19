@@ -164,8 +164,8 @@ What they found, and what a plain leaderboard would have hidden:
 - **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
   the point estimate, LLMs as run here; only the first is separated from all but one paid
   arm. The lead is concentrated in 17 items the hosted field mostly gets wrong — about half
-  a learnable convention, half mislabels, read by one person. On DBpedia a **115× price
-  difference** bought nothing measurable, and the fine-tuned model is not separated from
+  a learnable convention, half mislabels, on one rater's reading. On DBpedia a **115× price
+  difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
   the top group: the top eleven arms are within four items, three of them items whose
   label the field disputes, unadjudicated.
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of

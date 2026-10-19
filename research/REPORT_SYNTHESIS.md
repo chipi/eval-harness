@@ -153,7 +153,7 @@ the three-tier breakdown, the memory budgets, and four ways it could be wrong:
 | **3** | **The axis is training exposure, not free-vs-paid — with one exception** | A free arm ranks first in 3 of 6 on the point estimate (one by 0.0001) and is not separated from first in 2 more. Until 2026-10-19 this row said a free arm never loses once one trained for the task can run. That is false: on SummEval UniEval, a free evaluator trained for the task, is separated below 23 of the 24 judges and ties only the weakest. Why it loses where the other trained arms win is not tested here (§3). At price zero on both sides: BART fine-tuned on CNN/DailyMail vs the same BART on XSum, **1st vs 29th of 29** on `coverage` — the closest to a matched pair here, though its decode settings differ too — and `span_marker` 0.7674 vs the zero-shot `gliner` 0.4540, +0.3134, which also differ in architecture. |
 | **4** | **A pilot correlates beautifully and picks the wrong winner** | ρ(dev, full) = **0.72–0.90** in every experiment that ran a pilot (0.68–0.90 where it can be recomputed from the committed runs), and the pilot chose wrong in **3 of 5** (SummEval ran none). On SciFact it chose the tenth by point estimate, 0.0265 behind the leader and not separated from it; on AG News, now, the fifth of thirty. |
 | **5** | **The gold is wrong or noisy, in every corpus that was checked** | 4 for 4 where anyone looked; 2 were never checked. SummEval's experts gave different scores to 41 of 44 groups of identical summaries. Few-NERD: **34 of 768** gold entity types rejected by ≥80% of the 26 learned arms. DBpedia's top eleven are separated by four items, three of which the field disputes. On AG News the fine-tuned lead is concentrated in **17 items** the hosted field mostly gets wrong (19 at a 75% cut, 20 at 70%) — fine-tunes agree with the gold on 12–14, `anthropic_l` on 0 — and on the other 183 items there is no difference (1 against 3 discordant items, p = 0.625). The 17 are selected by the hosted arms' own errors, and read by one rater as about half a learnable convention, half mislabels. |
-| **6** | **The instrument broke before the models got interesting** | In five of six. 8 defects tabulated; **3 moved a single arm further than the gap separating most of the field** — the label parser (8.6 accuracy points), the unparsed-as-empty rule (+0.0214 f1), the reasoning flag (0.6124 → 0.6991). |
+| **6** | **The instrument broke before the models got interesting** | In five of six. 8 defects tabulated; **3 moved a single arm further than the gap separating most of the field** — the label parser (8.6 accuracy points to one arm on DBpedia), the unparsed-as-empty rule (+0.0214 f1), the reasoning flag (0.6124 → 0.6991). |
 | **7** | **The metric's shape decides which diagnostics can be read** | Not which model wins — which *tools* work. On DBpedia at n=10, **19.9 of 28 arms tied** and the rank statistic was correlating arm names; 354–399 of 400 resampling draws are undecided at every size, and in every decided one the two halves crown different arms. |
 
 ### The economics
@@ -216,7 +216,7 @@ Four more findings that travel:
 6. **Do not select on a pilot**; use it to catch instrument bugs, which is what it is good at.
 
 **When paying more is right:** you cannot label data; the task is unlike anything a small
-model has seen — on SummEval even a free evaluator trained for it lost to 23 of the 24 judges; a wrong answer is
+model has seen — on SummEval the one free evaluator trained for it, scoring one summary at a time, lost to 23 of the 24 judges ranking all 16 at once; a wrong answer is
 expensive; your volume
 is low enough that the whole spread is rounding error (at 1,000 items/month the entire DBpedia range is $1.35); or
 engineering time costs more than the API. The claim is not that expensive models are bad —
@@ -255,7 +255,7 @@ re-run from the committed runs on 2026-10-15, the SummEval rows on 2026-10-19
 | training exposure | experiment | arm | rank (of N arms) | quality minus best paid arm (that task's metric) |
 |---|---|---|---|---|
 | **Fine-tuned on this dataset** | Extraction · Few-NERD | `span_marker` | **1st of 28** | **+0.0810**, separated (p = 0.0001 vs 0.05) |
-| | Classification · AG News | `bert_base_ta` | **1st of 30** | +0.0500, not separated (p = 0.022 vs 0.0167) |
+| | Classification · AG News | `bert_base_ta` | **1st of 30** by point estimate | +0.0500, not separated (p = 0.022 vs 0.0167) |
 | | Classification · AG News | `bert_base_fy` | 2nd of 30 | +0.0400, not separated (p = 0.077 vs 0.0167) |
 | | Classification · AG News | `bert_mini` | 3rd of 30 | +0.0350, not separated (p = 0.116 vs 0.0167) |
 | | Summarisation · CNN/DM | `bart_l` | **1st of 29** | +0.0001, not separated (p = 0.99 vs 0.05) |
@@ -400,7 +400,7 @@ machine it demands. They are not close in size.
 | Extraction · Few-NERD | `span_marker` | **499 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/103** |
 | Summarisation · CNN/DM | `bart_l` | **1.6 GB** | **0.3461** | DeepSeek-V4.1-Flash | 552B backbone, 510 GB checkpoint | 0.3460 | **not separated** (gap 0.0001) |
 | Retrieval · SciFact | `e5_base` | **438 MB** | 0.7191 | GLM-4.5-Air | ~221 GB | **0.7437** | LLM wins by 0.0246, **not separated** |
-| Classification · DBpedia | `bert_base_fy` | **438 MB** | **0.9857** | GLM-4.6 (or Gemma-4-26B, 52 GB) | ~714 GB | **0.9857** | **exact tie**, at 1/1,630 the size (1/119 of Gemma) |
+| Classification · DBpedia | `bert_base_fy` | **438 MB** | **0.9857** | GLM-4.6 (or Gemma-4-26B, 52 GB) | ~714 GB | **0.9857** | **same score** (not separated), at 1/1,630 the size (1/119 of Gemma) |
 | Judging · SummEval | `unievalpub` (UniEval, trained to judge; its own inputs) | **3.1 GB** | 0.3717 | Gemma-4-31B | ~63 GB | **0.5384** | **LLM wins by 0.1667, separated**, at 20× the size |
 
 *Sizes are on-disk checkpoint sizes. A model in parentheses is an alternative with its own
@@ -853,7 +853,7 @@ would have:
 |---|---|---|
 | Summarisation · CNN/DM | scorer bug surviving two sweeps | drove `rescore.py` into existence |
 | Classification · AG News | duplicate-run check flagged honest ties as copies | 4 false alarms in one sweep |
-| Classification · AG News | the **label parser** is worth **8.6 accuracy points** to one arm | wider than most of the field's spread |
+| Classification · DBpedia | the **label parser** is worth **8.6 accuracy points** to one arm | wider than most of the field's spread |
 | Extraction · Few-NERD | an unreadable answer scored **1.0** on empty-gold items | +0.0214 f1 to one arm |
 | Extraction · Few-NERD | `normalizer_sha256` covered the normaliser, not the scorer | a scorer change was invisible in the fingerprint |
 | Retrieval · SciFact | the adapter never disabled reasoning, unlike the other three | one arm went **0.6124 → 0.6991** once fixed |
@@ -1174,7 +1174,7 @@ Ordered by what they are worth, not by how obvious they are.
 
 **When paying more IS right**, and this report should not be read as saying never: when
 you cannot label data and the task is unlike anything a small model was trained on
-(on SummEval, even a free evaluator trained for it lost to 23 of the 24 LLM judges); when the
+(on SummEval the one free evaluator trained for it, scoring one summary at a time, lost to 23 of the 24 LLM judges ranking all 16 at once); when the
 quality
 difference is worth more than the bill (at 1,000 items/month the entire
 DBpedia spread is $1.35 and the analysis is not worth your time); when a single wrong

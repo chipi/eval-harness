@@ -77,8 +77,8 @@ What differs is **what the criteria can do**:
   task the field's consensus errors *are* the ceiling. Fourteen arms reported byte-identical
   accuracy, macro-F1 **and** worst class — traced to one item: *"Dukart's Canal"*, gold
   `NaturalPlace`, which 20 of 24 arms called `MeanOfTransportation`. It is a man-made
-  waterway built to move coal. The models are right and the ontology's label is the odd one
-  out.
+  waterway built to move coal. On one rater's reading the models' answer is defensible and
+  the ontology's label is the odd one out; nobody has adjudicated it.
 - **And rank-stability stops being readable.** With 19.8 of 27 arms tied at n=10 (19.9 of
   28 with the fine-tuned arm), Spearman's ρ was correlating *arm names*. That is what drove
   the `arms tied 1st` column into the tool, and later the tie-correct ρ. Requiring a unique

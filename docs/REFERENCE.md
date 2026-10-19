@@ -51,7 +51,7 @@ Implementation: [`google-research/rouge`](https://github.com/google-research/goo
 |---|---|---|
 | **`correct`** ← primary | quality | 1 if the predicted label equals the gold label, else 0. Its mean **is** accuracy. |
 | `parsed` | quality | Whether the output could be read as a label at all. Quality, not descriptive: an arm that cannot be parsed cannot be deployed, whatever it knows. |
-| `correct_after_repair` | descriptive | Whether a lenient re-parse would have rescued it. The gap between this and `correct` is **what the parser is worth** — 8.6 accuracy points to one arm. |
+| `correct_after_repair` | descriptive | Whether a lenient re-parse would have rescued it. The gap between this and `correct` is **what the parser is worth** — 8.6 accuracy points to one arm on DBpedia (7.5 on AG News). |
 | `confidence` | descriptive | The model's own probability for its answer. Only the local ML arms supply it; no hosted arm does, because logprobs were never requested. |
 | `answer_words`, `fmt_verbose`, `fmt_markdown` | descriptive | Did it answer with one word, or a paragraph containing one. |
 

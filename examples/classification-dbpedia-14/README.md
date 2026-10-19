@@ -90,13 +90,14 @@ which the result says you do not need.
 
 ## What this example shows that AG News could not
 
-**A 115× price difference buys nothing measurable.** `qwen_m` leads at 0.9929 for
+**A 115× price difference buys nothing this slice can detect.** `qwen_m` leads at 0.9929 for
 **$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**, and
-`gemma_m` ties the fine-tuned arm at 0.9857 for $0.0033 — 115× cheaper. Holm over a family
+`gemma_m` scores the same 0.9857 as the fine-tuned arm for $0.0033 — 115× cheaper. Holm over a family
 of 27 declared before the p-values were read (the leader was picked because it led): the
 leader is ahead of 27 of 27 and **separated from only 8**. It is not separated from the other
 19, one of them the free fine-tuned classifier, at gaps of 1 to 8 items; the top eleven sit
-within four items of each other.
+within four items of each other. The smallest gap Holm separated is 10 items (+0.0357), so a
+benefit of paying of up to about 3 points cannot be ruled out.
 
 **Label noise is the same size as the signal.** Three items are missed by 24–25 of the 26
 learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `Building`
@@ -116,8 +117,8 @@ first unparseable answers in either example appear here — including one empty 
 credible DBpedia-14 fine-tune on the Hub ships `pytorch_model.bin` without safetensors;
 they predate safetensors becoming default, and `transformers` refuses a pickle below torch
 2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch 2.14 and it runs
-unmodified. Measured 2026-09-30: **0.9857 at $0, 87 ms/item on CPU — statistically tied
-with the $0.0143 leader (p = 0.62), not above it.** AG News's fine-tuned lead does not
+unmodified. Measured 2026-09-30: **0.9857 at $0 marginal, 87 ms/item on CPU — not separated
+from the $0.0143 leader (p = 0.62), not above it.** AG News's fine-tuned lead does not
 carry over to a saturated task; "fine-tune costs nothing" does.
 
 ---

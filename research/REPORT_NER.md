@@ -1,7 +1,7 @@
 # Evaluation report — 24 LLMs and two NER models on Few-NERD
 
 **Dataset** `few_nerd_280` · 280 Wikipedia-derived sentences · 768 gold entities · 8 coarse types
-**Protocol** supervised test split, 280 of 37,648 sentences, seeded · metric is ours (mean per-sentence F1, coarse types, string match); standard micro-F1 in §2 · calibration: `span_marker`, standard fine-type micro-F1, 0.7047 vs 0.7040 published, inside its own bootstrap 95% interval (±0.016) — [docs/PROTOCOL.md](../docs/PROTOCOL.md#extraction--few-nerd)
+**Protocol** supervised test split, 280 of 37,648 sentences, seeded · metric is ours (mean per-sentence F1, coarse types, string match); standard micro-F1 in §2 (hosted arms never scored the standard way) · calibration: `span_marker` only, standard fine-type micro-F1, 0.7047 vs 0.7040 published, inside its own bootstrap 95% interval (±0.016) — [docs/PROTOCOL.md](../docs/PROTOCOL.md#extraction--few-nerd)
 **Arms** 24 hosted models (8 vendors × 3 price tiers) · 1 fine-tuned span tagger · 1 zero-shot span tagger · 2 non-learned baselines
 **Design** 1 pass per arm · one zero-shot prompt for every hosted arm (bare type names, no definitions, no examples), temperature 0, reasoning off, `max_tokens` 600, no provider pinned (OpenRouter routed the open-weight arms across many providers; `gemma_m` across 13) · Few-NERD is public, contamination unmeasured (§7) · **$2.61 billed** ($2.05 by the price table — see Correction)
 **Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md)
@@ -21,78 +21,83 @@
 
 ## Executive summary
 
-### The decision, in one table
+**If you have labelled data in a fixed taxonomy, fine-tune a small tagger; do not rent a
+zero-shot hosted LLM for this job.** `span_marker` — a published SpanMarker checkpoint
+trained on Few-NERD's own training split and scored in-distribution on the same taxonomy;
+499 MB, CPU, 0.76 s/item on this run's machine — scores **0.7674** against **0.6864** for the
+best of 24 zero-shot hosted LLMs (`openai_m`, $2,324/month per 1M items). A paired
+permutation test with Holm correction separates it from all 27 other arms: the one separated
+win in the six experiments. It costs $0 to run; labelling and training cost were not
+measured. The best self-hostable LLM by point estimate, `gemma_m` (Gemma-4-26B-A4B: 25.8B
+parameters of which about 4B are active, ~52 GB of weights; 0.6733 as served by 13 OpenRouter
+providers, never run locally), trails by 0.0941 and is **103× larger to download**; on weight
+size alone it fits a 64 GB box with ~12 GB left, which was not tested. If you do rent, the data
+cannot choose among `openai_m` and the seven hosted arms it is not separated from (gaps up to 0.0383
+F1; 78× price range at the routed mix billed in this run): take the cheapest, `gemma_m`
+(≈$32/month per 1M items, +0.0131 F1 behind, p = 0.43). Do not buy `anthropic_l`, the dearest
+arm ($2,463/month, 0.0066 behind `openai_m`, not separated).
+
+Part of the lead is learned convention, which is what fine-tuning is for. Against `openai_m`,
+57% of the lead (30–57% across the hosted arms) is on one catch-all type, `other`, that the
+prompt never defined; separately, up to 38% is agreement with 34 gold labels that at least
+80% of the learned arms reject — one reader's judgement, no second annotator. The two overlap
+and cannot be added. What survives: under the annotation bound the lead over `openai_m` falls
+from 0.0810 to 0.0503 and stays ahead (separation was not retested under the bound). What
+the result does not show: that a small model beats an LLM at NER in general, or an LLM given
+definitions or labelled examples (not run). The hosted arms were never scored the standard
+micro-F1 way (only `span_marker` is calibrated: 0.7047 vs 0.7040 published), and Few-NERD
+contamination of the hosted models is unmeasured.
+
+Corrections and their dates: §6.
+
+### Supporting facts
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`span_marker`** — SpanMarker fine-tuned on this corpus, CC-BY-SA-4.0, **499 MB**, CPU, 0.76 s/item. **0.7674 — separated from all 27 other arms** (the 24 hosted, `gliner`, `capitalized`, `nothing`), the only unambiguous winner in this repo, as run here. |
-| **Self-host · open-weight LLM, by point estimate** | **`gemma_m`** — Gemma-4-26B-A4B, Apache-2.0, **25.8B parameters / ~52 GB of weights**. **0.6733** as served by 13 OpenRouter providers (not run locally) — **0.0941 worse** than a tagger with **103× less download size** (≈207× fewer parameters: 25.8B against the tagger's 124.75M). The clearest ML-beats-LLM result in the set, as run here. |
-| **Self-host · open-weight LLM, ≤128 GB** | **The same model, on weight size alone.** 52 GB of weights fits 128 GB with room to spare; KV cache and runtime memory were not measured and nothing was run locally. |
-| **Self-host · open-weight LLM, ≤64 GB** | **The same model on weight size alone**: 52 GB of weights leaves 12 GB of a 64 GB box for KV cache and runtime. Nothing was run on a 64 GB machine, so whether it fits in practice is untested. The score is the served model's — **and it trails a 499 MB tagger by 0.0941.** |
-| **Deploy — rented API** | **`openai_m`** is best by point estimate: **$2,324/month per 1M items**, 0.6864 — **10.6% below free** and 2× slower. It is not separated from seven other hosted arms, up to 0.0383 F1 behind it (`gemma_l`: p = 0.0084 against a Holm threshold of 0.0071); `gemma_m` is 74× cheaper (≈$32/month) at a +0.0131 gap (p = 0.43). The data does not choose between them. There is no reason to rent unless you cannot run a 499 MB model. |
-| **What should I not deploy?** | `anthropic_l` — the **most expensive arm in the set**, **$2,463/month per 1M items**, scoring **11.4% below free**; 0.0066 behind the cheaper `openai_m` (p = 0.67, not separated, §3.3) and 78× the price of `gemma_m` for a +0.0065 point-estimate gap (not tested pairwise). |
-| **Does paying more help?** | **A little, and not enough.** Across the 24 hosted arms a log-linear fit gives **+0.0407 F1 per 10× in cost** (r = 0.50, 95% Fisher interval 0.13 to 0.75) — 5.9% of the best hosted arm's F1, 5.3% of `span_marker`'s. It is a cross-vendor association, confounded with vendor, not a measure of what paying buys. It is the steepest absolute slope of the six experiments, though SummEval's is larger as a share of its best score ([synthesis](REPORT_SYNTHESIS.md)) — and the free tagger still beats every paid arm. |
-| **How much of the win is real?** | **Against `openai_m`, 57% of its margin is one entity type** (`other`; 30–57% across the 24 hosted arms, for a prompt that defines no type), and **up to 38% of its lead** disappears if the 34 labels 80% of the field rejects are resolved the field's way (19–34% against the next three hosted arms; 7–53% across thresholds 90% to 70%) — an upper bound, and the voters share zero-shot priors. On `person`, three hosted arms edge it by 0.004–0.007 (untested). |
-| **Is a pilot enough?** | Here yes — ρ = 0.895 over the 27 arms measured at the time (0.903 with all 28, §3.8), right winner. Across experiments, it was wrong in 3 of the 4 others that ran a pilot (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
-| **Fine-tune or pay?** | **Fine-tune, if you have labelled data — as run here.** `span_marker` (fine-tuned on the training split) scores 0.7674 against 0.6864 for the best of 24 zero-shot hosted arms, at $0; an LLM given definitions or examples was not run. The zero-shot control `gliner` (0.4540, +0.3134 F1 behind) differs in training exposure and in architecture, so that gap is exposure plus architecture, split unmeasured (§3.5); the case for fine-tuning rests on `span_marker` beating the LLMs, not on it. |
+| **Self-host · small ML** | **`span_marker`**: CC-BY-SA-4.0, 499 MB, CPU, 0.76 s/item on this run's machine. **0.7674, separated from all 27 other arms** (the 24 hosted, `gliner`, `capitalized`, `nothing`). The one separated win in the six experiments. |
+| **Self-host · open-weight LLM (≤64 or ≤128 GB)** | **`gemma_m`**, Apache-2.0, ~52 GB of weights: fits 128 GB, and leaves ~12 GB of a 64 GB box for KV cache and runtime. Nothing was run locally. 0.6733 as served by 13 providers, **0.0941 behind** the tagger, 103× its download size (25.8B total / ~4B active parameters against 124.75M). |
+| **Deploy · rented API** | **`openai_m`** is best by point estimate: $2,324/month per 1M items, 0.6864, 10.6% below `span_marker`, 2× slower. Not separated from seven other hosted arms, up to 0.0383 behind (`gemma_l`: p = 0.0084 against a Holm threshold of 0.0071). Cheapest of the eight: `gemma_m`, ≈$32/month, +0.0131 behind (p = 0.43). |
+| **What not to deploy** | `anthropic_l`: the most expensive arm, $2,463/month per 1M items, 11.4% below `span_marker`. 0.0066 behind `openai_m` (p = 0.67, not separated, §3.3); 78× the price of `gemma_m` at the routed mix billed in this run for a +0.0065 point-estimate gap (not tested pairwise). |
+| **Does paying more help?** | A little, not enough. Across the 24 hosted arms, +0.0407 F1 per 10× in cost (r = 0.50, 95% Fisher interval 0.13 to 0.75): 5.9% of the best hosted F1, 5.3% of `span_marker`'s. A cross-vendor association confounded with vendor. The steepest absolute slope of the six experiments (SummEval's is larger as a share of its best score; [synthesis](REPORT_SYNTHESIS.md)). |
+| **What part of the lead is learned convention?** | Against `openai_m`: 57% on `other` (30–57% across the 24 hosted arms, for a prompt that defines no type) and up to 38% on 34 disputed labels (19–34% against the next three hosted arms; 7–53% across thresholds 90% to 70%; voters share zero-shot priors). They overlap. Lead after the bound: 0.0503. On `person`, three hosted arms edge it by 0.004–0.007 (untested). |
+| **Is a pilot enough?** | Here yes: ρ = 0.895 over the 27 arms measured at the time (0.903 with all 28, §3.8), right winner. In 3 of the 4 other experiments that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
+| **Fine-tune or pay?** | Fine-tune, if you have labelled data, as run here: 0.7674 against 0.6864 at $0 to run. The zero-shot control `gliner` (0.4540, +0.3134 behind) differs in training exposure and architecture, so that gap is both, split unmeasured (§3.5); the case rests on `span_marker` beating the LLMs, not on it. |
 
 *How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
-higher is better; §2). **Free** = `span_marker`, self-hosted at $0. **% below free** is the
-relative gap: (0.7674 − the arm's score) / 0.7674. **$/month per 1M items** = what the
-provider billed for the 280 sentences, scaled to one million items a month.
-**Separated** = a paired sign-flip permutation test on per-sentence F1, Holm-corrected
-over the declared family of 27 opponents at α = 0.05 (§3.2).
-
-*Cross-cutting context for all six experiments:
-[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).*
+higher is better; §2). **% below** is relative to `span_marker`: (0.7674 − the arm's score) /
+0.7674. **$/month per 1M items** = what the provider billed for the 280 sentences, scaled to
+one million items a month. **Separated** = a paired sign-flip permutation test on per-sentence
+F1, Holm-corrected over the declared family of 27 opponents at α = 0.05 (§3.2).
+Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ### What this experiment specifically found
 
+1. **A winner, not a group.** `span_marker` scored **0.7674** against a hosted field of
+   0.524–0.686, separated from all 27 other arms (Holm step-down over a family declared in
+   advance). Neither classification corpus produced this: AG News's leader is tied with three
+   other arms, DBpedia's with nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md),
+   after the 2026-09-30 fine-tune runs).
 
-**In this run, a free 499 MB tagger fine-tuned on Few-NERD scored 0.7674 and separated from
-all 27 other arms — 24 hosted LLMs run once, zero-shot, on one prompt of bare type names (no
-definitions, no examples), temperature 0, reasoning off, provider unpinned — scored on 8
-coarse types by string match. It is the first unambiguous winner in this repo. Against
-`openai_m`, 57% of its lead is one catch-all type, `other`, that the prompt never defined;
-on `person`, three hosted arms edge it. How much of the lead is training exposure is not
-isolated.**
+2. **Behind it, the familiar tie.** `openai_m` (0.6864) separates from 16 of the 23 other
+   hosted arms (20 of the 27 opponents once `span_marker`, `gliner`, `capitalized` and
+   `nothing` are counted). The seven it cannot separate from span `gemma_m` at **$0.0088** to
+   `anthropic_l` at **$0.6897**, a 78× price range, with gaps of 0.0066 to 0.0383 F1 that
+   these 280 sentences cannot resolve: not shown different, not shown equal. DBpedia's figure
+   was 115×.
 
-**On deployment:** this is the task where a small model wins by the widest margin. The
-best open-weight LLM you could self-host by point estimate, Gemma-4-26B at 52 GB of weights,
-scores **0.6733** — **103× the download size** of `span_marker` (≈207× the parameters:
-25.8B against 124.75M) and **0.0941 worse**. Nothing was run on a 64 GB machine: 52 GB is
-weights only, before KV cache and runtime, and the 0.6733 is the model as 13 OpenRouter
-providers served it. On weight size alone it fits a 64 GB box; whether it runs there is
-untested.
-
-1. **An actual winner, not a group.** `span_marker` scored **0.7674** against a hosted
-   field of 0.524–0.686. Holm step-down over a family of 27 declared in advance:
-   **separated from all 27 other arms** (the 24 hosted, plus `gliner`, `capitalized` and
-   `nothing`). Neither classification corpus produced this — AG News's
-   leader is tied with three other arms, DBpedia's with nineteen (counts per
-   [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs).
-
-2. **And behind it, the familiar tie.** The best hosted arm, `openai_m` at 0.6864,
-   separates from 16 of the 23 other hosted arms (20 of the 27 opponents once `span_marker`,
-   `gliner`, `capitalized` and `nothing` are counted). The seven it cannot separate from span
-   `gemma_m` at **$0.0088** to `anthropic_l` at **$0.6897** — a **78× price range**, with
-   gaps of 0.0066 to 0.0383 F1 that these 280 sentences cannot resolve: not shown different,
-   not shown equal. DBpedia's figure was 115×. Two unrelated tasks, the same shape.
-
-3. **The lead is concentrated in one label, and the prompt never defined it.** Broken down
-   by type, `span_marker` beats `openai_m` by +0.4693 F1 on `other` — Few-NERD's catch-all
-   — which is **57.2%** of its support-weighted advantage over that arm. Across the 24
-   hosted arms the share runs from 29.8% (`llama_l`) to 57.2% (`openai_m`; `openai_l` 52.2%,
-   `anthropic_l` 43.3%, `gemma_m` 39.2%), and it is conditional on a prompt that gave bare
-   type names and no definitions. Membership of `other` follows an annotation convention
-   (languages, diseases, currencies); `openai_m` still gets 0.3017 on it from the label
-   alone. On `person`, three hosted arms edge `span_marker` — `openai_m` by 0.0067,
-   `anthropic_l` by 0.0054, `openai_l` by 0.0040, untested at n = 166 — and the other 21
-   trail it by 0.0007 to 0.0894.
+3. **The lead is concentrated in one label, and the prompt never defined it.** By type,
+   `span_marker` beats `openai_m` by +0.4693 F1 on `other`, Few-NERD's catch-all, which is
+   **57.2%** of its support-weighted advantage over that arm. Across the 24 hosted arms the
+   share runs from 29.8% (`llama_l`) to 57.2% (`openai_m`; `openai_l` 52.2%, `anthropic_l`
+   43.3%, `gemma_m` 39.2%), conditional on a prompt of bare type names. Membership of `other`
+   follows an annotation convention (languages, diseases, currencies); `openai_m` still gets
+   0.3017 on it from the label alone. On `person`, three hosted arms edge `span_marker`:
+   `openai_m` by 0.0067, `anthropic_l` by 0.0054, `openai_l` by 0.0040, untested at n = 166;
+   the other 21 trail it by 0.0007 to 0.0894.
 
 4. **The zero-shot control almost never predicts `other`.** `gliner`, handed the same
    eight labels and never trained on Few-NERD, emitted `other` 3 times in 280 sentences
-   (`openai_m` 93, `anthropic_l` 131, `span_marker` 97) and gets **0 of 86** right — while
+   (`openai_m` 93, `anthropic_l` 131, `span_marker` 97) and gets **0 of 86** right, while
    reaching 0.7701 on `person`. With the label predicted 3 times, the 0.0000 is mostly that
    this label-prompted matcher skips the bare word "other"; why is not measured. `gliner`
    also differs from `span_marker` in architecture and encoder (§3.5), so the 0.0000 is not
@@ -101,29 +106,16 @@ untested.
 5. **34 of 768 gold types (4.4%) are rejected by at least 80% of the 26 learned arms, agreeing on one alternative**, and of the 14 listed in §3.6
    the field looks right to this reader: "Georgia Dome" filed as `location`, "Nazis" as
    `person`, "EDFL" as `event`. Resolving all 34 the arms' way moves every hosted arm
-   **+0.024 to +0.039** and `span_marker` **+0.0060** — it was trained on the convention and
-   never lost those points. Its lead over `openai_m` falls from 0.0810 to **0.0503**: **up
-   to 38% of that lead is agreement with the annotation** — an upper bound that depends on
-   the selection rule (7% to 53% across the four top hosted arms and thresholds of 90% to
-   70%, §3.6), scored with votes from arms that include the ones being scored and share
-   zero-shot priors.
+   **+0.024 to +0.039** and `span_marker` **+0.0060**, since it was trained on the
+   convention. The lead over `openai_m` falls from 0.0810 to **0.0503**: **up to 38% of that
+   lead is agreement with the annotation**, an upper bound that depends on the selection rule
+   (7% to 53% across the four top hosted arms and thresholds of 90% to 70%, §3.6), one reader
+   and no second annotator, scored with votes from arms that include the ones being scored and
+   share zero-shot priors.
 
 6. **A scoring bug paid non-answers full marks, and no fingerprint could have caught it.**
    An unreadable output was indistinguishable from an empty prediction; on the 12% of
    items with no gold entities that scored **1.0**. Found and fixed mid-sweep; see §6.
-
-> **Reframed 2026-10-19.** Until then this summary said: the winner "separated from 27 of
-> 27" (24 hosted plus `gliner`, `capitalized`, `nothing`; `openai_m`'s "20 of 27" counts
-> `span_marker` and those three, so 16 of 23 other hosted arms); that `gliner` was the "same
-> model class" and "the cleanest isolation of task-specific training" (it is a different
-> architecture and emitted `other` 3 times, §3.4–3.5); that "57% of the margin is one type"
-> (it is 57% against `openai_m`, the maximum; 30–57% across the 24 hosted arms) whose
-> meaning "has no inferable meaning" (`openai_m` gets 0.3017 on it from the label alone);
-> that "a frontier LLM wins" on `person` (three of 24 hosted arms edge it, by at most
-> 0.0067, untested); that "38% of that lead is conformity to the annotator, not
-> correctness" (up to 38%, selection-dependent, §3.6); and that 52 GB "fits a 64 GB box
-> natively" with "the same answer at every budget" (nothing was run on 64 GB; 52 GB is weights
-> only). The numbers did not change; the claims around them were wider than the evidence.
 
 ---
 
@@ -274,7 +266,7 @@ separated from 16 of the 23 other hosted arms (20 of 27 opponents counting `span
 | nothing | 0.1250 | 0.1250 | 1.000 | ~0 | $0 |
 
 
-### 3.2 The only unambiguous winner this repo has produced
+### 3.2 The one separated win in this repo
 
 `span_marker` vs a family of 27 declared before any p-value was read, Holm step-down at
 α = 0.05, sign-flip permutation on paired per-item F1:
@@ -445,12 +437,10 @@ the `gemma_m` and `openai_l` rows above. F1 is mean per-sentence F1 throughout.
 **`span_marker` moves four to six times less than the hosted field**, because it was
 trained on the convention and was never losing those points. Its 0.0810 lead over
 `openai_m` becomes **0.0503** under the bound: **up to 38% of that lead is agreement with
-the annotation.** It stays ahead, and it stays separated — but the margin is materially
-smaller than the leaderboard shows. The 38% is the figure against the arm the relabelling
+the annotation.** It stays ahead — separation was not retested under the bound — but the
+margin is materially smaller than the leaderboard shows. The 38% is the figure against the arm the relabelling
 helps most: against `anthropic_l` it is 22.3%, `gemma_m` 19.4%, `openai_l` 34.1%.
 
-*Until 2026-10-19 this read "38% of that lead is agreeing with the annotator rather than
-being right". The bound cannot say which of the two it is.*
 
 **The 38% depends on how the 34 labels were selected.** Share of `span_marker`'s lead
 removed by the bound, recomputed with `extraction_report`'s consensus and ceiling functions
@@ -576,21 +566,12 @@ look.** `span_marker` wins outright and separates from all 27 opponents. But dec
   bound; `openai_m` gains 0.0365, and it is the **difference** between the two that
   closes the margin.
 
-  *This bullet said "~7%" for a week, from dividing span_marker's own 0.0060 gain by
-  the margin. That is the wrong quantity: a share of the margin is about how the margin
-  MOVES, and the margin moves by the difference between the two arms, not by one arm's
-  gain. §0 and §3.6 of this same report already said 38% and were right.*
-
-  *Worse, when round 3 flagged the inconsistency I recorded it here as a disagreement
-  and wrote that I "could not reproduce 38% from any pairing of the committed numbers".
-  It was my own figure, 350 lines up in the file I was editing. Round 4 had to point at
-  my own lines 34, 82 and 323 to show me. I was defending a number against myself.*
 - On `person`, three hosted arms edge it, by at most 0.0067 (untested).
 
 So the defensible claim is: **if your labels are a fixed in-house taxonomy and you can
 label training data, a 499 MB model on CPU beat every hosted LLM as run here — one
 zero-shot prompt of bare type names, no examples, temperature 0, reasoning off, provider
-unpinned, scored on 8 coarse types by string match — at 0.76 s/item and $0.** How much of
+unpinned, scored on 8 coarse types by string match — at 0.76 s/item on CPU (this run's machine) and $0 to run; labelling and training cost were not measured.** How much of
 that lead is training exposure is not isolated: the only untrained span tagger, `gliner`,
 differs in architecture too. That is a real and useful claim — it is the podcast-product
 case. The claim it does *not* support is that the small model is better at named-entity
@@ -604,9 +585,6 @@ not shown equal. `gemma_m` at $0.0088 is inside the top group (+0.0131 behind `o
 the slowest, and its price bought no F1 gain these data can show. Latency includes the
 network and whichever provider served the call.
 
-*Until 2026-10-19 this paragraph opened "The hosted field is a commodity at the top" and
-said "Buying the expensive one bought 3.05 s/item of latency and nothing else measurable".
-3.05 s is `gemma_m`'s latency; `anthropic_l`'s is 2.76 s.*
 
 **`untyped_f1` barely reorders anything but explains a lot.** Spearman between the typed
 and untyped orderings is **0.955** over 28 arms, same leader, so it is not an alternative
@@ -636,6 +614,47 @@ now prints these, and `fetch.py` no longer claims the floor is *exactly* the emp
 ---
 
 ## 6. Corrections
+
+### Executive summary reframed (2026-10-19)
+
+Until then the summary said: the winner "separated from 27 of 27" (24 hosted plus `gliner`,
+`capitalized`, `nothing`; `openai_m`'s "20 of 27" counts `span_marker` and those three, so 16
+of 23 other hosted arms); that `gliner` was the "same model class" and "the cleanest isolation
+of task-specific training" (it is a different architecture and emitted `other` 3 times,
+§3.4–3.5); that "57% of the margin is one type" (it is 57% against `openai_m`, the maximum;
+30–57% across the 24 hosted arms) whose meaning "has no inferable meaning" (`openai_m` gets
+0.3017 on it from the label alone); that "a frontier LLM wins" on `person` (three of 24 hosted
+arms edge it, by at most 0.0067, untested); that "38% of that lead is conformity to the
+annotator, not correctness" (up to 38%, selection-dependent, §3.6); and that 52 GB "fits a 64
+GB box natively" with "the same answer at every budget" (nothing was run on 64 GB; 52 GB is
+weights only). The numbers did not change; the claims around them were wider than the
+evidence.
+
+Rewritten again the same day as a decision-first summary. The "≈207× fewer parameters" figure
+was dropped from the headline: it used 25.8B total parameters for a mixture-of-experts model
+with about 4B active; the 103× download-size ratio is the headline. The "no reason to rent"
+and "$0" wording now states its precondition (a checkpoint trained on Few-NERD's own training
+split, evaluated in-distribution), and "stays separated" under the annotation bound was
+withdrawn: only "stays ahead" was computed.
+
+### Notes moved out of §3.6 and §4
+
+*Until 2026-10-19 this read "38% of that lead is agreeing with the annotator rather than
+being right". The bound cannot say which of the two it is.*
+
+*Until 2026-10-19 this paragraph opened "The hosted field is a commodity at the top" and
+said "Buying the expensive one bought 3.05 s/item of latency and nothing else measurable".
+3.05 s is `gemma_m`'s latency; `anthropic_l`'s is 2.76 s.*
+
+*This bullet said "~7%" for a week, from dividing span_marker's own 0.0060 gain by
+  the margin. That is the wrong quantity: a share of the margin is about how the margin
+  MOVES, and the margin moves by the difference between the two arms, not by one arm's
+  gain. §0 and §3.6 of this same report already said 38% and were right.*
+
+  *Worse, when round 3 flagged the inconsistency I recorded it here as a disagreement
+  and wrote that I "could not reproduce 38% from any pairing of the committed numbers".
+  It was my own figure, 350 lines up in the file I was editing. Round 4 had to point at
+  my own lines 34, 82 and 323 to show me. I was defending a number against myself.*
 
 ### An unreadable answer was scoring 1.0
 
@@ -844,7 +863,7 @@ end of the field, and therefore inflates every price-ratio claim.** It also reor
 by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by
 what was billed.
 
-The figures below are corrected to what the provider billed. Rankings by *quality* are
+The figures above are corrected to what the provider billed. Rankings by *quality* are
 untouched — cost was never an input to them.
 
 **Fixed at cause:** all four adapters now record `usage.cost` when the provider supplies

@@ -116,7 +116,7 @@ of, UniEval on either set of inputs; the weakest, `llama_s`, cannot be told apar
 Every one is ahead of BARTScore. The leader cannot be separated from five others, led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
-articles), UniEval 64% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
+articles), UniEval 64%, and a no-model lookup of which system wrote each summary 63% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
 what changed while measuring (a retired model, a model that forces reasoning, moved prices)
 are in [research/REPORT_SUMMEVAL.md](../../research/REPORT_SUMMEVAL.md).
 
@@ -141,7 +141,8 @@ make leaderboard DATASET_ID=summeval_100
   measured. Renting a judge through default routing may give a different score and bill.
 - **Each position is the same system on every article.** A prior that only knows which
   system wrote a summary reaches τ 0.364 against the experts, above UniEval on this text and
-  the weakest judge; read the free arms, and the bottom of the field, against it.
+  the weakest judge (63% of an expert on the two-expert footing of `human_ceiling.py`, level
+  with UniEval); read the free arms, and the bottom of the field, against it.
 - **Judges and UniEval are not scored the same way.** A judge sees all 16 summaries in one
   call and can rank them against each other, which a per-article rank correlation rewards;
   UniEval scores one summary at a time and is given one human reference for relevance,

@@ -854,6 +854,107 @@ if "qwen_m" in _DB and "anthropic_l" in _DB:
           and "`qwen_m` leads `anthropic_l` by exactly one disputed item" in _CLS,
           f"disputed {len(_dis)}, qwen_m/anthropic_l differ on {len(_diff)}")
 
+# ---- THE CLASSIFICATION SUMMARY'S RENTED-API PICKS, MINIMUM GAP AND PILOT FIGURES --------
+#
+# Stage-two review 2026-10-19. The summary names the cheapest HOSTED arm the best paid arm
+# cannot be separated from, the smallest gap Holm separated on DBpedia, and the pilot's
+# tie-aware rho. None of those had a producer. Each is derived here and then looked for
+# in the report. The rho is Pearson on midranks (ties share a rank), dev-slice accuracy
+# against 200-item accuracy over every arm, which is what the report's footnote states.
+import subprocess as _clsp  # noqa: E402
+
+
+def _cl_midranks(v):
+    o = sorted(range(len(v)), key=lambda i: -v[i])
+    r, i = [0.0] * len(v), 0
+    while i < len(o):
+        j = i
+        while j + 1 < len(o) and v[o[j + 1]] == v[o[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            r[o[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return r
+
+
+def _cl_pearson(a, b):
+    ma, mb = statistics.fmean(a), statistics.fmean(b)
+    return (sum((x - ma) * (y - mb) for x, y in zip(a, b))
+            / (sum((x - ma) ** 2 for x in a) * sum((y - mb) ** 2 for y in b)) ** 0.5)
+
+
+def _cl_pilot(runs, dev_file, drop=()):
+    _ids = {(_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
+            for _i in json.loads((ROOT / "harness" / "data" / "datasets" / dev_file)
+                                 .read_text())["items"]}
+    _arms = sorted(a for a in runs if a not in drop)
+    _dev = [statistics.fmean(runs[a][i]["correct"] for i in _ids) for a in _arms]
+    _all = [statistics.fmean(r["correct"] for r in runs[a].values()) for a in _arms]
+    _top = max(_dev)
+    _tied = [a for a, m in zip(_arms, _dev) if m == _top]
+    return _cl_pearson(_cl_midranks(_dev), _cl_midranks(_all)), _tied, len(_arms)
+
+
+if "bert_mini" in _AG and "qwen_m" in _DB:
+    _r28, _t28, _n28 = _cl_pilot(_AG, "ag_news_20.json", drop=("bert_base_ta", "bert_base_fy"))
+    _r30, _t30, _n30 = _cl_pilot(_AG, "ag_news_20.json")
+    _d27, _dt27, _dn27 = _cl_pilot(_DB, "dbpedia_56.json", drop=("bert_base_fy",))
+    _d28, _dt28, _dn28 = _cl_pilot(_DB, "dbpedia_56.json")
+    check("classification: pilot rho (midranks) and the tie at the top of the dev slice",
+          (_n28, _n30, _dn27, _dn28) == (28, 30, 27, 28)
+          and f"AG News {_r28:.3f} at the 28 arms that existed then, {_r30:.3f} at today's 30"
+          in _CLS
+          and f"DBpedia {_d27:.3f} at 27, {_d28:.3f} at 28" in _CLS
+          and f"{len(_t28)} of 28 arms ({len(_t30)} of 30)" in _CLS
+          and f"{len(_dt27)} of 27 arms tied at the top of the 56-item dev slice" in _CLS
+          and sorted(_t28)[0] == sorted(_dt27)[0] == "anthropic_l",
+          f"derived AG {_r28:.3f}/{_r30:.3f}, ties {len(_t28)}/{len(_t30)}; "
+          f"DB {_d27:.3f}/{_d28:.3f}, tie {len(_dt27)}, first {sorted(_dt27)[0]}")
+
+    # AG News: the best paid arm's own family test, not the leader's.
+    _am = _not_separated("ag_anthropic_m_n200_v1", DATA, "ag_news_200", "correct")
+    if _am is None or len(_HOSTED) != 24:
+        missing += 1
+        print("  --   classification: anthropic_m family test did not run — skipped")
+    else:
+        _am_ns = {_arm_name(_a, "ag_") for _a in _am}
+        _hosted_ns = [_h for _h in _HOSTED if _h != "anthropic_m" and _h in _am_ns]
+        _ag_cost = _arm_costs("ag_", "ag_news_200")
+        _cheap = min(_hosted_ns, key=lambda h: _ag_cost[h])
+        _acc = lambda a: statistics.fmean(r["correct"] for r in _AG[a].values())  # noqa: E731
+        _sep_h = 23 - len(_hosted_ns)
+        _per_m = lambda a: round(_ag_cost[a] / 200 * 1e6)  # noqa: E731
+        check("classification: anthropic_m is separated from 3 of the 23 other hosted arms; "
+              "the cheapest hosted arm it is not separated from, with its gap",
+              f"separated from {_sep_h} of the 23 other hosted arms" in _CLS
+              and f"is `{_cheap}`, at ${_per_m(_cheap)} and {_acc(_cheap):.4f}, "
+                  f"{_acc('anthropic_m') - _acc(_cheap):.4f} behind" in _CLS
+              and f"`qwen_m`, at ${_per_m('qwen_m')} and {_acc('qwen_m'):.4f}" in _CLS
+              and f"`anthropic_m`, at ${_per_m('anthropic_m')} per 1M items and "
+                  f"{_acc('anthropic_m'):.4f}" in _CLS,
+              f"derived: separated from {_sep_h}, cheapest not separated {_cheap} "
+              f"${_per_m(_cheap)} {_acc(_cheap):.4f}")
+
+    # DBpedia: the smallest gap the leader's Holm test separated.
+    _fo = _clsp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", "dbpedia_280",
+                     "--a", "db_qwen_m_n200_v1", "--against", "_n200_v1", "--metric", "correct",
+                     "--runs-dir", str(DATA)], capture_output=True, text=True)
+    _rows_f = [ln.split() for ln in _fo.stdout.splitlines()
+               if ln.strip().startswith("db_") and ln.split()[-1] in ("SEPARATED", "--")]
+    if _fo.returncode != 0 or not _rows_f:
+        missing += 1
+        print("  --   classification: qwen_m family test did not run — skipped")
+    else:
+        _lo_sep = min(abs(float(r[1])) for r in _rows_f if r[-1] == "SEPARATED")
+        _hi_ns = max(abs(float(r[1])) for r in _rows_f
+                     if r[-1] == "--" and r[0] not in ("db_bert_base_fy_n200_v1",))
+        check("classification: DBpedia, no gap under 10 items separated; 8 items are not",
+              round(_lo_sep * 280) == 10 and round(_hi_ns * 280) == 8
+              and "smallest gap Holm separated from `qwen_m` is 10 items" in _CLS
+              and "8 items (+0.0286" in _CLS and "10 items (+0.0357" in _CLS,
+              f"derived smallest separated {round(_lo_sep * 280)} items, "
+              f"largest not separated {round(_hi_ns * 280)}")
+
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
@@ -1521,6 +1622,16 @@ if _hc:
           and " ".join(_SEV.split()).count(f"{_hc['duplicate_groups_scored_differently']} of those") >= 2
           and f"in {_hc['duplicate_articles']} articles two or more systems" in _SEV,
           "a count in §3.7 or the findings does not match the evidence")
+    # The system-identity prior on the two-expert footing (leave-one-article-out lookup).
+    _pp = _hc.get("position_prior") or {}
+    _pp_v, _pp_p = _pp.get("tau_vs_two_experts"), round(100 * _pp.get("share_of_one_expert", 0))
+    _sev_n = " ".join(_SEV.split())
+    check(f"SummEval §3.7: the position prior {_pp_v}, {_pp_p}% of one expert, in the table and the summary",
+          bool(_pp) and _pp_p == round(100 * _pp_v / _ceil)
+          and f"| position prior (no model: other 99 articles' mean per position) | {_pp_v:.4f} | {_pp_p}% |" in _SEV
+          and f"reaches {_pp_p}% of one expert" in _sev_n
+          and f"lookup of which system wrote each summary reaches {_pp_p}% of an expert" in _sev_n,
+          f"evidence says {_pp}")
 
 # UniEval's derived figures (REPORT_SUMMEVAL §3.3, §5; the synthesis' tables), each computed
 # here from the runs, the family tests above and the evidence, so a copied figure cannot drift.

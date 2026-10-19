@@ -888,7 +888,7 @@ def findings_for(x: dict, f: dict) -> list:
         ]
     if x["slug"] == "few-nerd":
         return [
-            ("The only unambiguous winner in the repo.",
+            ("The one separated win in the repo.",
              f"span_marker, fine-tuned on Few-NERD's training split, scores {t['score']:.4f} and is separated from all {x['n_arms'] - 1} other arms."),
             *common,
             ("But its margin is partly the corpus's own conventions.",

@@ -281,7 +281,7 @@ def patterns(H, f: dict) -> list:
     db = by["dbpedia"]
     return [
         ("Is the cheaper model good enough?", "arms = models, same prompt",
-         f"On DBpedia a {H.times(db['tied_ratio'])} price difference bought nothing measurable. "
+         f"On DBpedia a {H.times(db['tied_ratio'])} price difference was not shown to buy accuracy. "
          "Run both on your items; if they tie and the gap is one you can live with, the cheap "
          "one wins.",
          "classification-dbpedia-14", "accuracy · cost per item"),

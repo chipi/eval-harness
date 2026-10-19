@@ -27,6 +27,10 @@
     "fluency": 0.551,
     "relevance": 0.4129
   },
+  "position_prior": {
+    "tau_vs_two_experts": 0.3518,
+    "share_of_one_expert": 0.6296
+  },
   "arms": {
     "gemma_l": {
       "tau": 0.5384,

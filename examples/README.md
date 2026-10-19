@@ -99,7 +99,7 @@ reproducing the corpus's labelling. (The 17 are selected by the LLMs' own errors
 report's §3.4.)
 
 The example also found that **the scoring code is a bigger lever than the model choice for
-some arms**: the label parser is worth 8.6 accuracy points to `glm_l`, wider than the gap
+some arms**: the label parser is worth 8.6 accuracy points to `glm_l` on DBpedia, wider than the gap
 separating most of the field.
 
 ### DBpedia-14 — the same experiment, the opposite regime
@@ -115,8 +115,8 @@ dispute because the gold label is wrong.
 
 ### Few-NERD — task-specific training, against a zero-shot control
 A 499 MB span tagger fine-tuned on the corpus beat all 24 hosted LLMs as run here
-(zero-shot, bare type names) and separated from **all 27 other arms** — the only
-unambiguous winner in the repo. But **57% of its margin over `openai_m` is one entity
+(zero-shot, bare type names) and separated from **all 27 other arms** — the one
+separated win in the repo. But **57% of its margin over `openai_m` is one entity
 type**, `other` (30–57% across the 24 hosted arms), which the prompt never defined. On
 `person`, three of the 24 hosted arms edge it, by at most 0.0067 (untested).
 

@@ -172,6 +172,19 @@ def main() -> int:
 
     ceiling = statistics.fmean(experts)
 
+    # A no-model reference row. Each of the 16 positions is the same system on every
+    # article, so score each summary by the mean expert score its position got on the OTHER
+    # 99 articles, against the same leave-one-out two-expert references as the arms.
+    stems_all = sorted(items)
+    prior_by_item = []
+    for stem in stems_all:
+        pred = json.dumps({d: [statistics.fmean(items[o]["gold"][d][i] for o in stems_all if o != stem)
+                               for i in range(ad.N_SUMMARIES)] for d in ad.DIMS})
+        prior_by_item.append(statistics.fmean(ad.score(pred, rest_of(items[stem], k))["tau"]
+                                              for k in range(3)))
+    position_prior = {"tau_vs_two_experts": round(statistics.fmean(prior_by_item), 4),
+                      "share_of_one_expert": round(statistics.fmean(prior_by_item) / ceiling, 4)}
+
     # How sure is "93%"? A paired bootstrap over articles (seeded), for the two best judges:
     # the ratio judge / expert and the gap expert - judge, resampling the same articles on
     # both sides. The best judge is chosen on these same articles, so its interval is the
@@ -227,6 +240,7 @@ def main() -> int:
                 "documentation does not state. tau_mean does not depend on it.",
         "tau_mean": round(ceiling, 4),
         "tau_by_dimension": {d: round(statistics.fmean(v), 4) for d, v in per_dim.items()},
+        "position_prior": position_prior,
         "arms": dict(sorted(arms.items(), key=lambda kv: -kv[1]["tau_vs_two_experts"])),
     }
     OUT.write_text(json.dumps(result, indent=2) + "\n")
@@ -238,6 +252,8 @@ def main() -> int:
           f"(by position in the file: {', '.join(f'{x:.4f}' for x in experts)})")
     for d, v in result["tau_by_dimension"].items():
         print(f"  {d:11s} {v:.4f}")
+    print(f"position prior (other 99 articles only): {position_prior['tau_vs_two_experts']:.4f} "
+          f"= {position_prior['share_of_one_expert']:.0%} of one expert")
     print("\narms against the same two-expert references (tau vs all three in brackets):")
     for arm, r in result["arms"].items():
         extra = (f"  share 95% CI {r['share_ci95'][0]:.0%}-{r['share_ci95'][1]:.0%}, "

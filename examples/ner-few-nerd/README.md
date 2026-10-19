@@ -216,7 +216,7 @@ spread to 121×.
 
 Three things worth reading the report for:
 
-1. **The first unambiguous winner in this repo — as run here:** 24 hosted arms on one
+1. **The one separated win in this repo — as run here:** a Few-NERD-trained tagger against 24 hosted arms on one
    zero-shot prompt of bare type names, no definitions, no examples, provider unpinned.
    Both classification corpora produced a tied group at the top. This produced a podium.
 2. **57% of that winner's lead over `openai_m` is one entity type** — `other`, Few-NERD's
