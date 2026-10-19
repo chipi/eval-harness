@@ -24,6 +24,13 @@ improving; the data, the arms and their outputs do not need to change when they 
 harness should let a frozen experiment be **re-measured** with a better scorer, and record
 which scorer produced which numbers.
 
+The harness already has a judge panel (`runner.py`, `judges.py`, `make judge`). It narrows
+many runs to finalists on a cheap metric, scores each finalist with an LLM judge one output at
+a time on a 1–5 scale, aborts mid-run at a cost cap with partial results kept, and flags
+finalists where two judges disagree. It is a triage tool outside the frozen pipeline: its
+verdicts are not stored as fingerprinted runs, its judges carry no validation, and it scores
+only the finalists.
+
 An LLM judge is not a code scorer, and four properties make `rescore` the wrong home for it:
 
 1. **It costs money and is not deterministic.** Hosted models at temperature 0 matched
@@ -72,7 +79,8 @@ recorded decision to use it. The rest of this ADR is about the third.
    carries the label "unvalidated judge" in tables and reports. "Silver is not gold" is
    enforced, not advised.
 
-3. **The judging pass.** `make judge EXP=<exp> SCORER=<scorer_id>`:
+3. **The judging pass.** `make judge-score EXP=<exp> SCORER=<scorer_id>` (`make judge` stays
+   the judge panel's):
    - builds a derived, hash-frozen **judging set** from the committed runs. One item is one
      source item with every arm's output for it. The arm set is pinned in the judging set's
      id;
@@ -93,6 +101,8 @@ recorded decision to use it. The rest of this ADR is about the third.
      order.
    - **Noise.** A repeat on a subset measures the judge's own disagreement, so a difference
      between arms can be read against it.
+   - **Cost.** The pass reuses the judge panel's mid-run cost abort and its partial results,
+     and its disagreement flag.
 
 5. **Records.** A report states which version of each layer it reads: the outputs, the
    scorer, the decision rule (e.g. "outputs v1 · scorer `judge-v1` · Holm sign-flip v1").
@@ -137,6 +147,10 @@ the same way but is out of scope here.
 
 ## Alternatives considered
 
+- **Extend the existing judge panel.** It is pointwise on a 1–5 scale, which is not what
+  SummEval validated. Its verdicts are not frozen runs. And it judges only finalists, so most
+  arms would never be scored. Rejected as the vehicle; its cost abort and disagreement flag
+  are reused.
 - **A judge inside `score()`, run by `rescore`.** This would be the smallest change, but
   `score()` sees one output at a time, so the judge would be pointwise. Pointwise was not
   validated: SummEval's validated judges are listwise, and its one pointwise scorer, UniEval,

@@ -296,6 +296,35 @@ reasoning is in the main README.
 
 ---
 
+## 11. Adjudicate disputed gold
+
+When strong arms agree against the gold, the gold may be wrong. Check it, and re-score for
+$0:
+
+1. **Pick the items from both sides.** Take the items most arms miss, and also the items
+   your best arms miss. Reviewing only one side flatters the other.
+2. **Record each verdict** in an `adjudication.json` beside the experiment: the item, the
+   gold, what the adjudicator was shown, the verdict and the reason. Who adjudicated goes
+   in the file too.
+3. **Build the reference set and re-score:**
+
+   ```bash
+   python examples/_shared/adjudicate.py examples/<experiment>/adjudication.json
+   cd harness && python scripts/rescore.py --dataset-id <id> \
+       --reference-id gold/<id>_adj1 --out data/runs-adjudicated
+   EVAL_RUNS_DIR=data/runs-adjudicated make leaderboard DATASET_ID=<id>
+   ```
+
+4. **Add a claim check** for every new number you report. It can recompute them from the
+   committed predictions and the adjudication file, so the re-scored runs need not be
+   committed.
+5. **Decide what is primary, and record why** (CONCEPTS: Re-measuring a frozen
+   experiment).
+
+Worked example: `examples/classification-ag-news/adjudication.json`.
+
+---
+
 ## Choosing what to evaluate against
 
 The **system under test** is recorded as `build.ref`. It defaults to this tree's
