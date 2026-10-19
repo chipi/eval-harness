@@ -94,7 +94,9 @@ they compare them.
 - **A dev slice, nested inside the sample.** Prompts and parsers may be tuned on it and
   on nothing else; every headline is also reported on the held-out remainder. SummEval has
   no dev slice, and so no held-out remainder.
-- **One pass per arm, temperature 0, one prompt per task.** An *arm* is one system under
+- **One pass per arm, temperature 0, one prompt per task.** Hosted LLMs ran zero-shot with
+  reasoning off and no provider pinned, as run here; contamination of the public benchmarks
+  was not measured. An *arm* is one system under
   test: a model plus its configuration (prompt, decoding, provider). Between-run variance
   of hosted models is not measured except where stated (five SciFact repeat pairs).
 - **Comparisons are tested, not read.** Separation between arms is a paired permutation
@@ -110,7 +112,7 @@ they compare them.
   CNN and 10,397 DailyMail** (published counts), with CNN's articles first.
 - **Sample.** `cnn_dailymail_200` is the **first 200 rows**: all CNN — 196 with CNN's dateline, 4 partner pieces CNN
   republished. It is a
-  sample of the benchmark's CNN portion (9% of the split), and every committed summarisation finding is scoped
+  sample of the benchmark's CNN portion (9.5% of the split), and every committed summarisation finding is scoped
   to CNN-style news. `cnn_dailymail_dm200` is 200 DailyMail articles drawn at random
   (seed 20261014) to test whether findings travel. It was run for the five local arms, and
   every comparison among them held; the hosted arms were not re-run on it.
@@ -135,7 +137,7 @@ they compare them.
 - **Dev slice.** `ag_news_20`, the first 5 per class (nested).
 - **Reference.** Dataset labels — gold, and disputed: 17 items are labelled against the
   judgement of ≥80% of the hosted field; they stay in the score and are analysed apart
-  (REPORT_CLASSIFICATION §3.4).
+  (REPORT_CLASSIFICATION §3.4); one rater reads about half as convention, half as mislabels.
 - **Metric.** Accuracy — the standard one.
 - **Comparability.** Comparable in kind to published accuracy; at n=200 a single figure
   carries ±0.03.
@@ -147,7 +149,7 @@ they compare them.
 - **Sample.** `dbpedia_280`: 20 per class from a seeded per-class permutation (seed
   20260927). Dev slice `dbpedia_56`, nested.
 - **Reference.** Dataset labels — gold; three items' gold is disputed by 24–25 of 26 arms
-  and analysed apart (REPORT_CLASSIFICATION §3.4).
+  and analysed apart (REPORT_CLASSIFICATION §3.4); one rater's reading, unadjudicated.
 - **Metric.** Accuracy — the standard one. The benchmark is saturated: the top group is
   separated from the rest, not ordered within itself.
 - **Reproduce.** `examples/classification-dbpedia-14/README.md`; calibration: `calibrate.py`.

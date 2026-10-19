@@ -46,19 +46,19 @@ Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extrac
 
 **[`../research/REPORT_SYNTHESIS.md`](../research/REPORT_SYNTHESIS.md)** — the
 cross-cutting report. Seven findings, each tested in every experiment that could test it
-and computed from the stored runs rather than quoted: the dearest arm is never first (6/6; on SciFact only the twelve cheapest hosted models ran),
-five of six leaderboard tops are statistical ties (not separable at 100–280 items, which
+and computed from the stored runs rather than quoted: the dearest arm is never first (5 of 5 where the frontier models ran; on SciFact only the twelve cheapest hosted models ran),
+in five of six the leader is not separated from other arms (at 100–280 items, which
 is not the same as equal), a pilot with ρ ≈ 0.8 picked the wrong
 winner three times in the five experiments that ran one, and the scoring code moved single
 arms further than most model swaps did.
 
 It also answers the deployment question directly. **Every experiment has a $0 answer**:
-the best model fine-tuned on each dataset ranked first in 3 of 4 and third-equal (not
+the best fine-tune ranked first in 3 of the 4 experiments that had one and third-equal (not
 separable from the leader) on saturated DBpedia, the
 best proprietary arm never separated from the best open-weight arm in any of the six, and
-**at native precision the best model that fits a 64 GB machine matches the
-unlimited-hardware answer on two of the six tasks** and is not separated from it on two more
-(provider-served scores; nothing was run on a 64 GB machine). Every task-specific winner is under 2 GB and needs no GPU. On SummEval, even
+**at native precision the best model that fits a 64 GB machine matched the
+unlimited-hardware answer on two of the six tasks**, was not separated from it on two more
+and was separated below it on summarisation and SummEval (provider-served scores; nothing was run on a 64 GB machine). Every task-specific winner except SummEval's is under 2 GB and needs no GPU. On SummEval, even
 a free evaluator trained for the task sits far below the judges — the best judges reach 93% of a
 human expert's agreement (the best of 24, on the same articles), UniEval 64%, though the judges ranked all 16 summaries at once and UniEval scores one at a time — so the $0 answer is an open-weight LLM judge.
 
@@ -77,7 +77,7 @@ Later, ML arms were added and BART took the lead — by **0.00008** over the bes
 `P(both halves crown the same arm)` collapsing to 0.01.
 
 Then the control: the same BART fine-tuned on **XSum** instead of CNN/DailyMail finishes
-**last of 29** on `coverage` — below LEAD-3. BART's level with the best paid arm is
+**last of 29** on `coverage` — below LEAD-3. BART's not being separated from the best paid arm is
 consistent with this corpus's house style, learned; the XSum control also decodes shorter,
 so it does not isolate style. Its distillations keep most of it at 1.5–1.8× the speed on the same machine (`bart_m`
 0.3367 at 4.1 s against `bart_l`'s 6.3 s, not separated from `bart_l`).
@@ -115,7 +115,7 @@ the top eleven are separated by four items, three of which 24–25 of the 26 lea
 dispute because the gold label is wrong.
 
 ### Few-NERD — task-specific training, against a zero-shot control
-A 499 MB span tagger fine-tuned on the corpus beat all 24 hosted LLMs as run here
+A 499 MB span tagger fine-tuned on the corpus scored above all 24 hosted LLMs as run here
 (zero-shot, bare type names) and separated from **all 27 other arms** — the one
 separated win in the repo. But **57% of its margin over `openai_m` is one entity
 type**, `other` (30–57% across the 24 hosted arms), which the prompt never defined. On
@@ -137,7 +137,7 @@ produced a **prediction registered before the arm existed**: swapping only the f
 should move the pipeline from 0.74 to 0.786–0.797. Measured: **0.7891** for `glm_s`, inside
 the range; `qwen_s` landed outside it (0.7713 under the corrected parser). One of two.
 
-### SummEval — LLM judges beat a free evaluator trained for the task
+### SummEval — LLM judges scored above a free evaluator trained for the task
 The 24 hosted models as **judges**, scoring 16 summaries per article on four dimensions,
 graded by how well they order the summaries the way three experts did (Kendall τ-b). The
 best free scorer is UniEval, a T5 evaluator trained for these four dimensions: τ **0.3717**
@@ -147,7 +147,9 @@ BARTScore, a model fine-tuned on this corpus to write summaries, reaches **0.256
 every judge. The leader cannot be separated from five other judges, and `gemma_l` — open weights, $0.0278 for all 100
 articles — sits 0.0013 behind the leader. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement
-(interval 89–97%, the best of 24 chosen on the same articles), UniEval 64%, BARTScore 44%.
+(interval 89–97%, the best of 24 chosen on the same articles), UniEval 64%, BARTScore 44%; a no-model lookup of which system wrote each summary reaches 63%.
+The judges ranked all 16 summaries in one call and UniEval scores one at a time, a pointwise
+LLM judge was not run, the summaries are 2019-era and reasoning was off.
 
 It also measures the instrument: ROUGE agrees with the experts at τ 0.14–0.16, and this
 repository's own `coverage` at **0.1011**, below ROUGE-1. One model could not run as

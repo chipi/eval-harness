@@ -66,7 +66,7 @@ requires nothing, and gets the same attribution anyway.
 
 ## What is committed here
 
-**The thirteen CC-licensed papers above are mirrored in this directory**, 19 MB, with
+**The thirteen CC-licensed papers above are mirrored in this directory**, 20 MB, with
 [`ATTRIBUTION.md`](ATTRIBUTION.md) carrying the author, title, licence and source of each —
 which is what CC BY and CC BY-SA require of anyone redistributing them. None is modified;
 each is the publisher's PDF byte-for-byte.

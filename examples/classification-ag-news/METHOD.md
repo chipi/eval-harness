@@ -24,7 +24,7 @@ that discreteness broke three things the continuous summarisation metric never t
    no per-item number whose mean is macro-F1, and it lives in a report script instead of
    pretending to be a metric.
 3. **Parsing became load-bearing.** "Which topic?" invites a sentence, not a word. The
-   label parser turned out to be worth **8.6 accuracy points** to one arm — wider than the
+   label parser turned out to be worth **7.5 accuracy points** to one arm — wider than the
    gap separating most of the field.
 
 ## Why AG News
@@ -69,7 +69,7 @@ Everything else is read *after* the ranking:
 - **`parsed` is a quality metric, not descriptive.** An arm whose output cannot be read as
   a label cannot be deployed, whatever it knows.
 - **`correct_after_repair` minus `correct` is what the parser is worth.** Recording both is
-  how the 8.6-point finding was possible at all; a single number would have hidden it
+  how the 7.5-point finding was possible at all; a single number would have hidden it
   inside "model quality".
 - **Macro-F1** ([scikit-learn's definition](https://scikit-learn.org/stable/modules/model_evaluation.html#precision-recall-f-measure-metrics))
   weights every class equally, so it disagrees with accuracy exactly when an arm has a

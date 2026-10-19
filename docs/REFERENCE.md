@@ -127,7 +127,7 @@ it.
 | Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
-| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by; UniEval as the free evaluator trained for the task — a judge worth its bill should beat it | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
+| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by; UniEval as the free evaluator trained for the task — a judge worth its bill should be separated above it | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
 
 **Why each example has floors that are not models.** A *floor* is any non-model arm — a
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
@@ -142,7 +142,8 @@ normaliser deleted (the currency symbol `£`), which moved the floor by 1/280.
 
 ### Hosted — 24 arms, 8 vendors × 3 price tiers
 
-Every example runs the same 24, at temperature 0 with reasoning disabled, so a difference
+Five of the six examples run the same 24 (SciFact ran only the twelve cheapest), zero-shot
+with one prompt, at temperature 0 with reasoning disabled and no provider pinned, so a difference
 between examples is the **task** and not the configuration. Measured through a
 [LiteLLM](https://docs.litellm.ai/) proxy routing to [OpenRouter](https://openrouter.ai/); a
 rerun can go to OpenRouter directly with one key, through the same alias table
@@ -186,12 +187,11 @@ price tier.
 
 > **14 of these 24 have downloadable weights and could be self-hosted.** Verified on
 > 2026-09-29 against the HuggingFace API. Ten are unrestricted (MIT / Apache-2.0); four
-> are gated behind licence acceptance and carry use conditions. An earlier version said
-> 13 and inferred openness from OpenRouter's endpoint count — *one provider implies
-> closed* — which is **not a valid test**: `mistral_l` is served only by Mistral and its
+> are gated behind licence acceptance and carry use conditions. OpenRouter's endpoint
+> count is not a test of openness: `mistral_l` is served only by Mistral and its
 > weights are on HuggingFace under Apache-2.0. What that is worth is measured in
-> [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **no proprietary model
-> separated from the best open-weight model in any of the six experiments.**
+> [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **the best proprietary
+> arm was never separated from the best open-weight arm in any of the six experiments.**
 
 > **A hosted model has no verifiable identity.** The fingerprint records
 > `identity_declared: true` and `revision_source: unavailable` — we record the alias we
@@ -202,7 +202,7 @@ price tier.
 
 ### Local — downloaded weights, pinned by revision
 
-Every one is loaded from [HuggingFace](https://huggingface.co/). For the first ten, the
+Every one is loaded from [HuggingFace](https://huggingface.co/). For the first nine, the
 commit SHA and `model.safetensors` byte size are recorded in the run fingerprint, so a
 silent upstream change is detectable. **For five of the last six they are not** (all but
 `bert_base_ta`): their runs record `revision: null` and no weight files (two snapshots in the cache — see
@@ -272,7 +272,7 @@ model weights.
 | `capitalized` | every capitalised run, minus a stoplist | high untyped recall, near-random types |
 | `random` | a seeded permutation of the corpus | ≈ k/N for recall@k |
 | `first_k` | the corpus in id order | ≈ 0 |
-| `bm25` | [Okapi BM25](https://en.wikipedia.org/wiki/Okapi_BM25) via [`rank_bm25`](https://github.com/dorianbrown/rank_bm25) | no fixed prediction — a strong baseline that beats weak dense models on SciFact (calibrated: 0.6523 vs BEIR's 0.665) |
+| `bm25` | [Okapi BM25](https://en.wikipedia.org/wiki/Okapi_BM25) via [`rank_bm25`](https://github.com/dorianbrown/rank_bm25) | no fixed prediction — a strong lexical baseline: 0.6451 on the 200 queries, under all four dense retrievers (0.6533–0.7191); calibrated on all 300 queries at 0.6523 against BEIR's 0.665 |
 
 ---
 
@@ -409,9 +409,7 @@ and check before reusing any of them commercially.
 | [`textattack/bert-base-uncased-ag-news`](https://huggingface.co/textattack/bert-base-uncased-ag-news) | **none stated** |
 | [`MingZhong/unieval-sum`](https://huggingface.co/MingZhong/unieval-sum) | **none stated** (its code, [maszhongming/UniEval](https://github.com/maszhongming/UniEval), is MIT) |
 
-An earlier version of this line claimed the set was "variously MIT, Apache-2.0 and
-CC-BY-NC-4.0". No model here is CC-BY-NC-4.0; one is CC-BY-SA-4.0 and two state nothing (a third, UniEval, was added later and states nothing too).
-That was asserted rather than checked, and it is the same error the paper citations had.
+No model here is CC-BY-NC-4.0: one is CC-BY-SA-4.0 and three state nothing.
 
 [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) ·
 [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) ·
@@ -471,8 +469,7 @@ a download recipe instead. Two things are committed on purpose: the models' outp
 are the evidence every score is recomputed from, and thirteen CC-licensed papers,
 mirrored under their licences. [`papers/README.md`](papers/README.md) records the licence of
 each of the twenty-nine cited works — thirteen mirrored, sixteen that may not be — and the
-split follows publisher policy rather than importance. (This paragraph said no paper and no provider output was redistributed until
-2026-10-18; both were committed long before.)
+split follows publisher policy rather than importance.
 
 **Every citation above was verified on 2026-09-29** (SummEval's — the paper, G-Eval,
 BARTScore and the `mteb/summeval` dataset and its licence — on 2026-10-18; UniEval's paper,

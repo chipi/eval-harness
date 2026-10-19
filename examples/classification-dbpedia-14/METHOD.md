@@ -55,7 +55,7 @@ no torch above 2.2.2 — see
 absence is precisely why the NER example was built with a zero-shot control beside its fine-tune.
 **It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, not separated
 from the top group (p = 0.62 against the leader), label order confirmed by a diagonal
-confusion matrix. The ML-vs-LLM question is now answered here too, and the answer differs
+confusion matrix. The ML-vs-LLM question has an answer here too, and it differs
 from AG News's: not separated, at $0.
 
 `bart_mnli` did run, and its calibration is the interesting result: confidence 0.317

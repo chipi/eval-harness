@@ -179,20 +179,14 @@ Three things worth knowing:
 - **A replayed item keeps what was measured for it** — cost, tokens, latency and
   `_meta` all carry over from the pass that produced it, and every replayed row is
   flagged `resumed: 1` so you can separate them. It reports what the *results* cost,
-  not what this pass cost.
-
-  *This was false for a crash until 2026-09-30, which is the only case resume is for.*
-  The carried values were read from `predictions.jsonl`, which is written **after** the
-  pass returns — so a crashed run had none and every replayed row came back with
-  `latency_ms: None, cost_usd: None`. Rows are now appended to
-  `outputs/_rows.jsonl` as each item completes. Found by external review.
+  not what this pass cost. The values come from the rows appended to
+  `outputs/_rows.jsonl` as each item completes, so a crashed run, which never wrote
+  `predictions.jsonl`, still carries them.
 - **You cannot resume from a different arm, or from one that cannot be identified.**
   The source's `config_id` and `dataset_id` are checked against the config you are
   launching and a mismatch is refused. Identity comes from `run.json`, written **before
-  the first item** precisely so a crashed run can still answer the question — until
-  2026-09-30 it came from `metrics.json`, which a crashed run does not have, so the
-  check could only warn and `arm_a --resume <crashed arm_b run>` exited 0 having
-  recorded arm_a with arm_b's answers.
+  the first item** precisely so a crashed run can still answer the question
+  (`metrics.json`, which a crashed run does not have, could not).
 
   A directory with neither file is refused outright. `--resume-unverified` overrides
   that, for runs made before `run.json` existed; it will record another arm's answers
@@ -221,12 +215,10 @@ It refuses outright if the two runs used different `dataset_id`s.
 
 ---
 
-## 7b. The analysis tools, none of which this runbook used to name
+## 7b. The analysis tools
 
 Sections 0–7 walk one arm from data to comparison. Everything that turns a pile of runs
-into a *finding* is a separate verb, and this runbook listed none of them — so the tools
-that produced every number in `research/` were discoverable only by reading the
-Makefile. Found by external review.
+into a *finding* is a separate verb: these are the tools behind the numbers in `research/`.
 
 | verb | answers |
 |---|---|
@@ -275,10 +267,11 @@ make baselines-list
 make validate
 ```
 
-Six checks: schema conformance, every run's `dataset_id` resolves, every run
+Ten checks (V1–V10): schema conformance, every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
-configs reporting byte-identical scores, and no baseline pointing at a deleted
-run.
+configs reporting byte-identical scores and per-item results, no baseline pointing at a
+deleted run, every committed run readable and present on disk, no two runs claiming one
+`config_id`, and no derived run naming a scorer that is not the code in this tree.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them
@@ -333,8 +326,8 @@ In order, because each is cheaper than the next:
 2. `make runs-list` — was the run from a dirty tree?
 3. `REPEAT=3` — is the delta inside the arm's own spread?
 4. Same `dataset_id` on both sides? (`run-compare` refuses, but check the ids)
-5. Scored against **silver**? `make runs-list` shows the tier — silver ranks
-   arms, it does not establish correctness.
+5. Scored against **silver**? A run's `metrics.json` records `reference_tier` — silver
+   ranks arms, it does not establish correctness.
 6. Did a source change? `make dataset-materialize DATASET_ID=... ARGS=--force`
    re-verifies every hash.
 

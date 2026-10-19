@@ -192,7 +192,7 @@ spend the same budget — at fixed cost, n=60/r=1 gave sd(delta) 0.0090 against 
 0.0133. The consequence is stated rather than hidden: this run measures no within-arm
 variance, and the determinism figures in §3.3 come from the earlier r=3 sweep.
 
-**Provenance caveats.** All 24 runs record `harness.dirty: true`. The cause is now known:
+**Provenance caveats.** 23 of the 24 hosted runs record `harness.dirty: true` (`anthropic_l` does not). The cause is now known:
 `_fingerprint.py` derives that flag from `git status --porcelain`, which counts UNTRACKED
 files, and a sweep's own configs are untracked at the moment it starts. The fix is
 procedural — commit configs before launching — and it was applied for the last 16 arms but

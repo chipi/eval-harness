@@ -103,7 +103,7 @@ benefit of paying of up to about 3 points cannot be ruled out.
 learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `Building`
 rather than `EducationalInstitution`, Bharhut labelled `Building`. Each has a dissenter that
 sides with the gold: the arm trained on DBpedia on the canal, `qwen_m` and zero-shot
-`bart_mnli` on Bharhut, `bart_mnli` on the school. The field's answer is defensible on all
+`bart_mnli` on Bharhut, `bart_mnli` on the school. On one rater's reading the field's answer is defensible on all
 three and nobody has adjudicated them. The leader's one-item lead over `anthropic_l` is Bharhut.
 The top eleven arms are separated by four items in total. Any ranking within that
 group ranks which model best reproduces DBpedia's ontology quirks; this data cannot say
@@ -119,7 +119,7 @@ they predate safetensors becoming default, and `transformers` refuses a pickle b
 2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch 2.14 and it runs
 unmodified. Measured 2026-09-30: **0.9857 at $0 marginal, 87 ms/item on CPU — not separated
 from the $0.0143 leader (p = 0.62), not above it.** AG News's fine-tuned lead does not
-carry over to a saturated task; "fine-tune costs nothing" does.
+carry over to a saturated task; a $0 marginal inference cost does (training and hosting cost were not measured).
 
 ---
 

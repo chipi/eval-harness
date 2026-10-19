@@ -294,8 +294,8 @@ too — `make rank-stability` shows how many items it takes before the order sto
 - **Keep a dev slice apart.** Tune prompts on a small nested dataset (`tickets_dev_v1`)
   and report on the rest — `make holdout` re-tests excluding it.
 - **Disputed gold is a finding, not noise.** When most strong systems disagree with a
-  gold answer, read it: in this repository's AG News and DBpedia experiments, the gold
-  label was wrong on several such items.
+  gold answer, read it: in this repository's AG News and DBpedia experiments, one reader
+  judged some such items mislabelled or a matter of convention (unadjudicated).
 
 ## 8 · Decide: is the winner separated?
 

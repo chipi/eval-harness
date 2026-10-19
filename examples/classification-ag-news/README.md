@@ -1,4 +1,4 @@
-# Classifying news, 24 models and four things that are not models
+# Classifying news, 24 models and six other arms
 
 One task — put a news article into one of four topics — measured across 24 hosted models
 from 8 vendors, three fine-tuned classifiers (44 MB and 2 × 438 MB), a zero-shot NLI
@@ -121,10 +121,10 @@ $PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n
 ```
 
 The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy
-`.env.example`), or your own LiteLLM proxy. The four free arms need nothing, and two of them need no model either.
+`.env.example`), or your own LiteLLM proxy. The six free arms need nothing, and two of them need no model either.
 
-**Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 28 come
-to **$0.58** — well under a dollar — two orders of magnitude cheaper than the summarisation sweep, because the
+**Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 24 come
+to **$0.58** — about a tenth of the summarisation sweep's $5.74 — because the
 answer is one word. That is why no arm is selected on its dev score: selecting would save
 nothing and buy a bias.
 
@@ -185,7 +185,7 @@ summarisation metric could have asked.
 
 ## The arms
 
-| arm | what it is | cost |
+| arm | what it is | cost (marginal inference) |
 | --- | --- | --- |
 | 24 hosted | 8 vendors × small/mid/large, same aliases and prices as the summarisation example | $0.0014–$0.1750 per 200, billed |
 | `bert_mini` | 44MB BERT fine-tuned on AG News | 0 |
@@ -196,7 +196,7 @@ summarisation metric could have asked.
 | `constant` | always answers World | 0 |
 
 `bart_mnli` is the control the summarisation study could not run. That study ended with
-BART tied for first against 24 hosted models, and the objection was that it had been
+`bart_l` not separated from the best of 24 hosted models, and the objection was that it had been
 fine-tuned on exactly that corpus. This is the same architecture family with **no**
 exposure to AG News, run beside a model that was fine-tuned on it — so "BART is good" and
 "that checkpoint saw the test distribution" stop being the same hypothesis.
