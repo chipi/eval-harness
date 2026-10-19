@@ -36,6 +36,7 @@ nav:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
+      - "ADR-0001: Judge scorers": adr/ADR-0001-judge-scorers.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
