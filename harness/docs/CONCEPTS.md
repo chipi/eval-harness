@@ -87,6 +87,26 @@ model that authored them is the one being evaluated.
 
 ---
 
+## Re-measuring a frozen experiment
+
+A run's outputs are the expensive, frozen record; its scores are arithmetic over them. So
+an experiment can be measured again, without regenerating anything, when a better
+instrument arrives. There are three kinds:
+
+| kind | what changes | cost | how |
+| --- | --- | --- | --- |
+| new reference | what an output is scored against, e.g. gold adjudicated by a person | $0 | `make rescore REFERENCE=…` |
+| new code scorer | the metric, written as code | $0 | `make rescore` with the new scorer |
+| judge scorer | the metric, delivered by a validated model | billed | [ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md) |
+
+Two rules hold for all three. The originals are never overwritten: a re-measurement is
+written to its own runs directory, and the leaderboard is pointed at it. And an
+experiment's primary measurement changes only by a recorded decision, with the old one
+kept beside it. In this repository AG News and DBpedia keep the dataset's own gold as
+primary, because anyone can repeat it, and report the adjudicated gold beside it.
+
+---
+
 ## Cost and speed are part of quality
 
 A run records `latency_ms`, `tokens_in`, `tokens_out` and `cost_usd` per item,

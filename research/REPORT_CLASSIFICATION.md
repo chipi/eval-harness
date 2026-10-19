@@ -546,6 +546,10 @@ the zero-shot LLMs here score above the public fine-tunes. One reader adjudicate
 items some arm disagreed with were reviewed: an error the gold and every arm share would
 not have been seen.
 
+Reference v1, the dataset's own gold, stays primary: it is what the literature and the
+calibration use, and anyone can repeat it. v2 is this repository's adjudication and may be
+extended.
+
 ### 3.5 Calibration
 
 ```

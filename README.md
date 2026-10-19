@@ -165,7 +165,7 @@ pick, as run here:
 
 - **Summarisation:** `bart_l` if you can run a free 1.6 GB model on CPU and your text looks
   like CNN news; `deepseek_m` ($191 per 1M articles) if you need speed; not `anthropic_l`.
-- **AG News:** fine-tune, starting with `bert_mini`; if you must rent, `gemma_m` ($8 per 1M).
+- **AG News:** fine-tune, starting with `bert_mini`, if your labels follow a house convention; if they mean what the words say, a hosted LLM; if you rent, `gemma_m` ($8 per 1M).
 - **DBpedia-14:** the cheapest arm you can run at 0.9857: `gemma_m` (~$12), `qwen_s` (~$26)
   or the fine-tuned `bert_base_fy`.
 - **Few-NERD:** with labelled data, fine-tune `span_marker`; if you rent, `gemma_m`.
@@ -183,8 +183,9 @@ pick, as run here:
   ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 - **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
   the point estimate, LLMs as run here; only the first is separated from all but one paid
-  arm. The lead is concentrated in 17 items the hosted field mostly gets wrong — about half
-  a learnable convention, half mislabels, on one rater's reading. On DBpedia a **115× price
+  arm. The lead is concentrated in 17 items the hosted field mostly gets wrong; adjudicated
+  by topic, the gold was wrong on all 17, and on that gold every hosted LLM scores above
+  every fine-tune. On DBpedia a **115× price
   difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
   the top group: the top eleven arms are within four items, three of them items whose
   label the field disputes, unadjudicated.

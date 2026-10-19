@@ -809,7 +809,7 @@ def landing(f: dict) -> str:
     <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
     <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge the leader cannot be separated from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
-    <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong — about half a learnable convention, half mislabels.", "research/REPORT_CLASSIFICATION.md")} That split is one rater's reading. {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
+    <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong.", "research/REPORT_CLASSIFICATION.md")} Adjudicated by topic, the gold was wrong on all 17, and on that gold every hosted LLM scores above every fine-tune. {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
 
@@ -945,7 +945,9 @@ def findings_for(x: dict, f: dict) -> list:
             *common,
             ("The lead is concentrated in 17 items the hosted field mostly gets wrong.",
              q("17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them.", rep)
-             + " " + q("On the other 183 items the arms cannot be told apart — anthropic_l 0.984, bert_base_ta 0.973 (discordant 3 vs 1, exact sign p = 0.625) — and that cut is selected by the hosted arms' own errors, so it flatters them.", rep)),
+             + " " + q("On the other 183 items the arms cannot be told apart — anthropic_l 0.984, bert_base_ta 0.973 (discordant 3 vs 1, exact sign p = 0.625) — and that cut is selected by the hosted arms' own errors, so it flatters them.", rep)
+             + " " + q("Against gold adjudicated by topic (29 items reviewed from both sides, 17 changed), every hosted LLM scores above every fine-tune: anthropic_l leads at 0.9850 and is separated from all three (0.9050).", rep)
+             + " The primary numbers stay on the dataset's own gold."),
         ]
     if x["slug"] == "dbpedia":
         return [
@@ -1090,7 +1092,7 @@ QUESTION = {
 }
 PICK = {
     "summarization": q("Use bart_l if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent deepseek_m ($191 per 1M articles) if you need speed; do not buy anthropic_l.", "research/REPORT_SUMMARIZATION.md"),
-    "ag-news": q("If you have labels, fine-tune: start with bert_mini. If you must rent, start with gemma_m ($8 per 1M items).", "research/REPORT_CLASSIFICATION.md"),
+    "ag-news": q("If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).", "research/REPORT_CLASSIFICATION.md"),
     "dbpedia": q("Take the cheapest arm you can run at 0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy.", "research/REPORT_CLASSIFICATION.md"),
     "few-nerd": q("If you have labelled data in a fixed taxonomy, fine-tune a small tagger (span_marker); do not rent a zero-shot hosted LLM for this job. If you do rent, take the cheapest, gemma_m.", "research/REPORT_NER.md"),
     "scifact": q("Build e5_base retrieval first (0.7191, $0 per query); add an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.", "research/REPORT_RETRIEVAL.md"),

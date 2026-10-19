@@ -16,8 +16,9 @@ rent, take the cheapest arm the leader cannot be separated from, not the dearest
 text, use an LLM judge checked against your own human judgements.**
 
 For entity extraction use `span_marker` (0.7674 against 0.6864 for the best of 24 hosted
-LLMs; rented, `gemma_m` at about $32 per 1M items). For AG News use `bert_mini` (44 MB,
-0.9450, above every hosted arm on the point estimate; rented, `gemma_m` at $8 per 1M items).
+LLMs; rented, `gemma_m` at about $32 per 1M items). For AG News, fine-tune (`bert_mini`, 44 MB,
+0.9450) if your labels follow a house convention; if they mean what the words say, a hosted LLM
+scores above every fine-tune on gold adjudicated by topic (rented, `gemma_m` at $8 per 1M items).
 For DBpedia take the cheapest arm at 0.9857: `gemma_m` (about $12 per 1M items), `qwen_s` or
 `bert_base_fy`. For summarisation use `bart_l` on a CPU if your text looks like CNN news
 (0.3461, 11.0 s an article) or `deepseek_m` for speed ($191 per 1M articles, 0.3460). For
@@ -43,7 +44,7 @@ the end. The seven findings, each tested in every experiment that could test it,
 | **2** | **The top is a group, not a podium** | The leader is separated from 100% (Few-NERD, 27 of 27), 90% (AG News), 84% (SummEval), 46% (summarisation), 33% (SciFact) and 30% (DBpedia) of its opponents. |
 | **3** | **Training exposure predicts who wins, not price — with one exception** | The best fine-tune ranked first in three of four experiments that had one and third-equal on DBpedia, two items behind; zero-shot models ranked last among learned arms; a BART trained on XSum finished 29th of 29 on CNN. Exception: on SummEval, UniEval, trained to judge, is separated below 23 of the 24 LLM judges (cause untested). |
 | **4** | **A pilot picks the wrong winner** | Pilot ρ was 0.68–0.90 where it can be recomputed, and the pilot's leader was not the full-run leader in 3 of the 5 experiments that ran one. |
-| **5** | **Some gold labels are disputed or noisy** | Where anyone checked: Few-NERD 34 of 768 gold types rejected by ≥80% of 26 learned arms; AG News 17 items most hosted arms miss, about half convention and half mislabels on one rater's reading; DBpedia's top eleven are separated by four items, three of them disputed (unadjudicated); SummEval's experts scored 41 of 44 groups of identical summaries differently. Candidates, not proven errors; two corpora were not checked. |
+| **5** | **Some gold labels are disputed or noisy** | Where anyone checked: Few-NERD 34 of 768 gold types rejected by ≥80% of 26 learned arms; AG News 17 items most hosted arms miss: adjudicated by topic, the gold was wrong on all 17 and right on all 12 the fine-tunes missed, and on that gold every hosted LLM scores above every fine-tune; DBpedia's top eleven are separated by four items, three of them disputed, all three gold wrong on adjudication; SummEval's experts scored 41 of 44 groups of identical summaries differently. Candidates, not proven errors; two corpora were not checked. |
 | **6** | **The scorer is a model-sized lever** | Three of eight defects moved one arm further than the gap separating most of the field: DBpedia's label parser (8.6 accuracy points), Few-NERD's unparsed-as-empty rule (+0.0214 f1), SciFact's reasoning flag (0.6124 → 0.6991). |
 | **7** | **Metric shape decides which diagnostics can be read** | On DBpedia at n = 10, 19.9 of 28 arms tied, so rank correlation measured arm names; the same tool is readable on Few-NERD. |
 
