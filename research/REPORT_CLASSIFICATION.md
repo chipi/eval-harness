@@ -10,15 +10,16 @@
 
 ## Executive summary
 
-**AG News: if you have labels, fine-tune: start with `bert_mini` (44 MB, $0 marginal). If you
-must rent, start with `gemma_m` ($8 per 1M items).** Three public BERT fine-tunes (0.9600,
-0.9500, 0.9450) score above all 24 hosted LLMs (0.835–0.910) on the point estimate, and are
-not separated from each other; `bert_mini` is 11× faster than `bert_base_ta` for 0.0150 less.
-The paid leader, `anthropic_m`, at $351 per 1M items and 0.9100, is separated from 3 of the 23 other hosted arms; the cheapest it is not separated from is `gemma_m`, at $8 and 0.8550, 0.0550 behind (`qwen_m`, at $35 and 0.8850, sits between), so the extra money is not shown to buy accuracy. The limit that could change this: the fine-tunes'
-lead sits in 17 items most hosted arms miss, about half of them an AG News labelling
-convention on one rater's reading, and the fine-tunes were trained on AG News's own training
-split. What fine-tuning bought is this corpus's labelling; with fewer labels it was not
-measured.
+**AG News: if your labels follow a house convention, fine-tune on them, starting with
+`bert_mini` (44 MB, $0 marginal); if your labels mean what the words say, use a hosted LLM.
+If you rent, start with `gemma_m` ($8 per 1M items).** Against the dataset's gold, three
+public BERT fine-tunes (0.9600, 0.9500, 0.9450) score above all 24 hosted LLMs
+(0.835–0.910). That lead is AG News's filing convention: company news from a technology desk
+is labelled Sci/Tech, and non-US news, sport included, World. Against gold adjudicated by
+topic (§3.4; 29 items reviewed from both sides, 17 changed), every hosted LLM scores above
+every fine-tune: `anthropic_l` leads at 0.9850 and is separated from all three (0.9050).
+The fine-tunes were trained on AG News's own training split; with fewer labels they were
+not measured.
 
 **DBpedia-14: take the cheapest arm you can run at 0.9857: `gemma_m` (~$12 per 1M items),
 `qwen_s` (~$26) or the fine-tuned `bert_base_fy` (438 MB on a CPU, $0 marginal). Do not pay for
@@ -246,6 +247,8 @@ is 44 MB at 7 ms on the 12-core Mac. Re-timed together on the Linux machine (med
 `harness/data/runs-linux/`): 49, 55 and 4.3 ms. textattack's model card reports 0.9514 on its own eval set; 0.9600 here on
 200 items is consistent with it, and both new arms' confusion matrices are diagonal — the
 `label_order` the configs assume (`LABEL_0…3` carry no names) is the right one.
+
+**The rented choice, on gold v1.** The paid leader, `anthropic_m`, at $351 per 1M items and 0.9100, is separated from 3 of the 23 other hosted arms; the cheapest it is not separated from is `gemma_m`, at $8 and 0.8550, 0.0550 behind (`qwen_m`, at $35 and 0.8850, sits between).
 
 **Is the ordering real?** `p = 0.0002`, **Nemenyi CD 3.30** rank positions,
 **38 of 435** pairs distinguishable, observed span 10.65 (k=30). Holdout on the 180 items
@@ -502,6 +505,46 @@ was corrected to state, now with a number on it. `bert_mini` alone could not sho
 clearly — it was one arm; three fine-tunes (all trained on AG News's labels, two of them by
 different authors) agreeing with the gold where 24 LLMs agree with each other is a pattern,
 though not three independent tests of it.
+
+#### Re-measured against adjudicated gold (reference v2)
+
+The disputed items were adjudicated on 2026-10-19 by one reader, the operator, who was shown
+each item's text, its gold label and the hosted field's majority answer. So that the review
+was not one-sided, it covered every item at least 80% of the 24 hosted LLMs got wrong (AG
+News, 17; DBpedia, at 90%, 3) and every item a fine-tuned arm got wrong (AG News, 12;
+DBpedia, 2). The gold was wrong on all 20 items the hosted field missed and right on all 14
+the fine-tunes missed. The reader's reason, for AG News: the labels follow the source feed's
+section, not the article's topic, so company news from a technology desk is Sci/Tech and
+non-US news, sport included, is World.
+
+The record is `examples/classification-ag-news/adjudication.json` and
+`examples/classification-dbpedia-14/adjudication.json`. `examples/_shared/adjudicate.py`
+builds the reference set from the local gold, and every committed run was re-scored against
+it for $0 into `data/runs-adjudicated/`. The original runs and scores are unchanged.
+
+| AG News arm | gold v1 (rank) | adjudicated v2 (rank) |
+|---|---|---|
+| `anthropic_l` | 0.9000 (5) | **0.9850 (1)** |
+| `openai_m` | 0.8950 (6) | 0.9800 (2) |
+| `openai_l` | 0.8900 (7) | 0.9750 (3) |
+| `anthropic_m` | 0.9100 (4) | 0.9650 (4) |
+| `gemma_m` | 0.8550 (21) | 0.9400 (17) |
+| `llama_s`, lowest hosted | 0.8350 (27) | 0.9200 (24) |
+| `bert_base_ta` | **0.9600 (1)** | 0.9050 (26) |
+| `bert_base_fy` | 0.9500 (2) | 0.9050 (25) |
+| `bert_mini` | 0.9450 (3) | 0.9050 (27) |
+
+Holm over the 29 other arms, on v2: `anthropic_l` is separated from 9, including all three
+fine-tunes (p 0.0001–0.0005), and not separated from 20 hosted arms. `bert_base_ta` is
+separated below `anthropic_l` and `openai_m`. On DBpedia the top stays a crowd: `gemma_m`
+and `qwen_m` lead at 0.9964, `gemma_m` is separated from only 5 of 27, and `bert_base_fy`
+moves from 3rd to 11th at an unchanged 0.9857.
+
+So the fine-tunes' AG News lead was the corpus's convention, learned. If your labels follow a
+house convention, a fine-tune trained on them learns it; if they mean what the words say,
+the zero-shot LLMs here score above the public fine-tunes. One reader adjudicated, and only
+items some arm disagreed with were reviewed: an error the gold and every arm share would
+not have been seen.
 
 ### 3.5 Calibration
 

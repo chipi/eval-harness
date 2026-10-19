@@ -1,0 +1,62 @@
+{
+ "dataset_id": "dbpedia_280",
+ "base_reference": "gold/dbpedia_280",
+ "reference_id": "gold/dbpedia_280_adj1",
+ "adjudicator": "the operator (Marko Dragoljevic), one reader",
+ "date": "2026-10-19",
+ "selection": "every item at least 90% of the 24 hosted LLMs got wrong; then, so the review is not one-sided, every item at least one of the 1 fine-tuned arm(s) got wrong",
+ "shown": "the item text, the gold label and the hosted field's majority answer",
+ "items": [
+  {
+   "item_id": "4daa4d1813f1ef900ca79cef246d0b3b494c2e96",
+   "gold": "NaturalPlace",
+   "field": "MeanOfTransportation",
+   "field_votes": "20/24",
+   "adjudicated": "MeanOfTransportation",
+   "verdict": "gold wrong",
+   "why": "Read by what the article describes, the field's label fits and the gold does not."
+  },
+  {
+   "item_id": "d2ece996b5652ffb936f7c2c3199f98c2b862187",
+   "gold": "Building",
+   "field": "NaturalPlace",
+   "field_votes": "14/24",
+   "adjudicated": "NaturalPlace",
+   "verdict": "gold wrong",
+   "why": "Read by what the article describes, the field's label fits and the gold does not."
+  },
+  {
+   "item_id": "f181cab067c5026dbf7d628d9564a490a9bb9580",
+   "gold": "Building",
+   "field": "EducationalInstitution",
+   "field_votes": "24/24",
+   "adjudicated": "EducationalInstitution",
+   "verdict": "gold wrong",
+   "why": "Read by what the article describes, the field's label fits and the gold does not."
+  },
+  {
+   "item_id": "611580673725d0fa8e751bbd66258971cd397ba5",
+   "gold": "OfficeHolder",
+   "fine_tunes": {
+    "bert_base_fy": "Artist"
+   },
+   "field": "OfficeHolder",
+   "field_votes": "14/24",
+   "adjudicated": "OfficeHolder",
+   "verdict": "gold right",
+   "why": ""
+  },
+  {
+   "item_id": "c079cc58596626d736168123bd628182d47cfbaf",
+   "gold": "WrittenWork",
+   "fine_tunes": {
+    "bert_base_fy": "Album"
+   },
+   "field": "WrittenWork",
+   "field_votes": "24/24",
+   "adjudicated": "WrittenWork",
+   "verdict": "gold right",
+   "why": ""
+  }
+ ]
+}

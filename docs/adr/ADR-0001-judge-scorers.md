@@ -47,7 +47,7 @@ all three:
 | kind | what changes | cost | mechanism | first uses |
 |---|---|---|---|---|
 | **new reference** | what an output is scored against (e.g. adjudicated gold) | $0 | `make rescore REFERENCE=…` (exists) | AG News, DBpedia: the disputed gold labels, adjudicated |
-| **new code scorer** | the metric, written as code | $0 | `make rescore` with a new scorer (exists) | Few-NERD: the standard micro-F1 for every arm, so all arms are comparable with published numbers |
+| **new code scorer** | the metric, written as code | $0 | `make rescore` with a new scorer (exists) | none yet. Few-NERD's standard micro-F1 is not one: it needs 66 fine types and token spans, and the hosted arms were asked for 8 coarse types as strings, so their outputs do not hold it |
 | **judge scorer** | the metric, delivered by a model | billed | `make judge` (this ADR) | summarisation (validated on SummEval); SciFact's unlabelled abstracts (unvalidated until checked against a human sample) |
 
 The first two exist and need no new machinery, only a reference set or a scorer and a

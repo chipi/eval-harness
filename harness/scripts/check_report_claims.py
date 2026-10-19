@@ -955,6 +955,53 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
               f"derived smallest separated {round(_lo_sep * 280)} items, "
               f"largest not separated {round(_hi_ns * 280)}")
 
+#: Re-measured against adjudicated gold (reference v2). Recomputed from the committed
+#: predictions and the committed adjudication record, not from data/runs-adjudicated
+#: (gitignored: rescore copies the outputs): an item's verdict replaces its gold, every
+#: other item keeps the correctness the run recorded.
+def _adjudicated_acc(exp, dataset_id, prefix):
+    adj = json.loads((ROOT / "examples" / exp / "adjudication.json").read_text())
+    verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
+    v1, v2 = {}, {}
+    for arm, dirs in _runs_for(DATA, dataset_id, prefix).items():
+        rows = [json.loads(line) for line in (dirs[0] / "predictions.jsonl").open()]
+        v1[arm] = sum(r["correct"] for r in rows) / len(rows)
+        v2[arm] = sum((r["_meta"].get("predicted") == verdict[r["item_id"]])
+                      if r["item_id"] in verdict else r["correct"] for r in rows) / len(rows)
+    return adj, v1, v2
+
+
+_CLS_PLAIN = _CLS.replace("**", "")
+_adj_ag, _v1_ag, _v2_ag = _adjudicated_acc("classification-ag-news", "ag_news_200", "ag_")
+_rows_ok = all(f"`{a}`" in _CLS_PLAIN and f"{_v1_ag[a]:.4f} (" in _CLS_PLAIN
+               and f"{_v2_ag[a]:.4f} (" in _CLS_PLAIN
+               for a in ("anthropic_l", "openai_m", "openai_l", "anthropic_m", "gemma_m",
+                         "llama_s", "bert_base_ta", "bert_base_fy", "bert_mini"))
+_hosted = [a for a in _v2_ag if not a.startswith("bert") and a not in ("bart_mnli", "keyword", "constant")]
+_lead_v2 = max(_v2_ag, key=_v2_ag.get)
+check("classification: AG News on adjudicated gold v2 -- the table, the leader, every "
+      "hosted arm above every fine-tune",
+      _rows_ok and _lead_v2 == "anthropic_l"
+      and min(_v2_ag[a] for a in _hosted) > max(_v2_ag[a] for a in ("bert_mini", "bert_base_ta", "bert_base_fy"))
+      and f"`anthropic_l` leads at {_v2_ag['anthropic_l']:.4f}" in _CLS,
+      f"derived leader {_lead_v2} {_v2_ag[_lead_v2]:.4f}; lowest hosted "
+      f"{min(_v2_ag[a] for a in _hosted):.4f}; fine-tunes "
+      f"{max(_v2_ag[a] for a in ('bert_mini', 'bert_base_ta', 'bert_base_fy')):.4f}")
+_n_ag = len(_adj_ag["items"])
+_chg_ag = sum(i["verdict"] == "gold wrong" for i in _adj_ag["items"])
+_adj_db, _v1_db, _v2_db = _adjudicated_acc("classification-dbpedia-14", "dbpedia_280", "db_")
+_chg_db = sum(i["verdict"] == "gold wrong" for i in _adj_db["items"])
+check("classification: adjudication counts (AG News 29 reviewed, 17 changed; 20 gold wrong, 14 gold "
+      "right) and the DBpedia v2 leaders",
+      _n_ag == 29 and len(_adj_db["items"]) == 5 and _chg_ag == 17
+      and f"{_n_ag} items reviewed from both sides, {_chg_ag} changed" in _CLS
+      and f"wrong on all {_chg_ag + _chg_db} items" in _CLS
+      and f"right on all {_n_ag + len(_adj_db['items']) - _chg_ag - _chg_db} the fine-tunes" in _CLS
+      and round(_v2_db["gemma_m"], 4) == round(_v2_db["qwen_m"], 4) == round(max(_v2_db.values()), 4)
+      and f"lead at {_v2_db['gemma_m']:.4f}" in _CLS,
+      f"derived AG {_n_ag} reviewed / {_chg_ag} changed, DBpedia {len(_adj_db['items'])} / "
+      f"{_chg_db}; DBpedia v2 top {max(_v2_db.values()):.4f}")
+
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
