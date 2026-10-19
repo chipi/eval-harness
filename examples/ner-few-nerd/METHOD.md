@@ -21,7 +21,7 @@ never touched:
    entities gets caught, and it fixes the floor.
 3. **An unreadable answer looked like an empty one.** The first version of the scorer took
    only the parsed set, so a model whose output could not be read arrived as `[]` and
-   collected **1.0** on every empty-gold item. `glm_s`'s predecessor `glm_l` did exactly
+   collected **1.0** on every empty-gold item. `glm_l` did exactly
    that six times. `parsed` is now passed *through* to the scorer, not merely reported
    beside it.
 4. **The scorer itself was unfingerprinted.** `normalizer_sha256` covered the string
@@ -32,7 +32,7 @@ never touched:
 
 [`DFKI-SLT/few-nerd`](https://huggingface.co/datasets/DFKI-SLT/few-nerd),
 [Ding et al. 2021](https://aclanthology.org/2021.acl-long.248/), **CC BY-SA 4.0** — an
-actual grant, and the cleanest licence of the five corpora here.
+actual grant, and the cleanest licence of the first five corpora here.
 
 The alternatives do not offer one: CoNLL-2003's Reuters text needs a separate agreement,
 [`tner/wnut2017`](https://huggingface.co/datasets/tner/wnut2017) is licensed `other`, and

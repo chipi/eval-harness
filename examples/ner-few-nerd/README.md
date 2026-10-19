@@ -75,7 +75,7 @@ the classification examples deliberately kept — a mislabelled item still poses
 The filter is declared, its threshold is a flag, and what it removed is printed at the end
 of every fetch. A silent drop would be the cherry-pick.
 
-### Licence — the cleanest of the four corpora here
+### Licence — the cleanest of the first five corpora here
 
 CC BY-SA 4.0, stated on the dataset card. The usual alternatives do not offer one:
 CoNLL-2003's Reuters text needs a separate agreement, `tner/wnut2017` is licensed `other`,
@@ -218,7 +218,7 @@ Three things worth reading the report for:
 
 1. **The one separated win in this repo — as run here:** a Few-NERD-trained tagger against 24 hosted arms on one
    zero-shot prompt of bare type names, no definitions, no examples, provider unpinned.
-   Both classification corpora produced a tied group at the top. This produced a podium.
+   Both classification corpora produced a top group the data could not separate. This produced a separated first place.
 2. **57% of that winner's lead over `openai_m` is one entity type** — `other`, Few-NERD's
    catch-all (30–57% across the 24 hosted arms, for a prompt that defines no type). On
    `person`, three hosted arms edge it by at most 0.0067 (untested).

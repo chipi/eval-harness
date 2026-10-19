@@ -825,7 +825,7 @@ CARD = {
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
     "scifact": "Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not separated from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.",
-    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), and an open-weight judge is not separated from the leader.",
+    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), which scores one summary at a time while the judges rank all 16 at once; and an open-weight judge is not separated from the leader.",
 }
 
 

@@ -49,7 +49,7 @@ apart on two providers, one run each (§3.3).
 | **Is a small sample enough to rank judges?** | **To order them, yes; to crown one, no.** Two disjoint 20-article halves agree at ρ = **0.90** on the order of the 24 judges, helped by the wide spread of the field (judges τ 0.35–0.54, §3.5), but name the same unique winner only **21%** of the time: within the top group the order is not reliable. |
 | **Is ROUGE a usable judge?** | **No.** ROUGE-1/2/L agree with experts at τ 0.14–0.16; this repository's own `coverage` at **0.1011**, below ROUGE-1. |
 
-- **On mean τ, 23 of the 24 judges beat every free scorer, including one trained for the task.**
+- **On mean τ, 23 of the 24 judges score above every free scorer, including one trained for the task.**
   UniEval ([Zhong et al. 2022](https://arxiv.org/abs/2210.07197)), a T5 evaluator trained
   for these four dimensions, is the best free scorer: τ 0.3717 on its own published inputs,
   0.3476 on this experiment's. On either, the paired test separates it below 23 judges and
@@ -393,7 +393,7 @@ over which expert is left out:
 
 The position-prior row is the lookup of §3.1 and §7 on this footing: each summary scored by
 the mean expert score its position got on the other 99 articles only (`human_ceiling.py`),
-against the same two-expert references. It reaches 63% of one expert, level with UniEval's 60–64%
+against the same two-expert references. It reaches 63% of one expert, close to UniEval's 60–64%
 and about 30 points below the best judges. How much of a judge's score is reading the summary
 and how much is recognising the system is not measured.
 
