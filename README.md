@@ -40,7 +40,7 @@ It was built to answer four questions anyone building with AI ends up asking:
    GPU was first, or not separable from first, in five of the six experiments, against LLMs
    run with one prompt and no examples; the clearest wins were on text like the text it was
    trained on. On the sixth, judging summaries, even a free model
-   trained for the task lost, and an LLM judge beat every free scorer measured: the best judges
+   trained for the task lost, and an LLM judge scored above every free scorer measured: the best judges
    reach 93% of a human expert's agreement (the best of 24, chosen on the same 100
    articles; 92% held out; 2019-era summaries, all 16 ranked in one call, reasoning off),
    the best free scorer, UniEval, 64%. A no-model lookup of which system wrote each summary

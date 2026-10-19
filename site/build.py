@@ -633,7 +633,7 @@ def home(f: dict) -> str:
          f"A free model that needs no GPU was first, or not separable from first, in "
          f"{f['local_first_or_tied']} of {len(exps)}, against LLMs run with one prompt and no "
          "examples; the clearest wins were on text like the text it was trained on. On judging "
-         "summaries even a free model trained for the task lost, and an LLM judge beat every "
+         "summaries even a free model trained for the task lost, and an LLM judge scored above every "
          "free scorer measured: "
          + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement "
              "(the best of 24, chosen on the same articles; 92% held out), and UniEval, the best "
