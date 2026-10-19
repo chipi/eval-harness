@@ -3,8 +3,8 @@
 # summaries -- the same text, cased and tokenised as that file has it. It asks whether
 # this experiment's lower-cased text held the judges back, as it held UniEval back by
 # 0.0241. Committed under harness/data/runs-pair/, so it is not on the leaderboard.
-# OpenRouter routed it to SambaNova, where the original gemma_l run was served by CoreWeave;
-# REPORT_SUMMEVAL §3.3 reports the gap as text plus provider.
+# OpenRouter routed it to SambaNova, where the original gemma_l run was served by CoreWeave,
+# so it differs in text and provider; pair_gemma_l_pubtextcw_n100.yaml pins the provider.
 config_id: se_gemma_l_pubtext_n100_v1
 dataset_id: summeval_100
 adapter: ../adapter.py

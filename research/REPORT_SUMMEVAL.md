@@ -45,8 +45,9 @@
   `unievalpub` is above four judges, and on coherence alone above seven.
 - **How the text is written moves the trained evaluator.** The two UniEval arms score the
   same articles, summaries and reference, cased, tokenised and bracketed differently; that
-  difference is 0.0241 τ, separated (p 0.0002, §3.3). It moves a judge too: `gemma_l`,
-  re-run on UniEval's text, gains 0.0126, so the judge's lead over UniEval holds on either. Its calibration row, on its own inputs, reproduces
+  difference is 0.0241 τ, separated (p 0.0002, §3.3). It does not move a judge: `gemma_l`,
+  re-run on UniEval's text from the same provider, scores 0.0013 higher, not separated. The
+  provider does: served by SambaNova instead, the same run scores 0.0113 higher still. Its calibration row, on its own inputs, reproduces
   G-Eval's 0.377 (§5).
 - **The best judges come close to a single expert, and stay measurably below one.** Scored
   against the mean of two experts, as one expert is against the other two, the best judges
@@ -241,15 +242,17 @@ sentence-cased summaries. This experiment's has the article as published and the
 lower-cased, as SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
 wins 66 of 100 articles). Which part of it does the work is not tested.
 
-**The text holds the judges back too.** The judges were given this experiment's text as
-well, lower-cased summaries and bracket tokens included. One judge was re-run on UniEval's
-text as a paired side run (`harness/data/runs-pair/`, not on the leaderboard): `gemma_l`
-scores 0.5510 there against its 0.5384 here, +0.0126, separated in a single paired test
-(p 0.0141; it wins 55 of 100 articles), about half what the same change is worth to
-UniEval. The comparison is not clean: OpenRouter served the re-run from a different provider
-(SambaNova, where CoreWeave served the original), so the gap is text plus provider. Either
-way the judge's lead over UniEval barely moves: 0.1908 on this experiment's text, 0.1793 on
-UniEval's.
+**The text does not hold the judges back; the provider moves them.** The judges were given
+this experiment's text as well, lower-cased summaries and bracket tokens included. `gemma_l`
+was re-run twice on UniEval's text as paired side runs (`harness/data/runs-pair/`, not on the
+leaderboard). Pinned to CoreWeave, the provider that served the original run (fp4), it
+scores 0.5397 against its 0.5384 here: +0.0013, not separated (p 0.7658; it wins 49 of 100
+articles). So the text that is worth 0.0241 to UniEval is worth nothing measurable to the
+judge, and the judge's lead over UniEval is 0.1908 on this experiment's text and 0.1680 on
+UniEval's. The first re-run, routed by OpenRouter to SambaNova, scored 0.5510; on the same
+text the two providers differ by 0.0113, separated (p 0.0125). The original runs did not
+pin a provider, so every hosted score here carries that much provider spread, unmeasured
+for the other 23 judges.
 
 Among the free scorers not trained to judge, BARTScore, which never sees a reference,
 beats every reference-based metric, and plain ROUGE-1 beats this repository's `coverage`
@@ -462,6 +465,9 @@ between this experiment and the earlier five mix September and October prices.
   the summarisation experiment found for model-written references.
 - **The annotations are public** and may be in some judges' training data; memorising
   per-summary scores for 1,600 summaries is unlikely but not ruled out.
+- **No provider was pinned.** OpenRouter chose the provider for every judge. For `gemma_l`
+  two providers differ by 0.0113 on the same text (§3.3); for the other 23 it is not
+  measured, and it is the same size as several gaps in the tie table.
 - **One pass per judge.** Run-to-run variance at temperature 0 is not measured here; in the
   summarisation experiment's three-run sweep only 9.8% of hosted outputs were byte-identical
   across the three.

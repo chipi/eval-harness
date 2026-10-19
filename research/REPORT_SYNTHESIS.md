@@ -6,9 +6,9 @@
 arms that need torch ≥ 2.6 were run at $0; 133 until 2026-10-01, when `fn_mistral_l`
 finally got past its upstream rate limit for $0.0419; 134 until 2026-10-18, when
 SummEval's 31 arms were run for $7.03; and 165 until 2026-10-19, when SummEval's two UniEval
-arms were added at $0. Including the five paired runs (four behind the registered
-prediction, one on SummEval's text, $0.10) and the three hosted repeat runs, the repo has
-spent $20.20.*
+arms were added at $0. Including the six paired runs (four behind the registered
+prediction, two on SummEval's text, $0.13) and the three hosted repeat runs, the repo has
+spent $20.23.*
 
 > **Updated 2026-10-18 with a sixth experiment, SummEval, and 2026-10-19 with its UniEval arms** ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md)):
 > 24 LLMs judging summaries against expert scores. It confirms that the dearest model is not
@@ -213,7 +213,7 @@ model has seen — on SummEval even a free evaluator trained for it lost to 23 o
 expensive; your volume
 is low enough that the whole spread is rounding error (at 1,000 items/month the entire DBpedia range is $1.35); or
 engineering time costs more than the API. The claim is not that expensive models are bad —
-it is that **price stops predicting quality long before it stops rising.**
+it is that **the dearest model was never the best, and near the top a large price range sat inside differences this much data could not resolve.**
 
 ---
 
@@ -1148,8 +1148,9 @@ quality
 difference is worth more than the bill (at 1,000 items/month the entire
 DBpedia spread is $1.35 and the analysis is not worth your time); when a single wrong
 answer is expensive; or when engineering time to fine-tune and host costs more than the
-API. The finding is not that expensive models are bad — it is that **price stops
-predicting quality long before it stops rising**, so the premium has to be justified by
+API. The finding is not that expensive models are bad — it is that **the dearest model was
+never the best, and near the top a large price range sat inside differences this much data
+could not resolve**, so the premium has to be justified by
 something other than the leaderboard.
 
 ## What this cannot say
@@ -1180,7 +1181,8 @@ something other than the leaderboard.
 - **One pass per arm, temperature 0.** Every interval here is over *items*, never over
   *runs*. Run-to-run variance is real and, for hosted arms, unmeasured — two runs of an
   identical SciFact config scored 0.6691 and 0.6617, because OpenRouter routes across
-  providers. For the local arms of summarisation and classification it is measured and zero: all
+  providers, and on SummEval `gemma_l` scored 0.0113 apart on the same text from two
+  providers (REPORT_SUMMEVAL §3.3). No hosted run pinned a provider. For the local arms of summarisation and classification it is measured and zero: all
   nine re-ran byte-identically, six on the same machine and `bart_l`, `lead3` and
   `bert_mini` on a different one (`bert_mini`'s confidences moved by ≤ 2 × 10⁻⁶, its
   labels not at all). The NER and retrieval local arms were not re-run.

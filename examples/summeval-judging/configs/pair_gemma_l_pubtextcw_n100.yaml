@@ -1,0 +1,26 @@
+# A paired side run, not an arm: the gemma_l judge (same settings as
+# arm_gemma_l_n100.yaml) given UniEval's published copy of each article and its 16
+# summaries -- the same text, cased and tokenised as that file has it. It asks whether
+# this experiment's lower-cased text held the judges back, as it held UniEval back by
+# 0.0241. Committed under harness/data/runs-pair/, so it is not on the leaderboard.
+# The same run pinned to CoreWeave (fp4), the provider that served the original gemma_l
+# run, so the only difference from it is the text. Fallbacks off: no other provider.
+config_id: se_gemma_l_pubtextcw_n100_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-gemma-31b
+  family: gemma
+  price_tier: large
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  usd_per_mtok_in: 0.1
+  usd_per_mtok_out: 0.2
+  prompt_file: prompt.txt
+  max_tokens: 1500
+  inputs: published
+  provider_routing:
+    order: [coreweave/fp4]
+    allow_fallbacks: false

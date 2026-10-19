@@ -1353,12 +1353,15 @@ check(f"SummEval calibration: UniEval's largest dimension gap is {_worst}'s "
       f"{abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}, every dimension inside its interval",
       f"{_worst}'s {abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}" in _SEVn
       and all(abs(x["value"] - x["published"]) <= x["ci95"] for x in _ued.values()), str(_ued))
-_gp, _go = score(PAIR, "se_gemma_l_pubtext_n100_v1", "tau"), _tau["gemma_l"]
-check(f"SummEval §3.3: gemma_l on UniEval's text {_gp:.4f} vs {_go:.4f}; its lead over UniEval "
-      f"{_go - _tau['unieval']:.4f} and {_gp - _tau['unievalpub']:.4f}",
-      _gp is not None and f"scores {_gp:.4f} there against its {_go:.4f} here, +{_gp - _go:.4f}" in _SEVn
-      and f"{_go - _tau['unieval']:.4f} on this experiment's text, {_gp - _tau['unievalpub']:.4f} on" in _SEVn,
-      f"pair run tau {_gp}")
+_gp = score(PAIR, "se_gemma_l_pubtextcw_n100_v1", "tau")
+_gs, _go = score(PAIR, "se_gemma_l_pubtext_n100_v1", "tau"), _tau["gemma_l"]
+check(f"SummEval §3.3: gemma_l on UniEval's text {_gp:.4f} (CoreWeave) and {_gs:.4f} (SambaNova) vs "
+      f"{_go:.4f}; its lead over UniEval {_go - _tau['unieval']:.4f} and {_gp - _tau['unievalpub']:.4f}",
+      None not in (_gp, _gs)
+      and f"scores {_gp:.4f} against its {_go:.4f} here: +{_gp - _go:.4f}" in _SEVn
+      and f"to SambaNova, scored {_gs:.4f}; on the same text the two providers differ by {_gs - _gp:.4f}" in _SEVn
+      and f"{_go - _tau['unieval']:.4f} on this experiment's text and {_gp - _tau['unievalpub']:.4f} on" in _SEVn,
+      f"pair run taus {_gp} {_gs}")
 _ui = _cal_se.get("unievalpub_inputs_vs_ours") or {}
 check("SummEval §3.3: how UniEval's published inputs differ from ours, as calibrate.py counted it",
       bool(_ui) and _ui["summaries"] - _ui["same_ignoring_case_and_punctuation"] == _ui["differ_only_in_bracket_tokens"]

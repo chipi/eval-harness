@@ -270,8 +270,9 @@ separated from 20 of 27; ahead on the point estimate against 26 of 27
 ```
 
 **$0.0088 to $0.6897 — 78× — for a difference the data cannot resolve.** DBpedia gave
-115× on a completely different task. The consistency is the finding: at the top of a
-hosted field, price stops predicting quality long before quality stops varying.
+115× on a completely different task. The consistency is the finding: near the top of a
+hosted field, a 78× price range sits inside a gap these 280 sentences cannot resolve — not
+shown different, which is not the same as equal.
 
 ### 3.4 Where the lead actually comes from
 

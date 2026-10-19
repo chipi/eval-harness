@@ -2756,10 +2756,15 @@ reports did. All of it was in published copy before this branch.
    judges); "six-way tie" is relative to the leader (from `gemma_l` the set includes
    `glm_m`); UniEval gets a human reference the judges never see; summary order is fixed.
 
-**Paid run, $0.10, approved:** `gemma_l` re-run on UniEval's cased text
-(`data/runs-pair/`) scores 0.5510 against 0.5384, +0.0126, p 0.0141. OpenRouter served it
-from SambaNova, the original from CoreWeave, so the gap is text plus provider. It cost 3.6×
-the original run for the same work — the provider, not the text. My estimate was ~$0.03.
+**Paid runs, $0.13, approved:** `gemma_l` re-run on UniEval's cased text
+(`data/runs-pair/`). The first scored 0.5510 against 0.5384, +0.0126, p 0.0141, and I first
+wrote that up as "the text holds the judges back too". OpenRouter had served it from
+SambaNova, the original from CoreWeave, and it cost 3.6× the original for the same work. A
+second run pinned to CoreWeave (fp4, fallbacks off) scored 0.5397: +0.0013, p 0.7658, not
+separated. The text does not move the judge; the provider moved it by 0.0113 (p 0.0125).
+The first write-up was wrong, and only the pinned rerun, which the operator approved after
+I flagged the confound, showed it. No hosted run here pinned a provider, so provider spread
+of this size is in every hosted score and measured for one judge only.
 
 Mine in this round: the synthesis still said "ten calibration figures" after I added the
 eleventh, and I dated the UniEval runs 2026-10-19; they ran on 2026-10-18 (UTC).
