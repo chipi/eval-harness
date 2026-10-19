@@ -201,7 +201,9 @@ def chapters(H, f: dict) -> list:
         {"id": "record", "nodes": "baseline", "kicker": "The record",
          "title": "Decide on the record.",
          "short": "The scorer is part of the experiment. So is the reason.",
-         "story": ("<p>" + H.q("Three of these — the parser, the unparsed-as-empty rule, the "
+         "story": ("<p>Running the experiments found eight defects in the harness's own "
+                   "instrument, each of which changed published numbers or would have. "
+                   + H.q("Three of these — the parser, the unparsed-as-empty rule, the "
                    "reasoning flag — moved a single arm by more than the gap separating most of "
                    "the field.", SYN) + " The scoring code is a model-sized lever.</p>"
                    "<p>Every correction is kept: the lab notebook records the findings that were "
@@ -304,7 +306,7 @@ def patterns(H, f: dict) -> list:
          H.q("Score a few dozen outputs yourself, then measure how well each judge orders them "
              "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
              "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
-             "leader's price tied it.", JUDGE)
+             "leader's price was not separated from it.", JUDGE)
          + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
          "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",

@@ -196,6 +196,11 @@ def compute() -> dict:
         "total_arms": all_arms,
         "total_billed": billed,
         "dearest_never_best": sum(e["dearest"]["arm"] != e["top"]["arm"] for e in exps),
+        # SciFact ran only the twelve cheapest hosted models, so its dearest arm is not a
+        # frontier model; the headline stat counts only experiments where one ran.
+        "frontier_exps": sum(_has_frontier(e) for e in exps),
+        "dearest_not_best_frontier": sum(_has_frontier(e) and e["dearest"]["arm"] != e["top"]["arm"]
+                                         for e in exps),
         "local_first_or_tied": sum(e["top"]["kind"] == "local" or
                                    any(a["kind"] == "local" for a in e["arms"] if a["arm"] in e["tied"])
                                    for e in exps),
@@ -207,6 +212,10 @@ def compute() -> dict:
     }
 
 
+def _has_frontier(e) -> bool:
+    return any(a["arm"].startswith(("anthropic_", "openai_")) for a in e["arms"])
+
+
 if __name__ == "__main__":
     f = compute()
     for e in f["experiments"]:
@@ -215,5 +224,6 @@ if __name__ == "__main__":
               f"/{e['n_arms']} tied={e['n_tied']} ({e['n_tied_paid']} paid) cheapest_tied="
               f"{e['cheapest_tied']['arm'] if e['cheapest_tied'] else '-'} ${e['billed_total']:.2f}")
     print("total arms", f["total_arms"], "billed", round(f["total_billed"], 2),
-          "dearest never best", f["dearest_never_best"], "calibration consistent",
+          "dearest never best", f["dearest_never_best"],
+          "| with frontier models", f["dearest_not_best_frontier"], "/", f["frontier_exps"], "calibration consistent",
           f["calibration_consistent"], "/", len(f["calibration"]))

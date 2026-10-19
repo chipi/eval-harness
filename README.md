@@ -13,8 +13,11 @@
 most leaderboards skip: is this ranking real, or a lucky sample?**
 
 Freeze a dataset, run your system against it, and get an answer that says whether one
-system is actually better than another, or only ahead on this sample. To show it doing
-something real, it measured 24 LLMs, small fine-tuned models and baselines on six public
+system is actually better than another, or only ahead on this sample.
+
+This is ongoing work. The harness and its method are the point; the six experiments below are
+worked examples of them, not a benchmark, and they are still being extended. As those
+examples, it measured 24 LLMs, small fine-tuned models and baselines on six public
 benchmarks. The most expensive hosted model never won (on SciFact only the twelve cheapest
 hosted models ran), and in five of six the leader could not be separated from other arms,
 each time including one that cost less than the dearest hosted model, at 100–280 items — not

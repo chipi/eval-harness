@@ -1740,6 +1740,171 @@ check("NER: emitted-`other` counts (gliner 3, openai_m 93, anthropic_l 131, span
           "`span_marker` 97)" in _NERT,
       str(_oth))
 
+# ---- THE PRICE-QUALITY SLOPE OF EVERY EXPERIMENT, AND THE ONE-MODEL PERCENTILE --------
+#
+# Review 2026-10-19: only summarisation's fit was checked; the synthesis slope table, the
+# exec-summary range built from it and the sentences in the other reports that repeat a
+# slope were "recomputed by hand" and a drift in any of them would have passed. Likewise
+# the 67th / 72nd percentile of `glm_m`. Both are recomputed from the committed runs and
+# the stated figures are looked for, by shape, in the text.
+#
+# THE FIT (synthesis section 8): over the experiment's PAID arms (a nonzero billed cost),
+# ordinary least squares of the primary metric on log10(billed cost). The slope is the
+# change per 10x, the percentage divides it by the best paid arm's score, r is Pearson.
+_SLOPE_EXPS = [
+    # (row key in the synthesis table, prefix, dataset, primary metric, runs dir)
+    ("| Judging · SummEval |", "se_", "summeval_100", "tau", DATA),
+    ("| Extraction · Few-NERD |", "fn_", "few_nerd_280", "f1", RESCORED),
+    ("| Retrieval · SciFact |", "sf_", "scifact_200", "ndcg_10", REPARSED),
+    ("| Classification · AG News |", "ag_", "ag_news_200", "correct", DATA),
+    ("| Classification · DBpedia |", "db_", "dbpedia_280", "correct", DATA),
+    ("| Summarisation · CNN/DM |", "cnn_", "cnn_dailymail_200", "coverage", DATA),
+]
+_SYN = " ".join(SYNTH.split())
+
+
+def _sx(x, nd):
+    return f"{x:+.{nd}f}".replace("-", "−")
+
+
+def _r2(x):
+    return f"{x:.2f}".replace("-", "−")
+
+
+def _r_p_value(r, n):
+    """Two-sided p of Pearson r over n points: t = r sqrt((n-2)/(1-r^2)), n-2 df."""
+    df = n - 2
+    t = abs(r) * _math.sqrt(df / (1 - r * r))
+    c = _math.exp(_math.lgamma((df + 1) / 2) - _math.lgamma(df / 2)) / _math.sqrt(df * _math.pi)
+    steps, hi = 200000, 60.0
+    h = (hi - t) / steps
+    return 2 * h * sum(c * (1 + (t + (k + 0.5) * h) ** 2 / df) ** (-(df + 1) / 2)
+                       for k in range(steps))
+
+
+_fits = {}
+for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
+    _x, _y = [], []
+    for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
+        _bill = _billed_of(_dirs[0])
+        _v = (json.load(open(_dirs[0] / "metrics.json")).get("scores") or {}).get(_metric)
+        if _bill > 0 and _v is not None:
+            _x.append(_math.log10(_bill))
+            _y.append(_v)
+    if len(_x) < 3:
+        missing += 1
+        print(f"  --   slope {_ds}: only {len(_x)} paid arms — skipped")
+        continue
+    _mx, _my = statistics.fmean(_x), statistics.fmean(_y)
+    _sxx = sum((a - _mx) ** 2 for a in _x)
+    _syy = sum((b - _my) ** 2 for b in _y)
+    _sl = sum((a - _mx) * (b - _my) for a, b in zip(_x, _y)) / _sxx
+    _f = _fits[_ds] = dict(n=len(_x), slope=_sl, pct=100 * _sl / max(_y),
+                           r=_sl * _math.sqrt(_sxx / _syy), best=max(_y))
+    _row = next((ln for ln in SYNTH.splitlines() if ln.startswith(_key) and "| r = " in ln), None)
+    _cells = [c.replace("*", "").strip() for c in _row.strip("|").split("|")] if _row else []
+    _want = [str(_f["n"]), _sx(_f["slope"], 4), _sx(_f["pct"], 1) + "%", f"r = {_r2(_f['r'])}"]
+    _got = [_cells[1], _cells[2], _cells[3], _cells[4].split(" (")[0]] if len(_cells) >= 5 else []
+    check(f"price slope, synthesis table, {_ds}: {_want[1]} per 10x = {_want[2]} of the best "
+          f"paid arm, {_want[3]}, {_want[0]} paid arms",
+          _got == _want, f"the table row says {_got}, the runs give {_want}")
+
+if len(_fits) == len(_SLOPE_EXPS):
+    _pcts = {d: f["pct"] for d, f in _fits.items()}
+    _lo_ds, _hi_ds = min(_pcts, key=_pcts.get), max(_pcts, key=_pcts.get)
+    _range = f"{_sx(_pcts[_lo_ds], 1)}% to {_sx(_pcts[_hi_ds], 1)}%"
+    _steep = (f"Steepest on SummEval ({_sx(_fits['summeval_100']['pct'], 1)}%, "
+              f"r = {_r2(_fits['summeval_100']['r'])}); negative on summarisation "
+              f"({_sx(_fits['cnn_dailymail_200']['pct'], 1)}%, "
+              f"r = {_r2(_fits['cnn_dailymail_200']['r'])})")
+    check(f"price slope range {_range}, steepest SummEval, lowest summarisation, in the "
+          "synthesis exec row",
+          (_hi_ds, _lo_ds) == ("summeval_100", "cnn_dailymail_200")
+          and f"{_range} of the best paid arm's score" in _SYN and _steep in _SYN,
+          f"derived {_range}, steepest {_hi_ds}, lowest {_lo_ds}; {_steep}")
+    _f = _fits["summeval_100"]
+    _ratio = f"slope {_f['slope']:.5f} ÷ best paid score {_f['best']:.4f} = {_f['pct']:.2f}%"
+    check("price slope worked example (SummEval) in the synthesis footnote",
+          _ratio in _SYN, f"derived: {_ratio}")
+
+    _ner = _fits["few_nerd_280"]
+    _spm = score(RESCORED, "fn_span_marker_n200_v1", "f1")
+    _z, _se = _math.atanh(_ner["r"]), 1 / _math.sqrt(_ner["n"] - 3)
+    _ner_say = (f"{_sx(_ner['slope'], 4)} F1 per 10× in cost (r = {_r2(_ner['r'])}, 95% Fisher "
+                f"interval {_math.tanh(_z - 1.96 * _se):.2f} to {_math.tanh(_z + 1.96 * _se):.2f}): "
+                f"{_ner['pct']:.1f}% of the best hosted F1, {100 * _ner['slope'] / _spm:.1f}% of "
+                "`span_marker`'s")
+    check("price slope, NER report: slope, r, interval and shares", _ner_say in _NERT,
+          f"derived: {_ner_say}")
+    _ag, _db = _fits["ag_news_200"], _fits["dbpedia_280"]
+    _cls_say = [f"{_sx(_ag['pct'], 1)}%** per 10× cost (log-cost fit over the {_ag['n']} hosted "
+                f"arms: {_sx(_ag['slope'], 4)} accuracy per decade ÷ the best hosted score, "
+                f"{_ag['best']:.4f}; r = {_r2(_ag['r'])})",
+                f"{_sx(_db['pct'], 1)}%** per 10× cost ({_sx(_db['slope'], 4)} ÷ "
+                f"{_db['best']:.4f}; r = {_r2(_db['r'])})"]
+    check("price slope, classification report: AG News and DBpedia exec cells",
+          all(s_ in _CLS for s_ in _cls_say), "derived: " + " / ".join(_cls_say))
+    _sf = _fits["scifact_200"]
+    _sf_say = (f"{_sx(_sf['slope'], 4)} nDCG@10 per 10× billed cost (r = {_r2(_sf['r'])}, "
+               f"n = {_sf['n']}, p ≈ {_r_p_value(_sf['r'], _sf['n']):.1f})")
+    check("price slope, retrieval report: slope, r, n and p",
+          _sf_say in " ".join((ROOT / "research" / "REPORT_RETRIEVAL.md").read_text().split()),
+          f"derived: {_sf_say}")
+
+# THE ONE-MODEL PERCENTILE (synthesis section 8, "the strongest argument on the other side").
+# Method, as the text states it: the hosted arms of each experiment (provider litellm, or
+# rerank for SciFact's rerankers); the arms that ran all six; an arm's percentile in an
+# experiment is the share of that experiment's hosted arms it scores above, ITSELF
+# INCLUDED as a tie, ties counted half (or fully in its favour for the second figure);
+# averaged over the six; the best arm by the first figure.
+_hosted_by_exp = {}
+for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
+    _hosted_by_exp[_ds] = {}
+    for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
+        _m = json.load(open(_dirs[0] / "metrics.json"))
+        if (_m.get("params") or {}).get("provider") in ("litellm", "rerank") \
+                and (_m.get("scores") or {}).get(_metric) is not None:
+            _hosted_by_exp[_ds][_arm] = _m["scores"][_metric]
+_common = set.intersection(*[set(v) for v in _hosted_by_exp.values()])
+
+
+def _pct_rank(arm, half):
+    out = []
+    for v in _hosted_by_exp.values():
+        below = sum(x < v[arm] for x in v.values())
+        tied = sum(x == v[arm] for x in v.values())
+        out.append((below + (0.5 if half else 1.0) * tied) / len(v))
+    return 100 * statistics.fmean(out)
+
+
+def _ordinal(n):
+    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
+if _common:
+    _best = max(_common, key=lambda a: _pct_rank(a, True))
+    _mid, _weak = _pct_rank(_best, True), _pct_rank(_best, False)
+    _exec = (f"`{_best}`, the best of the twelve hosted arms that ran all six experiments, "
+             f"sits at the {_ordinal(round(_mid))} percentile among hosted arms (the share it "
+             f"scores above, itself included as a tie, ties counted half, averaged over the "
+             f"six; {_ordinal(round(_weak))} if ties are counted fully in its favour)")
+    _sec8 = (f"**{_ordinal(round(_mid))} percentile across all six** (the share of each "
+             f"experiment's hosted arms, itself included as a tie, that it scores above, ties "
+             f"counted half, averaged; {_ordinal(round(_weak))} if ties are counted fully in "
+             f"its favour")
+    check(f"one-model percentile: `{_best}` is best of {len(_common)} common hosted arms, "
+          f"{_ordinal(round(_mid))} (ties half) / {_ordinal(round(_weak))} (ties fully), "
+          "stated in the exec row",
+          len(_common) == 12 and _exec in _SYN, f"derived {len(_common)} common arms, best "
+          f"{_best}, {_mid:.2f} / {_weak:.2f}")
+    check(f"one-model percentile: section 8 states the {_ordinal(round(_mid))} / "
+          f"{_ordinal(round(_weak))} and the method",
+          _sec8 in _SYN and "Twelve of the 24 hosted arms ran every experiment" in _SYN,
+          f"derived {_mid:.2f} / {_weak:.2f}")
+else:
+    missing += 1
+    print("  --   one-model percentile: no hosted arm ran all six experiments — skipped")
+
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)
     if got is None:

@@ -56,7 +56,7 @@ The cross-cutting numbers behind the picks:
 | **Rent or own?** | 14 of the 24 hosted arms have downloadable weights. The best proprietary arm was never separated from the best open-weight arm in any of the six experiments (`anthropic_l` and `anthropic_m` are separated below `deepseek_m` on summarisation). Every arm's bill at 1M items, summed: $24,187 for the open-weight tier rented, $0 self-hosted; $100,894 for the 10 proprietary arms and `qwen37max` on SummEval, which cannot be self-hosted. |
 | **Is there a $0 answer?** | In every experiment: the self-hostable option is the winner in four of six and trails by 0.0071 (DBpedia) and 0.0013 (SummEval), neither resolvable. |
 | **What does a 64 GB machine hold?** | At native precision the best model that fits still equals the unlimited-hardware answer on two of six tasks (DBpedia, Few-NERD) and trails by 0.0074 (SciFact) and 0.0200 (AG News), both not separated, and by 0.0205 (summarisation) and 0.0614 (SummEval), both separated. The unlimited-hardware model would fit AG News and SummEval only at int4 or int8, which was not run. At 128 GB five of six answers equal the unlimited one (two only as an unrun int8 or int4 build). Nothing was run on a 64 or 128 GB machine; scores are as the providers served them (§0). |
-| **Can one model do everything?** | `glm_m`, the best of the twelve hosted arms that ran all six experiments, sits at the 67th percentile among hosted arms (the share it scores above, ties counted half, averaged over the six; 72nd if ties are counted fully in its favour), where each local model does one task (§0). |
+| **Can one model do everything?** | `glm_m`, the best of the twelve hosted arms that ran all six experiments, sits at the 67th percentile among hosted arms (the share it scores above, itself included as a tie, ties counted half, averaged over the six; 72nd if ties are counted fully in its favour), where each local model does one task (§0). |
 | **How good is an LLM judge?** | The best LLM judges reached 93% of a human expert's agreement (95% interval 89–97%) and the best free scorer, UniEval, 64%. The 93% is the best of 24 chosen on the same articles (92% when chosen on half and scored on the other half). A no-model lookup of which system wrote each summary reaches 63%, so how much of a judge's score is reading rather than recognising the system is not measured. The summaries are 2019-era, reasoning was off, and the judges ranked all 16 summaries in one call where UniEval scores one at a time (REPORT_SUMMEVAL §3.7). |
 
 What the dearest arm in each experiment buys, at **1,000,000 items/month** as billed,
@@ -484,9 +484,9 @@ crossover depends entirely on volume.
 
 **One hosted model does all six tasks with nothing but a prompt change.** Twelve of the
 24 hosted arms ran every experiment unmodified; the best of them, `glm_m`, sits at the
-**67th percentile across all six** (the share of each experiment's hosted arms that it
+**67th percentile across all six** (the share of each experiment's hosted arms, itself included as a tie, that it
 scores above, ties counted half, averaged; 72nd if ties are counted fully in its favour.
-Recomputed from the committed runs, with no check behind it). The best fine-tuned local
+Recomputed from the committed runs by `check_report_claims.py`). The best fine-tuned local
 model sits at or tied with
 the top on **one task each** and cannot perform the others at all — and, the XSum
 control shows, cannot even perform its *own* task on someone else's data. On the sixth,
@@ -824,9 +824,8 @@ metric; the percentage divides it by the best paid arm's score:
 | Classification · DBpedia | 24 | +0.0094 | +0.9% | r = 0.40 |
 | Summarisation · CNN/DM | 24 | −0.0013 | **−0.4%** | r = −0.07 |
 
-*Every fit uses the rescored Few-NERD runs and the corrected-parser SciFact runs. Only
-summarisation's fit is checked by `check_report_claims.py`; the others were recomputed from
-the committed runs and the billed costs (SummEval: slope 0.03989 ÷ best paid score 0.5398 =
+*Every fit uses the rescored Few-NERD runs and the corrected-parser SciFact runs. Every fit
+is recomputed from the committed runs and the billed costs by `check_report_claims.py` (SummEval: slope 0.03989 ÷ best paid score 0.5398 =
 7.39%).*
 
 **An order of magnitude more money buys between nothing and seven percent.** On
