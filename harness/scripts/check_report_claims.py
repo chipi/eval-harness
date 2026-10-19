@@ -1353,6 +1353,13 @@ check(f"SummEval calibration: UniEval's largest dimension gap is {_worst}'s "
       f"{abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}, every dimension inside its interval",
       f"{_worst}'s {abs(_ued[_worst]['value'] - _ued[_worst]['published']):.4f}" in _SEVn
       and all(abs(x["value"] - x["published"]) <= x["ci95"] for x in _ued.values()), str(_ued))
+_ui = _cal_se.get("unievalpub_inputs_vs_ours") or {}
+check("SummEval §3.3: how UniEval's published inputs differ from ours, as calibrate.py counted it",
+      bool(_ui) and _ui["summaries"] - _ui["same_ignoring_case_and_punctuation"] == _ui["differ_only_in_bracket_tokens"]
+      and _ui["reference_is_the_first_of_11"] == _ui["article_same_ignoring_case_and_punctuation"] == _ui["summaries"]
+      and f"{_ui['same_ignoring_case_and_punctuation']:,} of the {_ui['summaries']:,} summaries match" in _SEVn
+      and f"the other {_ui['differ_only_in_bracket_tokens']} differ only in how brackets" in _SEVn,
+      str(_ui))
 _rs = _sp.run([sys.executable, str(HERE / "rank_stability.py"), "--dataset-id", _sea.DATASET,
                "--metric", "tau"], capture_output=True, text=True, cwd=str(HERE.parent))
 _rs20 = [ln.split() for ln in _rs.stdout.splitlines() if ln.split()[:1] == ["20"]]

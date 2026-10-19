@@ -152,5 +152,15 @@
       "rho": 0.1586,
       "tau": 0.1264
     }
+  },
+  "unievalpub_inputs_vs_ours": {
+    "summaries": 1600,
+    "identical": 103,
+    "same_ignoring_case_and_punctuation": 1528,
+    "differ_only_in_bracket_tokens": 72,
+    "reference_is_the_first_of_11": 1600,
+    "article_same_ignoring_case_and_punctuation": 1600,
+    "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81",
+    "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab"
   }
 }

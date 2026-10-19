@@ -221,7 +221,8 @@ agreement against the best judges' 93% (§3.7).
 **The inputs move UniEval.** The two UniEval arms score the same articles, summaries and
 reference — 1,528 of the 1,600 summaries match word for word once case and punctuation are
 ignored, and the other 72 differ only in how brackets are written (`-lrb-` and `-rrb-` in
-this experiment's text) — written differently. UniEval's file has a tokenised article and
+this experiment's text; counted by `calibrate.py`, which also finds the same article and the
+same reference on every row) — written differently. UniEval's file has a tokenised article and
 sentence-cased summaries. This experiment's has the article as published and the summaries
 lower-cased, as SummEval releases them. That difference is worth 0.0241 τ, separated (p 0.0002; `unievalpub`
 wins 66 of 100 articles). Which part of it does the work is not tested. The LLM judges were

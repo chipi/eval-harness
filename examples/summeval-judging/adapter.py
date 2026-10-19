@@ -314,31 +314,57 @@ _UE_QUESTIONS = {
     "fluency": "question: Is this a fluent paragraph? </s> paragraph: {out}",
     "relevance": "question: Is this summary relevant to the reference? </s> summary: {out} </s> reference: {ref}",
 }
+#: sha256 of every download the UniEval arms read, as the committed runs read them. Neither
+#: URL is versioned (the release file is a bucket object; nltk.download fetches whatever
+#: punkt_tab is current), so a mismatch means a different input, and the run stops.
+UNIEVAL_INPUTS_SHA256 = "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81"
+ORIGINAL_SHA256 = "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab"
+#: Over punkt_tab/english, the one model sent_tokenize loads: sorted file names and bytes.
+PUNKT_ENGLISH_SHA256 = "158f5e4684a0852ae6a6e973c1e17978a4b1d780a8e353a18bc0c10a068aa07b"
 _UE: Any = None
 _UE_KEY: Optional[tuple] = None
 _UE_PUBLISHED: Any = None
+_PUNKT_OK = False
 
 
-def _cached(path: Path, url: str) -> Path:
+def _cached(path: Path, url: str, sha256: str) -> Path:
     if not path.is_file():
         import urllib.request  # noqa: PLC0415
 
         path.parent.mkdir(parents=True, exist_ok=True)
         with urllib.request.urlopen(url, timeout=120) as r:
             path.write_bytes(r.read())
+    got = hashlib.sha256(path.read_bytes()).hexdigest()
+    if got != sha256:
+        raise RuntimeError(f"{path.name}: sha256 {got} is not the pinned {sha256}; "
+                           f"{url} no longer serves the file the runs used")
     return path
 
 
+def punkt_english_digest(folder: Path) -> str:
+    h = hashlib.sha256()
+    for f in sorted(folder.iterdir()):
+        h.update(f.name.encode() + b"\x00" + f.read_bytes() + b"\x1e")
+    return h.hexdigest()
+
+
 def _sentences(text: str) -> List[str]:
+    global _PUNKT_OK
     import nltk  # noqa: PLC0415
 
-    data = SOURCES / "summeval_nltk"
-    if str(data) not in nltk.data.path:
-        nltk.data.path.insert(0, str(data))
-    try:
-        nltk.data.find("tokenizers/punkt_tab")
-    except LookupError:
-        nltk.download("punkt_tab", download_dir=str(data), quiet=True)
+    if not _PUNKT_OK:
+        data = SOURCES / "summeval_nltk"
+        if str(data) not in nltk.data.path:
+            nltk.data.path.insert(0, str(data))
+        try:
+            nltk.data.find("tokenizers/punkt_tab")
+        except LookupError:
+            nltk.download("punkt_tab", download_dir=str(data), quiet=True)
+        got = punkt_english_digest(Path(nltk.data.find("tokenizers/punkt_tab/english/")))
+        if got != PUNKT_ENGLISH_SHA256:
+            raise RuntimeError(f"punkt_tab/english: sha256 {got} is not the pinned "
+                               f"{PUNKT_ENGLISH_SHA256}; a different sentence splitter")
+        _PUNKT_OK = True
     return nltk.sent_tokenize(text) or [text]
 
 
@@ -377,13 +403,15 @@ def _unieval_published() -> Any:
     if _UE_PUBLISHED is None:
         norm = lambda t: " ".join(t.split()).lower()  # noqa: E731
         by_text: Dict[str, set] = {}
-        orig = _cached(SOURCES / "summeval_original" / "model_annotations.aligned.jsonl", ORIGINAL_URL)
+        orig = _cached(SOURCES / "summeval_original" / "model_annotations.aligned.jsonl", ORIGINAL_URL,
+                       ORIGINAL_SHA256)
         for line in orig.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 r = json.loads(line)
                 by_text.setdefault(norm(r["decoded"]), set()).add((r["id"].split("-test-")[1], r["model_id"]))
         rows = {}
-        ue = _cached(SOURCES / "summeval_unieval" / "summeval.json", UNIEVAL_INPUTS_URL)
+        ue = _cached(SOURCES / "summeval_unieval" / "summeval.json", UNIEVAL_INPUTS_URL,
+                     UNIEVAL_INPUTS_SHA256)
         for r in json.loads(ue.read_text(encoding="utf-8")):
             rows[(r["doc_id"].split("-test-")[1], r["system_id"])] = r
         _UE_PUBLISHED = (norm, by_text, rows)
@@ -499,6 +527,9 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         fp["inputs"] = params.get("inputs", "ours")
         fp["nltk"] = nltk.__version__
         fp["weights_licence"] = "not stated on the model card (MingZhong/unieval-sum)"
+        fp["punkt_english_sha256"] = PUNKT_ENGLISH_SHA256
+        if fp["inputs"] == "published":
+            fp["original_release_sha256"] = ORIGINAL_SHA256
         if fp["inputs"] == "published":
             ue = SOURCES / "summeval_unieval" / "summeval.json"
             fp["unieval_inputs_url"] = UNIEVAL_INPUTS_URL

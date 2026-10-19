@@ -75,12 +75,52 @@ def per_article(arm: str, key: str = "tau") -> list:
     return [json.loads(ln)[key] for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
 
 
+def _adapter():
+    if "se_adapter" not in sys.modules:
+        spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["se_adapter"] = mod
+        spec.loader.exec_module(mod)
+    return sys.modules["se_adapter"]
+
+
+def unieval_inputs() -> dict:
+    """How UniEval's published SummEval inputs differ from this experiment's items.
+
+    The two UniEval arms score the same summaries from two files; the report says they hold
+    the same text written differently. This counts it, through the adapter's own matching
+    (and its hash-pinned downloads), so the report's figures are evidence, not a reading."""
+    import re  # noqa: PLC0415
+
+    ad = _adapter()
+    data = ROOT / "harness" / "data"
+    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    norm, by_text, rows = ad._unieval_published()
+    alnum = lambda t: re.sub(r"[^a-z0-9]", "", t.lower())  # noqa: E731
+    nobr = lambda t: alnum(t.lower().replace("-lrb-", "(").replace("-rrb-", ")"))  # noqa: E731
+    n = exact = same = brackets = ref = src = 0
+    for it in items:
+        item = ad._item((data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8"))
+        keys = [by_text.get(norm(x), set()) for x in item["summaries"]]
+        doc = set.intersection(*[{d for d, _ in k} for k in keys]).pop()
+        for x, k in zip(item["summaries"], keys):
+            row = rows[(doc, sorted(m for d, m in k if d == doc)[0])]
+            n += 1
+            exact += row["system_output"] == x
+            same += alnum(row["system_output"]) == alnum(x)
+            brackets += alnum(row["system_output"]) != alnum(x) and nobr(row["system_output"]) == nobr(x)
+            ref += alnum(row["reference"]) == alnum(item["references"][0])
+            src += alnum(row["source"]) == alnum(item["article"])
+    return {"summaries": n, "identical": exact, "same_ignoring_case_and_punctuation": same,
+            "differ_only_in_bracket_tokens": brackets, "reference_is_the_first_of_11": ref,
+            "article_same_ignoring_case_and_punctuation": src,
+            "unieval_inputs_sha256": ad.UNIEVAL_INPUTS_SHA256,
+            "original_release_sha256": ad.ORIGINAL_SHA256}
+
+
 def reference_combinations() -> dict:
     """ROUGE-1 rho and tau under three ways of combining the 11 references."""
-    spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
-    adapter = importlib.util.module_from_spec(spec)
-    sys.modules["se_adapter"] = adapter
-    spec.loader.exec_module(adapter)
+    adapter = _adapter()
     from rouge_score import rouge_scorer  # noqa: PLC0415 - the example's own dependency
 
     data = ROOT / "harness" / "data"
@@ -133,7 +173,8 @@ def main() -> int:
                 "articles (the committed runs), "
                 "Kendall tau-b against the expert means",
         "split_rows": 100, "arms": arms,
-        "rouge1_reference_combination": reference_combinations()})
+        "rouge1_reference_combination": reference_combinations(),
+        "unievalpub_inputs_vs_ours": unieval_inputs()})
     for arm, r in arms.items():
         print(f"  {arm:10s} tau {r['value']:.4f} +/-{r['ci95']:.4f}  vs {r['published']:.3f} published  {r['verdict']}")
         for d, x in r["by_dimension"].items():
@@ -142,6 +183,9 @@ def main() -> int:
     combos = json.loads(path.read_text())["rouge1_reference_combination"]
     print("  ROUGE-1 by reference combination: " + "  ".join(
         f"{k} rho {v['rho']:.4f} tau {v['tau']:.4f}" for k, v in combos.items()))
+    print("  UniEval's inputs against ours: " + json.dumps(
+        {k: v for k, v in json.loads(path.read_text())["unievalpub_inputs_vs_ours"].items()
+         if not k.endswith("sha256")}))
     print(f"wrote {path.relative_to(ROOT)}")
     return 0
 

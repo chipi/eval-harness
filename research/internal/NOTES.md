@@ -2715,3 +2715,13 @@ existing datasets for inference, paraphrase, sentence acceptability and yes/no q
 which makes that false, and SciFact's two retrieval-trained encoders, tied without SciFact's
 labels, contradicted the new rule anyway. I had read that section of the paper and still
 wrote the claim. The rule is withdrawn; UniEval is reported as an unexplained exception.
+
+**Pinned after the runs, 2026-10-19.** The UniEval arms read three downloads that no URL
+versions: UniEval's SummEval inputs, the original SummEval release (to match summaries to
+rows), and nltk's punkt_tab sentence splitter. The adapter now checks each against the sha256
+of the files the runs read, and stops on a mismatch. That edit came after the runs, so their
+recorded adapter file hash is the earlier file's; the scorer's own code hash
+(`_unieval`, its scoring function and questions) is unchanged, which was checked.
+`calibrate.py` now also records how UniEval's inputs differ from ours (1,528 of 1,600
+summaries the same text, the other 72 only bracket tokens), and the checker reads the
+report against that.
