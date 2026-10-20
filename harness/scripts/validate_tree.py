@@ -17,6 +17,10 @@ Each check exists because its absence let a real defect through somewhere:
   V8  config_ids     two run directories claiming the same (dataset_id, config_id)
   V9  present        a committed run deleted from disk, or a directory below its floor
   V10 scorer drift   a DERIVED run naming a scorer that is not the code in this tree
+  V11 judging sets   a frozen judging set whose stored hash is not its content's hash
+  V12 verdicts       a stored judge verdict naming a set, item, pass or block that does not
+                     exist, or whose `n` is not that block's size
+  V13 judge scorers  a scorer yaml that does not load or fails judge_score's structure checks
 
 Exit 1 on any failure, so it can gate.
 
@@ -51,6 +55,7 @@ try:
 except ImportError:
     jsonschema = None
 
+DATA_DIR = ROOT / "data"
 problems: list[str] = []
 notes: list[str] = []
 
@@ -565,6 +570,134 @@ def v8_no_duplicate_config_ids() -> None:
           f"{len(bad)} ambiguous config_id(s)")
 
 
+def judging_set_problems(sets_dir: Path) -> list[str]:
+    """Every judging-set manifest: id matches its file name and the stored hash is the
+    hash of the content. A set is frozen; an edit in place is what this catches."""
+    import judge_score as js  # noqa: PLC0415
+
+    bad = []
+    for f in sorted(sets_dir.glob("*.json")):
+        try:
+            m = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            bad.append(f"{f.name}: unreadable ({exc})")
+            continue
+        if m.get("judging_set_id") != f.stem:
+            bad.append(f"{f.name}: judging_set_id is {m.get('judging_set_id')!r}")
+        want = js.manifest_hash(m)
+        if m.get("judging_set_sha256") != want:
+            bad.append(f"{f.name}: stored hash {str(m.get('judging_set_sha256'))[:12]} != "
+                       f"recomputed {want[:12]}")
+        elif not f.stem.endswith(want[:12]):
+            bad.append(f"{f.name}: id does not end in the content hash {want[:12]}")
+    return bad
+
+
+def verdict_problems(verdicts_dir: Path, sets_dir: Path) -> list[str]:
+    """Every verdict file under <scorer>/<set>/<judge>/: it names an existing set, an item
+    of it, a pass, and a block of that item and pass, and its `n` is that block's size."""
+    bad = []
+    sets: dict = {}
+    for f in sorted(verdicts_dir.glob("*/*/*/*.json")):
+        scorer_dir, set_id = f.parts[-4], f.parts[-3]
+        label = f"{scorer_dir}/{set_id}/{f.parent.name}/{f.name}"
+        if set_id not in sets:
+            sp = sets_dir / f"{set_id}.json"
+            try:
+                sets[set_id] = json.loads(sp.read_text(encoding="utf-8")) if sp.is_file() else None
+            except (OSError, ValueError):
+                sets[set_id] = None
+        m = sets[set_id]
+        if m is None:
+            bad.append(f"{label}: judging set {set_id} does not exist (or is unreadable)")
+            continue
+        try:
+            v = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            bad.append(f"{label}: unreadable")
+            continue
+        if v.get("set_id") != set_id:
+            bad.append(f"{label}: set_id is {v.get('set_id')!r}")
+        item = next((i for i in m.get("items", []) if i.get("item_id") == v.get("item_id")), None)
+        if item is None:
+            bad.append(f"{label}: item {v.get('item_id')!r} is not in the set")
+            continue
+        p = v.get("pass")
+        if p not in ("primary", "position", "noise"):
+            bad.append(f"{label}: unknown pass {p!r}")
+            continue
+        if p != "primary" and v["item_id"] not in m.get(f"{p}_items", []):
+            bad.append(f"{label}: item is not in the set's {p}_items")
+            continue
+        blocks = item["position" if p == "position" else "primary"]
+        b = v.get("block")
+        if not isinstance(b, int) or isinstance(b, bool) or not 0 <= b < len(blocks):
+            bad.append(f"{label}: block {b!r} does not exist ({len(blocks)} blocks)")
+            continue
+        if v.get("n") != len(blocks[b]):
+            bad.append(f"{label}: n is {v.get('n')!r}, the block has {len(blocks[b])}")
+        if f.name != f"{v['item_id']}.{p}.b{b}.json" or f.parent.name != v.get("judge"):
+            bad.append(f"{label}: file location does not match its judge/item/pass/block")
+    return bad
+
+
+def scorer_problems(scorers_dir: Path) -> list[str]:
+    """Every scorer yaml loads and is structurally sound. Not the paid gate: whether a
+    scorer is VALIDATED is judge_score's `validation_problems`, and an unvalidated
+    experiment scorer is allowed to exist."""
+    import judge_score as js  # noqa: PLC0415
+
+    bad = []
+    from yaml import YAMLError as yaml_error  # noqa: PLC0415
+
+    for f in sorted(scorers_dir.glob("*.yaml")):
+        try:
+            sc = js.load_scorer(f)
+            if sc["scorer_id"] != f.stem:
+                bad.append(f"{f.name}: scorer_id is {sc['scorer_id']!r}")
+            n = sc["protocol"].get("outputs_per_call")
+            if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+                bad.append(f"{f.name}: protocol.outputs_per_call must be a positive integer")
+            ids = [j.get("id") for j in sc["judges"]]
+            if len(set(ids)) != len(ids) or not all(ids):
+                bad.append(f"{f.name}: judge ids must be present and unique")
+            for j in sc["judges"]:
+                pr = j.get("params") or {}
+                for k in ("model", "usd_per_mtok_in", "usd_per_mtok_out"):
+                    if pr.get(k) in (None, ""):
+                        bad.append(f"{f.name}: judge {j.get('id')!r} has no params.{k}")
+            js.prompt_text(sc)
+        except SystemExit as exc:
+            bad.append(f"{f.name}: does not load ({exc})")
+        except (KeyError, TypeError, AttributeError, ValueError, yaml_error) as exc:
+            bad.append(f"{f.name}: malformed ({type(exc).__name__}: {exc})")
+    return bad
+
+
+def _report(bad: list[str], label: str, noun: str) -> None:
+    for x in bad[:6]:
+        print(f"       {x}")
+    if len(bad) > 6:
+        print(f"       ... and {len(bad) - 6} more")
+    check(not bad, label, f"{len(bad)} {noun}")
+
+
+def v11_judging_sets_match_their_hash() -> None:
+    _report(judging_set_problems(DATA_DIR / "judging-sets"),
+            "V11 every judging set's stored hash is the hash of its content", "bad set(s)")
+
+
+def v12_verdicts_belong_to_their_set() -> None:
+    _report(verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets"),
+            "V12 every judge verdict names a real set, item, pass and block, and its n",
+            "bad verdict(s)")
+
+
+def v13_judge_scorers_are_well_formed() -> None:
+    _report(scorer_problems(DATA_DIR / "scorers"),
+            "V13 every judge scorer yaml loads and is structurally valid", "bad scorer(s)")
+
+
 def main() -> int:
     # `--help` prints help. It used to fall through and run the whole validation, which
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
@@ -578,7 +711,9 @@ def main() -> int:
                v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable,
                v8_no_duplicate_config_ids,
                v9_no_committed_evidence_is_missing,
-               v10_derived_runs_carry_the_current_scorer):
+               v10_derived_runs_carry_the_current_scorer,
+               v11_judging_sets_match_their_hash, v12_verdicts_belong_to_their_set,
+               v13_judge_scorers_are_well_formed):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

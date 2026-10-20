@@ -1,0 +1,55 @@
+# Pointwise variant of judge-summ-v1: one summary per call, an experiment, not a validated scorer.
+#   make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-pointwise-v1 \
+#     ARGS="--arms <a>,<b> --unvalidated --dry-run"
+scorer_id: judge-summ-pointwise-v1
+kind: judge
+dataset_id: cnn_dailymail_200
+
+# The same two judges and the same prompt as judge-summ-v1 (see its comments for why these
+# two), so a difference between the two scorers is the protocol and nothing else.
+judges:
+  - id: gemma_l
+    params:
+      provider: litellm
+      model: eval-gemma-31b
+      family: gemma
+      price_tier: large
+      temperature: 0.0
+      reasoning: {enabled: false}
+      usd_per_mtok_in: 0.1
+      usd_per_mtok_out: 0.2
+      max_tokens: 1500
+  - id: qwen_s
+    params:
+      provider: litellm
+      model: eval-qwen-flash
+      family: qwen
+      price_tier: small
+      temperature: 0.0
+      reasoning: {enabled: false}
+      usd_per_mtok_in: 0.05
+      usd_per_mtok_out: 0.2
+      max_tokens: 1500
+
+prompt:
+  file: examples/summeval-judging/prompt.txt
+  sha256_at_16: 6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee
+
+# One summary per call. With one summary there is no list to reorder, so the position check
+# (a second shuffle that re-forms the blocks) has nothing to test and is off.
+protocol:
+  listwise: false
+  outputs_per_call: 1
+  blinding: true
+  order_seed: 0
+  position_check_fraction: 0
+  noise_check_fraction: 0.1
+  contested_threshold: 0.5
+
+# DELIBERATELY NO `validation` BLOCK. SummEval validated these judges listwise, 16 summaries
+# per call (judge-summ-v1). Nobody has measured them pointwise, so those tau values do not
+# transfer and naming those runs here would claim they do. The gate therefore refuses this
+# scorer; it runs only with --unvalidated and every number is labelled "unvalidated judge".
+# It becomes validated when a pointwise SummEval run is committed and named here.
+
+cost_cap_usd: 0.25   # the approved budget for this experiment

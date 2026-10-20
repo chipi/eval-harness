@@ -1,0 +1,24 @@
+{
+  "block": 0,
+  "cost_known": true,
+  "cost_usd": 0.00026208,
+  "created_at": "2026-10-20T20:10:01Z",
+  "finish_reason": "stop",
+  "item_id": "c34d84d38ccfd021ba0b3712dc23feadd455af5b",
+  "judge": "gemma_l",
+  "judge_fp": "5031d8671837eb80",
+  "latency_ms": 2950.152,
+  "n": 1,
+  "output": "```json\n{\"coherence\": [5], \"consistency\": [5], \"fluency\": [5], \"relevance\": [4]}\n```",
+  "pass": "primary",
+  "prompt_sha256": "6a18aad3223d0c557bc77cb3ab367a344d700d4f0835f0135d2da3815f1b24bd",
+  "provider": "Parasail",
+  "response_model": "eval-gemma-31b",
+  "scores": [
+    4.75
+  ],
+  "set_id": "cnn_dailymail_200-2arms-904523b2f2ea",
+  "tokens_in": 1808,
+  "tokens_out": 33,
+  "truncated": 0.0
+}

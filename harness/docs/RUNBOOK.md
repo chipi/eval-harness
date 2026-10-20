@@ -267,11 +267,13 @@ make baselines-list
 make validate
 ```
 
-Ten checks (V1–V10): schema conformance, every run's `dataset_id` resolves, every run
+Thirteen checks (V1–V13): schema conformance, every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results, no baseline pointing at a
 deleted run, every committed run readable and present on disk, no two runs claiming one
-`config_id`, and no derived run naming a scorer that is not the code in this tree.
+`config_id`, no derived run naming a scorer that is not the code in this tree, every judging
+set matching its stored hash, every judge verdict naming a real set, item, pass and block,
+and every judge scorer yaml loading and well-formed.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them
