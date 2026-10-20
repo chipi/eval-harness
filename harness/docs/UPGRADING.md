@@ -70,26 +70,30 @@ you run the same task; it is an example, not part of the core.
 
 ## 5. How to upgrade, and stay upgraded
 
-Copying the directory once is what caused this page. To keep a private repository on
-the current harness:
+Copying the directory once is what caused this page. Since version 0.2.0 the harness is
+an installable package, so a project can **pin** it the way it pins any other dependency:
 
-1. **Vendor it as a git subtree** at a known commit, so the upgrade is one command and the
-   history says which harness you are on:
-   ```bash
-   git subtree add  --prefix harness https://github.com/chipi/eval-harness main --squash   # first time
-   git subtree pull --prefix harness https://github.com/chipi/eval-harness main --squash   # each upgrade
-   ```
-   Note that this pulls the whole repository, so keep `harness/` as the prefix only if you
-   want the examples too. Otherwise vendor `harness/` alone with `git subtree split` on a
-   clone.
-2. **Keep your own code outside `harness/`.** Adapters, configs, data and report scripts
-   live in your repository's own directories, and point at the harness through config
-   paths. Then an upgrade never conflicts with your work.
-3. **Re-run `make ci`** (or at least `make test && make validate`) after every upgrade,
-   then re-score your committed runs (`make rescore`) and compare. A number that moves is
-   either a fixed bug from §1 or a change you need to understand before trusting new runs.
+```bash
+pip install "eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+eval-harness --help          # the Makefile's targets, as commands
+```
 
-One limitation to know about: a run's fingerprint records the harness as **the commit of
-the repository it runs in**. In a vendored copy that is your repository's commit, not the
-harness version. Until the harness records its own version, note the subtree commit in
-your upgrade commit message.
+1. **Pin a commit, not a branch.** An upgrade is then a one-line change to the pin, and
+   every run records the harness `version` and a `code_sha256` of its code in
+   `fingerprint.instrument.harness`. A run's `commit` is the commit of YOUR project, so
+   those two fields are what say which harness produced a number.
+2. **Keep the data in your project.** The package holds code and schemas only. Run the
+   commands from your project root, or set `EVAL_HOME` to it; `EVAL_DATA_DIR` moves the
+   data root if your layout is not `<project>/data` (for example
+   `EVAL_DATA_DIR=data/eval/stats`).
+3. **Bring existing results in without re-running them.** If your project already has
+   outputs scored by its own code, `eval-harness import-run` writes those per-item scores
+   as a run the significance tests read (`pair-test`, `family-test`, `leaderboard`,
+   `rank-stability`). Lower-is-better metrics take `--asc`.
+4. **Delete the copy.** Remove the copied `harness/scripts` and call `eval-harness`
+   instead. Your adapters, configs and report scripts stay where they are, outside the
+   package, so an upgrade never conflicts with your work.
+5. **After every upgrade,** run `eval-harness self-test` and `eval-harness validate`, then
+   re-score your committed runs (`eval-harness rescore`) and compare. A number that moves
+   is either a fixed bug from §1 or a change you need to understand before trusting new
+   runs.

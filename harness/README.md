@@ -20,6 +20,24 @@ It imports nothing from your project and your project imports nothing from it.
 
 ---
 
+## Install it as a dependency
+
+Use it from this checkout through `make`, or pin it into your own project:
+
+```bash
+pip install "eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+eval-harness --help                       # every make target, as a command
+eval-harness dataset-create --dataset-id my_v1
+eval-harness experiment-run --config data/configs/arm_a.yaml
+eval-harness family-test --dataset-id my_v1 --a arm_a --against arm_
+```
+
+The package is code and schemas; your data stays in your project (`EVAL_HOME`, default the
+current directory; `EVAL_DATA_DIR`, default `data`). Already have runs scored by your own
+code? `eval-harness import-run` brings their per-item scores in, so the significance tests
+can read them without re-running anything. Moving from a copied `harness/`:
+[docs/UPGRADING.md](docs/UPGRADING.md).
+
 ## Why evaluation usually fails
 
 Not for lack of a metric. It fails because the numbers turn out not to mean

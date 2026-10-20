@@ -75,6 +75,8 @@ def main() -> int:
     ap.add_argument("--family", type=int, default=1,
                     help="how many pairs were tested together (Bonferroni: alpha/family)")
     ap.add_argument("--seed", type=int, default=20260926)
+    ap.add_argument("--asc", action="store_true",
+                    help="lower is better (WER, latency): 'A wins' counts items where A scored lower")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
@@ -109,7 +111,7 @@ def main() -> int:
 
     deltas = [A[i] - B[i] for i in items]
     obs = statistics.fmean(deltas)
-    wins = sum(1 for d in deltas if d > 0)
+    wins = sum(1 for d in deltas if (d < 0 if args.asc else d > 0))
     ties = sum(1 for d in deltas if d == 0)
 
     rng = random.Random(args.seed)
@@ -128,7 +130,8 @@ def main() -> int:
 
     print(f"  {args.a}  vs  {args.b}    metric={args.metric}  N={len(items)}")
     print(f"    delta (A - B)      {obs:+.4f}")
-    print(f"    items A wins       {wins}/{len(items)}" + (f" ({ties} exact tie(s))" if ties else ""))
+    print(f"    items A wins       {wins}/{len(items)}" + (" (lower is better)" if args.asc else "")
+          + (f" ({ties} exact tie(s))" if ties else ""))
     print(f"    sign-flip p        {p:.4f}  ({args.permutations} permutations)")
     if args.family > 1:
         verdict = "SEPARATED" if p < thresh else "NOT-SEPARATED"

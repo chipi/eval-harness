@@ -2141,6 +2141,79 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
         check("family-test cache: the answer after a change is the recomputed one", after == fresh)
 
 
+def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
+    """The harness as a dependency: data in ANOTHER project, scores from ANOTHER tool.
+
+    Everything here runs with EVAL_HOME pointing at a temporary project and
+    EVAL_DATA_DIR at a nested data root, as a project that installs the harness would.
+    It checks that nothing is written beside the code (runs, the family-test cache), that
+    import-run refuses what it says it refuses, and that --asc makes "wins" mean lower.
+    """
+    import json as _json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    proj = Path(tempfile.mkdtemp(prefix="harness-project-"))
+    data = proj / "data" / "eval" / "stats"
+    (data / "sources").mkdir(parents=True)
+    for n in range(1, 5):
+        (data / "sources" / f"ep_{n}.txt").write_text(f"episode {n}\n", encoding="utf-8")
+    env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data/eval/stats", "EVAL_RUNS_DIR": ""}
+    made = run("scripts/dataset_create.py", "--dataset-id", "proj_v1", "--source-dir",
+               str(data / "sources"), env=env)
+    check("project elsewhere: dataset frozen under EVAL_DATA_DIR",
+          made.returncode == 0 and (data / "datasets" / "proj_v1.json").is_file(),
+          (made.stderr or made.stdout)[-200:])
+    if made.returncode != 0:
+        shutil.rmtree(proj, ignore_errors=True)
+        return
+    ids = [i["item_id"] for i in _json.loads((data / "datasets" / "proj_v1.json").read_text())["items"]]
+
+    def scores(name: str, base: float, rows=None) -> Path:
+        f = proj / f"{name}.jsonl"
+        rows = rows if rows is not None else [{"item_id": i, "wer": base + 0.01 * k}
+                                              for k, i in enumerate(ids)]
+        f.write_text("".join(_json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+        return f
+
+    def imp(arm: str, f: Path, *extra: str):
+        return run("scripts/import_run.py", "--dataset-id", "proj_v1", "--config-id", arm,
+                   "--scores", str(f), "--primary-metric", "wer", "--asc",
+                   "--build-ref", "test", "--source", "selftest", "--scorer-id", "wer",
+                   *extra, env=env)
+
+    a, b = imp("arm_lo", scores("lo", 0.10)), imp("arm_hi", scores("hi", 0.30))
+    check("import-run: two arms imported into the project's runs",
+          a.returncode == 0 and b.returncode == 0 and len(list((data / "runs").glob("arm_*"))) == 2,
+          (a.stderr + b.stderr)[-200:])
+    check("import-run: nothing written beside the code",
+          not list((HERE.parent / "data" / "runs").glob("arm_lo_*")))
+    bad = imp("arm_bad", scores("bad", 0, [{"item_id": ids[0], "wer": "n/a"}]))
+    check("import-run: refuses a non-numeric score", bad.returncode != 0 and "not a number" in bad.stderr + bad.stdout)
+    part = imp("arm_part", scores("part", 0, [{"item_id": ids[0], "wer": 0.1}]))
+    check("import-run: refuses a partial score set without --allow-subset",
+          part.returncode != 0 and "--allow-subset" in part.stderr + part.stdout)
+    alien = imp("arm_alien", scores("alien", 0, [{"item_id": "not_an_item", "wer": 0.1}]))
+    check("import-run: refuses an item the dataset does not have", alien.returncode != 0)
+    sub = imp("arm_sub", scores("sub", 0, [{"item_id": ids[0], "wer": 0.1}]), "--allow-subset")
+    m = next((data / "runs").glob("arm_sub_*/metrics.json"), None)
+    check("import-run: --allow-subset records the coverage on the run",
+          sub.returncode == 0 and m is not None
+          and _json.loads(m.read_text())["imported"]["items_scored"] == 1)
+
+    pt = run("scripts/pair_test.py", "--dataset-id", "proj_v1", "--a", "arm_lo", "--b", "arm_hi",
+             "--metric", "wer", "--asc", env=env)
+    check("pair-test --asc: 'A wins' counts the lower score",
+          f"items A wins       {len(ids)}/{len(ids)} (lower is better)" in pt.stdout, pt.stdout[-300:])
+    ft = run("scripts/family_test.py", "--dataset-id", "proj_v1", "--a", "arm_lo", "--against", "arm_hi",
+             "--metric", "wer", "--asc", "--permutations", "200", env=env)
+    check("family-test --asc: 'ahead' counts the lower score",
+          "ahead on the point estimate against 1 of 1" in ft.stdout, ft.stdout[-300:])
+    check("family-test: its cache lives in the project, not beside the code",
+          (proj / ".cache" / "family_test").is_dir())
+    shutil.rmtree(proj, ignore_errors=True)
+
+
 def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
@@ -2186,6 +2259,7 @@ def main() -> int:
         test_rescore_can_move_runs_onto_a_new_reference_set,
         test_the_reproduction_tables_agree_with_the_configs_and_runs,
         test_the_gateway_routes_as_documented,
+        test_a_project_elsewhere_imports_runs_and_tests_them,
     ):
         # A TEST THAT RAISES MUST NOT HIDE THE ONES AFTER IT. `fn()` bare meant one
         # ImportError -- from a helper that had been renamed, say -- aborted the suite

@@ -37,6 +37,7 @@ COMMANDS = {
     "bootstrap-test": ("bootstrap_test.py", "bootstrap intervals for corpus-level metrics"),
     "holdout": ("holdout_significance.py", "tune on a dev slice, confirm on the rest"),
     "rank-stability": ("rank_stability.py", "how many items a ranking needs"),
+    "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "validate": ("validate_tree.py", "schema and integrity checks over the data tree"),
