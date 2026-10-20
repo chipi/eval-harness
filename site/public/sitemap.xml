@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://evals.humancopilot.eu/</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments/ag-news.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments/dbpedia.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments/few-nerd.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments/scifact.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments/summarization.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/experiments/summeval.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/method.html</loc></url>
+  <url><loc>https://evals.humancopilot.eu/use.html</loc></url>
+</urlset>
