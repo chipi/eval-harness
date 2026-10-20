@@ -20,6 +20,24 @@ It imports nothing from your project and your project imports nothing from it.
 
 ---
 
+## Install it as a dependency
+
+Use it from this checkout through `make`, or pin it into your own project:
+
+```bash
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"
+evh --help                       # every make target, as a command
+evh dataset-create --dataset-id my_v1
+evh experiment-run --config data/configs/arm_a.yaml
+evh family-test --dataset-id my_v1 --a arm_a --against arm_
+```
+
+The package is code and schemas; your data stays in your project (`EVAL_HOME`, default the
+current directory; `EVAL_DATA_DIR`, default `data`). Already have runs scored by your own
+code? `evh import-run` brings their per-item scores in, so the significance tests
+can read them without re-running anything. Moving from a copied `harness/`:
+[docs/UPGRADING.md](docs/UPGRADING.md).
+
 ## Why evaluation usually fails
 
 Not for lack of a metric. It fails because the numbers turn out not to mean
@@ -196,6 +214,8 @@ how 18 arms of paid results were lost during this harness's own development.
 | --- | --- |
 | **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | the operational walk, step by step, with the reasoning |
+| **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
+| **[UPGRADING.md](docs/UPGRADING.md)** | for a copy of the harness taken before October 2026: the fixes that can change results, the breaking changes, how to stay current |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
 ---

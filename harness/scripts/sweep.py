@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import ROOT, die  # noqa: E402
+from _common import CODE, ROOT, die  # noqa: E402
 
 try:
     import yaml
@@ -59,7 +59,7 @@ def main() -> int:
     failed: List[str] = []
     for i, c in enumerate(configs, 1):
         print(f"── [{i}/{len(configs)}] {c.name} " + "─" * max(0, 50 - len(c.name)))
-        cmd = [py, str(ROOT / "scripts/experiment_run.py"), "--config", str(c),
+        cmd = [py, str(CODE / "experiment_run.py"), "--config", str(c),
                "--repeat", str(args.repeat)]
         if args.dry_run:
             cmd.append("--dry-run")
@@ -79,7 +79,7 @@ def main() -> int:
         print("Dry run — nothing was called and nothing was spent.")
         return 0
 
-    lb = [py, str(ROOT / "scripts/leaderboard.py"), "--dataset-id", dataset_id]
+    lb = [py, str(CODE / "leaderboard.py"), "--dataset-id", dataset_id]
     if args.sort:
         lb += ["--sort", args.sort]
     subprocess.run(lb, cwd=ROOT)

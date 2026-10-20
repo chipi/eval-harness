@@ -35,10 +35,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (  # noqa: E402
     BASELINES,
+    DATA,
     DATASETS,
     MATERIALIZED,
     ROOT,
     RUNS,
+    SCHEMAS,
+    data_rel,
     read_json,
     sha256,
 )
@@ -48,7 +51,6 @@ try:
 except ImportError:
     jsonschema = None
 
-SCHEMAS = ROOT / "schemas"
 problems: list[str] = []
 notes: list[str] = []
 
@@ -229,6 +231,22 @@ def v6_baselines() -> None:
     check(not broken, "V6 every baseline's source run still exists", f"{len(broken)} broken")
 
 
+def _tracked_runs(runs_dir: Path) -> dict:
+    """{run id: names of its tracked top-level entries}, from the git INDEX, for a runs
+    directory wherever the data root sits (<runs dir>/<run id>/<file...>)."""
+    prefix = data_rel(runs_dir).rstrip("/") + "/"
+    tracked = subprocess.run(["git", "ls-files", prefix], cwd=ROOT, capture_output=True,
+                             text=True).stdout.split()
+    out: dict = {}
+    for f in tracked:
+        if not f.startswith(prefix):
+            continue
+        parts = f[len(prefix):].split("/")
+        if len(parts) >= 2:
+            out.setdefault(parts[0], set()).add(parts[1])
+    return out
+
+
 def v7_committed_runs_are_readable() -> None:
     """A run in the repo must carry `metrics.json`. Outputs alone are not a run.
 
@@ -246,14 +264,7 @@ def v7_committed_runs_are_readable() -> None:
     Checked against the INDEX rather than the working tree: an in-progress run on disk
     is fine and expected, a committed one is not.
     """
-    tracked = subprocess.run(
-        ["git", "ls-files", "data/runs"], cwd=ROOT, capture_output=True, text=True,
-    ).stdout.split()
-    have: dict[str, set] = {}
-    for f in tracked:
-        parts = f.split("/")
-        if len(parts) >= 4:                      # data/runs/<id>/<file...>
-            have.setdefault(parts[2], set()).add(parts[3])
+    have = _tracked_runs(RUNS)
     bad = sorted(r for r, files in have.items() if "metrics.json" not in files)
 
     # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. `data/runs-rescored`,
@@ -261,17 +272,10 @@ def v7_committed_runs_are_readable() -> None:
     # and nothing validated them at all. Found by external review.
     for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats", "runs-linux",
                   "runs-fp32"):
-        base = ROOT / "data" / extra
+        base = DATA / extra
         if not base.is_dir():
             continue
-        tracked_x = subprocess.run(
-            ["git", "ls-files", f"data/{extra}"], cwd=ROOT, capture_output=True, text=True,
-        ).stdout.split()
-        seen: dict[str, set] = {}
-        for f in tracked_x:
-            parts = f.split("/")
-            if len(parts) >= 4:
-                seen.setdefault(parts[2], set()).add(parts[3])
+        seen = _tracked_runs(base)
         bad += [f"{extra}/{r}" for r, files in sorted(seen.items())
                 if "metrics.json" not in files]
     for x in bad[:10]:
@@ -300,22 +304,29 @@ def v9_no_committed_evidence_is_missing() -> None:
     #: and `grep -n runs-linux scripts/*.py` returned nothing. Deleting the directory
     #: that nine published latency numbers rest on passed every check. Found reviewing
     #: the merged ML-arm work, which is the same defect round 4 found one directory over.
-    FLOORS = {"runs-reparsed": 19, "runs-rescored": 28, "runs-pair": 6, "runs-repeats": 3,
-              "runs-linux": 9, "runs-fp32": 2}
+    # The floors are PROJECT policy: how many runs each committed directory must keep is
+    # a fact about one project's evidence, not about the harness. They are read from
+    # <data>/validate_floors.json; a project without one has no floors (V9's missing-file
+    # and empty-rows checks still apply).
+    floors_file = DATA / "validate_floors.json"
+    FLOORS = (read_json(floors_file).get("floors") or {}) if floors_file.is_file() else {}
 
     tracked = subprocess.run(
-        ["git", "ls-files", "data/runs", "data/runs-rescored", "data/runs-reparsed",
-         "data/runs-pair", "data/runs-repeats", "data/runs-linux", "data/runs-fp32"],
+        ["git", "ls-files", *(data_rel(DATA / d) for d in ("runs", "runs-rescored", "runs-reparsed",
+         "runs-pair", "runs-repeats", "runs-linux", "runs-fp32"))],
         cwd=ROOT, capture_output=True, text=True,
     ).stdout.split()
     missing, incomplete = [], []
     seen: dict = {}
+    data_prefix = data_rel(DATA).rstrip("/") + "/"
     for f in tracked:
-        parts = f.split("/")
-        if len(parts) < 4:
+        # <data root>/<runs dir>/<run id>/<file>, wherever the data root sits.
+        if not f.startswith(data_prefix):
             continue
-        run_dir = ROOT / parts[0] / parts[1] / parts[2]
-        seen.setdefault(f"{parts[1]}/{parts[2]}", set()).add(parts[3])
+        parts = f[len(data_prefix):].split("/")
+        if len(parts) < 3:
+            continue
+        seen.setdefault(f"{parts[0]}/{parts[1]}", set()).add(parts[2])
         if not (ROOT / f).exists():
             missing.append(f)
     # PRESENCE IS NOT CONTENT. `: > predictions.jsonl` left the file tracked, present
@@ -329,8 +340,8 @@ def v9_no_committed_evidence_is_missing() -> None:
         if "predictions.jsonl" not in files:
             incomplete.append(f"{key} has no predictions.jsonl")
             continue
-        _pj = ROOT / "data" / key / "predictions.jsonl"
-        _mj = ROOT / "data" / key / "metrics.json"
+        _pj = DATA / key / "predictions.jsonl"
+        _mj = DATA / key / "metrics.json"
         if not _pj.is_file() or not _mj.is_file():
             continue                       # already counted as missing above
         try:
@@ -355,7 +366,7 @@ def v9_no_committed_evidence_is_missing() -> None:
 
     short = []
     for name, floor in sorted(FLOORS.items()):
-        base = ROOT / "data" / name
+        base = DATA / name
         n = len([d for d in base.glob("*/metrics.json")]) if base.is_dir() else 0
         if n < floor:
             short.append(f"{name}: {n} runs, expected at least {floor}")
@@ -417,7 +428,7 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
         return d
 
     for directory, pat, path, modpath, modname, fn in SOURCES:
-        base = ROOT / "data" / directory
+        base = DATA / directory
         if not base.is_dir():
             continue
         runs = sorted(base.glob(f"{pat}/metrics.json"))
@@ -522,7 +533,7 @@ def v8_no_duplicate_config_ids() -> None:
     ALLOWED = {("smoke_v1", "demo_v1")}
 
     bad = []
-    for base in [(ROOT / "data" / n) for n in COMMITTED]:
+    for base in [(DATA / n) for n in COMMITTED]:
         if not base.is_dir():
             continue
         groups: dict = {}
@@ -562,7 +573,7 @@ def main() -> int:
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         print(__doc__)
         return 0
-    print(f"eval tree: {ROOT / 'data'}\n")
+    print(f"eval tree: {DATA}\n")
     for fn in (v1_schemas, v2_dataset_ids, v3_provenance, v4_materialized,
                v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable,
                v8_no_duplicate_config_ids,

@@ -188,7 +188,7 @@ pair-test:
 	$(PYTHON) scripts/pair_test.py --dataset-id $(DATASET_ID) --a $(A) --b $(B) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
 	  $(if $(FAMILY),--family $(FAMILY),) $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) \
-	  $(if $(ITEMS),--items $(ITEMS),)
+	  $(if $(ITEMS),--items $(ITEMS),) $(if $(ASC),--asc,)
 
 # MACRO-F1 and friends: metrics with no per-item value, so the sign-flip test cannot
 # take them. Paired bootstrap over items instead. ANTI-CONSERVATIVE relative to the exact
@@ -207,7 +207,13 @@ family-test:
 	@test -n "$(A)" -a -n "$(AGAINST)" || { echo 'A=<config_id> AGAINST=<substring> are required'; exit 1; }
 	$(PYTHON) scripts/family_test.py --dataset-id $(DATASET_ID) --a $(A) --against $(AGAINST) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(EXCLUDE),--exclude-dataset $(EXCLUDE),) \
-	  $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) $(if $(ITEMS),--items $(ITEMS),)
+	  $(if $(RUNS_DIR),--runs-dir $(RUNS_DIR),) $(if $(ITEMS),--items $(ITEMS),) \
+	  $(if $(ASC),--asc,)
+
+# Per-item scores made by ANOTHER tool, written as a run the tests above can read. Every
+# flag is required except where marked; see scripts/import_run.py for what it refuses.
+import-run:
+	$(PYTHON) scripts/import_run.py $(ARGS)
 
 run-compare:
 	@test -n "$(BASE)" || { echo "BASE=<run_id> is required (see: make runs-list)"; exit 1; }

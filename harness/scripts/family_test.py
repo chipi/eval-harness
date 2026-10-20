@@ -46,7 +46,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import DATA, ROOT, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
 
 
@@ -72,7 +72,8 @@ def _sign_flip(deltas: list[float], permutations: int, rng: random.Random) -> fl
     return (hits + 1) / (permutations + 1)
 
 
-CACHE = Path(__file__).resolve().parents[1] / ".cache" / "family_test"
+# Under the PROJECT, not beside the code: installed, the code sits in site-packages.
+CACHE = ROOT / ".cache" / "family_test"
 
 
 def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
@@ -138,6 +139,8 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument("--alpha", type=float, default=0.05)
+    ap.add_argument("--asc", action="store_true",
+                    help="lower is better (WER, latency): wins and 'ahead' count the lower score")
     ap.add_argument("--seed", type=int, default=20260926)
     return ap
 
@@ -179,7 +182,7 @@ def _run(args) -> int:
             "opp": opp,
             "n": len(items),
             "delta": statistics.fmean(deltas),
-            "wins": sum(1 for d in deltas if d > 0),
+            "wins": sum(1 for d in deltas if (d < 0 if args.asc else d > 0)),
             "p": _sign_flip(deltas, args.permutations, rng),
         })
     if not rows:
@@ -213,7 +216,7 @@ def _run(args) -> int:
         print(f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
               f"{r['p']:8.4f} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}")
     sep = sum(1 for r in rows if r["sep"])
-    ahead = sum(1 for r in rows if r["delta"] > 0)
+    ahead = sum(1 for r in rows if (r["delta"] < 0 if args.asc else r["delta"] > 0))
     print(f"\n    separated from {sep} of {m} opponents; ahead on the point estimate "
           f"against {ahead} of {m}")
     # The gap between those two numbers is the finding most of the time: an ordering the

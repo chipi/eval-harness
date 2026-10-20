@@ -1,0 +1,48 @@
+# On every change to the harness: does it still build and install as a package?
+#
+# The release workflow only runs on a tag, which is too late to find out the package is
+# broken. This builds the wheel, installs it into a clean venv, runs the installed CLI
+# against a throwaway project outside the checkout, and checks the version has a
+# CHANGELOG section -- so a release is a tag, not a repair.
+name: harness-package
+
+on:
+  pull_request:
+    paths: ["harness/**", ".github/workflows/harness-*.yml"]
+  push:
+    branches: [main]
+    paths: ["harness/**", ".github/workflows/harness-*.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade build
+          python -m build harness --outdir dist
+
+      - name: Install into a clean venv and run outside the checkout
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+          mkdir -p /tmp/proj/data/sources && cd /tmp/proj
+          git init -q && git -c user.email=ci@ci -c user.name=ci commit -q --allow-empty -m init
+          for n in 1 2 3; do echo "item $n" > data/sources/item_$n.txt; done
+          /tmp/clean/bin/evh dataset-create --dataset-id ci_v1
+          /tmp/clean/bin/evh validate
+          test ! -d /tmp/clean/lib/python3.11/site-packages/data
+
+      - name: The version has a CHANGELOG section
+        run: |
+          ver=$(python -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('harness/scripts/_version.py').read_text()).group(1))")
+          grep -q "^## $ver" harness/CHANGELOG.md || { echo "harness/CHANGELOG.md has no '## $ver' section for version $ver"; exit 1; }

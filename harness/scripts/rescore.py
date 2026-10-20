@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
+from _common import DATA, DATASETS, MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
 from _fingerprint import _references_digest  # noqa: E402
 from experiment_run import load_adapter, _score_wants_source  # noqa: E402
 
@@ -56,7 +56,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only runs whose config_id contains this substring")
-    ap.add_argument("--out", type=Path, default=ROOT / "data/runs-rescored")
+    ap.add_argument("--out", type=Path, default=DATA / "runs-rescored")
     ap.add_argument("--reference-id",
                     help="score against THIS reference set (e.g. gold/my_v1) instead of the "
                          "one each run recorded -- for when gold arrives after the runs")
@@ -98,7 +98,7 @@ def main() -> int:
     # Round 1 reported this fixed. The commit that claimed it added the `source_path`
     # lookup without checking that the field existed where it was being read from.
     item_source: Dict[str, str] = {}
-    ds_file = ROOT / "data" / "datasets" / f"{args.dataset_id}.json"
+    ds_file = DATASETS / f"{args.dataset_id}.json"
     if ds_file.is_file():
         for it in (read_json(ds_file).get("items") or []):
             if it.get("item_id") and it.get("source_path"):

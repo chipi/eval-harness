@@ -117,16 +117,46 @@ def tree_dirt(root: Path) -> Optional[list]:
     return filter_dirt(status, data_rel)
 
 
+def harness_code_sha256() -> str:
+    """Content hash of the harness's own Python code: every module beside this file.
+
+    The identity that survives installation. A project that depends on the harness has
+    no git history for it, and an edited site-packages copy would otherwise be invisible.
+    """
+    here = Path(__file__).resolve().parent
+    h = hashlib.sha256()
+    for f in sorted(here.glob("*.py")):
+        h.update(f.name.encode())
+        h.update(b"\x00")
+        h.update(f.read_bytes())
+        h.update(b"\x1e")
+    return h.hexdigest()
+
+
 def _harness_identity(root: Path) -> Dict[str, Any]:
-    """The INSTRUMENT: this harness's own code state."""
+    """The INSTRUMENT: this harness's own code state, and the project it ran in.
+
+    `commit` and `dirty` describe the PROJECT's git tree (in a checkout of eval-harness,
+    that is the harness itself). `version` and `code_sha256` describe the harness code,
+    and are the only reliable identity when the harness is an installed dependency.
+    """
+    try:
+        from _version import __version__
+    except ImportError:  # imported as evaluation_harness._fingerprint, not run as a script
+        from ._version import __version__  # type: ignore[no-redef]
+
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
     dirt = tree_dirt(root)
+    here = Path(__file__).resolve().parent
     return {
         "commit": commit,
         # A dirty tree is not a version. Recorded rather than only refused, so a number
         # produced from one carries the caveat instead of implying reproducibility.
         # Untracked run output does not count (see filter_dirt).
         "dirty": bool(dirt) if dirt is not None else None,
+        "version": __version__,
+        "code_sha256": harness_code_sha256(),
+        "installed": not (here.parent / "Makefile").is_file(),
     }
 
 

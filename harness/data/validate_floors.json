@@ -1,0 +1,11 @@
+{
+  "_comment": "V9 floors for THIS project's committed run directories: each must keep at least this many runs, so deleting evidence that reports cite fails `make validate`. Project policy, read by scripts/validate_tree.py; a project without this file has no floors.",
+  "floors": {
+    "runs-reparsed": 19,
+    "runs-rescored": 28,
+    "runs-pair": 6,
+    "runs-repeats": 3,
+    "runs-linux": 9,
+    "runs-fp32": 2
+  }
+}
