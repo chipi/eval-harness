@@ -46,6 +46,7 @@ import re
 import shutil
 import statistics
 import sys
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -173,6 +174,18 @@ def render_prompt(base: str, n: int) -> str:
     if a not in base or b not in base:
         die("the prompt no longer contains the two count phrases this pass rewrites "
             f"({a!r}, {b!r}); it cannot be rendered for {n} summaries")
+    if n == 1:
+        # Singular grammar, and an example showing one value per key: the 16-wide example
+        # ("[3, 4, ...]") would invite a list that parse_block then rejects.
+        ex = ('{"coherence": [3, 4, ...], "consistency": [5, 2, ...], '
+              '"fluency": [4, 4, ...], "relevance": [2, 3, ...]}')
+        if ex not in base:
+            die("the prompt no longer contains the example line this pass rewrites for one summary")
+        return (base.replace(a, "1 numbered summary").replace(b, "a list of 1 integer")
+                .replace(ex, '{"coherence": [3], "consistency": [5], "fluency": [4], "relevance": [2]}')
+                .replace("Rate every summary", "Rate the summary")
+                .replace("the summaries may share mistakes", "the summary may contain mistakes")
+                .replace("a list of 1 integer in summary order", "a list of 1 integer"))
     return base.replace(a, f"{n} numbered summaries").replace(b, f"a list of {n} integers")
 
 
@@ -265,6 +278,19 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> List[Di
     return arms
 
 
+def select_arms(arms: Sequence[Dict[str, Any]], spec: str) -> List[Dict[str, Any]]:
+    """Restrict to the comma-separated tokens: an exact config_id, else a substring of one.
+    A token that matches nothing is an error, not a smaller set."""
+    keep: List[Dict[str, Any]] = []
+    for tok in [t.strip() for t in spec.split(",") if t.strip()]:
+        exact = [a for a in arms if a["config_id"] == tok]
+        hit = exact or [a for a in arms if tok in a["config_id"]]
+        if not hit:
+            die(f"--arms {tok!r} matches none of the {len(arms)} discovered arms")
+        keep += [a for a in hit if a not in keep]
+    return sorted(keep, key=lambda a: a["config_id"])
+
+
 def read_outputs(arm: Dict[str, Any], item_ids: Sequence[str]) -> Dict[str, str]:
     out = {}
     for i in item_ids:
@@ -312,6 +338,12 @@ def build_manifest(sc: Dict[str, Any], dataset_id: str, items_sha256: Optional[s
     digest = _sha(_canon(body))
     return {"judging_set_id": f"{dataset_id}-{len(arm_ids)}arms-{digest[:12]}",
             "judging_set_sha256": digest, **body}
+
+
+def manifest_hash(manifest: Dict[str, Any]) -> str:
+    """Recompute a stored manifest's hash: everything but the two identity fields."""
+    return _sha(_canon({k: v for k, v in manifest.items()
+                        if k not in ("judging_set_id", "judging_set_sha256")}))
 
 
 def message_for(manifest: Dict[str, Any], base: str, articles: Dict[str, str],
@@ -401,8 +433,17 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                 if msg is None:
                     msg = message_for(manifest, base, articles, outputs, item, pass_name, block)
                 n = len(item["position" if pass_name == "position" else "primary"][block])
+                took: List[float] = []
+
+                def timed(m: str, prm: Dict[str, Any], _call=call, _took=took) -> Any:
+                    t0 = time.perf_counter()
+                    try:
+                        return _call(m, prm)
+                    finally:
+                        _took.append((time.perf_counter() - t0) * 1000.0)
+
                 res = call_with_retries(
-                    call, (msg, dict(j["params"])),
+                    timed, (msg, dict(j["params"])),
                     label=f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 cost = float(res.cost_usd) if getattr(res, "cost_usd", None) is not None else 0.0
                 meta = getattr(res, "meta", None) or {}
@@ -414,7 +455,7 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                     "prompt_sha256": _sha(msg), "output": res.output,
                     "scores": scores, "tokens_in": res.tokens_in, "tokens_out": res.tokens_out,
                     "cost_usd": cost, "cost_known": getattr(res, "cost_usd", None) is not None,
-                    "latency_ms": getattr(res, "latency_ms", None),
+                    "latency_ms": round(took[-1], 3),
                     "truncated": (getattr(res, "extra", None) or {}).get("truncated"),
                     "finish_reason": meta.get("finish_reason"),
                     "provider": meta.get("provider"), "response_model": meta.get("response_model"),
@@ -696,6 +737,8 @@ def main() -> int:
     ap.add_argument("--retry-unparsed", action="store_true",
                     help="call again for stored verdicts whose reply did not parse")
     ap.add_argument("--match", help="arm set: config_id substring (default: scorer's arms_match or _n200_v1)")
+    ap.add_argument("--arms", help="comma-separated config_ids or substrings: judge only these "
+                    "arms (a subset is its own judging set id)")
     ap.add_argument("--out", type=Path, default=JUDGED)
     args = ap.parse_args()
 
@@ -732,6 +775,8 @@ def main() -> int:
                 f"(make dataset-materialize DATASET_ID={args.dataset_id})")
         articles[it["item_id"]] = f.read_text(encoding="utf-8", errors="replace")
     arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", "_n200_v1"))
+    if args.arms:
+        arms = select_arms(arms, args.arms)
     if len(arms) < 2:
         die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}")
     outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}

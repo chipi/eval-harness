@@ -1040,11 +1040,53 @@ _SUMM = " ".join((ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text().spl
 _jc, _jb, _hb, _hd, _jd, _hn, _hp = _judge_summ()
 check("summarisation: judge re-measurement -- 960 calls and the bill, from the committed verdicts",
       _jc == 960 and f"{_jc} calls, ${_jb:.2f}" in _SUMM, f"derived {_jc} calls, ${_jb:.4f}")
-check("summarisation: the blind human check (14 vs 6, p) and the judges' 20 of 20",
-      f"preferred `bart_l` {_hb} times and `deepseek_m` {_hd} times" in _SUMM
-      and f"p = {_hp:.3f}" in _SUMM and _jd == _hn == 20
-      and f"The judges preferred `deepseek_m` in all {_jd}" in _SUMM,
-      f"derived human bart_l {_hb} / deepseek_m {_hd}, p {_hp:.3f}; judges deepseek_m {_jd} of {_hn}")
+check("summarisation: the blind human check (14 to 6) on 20 pairs",
+      f"preferred `bart_l` {_hb} to {_hd}" in _SUMM and _hn == 20,
+      f"derived human bart_l {_hb} / deepseek_m {_hd} of {_hn}")
+
+
+def _goyal_and_pointwise():
+    base = HERE.parent / "data" / "judge-verdicts"
+    rep = json.loads((HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn" / "report.json").read_text())
+    pct = lambda a, b: round(100 * a / (a + b))
+    j = rep["judges"]
+    g, q = j["gemma_l"], j["qwen_s"]
+    frac = lambda s: round(100 * int(s.split("/")[0]) / int(s.split("/")[1]))
+    nums = {"gemma": pct(g["judge_gpt3_over_brio"], g["judge_brio_over_gpt3"]),
+            "qwen": pct(q["judge_gpt3_over_brio"], q["judge_brio_over_gpt3"]),
+            "human": pct(g["human_gpt3_over_brio"], g["human_brio_over_gpt3"]),
+            "g_best": frac(g["best_pick_agreement"]), "q_best": frac(q["best_pick_agreement"]),
+            "h_best": frac(rep["human_baseline"]["one_annotator_matches_other_two_best"])}
+    # pointwise: deepseek_m above bart_l per article, from the committed verdicts
+    man = next(p for p in (HERE.parent / "data" / "judging-sets").glob("cnn_dailymail_200-2arms-*.json"))
+    m = json.loads(man.read_text())
+    per = {}
+    for f in (base / "judge-summ-pointwise-v1" / m["judging_set_id"]).glob("*/*.json"):
+        v = json.loads(f.read_text())
+        if v.get("pass") != "primary" or v.get("scores") is None:
+            continue
+        it = next(x for x in m["items"] if x["item_id"] == v["item_id"])
+        arm = it["primary"][v["block"]][0]
+        per.setdefault(v["item_id"], {}).setdefault(arm, []).append(v["scores"][0])
+    hi = lo = 0
+    for a in per.values():
+        b, d = a.get("cnn_bart_l_n200_v1"), a.get("cnn_deepseek_m_n200_v1")
+        if b and d and len(b) == len(d) == 2:
+            hi += sum(d) > sum(b)
+            lo += sum(d) < sum(b)
+    return nums, hi, lo, len(per)
+
+
+_gn, _phi, _plo, _pn = _goyal_and_pointwise()
+check("summarisation: judge calibration on Goyal et al. (71/77 vs 61; 40/54 vs 47)",
+      f"71%\n(`gemma_l`)".replace("\n", " ") and
+      f"over the BART-based BRIO one {_gn['gemma']}% (`gemma_l`) and {_gn['qwen']}% (`qwen_s`)" in _SUMM
+      and f"the annotators did so {_gn['human']}% of the time" in _SUMM
+      and f"majority on {_gn['g_best']}% and {_gn['q_best']}% of articles" in _SUMM
+      and f"the other two's shared pick on {_gn['h_best']}%" in _SUMM, str(_gn))
+check("summarisation: pointwise, deepseek_m above bart_l on 192 of 200 and never below",
+      _plo == 0 and f"`deepseek_m` above `bart_l` on {_phi} of {_pn} articles and never below" in _SUMM,
+      f"derived {_phi} above, {_plo} below, of {_pn}")
 
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")

@@ -437,6 +437,162 @@ with tempfile.TemporaryDirectory() as td:
     if lb.returncode != 0:
         print((lb.stdout + lb.stderr)[-600:])
 
+
+# ── one summary per call (the pointwise experiment) ──────────────────────────
+p1 = js.render_prompt(BASE, 1)
+check("N=1: singular grammar in both count phrases",
+      "1 numbered summary" in p1 and "a list of 1 integer" in p1
+      and "numbered summaries" not in p1 and "integers" not in p1)
+check("N=1: the example shows one value per key",
+      '{"coherence": [3], "consistency": [5], "fluency": [4], "relevance": [2]}' in p1
+      and "..." not in p1)
+check("N=16 is still byte-identical after the N=1 branch", js.render_prompt(BASE, 16) == BASE)
+check("N=1: parse_block takes exactly one value per dimension",
+      js.parse_block(json.dumps({"coherence": [4], "consistency": [3], "fluency": [5],
+                                 "relevance": [4]}), 1) == [4.0]
+      and js.parse_block(json.dumps({d: [3, 3] for d in js.DIMS}), 1) is None)
+check("N=1: block_sizes gives one block per arm", js.block_sizes(2, 1) == [1, 1])
+one = scorer(protocol={**scorer()["protocol"], "outputs_per_call": 1})
+m_one = manifest_for(one, arms=ARMS[:2])
+check("N=1: every arm is its own block, and the prompt sent says 1 summary",
+      all([len(b) for b in it["primary"]] == [1, 1] for it in m_one["items"])
+      and "1 numbered summary" in js.message_for(m_one, BASE, ARTICLES, OUTPUTS,
+                                                m_one["items"][0], "primary", 0))
+with tempfile.TemporaryDirectory() as td:
+    st = js.run_judging(m_one, one, BASE, ARTICLES, OUTPUTS, Path(td), fake_judge(), None,
+                        log=lambda *_: None)
+    pr1 = js.project(one, js.load_scores(m_one, one, Path(td)), ITEMS)
+    check("N=1: a fake judge's pointwise verdicts parse and project for both arms",
+          st["calls"] == 2 * len(js.tasks(m_one)) and sorted(pr1["itemA"]) == sorted(
+              a["config_id"] for a in ARMS[:2])
+          and abs(pr1["itemA"]["arm00_v1"]["ja"] - expected_a(0)) < 1e-9)
+
+# ── --arms: a subset is its own judging set ──────────────────────────────────
+sub = js.select_arms(ARMS, "arm03_v1,arm07")
+check("--arms: an exact id and a substring both select", [a["config_id"] for a in sub]
+      == ["arm03_v1", "arm07_v1"])
+check("--arms: an exact id wins over substrings that also match",
+      [a["config_id"] for a in js.select_arms(ARMS + [dict(ARMS[0], config_id="arm00_v1_x")],
+                                              "arm00_v1")] == ["arm00_v1"])
+check("--arms: a token that matches nothing is refused, not ignored",
+      raises_exit(lambda: js.select_arms(ARMS, "arm03_v1,nope")))
+m_sub = manifest_for(arms=sub)
+check("--arms: the subset has its own id (arm count and hash differ from the full set)",
+      m_sub["judging_set_id"].startswith("ds-2arms-") and m_sub["judging_set_id"] != m1["judging_set_id"])
+
+# ── latency, and verdicts stored before it was measured ──────────────────────
+with tempfile.TemporaryDirectory() as td:
+    def slow(message, params):
+        import time as _t
+        _t.sleep(0.03)
+        return fake_judge()(message, params)
+    js.run_judging(m_one, one, BASE, ARTICLES, OUTPUTS, Path(td), slow, None, log=lambda *_: None)
+    lat = [json.loads(f.read_text())["latency_ms"] for f in Path(td).glob("*/*.json")]
+    check("latency: every verdict stores the wall-clock of its call, not the judge's own field",
+          lat and all(isinstance(x, float) and 25 <= x < 2000 for x in lat))
+    f0 = next(Path(td).glob("ja/*.json"))
+    v0 = json.loads(f0.read_text())
+    v0["latency_ms"] = None
+    f0.write_text(json.dumps(v0))
+    check("latency: an old verdict with latency_ms null is still read, skipped and projected",
+          js.run_judging(m_one, one, BASE, ARTICLES, OUTPUTS, Path(td), fake_judge(), None,
+                         log=lambda *_: None)["calls"] == 0
+          and js.project(one, js.load_scores(m_one, one, Path(td)), ITEMS) != {}
+          and js.summarise(m_one, one, ARMS[:2], js.load_scores(m_one, one, Path(td)),
+                           js.project(one, js.load_scores(m_one, one, Path(td)), ITEMS),
+                           {}, "unvalidated judge", False, Path(td))["per_judge"]["ja"]["verdicts"] > 0)
+
+# ── the committed pointwise scorer is unvalidated, and says so ───────────────
+pw = js.load_scorer(HERE.parent / "data" / "scorers" / "judge-summ-pointwise-v1.yaml")
+check("pointwise scorer: same judges and prompt as judge-summ-v1, one summary per call",
+      pw["judges"] == real["judges"] and pw["prompt"] == real["prompt"]
+      and pw["protocol"]["outputs_per_call"] == 1 and not pw["protocol"]["position_check_fraction"])
+check("pointwise scorer: no validation block, so the gate refuses it",
+      "validation" not in pw and js.validation_problems(pw, real_runs) != [])
+old = sys.argv
+sys.argv = ["judge_score.py", "--dataset-id", pw["dataset_id"], "--scorer", pw["scorer_id"]]
+try:
+    import contextlib
+    import io
+    buf = io.StringIO()
+    with contextlib.redirect_stderr(buf):
+        rc = js.main()
+finally:
+    sys.argv = old
+check("pointwise scorer: without --unvalidated the CLI exits 3 and says REFUSED",
+      rc == 3 and "REFUSED" in buf.getvalue())
+
+# ── validate_tree V11-V13 each fail on a deliberately broken copy ────────────
+import shutil  # noqa: E402
+import validate_tree as vt  # noqa: E402
+
+DATA = HERE.parent / "data"
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    for sub_ in ("judging-sets", "judge-verdicts", "scorers"):
+        shutil.copytree(DATA / sub_, td / sub_)
+    sets_d, ver_d, sc_d = td / "judging-sets", td / "judge-verdicts", td / "scorers"
+    check("V11-V13 helpers: the committed data is clean",
+          vt.judging_set_problems(sets_d) == [] and vt.verdict_problems(ver_d, sets_d) == []
+          and vt.scorer_problems(sc_d) == [])
+
+    sf = next(sets_d.glob("*.json"))
+    orig = sf.read_text()
+    man = json.loads(orig)
+    # A real edit on any set: reversing a one-summary block (pointwise sets) would change nothing.
+    man["items"][0]["article_sha256"] = "0" * 64
+    sf.write_text(json.dumps(man))
+    check("V11: a judging set edited after its hash was stored fails",
+          any("recomputed" in p for p in vt.judging_set_problems(sets_d)))
+    man = json.loads(orig)
+    man["judging_set_sha256"] = "0" * 64
+    sf.write_text(json.dumps(man))
+    check("V11: a wrong stored hash fails", any("recomputed" in p for p in vt.judging_set_problems(sets_d)))
+    sf.write_text(orig)
+
+    vf = next(ver_d.glob("*/*/*/*.json"))
+    vorig = vf.read_text()
+    cases = {
+        "an unknown item": ("item_id", "no-such-item"),
+        "a block index that does not exist": ("block", 99),
+        "an unknown pass": ("pass", "sideways"),
+        "an n that is not the block's size": ("n", 999),
+    }
+    for what, (k, val) in cases.items():
+        v = json.loads(vorig)
+        v[k] = val
+        vf.write_text(json.dumps(v))
+        check(f"V12: a verdict with {what} fails", vt.verdict_problems(ver_d, sets_d) != [])
+    vf.write_text(vorig)
+    set_dir = vf.parent.parent
+    set_dir.rename(set_dir.with_name("ds-9arms-ffffffffffff"))
+    check("V12: a verdict directory naming a judging set that does not exist fails",
+          any("does not exist" in p for p in vt.verdict_problems(ver_d, sets_d)))
+    set_dir.with_name("ds-9arms-ffffffffffff").rename(set_dir)
+    check("V12: restored copy is clean again", vt.verdict_problems(ver_d, sets_d) == [])
+
+    pf = sc_d / "judge-summ-pointwise-v1.yaml"
+    sorig = pf.read_text()
+    broken = {
+        "a missing judges key": sorig.replace("judges:", "judgez:", 1),
+        "a scorer_id that is not its file name": sorig.replace(
+            "scorer_id: judge-summ-pointwise-v1", "scorer_id: other", 1),
+        "a non-integer outputs_per_call": sorig.replace("outputs_per_call: 1", "outputs_per_call: lots", 1),
+        "a judge with no model": sorig.replace("model: eval-gemma-31b", "", 1),
+        "a prompt file that does not exist": sorig.replace(
+            "examples/summeval-judging/prompt.txt", "nope/prompt.txt", 1),
+        "invalid yaml": "scorer_id: [unclosed\n",
+    }
+    for what, text in broken.items():
+        pf.write_text(text)
+        try:
+            bad_sc = vt.scorer_problems(sc_d)
+        except Exception as exc:  # a crash in the check is not a failing check
+            bad_sc = []
+            print("   check crashed:", type(exc).__name__, exc)
+        check(f"V13: a scorer with {what} fails", bad_sc != [])
+    pf.write_text(sorig)
+
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
 if bad:

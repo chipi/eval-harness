@@ -1,0 +1,24 @@
+{
+  "block": 0,
+  "cost_known": true,
+  "cost_usd": 7.5756e-05,
+  "created_at": "2026-10-20T20:12:12Z",
+  "finish_reason": "stop",
+  "item_id": "dd4f726200355d742f631777aaa7b265533c0baf",
+  "judge": "qwen_s",
+  "judge_fp": "c0ecf5eb99cea0b5",
+  "latency_ms": 1010.543,
+  "n": 1,
+  "output": "{\"coherence\": [4], \"consistency\": [3], \"fluency\": [4], \"relevance\": [2]}",
+  "pass": "primary",
+  "prompt_sha256": "1de5fb19f618a8dbc061ec22f51dbbfe649e28eaeeb11e16ed58d297e8826e86",
+  "provider": "Alibaba",
+  "response_model": "eval-qwen-flash",
+  "scores": [
+    3.25
+  ],
+  "set_id": "cnn_dailymail_200-2arms-904523b2f2ea",
+  "tokens_in": 646,
+  "tokens_out": 28,
+  "truncated": 0.0
+}

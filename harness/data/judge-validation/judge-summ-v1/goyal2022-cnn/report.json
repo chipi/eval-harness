@@ -1,0 +1,28 @@
+{
+ "source": "Goyal, Li & Durrett 2022, cnn_human.json (CC BY 4.0)",
+ "scorer": "judge-summ-v1",
+ "articles": 100,
+ "judges": {
+  "gemma_l": {
+   "best_pick_agreement": "33/82",
+   "judge_gpt3_over_brio": 60,
+   "judge_brio_over_gpt3": 24,
+   "human_gpt3_over_brio": 168,
+   "human_brio_over_gpt3": 106,
+   "unparsed": 0,
+   "billed_usd": 0.0124
+  },
+  "qwen_s": {
+   "best_pick_agreement": "44/82",
+   "judge_gpt3_over_brio": 73,
+   "judge_brio_over_gpt3": 22,
+   "human_gpt3_over_brio": 168,
+   "human_brio_over_gpt3": 106,
+   "unparsed": 0,
+   "billed_usd": 0.0153
+  }
+ },
+ "human_baseline": {
+  "one_annotator_matches_other_two_best": "51/109"
+ }
+}

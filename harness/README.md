@@ -76,7 +76,7 @@ data/runs/
 data/baselines/      make run-promote — the number future work is judged against
 ```
 
-`make validate` checks the whole tree — ten integrity rules, exits non-zero, so
+`make validate` checks the whole tree — thirteen integrity rules, exits non-zero, so
 it can gate CI.
 
 ### The three inputs
@@ -253,7 +253,7 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | ten integrity checks |
+| `scripts/validate_tree.py` | thirteen integrity checks |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the three contracts: dataset, metrics, baseline |
 | `runner.py`, `judges.py` | the judge panel |

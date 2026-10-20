@@ -693,14 +693,18 @@ separated below all 24 hosted LLMs, which score 4.53–4.98, with `anthropic_l` 
 judges agree closely: Spearman 0.93 over arm means, item τ 0.74. Re-ordering the summaries
 moved per-article scores by 0.11–0.21, and a repeat call by 0.03–0.12.
 
-The judges' validation does not carry over to these summaries unchecked. SummEval scored
-2019-era systems; here the judges score modern LLM output against BART, and LLM judges are
-known to favour LLM-written text. A blind check disagreed with them. One non-expert reader
-compared `bart_l` and `deepseek_m` on 20 article pairs, shown the first 170–220 words of each
-article. The reader preferred `bart_l` 14 times and `deepseek_m` 6 times (sign test
-p = 0.115). The judges preferred `deepseek_m` in all 20. So the judged ranking is unconfirmed
-on this data, and `coverage` stays the primary metric. The judged scores are reported beside
-it. A check by two or three readers on full articles would settle it. The record is
+The judges' preference holds when it is checked, but it is too strong. On human preferences
+for modern news summaries (Goyal, Li & Durrett 2022, CC BY 4.0; 100 CNN articles, three
+annotators each), the judges preferred the GPT-3 summary over the BART-based BRIO one 71%
+(`gemma_l`) and 77% (`qwen_s`) of the time; the annotators did so 61% of the time. The
+judges' best pick matched the annotators' majority on 40% and 54% of articles, while one
+annotator matches the other two's shared pick on 47%. Scored one summary at a time instead of
+in lists (unvalidated), they still rated `deepseek_m` above `bart_l` on 192 of 200 articles and
+never below. A blind check by one non-expert reader on 20 pairs (truncated articles)
+preferred `bart_l` 14 to 6. So the direction, LLM summaries above BART, is supported by
+people, but the size is not: the judges turn a roughly 60/40 human preference into near
+unanimity. `coverage` stays the primary metric, and the judged scores are reported beside it
+as directional only. The record is
 `examples/summarization-cnn-dailymail/human_check_judge.json`; the verdicts are in
 `harness/data/judge-verdicts/judge-summ-v1/`, and `make judge-score ... ARGS=--no-calls`
 rebuilds the scored runs from them for $0.

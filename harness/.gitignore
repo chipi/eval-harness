@@ -301,3 +301,6 @@ data/runs/demo_v1_*/
 *.egg-info/
 build/
 dist/
+
+# Third-party data fetched by scripts (e.g. validate_judge_goyal.py); never committed.
+data/external/
