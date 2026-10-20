@@ -2,10 +2,10 @@
 
 The harness is installed from **GitHub only**. Nothing of ours is on PyPI, under any name.
 
-Its package name is **`chipi-eval-harness`**, not `eval-harness`: on PyPI `eval-harness` is
-an unrelated project, so a bare `pip install eval-harness` would install theirs. A bare
-`pip install chipi-eval-harness` finds nothing and fails, which is the point. The command
-it installs is still `eval-harness`, and the import is still `eval_harness`.
+Its package name is **`evaluation-harness`**, its import `evaluation_harness`, its command
+`evh`. None of them is `eval-harness` or `eval_harness`: on PyPI those belong to an
+unrelated project, which a bare `pip install eval-harness` installs. A bare
+`pip install evaluation-harness` finds nothing and fails, which is the point.
 
 ## For a project that depends on it
 
@@ -13,7 +13,7 @@ Pin a release tag:
 
 ```toml
 # pyproject.toml
-"chipi-eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness",
+"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness",
 ```
 
 - **Pin a tag, never a branch.** A branch moves; a run recorded against it cannot be
@@ -23,8 +23,8 @@ Pin a release tag:
   install the wheel attached to the GitHub Release with `--require-hashes`.
 - Every run records the harness `version` and a `code_sha256` of its code, so a result
   says which harness produced it whatever the pin was.
-- To upgrade, change the pin, reinstall, run `eval-harness self-test` and
-  `eval-harness validate`, and re-score committed runs to see whether any number moves
+- To upgrade, change the pin, reinstall, run `evh self-test` and
+  `evh validate`, and re-score committed runs to see whether any number moves
   (`docs/UPGRADING.md`).
 
 ## Cutting a release

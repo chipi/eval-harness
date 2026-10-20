@@ -10,13 +10,13 @@ release without saying so under **Changed**.
 The first version meant to be installed rather than copied.
 
 ### Added
-- **Installable package.** `pip install "chipi-eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"`
-  gives the `eval-harness` command: every Makefile target, running the same scripts.
+- **Installable package.** `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"`
+  gives the `evh` command: every Makefile target, running the same scripts.
 - **`EVAL_HOME` / `EVAL_DATA_DIR`.** The project's data lives in the project, never in the
   installed package; the data root can be nested (for example `data/eval/stats`).
 - **The harness identifies itself in every run.** `fingerprint.instrument.harness` gains
   `version`, `code_sha256` and `installed`.
-- **`eval-harness import-run`.** Per-item scores produced by another tool become a run the
+- **`evh import-run`.** Per-item scores produced by another tool become a run the
   significance tests read, with the source, the scorer and the sha256 of the imported bytes
   on the record.
 - **`--asc` for `pair-test` and `family-test`.** For lower-is-better metrics, "wins" and

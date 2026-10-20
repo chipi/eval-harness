@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import per-item scores produced OUTSIDE the harness, as a run the harness can test.
 
-    eval-harness import-run --dataset-id my_v1 --config-id arm_a \\
+    evh import-run --dataset-id my_v1 --config-id arm_a \\
         --scores scores.jsonl --primary-metric wer --asc \\
         --build-ref <commit of the system that produced the outputs> \\
         --source path/to/original/run --scorer-id my_scorer --scorer-sha256 <hash>
@@ -86,7 +86,7 @@ def main() -> int:
     ds_file = DATASETS / f"{args.dataset_id}.json"
     if not ds_file.is_file():
         die(f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
-            f"Freeze the items first (eval-harness dataset-create).")
+            f"Freeze the items first (evh dataset-create).")
     dataset = read_json(ds_file)
     known = {it["item_id"] for it in dataset["items"]}
 

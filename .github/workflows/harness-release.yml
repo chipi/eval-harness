@@ -4,13 +4,13 @@
 #      section for it -- a release that disagrees with its own version is not a release;
 #   2. run the harness's own gate (make ci in harness/);
 #   3. build the wheel and sdist, install the wheel into a clean venv, and check the
-#      installed `eval-harness --version` is the tag;
+#      installed `evh --version` is the tag;
 #   4. create the GitHub Release, notes from the CHANGELOG section, package attached.
 #
 # GitHub Releases only, by decision: nothing is ever published to PyPI. The package is
-# named chipi-eval-harness because PyPI's `eval-harness` is an unrelated project.
+# named evaluation-harness (command `evh`) because PyPI's `eval-harness` is an unrelated project.
 # Consumers pin the tag:
-#   chipi-eval-harness @ git+https://github.com/chipi/eval-harness@vX.Y.Z#subdirectory=harness
+#   evaluation-harness @ git+https://github.com/chipi/eval-harness@vX.Y.Z#subdirectory=harness
 name: harness-release
 
 on:
@@ -54,8 +54,8 @@ jobs:
         run: |
           python -m venv /tmp/clean
           /tmp/clean/bin/pip install dist/*.whl
-          test "$(/tmp/clean/bin/eval-harness --version)" = "${GITHUB_REF_NAME#v}"
-          /tmp/clean/bin/eval-harness --help > /dev/null
+          test "$(/tmp/clean/bin/evh --version)" = "${GITHUB_REF_NAME#v}"
+          /tmp/clean/bin/evh --help > /dev/null
 
       - name: Release notes from the changelog
         run: |
@@ -65,11 +65,11 @@ jobs:
             echo ""
             echo "### Install"
             echo '```'
-            echo "pip install \"chipi-eval-harness @ git+https://github.com/chipi/eval-harness@${GITHUB_REF_NAME}#subdirectory=harness\""
+            echo "pip install \"evaluation-harness @ git+https://github.com/chipi/eval-harness@${GITHUB_REF_NAME}#subdirectory=harness\""
             echo '```'
           } >> notes.md
 
       - name: GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "eval-harness $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "evaluation-harness $GITHUB_REF_NAME" --notes-file notes.md --verify-tag

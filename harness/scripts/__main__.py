@@ -1,4 +1,4 @@
-"""`python -m eval_harness <command>`, the same as the `eval-harness` command."""
+"""`python -m evaluation_harness <command>`, the same as the `evh` command."""
 
 import sys
 from pathlib import Path

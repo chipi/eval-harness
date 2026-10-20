@@ -22,7 +22,7 @@ def _project_root() -> Path:
     """Where the PROJECT lives: its data/, its .env, its git history.
 
     Run from a checkout of eval-harness, that is the harness/ directory beside this one,
-    as it always was. Installed as a package (`pip install eval-harness`), the code sits in
+    as it always was. Installed as a package (`pip install evaluation-harness @ git+...`), the code sits in
     site-packages and the project is wherever the user is working: `EVAL_HOME` if set,
     else the current directory. Kept apart from CODE because a project that depends on the
     harness must never write its data into site-packages.

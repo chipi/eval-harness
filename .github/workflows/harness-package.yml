@@ -38,8 +38,8 @@ jobs:
           mkdir -p /tmp/proj/data/sources && cd /tmp/proj
           git init -q && git -c user.email=ci@ci -c user.name=ci commit -q --allow-empty -m init
           for n in 1 2 3; do echo "item $n" > data/sources/item_$n.txt; done
-          /tmp/clean/bin/eval-harness dataset-create --dataset-id ci_v1
-          /tmp/clean/bin/eval-harness validate
+          /tmp/clean/bin/evh dataset-create --dataset-id ci_v1
+          /tmp/clean/bin/evh validate
           test ! -d /tmp/clean/lib/python3.11/site-packages/data
 
       - name: The version has a CHANGELOG section

@@ -25,16 +25,16 @@ It imports nothing from your project and your project imports nothing from it.
 Use it from this checkout through `make`, or pin it into your own project:
 
 ```bash
-pip install "chipi-eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"
-eval-harness --help                       # every make target, as a command
-eval-harness dataset-create --dataset-id my_v1
-eval-harness experiment-run --config data/configs/arm_a.yaml
-eval-harness family-test --dataset-id my_v1 --a arm_a --against arm_
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"
+evh --help                       # every make target, as a command
+evh dataset-create --dataset-id my_v1
+evh experiment-run --config data/configs/arm_a.yaml
+evh family-test --dataset-id my_v1 --a arm_a --against arm_
 ```
 
 The package is code and schemas; your data stays in your project (`EVAL_HOME`, default the
 current directory; `EVAL_DATA_DIR`, default `data`). Already have runs scored by your own
-code? `eval-harness import-run` brings their per-item scores in, so the significance tests
+code? `evh import-run` brings their per-item scores in, so the significance tests
 can read them without re-running anything. Moving from a copied `harness/`:
 [docs/UPGRADING.md](docs/UPGRADING.md).
 

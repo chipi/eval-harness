@@ -74,8 +74,8 @@ Copying the directory once is what caused this page. Since version 0.2.0 the har
 an installable package, so a project can **pin** it the way it pins any other dependency:
 
 ```bash
-pip install "chipi-eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
-eval-harness --help          # the Makefile's targets, as commands
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+evh --help          # the Makefile's targets, as commands
 ```
 
 1. **Pin a commit, not a branch.** An upgrade is then a one-line change to the pin, and
@@ -87,13 +87,13 @@ eval-harness --help          # the Makefile's targets, as commands
    data root if your layout is not `<project>/data` (for example
    `EVAL_DATA_DIR=data/eval/stats`).
 3. **Bring existing results in without re-running them.** If your project already has
-   outputs scored by its own code, `eval-harness import-run` writes those per-item scores
+   outputs scored by its own code, `evh import-run` writes those per-item scores
    as a run the significance tests read (`pair-test`, `family-test`, `leaderboard`,
    `rank-stability`). Lower-is-better metrics take `--asc`.
-4. **Delete the copy.** Remove the copied `harness/scripts` and call `eval-harness`
+4. **Delete the copy.** Remove the copied `harness/scripts` and call `evh`
    instead. Your adapters, configs and report scripts stay where they are, outside the
    package, so an upgrade never conflicts with your work.
-5. **After every upgrade,** run `eval-harness self-test` and `eval-harness validate`, then
-   re-score your committed runs (`eval-harness rescore`) and compare. A number that moves
+5. **After every upgrade,** run `evh self-test` and `evh validate`, then
+   re-score your committed runs (`evh rescore`) and compare. A number that moves
    is either a fixed bug from §1 or a change you need to understand before trusting new
    runs.

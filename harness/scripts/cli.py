@@ -1,4 +1,4 @@
-"""`eval-harness <command>`: the harness as an installed tool.
+"""`evh <command>`: the harness as an installed tool.
 
 Every command runs the same script `make <target>` runs in a checkout, with the same
 arguments, so the two cannot drift: this file only maps names to scripts. The scripts
@@ -50,8 +50,8 @@ def _usage() -> str:
 
     width = max(map(len, COMMANDS))
     rows = "\n".join(f"  {name:<{width}}  {help_}" for name, (_, help_) in COMMANDS.items())
-    return (f"eval-harness {__version__}\n\nusage: eval-harness <command> [args]\n\n{rows}\n\n"
-            f"`eval-harness <command> --help` for a command's own options.\n"
+    return (f"evaluation-harness {__version__}\n\nusage: evh <command> [args]\n\n{rows}\n\n"
+            f"`evh <command> --help` for a command's own options.\n"
             f"Data: EVAL_HOME (project root, default: cwd), EVAL_DATA_DIR (default: data).")
 
 
@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     name, rest = argv[0], argv[1:]
     if name not in COMMANDS:
-        print(f"eval-harness: unknown command {name!r}\n\n{_usage()}", file=sys.stderr)
+        print(f"evh: unknown command {name!r}\n\n{_usage()}", file=sys.stderr)
         return 2
     script = HERE / COMMANDS[name][0]
     sys.argv = [str(script), *rest]

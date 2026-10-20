@@ -142,7 +142,7 @@ def _harness_identity(root: Path) -> Dict[str, Any]:
     """
     try:
         from _version import __version__
-    except ImportError:  # imported as eval_harness._fingerprint, not run as a script
+    except ImportError:  # imported as evaluation_harness._fingerprint, not run as a script
         from ._version import __version__  # type: ignore[no-redef]
 
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
