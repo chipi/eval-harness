@@ -196,6 +196,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | --- | --- |
 | **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | the operational walk, step by step, with the reasoning |
+| **[UPGRADING.md](docs/UPGRADING.md)** | for a copy of the harness taken before October 2026: the fixes that can change results, the breaking changes, how to stay current |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
 ---
