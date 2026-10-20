@@ -31,6 +31,14 @@ if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+if "--print-judge-figures" in sys.argv[1:]:
+    import judge_figures as _jf0  # noqa: E402
+    _f0 = _jf0.compute()
+    for _j0 in _f0["goyal"]["judges"].values():
+        _j0.pop("best_pick_per_article", None)
+    print(json.dumps(_f0, indent=1))
+    raise SystemExit(0)
 DATA = HERE.parent / "data" / "runs"
 FP32 = HERE.parent / "data" / "runs-fp32"
 RESCORED = HERE.parent / "data" / "runs-rescored"
@@ -1002,91 +1010,160 @@ check("classification: adjudication counts (AG News 29 reviewed, 17 changed; 20 
       f"derived AG {_n_ag} reviewed / {_chg_ag} changed, DBpedia {len(_adj_db['items'])} / "
       f"{_chg_db}; DBpedia v2 top {max(_v2_db.values()):.4f}")
 
-#: Summarisation re-measured with validated judges (report §3.8): recomputed from the
-#: committed verdicts, the judging-set manifest and the human-check record -- not from
-#: data/runs-judged (gitignored; rebuilt from the verdicts with --no-calls).
-def _judge_summ():
-    import math as _jm
-    base = HERE.parent / "data"
-    man = next((base / "judging-sets").glob("cnn_dailymail_200-*.json"))
-    m = json.loads(man.read_text())
-    vdir = base / "judge-verdicts" / "judge-summ-v1" / m["judging_set_id"]
-    calls, billed, per = 0, 0.0, {}
-    for f in vdir.glob("*/*.json"):
-        v = json.loads(f.read_text())
-        calls += 1
-        billed += v.get("cost_usd") or 0.0
-        if v.get("pass") != "primary" or v.get("scores") is None:
-            continue
-        it = next(x for x in m["items"] if x["item_id"] == v["item_id"])
-        blocks = it["primary"] if isinstance(it["primary"], list) else json.loads(it["primary"].replace("'", '"'))
-        for arm, sc in zip(blocks[v["block"]], v["scores"]):
-            per.setdefault(v["item_id"], {}).setdefault(arm, []).append(sc)
-    hc = json.loads((ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text())
-    h_bart = sum(x["preferred"] == "bart_l" for x in hc["pairs"])
-    h_ds = sum(x["preferred"] == "deepseek_m" for x in hc["pairs"])
-    j_ds = 0
-    for x in hc["pairs"]:
-        a = per.get(x["item_id"], {})
-        b, d = a.get("cnn_bart_l_n200_v1"), a.get("cnn_deepseek_m_n200_v1")
-        if b and d and len(b) == 2 and len(d) == 2:
-            j_ds += sum(d) / 2 > sum(b) / 2
-    n = h_bart + h_ds
-    pv = sum(_jm.comb(n, i) for i in range(n + 1) if abs(i - n / 2) >= abs(h_ds - n / 2)) / 2 ** n
-    return calls, billed, h_bart, h_ds, j_ds, len(hc["pairs"]), pv
+
+def _v2_family(exp, dataset_id, prefix, leader, metric="correct"):
+    """The leader's Holm family test on adjudicated gold: a runs dir built in a temp dir
+    from the committed predictions, each adjudicated item's correctness replaced by the
+    verdict (the same rule as _adjudicated_acc). Returns the test's stdout, or None."""
+    import tempfile as _tf
+    adj = json.loads((ROOT / "examples" / exp / "adjudication.json").read_text())
+    verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
+    with _tf.TemporaryDirectory() as td:
+        for dirs in _runs_for(DATA, dataset_id, prefix).values():
+            d = dirs[0]
+            m = json.loads((d / "metrics.json").read_text())
+            out = Path(td) / d.name
+            out.mkdir()
+            (out / "metrics.json").write_text(json.dumps(
+                {"config_id": m["config_id"], "dataset_id": dataset_id}))
+            rows = [json.loads(line) for line in (d / "predictions.jsonl").open()]
+            (out / "predictions.jsonl").write_text("".join(json.dumps(
+                {"item_id": r["item_id"], "correct": float(
+                    (r["_meta"].get("predicted") == verdict[r["item_id"]])
+                    if r["item_id"] in verdict else r["correct"])}) + "\n" for r in rows))
+        r = _clsp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", dataset_id,
+                       "--a", leader, "--against", "_n200_v1", "--metric", metric,
+                       "--runs-dir", td], capture_output=True, text=True)
+    return r.stdout if r.returncode == 0 else None
 
 
+_fo2 = _v2_family("classification-ag-news", "ag_news_200", "ag_", "ag_anthropic_l_n200_v1")
+_rows2 = [ln.split() for ln in (_fo2 or "").splitlines()
+          if ln.strip().startswith("ag_") and ln.split()[-1] in ("SEPARATED", "--")]
+if not _rows2:
+    missing += 1
+    print("  --   classification: AG News v2 family test did not run — skipped")
+else:
+    _sep2 = {r[0] for r in _rows2 if r[-1] == "SEPARATED"}
+    _fts = ("ag_bert_mini_n200_v1", "ag_bert_base_ta_n200_v1", "ag_bert_base_fy_n200_v1")
+    _p_ft = [float(r[3]) for r in _rows2 if r[0] in _fts]
+    _ns2 = [r[0] for r in _rows2 if r[-1] == "--"]
+    check("classification: AG News v2, anthropic_l separated from 9 of 29 (all three fine-tunes, "
+          "p 0.0001-0.0005), not separated from 20; the fine-tunes tie at 0.9050",
+          len(_rows2) == 29 and len(_sep2) == 9 and len(_ns2) == 20 and set(_fts) <= _sep2
+          and round(min(_p_ft), 4) == 0.0001 and round(max(_p_ft), 4) == 0.0005
+          and all(round(_v2_ag[a], 4) == 0.9050 for a in ("bert_mini", "bert_base_ta", "bert_base_fy"))
+          and f"`anthropic_l` is separated from {len(_sep2)}, including all three fine-tunes "
+              "(p 0.0001–0.0005)" in _CLS
+          and f"not separated from {len(_ns2)} hosted arms" in _CLS
+          and "Holm over the 29 other arms, on v2" in _CLS,
+          f"derived separated {len(_sep2)} of {len(_rows2)}, not separated {len(_ns2)}, "
+          f"fine-tune p {min(_p_ft):.4f}-{max(_p_ft):.4f}, "
+          f"fine-tune v2 {[round(_v2_ag[a], 4) for a in ('bert_mini', 'bert_base_ta', 'bert_base_fy')]}")
+
+#: Summarisation re-measured with validated judges (report §3.8). Every figure comes from
+#: judge_figures.compute(): the committed verdicts, the 29-arm judging-set manifest, the
+#: committed runs and the human-check record. data/runs-judged is gitignored and not read.
+#: `--print-judge-figures` prints the dict. The TEXT assertions below are deliberately loose
+#: (strings the report already has); the figures' values are asserted in full.
+import judge_figures as _jfm  # noqa: E402
+
+JUDGE_FIGURES = _jfm.compute()
 _SUMM = " ".join((ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text().split())
-_jc, _jb, _hb, _hd, _jd, _hn, _hp = _judge_summ()
+_JF = JUDGE_FIGURES
+
+
+def _is(got, want, nd=2):
+    """The figure, rounded as the report rounds it, equals what the report states."""
+    return round(got, nd) == want
+
+
+_hc = _JF["human_check"]
 check("summarisation: judge re-measurement -- 960 calls and the bill, from the committed verdicts",
-      _jc == 960 and f"{_jc} calls, ${_jb:.2f}" in _SUMM, f"derived {_jc} calls, ${_jb:.4f}")
+      _JF["calls"] == 960 and f"{_JF['calls']} calls, ${_JF['billed_usd']:.2f}" in _SUMM,
+      f"derived {_JF['calls']} calls, ${_JF['billed_usd']:.4f}")
 check("summarisation: the blind human check (14 to 6) on 20 pairs",
-      f"preferred `bart_l` {_hb} to {_hd}" in _SUMM and _hn == 20,
-      f"derived human bart_l {_hb} / deepseek_m {_hd} of {_hn}")
+      f"preferred `bart_l` {_hc['human_prefers_bart_l']} to {_hc['human_prefers_deepseek_m']}" in _SUMM
+      and _hc["pairs"] == 20,
+      f"derived human bart_l {_hc['human_prefers_bart_l']} / deepseek_m "
+      f"{_hc['human_prefers_deepseek_m']} of {_hc['pairs']}")
+check("summarisation: the judges preferred deepseek_m on 20 of the 20 human-check pairs "
+      "(the humans' 14 to 6 for bart_l is the disagreement)",
+      _hc["pairs_with_judge_scores"] == 20 and _hc["judge_prefers_deepseek_m"] == 20,
+      f"derived judge deepseek_m {_hc['judge_prefers_deepseek_m']} of {_hc['pairs_with_judge_scores']}")
+check("summarisation: judge set is the 29-arm set; 24 hosted; 197 of 200 articles scored",
+      _JF["arms"] == 29 and _JF["hosted_arms"] == 24 and _JF["items_total"] == 200
+      and _JF["items_scored"] == 197
+      and f"{_JF['items_scored']} of {_JF['items_total']} articles" in _SUMM,
+      f"derived {_JF['arms']} arms, {_JF['hosted_arms']} hosted, "
+      f"{_JF['items_scored']}/{_JF['items_total']} articles")
+_hlo, _hhi = _JF["hosted_judge_score_range"]
+check("summarisation: bart_l's mean judge score 3.87; the 24 hosted arms 4.53-4.98, anthropic_l "
+      "first, every hosted arm above every BART",
+      _is(_JF["bart_l_judge_score"], 3.87) and _is(_hlo, 4.53) and _is(_hhi, 4.98)
+      and _JF["hosted_leader"] == "cnn_anthropic_l_n200_v1" and _JF["hosted_all_above_every_bart"]
+      and f"`bart_l` scores {_JF['bart_l_judge_score']:.2f} of 5" in _SUMM
+      and f"which score {_hlo:.2f}–{_hhi:.2f}, with `anthropic_l` first" in _SUMM,
+      f"derived bart_l {_JF['bart_l_judge_score']:.4f}, hosted {_hlo:.4f}-{_hhi:.4f}, "
+      f"leader {_JF['hosted_leader']}")
+check("summarisation: the two judges agree -- Spearman 0.93 over arm means, mean item tau 0.74",
+      _is(_JF["agreement_arm_mean_spearman"], 0.93) and _is(_JF["agreement_mean_item_tau"], 0.74)
+      and f"Spearman {_JF['agreement_arm_mean_spearman']:.2f} over arm means, item τ "
+          f"{_JF['agreement_mean_item_tau']:.2f}" in _SUMM,
+      f"derived Spearman {_JF['agreement_arm_mean_spearman']:.4f}, "
+      f"tau {_JF['agreement_mean_item_tau']:.4f}")
+_plo, _phi2 = _JF["position_mean_abs_diff_range"]
+_nlo, _nhi = _JF["noise_mean_abs_diff_range"]
+check("summarisation: controls -- re-ordering moves scores by 0.11-0.21, a repeat call by 0.03-0.12",
+      _is(_plo, 0.11) and _is(_phi2, 0.21) and _is(_nlo, 0.03) and _is(_nhi, 0.12)
+      and f"moved per-article scores by {_plo:.2f}–{_phi2:.2f}, and a repeat call by "
+          f"{_nlo:.2f}–{_nhi:.2f}" in _SUMM,
+      f"derived position {_plo:.4f}-{_phi2:.4f}, noise {_nlo:.4f}-{_nhi:.4f}")
 
+_G = _JF["goyal"]
+_gj = _G["judges"]
+_gn = {"gemma": round(100 * _gj["gemma_l"]["judge_gpt3_over_brio"]
+                      / (_gj["gemma_l"]["judge_gpt3_over_brio"] + _gj["gemma_l"]["judge_brio_over_gpt3"])),
+       "qwen": round(100 * _gj["qwen_s"]["judge_gpt3_over_brio"]
+                     / (_gj["qwen_s"]["judge_gpt3_over_brio"] + _gj["qwen_s"]["judge_brio_over_gpt3"])),
+       "human": round(100 * _gj["gemma_l"]["human_gpt3_over_brio"]
+                      / (_gj["gemma_l"]["human_gpt3_over_brio"] + _gj["gemma_l"]["human_brio_over_gpt3"]))}
+_frac = lambda s_: round(100 * int(s_.split("/")[0]) / int(s_.split("/")[1]))  # noqa: E731
+_gn.update(g_best=_frac(_gj["gemma_l"]["best_pick_agreement"]),
+           q_best=_frac(_gj["qwen_s"]["best_pick_agreement"]),
+           h_best=_frac(_G["human_baseline"]["one_annotator_matches_other_two_best"]))
+_loo = {j: _gj[j]["best_pick_vs_loo_reference"]["rate"] for j in ("gemma_l", "qwen_s")}
+_hloo = _G["human_baseline"]["leave_one_annotator_out"]["rate"]
+_pw = {j: _gj[j]["pairwise_gpt3_vs_brio_per_article"] for j in ("gemma_l", "qwen_s")}
+_jp = {j: 100 * _pw[j]["judge_prefers_gpt3"]["rate"] for j in _pw}
+_hp2 = {j: 100 * _pw[j]["human_prefers_gpt3"]["rate"] for j in _pw}
+_overlap_g = _pw["gemma_l"]["judge_prefers_gpt3"]["ci95"][0] <= _pw["gemma_l"]["human_prefers_gpt3"]["ci95"][1]
+check(f"summarisation: judges vs Goyal annotators, like-for-like (leave-one-out, per-article) -- {_G['source']}",
+      f"against one annotator they score {_loo['gemma_l']:.3f} (`gemma_l`) and {_loo['qwen_s']:.3f} (`qwen_s`), "
+      f"annotators against each other {_hloo:.3f}, chance 0.333" in _SUMM
+      and f"({_jp['gemma_l']:.1f}% and {_jp['qwen_s']:.1f}% against {_hp2['gemma_l']:.1f}% and {_hp2['qwen_s']:.1f}%; "
+          f"the 95% intervals overlap for `gemma_l`)" in _SUMM and _overlap_g,
+      f"derived loo {_loo}, humans {_hloo}; judge {_jp}, humans {_hp2}; gemma CIs overlap {_overlap_g}")
+if _G["source"].startswith("recomputed"):
+    _rep = json.loads((HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn"
+                       / "report.json").read_text())
+    _same = all(_rep["judges"][j].get(k) == _gj[j][k] for j in _gj for k in (
+        "best_pick_agreement", "best_pick_partial_credit", "best_pick_vs_loo_reference",
+        "pairwise_gpt3_vs_brio_per_article", "judge_gpt3_over_brio", "judge_brio_over_gpt3",
+        "human_gpt3_over_brio", "human_brio_over_gpt3")) \
+        and _rep["human_baseline"] == _G["human_baseline"]
+    check("summarisation: Goyal report.json equals the recomputation from the stored records",
+          _same, "report.json is stale: re-run validate_judge_goyal.py --no-calls")
+else:
+    print("  --   Goyal: only report.json compared (data/external/goyal2022 absent); not recomputed")
 
-def _goyal_and_pointwise():
-    base = HERE.parent / "data" / "judge-verdicts"
-    rep = json.loads((HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn" / "report.json").read_text())
-    pct = lambda a, b: round(100 * a / (a + b))
-    j = rep["judges"]
-    g, q = j["gemma_l"], j["qwen_s"]
-    frac = lambda s: round(100 * int(s.split("/")[0]) / int(s.split("/")[1]))
-    nums = {"gemma": pct(g["judge_gpt3_over_brio"], g["judge_brio_over_gpt3"]),
-            "qwen": pct(q["judge_gpt3_over_brio"], q["judge_brio_over_gpt3"]),
-            "human": pct(g["human_gpt3_over_brio"], g["human_brio_over_gpt3"]),
-            "g_best": frac(g["best_pick_agreement"]), "q_best": frac(q["best_pick_agreement"]),
-            "h_best": frac(rep["human_baseline"]["one_annotator_matches_other_two_best"])}
-    # pointwise: deepseek_m above bart_l per article, from the committed verdicts
-    man = next(p for p in (HERE.parent / "data" / "judging-sets").glob("cnn_dailymail_200-2arms-*.json"))
-    m = json.loads(man.read_text())
-    per = {}
-    for f in (base / "judge-summ-pointwise-v1" / m["judging_set_id"]).glob("*/*.json"):
-        v = json.loads(f.read_text())
-        if v.get("pass") != "primary" or v.get("scores") is None:
-            continue
-        it = next(x for x in m["items"] if x["item_id"] == v["item_id"])
-        arm = it["primary"][v["block"]][0]
-        per.setdefault(v["item_id"], {}).setdefault(arm, []).append(v["scores"][0])
-    hi = lo = 0
-    for a in per.values():
-        b, d = a.get("cnn_bart_l_n200_v1"), a.get("cnn_deepseek_m_n200_v1")
-        if b and d and len(b) == len(d) == 2:
-            hi += sum(d) > sum(b)
-            lo += sum(d) < sum(b)
-    return nums, hi, lo, len(per)
-
-
-_gn, _phi, _plo, _pn = _goyal_and_pointwise()
-check("summarisation: judge calibration on Goyal et al. (71/77 vs 61; 40/54 vs 47)",
-      f"71%\n(`gemma_l`)".replace("\n", " ") and
-      f"over the BART-based BRIO one {_gn['gemma']}% (`gemma_l`) and {_gn['qwen']}% (`qwen_s`)" in _SUMM
-      and f"the annotators did so {_gn['human']}% of the time" in _SUMM
-      and f"majority on {_gn['g_best']}% and {_gn['q_best']}% of articles" in _SUMM
-      and f"the other two's shared pick on {_gn['h_best']}%" in _SUMM, str(_gn))
+_pw = _JF["pointwise"]
 check("summarisation: pointwise, deepseek_m above bart_l on 192 of 200 and never below",
-      _plo == 0 and f"`deepseek_m` above `bart_l` on {_phi} of {_pn} articles and never below" in _SUMM,
-      f"derived {_phi} above, {_plo} below, of {_pn}")
+      _pw["deepseek_m_below_bart_l"] == 0
+      and f"`deepseek_m` above `bart_l` on {_pw['deepseek_m_above_bart_l']} of {_pw['articles']} "
+          "articles and never below" in _SUMM,
+      f"derived {_pw['deepseek_m_above_bart_l']} above, {_pw['deepseek_m_below_bart_l']} below, "
+      f"of {_pw['articles']}")
 
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")

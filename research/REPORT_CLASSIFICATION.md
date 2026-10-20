@@ -16,8 +16,9 @@ If you rent, start with `gemma_m` ($8 per 1M items).** Against the dataset's gol
 public BERT fine-tunes (0.9600, 0.9500, 0.9450) score above all 24 hosted LLMs
 (0.835–0.910). That lead is AG News's filing convention: company news from a technology desk
 is labelled Sci/Tech, and non-US news, sport included, World. Against gold adjudicated by
-topic (§3.4; 29 items reviewed from both sides, 17 changed), every hosted LLM scores above
-every fine-tune: `anthropic_l` leads at 0.9850 and is separated from all three (0.9050).
+topic by one reader, who was shown the hosted field's answer (§3.4; 29 items reviewed from both
+sides, 17 changed), every hosted LLM scores above every fine-tune: `anthropic_l` leads at 0.9850
+and is separated from all three (tied at 0.9050).
 The fine-tunes were trained on AG News's own training split; with fewer labels they were
 not measured.
 
@@ -530,9 +531,9 @@ it for $0 into `data/runs-adjudicated/`. The original runs and scores are unchan
 | `anthropic_m` | 0.9100 (4) | 0.9650 (4) |
 | `gemma_m` | 0.8550 (21) | 0.9400 (17) |
 | `llama_s`, lowest hosted | 0.8350 (27) | 0.9200 (24) |
-| `bert_base_ta` | **0.9600 (1)** | 0.9050 (26) |
-| `bert_base_fy` | 0.9500 (2) | 0.9050 (25) |
-| `bert_mini` | 0.9450 (3) | 0.9050 (27) |
+| `bert_base_ta` | **0.9600 (1)** | 0.9050 (25–27) |
+| `bert_base_fy` | 0.9500 (2) | 0.9050 (25–27) |
+| `bert_mini` | 0.9450 (3) | 0.9050 (25–27) |
 
 Holm over the 29 other arms, on v2: `anthropic_l` is separated from 9, including all three
 fine-tunes (p 0.0001–0.0005), and not separated from 20 hosted arms. `bert_base_ta` is

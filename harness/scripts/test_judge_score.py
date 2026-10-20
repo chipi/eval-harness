@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -305,6 +306,32 @@ with tempfile.TemporaryDirectory() as td:
     zero = tempfile.mkdtemp(dir=td)
     check("cost cap: a cap of 0 makes no call", run_all(zero, call=fake_judge(), cap=0.0)["calls"] == 0)
 
+# cost_usd None is unknown, not free
+def no_cost_judge(tokens=True):
+    inner = fake_judge()
+
+    def call(message, params):
+        r = inner(message, params)
+        r.cost_usd = None
+        if not tokens:
+            r.tokens_in = r.tokens_out = None
+        return r
+    return call
+
+
+with tempfile.TemporaryDirectory() as td:
+    st = run_all(td, call=no_cost_judge(), cap=0.0004)
+    one_call = (100 * 1.0 + 20 * 2.0) / 1e6
+    v_ = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    check("cost None with token counts: counted at the price table, flagged cost_known false",
+          abs(v_["cost_usd"] - one_call) < 1e-12 and v_["cost_known"] is False)
+    check("cost None with token counts: the cap still stops the run",
+          st["aborted"] and 0 < st["calls"] < 2 * N_TASKS and abs(st["spent_usd"] - st["calls"] * one_call) < 1e-9)
+with tempfile.TemporaryDirectory() as td:
+    st = run_all(td, call=no_cost_judge(tokens=False), cap=1.0)
+    check("cost None and no token counts: the verdict is kept, then the run stops",
+          st["aborted"] and st["calls"] == 1 and len(list(Path(td).glob("*/*.json"))) == 1)
+
 with tempfile.TemporaryDirectory() as td:
     st = run_all(td, call=fake_judge(reply="I cannot do this."))
     sc = scorer()
@@ -352,6 +379,48 @@ check("a judge no validation run names: refused",
 check("a prompt that is not the validated one: refused",
       any("sha256_at_16" in p for p in js.validation_problems(
           dict(real, prompt=dict(real["prompt"], sha256_at_16="0" * 64)), real_runs)))
+for k_, v_, what_ in (("temperature", 0.7, "temperature"), ("max_tokens", 100, "max_tokens"),
+                      ("reasoning", {"enabled": True}, "reasoning"),
+                      ("provider", "other", "provider"), ("model", "eval-other", "model")):
+    changed = dict(real, judges=[dict(real["judges"][0], params={**real["judges"][0]["params"], k_: v_}),
+                                 real["judges"][1]])
+    check(f"gate: a scorer whose judge differs from the validated run in {what_}: refused",
+          any(f"{k_}=" in p for p in js.validation_problems(changed, real_runs)))
+no_sha = dict(real, prompt={k: v for k, v in real["prompt"].items() if k != "sha256_at_16"})
+check("gate: a validation block without prompt.sha256_at_16: refused",
+      any("required" in p for p in js.validation_problems(no_sha, real_runs)))
+with tempfile.TemporaryDirectory() as td:
+    (Path(td) / "examples" / "summeval-judging").mkdir(parents=True)
+    shutil.copy(HERE.parent.parent / "examples" / "summeval-judging" / "prompt.txt",
+                Path(td) / "examples" / "summeval-judging" / "other.txt")
+    check("gate: a different prompt file name: refused",
+          any("prompt file" in p for p in js.validation_problems(
+              dict(real, prompt=dict(real["prompt"], file="examples/summeval-judging/other.txt")),
+              real_runs, Path(td))))
+floor = dict(real, validation=dict(real["validation"], runs=[
+    dict(r, min_metric=0.6) for r in real["validation"]["runs"]]))
+check("gate: a judge whose validation metric is below min_metric: refused",
+      sum("below the scorer's min_metric" in p for p in js.validation_problems(floor, real_runs)) == 2)
+check("the committed scorer sets min_metric on every judge",
+      all(r.get("min_metric") is not None for r in real["validation"]["runs"]))
+check("the label names the validation experiment and says it is provenance",
+      js.validated_label(real) == "validated on summeval_100 (provenance)")
+with tempfile.TemporaryDirectory() as td:
+    # a run recording a different prompt sha is refused (copy the committed run, edit one field)
+    rd = Path(td) / "runs"
+    for r_ in real["validation"]["runs"]:
+        shutil.copytree(real_runs / r_["run"], rd / r_["run"])
+    mf = rd / real["validation"]["runs"][0]["run"] / "metrics.json"
+    mj_ = json.loads(mf.read_text())
+    mj_["fingerprint"]["system_under_test"]["model"]["prompt_sha256"] = "0" * 64
+    mf.write_text(json.dumps(mj_))
+    check("gate: a validation run that used a different prompt: refused",
+          any("used prompt" in p for p in js.validation_problems(real, rd)))
+    del mj_["fingerprint"]["system_under_test"]["model"]["prompt_sha256"]
+    mf.write_text(json.dumps(mj_))
+    check("gate: a validation run that recorded no prompt sha: refused",
+          any("records no prompt sha256" in p for p in js.validation_problems(real, rd)))
+
 one_family = dict(real, judges=[real["judges"][0], real["judges"][0]])
 with tempfile.TemporaryDirectory() as td:
     pth = Path(td) / "x.yaml"
@@ -521,6 +590,90 @@ finally:
     sys.argv = old
 check("pointwise scorer: without --unvalidated the CLI exits 3 and says REFUSED",
       rc == 3 and "REFUSED" in buf.getvalue())
+
+# ── validate_judge_goyal: the human comparison, from stored records, no calls ──
+import validate_judge_goyal as vg  # noqa: E402
+
+
+def ann(best, worst):
+    return {"best_summary": best, "worst_summary": worst}
+
+
+check("credit: a tie for top earns 1/k, a miss 0, an unambiguous hit 1",
+      vg.credit(["a", "b", "c"], ["a"]) == 1 / 3 and vg.credit(["a"], ["b"]) == 0
+      and vg.credit(["a"], ["a"]) == 1 and vg.credit(["a", "b"], ["a"]) == 0.5)
+check("credit: a split reference is drawn uniformly (picks a, refs a|b -> 1/2)",
+      vg.credit(["a"], ["a", "b"]) == 0.5)
+w = vg.wilson(50, 100)
+check("wilson: 50/100 is the textbook [0.404, 0.596]", w == [0.4038, 0.5961] or w == [0.4038, 0.5962])
+check("wilson: 0/0 has no interval", vg.wilson(0, 0) is None)
+trio = [ann(["gpt3"], ["t0"]), ann(["gpt3"], ["brio"]), ann(["brio"], ["t0"])]
+check("majority best: two of three name the same system", vg.majority_best(trio) == "gpt3")
+check("majority best: no two agree -> none",
+      vg.majority_best([ann(["gpt3"], []), ann(["brio"], []), ann(["t0"], [])]) is None)
+check("pairwise human preference: the majority of three implied orderings",
+      vg.human_pair_pref(trio) == "gpt3"
+      and vg.human_pair_pref([ann(["gpt3"], ["t0"]), ann(["brio"], ["t0"])]) is None)
+ref = vg.loo_refs(trio)
+check("leave-one-out: the reference is the other two's top-voted best(s)",
+      ref[0][1] == ["brio", "gpt3"] and ref[1][1] == ["brio", "gpt3"] and ref[2][1] == ["gpt3"])
+
+G = {"a1": {"annotators": trio}, "a2": {"annotators": [ann(["brio"], ["gpt3"])] * 3}}
+R = {"a1": {"order": ["gpt3", "brio", "t0"], "scores": [4.0, 4.0, 3.0]},
+     "a2": {"order": ["t0", "gpt3", "brio"], "scores": [2.0, 3.0, 5.0]}}
+st = vg.judge_stats(G, R)
+check("judge stats: a tie for top between gpt3 and brio earns 1/2 against human best gpt3, "
+      "an exact hit earns 1", st["best_pick_partial_credit"]["k"] == 1.5
+      and st["best_pick_partial_credit"]["n"] == 2 and st["best_pick_agreement"] == "1/2")
+check("judge stats: a judge tie on gpt3 vs brio is skipped, a decided one is compared per article",
+      st["pairwise_gpt3_vs_brio_per_article"]["articles_both_decided"] == 1
+      and st["pairwise_gpt3_vs_brio_per_article"]["agreement"]["k"] == 1
+      and st["pairwise_gpt3_vs_brio_per_article"]["judge_tied"] == 1)
+
+record = {"judge_fp": "f", "prompt_sha": "p", "order": ["x"]}
+check("record check: a matching record is accepted", vg.record_problem(record, ["x"], "p", "f") is None)
+check("record check: another judge definition, another prompt, another order, or no stamp: refused",
+      all(vg.record_problem(r_, ["x"], "p", "f") for r_ in (
+          dict(record, judge_fp="g"), dict(record, prompt_sha="q"), dict(record, order=["y"]),
+          {"order": ["x"]})))
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    (td / "scorers").mkdir()
+    shutil.copy(HERE.parent / "data" / "scorers" / "judge-summ-v1.yaml", td / "scorers" / "judge-summ-v1.yaml")
+    synth = {"a1": {"article": "An article.", "gpt3": {"text": "g"}, "brio": {"text": "b"},
+                    "t0": {"text": "t"}, "annotators": trio}}
+    saved = (vg.DATA, vg.load, sys.argv)
+    vg.DATA, vg.load = td, lambda: synth
+    sys.argv = ["validate_judge_goyal.py", "--scorer", "judge-summ-v1", "--no-calls"]
+    try:
+        try:
+            vg.main()
+            msg_ = ""
+        except SystemExit as exc:
+            msg_ = str(exc)
+        check("--no-calls with a record missing: errors and lists it", "missing" in msg_ and "gemma_l" in msg_
+              and "qwen_s" in msg_)
+        sc_ = js.load_scorer(td / "scorers" / "judge-summ-v1.yaml")
+        so_, sha_ = vg.expected(js.prompt_text(sc_), "a1", synth["a1"])
+        for j_ in sc_["judges"]:
+            f_ = vg.record_path(td / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn" / j_["id"], "a1")
+            f_.parent.mkdir(parents=True, exist_ok=True)
+            f_.write_text(json.dumps({"article_id": "a1", "order": so_, "scores": [3.0, 4.0, 2.0],
+                                      "cost_usd": 0.0, "judge_fp": js.judge_fingerprint(j_),
+                                      "prompt_sha": sha_}))
+        check("--no-calls with every record stored: writes the report, calls nothing",
+              vg.main() == 0 and (td / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn"
+                                  / "report.json").is_file())
+        f_.write_text(json.dumps({**json.loads(f_.read_text()), "judge_fp": "0" * 16}))
+        try:
+            vg.main()
+            msg_ = ""
+        except SystemExit as exc:
+            msg_ = str(exc)
+        check("a stored record from a different judge definition is refused, not reused",
+              "refused" in msg_ and "qwen_s" in msg_)
+    finally:
+        vg.DATA, vg.load, sys.argv = saved
 
 # ── validate_tree V11-V13 each fail on a deliberately broken copy ────────────
 import shutil  # noqa: E402

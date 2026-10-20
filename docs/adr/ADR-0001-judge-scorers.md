@@ -55,7 +55,7 @@ all three:
 |---|---|---|---|---|
 | **new reference** | what an output is scored against (e.g. adjudicated gold) | $0 | `make rescore REFERENCE=…` (exists) | AG News, DBpedia: the disputed gold labels, adjudicated |
 | **new code scorer** | the metric, written as code | $0 | `make rescore` with a new scorer (exists) | none yet. Few-NERD's standard micro-F1 is not one: it needs 66 fine types and token spans, and the hosted arms were asked for 8 coarse types as strings, so their outputs do not hold it |
-| **judge scorer** | the metric, delivered by a model | billed | `make judge` (this ADR) | summarisation (validated on SummEval); SciFact's unlabelled abstracts (unvalidated until checked against a human sample) |
+| **judge scorer** | the metric, delivered by a model | billed | `make judge-score` (this ADR) | summarisation (validated on SummEval); SciFact's unlabelled abstracts (unvalidated until checked against a human sample) |
 
 The first two exist and need no new machinery, only a reference set or a scorer and a
 recorded decision to use it. The rest of this ADR is about the third.
@@ -111,10 +111,12 @@ recorded decision to use it. The rest of this ADR is about the third.
 
 The first use is the summarisation experiment, re-measured with judges validated on SummEval.
 That first use showed why validation must be on data like the data being judged. Validated
-on 2019-era summaries, the judges ranked every LLM above every BART model. Checked on human
-preferences for modern summaries, they had the right direction but exaggerated it, 71–77%
-against 61%. A validation does not transfer just because the judge is the same; calibrate on
-comparable human data before a judged score replaces a primary.
+on 2019-era summaries, the judges ranked every LLM above every BART model. The one human check
+on these outputs disagreed (one reader, 14 to 6 for BART). On a different modern pair (GPT-3
+against BRIO) the judges matched the annotators' agreement with each other, but preferred the
+LLM summary more often than the annotators did. A validation does not transfer just because
+the judge is the same; calibrate on comparable human data before a judged score replaces a
+primary.
 The second is SciFact. Its relevance labels are incomplete: 227 judgments cover 200 queries,
 so a relevant but unlabelled abstract ranked first counts against an arm. A judge can label
 those abstracts, but no judge here has been validated on scientific relevance. That run goes

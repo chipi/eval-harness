@@ -184,7 +184,7 @@ pick, as run here:
 - **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
   the point estimate, LLMs as run here; only the first is separated from all but one paid
   arm. The lead is concentrated in 17 items the hosted field mostly gets wrong; adjudicated
-  by topic, the gold was wrong on all 17, and on that gold every hosted LLM scores above
+  by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above
   every fine-tune. On DBpedia a **115× price
   difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
   the top group: the top eleven arms are within four items, three of them items whose

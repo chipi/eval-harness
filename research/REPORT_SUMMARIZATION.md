@@ -693,18 +693,18 @@ separated below all 24 hosted LLMs, which score 4.53–4.98, with `anthropic_l` 
 judges agree closely: Spearman 0.93 over arm means, item τ 0.74. Re-ordering the summaries
 moved per-article scores by 0.11–0.21, and a repeat call by 0.03–0.12.
 
-The judges' preference holds when it is checked, but it is too strong. On human preferences
-for modern news summaries (Goyal, Li & Durrett 2022, CC BY 4.0; 100 CNN articles, three
-annotators each), the judges preferred the GPT-3 summary over the BART-based BRIO one 71%
-(`gemma_l`) and 77% (`qwen_s`) of the time; the annotators did so 61% of the time. The
-judges' best pick matched the annotators' majority on 40% and 54% of articles, while one
-annotator matches the other two's shared pick on 47%. Scored one summary at a time instead of
-in lists (unvalidated), they still rated `deepseek_m` above `bart_l` on 192 of 200 articles and
-never below. A blind check by one non-expert reader on 20 pairs (truncated articles)
-preferred `bart_l` 14 to 6. So the direction, LLM summaries above BART, is supported by
-people, but the size is not: the judges turn a roughly 60/40 human preference into near
-unanimity. `coverage` stays the primary metric, and the judged scores are reported beside it
-as directional only. The record is
+People have not confirmed this ranking on these outputs. The one direct check, a blind
+comparison by one non-expert reader on 20 `bart_l`/`deepseek_m` pairs shown truncated
+articles, preferred `bart_l` 14 to 6 (sign test p = 0.115), while the judges preferred
+`deepseek_m` on all 20. On a different pair, the GPT-3 and BART-based BRIO summaries of Goyal,
+Li & Durrett (2022, CC BY 4.0; 100 CNN articles, three annotators each), the judges agree with
+people about as well as people agree with each other: against one annotator they score 0.498
+(`gemma_l`) and 0.526 (`qwen_s`), annotators against each other 0.454, chance 0.333. On the
+same articles they prefer the GPT-3 summary more often than the annotators do (72.7% and 77.0%
+against 63.6% and 63.2%; the 95% intervals overlap for `gemma_l`). Scored one summary at a time
+instead of in lists (unvalidated), they still rated `deepseek_m` above `bart_l` on 192 of 200
+articles and never below. So the judged scores are directional at most and unconfirmed on these
+arms, and `coverage` stays the primary metric. The record is
 `examples/summarization-cnn-dailymail/human_check_judge.json`; the verdicts are in
 `harness/data/judge-verdicts/judge-summ-v1/`, and `make judge-score ... ARGS=--no-calls`
 rebuilds the scored runs from them for $0.
