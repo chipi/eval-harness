@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import REFERENCES, RUNS, ROOT, die, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import MATERIALIZED, REFERENCES, RUNS, ROOT, die, read_json, warn_on_ambiguous_runs  # noqa: E402
 from experiment_run import load_adapter, _score_wants_source  # noqa: E402
 
 
@@ -174,7 +174,7 @@ def main() -> int:
               "--reference-id, for a calibration.")
     trusted = {os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8").strip()
                for f in glob.glob(str(REFERENCES / ref_id / "*.txt"))}
-    mat = ROOT / "data/materialized" / args.dataset_id
+    mat = MATERIALIZED / args.dataset_id
     sources = {os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8", errors="replace")
                for f in glob.glob(str(mat / "*.txt"))}
     items = sorted(trusted)

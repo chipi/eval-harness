@@ -12,7 +12,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, List
 
-ROOT = Path(__file__).resolve().parents[1]
+#: Where the harness CODE lives: this directory. Schemas and sibling scripts are found
+#: relative to it, so they travel with the code whether it runs from a checkout or from an
+#: installed package.
+CODE = Path(__file__).resolve().parent
+
+
+def _project_root() -> Path:
+    """Where the PROJECT lives: its data/, its .env, its git history.
+
+    Run from a checkout of eval-harness, that is the harness/ directory beside this one,
+    as it always was. Installed as a package (`pip install eval-harness`), the code sits in
+    site-packages and the project is wherever the user is working: `EVAL_HOME` if set,
+    else the current directory. Kept apart from CODE because a project that depends on the
+    harness must never write its data into site-packages.
+    """
+    import os
+
+    home = os.environ.get("EVAL_HOME", "").strip()
+    if home:
+        return Path(home).expanduser().resolve()
+    checkout = CODE.parent
+    if (checkout / "data").is_dir() and (checkout / "scripts").resolve() == CODE:
+        return checkout
+    return Path.cwd().resolve()
+
+
+ROOT = _project_root()
 
 
 def load_dotenv(path: Optional[Path] = None) -> int:
@@ -61,7 +87,11 @@ def env_float(name: str, default: Optional[float] = None) -> Optional[float]:
 def env_int(name: str, default: int) -> int:
     v = env_float(name, float(default))
     return int(v) if v is not None else default
-DATA = ROOT / "data"
+# The data root. `EVAL_DATA_DIR` moves it, for a project whose own layout puts the
+# harness's records somewhere other than <project>/data (a relative path is taken from
+# the project root). Everything below is derived from it.
+_data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
+DATA = ((ROOT / Path(_data_override).expanduser()).resolve() if _data_override else ROOT / "data")
 SOURCES = DATA / "sources"
 DATASETS = DATA / "datasets"
 MATERIALIZED = DATA / "materialized"
@@ -75,6 +105,20 @@ _runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
 RUNS = Path(_runs_override).expanduser() if _runs_override else DATA / "runs"
 BASELINES = DATA / "baselines"
 REFERENCES = DATA / "references"
+
+#: The JSON Schemas the harness validates against. Inside the installed package they sit
+#: beside the code; in a checkout they are one level up, in harness/schemas.
+SCHEMAS = next((p for p in (CODE / "schemas", CODE.parent / "schemas") if p.is_dir()),
+               CODE.parent / "schemas")
+
+
+def data_rel(path: Path) -> str:
+    """`path` relative to the project root, as git and the run records spell it. Falls
+    back to the absolute path when the data root sits outside the project."""
+    try:
+        return Path(path).resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(Path(path).resolve())
 
 
 class CostCapExceeded(RuntimeError):
