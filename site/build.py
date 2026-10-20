@@ -1106,6 +1106,57 @@ HEADLINE = {
 }
 
 
+# ── crawl files ─────────────────────────────────────────────────────────────
+#: The docs site (MkDocs, built into /docs/) writes its own sitemap; robots.txt points
+#: to both. No AI-training rules: whether this open research opts out is undecided.
+ROBOTS = f"""User-agent: *
+Allow: /
+
+Sitemap: {SITE}/sitemap.xml
+Sitemap: {SITE}/docs/sitemap.xml
+"""
+
+
+def sitemap_urls(out: Path) -> list:
+    """Absolute URLs of every page this build writes, as Pages serves them. No lastmod:
+    the build is deterministic and site-check compares it byte for byte, so a build date
+    would make every day's check fail, and no other date here is reliable per page."""
+    pages = sorted((p.relative_to(out).as_posix() for p in out.rglob("*.html")),
+                   key=lambda p: (p != "index.html", p))
+    return [f"{SITE}/" if p == "index.html" else f"{SITE}/{p}" for p in pages]
+
+
+def sitemap_xml(urls: list) -> str:
+    rows = "".join(f"  <url><loc>{e(u)}</loc></url>\n" for u in urls)
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            f"{rows}</urlset>\n")
+
+
+def check_crawl_files(out: Path) -> list:
+    """What is wrong with robots.txt and sitemap.xml in `out`: missing, or a sitemap
+    URL that names no page the build wrote. (The deployed check in pages.yml asks the
+    live domain for a 200 on each URL.)"""
+    problems = []
+    robots, smap = out / "robots.txt", out / "sitemap.xml"
+    if not robots.is_file():
+        problems.append("robots.txt is missing")
+    elif f"Sitemap: {SITE}/sitemap.xml" not in robots.read_text(encoding="utf-8"):
+        problems.append("robots.txt does not point to the sitemap")
+    if not smap.is_file():
+        problems.append("sitemap.xml is missing")
+        return problems
+    import re  # noqa: PLC0415
+    urls = re.findall(r"<loc>([^<]+)</loc>", smap.read_text(encoding="utf-8"))
+    if not urls:
+        problems.append("sitemap.xml lists no URLs")
+    for u in urls:
+        rel = "index.html" if u == f"{SITE}/" else u[len(SITE) + 1:] if u.startswith(SITE + "/") else None
+        if rel is None or not (out / rel).is_file():
+            problems.append(f"sitemap URL with no page behind it: {u}")
+    return problems
+
+
 # ── build ───────────────────────────────────────────────────────────────────
 def build(out: Path) -> None:
     f = figures.compute()
@@ -1120,6 +1171,8 @@ def build(out: Path) -> None:
     for x in f["experiments"]:
         (out / "experiments" / f'{x["slug"]}.html').write_text(experiment_page(x, f), encoding="utf-8")
     (out / ".nojekyll").write_text("")
+    (out / "sitemap.xml").write_text(sitemap_xml(sitemap_urls(out)), encoding="utf-8")
+    (out / "robots.txt").write_text(ROBOTS, encoding="utf-8")
 
 
 def main() -> int:
@@ -1144,6 +1197,11 @@ def main() -> int:
         if stale:
             print("FAIL  site/public is stale; run `python site/build.py`:", *stale, sep="\n  ")
             return 1
+    crawl = check_crawl_files(OUT)
+    if crawl:
+        print("FAIL  robots.txt / sitemap.xml:", *crawl, sep="\n  ")
+        return 1
+    print("ok    robots.txt and sitemap.xml present; every sitemap URL is a built page")
     print("ok    site/public matches a fresh build")
     return 0
 

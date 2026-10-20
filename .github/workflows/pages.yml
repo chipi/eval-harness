@@ -77,3 +77,31 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # After the deploy: does the LIVE domain serve robots.txt and sitemap.xml at its root,
+  # with the right types, and does every sitemap URL answer 200? (build.py --check proves
+  # each URL is a built page; only the live domain can prove Pages publishes it.)
+  crawl-check:
+    if: github.event_name != 'pull_request'
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: robots.txt, sitemap.xml and every sitemap URL, on the live domain
+        run: |
+          site=https://evals.humancopilot.eu
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$site/sitemap.xml")
+            [ "$code" = 200 ] && break; sleep 20
+          done
+          type_of() { curl -sI "$1" | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type"{print $2}'; }
+          rt=$(type_of "$site/robots.txt"); st=$(type_of "$site/sitemap.xml")
+          echo "robots.txt  $rt"; echo "sitemap.xml $st"
+          case "$rt" in text/plain*) ;; *) echo "robots.txt is not text/plain"; exit 1;; esac
+          case "$st" in application/xml*|text/xml*) ;; *) echo "sitemap.xml is not XML"; exit 1;; esac
+          curl -sf "$site/robots.txt" | grep -q "Sitemap: $site/sitemap.xml" || { echo "robots.txt does not point to the sitemap"; exit 1; }
+          fail=0
+          for u in $(curl -sf "$site/sitemap.xml" | grep -o '<loc>[^<]*</loc>' | sed 's/<[^>]*>//g'); do
+            c=$(curl -s -o /dev/null -w '%{http_code}' "$u"); echo "$c $u"
+            [ "$c" = 200 ] || fail=1
+          done
+          exit $fail
