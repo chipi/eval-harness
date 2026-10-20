@@ -304,8 +304,12 @@ def v9_no_committed_evidence_is_missing() -> None:
     #: and `grep -n runs-linux scripts/*.py` returned nothing. Deleting the directory
     #: that nine published latency numbers rest on passed every check. Found reviewing
     #: the merged ML-arm work, which is the same defect round 4 found one directory over.
-    FLOORS = {"runs-reparsed": 19, "runs-rescored": 28, "runs-pair": 6, "runs-repeats": 3,
-              "runs-linux": 9, "runs-fp32": 2}
+    # The floors are PROJECT policy: how many runs each committed directory must keep is
+    # a fact about one project's evidence, not about the harness. They are read from
+    # <data>/validate_floors.json; a project without one has no floors (V9's missing-file
+    # and empty-rows checks still apply).
+    floors_file = DATA / "validate_floors.json"
+    FLOORS = (read_json(floors_file).get("floors") or {}) if floors_file.is_file() else {}
 
     tracked = subprocess.run(
         ["git", "ls-files", *(data_rel(DATA / d) for d in ("runs", "runs-rescored", "runs-reparsed",

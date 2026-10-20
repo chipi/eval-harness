@@ -1,0 +1,46 @@
+# eval-harness as an installable package, so a project can PIN it instead of copying it:
+#
+#     pip install "eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+#
+# The package is the harness core: scripts/ installs as `eval_harness`, schemas/ beside
+# it. The data is never in the package -- it lives in the project that uses it (see
+# EVAL_HOME / EVAL_DATA_DIR in scripts/cli.py). A checkout keeps working exactly as
+# before: `make <target>` runs the same scripts the `eval-harness` command does.
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eval-harness"
+dynamic = ["version"]
+description = "Is the ranking real, or a lucky sample? Frozen datasets, run fingerprints, paired significance tests."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml>=6.0",
+    "jsonschema>=4.0",
+]
+
+[project.optional-dependencies]
+# The bundled template adapter and judges call hosted models through these clients.
+llm = ["openai>=1.0", "anthropic>=0.40"]
+# The self-test's summarisation corpus checks.
+test = ["rouge-score"]
+
+[project.scripts]
+eval-harness = "eval_harness.cli:main"
+
+[project.urls]
+Homepage = "https://chipi.github.io/eval-harness/"
+Source = "https://github.com/chipi/eval-harness"
+
+[tool.setuptools]
+packages = ["eval_harness", "eval_harness.schemas"]
+package-dir = {"eval_harness" = "scripts", "eval_harness.schemas" = "schemas"}
+
+[tool.setuptools.package-data]
+"eval_harness.schemas" = ["*.json"]
+
+[tool.setuptools.dynamic]
+version = {attr = "eval_harness._version.__version__"}

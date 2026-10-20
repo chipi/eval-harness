@@ -296,3 +296,8 @@ data/runs/demo_v1_*/
 
 # derived: the family test's answers, keyed on its exact inputs (scripts/family_test.py)
 .cache/
+
+# packaging by-products (pip install / python -m build)
+*.egg-info/
+build/
+dist/
