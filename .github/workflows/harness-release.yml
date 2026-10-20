@@ -1,0 +1,74 @@
+# Release the harness: push a tag `vX.Y.Z`, get a GitHub Release with the built package.
+#
+#   1. refuse the tag unless it equals harness/scripts/_version.py and CHANGELOG.md has a
+#      section for it -- a release that disagrees with its own version is not a release;
+#   2. run the harness's own gate (make ci in harness/);
+#   3. build the wheel and sdist, install the wheel into a clean venv, and check the
+#      installed `eval-harness --version` is the tag;
+#   4. create the GitHub Release, notes from the CHANGELOG section, package attached.
+#
+# GitHub Releases only, by decision: nothing is published to PyPI (where the name
+# `eval-harness` belongs to another project). Consumers pin the tag:
+#   eval-harness @ git+https://github.com/chipi/eval-harness@vX.Y.Z#subdirectory=harness
+name: harness-release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: harness/requirements.txt
+
+      - name: The tag, the version file and the changelog agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver=$(python -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('harness/scripts/_version.py').read_text()).group(1))")
+          test "$tag" = "$ver" || { echo "tag v$tag but harness/scripts/_version.py says $ver"; exit 1; }
+          grep -q "^## $ver" harness/CHANGELOG.md || { echo "harness/CHANGELOG.md has no '## $ver' section"; exit 1; }
+          if grep -q "^## $ver — unreleased" harness/CHANGELOG.md; then
+            echo "harness/CHANGELOG.md still marks $ver as unreleased; date it before tagging"; exit 1
+          fi
+
+      - name: The harness's own gate
+        run: make verify
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade build
+          python -m build harness --outdir dist
+
+      - name: The built wheel installs and reports this version
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+          test "$(/tmp/clean/bin/eval-harness --version)" = "${GITHUB_REF_NAME#v}"
+          /tmp/clean/bin/eval-harness --help > /dev/null
+
+      - name: Release notes from the changelog
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          awk -v v="## $ver" 'index($0, v)==1 {on=1; next} on && /^## / {exit} on' harness/CHANGELOG.md > notes.md
+          {
+            echo ""
+            echo "### Install"
+            echo '```'
+            echo "pip install \"eval-harness @ git+https://github.com/chipi/eval-harness@${GITHUB_REF_NAME}#subdirectory=harness\""
+            echo '```'
+          } >> notes.md
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "eval-harness $GITHUB_REF_NAME" --notes-file notes.md --verify-tag

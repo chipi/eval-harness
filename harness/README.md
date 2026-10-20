@@ -25,7 +25,7 @@ It imports nothing from your project and your project imports nothing from it.
 Use it from this checkout through `make`, or pin it into your own project:
 
 ```bash
-pip install "eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+pip install "eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"
 eval-harness --help                       # every make target, as a command
 eval-harness dataset-create --dataset-id my_v1
 eval-harness experiment-run --config data/configs/arm_a.yaml
@@ -214,6 +214,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | --- | --- |
 | **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | the operational walk, step by step, with the reasoning |
+| **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
 | **[UPGRADING.md](docs/UPGRADING.md)** | for a copy of the harness taken before October 2026: the fixes that can change results, the breaking changes, how to stay current |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
