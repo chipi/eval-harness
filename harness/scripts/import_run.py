@@ -128,8 +128,12 @@ def main() -> int:
     run_dir = RUNS / run_id
     if run_dir.exists():
         die(f"{run_dir} already exists")
+    import hashlib  # noqa: PLC0415
+
     imported = {"source": args.source, "scorer_id": args.scorer_id,
                 "scorer_sha256": args.scorer_sha256, "scores_file": args.scores.name,
+                # The exact bytes imported: a name can be reused, a hash cannot.
+                "scores_sha256": hashlib.sha256(args.scores.read_bytes()).hexdigest(),
                 "items_scored": len(seen), "items_in_dataset": len(known)}
     params = {"imported": True, "source": args.source}
     fingerprint = build_fingerprint(

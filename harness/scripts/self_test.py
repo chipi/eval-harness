@@ -2200,6 +2200,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     check("import-run: --allow-subset records the coverage on the run",
           sub.returncode == 0 and m is not None
           and _json.loads(m.read_text())["imported"]["items_scored"] == 1)
+    check("import-run: the imported bytes are hashed on the record",
+          m is not None and len(_json.loads(m.read_text())["imported"].get("scores_sha256") or "") == 64)
 
     pt = run("scripts/pair_test.py", "--dataset-id", "proj_v1", "--a", "arm_lo", "--b", "arm_hi",
              "--metric", "wer", "--asc", env=env)
