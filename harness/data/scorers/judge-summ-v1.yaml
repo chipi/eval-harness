@@ -1,0 +1,76 @@
+# Judge scorer for the summarisation experiment (docs/adr/ADR-0001-judge-scorers.md).
+#   make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run
+scorer_id: judge-summ-v1
+kind: judge
+dataset_id: cnn_dailymail_200
+
+# Two judges from different vendor families, both measured on SummEval under the protocol
+# below (the same prompt, listwise, 16 summaries per call, arm identities hidden).
+#   gemma_l  Gemma 4 31B (Google)  tau 0.5384, 2nd of 33 on SummEval, $0.028 per 100 articles.
+#   qwen_s   Qwen3.8 Flash (Alibaba)  tau 0.5192, 6th of 33, $0.039 per 100 articles. A
+#            different vendor from gemma_l, and the cheapest judge in the top six besides
+#            gemma_l. Chosen over openai_l (tau 0.5398, $0.635 per 100) and qwen37max
+#            (0.5204, $0.444) because those cost 16x and 12x as much for a tau gap of 0.02
+#            or less. Not tested here: whether that gap is separated (REPORT_SUMMEVAL §3.2).
+# Both families are also arms in the summarisation experiment (gemma_*, qwen_*); the pass
+# flags those arms in the matching judge's column rather than excluding them.
+judges:
+  - id: gemma_l
+    params:
+      provider: litellm
+      model: eval-gemma-31b
+      family: gemma
+      price_tier: large
+      temperature: 0.0
+      reasoning: {enabled: false}
+      usd_per_mtok_in: 0.1
+      usd_per_mtok_out: 0.2
+      max_tokens: 1500
+  - id: qwen_s
+    params:
+      provider: litellm
+      model: eval-qwen-flash
+      family: qwen
+      price_tier: small
+      temperature: 0.0
+      reasoning: {enabled: false}
+      usd_per_mtok_in: 0.05
+      usd_per_mtok_out: 0.2
+      max_tokens: 1500
+
+# The prompt SummEval validated, byte for byte at 16 summaries. At any other count only the
+# two numbers that name the count change ("16 numbered summaries", "list of 16 integers").
+prompt:
+  file: examples/summeval-judging/prompt.txt
+  sha256_at_16: 6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee
+
+# SummEval validated 16 summaries per call. The summarisation experiment has 29 arms, so an
+# item is judged in blocks of at most 16: 29 -> 15 + 14, never 16 + 13 (see judge_score.py).
+# Scores are absolute 1-5 per dimension, so blocks are comparable; the position check
+# (a second shuffle, which also re-forms the blocks) measures what that assumption costs.
+protocol:
+  listwise: true
+  outputs_per_call: 16
+  blinding: true
+  order_seed: 0
+  position_check_fraction: 0.1
+  noise_check_fraction: 0.1
+  contested_threshold: 0.5   # the judge panel's rule (runner.py): two judges' arm means differ by more
+
+# The gate (harness/scripts/judge_score.py) reads each named run and requires its metric to
+# equal `value` and its model to be the judge's. Values are the committed runs', not typed
+# from the report.
+validation:
+  experiment: summeval_100
+  metric: tau
+  what: mean Kendall tau-b against the mean of three expert annotators, over 4 dimensions and 100 articles
+  differs_from_this_use: >-
+    SummEval summaries are from 16 systems of 2019; the summarisation experiment's are 29
+    modern arms, judged here in blocks of 15 and 14.
+  runs:
+    - {judge: gemma_l, run: se_gemma_l_n100_v1_20261018T094137Z, value: 0.538416}
+    - {judge: qwen_s,  run: se_qwen_s_n100_v1_20261018T092524Z,  value: 0.519234}
+
+# Upper bound on the whole pass, all judges and controls, counting verdicts already stored.
+# EVAL_MAX_COST_USD, if lower, wins. Dry-run prints the estimate to set it against.
+cost_cap_usd: 1.00

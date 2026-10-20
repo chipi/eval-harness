@@ -24,7 +24,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge check ci test smoke-fixture cost-report clean clean-cache
+        validate judge judge-score check ci test smoke-fixture cost-report clean clean-cache
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -58,6 +58,11 @@ help:
 	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric"
 	@echo "  EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=my_v1"
 	@echo ""
+	@echo "RE-MEASURE WITH A VALIDATED JUDGE  (BILLED and cost-capped; --dry-run first, it is free)"
+	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id> ARGS=--dry-run   calls, tokens, estimated cost"
+	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id>                  resumable; verdicts are stored"
+	@echo "  EVAL_RUNS_DIR=data/runs-judged/<id> make leaderboard DATASET_ID=my_v1"
+	@echo ""
 	@echo "ASK ONE QUESTION  (free — no API calls)"
 	@echo "  make pair-test DATASET_ID=my_v1 A=<arm> B=<arm> [FAMILY=n]"
 	@echo "  make family-test DATASET_ID=my_v1 A=<arm> AGAINST=<substring> [ITEMS=f]"
@@ -74,7 +79,7 @@ help:
 	@echo "  make run-promote RUN=<run> REASON=\"...\""
 	@echo ""
 	@echo "INSPECT / GATE"
-	@echo "  make runs-list | baselines-list | validate | judge"
+	@echo "  make runs-list | baselines-list | validate | judge (the panel)"
 	@echo ""
 	@echo "SCOPING  (a dataset accumulates arms across config versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
@@ -278,6 +283,15 @@ docs:
 
 ci: check site-check
 	@echo "ci: green"
+
+# The judging PASS (ADR-0001): a validated LLM judge re-measures every arm's frozen outputs,
+# listwise and blind, into data/runs-judged/<SCORER>/. Billed, capped (the scorer's
+# cost_cap_usd, EVAL_MAX_COST_USD), resumable. ARGS=--dry-run prices it without calling
+# anything; ARGS=--no-calls re-reads stored verdicts for $0. Not `make judge`, which is the
+# panel below.
+judge-score:
+	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
+	$(PYTHON) scripts/judge_score.py --dataset-id $(if $(EXP),$(EXP),$(DATASET_ID)) --scorer $(SCORER) $(ARGS)
 
 # The judge panel: promote -> judge -> aggregate -> report over candidate runs.
 # Keyless by default (FakeJudge).

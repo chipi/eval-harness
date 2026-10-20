@@ -325,6 +325,45 @@ Worked example: `examples/classification-ag-news/adjudication.json`.
 
 ---
 
+## 12. Re-measure with a validated judge
+
+When a better instrument exists than the metric the experiment ranks by (SummEval showed
+`coverage` agrees with experts at τ 0.10, a validated LLM judge at 0.52), measure the frozen
+outputs again, billed and capped. Design: [ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md).
+This is not `make judge`, the older judge panel.
+
+```bash
+make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run   # free
+make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
+EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dailymail_200
+```
+
+1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
+   families, the prompt, the protocol, a `validation` block and a cost cap. The command
+   refuses a scorer whose validation does not name a committed run with the stated value and
+   the judge's model. `ARGS=--unvalidated` overrides it and labels every number
+   "unvalidated judge" (the primary metric becomes `judge_score_unvalidated`).
+2. **Dry-run first.** It builds the judging set and prints calls, tokens and estimated cost
+   per judge, and calls nothing.
+3. **The judging set** is one item = the article plus every arm's primary output, arm ids
+   hidden, order shuffled per item by the seed. Its id pins the arm set, and its manifest is
+   frozen in `data/judging-sets/`. Add an arm and you get a new set and a new pass.
+4. **Blocks.** SummEval validated 16 summaries per call, so an item's arms are judged in the
+   fewest blocks of at most `outputs_per_call`: 29 arms are 15 + 14. Scores are absolute
+   1–5 per dimension, so blocks are pooled.
+5. **Verdicts** are stored raw per call in `data/judge-verdicts/`. A rerun skips what is
+   stored; `ARGS=--no-calls` projects from them for $0. At the cost cap the pass stops and
+   keeps everything bought; raise the cap to continue.
+6. **Read `data/runs-judged/<id>/summary.json` before the leaderboard:** per-judge columns,
+   inter-judge agreement, which arms share a judge's family, the position check (a second
+   shuffle on a subset) and the noise check (a repeat on a subset). A difference between arms
+   smaller than the noise check's is not a difference.
+7. **Record the decision.** Changing an experiment's primary metric is a recorded decision
+   with a reason; the old metric stays beside the new one (CONCEPTS: Re-measuring a frozen
+   experiment).
+
+---
+
 ## Choosing what to evaluate against
 
 The **system under test** is recorded as `build.ref`. It defaults to this tree's
