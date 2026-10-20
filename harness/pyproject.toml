@@ -1,6 +1,6 @@
 # eval-harness as an installable package, so a project can PIN it instead of copying it:
 #
-#     pip install "eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+#     pip install "chipi-eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
 #
 # The package is the harness core: scripts/ installs as `eval_harness`, schemas/ beside
 # it. The data is never in the package -- it lives in the project that uses it (see
@@ -11,7 +11,11 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eval-harness"
+# The DISTRIBUTION name is chipi-eval-harness, not eval-harness: on PyPI `eval-harness` is
+# an unrelated project, so a bare `pip install eval-harness` would install theirs. Nothing
+# of ours is on PyPI under any name; install only from GitHub. The command stays
+# `eval-harness` and the import `eval_harness`.
+name = "chipi-eval-harness"
 dynamic = ["version"]
 description = "Is the ranking real, or a lucky sample? Frozen datasets, run fingerprints, paired significance tests."
 readme = "README.md"

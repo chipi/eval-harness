@@ -74,7 +74,7 @@ Copying the directory once is what caused this page. Since version 0.2.0 the har
 an installable package, so a project can **pin** it the way it pins any other dependency:
 
 ```bash
-pip install "eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
+pip install "chipi-eval-harness @ git+https://github.com/chipi/eval-harness@<commit>#subdirectory=harness"
 eval-harness --help          # the Makefile's targets, as commands
 ```
 

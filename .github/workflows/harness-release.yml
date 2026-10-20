@@ -7,9 +7,10 @@
 #      installed `eval-harness --version` is the tag;
 #   4. create the GitHub Release, notes from the CHANGELOG section, package attached.
 #
-# GitHub Releases only, by decision: nothing is published to PyPI (where the name
-# `eval-harness` belongs to another project). Consumers pin the tag:
-#   eval-harness @ git+https://github.com/chipi/eval-harness@vX.Y.Z#subdirectory=harness
+# GitHub Releases only, by decision: nothing is ever published to PyPI. The package is
+# named chipi-eval-harness because PyPI's `eval-harness` is an unrelated project.
+# Consumers pin the tag:
+#   chipi-eval-harness @ git+https://github.com/chipi/eval-harness@vX.Y.Z#subdirectory=harness
 name: harness-release
 
 on:
@@ -64,7 +65,7 @@ jobs:
             echo ""
             echo "### Install"
             echo '```'
-            echo "pip install \"eval-harness @ git+https://github.com/chipi/eval-harness@${GITHUB_REF_NAME}#subdirectory=harness\""
+            echo "pip install \"chipi-eval-harness @ git+https://github.com/chipi/eval-harness@${GITHUB_REF_NAME}#subdirectory=harness\""
             echo '```'
           } >> notes.md
 

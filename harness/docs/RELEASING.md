@@ -1,8 +1,11 @@
 # Releasing the harness
 
-The harness is installed from **GitHub**, never from PyPI. On PyPI the name `eval-harness`
-belongs to an unrelated project, so a bare `pip install eval-harness` installs that one.
-Always install with the URL.
+The harness is installed from **GitHub only**. Nothing of ours is on PyPI, under any name.
+
+Its package name is **`chipi-eval-harness`**, not `eval-harness`: on PyPI `eval-harness` is
+an unrelated project, so a bare `pip install eval-harness` would install theirs. A bare
+`pip install chipi-eval-harness` finds nothing and fails, which is the point. The command
+it installs is still `eval-harness`, and the import is still `eval_harness`.
 
 ## For a project that depends on it
 
@@ -10,7 +13,7 @@ Pin a release tag:
 
 ```toml
 # pyproject.toml
-"eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness",
+"chipi-eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness",
 ```
 
 - **Pin a tag, never a branch.** A branch moves; a run recorded against it cannot be

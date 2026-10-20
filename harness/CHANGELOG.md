@@ -10,7 +10,7 @@ release without saying so under **Changed**.
 The first version meant to be installed rather than copied.
 
 ### Added
-- **Installable package.** `pip install "eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"`
+- **Installable package.** `pip install "chipi-eval-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"`
   gives the `eval-harness` command: every Makefile target, running the same scripts.
 - **`EVAL_HOME` / `EVAL_DATA_DIR`.** The project's data lives in the project, never in the
   installed package; the data root can be nested (for example `data/eval/stats`).
