@@ -1,0 +1,150 @@
+{
+ "what": "blind pairwise human check of the judge-summ-v1 re-measurement: bart_l vs deepseek_m",
+ "date": "2026-10-20",
+ "reader": "the operator (Marko Dragoljevic), one non-expert reader, self-described as not the best judge",
+ "shown": "the first 170-220 words of each article (a one-line note of later content in most pairs) and the two summaries as A and B in a seeded random order; asked which summary is better: most accurate and clear about what happened",
+ "selection": "20 items of cnn_dailymail_200, sha256('human-check-0:' + item_id) order; A/B by sha256('order-0:' + item_id)",
+ "scorer_compared": "judge-summ-v1",
+ "pairs": [
+  {
+   "n": 1,
+   "item_id": "0f39feebc34fee03b8c647d1557eb40bb20f4e8b",
+   "a_is": "deepseek_m",
+   "answer": "A",
+   "preferred": "deepseek_m"
+  },
+  {
+   "n": 2,
+   "item_id": "a2a2ac30f4650050ee114a48316e7451936692ca",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 3,
+   "item_id": "202a51397a4de6483e6a7427d1952c46fca69d81",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 4,
+   "item_id": "ff42fad959e8b522b562b7b715c8d558270a79f2",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 5,
+   "item_id": "5493b9481b00e8ca9d83320d00abe09266bbeaef",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 6,
+   "item_id": "ca1c3b587b7216654c8c719a66738de80d495179",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 7,
+   "item_id": "1ecb11d97cc3290881a814fa863c1b06b6b96502",
+   "a_is": "deepseek_m",
+   "answer": "B",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 8,
+   "item_id": "978a6fc6a910592f6be5add104474e7d9ba428c5",
+   "a_is": "bart_l",
+   "answer": "B",
+   "preferred": "deepseek_m"
+  },
+  {
+   "n": 9,
+   "item_id": "f97442bee2acf684b1b8d5e653acea2307fc5dad",
+   "a_is": "deepseek_m",
+   "answer": "B",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 10,
+   "item_id": "e8c90d557031700caa1afb66dfc85358ef719108",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 11,
+   "item_id": "7d5b44afe30b34c03f77f0e5ebf5eb88498ee71c",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 12,
+   "item_id": "934a2d9235022c9e8a6aeec5e7e941b127569b76",
+   "a_is": "deepseek_m",
+   "answer": "A",
+   "preferred": "deepseek_m"
+  },
+  {
+   "n": 13,
+   "item_id": "f8e429a6906f299a0925f6d70e2570834a7b8dc6",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 14,
+   "item_id": "c71b08cede3b6edb662a2f2c95f8b543fa65e405",
+   "a_is": "bart_l",
+   "answer": "B",
+   "preferred": "deepseek_m"
+  },
+  {
+   "n": 15,
+   "item_id": "a2ee2faeb2dc4e5eab43b1d14233c4ac658f0a8f",
+   "a_is": "bart_l",
+   "answer": "B",
+   "preferred": "deepseek_m"
+  },
+  {
+   "n": 16,
+   "item_id": "3783ef06d42f795f34533caf346c2cb9d3c844dd",
+   "a_is": "deepseek_m",
+   "answer": "B",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 17,
+   "item_id": "78a670384c908a15617cab7f575fd50dc5999937",
+   "a_is": "deepseek_m",
+   "answer": "B",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 18,
+   "item_id": "f78024d271fd21f0667f5da6843516314af71f8f",
+   "a_is": "bart_l",
+   "answer": "A",
+   "preferred": "bart_l"
+  },
+  {
+   "n": 19,
+   "item_id": "996940764a066a9c16f622c873ad041ac5521fa3",
+   "a_is": "bart_l",
+   "answer": "B",
+   "preferred": "deepseek_m"
+  },
+  {
+   "n": 20,
+   "item_id": "5362f24162b3ed6f36037319ee66fbaaddc50650",
+   "a_is": "deepseek_m",
+   "answer": "B",
+   "preferred": "bart_l"
+  }
+ ]
+}

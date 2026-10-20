@@ -682,6 +682,29 @@ sampling interval) — 0.9 above, inside that interval, though a different ROUGE
 implementation and 400 articles rather than 11,490 are also in play. The instrument is
 close to the literature on the model, and on LEAD-3 (R1 0.40 below, outside its ±0.22).
 
+### 3.8 Re-measured with validated LLM judges
+
+The same 29 outputs were scored again by two LLM judges validated on SummEval (`gemma_l`,
+τ 0.5384; `qwen_s`, τ 0.5192), with scorer `judge-summ-v1`
+([ADR-0001](../docs/adr/ADR-0001-judge-scorers.md)). Each judge read the article and up to 15
+summaries per call, blinded and shuffled: 960 calls, $0.31, 197 of 200 articles. On the
+judges' score every hosted LLM ranks above every BART model: `bart_l` scores 3.87 of 5 and is
+separated below all 24 hosted LLMs, which score 4.53–4.98, with `anthropic_l` first. The two
+judges agree closely: Spearman 0.93 over arm means, item τ 0.74. Re-ordering the summaries
+moved per-article scores by 0.11–0.21, and a repeat call by 0.03–0.12.
+
+The judges' validation does not carry over to these summaries unchecked. SummEval scored
+2019-era systems; here the judges score modern LLM output against BART, and LLM judges are
+known to favour LLM-written text. A blind check disagreed with them. One non-expert reader
+compared `bart_l` and `deepseek_m` on 20 article pairs, shown the first 170–220 words of each
+article. The reader preferred `bart_l` 14 times and `deepseek_m` 6 times (sign test
+p = 0.115). The judges preferred `deepseek_m` in all 20. So the judged ranking is unconfirmed
+on this data, and `coverage` stays the primary metric. The judged scores are reported beside
+it. A check by two or three readers on full articles would settle it. The record is
+`examples/summarization-cnn-dailymail/human_check_judge.json`; the verdicts are in
+`harness/data/judge-verdicts/judge-summ-v1/`, and `make judge-score ... ARGS=--no-calls`
+rebuilds the scored runs from them for $0.
+
 ## 4. Discussion
 
 **The experiment's resolution is set by the corpus, not the models.** With 67.8% of
@@ -773,6 +796,9 @@ higher price tier does not buy cleaner output — worth checking before paying f
 
 ## 5. What this experiment cannot say
 
+- **No measure here has been confirmed by people on these summaries.** `coverage` tracks
+  experts less well than ROUGE-1 (on SummEval), and the validated LLM judges disagreed
+  with a blind human check on 20 pairs (§3.8).
 - **How well `coverage` tracks what a person prefers.** Measured since on SummEval, against
   expert judgement of 1,600 summaries, it agrees at τ 0.1011, below plain ROUGE-1 (0.1487)
   ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) §3.3). The comparisons here are separations under
