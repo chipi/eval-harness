@@ -58,7 +58,8 @@ protocol:
   contested_threshold: 0.5   # the judge panel's rule (runner.py): two judges' arm means differ by more
 
 # The gate (harness/scripts/judge_score.py) reads each named run and requires its metric to
-# equal `value` and its model to be the judge's. Values are the committed runs', not typed
+# equal `value` (and be at least `min_metric`), and its model, temperature, reasoning,
+# max_tokens, provider and prompt (file and sha256) to be the judge's. Values are the committed runs', not typed
 # from the report.
 validation:
   experiment: summeval_100
@@ -68,8 +69,11 @@ validation:
     SummEval summaries are from 16 systems of 2019; the summarisation experiment's are 29
     modern arms, judged here in blocks of 15 and 14.
   runs:
-    - {judge: gemma_l, run: se_gemma_l_n100_v1_20261018T094137Z, value: 0.538416}
-    - {judge: qwen_s,  run: se_qwen_s_n100_v1_20261018T092524Z,  value: 0.519234}
+    # min_metric: a judge whose validation tau is below the best free scorer's is refused.
+    # 0.371714 is se_unievalpub_n100_v1_20261018T221123Z's tau (UniEval on its own published
+    # inputs, 0.3717 in REPORT_SUMMEVAL), read from that committed run.
+    - {judge: gemma_l, run: se_gemma_l_n100_v1_20261018T094137Z, value: 0.538416, min_metric: 0.371714}
+    - {judge: qwen_s,  run: se_qwen_s_n100_v1_20261018T092524Z,  value: 0.519234, min_metric: 0.371714}
 
 # Upper bound on the whole pass, all judges and controls, counting verdicts already stored.
 # EVAL_MAX_COST_USD, if lower, wins. Dry-run prints the estimate to set it against.

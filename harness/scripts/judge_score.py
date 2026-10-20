@@ -129,6 +129,11 @@ def prompt_text(sc: Dict[str, Any], root: Path = ROOT.parent) -> str:
     return p.read_text(encoding="utf-8").strip()
 
 
+#: Params that change what a judge says. The validation run recorded them; the scorer must
+#: still carry the same ones, or the number it cites was measured on a different judge.
+OUTPUT_PARAMS = ("provider", "model", "temperature", "reasoning", "max_tokens")
+
+
 def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
                         prompt_root: Path = ROOT.parent) -> List[str]:
     """Why this scorer is not validated; empty means it is."""
@@ -138,6 +143,13 @@ def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
     out: List[str] = []
     metric = v.get("metric")
     named = {r.get("judge"): r for r in v["runs"] if isinstance(r, dict)}
+    want = sc["prompt"].get("sha256_at_16") or ""
+    have = _sha(prompt_text(sc, prompt_root))
+    if not want:
+        out.append("prompt.sha256_at_16 is required once a `validation` block exists")
+    elif want != have:
+        out.append("prompt.sha256_at_16 does not match the prompt file: the text the "
+                   "judges were validated on has changed")
     for j in sc["judges"]:
         r = named.get(j["id"])
         if not r:
@@ -155,14 +167,31 @@ def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
         if got is None or r.get("value") is None or abs(float(got) - float(r["value"])) > 1e-6:
             out.append(f"judge {j['id']!r}: run {r['run']} has {metric}={got}, "
                        f"scorer claims {r.get('value')}")
-        if (m.get("params") or {}).get("model") != j["params"].get("model"):
-            out.append(f"judge {j['id']!r}: run {r['run']} measured model "
-                       f"{(m.get('params') or {}).get('model')!r}, not {j['params'].get('model')!r}")
-    want = (sc["prompt"].get("sha256_at_16") or "")
-    if want and want != _sha(prompt_text(sc, prompt_root)):
-        out.append("prompt.sha256_at_16 does not match the prompt file: the text the "
-                   "judges were validated on has changed")
+        floor = r.get("min_metric", v.get("min_metric"))
+        if floor is not None and (got is None or float(got) < float(floor)):
+            out.append(f"judge {j['id']!r}: run {r['run']} has {metric}={got}, below the "
+                       f"scorer's min_metric {floor}")
+        rec = m.get("params") or {}
+        for k in OUTPUT_PARAMS:
+            if rec.get(k) != j["params"].get(k):
+                out.append(f"judge {j['id']!r}: run {r['run']} measured {k}={rec.get(k)!r}, "
+                           f"the scorer uses {j['params'].get(k)!r}")
+        if rec.get("prompt_file") != Path(sc["prompt"]["file"]).name:
+            out.append(f"judge {j['id']!r}: run {r['run']} used prompt file "
+                       f"{rec.get('prompt_file')!r}, the scorer uses {Path(sc['prompt']['file']).name!r}")
+        ran = (((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}
+               ).get("prompt_sha256")
+        if not ran:
+            out.append(f"judge {j['id']!r}: run {r['run']} records no prompt sha256")
+        elif want and ran != want:
+            out.append(f"judge {j['id']!r}: run {r['run']} used prompt {ran[:12]}, the scorer "
+                       f"names {want[:12]}")
     return out
+
+
+def validated_label(sc: Dict[str, Any]) -> str:
+    """Says where the validation was done, not that the judge is valid for this use."""
+    return f"validated on {sc['validation']['experiment']} (provenance)"
 
 
 # ── the prompt, generalised only in its count ────────────────────────────────
@@ -373,6 +402,20 @@ def judge_fingerprint(j: Dict[str, Any]) -> str:
     return _sha(_canon({"id": j["id"], "params": j["params"]}))[:16]
 
 
+def call_cost(res: Any, params: Dict[str, Any]) -> Tuple[Optional[float], bool]:
+    """(cost, known). A reply with no `cost_usd` is unknown, not free: it is counted at the
+    scorer's price table from the token counts (known=False), and if there are none either
+    the cost is None and the caller must stop, because the cap can no longer be enforced."""
+    c = getattr(res, "cost_usd", None)
+    if c is not None:
+        return float(c), True
+    tin, tout = getattr(res, "tokens_in", None), getattr(res, "tokens_out", None)
+    pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
+    if None in (tin, tout, pin, pout):
+        return None, False
+    return float(tin) / 1e6 * float(pin) + float(tout) / 1e6 * float(pout), False
+
+
 def verdict_path(vdir: Path, judge_id: str, item_id: str, pass_name: str, block: int) -> Path:
     return vdir / judge_id / f"{item_id}.{pass_name}.b{block}.json"
 
@@ -445,7 +488,8 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                 res = call_with_retries(
                     timed, (msg, dict(j["params"])),
                     label=f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
-                cost = float(res.cost_usd) if getattr(res, "cost_usd", None) is not None else 0.0
+                est, known = call_cost(res, j["params"])
+                cost = est if est is not None else 0.0
                 meta = getattr(res, "meta", None) or {}
                 scores = parse_block(res.output, n)
                 write_json(path, {
@@ -454,7 +498,7 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                     "pass": pass_name, "block": block, "n": n,
                     "prompt_sha256": _sha(msg), "output": res.output,
                     "scores": scores, "tokens_in": res.tokens_in, "tokens_out": res.tokens_out,
-                    "cost_usd": cost, "cost_known": getattr(res, "cost_usd", None) is not None,
+                    "cost_usd": cost, "cost_known": known,
                     "latency_ms": round(took[-1], 3),
                     "truncated": (getattr(res, "extra", None) or {}).get("truncated"),
                     "finish_reason": meta.get("finish_reason"),
@@ -463,6 +507,9 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                 spent += cost
                 stats["billed_this_run"] += cost
                 stats["calls"] += 1
+                if est is None:
+                    raise CostCapExceeded(f"{j['id']} returned no cost and no token counts: "
+                                          "the spend is unknown, so the cap cannot be enforced")
                 if scores is None:
                     log(f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 elif stats["calls"] % 25 == 0:
@@ -754,7 +801,7 @@ def main() -> int:
         print("  Fix the `validation` block, or pass --unvalidated to run it labelled "
               "'unvalidated judge'.", file=sys.stderr)
         return 3
-    label = "validated judge" if validated else "unvalidated judge"
+    label = validated_label(sc) if validated else "unvalidated judge"
     if not validated:
         print(f"WARNING: UNVALIDATED JUDGE. Every number is labelled; {len(problems)} problem(s):")
         for p in problems:

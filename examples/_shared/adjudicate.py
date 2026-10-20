@@ -30,6 +30,10 @@ def main() -> int:
         return 2
     adj = json.loads(Path(sys.argv[1]).read_text())
     base, dest = REFS / adj["base_reference"], REFS / adj["reference_id"]
+    if adj["reference_id"] == adj["base_reference"] or dest.resolve() == base.resolve():
+        print(f"reference_id {adj['reference_id']!r} is the base reference: "
+              "refusing, because the copy would delete the gold set it copies from")
+        return 1
     if not base.is_dir():
         print(f"no gold reference set at {base}: run the experiment's fetch.py first")
         return 1
