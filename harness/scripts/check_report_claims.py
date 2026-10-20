@@ -1002,6 +1002,50 @@ check("classification: adjudication counts (AG News 29 reviewed, 17 changed; 20 
       f"derived AG {_n_ag} reviewed / {_chg_ag} changed, DBpedia {len(_adj_db['items'])} / "
       f"{_chg_db}; DBpedia v2 top {max(_v2_db.values()):.4f}")
 
+#: Summarisation re-measured with validated judges (report §3.8): recomputed from the
+#: committed verdicts, the judging-set manifest and the human-check record -- not from
+#: data/runs-judged (gitignored; rebuilt from the verdicts with --no-calls).
+def _judge_summ():
+    import math as _jm
+    base = HERE.parent / "data"
+    man = next((base / "judging-sets").glob("cnn_dailymail_200-*.json"))
+    m = json.loads(man.read_text())
+    vdir = base / "judge-verdicts" / "judge-summ-v1" / m["judging_set_id"]
+    calls, billed, per = 0, 0.0, {}
+    for f in vdir.glob("*/*.json"):
+        v = json.loads(f.read_text())
+        calls += 1
+        billed += v.get("cost_usd") or 0.0
+        if v.get("pass") != "primary" or v.get("scores") is None:
+            continue
+        it = next(x for x in m["items"] if x["item_id"] == v["item_id"])
+        blocks = it["primary"] if isinstance(it["primary"], list) else json.loads(it["primary"].replace("'", '"'))
+        for arm, sc in zip(blocks[v["block"]], v["scores"]):
+            per.setdefault(v["item_id"], {}).setdefault(arm, []).append(sc)
+    hc = json.loads((ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text())
+    h_bart = sum(x["preferred"] == "bart_l" for x in hc["pairs"])
+    h_ds = sum(x["preferred"] == "deepseek_m" for x in hc["pairs"])
+    j_ds = 0
+    for x in hc["pairs"]:
+        a = per.get(x["item_id"], {})
+        b, d = a.get("cnn_bart_l_n200_v1"), a.get("cnn_deepseek_m_n200_v1")
+        if b and d and len(b) == 2 and len(d) == 2:
+            j_ds += sum(d) / 2 > sum(b) / 2
+    n = h_bart + h_ds
+    pv = sum(_jm.comb(n, i) for i in range(n + 1) if abs(i - n / 2) >= abs(h_ds - n / 2)) / 2 ** n
+    return calls, billed, h_bart, h_ds, j_ds, len(hc["pairs"]), pv
+
+
+_SUMM = " ".join((ROOT / "research" / "REPORT_SUMMARIZATION.md").read_text().split())
+_jc, _jb, _hb, _hd, _jd, _hn, _hp = _judge_summ()
+check("summarisation: judge re-measurement -- 960 calls and the bill, from the committed verdicts",
+      _jc == 960 and f"{_jc} calls, ${_jb:.2f}" in _SUMM, f"derived {_jc} calls, ${_jb:.4f}")
+check("summarisation: the blind human check (14 vs 6, p) and the judges' 20 of 20",
+      f"preferred `bart_l` {_hb} times and `deepseek_m` {_hd} times" in _SUMM
+      and f"p = {_hp:.3f}" in _SUMM and _jd == _hn == 20
+      and f"The judges preferred `deepseek_m` in all {_jd}" in _SUMM,
+      f"derived human bart_l {_hb} / deepseek_m {_hd}, p {_hp:.3f}; judges deepseek_m {_jd} of {_hn}")
+
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):

@@ -110,6 +110,10 @@ recorded decision to use it. The rest of this ADR is about the third.
    baseline promotion is. The old metric stays, as history, beside the new one.
 
 The first use is the summarisation experiment, re-measured with judges validated on SummEval.
+That first use showed why the gate and the human check matter. Two judges validated on
+SummEval ranked every LLM above every BART model, while a blind check on 20 pairs by one
+reader preferred BART 14 to 6. A validation does not transfer just because the judge is the
+same. The judged scores were therefore reported beside the primary metric, not in its place.
 The second is SciFact. Its relevance labels are incomplete: 227 judgments cover 200 queries,
 so a relevant but unlabelled abstract ranked first counts against an arm. A judge can label
 those abstracts, but no judge here has been validated on scientific relevance. That run goes
