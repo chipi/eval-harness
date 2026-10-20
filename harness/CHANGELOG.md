@@ -5,7 +5,7 @@ release is the git tag `v<version>`, and the release workflow refuses a tag that
 with that file or has no section here. A change that can move a result is never a patch
 release without saying so under **Changed**.
 
-## 0.2.0 — unreleased
+## 0.2.0 — 2026-10-20
 
 The first version meant to be installed rather than copied.
 
