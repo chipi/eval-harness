@@ -55,6 +55,24 @@ def q(template: str, report: str, **vals) -> str:
     return template.format(**vals)
 
 
+def _plain(text: str) -> str:
+    """Text as a reader sees it: no markdown emphasis or code marks, one space between words."""
+    return " ".join(re.sub(r"[`*]", "", text).split())
+
+
+def qv(sentence: str, report: str) -> str:
+    """A verbatim quote: the whole sentence must appear in `report`, formatting aside (code
+    marks, emphasis, line breaks), or the build stops. q() checks only a quote's numbers, so
+    a paraphrase passes it; anything the page presents as the report's own words uses this."""
+    q(sentence, report)
+    key = f"plain:{report}"
+    if key not in _REPORT_TEXT:
+        _REPORT_TEXT[key] = _plain((ROOT / report).read_text(encoding="utf-8"))
+    if _plain(sentence) not in _REPORT_TEXT[key]:
+        raise SystemExit(f"site copy quotes, as {report}'s own words, a sentence it does not contain:\n  {sentence[:160]}")
+    return sentence
+
+
 def e(s) -> str:
     return html.escape(str(s), quote=True)
 
@@ -510,7 +528,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 
 
 #: The helpers method.py borrows, passed in rather than imported (no circular import).
-H = types.SimpleNamespace(q=q, e=e, page=page, times=times, money=money, word=word, REPO=REPO,
+H = types.SimpleNamespace(q=q, qv=qv, e=e, page=page, times=times, money=money, word=word, REPO=REPO,
                           author=author)
 
 
@@ -587,6 +605,20 @@ def hero_sketch(exps: list) -> str:
             f'{key}{both(sketch(exps), sketch(exps, compact=True))}'
             f'<figcaption>{e(finding)} <a href="experiments.html#findings">See each one →</a>'
             f'</figcaption></figure>')
+
+
+def dearest_note(f: dict, up: str = "") -> str:
+    """The qualifier the 'never won' headline needs: on the re-measured scores the dearest
+    model leads in these experiments. Computed, so it cannot outlive the data."""
+    r = f["remeasure"]
+    by = {x["slug"]: x for x in f["experiments"]}
+    leads = [by[s]["bench"] for s, rows in (("ag-news", r["ag"]["arms"]), ("summarization", r["summ"]["arms"]))
+             if by[s]["dearest"]["arm"] == max(rows, key=lambda a: a["v2"])["arm"]]
+    if not leads:
+        return ""
+    return (f' The headline is on each experiment\'s primary metric. <a href="{up}experiments/judging.html">Re-measured</a>, '
+            f'against labels a person corrected and by LLM judges, it leads {word(len(leads))}: '
+            f'{" and ".join(leads)}; neither re-measurement is confirmed.')
 
 
 def home(f: dict) -> str:
@@ -699,7 +731,7 @@ def home(f: dict) -> str:
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Worked examples · {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
-  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.</p>
+  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)}</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
@@ -747,11 +779,11 @@ def landing(f: dict) -> str:
         f'<h3>{e(x["bench"])}</h3><p>{e(CARD[x["slug"]])}</p>'
         f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} arms</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
         for x in exps) + (
-        '<a class="card reveal" href="experiments/judging.html"><div class="task">Re-measured, not re-run</div>'
+        '<a class="card reveal" style="grid-column:1/-1" href="experiments/judging.html"><div class="task">Re-measured, not re-run · across experiments</div>'
         '<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM '
         'judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge '
         "beat the metric on SummEval, and why one reader's check kept coverage primary.</p>"
-        f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["fig"]["billed_usd"])} of judging</span>'
+        f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["billed_usd"] + f["remeasure"]["summ_v2"]["billed_usd"])} of judging</span>'
         '<span>primaries <b>unchanged</b></span></div></a>')
     s = by["summarization"]
     hw_rows = "".join(
@@ -776,7 +808,7 @@ def landing(f: dict) -> str:
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>The experiments</b> · worked examples, ongoing · {len(exps)} tasks · {f["total_arms"]} measured runs · {money(f["total_billed"])} billed</div>
   <h1>The most expensive model <em>never won.</em></h1>
-  <p class="dek">{hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks as worked examples of the harness and its method. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.</p>
+  <p class="dek">{hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks as worked examples of the harness and its method. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.{dearest_note(f)}</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
@@ -1050,6 +1082,24 @@ def privacy_page() -> str:
     return page("Privacy — eval-harness", "What this site counts, and what it does not.", body)
 
 
+#: One line in the hero of a re-measured experiment, under the report's pick, so a reader sees
+#: before the findings that the pick rests on the primary measurement and what moved it.
+REMEASURED_NOTE = {
+    "ag-news": "On labels one reader corrected, every hosted LLM has a higher accuracy than every "
+               "fine-tune, so the fine-tune pick holds only if your labels follow AG News's filing "
+               "convention.",
+    "dbpedia": "Three disputed labels were corrected; the top stays a crowd and the pick stands.",
+    "summarization": "Validated LLM judges, cheap and frontier, rank every hosted LLM above every BART "
+                     "model; one reader's check went the other way. Neither is confirmed.",
+}
+
+
+def remeasured_note(x: dict) -> str:
+    t = REMEASURED_NOTE.get(x["slug"])
+    return (f'\n  <p class="note"><b>Re-measured.</b> {e(t)} <a href="#remeasured">Below</a> · '
+            f'<a href="judging.html">what it teaches</a></p>') if t else ""
+
+
 def remeasured_block(x: dict, f: dict, num: int) -> str:
     """For an experiment that was re-measured (or whose judges did the re-measuring): what
     changed, in one paragraph, and the way to the judging page. Numbers are computed."""
@@ -1138,7 +1188,7 @@ def experiment_page(x: dict, f: dict) -> str:
   <div class="kicker"><b>{e(x["task"])}</b> · {e(x["bench"])}</div>
   <h1 style="max-width:16ch">{e(HEADLINE[x["slug"]])}</h1>
   <p class="dek">{e(CARD[x["slug"]])}</p>
-  <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>
+  <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>{remeasured_note(x)}
   <div class="facts">{facts_html}</div>
   <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>

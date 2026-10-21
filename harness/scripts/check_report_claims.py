@@ -1061,6 +1061,19 @@ else:
           f"fine-tune p {min(_p_ft):.4f}-{max(_p_ft):.4f}, "
           f"fine-tune v2 {[round(_v2_ag[a], 4) for a in ('bert_mini', 'bert_base_ta', 'bert_base_fy')]}")
 
+_fo3 = _v2_family("classification-dbpedia-14", "dbpedia_280", "db_", "db_gemma_m_n200_v1")
+_rows3 = [ln.split() for ln in (_fo3 or "").splitlines()
+          if ln.strip().startswith("db_") and ln.split()[-1] in ("SEPARATED", "--")]
+if not _rows3:
+    missing += 1
+    print("  --   classification: DBpedia v2 family test did not run — skipped")
+else:
+    _sep3 = [r[0] for r in _rows3 if r[-1] == "SEPARATED"]
+    check("classification: DBpedia v2, the top stays a crowd -- gemma_m separated from only 5 of 27",
+          len(_rows3) == 27 and len(_sep3) == 5
+          and f"`gemma_m` is separated from only {len(_sep3)} of {len(_rows3)}" in _CLS,
+          f"derived separated {len(_sep3)} of {len(_rows3)}: {_sep3}")
+
 #: Summarisation re-measured with validated judges (report §3.8). Every figure comes from
 #: judge_figures.compute(): the committed verdicts, the 29-arm judging-set manifest, the
 #: committed runs and the human-check record. data/runs-judged is gitignored and not read.

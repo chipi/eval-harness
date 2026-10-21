@@ -45,9 +45,9 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>The metric was the weak link.</h2>
   <div class="prose">
     <p>The summarisation experiment ranks by <strong>coverage</strong>, an overlap score against reference summaries. SummEval measures how well a scorer agrees with expert annotators. Coverage agrees with them at τ 0.10. The two LLM judges used below agree at τ 0.54 and 0.52, against 0.10 for the metric the leaderboard was sorted by.</p>
-    <p>The best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out). That is the case for judging: when the cheap metric barely tracks what people think, a validated judge is the better instrument on that data, and it can re-score outputs you already have. Two caveats from the same report: the judges rank all 16 summaries of an article in one call, which this measure rewards, and a no-model lookup of which system wrote each summary reaches 63% of an expert, so part of a judge's score may be recognising which system wrote a summary; how much is not measured.</p>
+    <p>The best judges agree with the experts about 93% as well as an expert does, the best of 24 chosen on the same articles, and 92% held out. That is the case for judging: when the cheap metric barely tracks what people think, a validated judge is the better instrument on that data, and it can re-score outputs you already have. Two caveats from the same report: the judges rank all 16 summaries of an article in one call, which this measure rewards, and a no-model lookup of which system wrote each summary already reaches 63% of an expert, so part of a judge's score may be recognising which system wrote a summary; how much is not measured.</p>
   </div>
-  <figure class="chart" style="margin-top:32px;max-width:900px"><div class="vw"><svg viewBox="0 0 1000 274" role="img" aria-label="Agreement with expert judgements, by instrument"><line x1="300.0" x2="300.0" y1="10" y2="252" class="axis" opacity="0.5"/><text x="300.0" y="270" text-anchor="middle" class="t-muted" font-size="12">0.0</text><line x1="503.3" x2="503.3" y1="10" y2="252" class="axis" opacity="0.5"/><text x="503.3" y="270" text-anchor="middle" class="t-muted" font-size="12">0.2</text><line x1="706.7" x2="706.7" y1="10" y2="252" class="axis" opacity="0.5"/><text x="706.7" y="270" text-anchor="middle" class="t-muted" font-size="12">0.4</text><line x1="910.0" x2="910.0" y1="10" y2="252" class="axis" opacity="0.5"/><text x="910.0" y="270" text-anchor="middle" class="t-muted" font-size="12">0.6</text><text x="288" y="31.0" text-anchor="end" class="t-ink" font-size="14">coverage</text><text x="288" y="47.0" text-anchor="end" class="t-muted" font-size="11">what summarisation ranks by</text><rect x="300" y="18" width="102.8" height="22" rx="3" class="k-baseline"/><text x="410.8" y="34.0" class="t-ink" font-size="14">0.10</text><text x="288" y="71.0" text-anchor="end" class="t-ink" font-size="14">ROUGE-1</text><text x="288" y="87.0" text-anchor="end" class="t-muted" font-size="11">the field&#x27;s usual metric</text><rect x="300" y="58" width="151.2" height="22" rx="3" class="k-baseline"/><text x="459.2" y="74.0" class="t-ink" font-size="14">0.15</text><text x="288" y="111.0" text-anchor="end" class="t-ink" font-size="14">UniEval</text><text x="288" y="127.0" text-anchor="end" class="t-muted" font-size="11">free, trained to judge</text><rect x="300" y="98" width="377.9" height="22" rx="3" class="k-local"/><text x="685.9" y="114.0" class="t-ink" font-size="14">0.37</text><text x="288" y="151.0" text-anchor="end" class="t-ink" font-size="14">qwen_s</text><text x="288" y="167.0" text-anchor="end" class="t-muted" font-size="11">LLM judge used below</text><rect x="300" y="138" width="527.9" height="22" rx="3" class="k-proprietary"/><text x="835.9" y="154.0" class="t-ink" font-size="14">0.52</text><text x="288" y="191.0" text-anchor="end" class="t-ink" font-size="14">gemma_l</text><text x="288" y="207.0" text-anchor="end" class="t-muted" font-size="11">LLM judge used below</text><rect x="300" y="178" width="547.4" height="22" rx="3" class="k-open"/><text x="855.4" y="194.0" class="t-ink" font-size="14">0.54</text><text x="288" y="231.0" text-anchor="end" class="t-ink" font-size="14">openai_l</text><text x="288" y="247.0" text-anchor="end" class="t-muted" font-size="11">the best of 24 LLM judges</text><rect x="300" y="218" width="548.7" height="22" rx="3" class="k-proprietary"/><text x="856.7" y="234.0" class="t-ink" font-size="14">0.54</text></svg></div><div class="vn"><svg viewBox="0 0 400 310" role="img" aria-label="Agreement with expert judgements, by instrument"><line x1="150.0" x2="150.0" y1="10" y2="288" class="axis" opacity="0.5"/><text x="150.0" y="306" text-anchor="middle" class="t-muted" font-size="13">0.0</text><line x1="213.3" x2="213.3" y1="10" y2="288" class="axis" opacity="0.5"/><text x="213.3" y="306" text-anchor="middle" class="t-muted" font-size="13">0.2</text><line x1="276.7" x2="276.7" y1="10" y2="288" class="axis" opacity="0.5"/><text x="276.7" y="306" text-anchor="middle" class="t-muted" font-size="13">0.4</text><line x1="340.0" x2="340.0" y1="10" y2="288" class="axis" opacity="0.5"/><text x="340.0" y="306" text-anchor="middle" class="t-muted" font-size="13">0.6</text><text x="138" y="34.0" text-anchor="end" class="t-ink" font-size="15">coverage</text><rect x="150" y="18" width="32.0" height="28" rx="3" class="k-baseline"/><text x="190.0" y="37.0" class="t-ink" font-size="15">0.10</text><text x="138" y="80.0" text-anchor="end" class="t-ink" font-size="15">ROUGE-1</text><rect x="150" y="64" width="47.1" height="28" rx="3" class="k-baseline"/><text x="205.1" y="83.0" class="t-ink" font-size="15">0.15</text><text x="138" y="126.0" text-anchor="end" class="t-ink" font-size="15">UniEval</text><rect x="150" y="110" width="117.7" height="28" rx="3" class="k-local"/><text x="275.7" y="129.0" class="t-ink" font-size="15">0.37</text><text x="138" y="172.0" text-anchor="end" class="t-ink" font-size="15">qwen_s</text><rect x="150" y="156" width="164.4" height="28" rx="3" class="k-proprietary"/><text x="322.4" y="175.0" class="t-ink" font-size="15">0.52</text><text x="138" y="218.0" text-anchor="end" class="t-ink" font-size="15">gemma_l</text><rect x="150" y="202" width="170.5" height="28" rx="3" class="k-open"/><text x="328.5" y="221.0" class="t-ink" font-size="15">0.54</text><text x="138" y="264.0" text-anchor="end" class="t-ink" font-size="15">openai_l</text><rect x="150" y="248" width="170.9" height="28" rx="3" class="k-proprietary"/><text x="328.9" y="267.0" class="t-ink" font-size="15">0.54</text></svg></div><figcaption>Mean Kendall τ against SummEval's expert annotators, 100 articles × 16 summaries. 0 is no agreement. Coloured by kind, as elsewhere on this site.</figcaption></figure>
+  <figure class="chart" style="margin-top:32px;max-width:900px"><div class="vw"><svg viewBox="0 0 1000 274" role="img" aria-label="Agreement with expert judgements, by instrument"><line x1="300.0" x2="300.0" y1="10" y2="252" class="axis" opacity="0.5"/><text x="300.0" y="270" text-anchor="middle" class="t-muted" font-size="12">0.0</text><line x1="503.3" x2="503.3" y1="10" y2="252" class="axis" opacity="0.5"/><text x="503.3" y="270" text-anchor="middle" class="t-muted" font-size="12">0.2</text><line x1="706.7" x2="706.7" y1="10" y2="252" class="axis" opacity="0.5"/><text x="706.7" y="270" text-anchor="middle" class="t-muted" font-size="12">0.4</text><line x1="910.0" x2="910.0" y1="10" y2="252" class="axis" opacity="0.5"/><text x="910.0" y="270" text-anchor="middle" class="t-muted" font-size="12">0.6</text><text x="288" y="31.0" text-anchor="end" class="t-ink" font-size="14">coverage</text><text x="288" y="47.0" text-anchor="end" class="t-muted" font-size="11">what summarisation ranks by</text><rect x="300" y="18" width="102.8" height="22" rx="3" class="k-baseline"/><text x="410.8" y="34.0" class="t-ink" font-size="14">0.10</text><text x="288" y="71.0" text-anchor="end" class="t-ink" font-size="14">ROUGE-1</text><text x="288" y="87.0" text-anchor="end" class="t-muted" font-size="11">the field&#x27;s usual metric</text><rect x="300" y="58" width="151.2" height="22" rx="3" class="k-baseline"/><text x="459.2" y="74.0" class="t-ink" font-size="14">0.15</text><text x="288" y="111.0" text-anchor="end" class="t-ink" font-size="14">UniEval</text><text x="288" y="127.0" text-anchor="end" class="t-muted" font-size="11">free, trained to judge</text><rect x="300" y="98" width="377.9" height="22" rx="3" class="k-local"/><text x="685.9" y="114.0" class="t-ink" font-size="14">0.37</text><text x="288" y="151.0" text-anchor="end" class="t-ink" font-size="14">qwen_s</text><text x="288" y="167.0" text-anchor="end" class="t-muted" font-size="11">LLM judge used below</text><rect x="300" y="138" width="527.9" height="22" rx="3" class="k-proprietary"/><text x="835.9" y="154.0" class="t-ink" font-size="14">0.52</text><text x="288" y="191.0" text-anchor="end" class="t-ink" font-size="14">gemma_l</text><text x="288" y="207.0" text-anchor="end" class="t-muted" font-size="11">LLM judge used below</text><rect x="300" y="178" width="547.4" height="22" rx="3" class="k-open"/><text x="855.4" y="194.0" class="t-ink" font-size="14">0.54</text><text x="288" y="231.0" text-anchor="end" class="t-ink" font-size="14">openai_l</text><text x="288" y="247.0" text-anchor="end" class="t-muted" font-size="11">the best of 24 LLM judges</text><rect x="300" y="218" width="548.7" height="22" rx="3" class="k-proprietary"/><text x="856.7" y="234.0" class="t-ink" font-size="14">0.54</text></svg></div><div class="vn"><svg viewBox="0 0 400 310" role="img" aria-label="Agreement with expert judgements, by instrument"><line x1="150.0" x2="150.0" y1="10" y2="288" class="axis" opacity="0.5"/><text x="150.0" y="306" text-anchor="middle" class="t-muted" font-size="12">0.0</text><line x1="213.3" x2="213.3" y1="10" y2="288" class="axis" opacity="0.5"/><text x="213.3" y="306" text-anchor="middle" class="t-muted" font-size="12">0.2</text><line x1="276.7" x2="276.7" y1="10" y2="288" class="axis" opacity="0.5"/><text x="276.7" y="306" text-anchor="middle" class="t-muted" font-size="12">0.4</text><line x1="340.0" x2="340.0" y1="10" y2="288" class="axis" opacity="0.5"/><text x="340.0" y="306" text-anchor="middle" class="t-muted" font-size="12">0.6</text><text x="138" y="34.0" text-anchor="end" class="t-ink" font-size="14">coverage</text><rect x="150" y="18" width="32.0" height="28" rx="3" class="k-baseline"/><text x="190.0" y="37.0" class="t-ink" font-size="14">0.10</text><text x="138" y="80.0" text-anchor="end" class="t-ink" font-size="14">ROUGE-1</text><rect x="150" y="64" width="47.1" height="28" rx="3" class="k-baseline"/><text x="205.1" y="83.0" class="t-ink" font-size="14">0.15</text><text x="138" y="126.0" text-anchor="end" class="t-ink" font-size="14">UniEval</text><rect x="150" y="110" width="117.7" height="28" rx="3" class="k-local"/><text x="275.7" y="129.0" class="t-ink" font-size="14">0.37</text><text x="138" y="172.0" text-anchor="end" class="t-ink" font-size="14">qwen_s</text><rect x="150" y="156" width="164.4" height="28" rx="3" class="k-proprietary"/><text x="322.4" y="175.0" class="t-ink" font-size="14">0.52</text><text x="138" y="218.0" text-anchor="end" class="t-ink" font-size="14">gemma_l</text><rect x="150" y="202" width="170.5" height="28" rx="3" class="k-open"/><text x="328.5" y="221.0" class="t-ink" font-size="14">0.54</text><text x="138" y="264.0" text-anchor="end" class="t-ink" font-size="14">openai_l</text><rect x="150" y="248" width="170.9" height="28" rx="3" class="k-proprietary"/><text x="328.9" y="267.0" class="t-ink" font-size="14">0.54</text></svg></div><figcaption>Mean Kendall τ against SummEval's expert annotators, 100 articles × 16 summaries. 0 is no agreement. Coloured by kind, as elsewhere on this site.</figcaption></figure>
 </div></section>
 
 <section class="block" id="judged"><div class="wrap">
@@ -289,239 +289,239 @@ validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><cir
 coverage (primary): coverage 0.2718 (rank 28 of 29)
 validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
 coverage (primary): coverage 0.2718 (rank 28 of 29)
-validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">bart_l · 1</text><text x="862" y="477.0" class="t-ink" font-size="14">25 · bart_l</text><text x="138" y="75.0" text-anchor="end" class="t-ink" font-size="14">deepseek_m · 2</text><text x="862" y="109.5" class="t-ink" font-size="14">4 · deepseek_m</text><text x="138" y="354.5" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 18</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="529.5" text-anchor="end" class="t-ink" font-size="14">lead3 · 28</text><text x="862" y="529.5" class="t-ink" font-size="14">28 · lead3</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="coverage rank against judges rank"><text x="110" y="22" text-anchor="middle" class="t-muted" font-size="15">coverage</text><text x="290" y="22" text-anchor="middle" class="t-muted" font-size="15">judges</text><text x="110" y="40" text-anchor="middle" class="t-muted" font-size="12">rank 1 at the top</text><text x="290" y="40" text-anchor="middle" class="t-muted" font-size="12">rank 1 at the top</text><line x1="110" x2="110" y1="46" y2="508" class="axis"/><line x1="290" x2="290" y1="46" y2="508" class="axis"/><line x1="110" y1="84.1" x2="290" y2="341.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="84.1" r="3.5" class="dot k-open" data-tip="llama_l
+validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">bart_l · 1</text><text x="862" y="477.0" class="t-ink" font-size="14">25 · bart_l</text><text x="138" y="75.0" text-anchor="end" class="t-ink" font-size="14">deepseek_m · 2</text><text x="862" y="109.5" class="t-ink" font-size="14">4 · deepseek_m</text><text x="138" y="354.5" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 18</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="529.5" text-anchor="end" class="t-ink" font-size="14">lead3 · 28</text><text x="862" y="529.5" class="t-ink" font-size="14">28 · lead3</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="coverage rank against judges rank"><text x="128" y="22" text-anchor="middle" class="t-muted" font-size="14">coverage</text><text x="264" y="22" text-anchor="middle" class="t-muted" font-size="14">judges</text><text x="128" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="264" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="128" x2="128" y1="46" y2="508" class="axis"/><line x1="264" x2="264" y1="46" y2="508" class="axis"/><line x1="128" y1="84.1" x2="264" y2="341.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="84.1" r="3.5" class="dot k-open" data-tip="llama_l
 coverage: coverage 0.3387 (rank 3 of 29)
 judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
 coverage: coverage 0.3387 (rank 3 of 29)
-judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><circle cx="290" cy="341.3" r="3.5" class="dot k-open" data-tip="llama_l
+judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><circle cx="264" cy="341.3" r="3.5" class="dot k-open" data-tip="llama_l
 coverage: coverage 0.3387 (rank 3 of 29)
 judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
 coverage: coverage 0.3387 (rank 3 of 29)
-judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><line x1="110" y1="100.2" x2="290" y2="373.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="100.2" r="3.5" class="dot k-open" data-tip="llama_m
+judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><line x1="128" y1="100.2" x2="264" y2="373.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="100.2" r="3.5" class="dot k-open" data-tip="llama_m
 coverage: coverage 0.3382 (rank 4 of 29)
 judges: judge score 4.67 of 5 (rank 21 of 29)"><title>llama_m
 coverage: coverage 0.3382 (rank 4 of 29)
-judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><circle cx="290" cy="373.4" r="3.5" class="dot k-open" data-tip="llama_m
+judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><circle cx="264" cy="373.4" r="3.5" class="dot k-open" data-tip="llama_m
 coverage: coverage 0.3382 (rank 4 of 29)
 judges: judge score 4.67 of 5 (rank 21 of 29)"><title>llama_m
 coverage: coverage 0.3382 (rank 4 of 29)
-judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><line x1="110" y1="116.3" x2="290" y2="453.8" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="116.3" r="3.5" class="dot k-local" data-tip="bart_m
+judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><line x1="128" y1="116.3" x2="264" y2="453.8" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="116.3" r="3.5" class="dot k-local" data-tip="bart_m
 coverage: coverage 0.3367 (rank 5 of 29)
 judges: judge score 3.56 of 5 (rank 26 of 29)"><title>bart_m
 coverage: coverage 0.3367 (rank 5 of 29)
-judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><circle cx="290" cy="453.8" r="3.5" class="dot k-local" data-tip="bart_m
+judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><circle cx="264" cy="453.8" r="3.5" class="dot k-local" data-tip="bart_m
 coverage: coverage 0.3367 (rank 5 of 29)
 judges: judge score 3.56 of 5 (rank 26 of 29)"><title>bart_m
 coverage: coverage 0.3367 (rank 5 of 29)
-judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><line x1="110" y1="132.4" x2="290" y2="325.2" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="132.4" r="3.5" class="dot k-open" data-tip="llama_s
+judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><line x1="128" y1="132.4" x2="264" y2="325.2" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="132.4" r="3.5" class="dot k-open" data-tip="llama_s
 coverage: coverage 0.3333 (rank 6 of 29)
 judges: judge score 4.70 of 5 (rank 18 of 29)"><title>llama_s
 coverage: coverage 0.3333 (rank 6 of 29)
-judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><circle cx="290" cy="325.2" r="3.5" class="dot k-open" data-tip="llama_s
+judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><circle cx="264" cy="325.2" r="3.5" class="dot k-open" data-tip="llama_s
 coverage: coverage 0.3333 (rank 6 of 29)
 judges: judge score 4.70 of 5 (rank 18 of 29)"><title>llama_s
 coverage: coverage 0.3333 (rank 6 of 29)
-judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><line x1="110" y1="148.4" x2="290" y2="116.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="148.4" r="3.5" class="dot k-open" data-tip="deepseek_l
+judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><line x1="128" y1="148.4" x2="264" y2="116.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="148.4" r="3.5" class="dot k-open" data-tip="deepseek_l
 coverage: coverage 0.3325 (rank 7 of 29)
 judges: judge score 4.88 of 5 (rank 5 of 29)"><title>deepseek_l
 coverage: coverage 0.3325 (rank 7 of 29)
-judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><circle cx="290" cy="116.3" r="3.5" class="dot k-open" data-tip="deepseek_l
+judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><circle cx="264" cy="116.3" r="3.5" class="dot k-open" data-tip="deepseek_l
 coverage: coverage 0.3325 (rank 7 of 29)
 judges: judge score 4.88 of 5 (rank 5 of 29)"><title>deepseek_l
 coverage: coverage 0.3325 (rank 7 of 29)
-judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><line x1="110" y1="164.5" x2="290" y2="148.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="164.5" r="3.5" class="dot k-open" data-tip="glm_m
+judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><line x1="128" y1="164.5" x2="264" y2="148.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="164.5" r="3.5" class="dot k-open" data-tip="glm_m
 coverage: coverage 0.3320 (rank 8 of 29)
 judges: judge score 4.86 of 5 (rank 7 of 29)"><title>glm_m
 coverage: coverage 0.3320 (rank 8 of 29)
-judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><circle cx="290" cy="148.4" r="3.5" class="dot k-open" data-tip="glm_m
+judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><circle cx="264" cy="148.4" r="3.5" class="dot k-open" data-tip="glm_m
 coverage: coverage 0.3320 (rank 8 of 29)
 judges: judge score 4.86 of 5 (rank 7 of 29)"><title>glm_m
 coverage: coverage 0.3320 (rank 8 of 29)
-judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><line x1="110" y1="180.6" x2="290" y2="180.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="180.6" r="3.5" class="dot k-open" data-tip="deepseek_s
+judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><line x1="128" y1="180.6" x2="264" y2="180.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="180.6" r="3.5" class="dot k-open" data-tip="deepseek_s
 coverage: coverage 0.3285 (rank 9 of 29)
 judges: judge score 4.82 of 5 (rank 9 of 29)"><title>deepseek_s
 coverage: coverage 0.3285 (rank 9 of 29)
-judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><circle cx="290" cy="180.6" r="3.5" class="dot k-open" data-tip="deepseek_s
+judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><circle cx="264" cy="180.6" r="3.5" class="dot k-open" data-tip="deepseek_s
 coverage: coverage 0.3285 (rank 9 of 29)
 judges: judge score 4.82 of 5 (rank 9 of 29)"><title>deepseek_s
 coverage: coverage 0.3285 (rank 9 of 29)
-judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><line x1="110" y1="196.6" x2="290" y2="502.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="196.6" r="3.5" class="dot k-local" data-tip="bart_s
+judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><line x1="128" y1="196.6" x2="264" y2="502.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="196.6" r="3.5" class="dot k-local" data-tip="bart_s
 coverage: coverage 0.3276 (rank 10 of 29)
 judges: judge score 3.19 of 5 (rank 29 of 29)"><title>bart_s
 coverage: coverage 0.3276 (rank 10 of 29)
-judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><circle cx="290" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_s
+judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><circle cx="264" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_s
 coverage: coverage 0.3276 (rank 10 of 29)
 judges: judge score 3.19 of 5 (rank 29 of 29)"><title>bart_s
 coverage: coverage 0.3276 (rank 10 of 29)
-judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><line x1="110" y1="212.7" x2="290" y2="244.9" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="212.7" r="3.5" class="dot k-proprietary" data-tip="openai_m
+judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><line x1="128" y1="212.7" x2="264" y2="244.9" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="212.7" r="3.5" class="dot k-proprietary" data-tip="openai_m
 coverage: coverage 0.3268 (rank 11 of 29)
 judges: judge score 4.80 of 5 (rank 13 of 29)"><title>openai_m
 coverage: coverage 0.3268 (rank 11 of 29)
-judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><circle cx="290" cy="244.9" r="3.5" class="dot k-proprietary" data-tip="openai_m
+judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><circle cx="264" cy="244.9" r="3.5" class="dot k-proprietary" data-tip="openai_m
 coverage: coverage 0.3268 (rank 11 of 29)
 judges: judge score 4.80 of 5 (rank 13 of 29)"><title>openai_m
 coverage: coverage 0.3268 (rank 11 of 29)
-judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><line x1="110" y1="228.8" x2="290" y2="260.9" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="228.8" r="3.5" class="dot k-proprietary" data-tip="openai_l
+judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><line x1="128" y1="228.8" x2="264" y2="260.9" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="228.8" r="3.5" class="dot k-proprietary" data-tip="openai_l
 coverage: coverage 0.3268 (rank 12 of 29)
 judges: judge score 4.77 of 5 (rank 14 of 29)"><title>openai_l
 coverage: coverage 0.3268 (rank 12 of 29)
-judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><circle cx="290" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="openai_l
+judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><circle cx="264" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="openai_l
 coverage: coverage 0.3268 (rank 12 of 29)
 judges: judge score 4.77 of 5 (rank 14 of 29)"><title>openai_l
 coverage: coverage 0.3268 (rank 12 of 29)
-judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><line x1="110" y1="244.9" x2="290" y2="228.8" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="244.9" r="3.5" class="dot k-open" data-tip="mistral_s
+judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><line x1="128" y1="244.9" x2="264" y2="228.8" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="244.9" r="3.5" class="dot k-open" data-tip="mistral_s
 coverage: coverage 0.3255 (rank 13 of 29)
 judges: judge score 4.80 of 5 (rank 12 of 29)"><title>mistral_s
 coverage: coverage 0.3255 (rank 13 of 29)
-judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><circle cx="290" cy="228.8" r="3.5" class="dot k-open" data-tip="mistral_s
+judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><circle cx="264" cy="228.8" r="3.5" class="dot k-open" data-tip="mistral_s
 coverage: coverage 0.3255 (rank 13 of 29)
 judges: judge score 4.80 of 5 (rank 12 of 29)"><title>mistral_s
 coverage: coverage 0.3255 (rank 13 of 29)
-judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><line x1="110" y1="260.9" x2="290" y2="84.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><line x1="128" y1="260.9" x2="264" y2="84.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 coverage: coverage 0.3238 (rank 14 of 29)
 judges: judge score 4.95 of 5 (rank 3 of 29)"><title>anthropic_s
 coverage: coverage 0.3238 (rank 14 of 29)
-judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><circle cx="290" cy="84.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><circle cx="264" cy="84.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 coverage: coverage 0.3238 (rank 14 of 29)
 judges: judge score 4.95 of 5 (rank 3 of 29)"><title>anthropic_s
 coverage: coverage 0.3238 (rank 14 of 29)
-judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><line x1="110" y1="277.0" x2="290" y2="68.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="277.0" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><line x1="128" y1="277.0" x2="264" y2="68.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="277.0" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 coverage: coverage 0.3236 (rank 15 of 29)
 judges: judge score 4.96 of 5 (rank 2 of 29)"><title>anthropic_m
 coverage: coverage 0.3236 (rank 15 of 29)
-judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><circle cx="290" cy="68.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><circle cx="264" cy="68.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 coverage: coverage 0.3236 (rank 15 of 29)
 judges: judge score 4.96 of 5 (rank 2 of 29)"><title>anthropic_m
 coverage: coverage 0.3236 (rank 15 of 29)
-judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><line x1="110" y1="293.1" x2="290" y2="277.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="293.1" r="3.5" class="dot k-open" data-tip="gemma_l
+judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><line x1="128" y1="293.1" x2="264" y2="277.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="293.1" r="3.5" class="dot k-open" data-tip="gemma_l
 coverage: coverage 0.3204 (rank 16 of 29)
 judges: judge score 4.72 of 5 (rank 15 of 29)"><title>gemma_l
 coverage: coverage 0.3204 (rank 16 of 29)
-judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><circle cx="290" cy="277.0" r="3.5" class="dot k-open" data-tip="gemma_l
+judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><circle cx="264" cy="277.0" r="3.5" class="dot k-open" data-tip="gemma_l
 coverage: coverage 0.3204 (rank 16 of 29)
 judges: judge score 4.72 of 5 (rank 15 of 29)"><title>gemma_l
 coverage: coverage 0.3204 (rank 16 of 29)
-judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><line x1="110" y1="309.1" x2="290" y2="164.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="309.1" r="3.5" class="dot k-proprietary" data-tip="openai_s
+judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><line x1="128" y1="309.1" x2="264" y2="164.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="309.1" r="3.5" class="dot k-proprietary" data-tip="openai_s
 coverage: coverage 0.3171 (rank 17 of 29)
 judges: judge score 4.82 of 5 (rank 8 of 29)"><title>openai_s
 coverage: coverage 0.3171 (rank 17 of 29)
-judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><circle cx="290" cy="164.5" r="3.5" class="dot k-proprietary" data-tip="openai_s
+judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><circle cx="264" cy="164.5" r="3.5" class="dot k-proprietary" data-tip="openai_s
 coverage: coverage 0.3171 (rank 17 of 29)
 judges: judge score 4.82 of 5 (rank 8 of 29)"><title>openai_s
 coverage: coverage 0.3171 (rank 17 of 29)
-judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><line x1="110" y1="341.3" x2="290" y2="421.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="341.3" r="3.5" class="dot k-open" data-tip="glm_s
+judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><line x1="128" y1="341.3" x2="264" y2="421.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="341.3" r="3.5" class="dot k-open" data-tip="glm_s
 coverage: coverage 0.3139 (rank 19 of 29)
 judges: judge score 4.53 of 5 (rank 24 of 29)"><title>glm_s
 coverage: coverage 0.3139 (rank 19 of 29)
-judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><circle cx="290" cy="421.6" r="3.5" class="dot k-open" data-tip="glm_s
+judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><circle cx="264" cy="421.6" r="3.5" class="dot k-open" data-tip="glm_s
 coverage: coverage 0.3139 (rank 19 of 29)
 judges: judge score 4.53 of 5 (rank 24 of 29)"><title>glm_s
 coverage: coverage 0.3139 (rank 19 of 29)
-judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><line x1="110" y1="357.4" x2="290" y2="309.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="357.4" r="3.5" class="dot k-open" data-tip="gemma_m
+judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><line x1="128" y1="357.4" x2="264" y2="309.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="357.4" r="3.5" class="dot k-open" data-tip="gemma_m
 coverage: coverage 0.3136 (rank 20 of 29)
 judges: judge score 4.71 of 5 (rank 17 of 29)"><title>gemma_m
 coverage: coverage 0.3136 (rank 20 of 29)
-judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><circle cx="290" cy="309.1" r="3.5" class="dot k-open" data-tip="gemma_m
+judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><circle cx="264" cy="309.1" r="3.5" class="dot k-open" data-tip="gemma_m
 coverage: coverage 0.3136 (rank 20 of 29)
 judges: judge score 4.71 of 5 (rank 17 of 29)"><title>gemma_m
 coverage: coverage 0.3136 (rank 20 of 29)
-judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><line x1="110" y1="373.4" x2="290" y2="405.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="373.4" r="3.5" class="dot k-open" data-tip="glm_l
+judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><line x1="128" y1="373.4" x2="264" y2="405.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="373.4" r="3.5" class="dot k-open" data-tip="glm_l
 coverage: coverage 0.3124 (rank 21 of 29)
 judges: judge score 4.61 of 5 (rank 23 of 29)"><title>glm_l
 coverage: coverage 0.3124 (rank 21 of 29)
-judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><circle cx="290" cy="405.6" r="3.5" class="dot k-open" data-tip="glm_l
+judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><circle cx="264" cy="405.6" r="3.5" class="dot k-open" data-tip="glm_l
 coverage: coverage 0.3124 (rank 21 of 29)
 judges: judge score 4.61 of 5 (rank 23 of 29)"><title>glm_l
 coverage: coverage 0.3124 (rank 21 of 29)
-judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><line x1="110" y1="389.5" x2="290" y2="212.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="389.5" r="3.5" class="dot k-open" data-tip="gemma_s
+judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><line x1="128" y1="389.5" x2="264" y2="212.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="389.5" r="3.5" class="dot k-open" data-tip="gemma_s
 coverage: coverage 0.3120 (rank 22 of 29)
 judges: judge score 4.80 of 5 (rank 11 of 29)"><title>gemma_s
 coverage: coverage 0.3120 (rank 22 of 29)
-judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><circle cx="290" cy="212.7" r="3.5" class="dot k-open" data-tip="gemma_s
+judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><circle cx="264" cy="212.7" r="3.5" class="dot k-open" data-tip="gemma_s
 coverage: coverage 0.3120 (rank 22 of 29)
 judges: judge score 4.80 of 5 (rank 11 of 29)"><title>gemma_s
 coverage: coverage 0.3120 (rank 22 of 29)
-judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><line x1="110" y1="405.6" x2="290" y2="196.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="405.6" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><line x1="128" y1="405.6" x2="264" y2="196.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="405.6" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 coverage: coverage 0.3108 (rank 23 of 29)
 judges: judge score 4.81 of 5 (rank 10 of 29)"><title>qwen_l
 coverage: coverage 0.3108 (rank 23 of 29)
-judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><circle cx="290" cy="196.6" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><circle cx="264" cy="196.6" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 coverage: coverage 0.3108 (rank 23 of 29)
 judges: judge score 4.81 of 5 (rank 10 of 29)"><title>qwen_l
 coverage: coverage 0.3108 (rank 23 of 29)
-judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><line x1="110" y1="421.6" x2="290" y2="357.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="421.6" r="3.5" class="dot k-open" data-tip="mistral_l
+judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><line x1="128" y1="421.6" x2="264" y2="357.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="421.6" r="3.5" class="dot k-open" data-tip="mistral_l
 coverage: coverage 0.3080 (rank 24 of 29)
 judges: judge score 4.70 of 5 (rank 20 of 29)"><title>mistral_l
 coverage: coverage 0.3080 (rank 24 of 29)
-judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><circle cx="290" cy="357.4" r="3.5" class="dot k-open" data-tip="mistral_l
+judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><circle cx="264" cy="357.4" r="3.5" class="dot k-open" data-tip="mistral_l
 coverage: coverage 0.3080 (rank 24 of 29)
 judges: judge score 4.70 of 5 (rank 20 of 29)"><title>mistral_l
 coverage: coverage 0.3080 (rank 24 of 29)
-judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><line x1="110" y1="437.7" x2="290" y2="389.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="437.7" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><line x1="128" y1="437.7" x2="264" y2="389.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="437.7" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 coverage: coverage 0.3068 (rank 25 of 29)
 judges: judge score 4.61 of 5 (rank 22 of 29)"><title>qwen_s
 coverage: coverage 0.3068 (rank 25 of 29)
-judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><circle cx="290" cy="389.5" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><circle cx="264" cy="389.5" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 coverage: coverage 0.3068 (rank 25 of 29)
 judges: judge score 4.61 of 5 (rank 22 of 29)"><title>qwen_s
 coverage: coverage 0.3068 (rank 25 of 29)
-judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><line x1="110" y1="453.8" x2="290" y2="293.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="453.8" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><line x1="128" y1="453.8" x2="264" y2="293.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="453.8" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 coverage: coverage 0.3043 (rank 26 of 29)
 judges: judge score 4.71 of 5 (rank 16 of 29)"><title>mistral_m
 coverage: coverage 0.3043 (rank 26 of 29)
-judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><circle cx="290" cy="293.1" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><circle cx="264" cy="293.1" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 coverage: coverage 0.3043 (rank 26 of 29)
 judges: judge score 4.71 of 5 (rank 16 of 29)"><title>mistral_m
 coverage: coverage 0.3043 (rank 26 of 29)
-judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><line x1="110" y1="469.9" x2="290" y2="132.4" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="469.9" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><line x1="128" y1="469.9" x2="264" y2="132.4" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="469.9" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 coverage: coverage 0.3030 (rank 27 of 29)
 judges: judge score 4.88 of 5 (rank 6 of 29)"><title>qwen_m
 coverage: coverage 0.3030 (rank 27 of 29)
-judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><circle cx="290" cy="132.4" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><circle cx="264" cy="132.4" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 coverage: coverage 0.3030 (rank 27 of 29)
 judges: judge score 4.88 of 5 (rank 6 of 29)"><title>qwen_m
 coverage: coverage 0.3030 (rank 27 of 29)
-judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><line x1="110" y1="485.9" x2="290" y2="485.9" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="485.9" r="3.5" class="dot k-baseline" data-tip="lead3
+judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><line x1="128" y1="485.9" x2="264" y2="485.9" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="485.9" r="3.5" class="dot k-baseline" data-tip="lead3
 coverage: coverage 0.2718 (rank 28 of 29)
 judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
 coverage: coverage 0.2718 (rank 28 of 29)
-judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><circle cx="290" cy="485.9" r="3.5" class="dot k-baseline" data-tip="lead3
+judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><circle cx="264" cy="485.9" r="3.5" class="dot k-baseline" data-tip="lead3
 coverage: coverage 0.2718 (rank 28 of 29)
 judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
 coverage: coverage 0.2718 (rank 28 of 29)
-judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><line x1="110" y1="502.0" x2="290" y2="469.9" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_l_xsum
+judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><line x1="128" y1="502.0" x2="264" y2="469.9" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_l_xsum
 coverage: coverage 0.2071 (rank 29 of 29)
 judges: judge score 3.52 of 5 (rank 27 of 29)"><title>bart_l_xsum
 coverage: coverage 0.2071 (rank 29 of 29)
-judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><circle cx="290" cy="469.9" r="3.5" class="dot k-local" data-tip="bart_l_xsum
+judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><circle cx="264" cy="469.9" r="3.5" class="dot k-local" data-tip="bart_l_xsum
 coverage: coverage 0.2071 (rank 29 of 29)
 judges: judge score 3.52 of 5 (rank 27 of 29)"><title>bart_l_xsum
 coverage: coverage 0.2071 (rank 29 of 29)
-judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><line x1="110" y1="52.0" x2="290" y2="437.7" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="110" cy="52.0" r="5.5" class="dot k-local" data-tip="bart_l
+judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><line x1="128" y1="52.0" x2="264" y2="437.7" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="128" cy="52.0" r="5.5" class="dot k-local" data-tip="bart_l
 coverage: coverage 0.3461 (rank 1 of 29)
 judges: judge score 3.87 of 5 (rank 25 of 29)"><title>bart_l
 coverage: coverage 0.3461 (rank 1 of 29)
-judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><circle cx="290" cy="437.7" r="5.5" class="dot k-local" data-tip="bart_l
+judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><circle cx="264" cy="437.7" r="5.5" class="dot k-local" data-tip="bart_l
 coverage: coverage 0.3461 (rank 1 of 29)
 judges: judge score 3.87 of 5 (rank 25 of 29)"><title>bart_l
 coverage: coverage 0.3461 (rank 1 of 29)
-judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><line x1="110" y1="68.1" x2="290" y2="100.2" class="s-open" stroke-width="3.5" opacity="1"/><circle cx="110" cy="68.1" r="5.5" class="dot k-open" data-tip="deepseek_m
+judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><line x1="128" y1="68.1" x2="264" y2="100.2" class="s-open" stroke-width="3.5" opacity="1"/><circle cx="128" cy="68.1" r="5.5" class="dot k-open" data-tip="deepseek_m
 coverage: coverage 0.3460 (rank 2 of 29)
 judges: judge score 4.92 of 5 (rank 4 of 29)"><title>deepseek_m
 coverage: coverage 0.3460 (rank 2 of 29)
-judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><circle cx="290" cy="100.2" r="5.5" class="dot k-open" data-tip="deepseek_m
+judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><circle cx="264" cy="100.2" r="5.5" class="dot k-open" data-tip="deepseek_m
 coverage: coverage 0.3460 (rank 2 of 29)
 judges: judge score 4.92 of 5 (rank 4 of 29)"><title>deepseek_m
 coverage: coverage 0.3460 (rank 2 of 29)
-judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><line x1="110" y1="325.2" x2="290" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="110" cy="325.2" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><line x1="128" y1="325.2" x2="264" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="128" cy="325.2" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 coverage: coverage 0.3155 (rank 18 of 29)
 judges: judge score 4.98 of 5 (rank 1 of 29)"><title>anthropic_l
 coverage: coverage 0.3155 (rank 18 of 29)
-judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><circle cx="290" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><circle cx="264" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 coverage: coverage 0.3155 (rank 18 of 29)
 judges: judge score 4.98 of 5 (rank 1 of 29)"><title>anthropic_l
 coverage: coverage 0.3155 (rank 18 of 29)
-judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><text x="98" y="57.0" text-anchor="end" class="t-ink" font-size="15">bart_l 1</text><text x="302" y="442.7" class="t-ink" font-size="15">25 bart_l</text><text x="98" y="75.0" text-anchor="end" class="t-ink" font-size="15">deepseek_m 2</text><text x="302" y="105.2" class="t-ink" font-size="15">4 deepseek_m</text><text x="98" y="330.2" text-anchor="end" class="t-ink" font-size="15">anthropic_l 18</text><text x="302" y="57.0" class="t-ink" font-size="15">1 anthropic_l</text></svg></div><figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure>
+judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><text x="116" y="57.0" text-anchor="end" class="t-ink" font-size="14">bart_l 1</text><text x="276" y="442.7" class="t-ink" font-size="14">25 bart_l</text><text x="116" y="75.0" text-anchor="end" class="t-ink" font-size="14">deepseek_m 2</text><text x="276" y="105.2" class="t-ink" font-size="14">4 deepseek_m</text><text x="116" y="330.2" text-anchor="end" class="t-ink" font-size="14">anthropic_l 18</text><text x="276" y="57.0" class="t-ink" font-size="14">1 anthropic_l</text></svg></div><figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure>
 </div></section>
 
 <section class="block" id="person"><div class="wrap">
@@ -774,239 +774,239 @@ judge-summ-v2 (openai_l, anthropic_l): judge score 4.04 of 5 (rank 24 of 29)</ti
 judge-summ-v1 (gemma_l, qwen_s): judge score 4.70 of 5 (rank 20 of 29)
 judge-summ-v2 (openai_l, anthropic_l): judge score 4.04 of 5 (rank 24 of 29)"><title>mistral_l
 judge-summ-v1 (gemma_l, qwen_s): judge score 4.70 of 5 (rank 20 of 29)
-judge-summ-v2 (openai_l, anthropic_l): judge score 4.04 of 5 (rank 24 of 29)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 1</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="477.0" text-anchor="end" class="t-ink" font-size="14">bart_l · 25</text><text x="862" y="477.5" class="t-ink" font-size="14">25 · bart_l</text><text x="138" y="109.5" text-anchor="end" class="t-ink" font-size="14">deepseek_m · 4</text><text x="862" y="75.0" class="t-ink" font-size="14">2 · deepseek_m</text><text x="138" y="389.5" text-anchor="end" class="t-ink" font-size="14">mistral_l · 20</text><text x="862" y="459.5" class="t-ink" font-size="14">24 · mistral_l</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="v1 judges rank against frontier judges rank"><text x="110" y="22" text-anchor="middle" class="t-muted" font-size="15">v1 judges</text><text x="290" y="22" text-anchor="middle" class="t-muted" font-size="15">frontier judges</text><text x="110" y="40" text-anchor="middle" class="t-muted" font-size="12">rank 1 at the top</text><text x="290" y="40" text-anchor="middle" class="t-muted" font-size="12">rank 1 at the top</text><line x1="110" x2="110" y1="46" y2="508" class="axis"/><line x1="290" x2="290" y1="46" y2="508" class="axis"/><line x1="110" y1="68.1" x2="290" y2="116.3" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="68.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+judge-summ-v2 (openai_l, anthropic_l): judge score 4.04 of 5 (rank 24 of 29)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 1</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="477.0" text-anchor="end" class="t-ink" font-size="14">bart_l · 25</text><text x="862" y="477.5" class="t-ink" font-size="14">25 · bart_l</text><text x="138" y="109.5" text-anchor="end" class="t-ink" font-size="14">deepseek_m · 4</text><text x="862" y="75.0" class="t-ink" font-size="14">2 · deepseek_m</text><text x="138" y="389.5" text-anchor="end" class="t-ink" font-size="14">mistral_l · 20</text><text x="862" y="459.5" class="t-ink" font-size="14">24 · mistral_l</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="v1 judges rank against frontier judges rank"><text x="128" y="22" text-anchor="middle" class="t-muted" font-size="14">v1 judges</text><text x="264" y="22" text-anchor="middle" class="t-muted" font-size="14">frontier judges</text><text x="128" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="264" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="128" x2="128" y1="46" y2="508" class="axis"/><line x1="264" x2="264" y1="46" y2="508" class="axis"/><line x1="128" y1="68.1" x2="264" y2="116.3" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="68.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 v1 judges: judge score 4.96 of 5 (rank 2 of 29)
 frontier judges: judge score 4.81 of 5 (rank 5 of 29)"><title>anthropic_m
 v1 judges: judge score 4.96 of 5 (rank 2 of 29)
-frontier judges: judge score 4.81 of 5 (rank 5 of 29)</title></circle><circle cx="290" cy="116.3" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+frontier judges: judge score 4.81 of 5 (rank 5 of 29)</title></circle><circle cx="264" cy="116.3" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 v1 judges: judge score 4.96 of 5 (rank 2 of 29)
 frontier judges: judge score 4.81 of 5 (rank 5 of 29)"><title>anthropic_m
 v1 judges: judge score 4.96 of 5 (rank 2 of 29)
-frontier judges: judge score 4.81 of 5 (rank 5 of 29)</title></circle><line x1="110" y1="84.1" x2="290" y2="164.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="84.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+frontier judges: judge score 4.81 of 5 (rank 5 of 29)</title></circle><line x1="128" y1="84.1" x2="264" y2="164.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="84.1" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 v1 judges: judge score 4.95 of 5 (rank 3 of 29)
 frontier judges: judge score 4.73 of 5 (rank 8 of 29)"><title>anthropic_s
 v1 judges: judge score 4.95 of 5 (rank 3 of 29)
-frontier judges: judge score 4.73 of 5 (rank 8 of 29)</title></circle><circle cx="290" cy="164.5" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+frontier judges: judge score 4.73 of 5 (rank 8 of 29)</title></circle><circle cx="264" cy="164.5" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 v1 judges: judge score 4.95 of 5 (rank 3 of 29)
 frontier judges: judge score 4.73 of 5 (rank 8 of 29)"><title>anthropic_s
 v1 judges: judge score 4.95 of 5 (rank 3 of 29)
-frontier judges: judge score 4.73 of 5 (rank 8 of 29)</title></circle><line x1="110" y1="469.9" x2="290" y2="453.8" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="469.9" r="3.5" class="dot k-local" data-tip="bart_l_xsum
+frontier judges: judge score 4.73 of 5 (rank 8 of 29)</title></circle><line x1="128" y1="469.9" x2="264" y2="453.8" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="469.9" r="3.5" class="dot k-local" data-tip="bart_l_xsum
 v1 judges: judge score 3.52 of 5 (rank 27 of 29)
 frontier judges: judge score 3.37 of 5 (rank 26 of 29)"><title>bart_l_xsum
 v1 judges: judge score 3.52 of 5 (rank 27 of 29)
-frontier judges: judge score 3.37 of 5 (rank 26 of 29)</title></circle><circle cx="290" cy="453.8" r="3.5" class="dot k-local" data-tip="bart_l_xsum
+frontier judges: judge score 3.37 of 5 (rank 26 of 29)</title></circle><circle cx="264" cy="453.8" r="3.5" class="dot k-local" data-tip="bart_l_xsum
 v1 judges: judge score 3.52 of 5 (rank 27 of 29)
 frontier judges: judge score 3.37 of 5 (rank 26 of 29)"><title>bart_l_xsum
 v1 judges: judge score 3.52 of 5 (rank 27 of 29)
-frontier judges: judge score 3.37 of 5 (rank 26 of 29)</title></circle><line x1="110" y1="453.8" x2="290" y2="485.9" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="453.8" r="3.5" class="dot k-local" data-tip="bart_m
+frontier judges: judge score 3.37 of 5 (rank 26 of 29)</title></circle><line x1="128" y1="453.8" x2="264" y2="485.9" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="453.8" r="3.5" class="dot k-local" data-tip="bart_m
 v1 judges: judge score 3.56 of 5 (rank 26 of 29)
 frontier judges: judge score 3.23 of 5 (rank 28 of 29)"><title>bart_m
 v1 judges: judge score 3.56 of 5 (rank 26 of 29)
-frontier judges: judge score 3.23 of 5 (rank 28 of 29)</title></circle><circle cx="290" cy="485.9" r="3.5" class="dot k-local" data-tip="bart_m
+frontier judges: judge score 3.23 of 5 (rank 28 of 29)</title></circle><circle cx="264" cy="485.9" r="3.5" class="dot k-local" data-tip="bart_m
 v1 judges: judge score 3.56 of 5 (rank 26 of 29)
 frontier judges: judge score 3.23 of 5 (rank 28 of 29)"><title>bart_m
 v1 judges: judge score 3.56 of 5 (rank 26 of 29)
-frontier judges: judge score 3.23 of 5 (rank 28 of 29)</title></circle><line x1="110" y1="502.0" x2="290" y2="502.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_s
+frontier judges: judge score 3.23 of 5 (rank 28 of 29)</title></circle><line x1="128" y1="502.0" x2="264" y2="502.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_s
 v1 judges: judge score 3.19 of 5 (rank 29 of 29)
 frontier judges: judge score 2.95 of 5 (rank 29 of 29)"><title>bart_s
 v1 judges: judge score 3.19 of 5 (rank 29 of 29)
-frontier judges: judge score 2.95 of 5 (rank 29 of 29)</title></circle><circle cx="290" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_s
+frontier judges: judge score 2.95 of 5 (rank 29 of 29)</title></circle><circle cx="264" cy="502.0" r="3.5" class="dot k-local" data-tip="bart_s
 v1 judges: judge score 3.19 of 5 (rank 29 of 29)
 frontier judges: judge score 2.95 of 5 (rank 29 of 29)"><title>bart_s
 v1 judges: judge score 3.19 of 5 (rank 29 of 29)
-frontier judges: judge score 2.95 of 5 (rank 29 of 29)</title></circle><line x1="110" y1="116.3" x2="290" y2="132.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="116.3" r="3.5" class="dot k-open" data-tip="deepseek_l
+frontier judges: judge score 2.95 of 5 (rank 29 of 29)</title></circle><line x1="128" y1="116.3" x2="264" y2="132.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="116.3" r="3.5" class="dot k-open" data-tip="deepseek_l
 v1 judges: judge score 4.88 of 5 (rank 5 of 29)
 frontier judges: judge score 4.76 of 5 (rank 6 of 29)"><title>deepseek_l
 v1 judges: judge score 4.88 of 5 (rank 5 of 29)
-frontier judges: judge score 4.76 of 5 (rank 6 of 29)</title></circle><circle cx="290" cy="132.4" r="3.5" class="dot k-open" data-tip="deepseek_l
+frontier judges: judge score 4.76 of 5 (rank 6 of 29)</title></circle><circle cx="264" cy="132.4" r="3.5" class="dot k-open" data-tip="deepseek_l
 v1 judges: judge score 4.88 of 5 (rank 5 of 29)
 frontier judges: judge score 4.76 of 5 (rank 6 of 29)"><title>deepseek_l
 v1 judges: judge score 4.88 of 5 (rank 5 of 29)
-frontier judges: judge score 4.76 of 5 (rank 6 of 29)</title></circle><line x1="110" y1="180.6" x2="290" y2="196.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="180.6" r="3.5" class="dot k-open" data-tip="deepseek_s
+frontier judges: judge score 4.76 of 5 (rank 6 of 29)</title></circle><line x1="128" y1="180.6" x2="264" y2="196.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="180.6" r="3.5" class="dot k-open" data-tip="deepseek_s
 v1 judges: judge score 4.82 of 5 (rank 9 of 29)
 frontier judges: judge score 4.64 of 5 (rank 10 of 29)"><title>deepseek_s
 v1 judges: judge score 4.82 of 5 (rank 9 of 29)
-frontier judges: judge score 4.64 of 5 (rank 10 of 29)</title></circle><circle cx="290" cy="196.6" r="3.5" class="dot k-open" data-tip="deepseek_s
+frontier judges: judge score 4.64 of 5 (rank 10 of 29)</title></circle><circle cx="264" cy="196.6" r="3.5" class="dot k-open" data-tip="deepseek_s
 v1 judges: judge score 4.82 of 5 (rank 9 of 29)
 frontier judges: judge score 4.64 of 5 (rank 10 of 29)"><title>deepseek_s
 v1 judges: judge score 4.82 of 5 (rank 9 of 29)
-frontier judges: judge score 4.64 of 5 (rank 10 of 29)</title></circle><line x1="110" y1="277.0" x2="290" y2="212.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="277.0" r="3.5" class="dot k-open" data-tip="gemma_l
+frontier judges: judge score 4.64 of 5 (rank 10 of 29)</title></circle><line x1="128" y1="277.0" x2="264" y2="212.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="277.0" r="3.5" class="dot k-open" data-tip="gemma_l
 v1 judges: judge score 4.72 of 5 (rank 15 of 29)
 frontier judges: judge score 4.60 of 5 (rank 11 of 29)"><title>gemma_l
 v1 judges: judge score 4.72 of 5 (rank 15 of 29)
-frontier judges: judge score 4.60 of 5 (rank 11 of 29)</title></circle><circle cx="290" cy="212.7" r="3.5" class="dot k-open" data-tip="gemma_l
+frontier judges: judge score 4.60 of 5 (rank 11 of 29)</title></circle><circle cx="264" cy="212.7" r="3.5" class="dot k-open" data-tip="gemma_l
 v1 judges: judge score 4.72 of 5 (rank 15 of 29)
 frontier judges: judge score 4.60 of 5 (rank 11 of 29)"><title>gemma_l
 v1 judges: judge score 4.72 of 5 (rank 15 of 29)
-frontier judges: judge score 4.60 of 5 (rank 11 of 29)</title></circle><line x1="110" y1="309.1" x2="290" y2="244.9" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="309.1" r="3.5" class="dot k-open" data-tip="gemma_m
+frontier judges: judge score 4.60 of 5 (rank 11 of 29)</title></circle><line x1="128" y1="309.1" x2="264" y2="244.9" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="309.1" r="3.5" class="dot k-open" data-tip="gemma_m
 v1 judges: judge score 4.71 of 5 (rank 17 of 29)
 frontier judges: judge score 4.58 of 5 (rank 13 of 29)"><title>gemma_m
 v1 judges: judge score 4.71 of 5 (rank 17 of 29)
-frontier judges: judge score 4.58 of 5 (rank 13 of 29)</title></circle><circle cx="290" cy="244.9" r="3.5" class="dot k-open" data-tip="gemma_m
+frontier judges: judge score 4.58 of 5 (rank 13 of 29)</title></circle><circle cx="264" cy="244.9" r="3.5" class="dot k-open" data-tip="gemma_m
 v1 judges: judge score 4.71 of 5 (rank 17 of 29)
 frontier judges: judge score 4.58 of 5 (rank 13 of 29)"><title>gemma_m
 v1 judges: judge score 4.71 of 5 (rank 17 of 29)
-frontier judges: judge score 4.58 of 5 (rank 13 of 29)</title></circle><line x1="110" y1="212.7" x2="290" y2="341.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="212.7" r="3.5" class="dot k-open" data-tip="gemma_s
+frontier judges: judge score 4.58 of 5 (rank 13 of 29)</title></circle><line x1="128" y1="212.7" x2="264" y2="341.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="212.7" r="3.5" class="dot k-open" data-tip="gemma_s
 v1 judges: judge score 4.80 of 5 (rank 11 of 29)
 frontier judges: judge score 4.43 of 5 (rank 19 of 29)"><title>gemma_s
 v1 judges: judge score 4.80 of 5 (rank 11 of 29)
-frontier judges: judge score 4.43 of 5 (rank 19 of 29)</title></circle><circle cx="290" cy="341.3" r="3.5" class="dot k-open" data-tip="gemma_s
+frontier judges: judge score 4.43 of 5 (rank 19 of 29)</title></circle><circle cx="264" cy="341.3" r="3.5" class="dot k-open" data-tip="gemma_s
 v1 judges: judge score 4.80 of 5 (rank 11 of 29)
 frontier judges: judge score 4.43 of 5 (rank 19 of 29)"><title>gemma_s
 v1 judges: judge score 4.80 of 5 (rank 11 of 29)
-frontier judges: judge score 4.43 of 5 (rank 19 of 29)</title></circle><line x1="110" y1="405.6" x2="290" y2="389.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="405.6" r="3.5" class="dot k-open" data-tip="glm_l
+frontier judges: judge score 4.43 of 5 (rank 19 of 29)</title></circle><line x1="128" y1="405.6" x2="264" y2="389.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="405.6" r="3.5" class="dot k-open" data-tip="glm_l
 v1 judges: judge score 4.61 of 5 (rank 23 of 29)
 frontier judges: judge score 4.38 of 5 (rank 22 of 29)"><title>glm_l
 v1 judges: judge score 4.61 of 5 (rank 23 of 29)
-frontier judges: judge score 4.38 of 5 (rank 22 of 29)</title></circle><circle cx="290" cy="389.5" r="3.5" class="dot k-open" data-tip="glm_l
+frontier judges: judge score 4.38 of 5 (rank 22 of 29)</title></circle><circle cx="264" cy="389.5" r="3.5" class="dot k-open" data-tip="glm_l
 v1 judges: judge score 4.61 of 5 (rank 23 of 29)
 frontier judges: judge score 4.38 of 5 (rank 22 of 29)"><title>glm_l
 v1 judges: judge score 4.61 of 5 (rank 23 of 29)
-frontier judges: judge score 4.38 of 5 (rank 22 of 29)</title></circle><line x1="110" y1="148.4" x2="290" y2="180.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="148.4" r="3.5" class="dot k-open" data-tip="glm_m
+frontier judges: judge score 4.38 of 5 (rank 22 of 29)</title></circle><line x1="128" y1="148.4" x2="264" y2="180.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="148.4" r="3.5" class="dot k-open" data-tip="glm_m
 v1 judges: judge score 4.86 of 5 (rank 7 of 29)
 frontier judges: judge score 4.72 of 5 (rank 9 of 29)"><title>glm_m
 v1 judges: judge score 4.86 of 5 (rank 7 of 29)
-frontier judges: judge score 4.72 of 5 (rank 9 of 29)</title></circle><circle cx="290" cy="180.6" r="3.5" class="dot k-open" data-tip="glm_m
+frontier judges: judge score 4.72 of 5 (rank 9 of 29)</title></circle><circle cx="264" cy="180.6" r="3.5" class="dot k-open" data-tip="glm_m
 v1 judges: judge score 4.86 of 5 (rank 7 of 29)
 frontier judges: judge score 4.72 of 5 (rank 9 of 29)"><title>glm_m
 v1 judges: judge score 4.86 of 5 (rank 7 of 29)
-frontier judges: judge score 4.72 of 5 (rank 9 of 29)</title></circle><line x1="110" y1="421.6" x2="290" y2="357.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="421.6" r="3.5" class="dot k-open" data-tip="glm_s
+frontier judges: judge score 4.72 of 5 (rank 9 of 29)</title></circle><line x1="128" y1="421.6" x2="264" y2="357.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="421.6" r="3.5" class="dot k-open" data-tip="glm_s
 v1 judges: judge score 4.53 of 5 (rank 24 of 29)
 frontier judges: judge score 4.42 of 5 (rank 20 of 29)"><title>glm_s
 v1 judges: judge score 4.53 of 5 (rank 24 of 29)
-frontier judges: judge score 4.42 of 5 (rank 20 of 29)</title></circle><circle cx="290" cy="357.4" r="3.5" class="dot k-open" data-tip="glm_s
+frontier judges: judge score 4.42 of 5 (rank 20 of 29)</title></circle><circle cx="264" cy="357.4" r="3.5" class="dot k-open" data-tip="glm_s
 v1 judges: judge score 4.53 of 5 (rank 24 of 29)
 frontier judges: judge score 4.42 of 5 (rank 20 of 29)"><title>glm_s
 v1 judges: judge score 4.53 of 5 (rank 24 of 29)
-frontier judges: judge score 4.42 of 5 (rank 20 of 29)</title></circle><line x1="110" y1="485.9" x2="290" y2="469.9" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="485.9" r="3.5" class="dot k-baseline" data-tip="lead3
+frontier judges: judge score 4.42 of 5 (rank 20 of 29)</title></circle><line x1="128" y1="485.9" x2="264" y2="469.9" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="485.9" r="3.5" class="dot k-baseline" data-tip="lead3
 v1 judges: judge score 3.42 of 5 (rank 28 of 29)
 frontier judges: judge score 3.34 of 5 (rank 27 of 29)"><title>lead3
 v1 judges: judge score 3.42 of 5 (rank 28 of 29)
-frontier judges: judge score 3.34 of 5 (rank 27 of 29)</title></circle><circle cx="290" cy="469.9" r="3.5" class="dot k-baseline" data-tip="lead3
+frontier judges: judge score 3.34 of 5 (rank 27 of 29)</title></circle><circle cx="264" cy="469.9" r="3.5" class="dot k-baseline" data-tip="lead3
 v1 judges: judge score 3.42 of 5 (rank 28 of 29)
 frontier judges: judge score 3.34 of 5 (rank 27 of 29)"><title>lead3
 v1 judges: judge score 3.42 of 5 (rank 28 of 29)
-frontier judges: judge score 3.34 of 5 (rank 27 of 29)</title></circle><line x1="110" y1="341.3" x2="290" y2="277.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="341.3" r="3.5" class="dot k-open" data-tip="llama_l
+frontier judges: judge score 3.34 of 5 (rank 27 of 29)</title></circle><line x1="128" y1="341.3" x2="264" y2="277.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="341.3" r="3.5" class="dot k-open" data-tip="llama_l
 v1 judges: judge score 4.70 of 5 (rank 19 of 29)
 frontier judges: judge score 4.53 of 5 (rank 15 of 29)"><title>llama_l
 v1 judges: judge score 4.70 of 5 (rank 19 of 29)
-frontier judges: judge score 4.53 of 5 (rank 15 of 29)</title></circle><circle cx="290" cy="277.0" r="3.5" class="dot k-open" data-tip="llama_l
+frontier judges: judge score 4.53 of 5 (rank 15 of 29)</title></circle><circle cx="264" cy="277.0" r="3.5" class="dot k-open" data-tip="llama_l
 v1 judges: judge score 4.70 of 5 (rank 19 of 29)
 frontier judges: judge score 4.53 of 5 (rank 15 of 29)"><title>llama_l
 v1 judges: judge score 4.70 of 5 (rank 19 of 29)
-frontier judges: judge score 4.53 of 5 (rank 15 of 29)</title></circle><line x1="110" y1="373.4" x2="290" y2="293.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="373.4" r="3.5" class="dot k-open" data-tip="llama_m
+frontier judges: judge score 4.53 of 5 (rank 15 of 29)</title></circle><line x1="128" y1="373.4" x2="264" y2="293.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="373.4" r="3.5" class="dot k-open" data-tip="llama_m
 v1 judges: judge score 4.67 of 5 (rank 21 of 29)
 frontier judges: judge score 4.49 of 5 (rank 16 of 29)"><title>llama_m
 v1 judges: judge score 4.67 of 5 (rank 21 of 29)
-frontier judges: judge score 4.49 of 5 (rank 16 of 29)</title></circle><circle cx="290" cy="293.1" r="3.5" class="dot k-open" data-tip="llama_m
+frontier judges: judge score 4.49 of 5 (rank 16 of 29)</title></circle><circle cx="264" cy="293.1" r="3.5" class="dot k-open" data-tip="llama_m
 v1 judges: judge score 4.67 of 5 (rank 21 of 29)
 frontier judges: judge score 4.49 of 5 (rank 16 of 29)"><title>llama_m
 v1 judges: judge score 4.67 of 5 (rank 21 of 29)
-frontier judges: judge score 4.49 of 5 (rank 16 of 29)</title></circle><line x1="110" y1="325.2" x2="290" y2="309.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="325.2" r="3.5" class="dot k-open" data-tip="llama_s
+frontier judges: judge score 4.49 of 5 (rank 16 of 29)</title></circle><line x1="128" y1="325.2" x2="264" y2="309.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="325.2" r="3.5" class="dot k-open" data-tip="llama_s
 v1 judges: judge score 4.70 of 5 (rank 18 of 29)
 frontier judges: judge score 4.47 of 5 (rank 17 of 29)"><title>llama_s
 v1 judges: judge score 4.70 of 5 (rank 18 of 29)
-frontier judges: judge score 4.47 of 5 (rank 17 of 29)</title></circle><circle cx="290" cy="309.1" r="3.5" class="dot k-open" data-tip="llama_s
+frontier judges: judge score 4.47 of 5 (rank 17 of 29)</title></circle><circle cx="264" cy="309.1" r="3.5" class="dot k-open" data-tip="llama_s
 v1 judges: judge score 4.70 of 5 (rank 18 of 29)
 frontier judges: judge score 4.47 of 5 (rank 17 of 29)"><title>llama_s
 v1 judges: judge score 4.70 of 5 (rank 18 of 29)
-frontier judges: judge score 4.47 of 5 (rank 17 of 29)</title></circle><line x1="110" y1="357.4" x2="290" y2="421.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="357.4" r="3.5" class="dot k-open" data-tip="mistral_l
+frontier judges: judge score 4.47 of 5 (rank 17 of 29)</title></circle><line x1="128" y1="357.4" x2="264" y2="421.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="357.4" r="3.5" class="dot k-open" data-tip="mistral_l
 v1 judges: judge score 4.70 of 5 (rank 20 of 29)
 frontier judges: judge score 4.04 of 5 (rank 24 of 29)"><title>mistral_l
 v1 judges: judge score 4.70 of 5 (rank 20 of 29)
-frontier judges: judge score 4.04 of 5 (rank 24 of 29)</title></circle><circle cx="290" cy="421.6" r="3.5" class="dot k-open" data-tip="mistral_l
+frontier judges: judge score 4.04 of 5 (rank 24 of 29)</title></circle><circle cx="264" cy="421.6" r="3.5" class="dot k-open" data-tip="mistral_l
 v1 judges: judge score 4.70 of 5 (rank 20 of 29)
 frontier judges: judge score 4.04 of 5 (rank 24 of 29)"><title>mistral_l
 v1 judges: judge score 4.70 of 5 (rank 20 of 29)
-frontier judges: judge score 4.04 of 5 (rank 24 of 29)</title></circle><line x1="110" y1="293.1" x2="290" y2="405.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="293.1" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+frontier judges: judge score 4.04 of 5 (rank 24 of 29)</title></circle><line x1="128" y1="293.1" x2="264" y2="405.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="293.1" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 v1 judges: judge score 4.71 of 5 (rank 16 of 29)
 frontier judges: judge score 4.31 of 5 (rank 23 of 29)"><title>mistral_m
 v1 judges: judge score 4.71 of 5 (rank 16 of 29)
-frontier judges: judge score 4.31 of 5 (rank 23 of 29)</title></circle><circle cx="290" cy="405.6" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+frontier judges: judge score 4.31 of 5 (rank 23 of 29)</title></circle><circle cx="264" cy="405.6" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 v1 judges: judge score 4.71 of 5 (rank 16 of 29)
 frontier judges: judge score 4.31 of 5 (rank 23 of 29)"><title>mistral_m
 v1 judges: judge score 4.71 of 5 (rank 16 of 29)
-frontier judges: judge score 4.31 of 5 (rank 23 of 29)</title></circle><line x1="110" y1="228.8" x2="290" y2="373.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="228.8" r="3.5" class="dot k-open" data-tip="mistral_s
+frontier judges: judge score 4.31 of 5 (rank 23 of 29)</title></circle><line x1="128" y1="228.8" x2="264" y2="373.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="228.8" r="3.5" class="dot k-open" data-tip="mistral_s
 v1 judges: judge score 4.80 of 5 (rank 12 of 29)
 frontier judges: judge score 4.41 of 5 (rank 21 of 29)"><title>mistral_s
 v1 judges: judge score 4.80 of 5 (rank 12 of 29)
-frontier judges: judge score 4.41 of 5 (rank 21 of 29)</title></circle><circle cx="290" cy="373.4" r="3.5" class="dot k-open" data-tip="mistral_s
+frontier judges: judge score 4.41 of 5 (rank 21 of 29)</title></circle><circle cx="264" cy="373.4" r="3.5" class="dot k-open" data-tip="mistral_s
 v1 judges: judge score 4.80 of 5 (rank 12 of 29)
 frontier judges: judge score 4.41 of 5 (rank 21 of 29)"><title>mistral_s
 v1 judges: judge score 4.80 of 5 (rank 12 of 29)
-frontier judges: judge score 4.41 of 5 (rank 21 of 29)</title></circle><line x1="110" y1="260.9" x2="290" y2="84.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="openai_l
+frontier judges: judge score 4.41 of 5 (rank 21 of 29)</title></circle><line x1="128" y1="260.9" x2="264" y2="84.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="openai_l
 v1 judges: judge score 4.77 of 5 (rank 14 of 29)
 frontier judges: judge score 4.85 of 5 (rank 3 of 29)"><title>openai_l
 v1 judges: judge score 4.77 of 5 (rank 14 of 29)
-frontier judges: judge score 4.85 of 5 (rank 3 of 29)</title></circle><circle cx="290" cy="84.1" r="3.5" class="dot k-proprietary" data-tip="openai_l
+frontier judges: judge score 4.85 of 5 (rank 3 of 29)</title></circle><circle cx="264" cy="84.1" r="3.5" class="dot k-proprietary" data-tip="openai_l
 v1 judges: judge score 4.77 of 5 (rank 14 of 29)
 frontier judges: judge score 4.85 of 5 (rank 3 of 29)"><title>openai_l
 v1 judges: judge score 4.77 of 5 (rank 14 of 29)
-frontier judges: judge score 4.85 of 5 (rank 3 of 29)</title></circle><line x1="110" y1="244.9" x2="290" y2="100.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="244.9" r="3.5" class="dot k-proprietary" data-tip="openai_m
+frontier judges: judge score 4.85 of 5 (rank 3 of 29)</title></circle><line x1="128" y1="244.9" x2="264" y2="100.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="244.9" r="3.5" class="dot k-proprietary" data-tip="openai_m
 v1 judges: judge score 4.80 of 5 (rank 13 of 29)
 frontier judges: judge score 4.81 of 5 (rank 4 of 29)"><title>openai_m
 v1 judges: judge score 4.80 of 5 (rank 13 of 29)
-frontier judges: judge score 4.81 of 5 (rank 4 of 29)</title></circle><circle cx="290" cy="100.2" r="3.5" class="dot k-proprietary" data-tip="openai_m
+frontier judges: judge score 4.81 of 5 (rank 4 of 29)</title></circle><circle cx="264" cy="100.2" r="3.5" class="dot k-proprietary" data-tip="openai_m
 v1 judges: judge score 4.80 of 5 (rank 13 of 29)
 frontier judges: judge score 4.81 of 5 (rank 4 of 29)"><title>openai_m
 v1 judges: judge score 4.80 of 5 (rank 13 of 29)
-frontier judges: judge score 4.81 of 5 (rank 4 of 29)</title></circle><line x1="110" y1="164.5" x2="290" y2="148.4" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="164.5" r="3.5" class="dot k-proprietary" data-tip="openai_s
+frontier judges: judge score 4.81 of 5 (rank 4 of 29)</title></circle><line x1="128" y1="164.5" x2="264" y2="148.4" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="164.5" r="3.5" class="dot k-proprietary" data-tip="openai_s
 v1 judges: judge score 4.82 of 5 (rank 8 of 29)
 frontier judges: judge score 4.75 of 5 (rank 7 of 29)"><title>openai_s
 v1 judges: judge score 4.82 of 5 (rank 8 of 29)
-frontier judges: judge score 4.75 of 5 (rank 7 of 29)</title></circle><circle cx="290" cy="148.4" r="3.5" class="dot k-proprietary" data-tip="openai_s
+frontier judges: judge score 4.75 of 5 (rank 7 of 29)</title></circle><circle cx="264" cy="148.4" r="3.5" class="dot k-proprietary" data-tip="openai_s
 v1 judges: judge score 4.82 of 5 (rank 8 of 29)
 frontier judges: judge score 4.75 of 5 (rank 7 of 29)"><title>openai_s
 v1 judges: judge score 4.82 of 5 (rank 8 of 29)
-frontier judges: judge score 4.75 of 5 (rank 7 of 29)</title></circle><line x1="110" y1="196.6" x2="290" y2="260.9" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="196.6" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+frontier judges: judge score 4.75 of 5 (rank 7 of 29)</title></circle><line x1="128" y1="196.6" x2="264" y2="260.9" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="196.6" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 v1 judges: judge score 4.81 of 5 (rank 10 of 29)
 frontier judges: judge score 4.57 of 5 (rank 14 of 29)"><title>qwen_l
 v1 judges: judge score 4.81 of 5 (rank 10 of 29)
-frontier judges: judge score 4.57 of 5 (rank 14 of 29)</title></circle><circle cx="290" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+frontier judges: judge score 4.57 of 5 (rank 14 of 29)</title></circle><circle cx="264" cy="260.9" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 v1 judges: judge score 4.81 of 5 (rank 10 of 29)
 frontier judges: judge score 4.57 of 5 (rank 14 of 29)"><title>qwen_l
 v1 judges: judge score 4.81 of 5 (rank 10 of 29)
-frontier judges: judge score 4.57 of 5 (rank 14 of 29)</title></circle><line x1="110" y1="132.4" x2="290" y2="228.8" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="132.4" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+frontier judges: judge score 4.57 of 5 (rank 14 of 29)</title></circle><line x1="128" y1="132.4" x2="264" y2="228.8" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="132.4" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 v1 judges: judge score 4.88 of 5 (rank 6 of 29)
 frontier judges: judge score 4.60 of 5 (rank 12 of 29)"><title>qwen_m
 v1 judges: judge score 4.88 of 5 (rank 6 of 29)
-frontier judges: judge score 4.60 of 5 (rank 12 of 29)</title></circle><circle cx="290" cy="228.8" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+frontier judges: judge score 4.60 of 5 (rank 12 of 29)</title></circle><circle cx="264" cy="228.8" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 v1 judges: judge score 4.88 of 5 (rank 6 of 29)
 frontier judges: judge score 4.60 of 5 (rank 12 of 29)"><title>qwen_m
 v1 judges: judge score 4.88 of 5 (rank 6 of 29)
-frontier judges: judge score 4.60 of 5 (rank 12 of 29)</title></circle><line x1="110" y1="389.5" x2="290" y2="325.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="389.5" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+frontier judges: judge score 4.60 of 5 (rank 12 of 29)</title></circle><line x1="128" y1="389.5" x2="264" y2="325.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="389.5" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 v1 judges: judge score 4.61 of 5 (rank 22 of 29)
 frontier judges: judge score 4.46 of 5 (rank 18 of 29)"><title>qwen_s
 v1 judges: judge score 4.61 of 5 (rank 22 of 29)
-frontier judges: judge score 4.46 of 5 (rank 18 of 29)</title></circle><circle cx="290" cy="325.2" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+frontier judges: judge score 4.46 of 5 (rank 18 of 29)</title></circle><circle cx="264" cy="325.2" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 v1 judges: judge score 4.61 of 5 (rank 22 of 29)
 frontier judges: judge score 4.46 of 5 (rank 18 of 29)"><title>qwen_s
 v1 judges: judge score 4.61 of 5 (rank 22 of 29)
-frontier judges: judge score 4.46 of 5 (rank 18 of 29)</title></circle><line x1="110" y1="52.0" x2="290" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="110" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+frontier judges: judge score 4.46 of 5 (rank 18 of 29)</title></circle><line x1="128" y1="52.0" x2="264" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="128" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 v1 judges: judge score 4.98 of 5 (rank 1 of 29)
 frontier judges: judge score 4.89 of 5 (rank 1 of 29)"><title>anthropic_l
 v1 judges: judge score 4.98 of 5 (rank 1 of 29)
-frontier judges: judge score 4.89 of 5 (rank 1 of 29)</title></circle><circle cx="290" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+frontier judges: judge score 4.89 of 5 (rank 1 of 29)</title></circle><circle cx="264" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 v1 judges: judge score 4.98 of 5 (rank 1 of 29)
 frontier judges: judge score 4.89 of 5 (rank 1 of 29)"><title>anthropic_l
 v1 judges: judge score 4.98 of 5 (rank 1 of 29)
-frontier judges: judge score 4.89 of 5 (rank 1 of 29)</title></circle><line x1="110" y1="437.7" x2="290" y2="437.7" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="110" cy="437.7" r="5.5" class="dot k-local" data-tip="bart_l
+frontier judges: judge score 4.89 of 5 (rank 1 of 29)</title></circle><line x1="128" y1="437.7" x2="264" y2="437.7" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="128" cy="437.7" r="5.5" class="dot k-local" data-tip="bart_l
 v1 judges: judge score 3.87 of 5 (rank 25 of 29)
 frontier judges: judge score 3.82 of 5 (rank 25 of 29)"><title>bart_l
 v1 judges: judge score 3.87 of 5 (rank 25 of 29)
-frontier judges: judge score 3.82 of 5 (rank 25 of 29)</title></circle><circle cx="290" cy="437.7" r="5.5" class="dot k-local" data-tip="bart_l
+frontier judges: judge score 3.82 of 5 (rank 25 of 29)</title></circle><circle cx="264" cy="437.7" r="5.5" class="dot k-local" data-tip="bart_l
 v1 judges: judge score 3.87 of 5 (rank 25 of 29)
 frontier judges: judge score 3.82 of 5 (rank 25 of 29)"><title>bart_l
 v1 judges: judge score 3.87 of 5 (rank 25 of 29)
-frontier judges: judge score 3.82 of 5 (rank 25 of 29)</title></circle><line x1="110" y1="100.2" x2="290" y2="68.1" class="s-open" stroke-width="3.5" opacity="1"/><circle cx="110" cy="100.2" r="5.5" class="dot k-open" data-tip="deepseek_m
+frontier judges: judge score 3.82 of 5 (rank 25 of 29)</title></circle><line x1="128" y1="100.2" x2="264" y2="68.1" class="s-open" stroke-width="3.5" opacity="1"/><circle cx="128" cy="100.2" r="5.5" class="dot k-open" data-tip="deepseek_m
 v1 judges: judge score 4.92 of 5 (rank 4 of 29)
 frontier judges: judge score 4.85 of 5 (rank 2 of 29)"><title>deepseek_m
 v1 judges: judge score 4.92 of 5 (rank 4 of 29)
-frontier judges: judge score 4.85 of 5 (rank 2 of 29)</title></circle><circle cx="290" cy="68.1" r="5.5" class="dot k-open" data-tip="deepseek_m
+frontier judges: judge score 4.85 of 5 (rank 2 of 29)</title></circle><circle cx="264" cy="68.1" r="5.5" class="dot k-open" data-tip="deepseek_m
 v1 judges: judge score 4.92 of 5 (rank 4 of 29)
 frontier judges: judge score 4.85 of 5 (rank 2 of 29)"><title>deepseek_m
 v1 judges: judge score 4.92 of 5 (rank 4 of 29)
-frontier judges: judge score 4.85 of 5 (rank 2 of 29)</title></circle><text x="98" y="57.0" text-anchor="end" class="t-ink" font-size="15">anthropic_l 1</text><text x="302" y="57.0" class="t-ink" font-size="15">1 anthropic_l</text><text x="98" y="442.7" text-anchor="end" class="t-ink" font-size="15">bart_l 25</text><text x="302" y="442.7" class="t-ink" font-size="15">25 bart_l</text><text x="98" y="105.2" text-anchor="end" class="t-ink" font-size="15">deepseek_m 4</text><text x="302" y="75.0" class="t-ink" font-size="15">2 deepseek_m</text></svg></div><figcaption>Each line is one arm: its rank on the first judges' score (left) and on the frontier judges' (right).</figcaption></figure>
+frontier judges: judge score 4.85 of 5 (rank 2 of 29)</title></circle><text x="116" y="57.0" text-anchor="end" class="t-ink" font-size="14">anthropic_l 1</text><text x="276" y="57.0" class="t-ink" font-size="14">1 anthropic_l</text><text x="116" y="442.7" text-anchor="end" class="t-ink" font-size="14">bart_l 25</text><text x="276" y="442.7" class="t-ink" font-size="14">25 bart_l</text><text x="116" y="105.2" text-anchor="end" class="t-ink" font-size="14">deepseek_m 4</text><text x="276" y="75.0" class="t-ink" font-size="14">2 deepseek_m</text></svg></div><figcaption>Each line is one arm: its rank on the first judges' score (left) and on the frontier judges' (right).</figcaption></figure>
 </div></section>
 <section class="block" id="labels"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>A person re-measures the labels</div>
@@ -1256,247 +1256,247 @@ adjudicated gold: accuracy 0.9400 (rank 17 of 30)</title></circle><circle cx="85
 dataset gold (primary): accuracy 0.8550 (rank 21 of 30)
 adjudicated gold: accuracy 0.9400 (rank 17 of 30)"><title>gemma_m
 dataset gold (primary): accuracy 0.8550 (rank 21 of 30)
-adjudicated gold: accuracy 0.9400 (rank 17 of 30)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">bert_base_ta · 1</text><text x="862" y="479.4" class="t-ink" font-size="14">26 · bert_base_ta</text><text x="138" y="90.8" text-anchor="end" class="t-ink" font-size="14">bert_mini · 3</text><text x="862" y="497.4" class="t-ink" font-size="14">27 · bert_mini</text><text x="138" y="124.6" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 5</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="394.9" text-anchor="end" class="t-ink" font-size="14">gemma_m · 21</text><text x="862" y="327.3" class="t-ink" font-size="14">17 · gemma_m</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="dataset gold rank against adjudicated rank"><text x="110" y="22" text-anchor="middle" class="t-muted" font-size="15">dataset gold</text><text x="290" y="22" text-anchor="middle" class="t-muted" font-size="15">adjudicated</text><text x="110" y="40" text-anchor="middle" class="t-muted" font-size="12">rank 1 at the top</text><text x="290" y="40" text-anchor="middle" class="t-muted" font-size="12">rank 1 at the top</text><line x1="110" x2="110" y1="46" y2="508" class="axis"/><line x1="290" x2="290" y1="46" y2="508" class="axis"/><line x1="110" y1="67.5" x2="290" y2="424.4" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="67.5" r="3.5" class="dot k-local" data-tip="bert_base_fy
+adjudicated gold: accuracy 0.9400 (rank 17 of 30)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">bert_base_ta · 1</text><text x="862" y="479.4" class="t-ink" font-size="14">26 · bert_base_ta</text><text x="138" y="90.8" text-anchor="end" class="t-ink" font-size="14">bert_mini · 3</text><text x="862" y="497.4" class="t-ink" font-size="14">27 · bert_mini</text><text x="138" y="124.6" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 5</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="394.9" text-anchor="end" class="t-ink" font-size="14">gemma_m · 21</text><text x="862" y="327.3" class="t-ink" font-size="14">17 · gemma_m</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="dataset gold rank against adjudicated rank"><text x="128" y="22" text-anchor="middle" class="t-muted" font-size="14">dataset gold</text><text x="264" y="22" text-anchor="middle" class="t-muted" font-size="14">adjudicated</text><text x="128" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="264" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="128" x2="128" y1="46" y2="508" class="axis"/><line x1="264" x2="264" y1="46" y2="508" class="axis"/><line x1="128" y1="67.5" x2="264" y2="424.4" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="67.5" r="3.5" class="dot k-local" data-tip="bert_base_fy
 dataset gold: accuracy 0.9500 (rank 2 of 30)
 adjudicated: accuracy 0.9050 (rank 25 of 30)"><title>bert_base_fy
 dataset gold: accuracy 0.9500 (rank 2 of 30)
-adjudicated: accuracy 0.9050 (rank 25 of 30)</title></circle><circle cx="290" cy="424.4" r="3.5" class="dot k-local" data-tip="bert_base_fy
+adjudicated: accuracy 0.9050 (rank 25 of 30)</title></circle><circle cx="264" cy="424.4" r="3.5" class="dot k-local" data-tip="bert_base_fy
 dataset gold: accuracy 0.9500 (rank 2 of 30)
 adjudicated: accuracy 0.9050 (rank 25 of 30)"><title>bert_base_fy
 dataset gold: accuracy 0.9500 (rank 2 of 30)
-adjudicated: accuracy 0.9050 (rank 25 of 30)</title></circle><line x1="110" y1="98.6" x2="290" y2="98.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="98.6" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+adjudicated: accuracy 0.9050 (rank 25 of 30)</title></circle><line x1="128" y1="98.6" x2="264" y2="98.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="98.6" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 dataset gold: accuracy 0.9100 (rank 4 of 30)
 adjudicated: accuracy 0.9650 (rank 4 of 30)"><title>anthropic_m
 dataset gold: accuracy 0.9100 (rank 4 of 30)
-adjudicated: accuracy 0.9650 (rank 4 of 30)</title></circle><circle cx="290" cy="98.6" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+adjudicated: accuracy 0.9650 (rank 4 of 30)</title></circle><circle cx="264" cy="98.6" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 dataset gold: accuracy 0.9100 (rank 4 of 30)
 adjudicated: accuracy 0.9650 (rank 4 of 30)"><title>anthropic_m
 dataset gold: accuracy 0.9100 (rank 4 of 30)
-adjudicated: accuracy 0.9650 (rank 4 of 30)</title></circle><line x1="110" y1="129.6" x2="290" y2="67.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="129.6" r="3.5" class="dot k-proprietary" data-tip="openai_m
+adjudicated: accuracy 0.9650 (rank 4 of 30)</title></circle><line x1="128" y1="129.6" x2="264" y2="67.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="129.6" r="3.5" class="dot k-proprietary" data-tip="openai_m
 dataset gold: accuracy 0.8950 (rank 6 of 30)
 adjudicated: accuracy 0.9800 (rank 2 of 30)"><title>openai_m
 dataset gold: accuracy 0.8950 (rank 6 of 30)
-adjudicated: accuracy 0.9800 (rank 2 of 30)</title></circle><circle cx="290" cy="67.5" r="3.5" class="dot k-proprietary" data-tip="openai_m
+adjudicated: accuracy 0.9800 (rank 2 of 30)</title></circle><circle cx="264" cy="67.5" r="3.5" class="dot k-proprietary" data-tip="openai_m
 dataset gold: accuracy 0.8950 (rank 6 of 30)
 adjudicated: accuracy 0.9800 (rank 2 of 30)"><title>openai_m
 dataset gold: accuracy 0.8950 (rank 6 of 30)
-adjudicated: accuracy 0.9800 (rank 2 of 30)</title></circle><line x1="110" y1="145.1" x2="290" y2="83.0" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="145.1" r="3.5" class="dot k-proprietary" data-tip="openai_l
+adjudicated: accuracy 0.9800 (rank 2 of 30)</title></circle><line x1="128" y1="145.1" x2="264" y2="83.0" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="145.1" r="3.5" class="dot k-proprietary" data-tip="openai_l
 dataset gold: accuracy 0.8900 (rank 7 of 30)
 adjudicated: accuracy 0.9750 (rank 3 of 30)"><title>openai_l
 dataset gold: accuracy 0.8900 (rank 7 of 30)
-adjudicated: accuracy 0.9750 (rank 3 of 30)</title></circle><circle cx="290" cy="83.0" r="3.5" class="dot k-proprietary" data-tip="openai_l
+adjudicated: accuracy 0.9750 (rank 3 of 30)</title></circle><circle cx="264" cy="83.0" r="3.5" class="dot k-proprietary" data-tip="openai_l
 dataset gold: accuracy 0.8900 (rank 7 of 30)
 adjudicated: accuracy 0.9750 (rank 3 of 30)"><title>openai_l
 dataset gold: accuracy 0.8900 (rank 7 of 30)
-adjudicated: accuracy 0.9750 (rank 3 of 30)</title></circle><line x1="110" y1="160.6" x2="290" y2="145.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="160.6" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+adjudicated: accuracy 0.9750 (rank 3 of 30)</title></circle><line x1="128" y1="160.6" x2="264" y2="145.1" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="160.6" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 dataset gold: accuracy 0.8850 (rank 8 of 30)
 adjudicated: accuracy 0.9600 (rank 7 of 30)"><title>qwen_m
 dataset gold: accuracy 0.8850 (rank 8 of 30)
-adjudicated: accuracy 0.9600 (rank 7 of 30)</title></circle><circle cx="290" cy="145.1" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+adjudicated: accuracy 0.9600 (rank 7 of 30)</title></circle><circle cx="264" cy="145.1" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 dataset gold: accuracy 0.8850 (rank 8 of 30)
 adjudicated: accuracy 0.9600 (rank 7 of 30)"><title>qwen_m
 dataset gold: accuracy 0.8850 (rank 8 of 30)
-adjudicated: accuracy 0.9600 (rank 7 of 30)</title></circle><line x1="110" y1="176.1" x2="290" y2="114.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="176.1" r="3.5" class="dot k-open" data-tip="llama_m
+adjudicated: accuracy 0.9600 (rank 7 of 30)</title></circle><line x1="128" y1="176.1" x2="264" y2="114.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="176.1" r="3.5" class="dot k-open" data-tip="llama_m
 dataset gold: accuracy 0.8800 (rank 9 of 30)
 adjudicated: accuracy 0.9650 (rank 5 of 30)"><title>llama_m
 dataset gold: accuracy 0.8800 (rank 9 of 30)
-adjudicated: accuracy 0.9650 (rank 5 of 30)</title></circle><circle cx="290" cy="114.1" r="3.5" class="dot k-open" data-tip="llama_m
+adjudicated: accuracy 0.9650 (rank 5 of 30)</title></circle><circle cx="264" cy="114.1" r="3.5" class="dot k-open" data-tip="llama_m
 dataset gold: accuracy 0.8800 (rank 9 of 30)
 adjudicated: accuracy 0.9650 (rank 5 of 30)"><title>llama_m
 dataset gold: accuracy 0.8800 (rank 9 of 30)
-adjudicated: accuracy 0.9650 (rank 5 of 30)</title></circle><line x1="110" y1="191.7" x2="290" y2="129.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="191.7" r="3.5" class="dot k-open" data-tip="gemma_s
+adjudicated: accuracy 0.9650 (rank 5 of 30)</title></circle><line x1="128" y1="191.7" x2="264" y2="129.6" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="191.7" r="3.5" class="dot k-open" data-tip="gemma_s
 dataset gold: accuracy 0.8750 (rank 10 of 30)
 adjudicated: accuracy 0.9600 (rank 6 of 30)"><title>gemma_s
 dataset gold: accuracy 0.8750 (rank 10 of 30)
-adjudicated: accuracy 0.9600 (rank 6 of 30)</title></circle><circle cx="290" cy="129.6" r="3.5" class="dot k-open" data-tip="gemma_s
+adjudicated: accuracy 0.9600 (rank 6 of 30)</title></circle><circle cx="264" cy="129.6" r="3.5" class="dot k-open" data-tip="gemma_s
 dataset gold: accuracy 0.8750 (rank 10 of 30)
 adjudicated: accuracy 0.9600 (rank 6 of 30)"><title>gemma_s
 dataset gold: accuracy 0.8750 (rank 10 of 30)
-adjudicated: accuracy 0.9600 (rank 6 of 30)</title></circle><line x1="110" y1="207.2" x2="290" y2="222.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="207.2" r="3.5" class="dot k-open" data-tip="mistral_l
+adjudicated: accuracy 0.9600 (rank 6 of 30)</title></circle><line x1="128" y1="207.2" x2="264" y2="222.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="207.2" r="3.5" class="dot k-open" data-tip="mistral_l
 dataset gold: accuracy 0.8750 (rank 11 of 30)
 adjudicated: accuracy 0.9500 (rank 12 of 30)"><title>mistral_l
 dataset gold: accuracy 0.8750 (rank 11 of 30)
-adjudicated: accuracy 0.9500 (rank 12 of 30)</title></circle><circle cx="290" cy="222.7" r="3.5" class="dot k-open" data-tip="mistral_l
+adjudicated: accuracy 0.9500 (rank 12 of 30)</title></circle><circle cx="264" cy="222.7" r="3.5" class="dot k-open" data-tip="mistral_l
 dataset gold: accuracy 0.8750 (rank 11 of 30)
 adjudicated: accuracy 0.9500 (rank 12 of 30)"><title>mistral_l
 dataset gold: accuracy 0.8750 (rank 11 of 30)
-adjudicated: accuracy 0.9500 (rank 12 of 30)</title></circle><line x1="110" y1="222.7" x2="290" y2="160.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="222.7" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+adjudicated: accuracy 0.9500 (rank 12 of 30)</title></circle><line x1="128" y1="222.7" x2="264" y2="160.6" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="222.7" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 dataset gold: accuracy 0.8750 (rank 12 of 30)
 adjudicated: accuracy 0.9600 (rank 8 of 30)"><title>qwen_s
 dataset gold: accuracy 0.8750 (rank 12 of 30)
-adjudicated: accuracy 0.9600 (rank 8 of 30)</title></circle><circle cx="290" cy="160.6" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+adjudicated: accuracy 0.9600 (rank 8 of 30)</title></circle><circle cx="264" cy="160.6" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 dataset gold: accuracy 0.8750 (rank 12 of 30)
 adjudicated: accuracy 0.9600 (rank 8 of 30)"><title>qwen_s
 dataset gold: accuracy 0.8750 (rank 12 of 30)
-adjudicated: accuracy 0.9600 (rank 8 of 30)</title></circle><line x1="110" y1="238.2" x2="290" y2="176.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="238.2" r="3.5" class="dot k-open" data-tip="deepseek_l
+adjudicated: accuracy 0.9600 (rank 8 of 30)</title></circle><line x1="128" y1="238.2" x2="264" y2="176.1" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="238.2" r="3.5" class="dot k-open" data-tip="deepseek_l
 dataset gold: accuracy 0.8700 (rank 13 of 30)
 adjudicated: accuracy 0.9550 (rank 9 of 30)"><title>deepseek_l
 dataset gold: accuracy 0.8700 (rank 13 of 30)
-adjudicated: accuracy 0.9550 (rank 9 of 30)</title></circle><circle cx="290" cy="176.1" r="3.5" class="dot k-open" data-tip="deepseek_l
+adjudicated: accuracy 0.9550 (rank 9 of 30)</title></circle><circle cx="264" cy="176.1" r="3.5" class="dot k-open" data-tip="deepseek_l
 dataset gold: accuracy 0.8700 (rank 13 of 30)
 adjudicated: accuracy 0.9550 (rank 9 of 30)"><title>deepseek_l
 dataset gold: accuracy 0.8700 (rank 13 of 30)
-adjudicated: accuracy 0.9550 (rank 9 of 30)</title></circle><line x1="110" y1="253.7" x2="290" y2="191.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="253.7" r="3.5" class="dot k-open" data-tip="gemma_l
+adjudicated: accuracy 0.9550 (rank 9 of 30)</title></circle><line x1="128" y1="253.7" x2="264" y2="191.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="253.7" r="3.5" class="dot k-open" data-tip="gemma_l
 dataset gold: accuracy 0.8700 (rank 14 of 30)
 adjudicated: accuracy 0.9550 (rank 10 of 30)"><title>gemma_l
 dataset gold: accuracy 0.8700 (rank 14 of 30)
-adjudicated: accuracy 0.9550 (rank 10 of 30)</title></circle><circle cx="290" cy="191.7" r="3.5" class="dot k-open" data-tip="gemma_l
+adjudicated: accuracy 0.9550 (rank 10 of 30)</title></circle><circle cx="264" cy="191.7" r="3.5" class="dot k-open" data-tip="gemma_l
 dataset gold: accuracy 0.8700 (rank 14 of 30)
 adjudicated: accuracy 0.9550 (rank 10 of 30)"><title>gemma_l
 dataset gold: accuracy 0.8700 (rank 14 of 30)
-adjudicated: accuracy 0.9550 (rank 10 of 30)</title></circle><line x1="110" y1="269.2" x2="290" y2="207.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="269.2" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+adjudicated: accuracy 0.9550 (rank 10 of 30)</title></circle><line x1="128" y1="269.2" x2="264" y2="207.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="269.2" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 dataset gold: accuracy 0.8700 (rank 15 of 30)
 adjudicated: accuracy 0.9550 (rank 11 of 30)"><title>qwen_l
 dataset gold: accuracy 0.8700 (rank 15 of 30)
-adjudicated: accuracy 0.9550 (rank 11 of 30)</title></circle><circle cx="290" cy="207.2" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+adjudicated: accuracy 0.9550 (rank 11 of 30)</title></circle><circle cx="264" cy="207.2" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 dataset gold: accuracy 0.8700 (rank 15 of 30)
 adjudicated: accuracy 0.9550 (rank 11 of 30)"><title>qwen_l
 dataset gold: accuracy 0.8700 (rank 15 of 30)
-adjudicated: accuracy 0.9550 (rank 11 of 30)</title></circle><line x1="110" y1="284.8" x2="290" y2="238.2" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="284.8" r="3.5" class="dot k-open" data-tip="glm_l
+adjudicated: accuracy 0.9550 (rank 11 of 30)</title></circle><line x1="128" y1="284.8" x2="264" y2="238.2" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="284.8" r="3.5" class="dot k-open" data-tip="glm_l
 dataset gold: accuracy 0.8600 (rank 16 of 30)
 adjudicated: accuracy 0.9450 (rank 13 of 30)"><title>glm_l
 dataset gold: accuracy 0.8600 (rank 16 of 30)
-adjudicated: accuracy 0.9450 (rank 13 of 30)</title></circle><circle cx="290" cy="238.2" r="3.5" class="dot k-open" data-tip="glm_l
+adjudicated: accuracy 0.9450 (rank 13 of 30)</title></circle><circle cx="264" cy="238.2" r="3.5" class="dot k-open" data-tip="glm_l
 dataset gold: accuracy 0.8600 (rank 16 of 30)
 adjudicated: accuracy 0.9450 (rank 13 of 30)"><title>glm_l
 dataset gold: accuracy 0.8600 (rank 16 of 30)
-adjudicated: accuracy 0.9450 (rank 13 of 30)</title></circle><line x1="110" y1="300.3" x2="290" y2="253.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="300.3" r="3.5" class="dot k-open" data-tip="glm_m
+adjudicated: accuracy 0.9450 (rank 13 of 30)</title></circle><line x1="128" y1="300.3" x2="264" y2="253.7" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="300.3" r="3.5" class="dot k-open" data-tip="glm_m
 dataset gold: accuracy 0.8600 (rank 17 of 30)
 adjudicated: accuracy 0.9450 (rank 14 of 30)"><title>glm_m
 dataset gold: accuracy 0.8600 (rank 17 of 30)
-adjudicated: accuracy 0.9450 (rank 14 of 30)</title></circle><circle cx="290" cy="253.7" r="3.5" class="dot k-open" data-tip="glm_m
+adjudicated: accuracy 0.9450 (rank 14 of 30)</title></circle><circle cx="264" cy="253.7" r="3.5" class="dot k-open" data-tip="glm_m
 dataset gold: accuracy 0.8600 (rank 17 of 30)
 adjudicated: accuracy 0.9450 (rank 14 of 30)"><title>glm_m
 dataset gold: accuracy 0.8600 (rank 17 of 30)
-adjudicated: accuracy 0.9450 (rank 14 of 30)</title></circle><line x1="110" y1="315.8" x2="290" y2="269.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="315.8" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+adjudicated: accuracy 0.9450 (rank 14 of 30)</title></circle><line x1="128" y1="315.8" x2="264" y2="269.2" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="315.8" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 dataset gold: accuracy 0.8600 (rank 18 of 30)
 adjudicated: accuracy 0.9450 (rank 15 of 30)"><title>mistral_m
 dataset gold: accuracy 0.8600 (rank 18 of 30)
-adjudicated: accuracy 0.9450 (rank 15 of 30)</title></circle><circle cx="290" cy="269.2" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+adjudicated: accuracy 0.9450 (rank 15 of 30)</title></circle><circle cx="264" cy="269.2" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 dataset gold: accuracy 0.8600 (rank 18 of 30)
 adjudicated: accuracy 0.9450 (rank 15 of 30)"><title>mistral_m
 dataset gold: accuracy 0.8600 (rank 18 of 30)
-adjudicated: accuracy 0.9450 (rank 15 of 30)</title></circle><line x1="110" y1="331.3" x2="290" y2="331.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="331.3" r="3.5" class="dot k-open" data-tip="mistral_s
+adjudicated: accuracy 0.9450 (rank 15 of 30)</title></circle><line x1="128" y1="331.3" x2="264" y2="331.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="331.3" r="3.5" class="dot k-open" data-tip="mistral_s
 dataset gold: accuracy 0.8600 (rank 19 of 30)
 adjudicated: accuracy 0.9300 (rank 19 of 30)"><title>mistral_s
 dataset gold: accuracy 0.8600 (rank 19 of 30)
-adjudicated: accuracy 0.9300 (rank 19 of 30)</title></circle><circle cx="290" cy="331.3" r="3.5" class="dot k-open" data-tip="mistral_s
+adjudicated: accuracy 0.9300 (rank 19 of 30)</title></circle><circle cx="264" cy="331.3" r="3.5" class="dot k-open" data-tip="mistral_s
 dataset gold: accuracy 0.8600 (rank 19 of 30)
 adjudicated: accuracy 0.9300 (rank 19 of 30)"><title>mistral_s
 dataset gold: accuracy 0.8600 (rank 19 of 30)
-adjudicated: accuracy 0.9300 (rank 19 of 30)</title></circle><line x1="110" y1="346.8" x2="290" y2="284.8" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="346.8" r="3.5" class="dot k-proprietary" data-tip="openai_s
+adjudicated: accuracy 0.9300 (rank 19 of 30)</title></circle><line x1="128" y1="346.8" x2="264" y2="284.8" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="346.8" r="3.5" class="dot k-proprietary" data-tip="openai_s
 dataset gold: accuracy 0.8600 (rank 20 of 30)
 adjudicated: accuracy 0.9450 (rank 16 of 30)"><title>openai_s
 dataset gold: accuracy 0.8600 (rank 20 of 30)
-adjudicated: accuracy 0.9450 (rank 16 of 30)</title></circle><circle cx="290" cy="284.8" r="3.5" class="dot k-proprietary" data-tip="openai_s
+adjudicated: accuracy 0.9450 (rank 16 of 30)</title></circle><circle cx="264" cy="284.8" r="3.5" class="dot k-proprietary" data-tip="openai_s
 dataset gold: accuracy 0.8600 (rank 20 of 30)
 adjudicated: accuracy 0.9450 (rank 16 of 30)"><title>openai_s
 dataset gold: accuracy 0.8600 (rank 20 of 30)
-adjudicated: accuracy 0.9450 (rank 16 of 30)</title></circle><line x1="110" y1="362.3" x2="290" y2="300.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="362.3" r="3.5" class="dot k-open" data-tip="gemma_m
+adjudicated: accuracy 0.9450 (rank 16 of 30)</title></circle><line x1="128" y1="362.3" x2="264" y2="300.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="362.3" r="3.5" class="dot k-open" data-tip="gemma_m
 dataset gold: accuracy 0.8550 (rank 21 of 30)
 adjudicated: accuracy 0.9400 (rank 17 of 30)"><title>gemma_m
 dataset gold: accuracy 0.8550 (rank 21 of 30)
-adjudicated: accuracy 0.9400 (rank 17 of 30)</title></circle><circle cx="290" cy="300.3" r="3.5" class="dot k-open" data-tip="gemma_m
+adjudicated: accuracy 0.9400 (rank 17 of 30)</title></circle><circle cx="264" cy="300.3" r="3.5" class="dot k-open" data-tip="gemma_m
 dataset gold: accuracy 0.8550 (rank 21 of 30)
 adjudicated: accuracy 0.9400 (rank 17 of 30)"><title>gemma_m
 dataset gold: accuracy 0.8550 (rank 21 of 30)
-adjudicated: accuracy 0.9400 (rank 17 of 30)</title></circle><line x1="110" y1="377.9" x2="290" y2="315.8" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="377.9" r="3.5" class="dot k-open" data-tip="glm_s
+adjudicated: accuracy 0.9400 (rank 17 of 30)</title></circle><line x1="128" y1="377.9" x2="264" y2="315.8" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="377.9" r="3.5" class="dot k-open" data-tip="glm_s
 dataset gold: accuracy 0.8500 (rank 22 of 30)
 adjudicated: accuracy 0.9350 (rank 18 of 30)"><title>glm_s
 dataset gold: accuracy 0.8500 (rank 22 of 30)
-adjudicated: accuracy 0.9350 (rank 18 of 30)</title></circle><circle cx="290" cy="315.8" r="3.5" class="dot k-open" data-tip="glm_s
+adjudicated: accuracy 0.9350 (rank 18 of 30)</title></circle><circle cx="264" cy="315.8" r="3.5" class="dot k-open" data-tip="glm_s
 dataset gold: accuracy 0.8500 (rank 22 of 30)
 adjudicated: accuracy 0.9350 (rank 18 of 30)"><title>glm_s
 dataset gold: accuracy 0.8500 (rank 22 of 30)
-adjudicated: accuracy 0.9350 (rank 18 of 30)</title></circle><line x1="110" y1="393.4" x2="290" y2="362.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="393.4" r="3.5" class="dot k-open" data-tip="deepseek_m
+adjudicated: accuracy 0.9350 (rank 18 of 30)</title></circle><line x1="128" y1="393.4" x2="264" y2="362.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="393.4" r="3.5" class="dot k-open" data-tip="deepseek_m
 dataset gold: accuracy 0.8450 (rank 23 of 30)
 adjudicated: accuracy 0.9250 (rank 21 of 30)"><title>deepseek_m
 dataset gold: accuracy 0.8450 (rank 23 of 30)
-adjudicated: accuracy 0.9250 (rank 21 of 30)</title></circle><circle cx="290" cy="362.3" r="3.5" class="dot k-open" data-tip="deepseek_m
+adjudicated: accuracy 0.9250 (rank 21 of 30)</title></circle><circle cx="264" cy="362.3" r="3.5" class="dot k-open" data-tip="deepseek_m
 dataset gold: accuracy 0.8450 (rank 23 of 30)
 adjudicated: accuracy 0.9250 (rank 21 of 30)"><title>deepseek_m
 dataset gold: accuracy 0.8450 (rank 23 of 30)
-adjudicated: accuracy 0.9250 (rank 21 of 30)</title></circle><line x1="110" y1="408.9" x2="290" y2="346.8" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="408.9" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+adjudicated: accuracy 0.9250 (rank 21 of 30)</title></circle><line x1="128" y1="408.9" x2="264" y2="346.8" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="408.9" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 dataset gold: accuracy 0.8400 (rank 24 of 30)
 adjudicated: accuracy 0.9250 (rank 20 of 30)"><title>anthropic_s
 dataset gold: accuracy 0.8400 (rank 24 of 30)
-adjudicated: accuracy 0.9250 (rank 20 of 30)</title></circle><circle cx="290" cy="346.8" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+adjudicated: accuracy 0.9250 (rank 20 of 30)</title></circle><circle cx="264" cy="346.8" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 dataset gold: accuracy 0.8400 (rank 24 of 30)
 adjudicated: accuracy 0.9250 (rank 20 of 30)"><title>anthropic_s
 dataset gold: accuracy 0.8400 (rank 24 of 30)
-adjudicated: accuracy 0.9250 (rank 20 of 30)</title></circle><line x1="110" y1="424.4" x2="290" y2="377.9" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="424.4" r="3.5" class="dot k-open" data-tip="deepseek_s
+adjudicated: accuracy 0.9250 (rank 20 of 30)</title></circle><line x1="128" y1="424.4" x2="264" y2="377.9" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="424.4" r="3.5" class="dot k-open" data-tip="deepseek_s
 dataset gold: accuracy 0.8400 (rank 25 of 30)
 adjudicated: accuracy 0.9250 (rank 22 of 30)"><title>deepseek_s
 dataset gold: accuracy 0.8400 (rank 25 of 30)
-adjudicated: accuracy 0.9250 (rank 22 of 30)</title></circle><circle cx="290" cy="377.9" r="3.5" class="dot k-open" data-tip="deepseek_s
+adjudicated: accuracy 0.9250 (rank 22 of 30)</title></circle><circle cx="264" cy="377.9" r="3.5" class="dot k-open" data-tip="deepseek_s
 dataset gold: accuracy 0.8400 (rank 25 of 30)
 adjudicated: accuracy 0.9250 (rank 22 of 30)"><title>deepseek_s
 dataset gold: accuracy 0.8400 (rank 25 of 30)
-adjudicated: accuracy 0.9250 (rank 22 of 30)</title></circle><line x1="110" y1="439.9" x2="290" y2="393.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="439.9" r="3.5" class="dot k-open" data-tip="llama_l
+adjudicated: accuracy 0.9250 (rank 22 of 30)</title></circle><line x1="128" y1="439.9" x2="264" y2="393.4" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="439.9" r="3.5" class="dot k-open" data-tip="llama_l
 dataset gold: accuracy 0.8400 (rank 26 of 30)
 adjudicated: accuracy 0.9250 (rank 23 of 30)"><title>llama_l
 dataset gold: accuracy 0.8400 (rank 26 of 30)
-adjudicated: accuracy 0.9250 (rank 23 of 30)</title></circle><circle cx="290" cy="393.4" r="3.5" class="dot k-open" data-tip="llama_l
+adjudicated: accuracy 0.9250 (rank 23 of 30)</title></circle><circle cx="264" cy="393.4" r="3.5" class="dot k-open" data-tip="llama_l
 dataset gold: accuracy 0.8400 (rank 26 of 30)
 adjudicated: accuracy 0.9250 (rank 23 of 30)"><title>llama_l
 dataset gold: accuracy 0.8400 (rank 26 of 30)
-adjudicated: accuracy 0.9250 (rank 23 of 30)</title></circle><line x1="110" y1="455.4" x2="290" y2="408.9" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="455.4" r="3.5" class="dot k-open" data-tip="llama_s
+adjudicated: accuracy 0.9250 (rank 23 of 30)</title></circle><line x1="128" y1="455.4" x2="264" y2="408.9" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="455.4" r="3.5" class="dot k-open" data-tip="llama_s
 dataset gold: accuracy 0.8350 (rank 27 of 30)
 adjudicated: accuracy 0.9200 (rank 24 of 30)"><title>llama_s
 dataset gold: accuracy 0.8350 (rank 27 of 30)
-adjudicated: accuracy 0.9200 (rank 24 of 30)</title></circle><circle cx="290" cy="408.9" r="3.5" class="dot k-open" data-tip="llama_s
+adjudicated: accuracy 0.9200 (rank 24 of 30)</title></circle><circle cx="264" cy="408.9" r="3.5" class="dot k-open" data-tip="llama_s
 dataset gold: accuracy 0.8350 (rank 27 of 30)
 adjudicated: accuracy 0.9200 (rank 24 of 30)"><title>llama_s
 dataset gold: accuracy 0.8350 (rank 27 of 30)
-adjudicated: accuracy 0.9200 (rank 24 of 30)</title></circle><line x1="110" y1="471.0" x2="290" y2="471.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="471.0" r="3.5" class="dot k-local" data-tip="bart_mnli
+adjudicated: accuracy 0.9200 (rank 24 of 30)</title></circle><line x1="128" y1="471.0" x2="264" y2="471.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="471.0" r="3.5" class="dot k-local" data-tip="bart_mnli
 dataset gold: accuracy 0.7000 (rank 28 of 30)
 adjudicated: accuracy 0.7550 (rank 28 of 30)"><title>bart_mnli
 dataset gold: accuracy 0.7000 (rank 28 of 30)
-adjudicated: accuracy 0.7550 (rank 28 of 30)</title></circle><circle cx="290" cy="471.0" r="3.5" class="dot k-local" data-tip="bart_mnli
+adjudicated: accuracy 0.7550 (rank 28 of 30)</title></circle><circle cx="264" cy="471.0" r="3.5" class="dot k-local" data-tip="bart_mnli
 dataset gold: accuracy 0.7000 (rank 28 of 30)
 adjudicated: accuracy 0.7550 (rank 28 of 30)"><title>bart_mnli
 dataset gold: accuracy 0.7000 (rank 28 of 30)
-adjudicated: accuracy 0.7550 (rank 28 of 30)</title></circle><line x1="110" y1="486.5" x2="290" y2="486.5" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="486.5" r="3.5" class="dot k-baseline" data-tip="keyword
+adjudicated: accuracy 0.7550 (rank 28 of 30)</title></circle><line x1="128" y1="486.5" x2="264" y2="486.5" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="486.5" r="3.5" class="dot k-baseline" data-tip="keyword
 dataset gold: accuracy 0.6700 (rank 29 of 30)
 adjudicated: accuracy 0.6700 (rank 29 of 30)"><title>keyword
 dataset gold: accuracy 0.6700 (rank 29 of 30)
-adjudicated: accuracy 0.6700 (rank 29 of 30)</title></circle><circle cx="290" cy="486.5" r="3.5" class="dot k-baseline" data-tip="keyword
+adjudicated: accuracy 0.6700 (rank 29 of 30)</title></circle><circle cx="264" cy="486.5" r="3.5" class="dot k-baseline" data-tip="keyword
 dataset gold: accuracy 0.6700 (rank 29 of 30)
 adjudicated: accuracy 0.6700 (rank 29 of 30)"><title>keyword
 dataset gold: accuracy 0.6700 (rank 29 of 30)
-adjudicated: accuracy 0.6700 (rank 29 of 30)</title></circle><line x1="110" y1="502.0" x2="290" y2="502.0" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="110" cy="502.0" r="3.5" class="dot k-baseline" data-tip="constant
+adjudicated: accuracy 0.6700 (rank 29 of 30)</title></circle><line x1="128" y1="502.0" x2="264" y2="502.0" class="s-baseline" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="502.0" r="3.5" class="dot k-baseline" data-tip="constant
 dataset gold: accuracy 0.2500 (rank 30 of 30)
 adjudicated: accuracy 0.2250 (rank 30 of 30)"><title>constant
 dataset gold: accuracy 0.2500 (rank 30 of 30)
-adjudicated: accuracy 0.2250 (rank 30 of 30)</title></circle><circle cx="290" cy="502.0" r="3.5" class="dot k-baseline" data-tip="constant
+adjudicated: accuracy 0.2250 (rank 30 of 30)</title></circle><circle cx="264" cy="502.0" r="3.5" class="dot k-baseline" data-tip="constant
 dataset gold: accuracy 0.2500 (rank 30 of 30)
 adjudicated: accuracy 0.2250 (rank 30 of 30)"><title>constant
 dataset gold: accuracy 0.2500 (rank 30 of 30)
-adjudicated: accuracy 0.2250 (rank 30 of 30)</title></circle><line x1="110" y1="52.0" x2="290" y2="439.9" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="110" cy="52.0" r="5.5" class="dot k-local" data-tip="bert_base_ta
+adjudicated: accuracy 0.2250 (rank 30 of 30)</title></circle><line x1="128" y1="52.0" x2="264" y2="439.9" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="128" cy="52.0" r="5.5" class="dot k-local" data-tip="bert_base_ta
 dataset gold: accuracy 0.9600 (rank 1 of 30)
 adjudicated: accuracy 0.9050 (rank 26 of 30)"><title>bert_base_ta
 dataset gold: accuracy 0.9600 (rank 1 of 30)
-adjudicated: accuracy 0.9050 (rank 26 of 30)</title></circle><circle cx="290" cy="439.9" r="5.5" class="dot k-local" data-tip="bert_base_ta
+adjudicated: accuracy 0.9050 (rank 26 of 30)</title></circle><circle cx="264" cy="439.9" r="5.5" class="dot k-local" data-tip="bert_base_ta
 dataset gold: accuracy 0.9600 (rank 1 of 30)
 adjudicated: accuracy 0.9050 (rank 26 of 30)"><title>bert_base_ta
 dataset gold: accuracy 0.9600 (rank 1 of 30)
-adjudicated: accuracy 0.9050 (rank 26 of 30)</title></circle><line x1="110" y1="83.0" x2="290" y2="455.4" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="110" cy="83.0" r="5.5" class="dot k-local" data-tip="bert_mini
+adjudicated: accuracy 0.9050 (rank 26 of 30)</title></circle><line x1="128" y1="83.0" x2="264" y2="455.4" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="128" cy="83.0" r="5.5" class="dot k-local" data-tip="bert_mini
 dataset gold: accuracy 0.9450 (rank 3 of 30)
 adjudicated: accuracy 0.9050 (rank 27 of 30)"><title>bert_mini
 dataset gold: accuracy 0.9450 (rank 3 of 30)
-adjudicated: accuracy 0.9050 (rank 27 of 30)</title></circle><circle cx="290" cy="455.4" r="5.5" class="dot k-local" data-tip="bert_mini
+adjudicated: accuracy 0.9050 (rank 27 of 30)</title></circle><circle cx="264" cy="455.4" r="5.5" class="dot k-local" data-tip="bert_mini
 dataset gold: accuracy 0.9450 (rank 3 of 30)
 adjudicated: accuracy 0.9050 (rank 27 of 30)"><title>bert_mini
 dataset gold: accuracy 0.9450 (rank 3 of 30)
-adjudicated: accuracy 0.9050 (rank 27 of 30)</title></circle><line x1="110" y1="114.1" x2="290" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="110" cy="114.1" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+adjudicated: accuracy 0.9050 (rank 27 of 30)</title></circle><line x1="128" y1="114.1" x2="264" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="128" cy="114.1" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 dataset gold: accuracy 0.9000 (rank 5 of 30)
 adjudicated: accuracy 0.9850 (rank 1 of 30)"><title>anthropic_l
 dataset gold: accuracy 0.9000 (rank 5 of 30)
-adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><circle cx="290" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><circle cx="264" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 dataset gold: accuracy 0.9000 (rank 5 of 30)
 adjudicated: accuracy 0.9850 (rank 1 of 30)"><title>anthropic_l
 dataset gold: accuracy 0.9000 (rank 5 of 30)
-adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><text x="98" y="57.0" text-anchor="end" class="t-ink" font-size="15">bert_base_ta 1</text><text x="302" y="444.9" class="t-ink" font-size="15">26 bert_base_ta</text><text x="98" y="88.0" text-anchor="end" class="t-ink" font-size="15">bert_mini 3</text><text x="302" y="462.9" class="t-ink" font-size="15">27 bert_mini</text><text x="98" y="119.1" text-anchor="end" class="t-ink" font-size="15">anthropic_l 5</text><text x="302" y="57.0" class="t-ink" font-size="15">1 anthropic_l</text></svg></div><figcaption>AG News, 30 arms: rank on the dataset's gold (left) and on the adjudicated gold (right).</figcaption></figure>
+adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><text x="116" y="57.0" text-anchor="end" class="t-ink" font-size="14">bert_base_ta 1</text><text x="276" y="444.9" class="t-ink" font-size="14">26 bert_base_ta</text><text x="116" y="88.0" text-anchor="end" class="t-ink" font-size="14">bert_mini 3</text><text x="276" y="462.9" class="t-ink" font-size="14">27 bert_mini</text><text x="116" y="119.1" text-anchor="end" class="t-ink" font-size="14">anthropic_l 5</text><text x="276" y="57.0" class="t-ink" font-size="14">1 anthropic_l</text></svg></div><figcaption>AG News, 30 arms: rank on the dataset's gold (left) and on the adjudicated gold (right).</figcaption></figure>
 </div></section>
 
 <section class="block" id="decided"><div class="wrap">
