@@ -1,0 +1,68 @@
+# Judge scorer for the summarisation experiment, frontier judges (docs/adr/ADR-0001-judge-scorers.md).
+#   make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v2 ARGS=--dry-run
+#
+# The question it answers: did judge-summ-v1 disagree with the human check because its
+# judges were weak? These are the two strongest judges SummEval measured from different
+# vendors, under the same prompt and protocol as v1.
+#   openai_l     (OpenAI)     tau 0.5398, 1st of 33 on SummEval, $0.635 per 100 articles.
+#   anthropic_l  (Anthropic)  tau 0.5283, $2.008 per 100 articles.
+# Both are also arms in the summarisation experiment (openai_*, anthropic_*); the pass
+# flags those arms in the matching judge's column rather than excluding them.
+judges:
+  - id: openai_l
+    params:
+      provider: litellm
+      model: eval-gpt-6sol
+      family: openai
+      price_tier: large
+      temperature: 0.0
+      reasoning: {enabled: false}
+      usd_per_mtok_in: 2.5
+      usd_per_mtok_out: 15.0
+      max_tokens: 1500
+  - id: anthropic_l
+    params:
+      provider: litellm
+      model: eval-opus-5
+      family: anthropic
+      price_tier: large
+      temperature: 0.0
+      reasoning: {enabled: false}
+      usd_per_mtok_in: 5.0
+      usd_per_mtok_out: 25.0
+      max_tokens: 1500
+
+scorer_id: judge-summ-v2
+kind: judge
+dataset_id: cnn_dailymail_200
+
+# The prompt SummEval validated, byte for byte at 16 summaries (the same as judge-summ-v1).
+prompt:
+  file: examples/summeval-judging/prompt.txt
+  sha256_at_16: 6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee
+
+# The same protocol as judge-summ-v1, so the two scorers judge the same judging set.
+protocol:
+  listwise: true
+  outputs_per_call: 16
+  blinding: true
+  order_seed: 0
+  position_check_fraction: 0.1
+  noise_check_fraction: 0.1
+  contested_threshold: 0.5
+
+validation:
+  experiment: summeval_100
+  metric: tau
+  what: mean Kendall tau-b against the mean of three expert annotators, over 4 dimensions and 100 articles
+  differs_from_this_use: >-
+    SummEval summaries are from 16 systems of 2019; the summarisation experiment's are 29
+    modern arms, judged here in blocks of 15 and 14. The same gap judge-summ-v1 failed to
+    cross: this scorer tests whether stronger judges cross it.
+  runs:
+    # min_metric: the best free scorer's tau, as in judge-summ-v1 (se_unievalpub_n100_v1_20261018T221123Z).
+    - {judge: openai_l,    run: se_openai_l_n100_v1_20261018T114806Z,    value: 0.539751, min_metric: 0.371714}
+    - {judge: anthropic_l, run: se_anthropic_l_n100_v1_20261018T115657Z, value: 0.528268, min_metric: 0.371714}
+
+# Upper bound on the whole pass, all judges and controls, counting verdicts already stored.
+cost_cap_usd: 15.00
