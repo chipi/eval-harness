@@ -1,0 +1,217 @@
+# ADR-0002 — Catalog, run inspector and goals in the harness (0.4.0)
+
+**Status:** Proposed. Awaiting the owner's approval before any code moves.
+**Date:** 2026-10-21
+
+## Context
+
+A project that pins the harness (the private podcast eval repo, on 0.3.0) built three things
+the harness does not have:
+
+1. **A catalog.** A static site over the project's data tree with:
+   - pages for datasets, references, runs, baselines and reports;
+   - charts of runs against references;
+   - a "ceiling" chart: how far two references agree with each other.
+2. **A run inspector.** A local server: pick runs on one `dataset_id`, see the per-item scores,
+   and get a paired test of every run against a baseline, with:
+   - an exact p-value;
+   - a Holm correction over a declared family;
+   - an exact confidence interval;
+   - the verdict in words.
+3. **Goals.** A registry of what a measurement is *for*:
+   - who reads the output;
+   - the output contract (format, length);
+   - the measure that decides;
+   - the references that count;
+   - which runs are evidence.
+
+   The project's configs name their goal; promotion records the output format; the validator
+   checks both.
+
+The owner decided (2026-10-21) that these are the main content of **0.4.0**:
+- move them into the harness as a generic core with project adapters;
+- make goals first-class in the harness;
+- keep one implementation of the paired test.
+
+This note proposes the split. **Nothing is moved until it is approved.**
+
+### What exists today (podcast repo, `tools/catalog/`, about 3,900 lines)
+
+| file | lines | what it is | generic? |
+|---|---|---|---|
+| `inspect_core.py` | 185 | `exact_p`, `sign_flip_p`, `holm`, `exact_ci`, `compare` | yes: no imports from the project |
+| `serve.py` | 427 | inspector HTTP server: 127.0.0.1, Host check, path allowlist, `compare`, `episode` | mostly; calls the adapter |
+| `build.py` | 2,199 | static catalog | mixed: page rendering is generic; task inference, model families, report and path conventions are not |
+| `goals.py` | 466 | goal registry: collect, expand, answer blocks, pages | mostly; reads the adapter's references and arms |
+| `podcast_adapter.py` | 583 | everything that knows the podcast layout | no, by design |
+| `assets/` | — | `forest.js`, `inspect.js`, `catalog.js`, `catalog.css` | yes |
+
+The generic code calls the adapter through about 18 functions:
+- `arms_of`, `split_arm`, `scores`, `recorded_means`, `describe`, `notes`, `input_hashes`;
+- `benchmark_results`, `dataset_of`, `run_metrics`;
+- `references`, `reference_format`, `reference_view`, `episode_view`;
+- `summary_format`, `is_neutral`, `lower_is_better`;
+- plus two private helpers that must become public or go.
+
+That set is the interface proposed below.
+
+### What the harness has today
+
+The paired test is written three times, each as a seeded Monte Carlo sign-flip (`(hits + 1) /
+(permutations + 1)`, 20,000 permutations):
+- `pair_test.py`;
+- `family_test.py` (with Holm);
+- `leaderboard.py`.
+
+`inspect_core.exact_p` enumerates all 2^n sign patterns up to n = 30, so it is exact there,
+and falls back to Monte Carlo above that. In the podcast repo, the Monte Carlo estimate flipped
+three published verdicts that sat on the 0.05 line.
+
+## Decision (proposed)
+
+### 1. One paired-test module: `evaluation_harness.stats`
+
+- `inspect_core.py` moves into the harness as `scripts/stats.py`, installed as
+  `evaluation_harness.stats`.
+- `pair_test`, `family_test`, `leaderboard` and the inspector all call it.
+- The three private copies are deleted.
+
+**This can change published numbers.** Above n = 30 nothing changes (it stays seeded Monte
+Carlo). At n ≤ 30, a p that was a Monte Carlo estimate becomes exact. The harness's reports
+are checked by `check_report_claims.py`, so the release is gated on that check: every p it
+finds must be re-derived and either agree or be corrected in the same release. The changelog
+lists each moved verdict under **Changed**. This is the "a change that can move a result"
+case the changelog rules already require.
+
+### 2. The adapter interface: `evaluation_harness.catalog.Adapter`
+
+A `typing.Protocol` (Python 3.9 compatible; the package's floor stays 3.9). Grouped by
+question:
+
+| question | methods |
+|---|---|
+| what runs exist, on which data | `arms()`, `dataset_of(arm)`, `describe(arm)`, `notes(arm)` |
+| what did each run score, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)` |
+| which way is better | `lower_is_better(metric)`, `is_neutral(metric)` (descriptive keys) |
+| what references exist | `references()`, `reference_format(ref)` |
+| what was asked, what came back | `output_format(arm)` → `{asked, got, how}` (today `summary_format`) |
+| one item, side by side (inspector only, never in static output) | `item_view(arm, item)`, `reference_view(ref, item)` |
+
+Names change from podcast words to harness words: episode → item, `summary_format` →
+`output_format`, `split_arm`/`arms_of` → `arms()` returning arm ids that already carry the
+dataset.
+
+The harness ships **one built-in adapter, `HarnessAdapter`**, over its own layout:
+- `runs/*/metrics.json`, `predictions.jsonl`, `outputs/`;
+- `baselines/`, `references/`, `datasets/`;
+- the 0.3.0 judged runs under `runs-judged/<scorer>/`.
+
+So `evh catalog` works on the harness's own data and on the tutorial with no project code. The
+podcast repo keeps `podcast_adapter.py`, which implements the protocol over its older layout
+and wraps its own re-scorers (ROUGE, NER) and `summary_format`.
+
+### 3. Commands
+
+- `evh catalog build [--adapter module:Class] [--out DIR]`: static site, default
+  `.build/catalog`.
+- `evh catalog serve [--port 8765]`: the inspector.
+
+The adapter is named in `config.yaml` (`catalog.adapter: tools.catalog.podcast_adapter:Adapter`)
+or by flag; the default is `HarnessAdapter`.
+
+**Kept exactly as now, and tested in the harness:**
+- No transcript, prediction or reference text in static output. Item text is served only by
+  the local inspector.
+- The server binds 127.0.0.1, checks the Host header, and serves only the build directory and
+  the data tree.
+- No mixed `dataset_id` in one comparison: a refusal, as in `run-compare`.
+
+### 4. What stays project-side
+
+These go in the adapter, or in an optional `catalog.yaml` the builder reads:
+- task inference from run names;
+- model-family rules (for the ⚑ same-family flag);
+- ML vs LLM kind;
+- report locations and `ANNOTATIONS.yaml`;
+- the retired-pages list.
+
+The harness ships the mechanism (flag same-family, show retired, annotate a reference), not the
+podcast rules.
+
+### 5. Goals become first-class
+
+- **Schema:** `schemas/goal.schema.json`, from the podcast repo's 19 goals. Required:
+  - `id`, `purpose`, `reader`;
+  - `output_contract` (format, length);
+  - `primary_measure`;
+  - `references`, `evidence`;
+  - `min_items`.
+
+  Optional:
+  - `secondary_measures`;
+  - `generalization` (checks that never decide);
+  - `links` (truth that lives elsewhere).
+- **Location:** `data/goals/<id>.yaml`, beside `datasets/` and `configs/`.
+- **Configs:** a `goal:` field on experiment configs. `experiment-run` copies it into the run
+  fingerprint and `run-promote` copies it into the baseline.
+- **Promotion:** `run-promote` records `format` (asked) and `format_observed` (got), using the
+  adapter's or harness's `output_format`.
+- **Validate:** `evh validate` gains the podcast repo's check A10, as a harness check:
+  - every `goal:` resolves;
+  - the format matches the goal;
+  - a note when n < `min_items`;
+  - new configs need a goal.
+
+  "New" is measured from a date set in `config.yaml`, so an existing project is not failed
+  retroactively.
+- **Catalog:** goal pages, with the leader on each goal's primary measure and the paired test
+  against it, as in the podcast repo now.
+
+Goals are **optional for a project and required only from its cut-over date**: an existing
+project upgrading from 0.3.0 changes nothing until it sets that date.
+
+### 6. Release sequence
+
+| step | release | content | gate |
+|---|---|---|---|
+| 1 | 0.4.0a1 (tag only) | `stats.py` + the three scripts moved onto it | self-test; `check_report_claims` re-derived; moved verdicts listed |
+| 2 | 0.4.0a2 | `catalog` package, `Adapter` protocol, `HarnessAdapter`, `evh catalog build/serve` | catalog builds on harness data and the tutorial; server security tests ported |
+| 3 | 0.4.0a3 | goals: schema, `goal:` on configs, promotion `format`, validate check | tutorial gets one goal; validate passes on harness data |
+| 4 | — | podcast repo pins 0.4.0a3, deletes its copies of the generic code, keeps `podcast_adapter.py` | its full suite (1,212 tests) and `make catalog` give the same pages |
+| 5 | 0.4.0 | changelog, UPGRADING, GUIDE step for goals and the catalog | owner's merge |
+
+Step 4 is the proof the split is right: if the podcast pages change other than by intent, the
+interface is wrong, and that gets fixed before 0.4.0.
+
+## Consequences
+
+- The inspector's statistics and the CLI's statistics can no longer disagree.
+- Any project on the harness gets a catalog and inspector with one adapter file, or none if it
+  uses the harness layout.
+- The package gains a `markdown` dependency (the catalog renders reports). Proposal: make it an
+  extra, `evaluation-harness[catalog]`, so the core stays `pyyaml` + `jsonschema`.
+- The podcast code uses 3.10 syntax (`X | None`). The move needs `from __future__ import
+  annotations` throughout (already in most files) or `Optional`, because the package's floor
+  is 3.9.
+
+## Open questions for the owner
+
+1. **Exact p in the CLI.** Should `pair-test`/`family-test` switch to exact at n ≤ 30 in 0.4.0
+   (recommended; it can move published verdicts, each one listed), or keep Monte Carlo and use
+   exact only in the inspector?
+2. **Goal cut-over.** Is a project-set date (recommended) right, or should 0.4.0 require goals
+   on all new configs from the upgrade on?
+3. **Catalog on the public site.** Should the harness's own catalog be published with the
+   findings site (it holds only public data), or stay local-only like the podcast one?
+4. **Alpha tags.** Use 0.4.0a1–a3 tags so the podcast repo can pin each step (recommended), or
+   one 0.4.0 at the end?
+
+## Not covered by this note
+
+- **Performance.** Build time over the harness's ~36,000 run files has not been measured; the
+  podcast tree is smaller. The note assumes it is acceptable; step 2 measures it.
+- **The podcast-specific re-scorers** (ROUGE against every live reference, NER) stay
+  project-side. Whether the harness's own `rescore` should feed the inspector is left for
+  later.
+- **The judge-assisted insight gold set** (podcast goal G3) and the human check on judge
+  rankings are project work, not harness work.
