@@ -55,7 +55,7 @@ try:
 except ImportError:
     jsonschema = None
 
-DATA_DIR = ROOT / "data"
+from _common import DATA as DATA_DIR  # noqa: E402  (honours the data-dir override)
 problems: list[str] = []
 notes: list[str] = []
 
