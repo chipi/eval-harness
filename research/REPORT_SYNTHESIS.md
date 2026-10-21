@@ -715,7 +715,7 @@ mistake, so those labels are suspect. It flags candidates, it does not prove an 
 | corpus | suspect gold labels (count, unit) | flagged when | method |
 |---|---|---|---|
 | Few-NERD | **34 of 768** gold entities (4.4%) | the span is found but ≥80% of the 26 learned arms give it another type | consensus pass |
-| DBpedia | 3 items | 24–25 of the 26 learned arms dispute the label; the top eleven arms are separated by four items. Whether the label or the field is right is one rater's reading, unadjudicated | consensus pass |
+| DBpedia | 3 items | 24–25 of the 26 learned arms dispute the label; the top eleven arms are separated by four items. Adjudicated by one reader shown the hosted answer: the gold was wrong on all three | consensus pass |
 | AG News | 17 items | ≥80% of the hosted field disputes the label (19 at 75%, 20 at 70%) — the fine-tuned lead is concentrated in them; revised a published finding twice | consensus pass, hosted arms only |
 | CNN/DailyMail | **not checked** | — | — |
 | SciFact | **not checked** (qrels incompleteness unmeasured) | — | — |
@@ -729,10 +729,10 @@ is a different kind of check: identical inputs that received different scores sh
 gold is noisy, not that any one score is wrong.
 
 On a saturated benchmark this stops being a footnote and becomes the ceiling: DBpedia's top
-eleven arms are separated by four items, and three of those are items 24–25 of 26 learned arms dispute
-because, on one rater's reading, the field's answer is defensible and the label
-unadjudicated; DBpedia's leader is ahead of the second arm by exactly one of them. **On that
-reading the measurement was resolving annotation, not capability.**
+eleven arms are separated by four items, and three of those are items 24–25 of 26 learned arms
+dispute. Adjudicated by one reader shown the hosted answer, the gold was wrong on all three,
+and DBpedia's leader is ahead of the second arm by exactly one of them. **On that reading the
+measurement was resolving annotation, not capability.**
 
 The diagnostic is cheap and general: items nearly every *learned* arm gets wrong are items
 that are candidates for wrong gold. Independent models do not agree on a mistake.

@@ -1,4 +1,4 @@
-# A judge scorer for the tutorial (docs/GUIDE.md, step 11). It re-measures the tickets_v1
+# A judge scorer for the tutorial (docs/GUIDE.md, step 10). It re-measures the tickets_v1
 # arms' frozen outputs with two judges, for $0 and offline: both are `provider: fake`, a
 # deterministic stand-in that calls nothing. A fake judge can never be validated, so the
 # harness refuses this scorer unless --unvalidated is given, and labels every number it makes.

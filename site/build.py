@@ -967,7 +967,7 @@ def findings_for(x: dict, f: dict) -> list:
              f"{t['arm']} leads at {t['score']:.4f}, not separated from {x['n_tied']} others, including the free fine-tune."),
             *common,
             ("The benchmark is saturated, and the gold is sometimes disputed.",
-             q("Three items are disputed by 24 to 25 of 26 arms, and on one rater's reading, unadjudicated, the gold label is the error.", rep)),
+             q("Three items are disputed by 24 to 25 of 26 arms. Adjudicated by one reader shown the hosted answer, the gold was wrong on all three; the dataset's own gold stays primary.", rep)),
         ]
     if x["slug"] == "few-nerd":
         return [

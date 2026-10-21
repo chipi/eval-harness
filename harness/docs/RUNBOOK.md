@@ -359,7 +359,7 @@ and to the news-summary judge, so it is not an `evh` command.
    - **`task`** says what is judged: `source_label` (what each item is, e.g. `TICKET`,
      `QUERY`), `output_label` (what the arms wrote, e.g. `SUMMARIES`, `ANSWERS`),
      `dimensions` (the names the judge must score, each a JSON key in its reply) and `scale`
-     (`[low, high]`; a score outside it makes the reply unparsed). The judge receives the
+     (`[low, high]`, whole numbers; a score outside it makes the reply unparsed). The judge receives the
      prompt, then `<source_label>:` and the item, then `<output_label>:` and the outputs
      numbered 1..n. Leave `task` out and it is SummEval's news-summary task (`ARTICLE`,
      `SUMMARIES`, coherence/consistency/fluency/relevance, 1-5), which the committed
@@ -367,10 +367,12 @@ and to the news-summary judge, so it is not an `evh` command.
    - **The prompt** writes `{n}` wherever the number of outputs in a call goes ("rate each of
      the {n} numbered answers", "a list of {n} integers"); the pass replaces it per call. It
      must ask for JSON with one list of n numbers per dimension. A prompt without `{n}` is
-     taken to be SummEval's, whose own count phrases are rewritten instead.
+     taken to be SummEval's, whose own count phrases are rewritten instead; a prompt with both
+     is refused, since its fixed phrases would keep saying 16.
    - **Which arms.** Every arm on the dataset (its latest run per `config_id`) unless the
      scorer sets `arms_match` (a `config_id` substring), or `ARGS="--match … "` or
-     `--arms a,b,c` narrows it. A subset is its own judging set.
+     `--arms a,b,c` narrows it. A subset is its own judging set. If the arms mix config versions
+     (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
      written; the project root (`EVAL_HOME`, else the harness checkout); the directory of
      the scorer file itself; and, only in a checkout of this repository, the repository root,
@@ -400,8 +402,9 @@ and to the news-summary judge, so it is not an `evh` command.
    keeps everything bought; raise the cap to continue. A reply that does not parse (wrong
    shape, missing dimension, a score off the scale) is stored as it came and reported as
    `unparsed reply: …`; an item counts only when every one of its primary blocks parsed.
-   Judges do this: in a trial on the tutorial's tickets, one of 24 replies was a bare list
-   (`[1, 2, 3, 4]`) instead of the JSON asked for. `ARGS="--retry-unparsed"` calls again for
+   Real judges do this: in an uncommitted trial of the tutorial's ticket task with two real
+   judges (`gemma_l`, `qwen_s`), one of 24 replies was a bare list (`[1, 2, 3, 4]`) instead of
+   the JSON asked for. `ARGS="--retry-unparsed"` calls again for
    those blocks only.
 6. **Read `data/runs-judged/<id>/summary.json` before the leaderboard:** per-judge columns,
    inter-judge agreement, which arms share a judge's family, the position check (a second

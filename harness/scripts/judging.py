@@ -69,10 +69,12 @@ def task_of(scorer: Dict[str, Any]) -> Dict[str, Any]:
             or not all(isinstance(d, str) and d.strip() for d in dims)):
         raise ValueError(f"task.dimensions must be a list of distinct names, got {dims!r}")
     sc = t["scale"]
+    # Whole numbers only: a judge rates on points, and a fractional bound such as [0.5, 3.5]
+    # would make every integer reply at the bottom fall outside it.
     if (not isinstance(sc, list) or len(sc) != 2
-            or not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in sc)
+            or not all(isinstance(x, int) and not isinstance(x, bool) for x in sc)
             or not sc[0] < sc[1]):
-        raise ValueError(f"task.scale must be [low, high] with low < high, got {sc!r}")
+        raise ValueError(f"task.scale must be [low, high], whole numbers with low < high, got {sc!r}")
     return {"source_label": t["source_label"], "output_label": t["output_label"],
             "dimensions": list(dims), "scale": [sc[0], sc[1]]}
 
@@ -81,11 +83,14 @@ def task_of(scorer: Dict[str, Any]) -> Dict[str, Any]:
 def render_prompt(base: str, n: int) -> str:
     """The prompt for `n` outputs. A prompt containing `{n}` gets the count there and nothing
     else changes. Otherwise it is SummEval's prompt, byte-identical to it when n == 16."""
+    a, b = "16 numbered summaries", "a list of 16 integers"
     if COUNT in base:
+        if a in base or b in base:
+            raise SystemExit(f"the prompt has both {COUNT} and SummEval's fixed count phrases "
+                             f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other")
         return base.replace(COUNT, str(n))
     if n == 16:
         return base
-    a, b = "16 numbered summaries", "a list of 16 integers"
     if a not in base or b not in base:
         raise SystemExit(f"the prompt has no {COUNT} where the count goes, and not SummEval's two "
                          f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs")

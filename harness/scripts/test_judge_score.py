@@ -866,6 +866,8 @@ for bad_task, why in (({"labels": "x"}, "an unknown key"), ({"dimensions": []}, 
                       ({"dimensions": ["a", "a"]}, "a repeated dimension"),
                       ({"scale": [5, 1]}, "a scale whose low is not below its high"),
                       ({"scale": [1]}, "a scale that is not two numbers"),
+                      ({"scale": [1.0, 5.0]}, "a scale in floats"),
+                      ({"scale": [0.5, 3.5]}, "a fractional scale"),
                       ({"source_label": "A:B"}, "a label with ':'"),
                       ({"output_label": "two\nlines"}, "a two-line label")):
     try:
@@ -950,7 +952,8 @@ with tempfile.TemporaryDirectory() as td_:
     check("V13: a scorer with a declared task and a {n} prompt passes",
           vt.scorer_problems(sdir) == [])
     (sdir / "s-bad.yaml").write_text(json.dumps(
-        {**base_, "scorer_id": "s-bad", "prompt": {"file": str(sdir / "bad.txt")}}))
+        {**base_, "scorer_id": "s-bad", "prompt": {"file": str(sdir / "bad.txt")},
+         "protocol": {"outputs_per_call": 16}}))
     (sdir / "s-task.yaml").write_text(json.dumps(
         {**base_, "scorer_id": "s-task", "task": {"scale": [3, 1]}}))
     probs_ = vt.scorer_problems(sdir)
@@ -974,6 +977,49 @@ check("leaderboard: judge means (quarters, sixths) are exact, so no precision no
 check("leaderboard: scores rounded to 6 decimals still get the note",
       not lb._small_fractions([0.25, 0.333333]) and not lb._small_fractions([0.123457]))
 check("leaderboard: no values is not 'all exact'", not lb._small_fractions([]))
+check("leaderboard: judge means as stored (round 10) never get the note: exact or >= 8 decimals",
+      all(lb._small_fractions([round(v, 10)]) or lb._stored_decimals([round(v, 10)]) >= lb._MIN_TIE_DECIMALS
+          for v in (3.25, 2.5, 2 / 3, 13 / 6, 4.0833333333)))
+
+check("prompt: {n} together with SummEval's fixed phrases is refused (they would stay at 16)",
+      "16" in _exit(lambda: judging.render_prompt(
+          "Rate the {n} items: 16 numbered summaries, a list of 16 integers.", 5)))
+
+# The default arm set: every config on the dataset, latest run per config; another dataset's
+# runs are not in it; a mix of config versions is reported.
+with tempfile.TemporaryDirectory() as td_:
+    rd = Path(td_)
+    for name, cid, ds, at in (("a_v1_r1", "a_v1", "ds", "2026-01-01"), ("a_v1_r2", "a_v1", "ds", "2026-01-02"),
+                              ("b_v1_r1", "b_v1", "ds", "2026-01-01"), ("a_v2_r1", "a_v2", "ds", "2026-01-03"),
+                              ("c_v1_r1", "c_v1", "other", "2026-01-01")):
+        (rd / name).mkdir()
+        (rd / name / "metrics.json").write_text(json.dumps(
+            {"config_id": cid, "dataset_id": ds, "created_at": at, "params": {"family": "x"}}))
+    got = js.discover_arms("ds", "", rd)
+    check("default arms: every config on the dataset, none from another dataset",
+          [a["config_id"] for a in got] == ["a_v1", "a_v2", "b_v1"])
+    check("default arms: repeat runs of one config are one arm, the latest",
+          next(a for a in got if a["config_id"] == "a_v1")["run"] == "a_v1_r2")
+    check("default arms: a mix of config versions is reported", js.config_versions(got) == ["_v1", "_v2"]
+          and js.config_versions([a for a in got if a["config_id"] != "a_v2"]) == ["_v1"])
+
+# A real judge is never handed the fake judge's task, whatever run_judging does.
+with tempfile.TemporaryDirectory() as td_:
+    handed = []
+
+    def rec(message, params):
+        handed.append(dict(params))
+        n_ = len(re.findall(r"^\d+\. ", message.rsplit("SUMMARIES:\n", 1)[1], re.M))
+        return SimpleNamespace(output=json.dumps({d: [3] * n_ for d in judging.DIMS}), tokens_in=10,
+                               tokens_out=10, cost_usd=0.0, extra={}, meta={})
+    real_sc = scorer(task={"dimensions": list(judging.DIMS)},
+                     judges=[{"id": "ra", "params": {"provider": "litellm", "model": "m_a", "family": "gemma",
+                                                     "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}},
+                             {"id": "rb", "params": {"provider": "litellm", "model": "m_b", "family": "qwen",
+                                                     "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}}])
+    js.run_judging(manifest_for(real_sc), real_sc, BASE, ARTICLES, OUTPUTS, Path(td_), rec, 1.0,
+                   log=lambda *_: None)
+    check("run_judging: no real judge's call carries _task", handed and all("_task" not in p for p in handed))
 
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")

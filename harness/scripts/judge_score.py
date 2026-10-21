@@ -286,6 +286,11 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> List[Di
     return arms
 
 
+def config_versions(arms: Sequence[Dict[str, Any]]) -> List[str]:
+    """The distinct `_vN` endings of the arms' config_ids (leaderboard warns on the same mix)."""
+    return sorted({m.group(0) for a in arms for m in [re.search(r"_v\d+$", a["config_id"])] if m})
+
+
 def select_arms(arms: Sequence[Dict[str, Any]], spec: str) -> List[Dict[str, Any]]:
     """Restrict to the comma-separated tokens: an exact config_id, else a substring of one.
     A token that matches nothing is an error, not a smaller set."""
@@ -816,6 +821,11 @@ def main() -> int:
         arms = select_arms(arms, args.arms)
     if len(arms) < 2:
         die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}")
+    vers = config_versions(arms)
+    if len(vers) > 1:
+        print(f"WARNING: the arm set mixes config versions {', '.join(vers)}: v1 and v2 of one arm are "
+              "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
+              "is not what you mean.")
     outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
     base = prompt_text(sc)
     items_sha = (read_json(RUNS / arms[0]["run"] / "metrics.json").get("fingerprint", {})

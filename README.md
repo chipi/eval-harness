@@ -189,7 +189,7 @@ pick, as run here:
   every fine-tune. On DBpedia a **115× price
   difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
   the top group: the top eleven arms are within four items, three of them items whose
-  label the field disputes, unadjudicated.
+  label the field disputes; one reader adjudicated them, shown the hosted answer, and found the gold wrong on all three.
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
   its margin over the best LLM is one entity type whose meaning exists only inside that
   corpus, and **up to 38%** of that lead is agreeing with annotation the rest of the field

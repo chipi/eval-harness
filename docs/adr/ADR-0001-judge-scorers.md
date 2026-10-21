@@ -173,5 +173,7 @@ the same way but is out of scope here.
 - **One judge.** This is cheaper, but it leaves self-preference unmeasured, and the
   reference-writing result shows that preference is large. Rejected.
 - **Human scoring of the summarisation outputs.** This is the gold standard, but no budget
-  exists for 200 × 29 summaries. A small human slice to check the judges on this data is a
-  natural follow-up. Deferred.
+  exists for 200 × 29 summaries. A small human slice to check the judges on this data was
+  done on 2026-10-20: one reader, 20 blind `bart_l`/`deepseek_m` pairs on truncated articles
+  (`examples/summarization-cnn-dailymail/human_check_judge.json`). A larger check, several
+  readers on full articles, is still open.

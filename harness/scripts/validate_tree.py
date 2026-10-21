@@ -667,7 +667,9 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
                     if pr.get(k) in (None, ""):
                         bad.append(f"{f.name}: judge {j.get('id')!r} has no params.{k}")
             # The prompt must render for a call: `{n}`, or SummEval's own count phrases.
-            js.render_prompt(js.prompt_text(sc), n if isinstance(n, int) and n > 1 else 16)
+            # Size 2 exercises the rewrite: at 16 a SummEval prompt is returned unchanged, so a
+            # prompt with neither `{n}` nor its phrases would pass and fail only at run time.
+            js.render_prompt(js.prompt_text(sc), 2)
         except SystemExit as exc:
             bad.append(f"{f.name}: does not load ({exc})")
         except (KeyError, TypeError, AttributeError, ValueError, yaml_error) as exc:

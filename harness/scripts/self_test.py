@@ -2276,6 +2276,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             (d / "metrics.json").write_text(_json.dumps({
                 "config_id": arm, "dataset_id": "jds_v1", "created_at": "2026-01-01T00:00:00Z",
                 "params": {"family": fam}, "n_items": 3, "primary_metric": "rouge1",
+                "reference_tier": "silver",
                 "scores": {"rouge1": 0.3}, "metric_kinds": {"rouge1": "quality"}}))
         (proj / "prompts").mkdir()
         shutil.copy2(ROOT.parent / "examples" / "summeval-judging" / "prompt.txt",
@@ -2323,6 +2324,11 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         check("installed judge-score: leaderboard reads the scored runs",
               board.returncode == 0 and "arm_a" in board.stdout and "arm_b" in board.stdout
               and "judge_score_unvalidated" in board.stdout, (board.stderr + board.stdout)[-400:])
+        check("installed judge-score: a judged run carries no reference tier; the source's is kept",
+              "reference_tier" not in m and m.get("judged_with", {}).get("source_reference_tier") == "silver")
+        check("installed judge-score: leaderboard says a judge scored them, not silver references",
+              "Scored by an LLM judge, not against references: judge-fake-v1, unvalidated judge" in board.stdout
+              and "SILVER" not in board.stdout, board.stdout[-400:])
         again = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1",
                     "--unvalidated")
         check("installed judge-score: a rerun resumes from the stored verdicts (no new calls)",
