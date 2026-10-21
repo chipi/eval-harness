@@ -2,7 +2,7 @@
 
 **Status:** Accepted (2026-10-21). The owner approved the design and all four open questions as
 recommended (see the end of this note), except the alpha tags: 0.4.0 is built on one branch,
-layer by layer, and released once.
+layer by layer, and released once. Done: layers 1 (stats) and 2 (catalog and inspector).
 **Date:** 2026-10-21
 
 ## Context

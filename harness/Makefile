@@ -19,7 +19,7 @@ OUT ?= data/runs-rescored
 NOISE ?=
 TIER ?= silver
 
-.PHONY: help demo env-check install venv-init \
+.PHONY: help demo env-check install venv-init catalog catalog-serve \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
@@ -80,6 +80,7 @@ help:
 	@echo ""
 	@echo "INSPECT / GATE"
 	@echo "  make runs-list | baselines-list | validate | judge (the panel)"
+	@echo "  make catalog | catalog-serve   pages over the runs; the run inspector on 127.0.0.1"
 	@echo ""
 	@echo "SCOPING  (a dataset accumulates arms across config versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
@@ -240,6 +241,15 @@ run-promote:
 # ── gates ───────────────────────────────────────────────────────────────────
 validate:
 	$(PYTHON) scripts/validate_tree.py
+
+# THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
+# .build/catalog/ (counts and means only, never an item's text); then a server on 127.0.0.1
+# that tests any arms on one dataset against a baseline with the same paired test as pair-test.
+catalog:
+	$(PYTHON) scripts/catalog_build.py $(ARGS)
+
+catalog-serve: catalog
+	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
 #

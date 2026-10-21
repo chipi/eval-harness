@@ -13,8 +13,8 @@ that can move a result is never a patch release without saying so under **Change
 
 Catalog, run inspector and goals in the harness ([ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md)).
 Built on one branch, layer by layer, and released once. Done so far: one implementation of the
-paired test, `evaluation_harness.stats`, shared by `pair-test`, `family-test` and the catalog's
-run inspector.
+paired test, `evaluation_harness.stats`, shared by `pair-test`, `family-test` and the run
+inspector; and the catalog and run inspector themselves, for any project.
 
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
@@ -41,6 +41,26 @@ run inspector.
   - `compare`, every arm against a baseline with verdicts in words.
 
   It has its own test suite, `scripts/test_stats.py`, run by `make test`.
+- **`evh catalog` and `evh catalog-serve`** (`make catalog`, `make catalog-serve`).
+  - **The catalog:** static pages over a project's runs, by dataset, built into
+    `.build/catalog/`. Each dataset page lists every arm with its headline number, and links
+    to the inspector for one arm or all of them.
+  - **The run inspector:** a server on 127.0.0.1 that tests any arms on one dataset against
+    a baseline with `stats.py`, so it gives the same p as `pair-test` on the same pair. It
+    shows the verdicts, charts of the per-item scores and differences, and, for one item,
+    each arm's output beside the reference.
+  - **The same rules as everywhere else:**
+    - Arms on different `dataset_id`s are refused.
+    - The static pages carry counts and means only, never an item's text.
+    - The server answers only to a 127.0.0.1 Host. It serves only the catalog and the
+      data tree, and no dot-folder in either.
+  - **An adapter is the only project code needed.** `catalog_adapter.Adapter` lists the
+    questions both tools ask. The built-in `HarnessAdapter` reads the harness's own layout
+    (`runs*/`, `runs-judged/`, `references/`): an arm is one config on one dataset, its
+    repeats averaged per item. A project with another layout names its own adapter in
+    `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`.
+
+  Tests: `scripts/test_catalog.py` (26 assertions), run by `make test`.
 
 ## 0.3.0 — 2026-10-21
 

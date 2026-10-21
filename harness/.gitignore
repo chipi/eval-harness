@@ -304,3 +304,6 @@ dist/
 
 # Third-party data fetched by scripts (e.g. validate_judge_goyal.py); never committed.
 data/external/
+
+# the built catalog -- regenerate with `make catalog`
+.build/
