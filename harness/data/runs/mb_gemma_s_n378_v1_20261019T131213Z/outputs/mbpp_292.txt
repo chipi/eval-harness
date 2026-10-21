@@ -1,0 +1,21 @@
+```python
+def find(a, b):
+  """
+  Finds the quotient of two numbers (rounded down to the nearest integer).
+
+  Args:
+    a: The dividend (numerator).
+    b: The divisor (denominator).
+
+  Returns:
+    The quotient of a divided by b, rounded down to the nearest integer.
+  """
+  return a // b
+
+# Example usage and assertion
+assert find(10, 3) == 3
+assert find(15, 5) == 3
+assert find(7, 2) == 3
+assert find(1, 1) == 1
+assert find(5, 10) == 0
+```

@@ -1,0 +1,37 @@
+```python
+def check_greater(array, number):
+    """
+    This function checks whether the entered number is greater than the elements of the given array.
+
+    Args:
+        array (list): A list of integers.
+        number (int): The number to check.
+
+    Returns:
+        bool: True if the number is greater than all elements in the array, False otherwise.
+    """
+    # Check if the array is empty
+    if not array:
+        return True  # An empty array is considered as having no elements to compare with
+
+    # Use the built-in all() function with a generator expression to check if the number is greater than all elements
+    return all(number > element for element in array)
+
+
+# Example usage:
+if __name__ == "__main__":
+    array = [1, 2, 3, 4, 5]
+    number = 4
+    result = check_greater(array, number)
+    print(f"Is {number} greater than all elements in {array}? {result}")
+    assert not check_greater([1, 2, 3, 4, 5], 4)
+```
+You can run this script and it will print whether the number is greater than all elements in the array. The `assert` statement at the end is used for testing and will not be executed if the script is run normally, but will be triggered if the condition is not met, indicating a failed test. 
+
+In this code:
+
+*   We define a function `check_greater` that takes an array and a number as arguments.
+*   Inside the function, we use the built-in `all()` function with a generator expression to check if the number is greater than all elements in the array.
+*   The `all()` function returns `True` if all elements of the iterable (in this case, the generator expression) are true. If at least one element is false, it returns `False`.
+*   The generator expression `(number > element for element in array)` generates a sequence of boolean values indicating whether the number is greater than each element in the array.
+*   Finally, we provide an example usage of the function and an `assert` statement to test its correctness.

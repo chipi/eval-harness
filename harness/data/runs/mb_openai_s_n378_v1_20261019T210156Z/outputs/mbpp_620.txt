@@ -1,0 +1,32 @@
+```python
+def largest_subset(nums):
+    """
+    Return the size of the largest subset such that every pair in the subset
+    is divisible, meaning for any two numbers a, b in the subset:
+        a % b == 0 or b % a == 0
+
+    This is the classic "largest divisible subset" problem.
+    We sort the numbers and use dynamic programming.
+
+    Example:
+        largest_subset([1, 3, 6, 13, 17, 18]) -> 4
+    """
+    if not nums:
+        return 0
+
+    nums = sorted(nums)
+    n = len(nums)
+    dp = [1] * n  # dp[i] = size of largest divisible subset ending at i
+
+    for i in range(n):
+        for j in range(i):
+            if nums[i] % nums[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+
+    return max(dp)
+
+
+if __name__ == "__main__":
+    assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+    print("All tests passed.")
+```

@@ -1,0 +1,26 @@
+```python
+import math
+
+def area_tetrahedron(a: float) -> float:
+    """
+    Calculate the surface area of a regular tetrahedron with edge length a.
+    
+    A regular tetrahedron has 4 equilateral triangular faces.
+    The area of one equilateral triangle with side a is (sqrt(3)/4) * a^2.
+    So the total surface area is 4 * (sqrt(3)/4) * a^2 = sqrt(3) * a^2.
+    
+    Args:
+        a: The edge length of the regular tetrahedron.
+        
+    Returns:
+        The surface area of the tetrahedron.
+    """
+    return math.sqrt(3) * a ** 2
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = area_tetrahedron(3)
+    print(f"area_tetrahedron(3) = {result}")
+    assert result == 15.588457268119894, f"Expected 15.588457268119894, got {result}"
+    print("Test passed!")
+```

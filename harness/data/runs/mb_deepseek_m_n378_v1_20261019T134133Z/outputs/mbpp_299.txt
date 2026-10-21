@@ -1,0 +1,57 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_aggregate(data):
+    """
+    Calculate the maximum aggregate from a list of tuples.
+    
+    Args:
+        data: List of tuples where each tuple contains (name, score)
+    
+    Returns:
+        Tuple containing (name, total_score) for the person with the highest total score
+    """
+    # Dictionary to store aggregated scores for each person
+    aggregates = {}
+    
+    # Aggregate scores by name
+    for name, score in data:
+        if name in aggregates:
+            aggregates[name] += score
+        else:
+            aggregates[name] = score
+    
+    # Find the person with maximum aggregate score
+    max_name = None
+    max_score = float('-inf')
+    
+    for name, total_score in aggregates.items():
+        if total_score > max_score:
+            max_score = total_score
+            max_name = name
+    
+    return (max_name, max_score)
+
+
+# Test the function
+if __name__ == "__main__":
+    result = max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)])
+    print(result)
+    assert result == ('Juan Whelan', 212)
+    print("Test passed!")
+```
+
+This script:
+
+1. **Defines the `max_aggregate` function** that takes a list of tuples as input
+2. **Aggregates scores** by person's name using a dictionary
+3. **Finds the maximum aggregate** by iterating through the aggregated scores
+4. **Returns a tuple** with the name and total score of the person with the highest aggregate
+5. **Includes a test case** that verifies the function works correctly with the provided example
+
+The function correctly handles the case where:
+- Juan Whelan has scores 90 + 122 = 212
+- Sabah Colley has scores 88 + 84 = 172  
+- Peter Nichols has score 7
+
+Therefore, Juan Whelan with 212 is the maximum aggregate.

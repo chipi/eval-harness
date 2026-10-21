@@ -1,0 +1,31 @@
+```python
+def sort_sublists(lists):
+    """
+    This function takes a list of lists of strings as input, 
+    and returns a new list of lists where each sublist is sorted.
+
+    Args:
+        lists (list): A list of lists of strings.
+
+    Returns:
+        list: A new list of lists where each sublist is sorted.
+    """
+    return [sorted(sublist) for sublist in lists]
+
+# Example usage:
+print(sort_sublists((["green", "orange"], ["black", "white"], ["white", "black", "orange"])))
+# Output: [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+```
+
+This script uses a technique called list comprehension to create a new list of sorted sublists. The `sorted` function is used to sort each sublist. 
+
+Note that this script assumes that the input is a list of lists, and that each sublist contains only strings. If the input may have a different structure, or if the sublists may contain other types of elements, you may need to modify the script accordingly. 
+
+Also note that this script returns a new list of lists, and does not modify the original list. If you want to modify the original list in place, you can use a for loop instead:
+
+```python
+def sort_sublists_in_place(lists):
+    for i in range(len(lists)):
+        lists[i] = sorted(lists[i])
+    return lists
+```

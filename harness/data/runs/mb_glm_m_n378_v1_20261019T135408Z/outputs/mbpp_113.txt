@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem of checking if a string represents an integer or not:
+
+```python
+def check_integer(s):
+    """
+    Check if the input string represents an integer.
+    
+    Args:
+        s (str): The string to check.
+        
+    Returns:
+        bool: True if the string represents an integer, False otherwise.
+    """
+    # Handle empty string case
+    if not s:
+        return False
+    
+    # Check for optional sign at the beginning
+    if s[0] in ('+', '-'):
+        s = s[1:]
+    
+    # Check if remaining characters are all digits
+    return s.isdigit()
+
+# Test cases
+assert check_integer("python") == False
+assert check_integer("123") == True
+assert check_integer("-123") == True
+assert check_integer("+123") == True
+assert check_integer("12.3") == False
+assert check_integer("123a") == False
+assert check_integer("") == False
+assert check_integer("   ") == False
+assert check_integer("0") == True
+assert check_integer("-0") == True
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `check_integer(s)`**:
+   - First checks if the string is empty, returning `False` if it is.
+   - Then checks if the first character is a sign (`+` or `-`). If so, it removes the sign for further checks.
+   - Finally, uses the `isdigit()` method to check if all remaining characters are digits. This method returns `True` only if all characters in the string are digits and there is at least one character.
+
+2. **Test Cases**:
+   - The function is tested with various inputs, including:
+     - Non-numeric strings (e.g., "python").
+     - Valid integers (e.g., "123", "-123", "+123").
+     - Invalid cases (e.g., "12.3", "123a", empty string, whitespace).
+     - Edge cases (e.g., "0", "-0").
+
+The script will print "All test cases passed!" if all assertions hold true. This ensures the function works as expected for the given problem.

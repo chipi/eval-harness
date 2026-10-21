@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def similar_elements(list1, list2):
+    """
+    Find the shared elements from the given two lists.
+    
+    Args:
+        list1: First list/tuple of elements
+        list2: Second list/tuple of elements
+    
+    Returns:
+        A tuple containing the common elements
+    """
+    # Convert both inputs to sets and find the intersection
+    common_elements = set(list1) & set(list2)
+    
+    # Convert back to tuple as per the function signature expectation
+    return tuple(common_elements)
+
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = similar_elements((3, 4, 5, 6), (5, 7, 4, 10))
+    expected = set((4, 5))
+    
+    # Assert that the result matches the expected output
+    assert set(result) == expected, f"Test failed: {set(result)} != {expected}"
+    
+    print("Test passed!")
+    print(f"Input: (3, 4, 5, 6) and (5, 7, 4, 10)")
+    print(f"Output: {result}")
+    print(f"Expected: {expected}")
+```
+
+This solution:
+1. Defines the `similar_elements` function that takes two lists/tuples as input
+2. Converts both inputs to sets and uses the `&` operator to find the intersection (common elements)
+3. Returns the result as a tuple
+4. Includes the test case from the problem statement to verify the function works correctly
+5. The assertion checks that the set of the result matches the expected set `{4, 5}`

@@ -1,0 +1,37 @@
+```python
+def count_divisors(n: int) -> bool:
+    """
+    Checks whether the count of divisors of a given integer `n` is even.
+    
+    A number has an even number of divisors if and only if it is NOT a perfect square.
+    This is because divisors typically come in pairs (d, n/d). Perfect squares have one divisor 
+    (the square root) that pairs with itself, making the total count of divisors odd.
+    
+    Args:
+        n (int): The number to check. Must be a positive integer.
+        
+    Returns:
+        bool: True if the count of divisors is even, False otherwise.
+    """
+    if n <= 0:
+        raise ValueError("Input must be a positive integer.")
+        
+    root = int(n ** 0.5)
+    
+    # If the number is a perfect square, it has an odd number of divisors.
+    if root * root == n:
+        return False
+        
+    # Otherwise, it has an even number of divisors.
+    return True
+
+if __name__ == "__main__":
+    # Test cases based on the problem description
+    assert count_divisors(10) == True   # Divisors of 10: 1, 2, 5, 10 (Count = 4, Even)
+    assert count_divisors(25) == False  # Divisors of 25: 1, 5, 25 (Count = 3, Odd)
+    assert count_divisors(1) == False   # Divisors of 1: 1 (Count = 1, Odd)
+    assert count_divisors(2) == True    # Divisors of 2: 1, 2 (Count = 2, Even)
+    assert count_divisors(36) == False  # Divisors of 36: 1, 2, 3, 4, 6, 9, 12, 18, 36 (Count = 9, Odd)
+    
+    print("All assertions passed.")
+```

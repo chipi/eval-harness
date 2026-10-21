@@ -1,0 +1,29 @@
+```python
+def check_monthnumber_number(month_number: int) -> bool:
+    """
+    This function checks whether the given month number contains 30 days or not.
+
+    Args:
+        month_number (int): The month number to check (1-12).
+
+    Returns:
+        bool: True if the month has 30 days, False otherwise.
+    """
+    # Define the months with 30 days
+    months_with_30_days = [4, 6, 9, 11]
+
+    # Check if the month number is valid
+    if not 1 <= month_number <= 12:
+        raise ValueError("Invalid month number. Month number must be between 1 and 12.")
+
+    # Check if the month has 30 days
+    return month_number in months_with_30_days
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(check_monthnumber_number(6))  # Output: True
+    print(check_monthnumber_number(2))  # Output: False
+```
+
+In this script, we define a function `check_monthnumber_number` that takes a month number as input and returns `True` if the month has 30 days, and `False` otherwise. The function first checks if the input month number is valid (between 1 and 12). If not, it raises a `ValueError`. Then, it checks if the month number is in the list of months with 30 days. The example usage demonstrates how to use the function.

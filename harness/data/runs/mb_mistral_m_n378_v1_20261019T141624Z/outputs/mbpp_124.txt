@@ -1,0 +1,21 @@
+```python
+import math
+import cmath
+
+def angle_complex(real, imag):
+    """
+    Calculate the angle (in radians) of a complex number given its real and imaginary parts.
+
+    Args:
+        real (float): The real part of the complex number.
+        imag (float): The imaginary part of the complex number.
+
+    Returns:
+        float: The angle in radians.
+    """
+    complex_num = complex(real, imag)
+    return cmath.phase(complex_num)
+
+# Test case
+assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+```

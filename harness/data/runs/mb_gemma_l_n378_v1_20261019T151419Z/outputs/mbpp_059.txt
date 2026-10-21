@@ -1,0 +1,29 @@
+```python
+def nth_octagonal_number(n):
+    """
+    Calculates the nth octagonal number.
+    The formula for the nth octagonal number is: On = n * (3n - 2)
+    """
+    return n * (3 * n - 2)
+
+def is_octagonal(n):
+    """
+    Helper function to check if a number is octagonal.
+    This is provided to align with the assert statement in the prompt,
+    which implies checking if the 5th octagonal number is 65.
+    """
+    # The prompt's assert is written as is_octagonal(5) == 65.
+    # Usually, is_octagonal would return a boolean, but based on the 
+    # provided test case, it is being used to retrieve the nth number.
+    return nth_octagonal_number(n)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Note: The prompt uses 'is_octagonal(5) == 65', implying the function 
+    # should return the value of the 5th octagonal number.
+    result = is_octagonal(5)
+    print(f"The 5th octagonal number is: {result}")
+    
+    assert result == 65
+    print("Assertion passed!")
+```

@@ -1,0 +1,12 @@
+```python
+def find_solution(a, b, n):
+    # Check if n is divisible by gcd(a, b)
+    if n % math.gcd(a, b):
+        return None
+
+    # Calculate x and y
+    x = n // math.gcd(a, b) * b
+    y = n // math.gcd(a, b) * a
+
+    return (x, y)
+```

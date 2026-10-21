@@ -1,0 +1,28 @@
+```python
+def find_length(binary_string):
+    # Initialize max_difference to 0
+    max_difference = 0
+
+    # Initialize count_zeros and count_ones to 0
+    count_zeros = count_ones = 0
+
+    # Iterate over the binary string
+    for i in range(len(binary_string)):
+        # If the current character is '0', increment count_zeros
+        if binary_string[i] == '0':
+            count_zeros += 1
+        else:
+            # If the current character is '1', increment count_ones
+            count_ones += 1
+
+        # If the difference between count_zeros and count_ones is greater than max_difference,
+        # update max_difference
+        if abs(count_zeros - count_ones) > max_difference:
+            max_difference = abs(count_zeros - count_ones)
+
+    # Return the maximum difference
+    return max_difference
+
+# Test the function with the provided test case
+assert find_length("11000010001") == 6
+```

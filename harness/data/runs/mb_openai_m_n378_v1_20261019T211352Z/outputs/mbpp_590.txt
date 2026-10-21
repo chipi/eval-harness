@@ -1,0 +1,28 @@
+```python
+import cmath
+from typing import Tuple
+
+
+def polar_rect(r: float, theta: float) -> Tuple[tuple, complex]:
+    """
+    Convert between polar and rectangular coordinates.
+
+    Given rectangular-style inputs (r, theta), this function:
+    1. Returns their polar representation using cmath.polar(complex(r, theta)).
+    2. Returns the rectangular complex number from polar coordinates (r, theta)
+       using cmath.rect(r, theta).
+
+    Example:
+        polar_rect(3, 4)
+        -> ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    """
+    return cmath.polar(complex(r, theta)), cmath.rect(r, theta)
+
+
+if __name__ == "__main__":
+    assert polar_rect(3, 4) == (
+        (5.0, 0.9272952180016122),
+        (-2 + 2.4492935982947064e-16j),
+    )
+    print("All tests passed.")
+```

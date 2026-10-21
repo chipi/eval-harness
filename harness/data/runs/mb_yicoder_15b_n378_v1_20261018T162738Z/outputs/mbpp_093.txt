@@ -1,0 +1,12 @@
+```python
+def power(a, b):
+    return a ** b
+
+# Test cases
+assert power(3, 4) == 81
+assert power(2, 3) == 8
+assert power(5, 2) == 25
+assert power(10, 0) == 1
+assert power(0, 100) == 0
+assert power(0, 0) == 1
+```

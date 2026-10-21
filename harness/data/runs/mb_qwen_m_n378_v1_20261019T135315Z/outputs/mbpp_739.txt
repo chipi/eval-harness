@@ -1,0 +1,42 @@
+```python
+import math
+
+
+def find_Index(n: int) -> int:
+    """
+    Find the index of the smallest triangular number with n digits.
+    
+    A triangular number T_k = k*(k+1)/2.
+    We need to find the smallest k such that T_k has exactly n digits.
+    
+    A number has n digits if 10^(n-1) <= number < 10^n.
+    
+    So we need the smallest k such that k*(k+1)/2 >= 10^(n-1).
+    
+    Solving k*(k+1)/2 >= 10^(n-1):
+    k^2 + k - 2*10^(n-1) >= 0
+    
+    Using quadratic formula: k = (-1 + sqrt(1 + 8*10^(n-1))) / 2
+    
+    The smallest integer k satisfying this is ceil of that value.
+    """
+    # Lower bound for n-digit numbers: 10^(n-1)
+    lower_bound = 10 ** (n - 1)
+    
+    # Solve k*(k+1)/2 >= lower_bound
+    # k^2 + k - 2*lower_bound >= 0
+    # k = (-1 + sqrt(1 + 8*lower_bound)) / 2
+    
+    discriminant = 1 + 8 * lower_bound
+    k = (-1 + math.sqrt(discriminant)) / 2
+    
+    # The smallest integer k that satisfies the inequality
+    result = math.ceil(k)
+    
+    return result
+
+
+if __name__ == "__main__":
+    assert find_Index(2) == 4, f"Expected 4, got {find_Index(2)}"
+    print("All tests passed!")
+```

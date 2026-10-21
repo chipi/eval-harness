@@ -1,0 +1,31 @@
+```python
+def word_len(word):
+    """
+    Check whether the length of the word is odd or not.
+    
+    Args:
+        word: A string representing a word
+        
+    Returns:
+        True if the length is odd, False if the length is even
+    """
+    return len(word) % 2 == 1
+
+
+# Test cases
+assert word_len("Hadoop") == False
+assert word_len("Python") == True
+assert word_len("a") == True
+assert word_len("ab") == False
+assert word_len("") == False
+
+print("All assertions passed!")
+```
+
+**Explanation:**
+- The function `word_len()` takes a word as input
+- It calculates the length of the word using `len(word)`
+- It uses the modulo operator `%` to check if the length is odd or even
+- If `len(word) % 2 == 1`, the length is odd (returns `True`)
+- If `len(word) % 2 == 0`, the length is even (returns `False`)
+- "Hadoop" has 6 characters (even), so it returns `False` ✓

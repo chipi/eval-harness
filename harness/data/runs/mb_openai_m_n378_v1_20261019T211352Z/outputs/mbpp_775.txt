@@ -1,0 +1,24 @@
+```python
+def odd_position(nums):
+    """
+    Return True if every odd index in the list contains an odd number.
+
+    Odd indices are positions 1, 3, 5, ... using 0-based indexing.
+    """
+    for i in range(1, len(nums), 2):
+        if nums[i] % 2 == 0:
+            return False
+    return True
+
+
+# Example test
+assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) == True
+
+# Additional simple tests
+assert odd_position([10, 5, 8, 9]) == True
+assert odd_position([10, 4, 8, 9]) == False
+assert odd_position([]) == True
+assert odd_position([2]) == True
+
+print("All tests passed.")
+```

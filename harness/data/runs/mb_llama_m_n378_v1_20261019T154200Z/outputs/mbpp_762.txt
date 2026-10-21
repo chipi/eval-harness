@@ -1,0 +1,20 @@
+```python
+def check_monthnumber_number(month_number):
+    """
+    This function checks whether the given month number contains 30 days or not.
+
+    Args:
+        month_number (int): The month number (1-12)
+
+    Returns:
+        bool: True if the month has 30 days, False otherwise
+    """
+    # Define the months with 30 days
+    months_with_30_days = [4, 6, 9, 11]
+    
+    # Check if the given month number is in the list of months with 30 days
+    return month_number in months_with_30_days
+
+# Test the function
+assert check_monthnumber_number(6) == True
+```

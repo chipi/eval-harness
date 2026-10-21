@@ -1,0 +1,18 @@
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Return the number of pairs (i, j) with i < j such that arr[i] XOR arr[j] is odd.
+    
+    A XOR B is odd iff one number is odd and the other is even.
+    So the answer is:
+        count_odd * count_even
+    """
+    odd_count = sum(1 for x in arr[:n] if x % 2 != 0)
+    even_count = n - odd_count
+    return odd_count * even_count
+
+
+if __name__ == "__main__":
+    assert find_Odd_Pair([5, 4, 7, 2, 1], 5) == 6
+    print("All tests passed.")
+```

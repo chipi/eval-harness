@@ -1,0 +1,52 @@
+```python
+def is_octagonal(n):
+    """
+    Calculates the nth octagonal number.
+
+    Octagonal numbers are figurate numbers that represent the number of dots
+    in an octagon with n dots on each side. The formula for the nth octagonal
+    number is 3 * n * (n - 1) + 1.
+
+    Args:
+        n (int): The position of the octagonal number to find (must be a positive integer).
+
+    Returns:
+        int: The nth octagonal number.
+
+    Raises:
+        ValueError: If n is not a positive integer.
+    """
+    if not isinstance(n, int) or n < 1:
+        raise ValueError("Input must be a positive integer.")
+    
+    # The formula for the nth octagonal number is 3 * n * (n - 1) + 1
+    return 3 * n * (n - 1) + 1
+
+# Example usage and assertions
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert is_octagonal(5) == 65
+    
+    # Additional test cases
+    assert is_octagonal(1) == 1   # The first octagonal number is 1
+    assert is_octagonal(2) == 8   # The second octagonal number is 8
+    assert is_octagonal(10) == 271 # The tenth octagonal number is 271
+    
+    print("All assertions passed successfully!")
+
+    # Example of invalid input
+    try:
+        is_octagonal(0)
+    except ValueError as e:
+        print(f"Caught expected error for n=0: {e}")
+
+    try:
+        is_octagonal(-5)
+    except ValueError as e:
+        print(f"Caught expected error for n=-5: {e}")
+
+    try:
+        is_octagonal(3.5)
+    except ValueError as e:
+        print(f"Caught expected error for n=3.5: {e}")
+```

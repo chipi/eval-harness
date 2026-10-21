@@ -1,0 +1,31 @@
+```python
+def tetrahedral_number(n):
+    """
+    Calculate the nth tetrahedral number.
+
+    A tetrahedral number is a figurate number that represents a pyramid with a
+    triangular base and three sides. The nth tetrahedral number can be calculated
+    using the formula: T_n = n * (n + 1) * (n + 2) / 6
+
+    Parameters:
+    n (int): The position in the sequence of tetrahedral numbers (starting from 1).
+
+    Returns:
+    int: The nth tetrahedral number.
+    """
+    # Ensure the input is a positive integer
+    if not isinstance(n, int) or n < 1:
+        raise ValueError("Input must be a positive integer.")
+
+    return n * (n + 1) * (n + 2) // 6
+
+if __name__ == "__main__":
+    # Test case based on the problem description
+    assert tetrahedral_number(5) == 35
+    print("Test passed: tetrahedral_number(5) == 35")
+    
+    # Additional test cases
+    assert tetrahedral_number(1) == 1
+    assert tetrahedral_number(6) == 56
+    print("Additional tests passed.")
+```

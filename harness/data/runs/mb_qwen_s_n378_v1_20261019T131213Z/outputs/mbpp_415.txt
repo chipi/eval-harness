@@ -1,0 +1,45 @@
+```python
+def max_Product(arr):
+    """
+    Find a pair with the highest product from a given array of integers.
+    
+    Args:
+        arr: A list of integers
+        
+    Returns:
+        A tuple containing the two elements that produce the maximum product
+    """
+    if len(arr) < 2:
+        raise ValueError("Array must contain at least two elements")
+    
+    # Initialize the first two elements as the current best pair
+    max1 = max(arr[0], arr[1])
+    min1 = min(arr[0], arr[1])
+    
+    # We need to track the two largest and two smallest numbers
+    # because the maximum product could come from either:
+    # 1. Two largest positive numbers
+    # 2. Two smallest negative numbers (their product is positive)
+    
+    # Sort approach for simplicity, but O(n log n)
+    # For O(n), we can find top 2 max and bottom 2 min
+    
+    sorted_arr = sorted(arr)
+    
+    # Candidate 1: product of two largest numbers
+    candidate1 = sorted_arr[-1] * sorted_arr[-2]
+    pair1 = (sorted_arr[-2], sorted_arr[-1])
+    
+    # Candidate 2: product of two smallest numbers (could be large positive if both negative)
+    candidate2 = sorted_arr[0] * sorted_arr[1]
+    pair2 = (sorted_arr[0], sorted_arr[1])
+    
+    if candidate1 >= candidate2:
+        return pair1
+    else:
+        return pair2
+
+
+# Test case
+assert max_Product([1,2,3,4,7,0,8,4]) == (7,8)
+```

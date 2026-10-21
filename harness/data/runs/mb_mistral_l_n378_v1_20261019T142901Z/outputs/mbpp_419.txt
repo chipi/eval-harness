@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def round_and_sum(numbers):
+    """
+    Rounds every number in the given list and returns the total sum multiplied by the length of the list.
+
+    Args:
+        numbers: List of numbers to be processed
+
+    Returns:
+        int: Sum of rounded numbers multiplied by the length of the list
+    """
+    rounded_numbers = [round(num) for num in numbers]
+    total_sum = sum(rounded_numbers)
+    return total_sum * len(numbers)
+
+# Test the function with the provided assertion
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+```
+
+The script:
+1. Defines a function `round_and_sum` that takes a list of numbers
+2. Rounds each number in the list using a list comprehension
+3. Calculates the sum of the rounded numbers
+4. Returns the sum multiplied by the length of the input list
+5. Includes the assertion test case provided in the problem statement
+
+The function will pass the assertion test as it correctly calculates (22 + 4 + -16 + -9 + 11 + -12 + 14 + -5 + 18) * 9 = 27 * 9 = 243.

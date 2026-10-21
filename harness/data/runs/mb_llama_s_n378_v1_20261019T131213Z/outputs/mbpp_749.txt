@@ -1,0 +1,45 @@
+```python
+def sort_numeric_strings(num_strs):
+    """
+    This function takes a list of numeric strings, converts them to integers, 
+    sorts the list in ascending order, and returns the sorted list.
+
+    Args:
+        num_strs (list): A list of numeric strings.
+
+    Returns:
+        list: A sorted list of integers.
+    """
+    # Convert the numeric strings to integers and store them in a list
+    nums = [int(num_str) for num_str in num_strs]
+    
+    # Sort the list of integers in ascending order
+    nums.sort()
+    
+    # Return the sorted list
+    return nums
+
+# Test the function
+assert sort_numeric_strings(['4','12','45','7','0','100','200','-12','-500']) == [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+```
+
+Alternatively, you can solve this problem in a more concise way:
+
+```python
+def sort_numeric_strings(num_strs):
+    """
+    This function takes a list of numeric strings, converts them to integers, 
+    sorts the list in ascending order, and returns the sorted list.
+
+    Args:
+        num_strs (list): A list of numeric strings.
+
+    Returns:
+        list: A sorted list of integers.
+    """
+    # Use the built-in sorted function to sort the list of integers
+    return sorted([int(num_str) for num_str in num_strs])
+
+# Test the function
+assert sort_numeric_strings(['4','12','45','7','0','100','200','-12','-500']) == [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+```

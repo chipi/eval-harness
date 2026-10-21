@@ -1,0 +1,10 @@
+```python
+def median_numbers(a, b, c):
+    return sorted([a, b, c])[1]
+
+def main():
+    print(median_numbers(25, 55, 65))  # Expected output: 55.0
+
+if __name__ == "__main__":
+    main()
+```

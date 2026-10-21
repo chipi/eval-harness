@@ -1,0 +1,56 @@
+```python
+def find_first_occurrence(arr, target):
+    """
+    Finds the index of the first occurrence of a given number in a sorted array.
+
+    This function uses a binary search algorithm for efficient O(log n) time complexity.
+
+    Args:
+        arr: A sorted list of numbers.
+        target: The number to search for.
+
+    Returns:
+        The index of the first occurrence of the target in the array.
+        If the target is not found, it returns -1.
+    """
+    low = 0
+    high = len(arr) - 1
+    first_occurrence = -1
+
+    while low <= high:
+        # Calculate mid-point to avoid potential overflow
+        mid = low + (high - low) // 2
+
+        if arr[mid] == target:
+            # We found the target, but it might not be the *first* occurrence.
+            # Record this index and continue searching to the left (in the lower half)
+            # to see if there's an earlier one.
+            first_occurrence = mid
+            high = mid - 1
+        elif arr[mid] < target:
+            # The target must be in the right half of the array.
+            low = mid + 1
+        else:  # arr[mid] > target
+            # The target must be in the left half of the array.
+            high = mid - 1
+            
+    return first_occurrence
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    sorted_array = [2, 5, 5, 5, 6, 6, 8, 9, 9, 9]
+    target_number = 5
+    
+    # Call the function and print the result
+    result_index = find_first_occurrence(sorted_array, target_number)
+    print(f"The first occurrence of {target_number} is at index: {result_index}")
+    
+    # Assertion to verify the result
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 2) == 0
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 9) == 7
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 10) == -1
+    assert find_first_occurrence([], 5) == -1
+    
+    print("All assertions passed!")
+```

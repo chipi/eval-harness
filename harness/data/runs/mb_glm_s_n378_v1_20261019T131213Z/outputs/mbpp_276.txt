@@ -1,0 +1,31 @@
+```python
+import math
+
+def volume_cylinder(radius, height):
+  """
+  Calculates the volume of a cylinder.
+
+  Args:
+    radius: The radius of the cylinder's base.
+    height: The height of the cylinder.
+
+  Returns:
+    The volume of the cylinder.
+  """
+  # The formula for the volume of a cylinder is V = π * r^2 * h
+  volume = math.pi * (radius ** 2) * height
+  return volume
+
+# Example usage and assertion to verify the function
+# This will run automatically when the script is executed.
+if __name__ == "__main__":
+  # Test case from the problem description
+  # Using math.isclose for floating-point comparison with a relative tolerance
+  assert math.isclose(volume_cylinder(10, 5), 1570.7500000000002, rel_tol=0.001)
+  
+  # Additional test cases
+  assert math.isclose(volume_cylinder(0, 10), 0, rel_tol=0.001)
+  assert math.isclose(volume_cylinder(1, 1), math.pi, rel_tol=0.001)
+  
+  print("All assertions passed!")
+```

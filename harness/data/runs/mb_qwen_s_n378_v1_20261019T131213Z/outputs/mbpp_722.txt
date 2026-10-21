@@ -1,0 +1,15 @@
+```python
+def filter_data(students, min_height, min_weight):
+    """
+    Filter students that have height and weight above the minimum.
+    
+    Args:
+        students (dict): A dictionary with student name as key and tuple of (height, weight) as value.
+        min_height (float): The minimal height threshold.
+        min_weight (float): The minimal weight threshold.
+    
+    Returns:
+        dict: A filtered dictionary containing only students whose height > min_height and weight > min_weight.
+    """
+    return {name: data for name, data in students.items() if data[0] > min_height and data[1] > min_weight}
+```

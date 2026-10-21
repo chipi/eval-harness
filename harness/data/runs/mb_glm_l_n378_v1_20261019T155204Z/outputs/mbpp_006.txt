@@ -1,0 +1,41 @@
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Checks whether two numbers differ at exactly one bit position.
+    
+    This uses the bitwise XOR operation. 
+    1. a ^ b produces a number with bits set to 1 where a and b differ.
+    2. If they differ at exactly one bit, the result must be a power of 2.
+    3. A number n is a power of 2 if (n & (n - 1)) == 0, provided n > 0.
+    
+    Args:
+        a (int): First integer
+        b (int): Second integer
+        
+    Returns:
+        bool: True if they differ at exactly one bit position, False otherwise.
+    """
+    # XOR of a and b gives a number with 1s at positions where bits differ
+    xor_val = a ^ b
+    
+    # Check if xor_val is a power of 2 (and non-zero)
+    # A number n is a power of 2 if it has exactly one bit set.
+    # The expression (n & (n - 1)) == 0 checks this.
+    return xor_val > 0 and (xor_val & (xor_val - 1)) == 0
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert differ_At_One_Bit_Pos(13, 9) == True
+    # 13 is 1101, 9 is 1001. They differ at the 3rd bit (0-indexed).
+    
+    # Additional test cases
+    assert differ_At_One_Bit_Pos(15, 15) == False  # Same numbers, difference is 0
+    assert differ_At_One_Bit_Pos(1, 2) == True     # 01 vs 10, differ at one bit
+    assert differ_At_One_Bit_Pos(1, 3) == True     # 01 vs 11, differ at one bit
+    assert differ_At_One_Bit_Pos(2, 3) == True     # 10 vs 11, differ at one bit
+    assert differ_At_One_Bit_Pos(3, 4) == False    # 011 vs 100, differ at three bits
+    assert differ_At_One_Bit_Pos(0, 1) == True     # 00 vs 01
+    
+    print("All test cases passed!")
+```

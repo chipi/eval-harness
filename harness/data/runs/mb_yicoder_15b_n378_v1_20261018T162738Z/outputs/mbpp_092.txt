@@ -1,0 +1,13 @@
+```python
+def is_undulating(n):
+    str_n = str(n)
+    return str_n == str_n[::-1]
+
+# Test cases
+assert is_undulating(1212121) == True
+assert is_undulating(12321) == True
+assert is_undulating(123421) == False
+assert is_undulating(1234321) == True
+assert is_undulating(12345678987654321) == True
+assert is_undulating(12345678987654322) == False
+```

@@ -1,0 +1,33 @@
+```python
+#!/usr/bin/env python3
+"""
+Check whether a string contains the letter 'z' in the middle of a word,
+but not at the start or end of that word.
+
+Example:
+    text_match_wordz_middle("pythonzabc.") == True
+"""
+
+import re
+
+
+def text_match_wordz_middle(text: str) -> bool:
+    """
+    Return True if the text contains a word where 'z' appears neither as the
+    first nor the last character of the word.
+
+    A "word" is made of letters, digits, or underscores, as defined by \\w.
+    """
+    pattern = r"\b\w+z\w+\b"
+    return re.search(pattern, text) is not None
+
+
+if __name__ == "__main__":
+    assert text_match_wordz_middle("pythonzabc.") == True
+    assert text_match_wordz_middle("zabc.") == False
+    assert text_match_wordz_middle("abcz.") == False
+    assert text_match_wordz_middle("abc.") == False
+    assert text_match_wordz_middle("abzcd.") == True
+
+    print("All tests passed.")
+```

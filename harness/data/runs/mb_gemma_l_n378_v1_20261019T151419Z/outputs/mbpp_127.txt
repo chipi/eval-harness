@@ -1,0 +1,15 @@
+```python
+def multiply_int(a, b):
+    """
+    Multiplies two integers and returns the result.
+    """
+    return a * b
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert multiply_int(10, 20) == 200
+        print("Test passed: multiply_int(10, 20) == 200")
+    except AssertionError:
+        print("Test failed: multiply_int(10, 20) did not equal 200")
+```

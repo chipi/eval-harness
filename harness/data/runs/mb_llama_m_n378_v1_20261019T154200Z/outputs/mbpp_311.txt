@@ -1,0 +1,26 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    This function sets the left most unset bit in the binary representation of a given integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The integer with the left most unset bit set.
+    """
+    # Find the left most unset bit by finding the first bit that is 0 from the left
+    # We can do this by shifting the bits to the right and checking if the result is 0
+    # If it is, then the left most bit was 0, so we shift the bits back to the left and OR with the original number
+    # If it's not, we continue shifting to the right until we find a 0
+    # We use the bitwise OR operator to set the bit
+    if n == 0:
+        return 1
+    mask = 1 << (n.bit_length() - 1)
+    while (mask & n) != 0:
+        mask >>= 1
+    return n | mask
+
+# Test the function
+assert set_left_most_unset_bit(10) == 14
+```

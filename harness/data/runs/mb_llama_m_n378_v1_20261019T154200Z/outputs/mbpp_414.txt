@@ -1,0 +1,18 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Checks if any value in seq1 exists in seq2.
+
+    Args:
+        seq1 (list): The first sequence.
+        seq2 (list): The second sequence.
+
+    Returns:
+        bool: True if any value in seq1 exists in seq2, False otherwise.
+    """
+    return any(value in seq2 for value in seq1)
+
+# Example usage:
+print(overlapping([1,2,3,4,5],[6,7,8,9]))  # Output: False
+print(overlapping([1,2,3,4,5],[4,7,8,9]))  # Output: True
+```

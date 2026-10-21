@@ -1,0 +1,54 @@
+Looking at this problem, I need to write a function that uses regex to check if a string starts with a vowel.
+
+```python
+"""
+Write a function to check whether the given string is starting with a vowel or not using regex.
+assert check_str("annie")
+"""
+
+import re
+
+# Regex pattern: matches strings beginning with a vowel (upper or lower case)
+VOWEL_PATTERN = re.compile(r'^[aeiouAEIOU]')
+
+
+def check_str(string):
+    """
+    Check whether the given string starts with a vowel.
+
+    Args:
+        string (str): The string to check.
+
+    Returns:
+        bool: True if the string starts with a vowel, False otherwise.
+    """
+    return bool(VOWEL_PATTERN.search(string))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check_str("annie")
+
+    # Additional test cases
+    assert check_str("dawood") == False
+    assert check_str("Else")
+    assert check_str("ok")
+    assert check_str("Umbrella")
+    assert check_str("Python") == False
+    assert check_str("") == False
+
+    print("All tests passed!")
+
+    # Demonstration
+    for word in ["annie", "dawood", "Else", "ok", "Python", "ice", "xylophone"]:
+        result = "starts with a vowel" if check_str(word) else "does not start with a vowel"
+        print(f"{word!r} {result}")
+```
+
+**How it works:**
+
+1. `re.compile(r'^[aeiouAEIOU]')` builds a pattern where:
+   - `^` anchors the match to the start of the string
+   - `[aeiouAEIOU]` is a character class matching any single vowel (lowercase or uppercase)
+2. `search()` returns a match object if the first character is a vowel, otherwise `None`
+3. `bool(...)` converts that result into `True`/`False`

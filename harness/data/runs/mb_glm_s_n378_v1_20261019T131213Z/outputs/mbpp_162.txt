@@ -1,0 +1,47 @@
+```python
+def sum_series(n: int) -> int:
+    """
+    Calculates the sum of the series n + (n-2) + (n-4)... (until n-x =< 0).
+
+    Args:
+        n: The starting number of the series. Must be a non-negative integer.
+
+    Returns:
+        The sum of the series.
+
+    Examples:
+        >>> sum_series(6)
+        12
+        >>> sum_series(5)
+        9
+        >>> sum_series(0)
+        0
+    """
+    if n < 0:
+        raise ValueError("Input 'n' must be a non-negative integer.")
+    
+    total = 0
+    # The loop starts at i=0 and continues as long as (n - 2*i) is greater than 0.
+    # The range is set to n // 2 + 1 to ensure the loop runs for the correct number of terms.
+    # For example, if n=6, n//2 is 3, so range(4) gives i=0, 1, 2, 3.
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+        
+    return total
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Provided example
+    assert sum_series(6) == 12, f"Expected 12, but got {sum_series(6)}"
+    
+    # Additional test cases
+    assert sum_series(5) == 9, f"Expected 9, but got {sum_series(5)}"  # 5 + 3 + 1
+    assert sum_series(4) == 6, f"Expected 6, but got {sum_series(4)}"  # 4 + 2
+    assert sum_series(1) == 1, f"Expected 1, but got {sum_series(1)}"  # 1
+    assert sum_series(0) == 0, f"Expected 0, but got {sum_series(0)}"  # 0
+    
+    print("All assertions passed successfully!")
+```

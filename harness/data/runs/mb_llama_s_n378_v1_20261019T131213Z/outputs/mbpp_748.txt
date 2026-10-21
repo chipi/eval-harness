@@ -1,0 +1,26 @@
+```python
+def capital_words_spaces(s):
+    """
+    Write a function to put spaces between words starting with capital letters in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with spaces between words starting with capital letters.
+    """
+    result = ""
+    for i, char in enumerate(s):
+        # If the character is uppercase and it's not the first character in the string
+        if char.isupper() and i != 0:
+            # Add a space before the uppercase character
+            result += " "
+        # Add the character to the result string
+        result += char
+    return result
+
+# Test the function
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("PythonIsAwesome") == 'Python Is Awesome'
+assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+```

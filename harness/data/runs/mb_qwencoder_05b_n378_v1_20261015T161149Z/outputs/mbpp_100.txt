@@ -1,0 +1,25 @@
+```python
+def next_smallest_palindrome(n):
+    # Convert the number to a string to easily manipulate its digits
+    str_n = str(n)
+    
+    # Check if the number is already a palindrome
+    if str_n == str_n[::-1]:
+        return n
+    
+    # Try to find the smallest palindrome by reversing the first half of the number
+    for i in range(len(str_n) // 2):
+        # Swap the first and last characters
+        str_n[i], str_n[-i - 1] = str_n[-i - 1], str_n[i]
+    
+    # Convert the modified string back to an integer
+    return int(str_n)
+
+# Test cases to verify the correctness of the function
+assert next_smallest_palindrome(99) == 101
+assert next_smallest_palindrome(123) == 122
+assert next_smallest_palindrome(111) == 122
+assert next_smallest_palindrome(147) == 154
+assert next_smallest_palindrome(135) == 145
+```
+

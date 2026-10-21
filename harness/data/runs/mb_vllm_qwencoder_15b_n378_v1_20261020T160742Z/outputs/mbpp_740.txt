@@ -1,0 +1,8 @@
+```python
+def tuple_to_dict(tup):
+    return dict(zip(range(len(tup)), tup))
+
+# Test cases
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+print("Test passed!")
+```

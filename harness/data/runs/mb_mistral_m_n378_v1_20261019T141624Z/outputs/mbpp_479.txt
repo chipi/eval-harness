@@ -1,0 +1,19 @@
+```python
+def first_Digit(number):
+    """
+    Returns the first digit of a given number.
+
+    Args:
+        number (int): The input number.
+
+    Returns:
+        int: The first digit of the number.
+    """
+    # Convert the number to a string and get the first character
+    first_char = str(number)[0]
+    # Convert the first character back to an integer
+    return int(first_char)
+
+# Test the function
+assert first_Digit(123) == 1
+```

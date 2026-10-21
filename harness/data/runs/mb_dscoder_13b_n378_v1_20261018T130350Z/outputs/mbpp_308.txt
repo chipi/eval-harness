@@ -1,0 +1,19 @@
+```python
+def large_product(list1, list2, k):
+    # Sort the lists in descending order
+    list1.sort(reverse=True)
+    list2.sort(reverse=True)
+
+    # Initialize an empty list to store the products
+    products = []
+
+    # Iterate over the first k elements of both lists
+    for i in range(k):
+        # Multiply the current elements of both lists and append the product to the products list
+        products.append(list1[i] * list2[i])
+
+    return products
+
+# Test the function with the provided test case
+print(large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3))  # Output: [60, 54, 50]
+```

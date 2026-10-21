@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem within a markdown code block:
+
+```python
+"""
+Function to check whether the given amount has no profit and no loss.
+The function returns True if the cost price equals the selling price (no profit, no loss),
+and False otherwise.
+"""
+
+def noprofit_noloss(cost_price, selling_price):
+    """
+    Check if there is no profit and no loss.
+
+    Args:
+        cost_price (int/float): The original cost price.
+        selling_price (int/float): The selling price.
+
+    Returns:
+        bool: True if cost_price equals selling_price, False otherwise.
+    """
+    return cost_price == selling_price
+
+# Test case
+assert noprofit_noloss(1500, 1200) == False
+```
+
+This script defines the `noprofit_noloss` function which returns `True` if the cost price and selling price are equal (indicating no profit and no loss), and `False` otherwise. The provided test case `assert noprofit_noloss(1500, 1200) == False` verifies that the function works correctly for the given example.

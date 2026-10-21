@@ -1,0 +1,37 @@
+Here's a self-contained Python script that calculates the sum of Perrin numbers up to a given index `n` and includes the requested assertion:
+
+```python
+"""
+Perrin numbers are defined by the recurrence relation:
+P(0) = 3, P(1) = 0, P(2) = 2
+P(n) = P(n-2) + P(n-3) for n > 2
+
+This script calculates the sum of Perrin numbers up to index n.
+"""
+
+def cal_sum(n):
+    if n < 0:
+        return 0
+    # Initialize the first three Perrin numbers
+    perrin = [3, 0, 2]
+    if n < 3:
+        return sum(perrin[:n+1])
+    # Generate Perrin numbers up to index n
+    for i in range(3, n + 1):
+        next_num = perrin[i-2] + perrin[i-3]
+        perrin.append(next_num)
+    return sum(perrin)
+
+# Test case
+assert cal_sum(9) == 49
+```
+
+The script:
+1. Defines the Perrin sequence with the given initial values
+2. Handles edge cases where n is less than 3
+3. Generates Perrin numbers up to the requested index n
+4. Returns the sum of all Perrin numbers up to that index
+5. Includes the assertion test case that verifies cal_sum(9) returns 49
+
+The sequence for n=9 is: 3, 0, 2, 3, 2, 5, 5, 7, 10, 12
+The sum is 3+0+2+3+2+5+5+7+10+12 = 49

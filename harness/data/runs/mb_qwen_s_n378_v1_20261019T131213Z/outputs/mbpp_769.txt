@@ -1,0 +1,11 @@
+```python
+def Diff(list1, list2):
+    """
+    Get the difference between two lists.
+    Returns elements in list1 that are not in list2.
+    """
+    return [item for item in list1 if item not in list2]
+
+# Test case
+assert (Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == [10, 15, 20, 30]
+```

@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Function to subtract two lists element-wise.
+
+Args:
+    list1: First list of numbers
+    list2: Second list of numbers (must be same length as list1)
+
+Returns:
+    List containing element-wise subtraction of list2 from list1
+
+Example:
+    >>> sub_list([1, 2, 3], [4, 5, 6])
+    [-3, -3, -3]
+"""
+
+def sub_list(list1, list2):
+    """
+    Subtracts two lists element-wise.
+
+    Raises:
+        ValueError: If the input lists have different lengths
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Input lists must have the same length")
+
+    return [a - b for a, b in zip(list1, list2)]
+
+# Test case
+assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+
+# Additional test cases
+assert sub_list([0, 0, 0], [1, 1, 1]) == [-1, -1, -1]
+assert sub_list([10, 20, 30], [5, 10, 15]) == [5, 10, 15]
+print("All tests passed!")
+```
+
+This script includes:
+1. A properly documented function with docstring
+2. Input validation to ensure lists are the same length
+3. The required test case from the problem statement
+4. Additional test cases to verify the function works correctly
+5. A list comprehension for efficient element-wise subtraction
+6. A success message when all tests pass

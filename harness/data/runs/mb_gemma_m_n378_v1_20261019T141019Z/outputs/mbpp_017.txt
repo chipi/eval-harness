@@ -1,0 +1,23 @@
+```python
+def square_perimeter(side_length):
+    """
+    Calculates the perimeter of a square given its side length.
+    
+    Args:
+        side_length (float/int): The length of one side of the square.
+        
+    Returns:
+        float/int: The perimeter of the square.
+    """
+    return 4 * side_length
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert square_perimeter(10) == 40
+    
+    # Additional test cases
+    assert square_perimeter(0) == 0
+    assert square_perimeter(5.5) == 22.0
+    
+    print("All tests passed!")
+```

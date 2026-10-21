@@ -1,0 +1,7 @@
+```python
+def remove_whitespaces(s):
+    return s.replace(" ", "")
+
+# Test cases
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+```

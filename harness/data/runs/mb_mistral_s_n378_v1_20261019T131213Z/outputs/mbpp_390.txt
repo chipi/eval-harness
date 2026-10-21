@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_string(elements, format_str):
+    """
+    Applies a given format string to all elements in a list.
+
+    Args:
+        elements: List of elements to be formatted
+        format_str: Format string with a single placeholder (e.g., 'temp{0}')
+
+    Returns:
+        List of formatted strings
+    """
+    return [format_str.format(element) for element in elements]
+
+# Test case
+assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `add_string` that takes a list of elements and a format string
+2. Uses a list comprehension to apply the format string to each element
+3. Includes the required test case that verifies the function works as expected
+4. Prints a confirmation message if the test passes
+
+The function uses Python's string formatting with the `format()` method, where `{0}` is replaced by each element in the list.

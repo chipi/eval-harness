@@ -1,0 +1,14 @@
+```python
+def surface_Area(base_edge, height):
+    import math
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    base_area = base_edge ** 2
+    lateral_area = 2 * base_edge * slant_height
+    return base_area + lateral_area
+
+# Test
+assert surface_Area(3, 4) == 33
+
+if __name__ == "__main__":
+    print(surface_Area(3, 4))
+```

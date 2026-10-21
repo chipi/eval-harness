@@ -1,0 +1,24 @@
+```python
+def opposite_Signs(x: int, y: int) -> bool:
+    """
+    Check whether the given two integers have opposite signs or not.
+    
+    Args:
+        x (int): First integer.
+        y (int): Second integer.
+        
+    Returns:
+        bool: True if x and y have opposite signs, False otherwise.
+    """
+    return (x ^ y) < 0
+
+# Test the function
+if __name__ == "__main__":
+    assert opposite_Signs(1, -2) == True
+    assert opposite_Signs(-1, 2) == True
+    assert opposite_Signs(1, 2) == False
+    assert opposite_Signs(-1, -2) == False
+    assert opposite_Signs(0, 1) == False  # 0 is not considered to have a sign
+    assert opposite_Signs(0, -1) == False
+    print("All tests passed!")
+```

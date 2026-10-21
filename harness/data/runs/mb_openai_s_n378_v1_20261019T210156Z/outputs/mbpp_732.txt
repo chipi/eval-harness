@@ -1,0 +1,16 @@
+```python
+import re
+
+def replace_specialchar(s: str) -> str:
+    """
+    Replace all occurrences of spaces, commas, and dots with ':'.
+    """
+    return re.sub(r"[ ,\.]", ":", s)
+
+
+if __name__ == "__main__":
+    assert replace_specialchar('Python language, Programming language.') == (
+        'Python:language::Programming:language:'
+    )
+    print("All tests passed.")
+```

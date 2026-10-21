@@ -1,0 +1,23 @@
+```python
+"""
+Find the closest smaller number than n.
+
+Example:
+assert closest_num(11) == 10
+"""
+
+def closest_num(n):
+    """
+    Return the largest integer that is smaller than n.
+    """
+    return n - 1
+
+
+if __name__ == "__main__":
+    assert closest_num(11) == 10
+    assert closest_num(1) == 0
+    assert closest_num(0) == -1
+    assert closest_num(-5) == -6
+
+    print("All tests passed.")
+```

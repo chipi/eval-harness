@@ -1,0 +1,79 @@
+```python
+import math
+
+def find_solution(a: int, b: int, n: int):
+    """
+    Returns integers x and y that satisfy ax + by = n as a tuple, 
+    or returns None if no solution exists.
+    """
+    # A solution exists if and only if the greatest common divisor of a and b divides n.
+    if n == 0:
+        return (0, 0)
+        
+    g = math.gcd(a, b)
+    
+    if n % g != 0:
+        return None
+        
+    # Find a particular solution using the Extended Euclidean Algorithm
+    x0, y0 = math.gcd(a, b), 0 # fallback, though math.gcd doesn't return bezout coefficients directly
+    
+    # We implement a simple extended gcd to get the bezout coefficients
+    def extended_gcd(a, b):
+        if b == 0:
+            return a, 1, 0
+        else:
+            g, x, y = extended_gcd(b, a % b)
+            return g, y, x - (a // b) * y
+            
+    g, x_g, y_g = extended_gcd(a, b)
+    
+    # Scale the particular solution to satisfy ax + by = n
+    x0 = x_g * (n // g)
+    y0 = y_g * (n // g)
+    
+    # The general solution is:
+    # x = x0 + k * (b // g)
+    # y = y0 - k * (a // g)
+    # We want to find an integer k that minimizes the absolute values of x and y.
+    
+    step_x = b // g
+    step_y = a // g
+    
+    # To minimize |x| + |y|, we approximate the optimal k.
+    # x = 0 => k = -x0 / step_x
+    # y = 0 => k = y0 / step_y
+    # We take the average of these two target k values as our starting point.
+    if step_x != 0 and step_y != 0:
+        k_approx = (y0 / step_y - x0 / step_x) / 2
+    elif step_x != 0:
+        k_approx = -x0 / step_x
+    else:
+        k_approx = y0 / step_y
+        
+    # Check the nearest integers to k_approx to find the best solution
+    best_x, best_y = x0, y0
+    min_sum = abs(x0) + abs(y0)
+    
+    for k in range(int(math.floor(k_approx)) - 1, int(math.floor(k_approx)) + 2):
+        curr_x = x0 + k * step_x
+        curr_y = y0 - k * step_y
+        curr_sum = abs(curr_x) + abs(curr_y)
+        if curr_sum < min_sum:
+            min_sum = curr_sum
+            best_x, best_y = curr_x, curr_y
+            
+    return (best_x, best_y)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+    print("Assertion passed: find_solution(2, 3, 7) == (2, 1)")
+    
+    # Additional tests
+    assert find_solution(3, 6, 8) is None  # gcd is 3, which doesn't divide 8
+    print("Assertion passed: find_solution(3, 6, 8) is None")
+    
+    assert find_solution(10, 6, 14) == (-1, 4) # -10 + 24 = 14
+    print("Assertion passed: find_solution(10, 6, 14) == (-1, 4)")
+```

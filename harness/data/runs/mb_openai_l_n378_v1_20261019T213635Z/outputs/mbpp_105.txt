@@ -1,0 +1,7 @@
+```python
+def count(values):
+    return sum(value is True for value in values)
+
+
+assert count([True, False, True]) == 2
+```

@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def noprofit_noloss(selling_price, cost_price):
+    """
+    Check whether the given amount has no profit and no loss.
+    
+    Parameters:
+    selling_price (float/int): The price at which the item is sold
+    cost_price (float/int): The price at which the item was bought
+    
+    Returns:
+    bool: True if there is no profit and no loss (selling_price == cost_price),
+          False otherwise
+    """
+    return selling_price == cost_price
+
+
+# Test cases
+assert noprofit_noloss(1500, 1200) == False
+assert noprofit_noloss(1200, 1200) == True
+assert noprofit_noloss(1000, 1500) == False
+assert noprofit_noloss(0, 0) == True
+
+print("All test cases passed!")
+```
+
+**Explanation:**
+
+- The function `noprofit_noloss` takes two arguments: `selling_price` and `cost_price`.
+- It returns `True` only when the selling price equals the cost price (meaning there's neither profit nor loss).
+- It returns `False` when there's a difference between the two prices (indicating either profit or loss).
+- The provided assertion `noprofit_noloss(1500, 1200) == False` passes because 1500 ≠ 1200, meaning there is a profit of 300, so it's not a "no profit, no loss" scenario.

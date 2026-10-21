@@ -1,0 +1,48 @@
+```python
+def odd_num_sum(n: int) -> int:
+    """
+    Calculates the sum of the fourth power of the first n odd natural numbers.
+
+    The first n odd natural numbers are: 1, 3, 5, ..., (2n-1).
+    This function computes the sum: 1^4 + 3^4 + 5^4 + ... + (2n-1)^4.
+
+    Args:
+        n: A non-negative integer representing the count of odd numbers.
+
+    Returns:
+        The sum of the fourth powers of the first n odd natural numbers.
+
+    Examples:
+        >>> odd_num_sum(2)
+        82
+        >>> odd_num_sum(3)
+        702
+        >>> odd_num_sum(0)
+        0
+    """
+    if n < 0:
+        raise ValueError("Input 'n' must be a non-negative integer.")
+    
+    # The sum can be calculated by iterating from 0 to n-1.
+    # The i-th odd number (0-indexed) is (2*i + 1).
+    total_sum = 0
+    for i in range(n):
+        odd_number = 2 * i + 1
+        total_sum += odd_number ** 4
+        
+    return total_sum
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert odd_num_sum(2) == 82, f"Test failed: odd_num_sum(2) should be 82, but got {odd_num_sum(2)}"
+    
+    # Additional test cases
+    assert odd_num_sum(3) == 702, f"Test failed: odd_num_sum(3) should be 702, but got {odd_num_sum(3)}"
+    assert odd_num_sum(1) == 1, f"Test failed: odd_num_sum(1) should be 1, but got {odd_num_sum(1)}"
+    assert odd_num_sum(0) == 0, f"Test failed: odd_num_sum(0) should be 0, but got {odd_num_sum(0)}"
+    
+    print("All tests passed successfully!")
+    print(f"The sum of the fourth powers of the first 2 odd numbers is: {odd_num_sum(2)}")
+    print(f"The sum of the fourth powers of the first 3 odd numbers is: {odd_num_sum(3)}")
+```

@@ -1,0 +1,37 @@
+```python
+def max_aggregate(data):
+    """
+    Calculate the maximum aggregate from a list of (name, score) tuples.
+    
+    Args:
+        data: List of tuples where each tuple contains (name, score)
+    
+    Returns:
+        Tuple of (name, total_score) with the maximum total score
+    """
+    # Dictionary to store cumulative scores for each person
+    scores = {}
+    
+    # Aggregate scores for each person
+    for name, score in data:
+        scores[name] = scores.get(name, 0) + score
+    
+    # Find the person with the maximum total score
+    max_name = None
+    max_score = float('-inf')
+    
+    for name, total in scores.items():
+        if total > max_score:
+            max_score = total
+            max_name = name
+    
+    return (max_name, max_score)
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)])
+    print(f"Result: {result}")
+    assert result == ('Juan Whelan', 212), f"Expected ('Juan Whelan', 212), got {result}"
+    print("Assertion passed!")
+```

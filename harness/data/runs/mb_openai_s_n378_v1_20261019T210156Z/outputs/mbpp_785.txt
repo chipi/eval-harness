@@ -1,0 +1,28 @@
+```python
+def tuple_str_int(tuple_string):
+    """
+    Convert a tuple-like string such as "(7, 8, 9)" into an integer tuple.
+
+    Examples:
+        tuple_str_int("(7, 8, 9)") -> (7, 8, 9)
+        tuple_str_int("()") -> ()
+        tuple_str_int("( 1, 2, 3 )") -> (1, 2, 3)
+    """
+    s = tuple_string.strip()
+
+    # Remove surrounding parentheses if present
+    if s.startswith("(") and s.endswith(")"):
+        s = s[1:-1].strip()
+
+    # Handle empty tuple
+    if not s:
+        return ()
+
+    # Split by commas and convert each part to int
+    return tuple(int(x.strip()) for x in s.split(","))
+
+
+if __name__ == "__main__":
+    assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+    print("All tests passed.")
+```

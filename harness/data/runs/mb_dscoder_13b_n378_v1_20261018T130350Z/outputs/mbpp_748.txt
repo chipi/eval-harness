@@ -1,0 +1,15 @@
+```python
+def capital_words_spaces(s):
+    words = s.split(' ')
+    for i in range(len(words)):
+        if words[i][0].isupper():
+            if i != 0:
+                words[i] = ' ' + words[i]
+    return ''.join(words)
+
+# Test cases
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("Hello World") == 'Hello World'
+assert capital_words_spaces("I am a Programmer") == 'I am a Programmer'
+assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+```

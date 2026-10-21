@@ -1,0 +1,62 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Sets the leftmost unset bit (the first 0 bit from the right) of a given integer.
+    
+    Example:
+    10 in binary is 1010.
+    The leftmost unset bit is at the 2nd position (value 4).
+    1010 | 0100 = 1110 (which is 14).
+    """
+    if n == 0:
+        return 1
+    
+    # Find the position of the most significant bit (MSB)
+    # We use bit_length() to find how many bits are needed to represent n
+    msb_position = n.bit_length()
+    
+    # The leftmost unset bit is either at the msb_position or 
+    # it's the bit immediately to the left of the current MSB if we 
+    # consider the number as a fixed-width field.
+    # However, based on the test case 10 -> 14:
+    # 10 is 1010. The bits are at positions 3, 2, 1, 0.
+    # The bits set are 3 and 1. The bits unset are 2 and 0.
+    # The "leftmost" unset bit relative to the current magnitude is bit 2.
+    
+    # To find the leftmost unset bit within the current bit length:
+    # We can iterate from the MSB downwards.
+    mask = 1 << (msb_position - 1)
+    while mask > 0:
+        if not (n & mask):
+            return n | mask
+        mask >>= 1
+        
+    # If all bits within the current length are set, 
+    # the next unset bit is the one just to the left of the MSB.
+    return n | (1 << msb_position)
+
+def main():
+    # Test case provided in the prompt
+    # 10 is 1010 in binary.
+    # The bits are: [8, 4, 2, 1]
+    # 10 is 1*8 + 0*4 + 1*2 + 0*1
+    # The unset bits are 4 and 1.
+    # The leftmost unset bit is 4.
+    # 10 + 4 = 14.
+    result = set_left_most_unset_bit(10)
+    print(f"set_left_most_unset_bit(10) == {result}")
+    assert result == 14
+
+    # Additional test cases
+    # 7 is 111 -> leftmost unset is 8 (1000)
+    assert set_left_most_unset_bit(7) == 15 # Wait, if 7 is 111, next unset is 8? 
+    # Let's re-evaluate the logic for 7 (111). 
+    # If we treat it as 3 bits, no unset bits. Next is 1000 (8). 7|8 = 15.
+    # If the function is meant to find the first 0 from the left:
+    # 10 (1010) -> 1110 (14). Correct.
+    
+    print("All tests passed!")
+
+if __name__ == "__main__":
+    main()
+```

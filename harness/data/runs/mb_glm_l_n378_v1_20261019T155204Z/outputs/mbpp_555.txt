@@ -1,0 +1,19 @@
+```python
+def difference(n):
+    """
+    Finds the difference between the sum of cubes of the first n natural numbers 
+    and the sum of the first n natural numbers.
+    
+    This uses the mathematical formulas:
+    - Sum of first n natural numbers: n * (n + 1) / 2
+    - Sum of cubes of first n natural numbers: (n * (n + 1) / 2) ** 2
+    """
+    sum_n = n * (n + 1) // 2
+    sum_cubes = sum_n ** 2
+    return sum_cubes - sum_n
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert difference(3) == 30
+    print("Assertion passed successfully.")
+```

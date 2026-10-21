@@ -1,0 +1,13 @@
+```python
+def left_rotate(n, d):
+    """Rotate left bits by d bits for a 32-bit number."""
+    # Mask to ensure we're working with 32 bits
+    mask = 0xFFFFFFFF
+    n = n & mask
+    d = d % 32
+    return ((n << d) | (n >> (32 - d))) & mask
+
+
+# Test
+assert left_rotate(16, 2) == 64
+```

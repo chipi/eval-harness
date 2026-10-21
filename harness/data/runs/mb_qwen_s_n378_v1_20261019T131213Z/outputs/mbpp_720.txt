@@ -1,0 +1,14 @@
+```python
+def add_dict_to_tuple(tup, dict):
+    """
+    Add a dictionary to the tuple. The output should be a tuple.
+    
+    Args:
+        tup: A tuple
+        dict: A dictionary
+    
+    Returns:
+        A new tuple with the dictionary added as the last element
+    """
+    return tup + (dict,)
+```

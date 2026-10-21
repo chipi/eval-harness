@@ -1,0 +1,18 @@
+```python
+def set_left_most_unset_bit(n):
+    # Convert the number to binary and remove the '0b' at the start
+    binary_n = bin(n)[2:]
+    
+    # Find the index of the first '0' from the right
+    first_zero_from_right = len(binary_n) - binary_n[::-1].index('0')
+    
+    # Set the left most unset bit by adding 1 to the number at the index
+    n = n + 2**(first_zero_from_right - 1)
+    
+    return n
+
+# Test cases
+assert set_left_most_unset_bit(10) == 14
+assert set_left_most_unset_bit(15) == 17
+assert set_left_most_unset_bit(20) == 24
+```

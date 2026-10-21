@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem of finding the next perfect square greater than a given number:
+
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than the given number.
+    
+    Args:
+        n (int): The input number.
+        
+    Returns:
+        int: The smallest perfect square greater than n.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    
+    # Calculate the integer square root of n
+    sqrt_n = math.isqrt(n)
+    
+    # If n is a perfect square, the next one is (sqrt_n + 1)^2
+    # Otherwise, it's (sqrt_n + 1)^2
+    next_square = (sqrt_n + 1) ** 2
+    
+    return next_square
+
+# Test cases
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(36) == 49
+assert next_Perfect_Square(0) == 1
+assert next_Perfect_Square(1) == 4
+assert next_Perfect_Square(99) == 100
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `next_Perfect_Square(n)`**:
+   - Takes an integer `n` as input.
+   - Uses `math.isqrt(n)` to compute the integer square root of `n` (the largest integer less than or equal to the square root of `n`).
+   - The next perfect square is then `(sqrt_n + 1) ** 2`, which is the square of the next integer after the integer square root of `n`.
+
+2. **Edge Cases**:
+   - If `n` is a perfect square (e.g., 36), the next perfect square is `(sqrt_n + 1)^2` (e.g., 49).
+   - If `n` is not a perfect square (e.g., 35), the next perfect square is still `(sqrt_n + 1)^2` (e.g., 36).
+
+3. **Test Cases**:
+   - The function is tested with various inputs, including edge cases like `0` and `1`, and non-perfect squares like `35` and `99`.
+
+This script is self-contained and includes the necessary imports and test cases to verify correctness.

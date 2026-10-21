@@ -1,0 +1,22 @@
+```python
+def decimal_to_binary(decimal_number):
+    """
+    Convert the given decimal number to its binary equivalent, represented as a string with no leading zeros.
+    
+    Args:
+    decimal_number (int): The decimal number to be converted.
+    
+    Returns:
+    str: The binary representation of the decimal number.
+    """
+    # Convert the decimal number to binary using the built-in bin() function
+    binary_representation = bin(decimal_number)[2:]  # Remove the '0b' prefix
+    return binary_representation
+
+# Test cases to verify the correctness of the function
+assert decimal_to_binary(8) == '1000'
+assert decimal_to_binary(7) == '111'
+assert decimal_to_binary(0) == '0'
+assert decimal_to_binary(15) == '1111'
+```
+

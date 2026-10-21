@@ -1,0 +1,29 @@
+```python
+def insert_element(original_list, element):
+    """
+    Inserts the specified element before each element in the provided list.
+    
+    Args:
+        original_list (list): The list to be processed.
+        element: The element to insert before each item.
+        
+    Returns:
+        list: A new list with the element inserted.
+    """
+    result = []
+    for item in original_list:
+        result.append(element)
+        result.append(item)
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ['Red', 'Green', 'Black']
+    test_element = 'c'
+    expected_output = ['c', 'Red', 'c', 'Green', 'c', 'Black']
+    
+    actual_output = insert_element(test_list, test_element)
+    
+    assert actual_output == expected_output, f"Expected {expected_output}, but got {actual_output}"
+    print("Test passed!")
+```

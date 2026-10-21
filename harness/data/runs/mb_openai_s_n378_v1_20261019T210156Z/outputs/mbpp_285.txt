@@ -1,0 +1,14 @@
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Return True if the string contains an 'a' followed by either
+    two or three 'b' characters; otherwise return False.
+    """
+    return bool(re.search(r"ab{2,3}", text))
+
+
+# Example test
+assert text_match_two_three("ac") == False
+```

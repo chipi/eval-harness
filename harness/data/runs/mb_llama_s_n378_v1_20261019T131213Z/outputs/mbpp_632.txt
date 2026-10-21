@@ -1,0 +1,56 @@
+```python
+def move_zero(lst):
+    """
+    Move all zeroes to the end of the given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: The modified list with zeroes at the end.
+    """
+    # Use list comprehension to create a new list with non-zero elements
+    non_zero_elements = [i for i in lst if i != 0]
+    
+    # Calculate the number of zeroes in the list
+    num_zeroes = len(lst) - len(non_zero_elements)
+    
+    # Combine the non-zero elements with the required number of zeroes
+    result = non_zero_elements + [0] * num_zeroes
+    
+    return result
+
+# Test the function
+assert move_zero([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+```
+
+Alternatively, you can solve this problem in a more efficient way using two pointers:
+
+```python
+def move_zero(lst):
+    """
+    Move all zeroes to the end of the given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: The modified list with zeroes at the end.
+    """
+    # Initialize two pointers
+    i = 0  # Pointer for non-zero elements
+    j = 0  # Pointer for current element
+
+    # Traverse the list
+    while j < len(lst):
+        # If current element is not zero, swap it with the element at index i
+        if lst[j] != 0:
+            lst[i], lst[j] = lst[j], lst[i]
+            i += 1
+        j += 1
+
+    return lst
+
+# Test the function
+assert move_zero([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+```

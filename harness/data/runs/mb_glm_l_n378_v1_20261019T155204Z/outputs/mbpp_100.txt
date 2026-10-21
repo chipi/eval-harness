@@ -1,0 +1,36 @@
+```python
+def next_smallest_palindrome(n: int) -> int:
+    """
+    Finds the smallest palindrome number strictly greater than n.
+    
+    Args:
+        n (int): The specified integer.
+        
+    Returns:
+        int: The next smallest palindrome.
+        
+    Examples:
+        >>> next_smallest_palindrome(99)
+        101
+        >>> next_smallest_palindrome(121)
+        131
+    """
+    # A palindrome cannot be smaller than 0, but strictly greater than n.
+    # If n is negative, the smallest palindrome > n is 0.
+    if n < 0:
+        return 0
+    
+    # Start checking from the next integer
+    num = n + 1
+    
+    while True:
+        # Check if the number is a palindrome
+        # Convert to string and compare with its reverse
+        if str(num) == str(num)[::-1]:
+            return num
+        num += 1
+
+# Test the function with the provided assertion
+assert next_smallest_palindrome(99) == 101
+print("Assertion passed: next_smallest_palindrome(99) == 101")
+```

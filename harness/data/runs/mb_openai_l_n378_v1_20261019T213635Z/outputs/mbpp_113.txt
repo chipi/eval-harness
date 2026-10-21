@@ -1,0 +1,19 @@
+```python
+def check_integer(value):
+    """Return True if the string represents an integer."""
+    if not isinstance(value, str):
+        return False
+
+    value = value.strip()
+    if value.startswith(("+", "-")):
+        value = value[1:]
+
+    return bool(value) and value.isdecimal()
+
+
+assert check_integer("python") is False
+assert check_integer("123") is True
+assert check_integer("-42") is True
+assert check_integer("+7") is True
+assert check_integer("12.5") is False
+```

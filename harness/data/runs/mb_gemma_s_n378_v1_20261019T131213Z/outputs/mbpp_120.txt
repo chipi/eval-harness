@@ -1,0 +1,24 @@
+```python
+def max_product_tuple(list_of_tuples):
+    """
+    Finds the maximum absolute product between numbers in pairs of tuples within a given list.
+
+    Args:
+        list_of_tuples: A list of tuples, where each tuple contains two numbers.
+
+    Returns:
+        The maximum absolute product found in the list of tuples.
+    """
+    max_product = 0
+    for tuple1 in list_of_tuples:
+        for tuple2 in list_of_tuples:
+            product1 = abs(tuple1[0] * tuple2[0])
+            product2 = abs(tuple1[0] * tuple2[1])
+            product3 = abs(tuple1[1] * tuple2[0])
+            product4 = abs(tuple1[1] * tuple2[1])
+            max_product = max(max_product, product1, product2, product3, product4)
+    return max_product
+
+# Example usage and assertion
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+```

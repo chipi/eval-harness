@@ -1,0 +1,24 @@
+```python
+#!/usr/bin/env python3
+
+def count_char_position(s: str) -> int:
+    """
+    Count characters whose position in the string matches their position in the
+    English alphabet, case-insensitive.
+
+    Examples:
+        'a' at position 1 -> match
+        'B' at position 2 -> match
+        'x' at position 24 -> match
+    """
+    count = 0
+    for i, ch in enumerate(s, start=1):
+        if ch.isalpha() and (ord(ch.lower()) - ord('a') + 1) == i:
+            count += 1
+    return count
+
+
+if __name__ == "__main__":
+    assert count_char_position("xbcefg") == 2
+    print("All tests passed.")
+```

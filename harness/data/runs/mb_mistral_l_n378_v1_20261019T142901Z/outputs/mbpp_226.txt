@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+"""
+Function to remove characters with odd index values from a given string.
+"""
+
+def odd_values_string(s: str) -> str:
+    """
+    Returns a new string with characters at even indices (0-based) from the input string.
+
+    Args:
+        s: Input string to process
+
+    Returns:
+        String containing only characters at even indices
+    """
+    return s[::2]
+
+# Test the function
+assert odd_values_string('abcdef') == 'ace'
+assert odd_values_string('python') == 'pto'
+assert odd_values_string('a') == 'a'
+assert odd_values_string('') == ''
+assert odd_values_string('0123456789') == '02468'
+
+print("All tests passed!")
+```
+
+The function uses Python's string slicing with a step of 2 (`[::2]`) to select every other character starting from index 0 (which are the even indices in 0-based indexing). The test cases verify that the function works correctly for various inputs.

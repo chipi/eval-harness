@@ -1,0 +1,35 @@
+### Centered Hexagonal Number Function
+#### Problem Description
+The function calculates the nth centered hexagonal number.
+
+#### Code Solution
+```python
+def centered_hexagonal_number(n: int) -> int:
+    """
+    This function calculates the nth centered hexagonal number.
+
+    Args:
+    n (int): The position of the centered hexagonal number.
+
+    Returns:
+    int: The nth centered hexagonal number.
+    """
+    if n < 1:
+        raise ValueError("Input should be a positive integer.")
+
+    # The formula for the nth centered hexagonal number is: 3n^2 - 3n + 1
+    return 3 * n ** 2 - 3 * n + 1
+
+
+# Example usage:
+if __name__ == "__main__":
+    assert centered_hexagonal_number(10) == 271
+    print("Centered hexagonal number for n=10 is:", centered_hexagonal_number(10))
+```
+
+#### Explanation
+
+*   The function `centered_hexagonal_number(n)` takes an integer `n` as input and returns the nth centered hexagonal number.
+*   It first checks if the input `n` is less than 1 and raises a `ValueError` if true.
+*   The nth centered hexagonal number is calculated using the formula `3n^2 - 3n + 1`, which is derived from the properties of centered hexagonal numbers.
+*   The example usage demonstrates how to use the function with `n=10` and verifies the result using an assertion.

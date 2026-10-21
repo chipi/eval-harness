@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem of finding the minimum value in a heterogeneous list, handling both strings and numbers appropriately:
+
+```python
+def min_val(heterogeneous_list):
+    """
+    Finds the minimum value in a heterogeneous list, treating numbers as comparable
+    and strings as having their own comparison space.
+
+    Args:
+        heterogeneous_list: A list containing mixed types (numbers and strings)
+
+    Returns:
+        The minimum value in the list, with numbers compared among themselves
+        and strings compared among themselves.
+
+    Example:
+        >>> min_val(['Python', 3, 2, 4, 5, 'version'])
+        2
+    """
+    # Separate numbers and strings
+    numbers = [x for x in heterogeneous_list if isinstance(x, (int, float))]
+    strings = [x for x in heterogeneous_list if isinstance(x, str)]
+
+    # Find min in each group
+    min_num = min(numbers) if numbers else None
+    min_str = min(strings) if strings else None
+
+    # Return the appropriate minimum
+    if min_num is not None and min_str is not None:
+        # Compare the types to determine which is "smaller"
+        # In Python, numbers are considered "smaller" than strings in comparisons
+        return min_num
+    elif min_num is not None:
+        return min_num
+    elif min_str is not None:
+        return min_str
+    else:
+        raise ValueError("List contains no comparable elements")
+
+# Test case
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+print("Test passed!")
+```
+
+This solution:
+1. Separates the input list into numbers and strings
+2. Finds the minimum in each group
+3. Returns the appropriate minimum, with numbers taking precedence over strings
+4. Includes the required test case that passes
+
+The function handles edge cases like:
+- Lists with only numbers
+- Lists with only strings
+- Empty lists (raises ValueError)
+- Lists with mixed types (as in the example)

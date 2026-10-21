@@ -1,0 +1,53 @@
+```python
+def max_sum(arr):
+    """
+    This function finds the maximum sum of a bitonic subsequence for the given array.
+    
+    A sequence is bitonic if it is first increasing and then decreasing.
+
+    Args:
+        arr (list): The input array.
+
+    Returns:
+        int: The maximum sum of a bitonic subsequence.
+
+    """
+    n = len(arr)
+
+    # Initialize arrays to store the increasing and decreasing sums
+    inc = [0]*n
+    dec = [0]*n
+
+    # Initialize the first element of inc array
+    inc[0] = arr[0]
+
+    # Compute the increasing sums
+    for i in range(1, n):
+        inc[i] = arr[i]
+        for j in range(i):
+            if arr[i] > arr[j]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+
+    # Initialize the last element of dec array
+    dec[n-1] = arr[n-1]
+
+    # Compute the decreasing sums
+    for i in range(n-2, -1, -1):
+        dec[i] = arr[i]
+        for j in range(n-1, i, -1):
+            if arr[i] > arr[j]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+
+    # Find the maximum sum of a bitonic subsequence
+    max_sum = 0
+    for i in range(n):
+        max_sum = max(max_sum, inc[i] + dec[i] - arr[i])
+
+    return max_sum
+
+
+# Test the function
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+```
+
+The provided Python script defines a function `max_sum` that takes an array as input and returns the maximum sum of a bitonic subsequence. The function first computes the increasing and decreasing sums for the array, then finds the maximum sum of a bitonic subsequence by combining the increasing and decreasing sums. The script also includes a test case to verify the correctness of the function.

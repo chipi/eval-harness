@@ -1,0 +1,39 @@
+```python
+def largest_subset(nums):
+    """
+    Finds the size of the largest subset of a list of numbers 
+    such that every pair in the subset is divisible (one divides the other).
+    """
+    if not nums:
+        return 0
+
+    # Sort the numbers to ensure that for any pair (a, b) where a < b,
+    # we only need to check if b % a == 0.
+    nums = sorted(nums)
+    n = len(nums)
+    
+    # dp[i] will store the size of the largest subset ending with nums[i]
+    dp = [1] * n
+    
+    for i in range(1, n):
+        for j in range(i):
+            # If the current number is divisible by a previous number in the sequence,
+            # it can extend the subset ending at index j.
+            if nums[i] % nums[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+                
+    return max(dp)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [1, 3, 6, 13, 17, 18]
+    result = largest_subset(test_list)
+    print(f"The size of the largest subset for {test_list} is: {result}")
+    assert result == 4  # Subset could be [1, 3, 6, 18]
+    
+    # Additional test cases
+    assert largest_subset([2, 4, 8, 16]) == 4
+    assert largest_subset([2, 3, 5, 7]) == 1
+    assert largest_subset([1, 2, 3, 4, 5, 6]) == 3 # e.g., [1, 2, 4] or [1, 2, 6] or [1, 3, 6]
+    print("All tests passed!")
+```

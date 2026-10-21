@@ -1,0 +1,13 @@
+```python
+def all_Characters_Same(s):
+    if len(set(s)) == 1:
+        return True
+    else:
+        return False
+
+# Test cases
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("aaaaaaa") == True
+assert all_Characters_Same("abcdefg") == False
+assert all_Characters_Same("1234567") == False
+```

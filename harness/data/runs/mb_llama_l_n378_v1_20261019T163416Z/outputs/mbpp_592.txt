@@ -1,0 +1,27 @@
+```python
+import math
+
+def sum_Of_product(n):
+    """
+    This function calculates the sum of the product of consecutive binomial co-efficients.
+    
+    Args:
+    n (int): The number up to which the binomial co-efficients are calculated.
+    
+    Returns:
+    int: The sum of the product of consecutive binomial co-efficients.
+    """
+    total_sum = 0
+    for i in range(n):
+        # Calculate the binomial co-efficients using math.comb
+        total_sum += math.comb(n, i) * math.comb(n, i + 1)
+    return total_sum
+
+def main():
+    # Test the function
+    assert sum_Of_product(3) == 15
+    print("Test passed.")
+
+if __name__ == "__main__":
+    main()
+```

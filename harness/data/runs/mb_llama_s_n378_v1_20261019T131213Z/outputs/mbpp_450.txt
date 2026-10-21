@@ -1,0 +1,21 @@
+```python
+def extract_string(string_list, size):
+    """
+    Extracts strings of a specified size from a given list of string values.
+
+    Args:
+        string_list (list): A list of string values.
+        size (int): The size of strings to be extracted.
+
+    Returns:
+        list: A list of strings of the specified size.
+    """
+    return [string for string in string_list if len(string) == size]
+
+# Test the function
+print(extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8))
+```
+
+In this script, we define a function `extract_string` that takes a list of strings `string_list` and an integer `size` as arguments. It uses a list comprehension to create a new list that includes only the strings from `string_list` that have a length equal to `size`. The function then returns this new list.
+
+When you run this script, it will print `['practice', 'solution']`, which are the strings of length 8 from the input list.

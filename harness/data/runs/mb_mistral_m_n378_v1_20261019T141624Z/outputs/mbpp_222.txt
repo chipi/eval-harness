@@ -1,0 +1,23 @@
+```python
+def check_type(input_tuple):
+    """
+    Check if all elements in a tuple have the same data type.
+
+    Args:
+        input_tuple: A tuple to be checked.
+
+    Returns:
+        bool: True if all elements have the same type, False otherwise.
+    """
+    if not input_tuple:
+        return True  # Empty tuple is considered as having same types
+
+    first_type = type(input_tuple[0])
+    for element in input_tuple[1:]:
+        if type(element) != first_type:
+            return False
+    return True
+
+# Test case
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+```

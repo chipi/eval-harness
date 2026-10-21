@@ -1,0 +1,18 @@
+```python
+import math
+
+def area_tetrahedron(side):
+    """
+    Calculate the total surface area of a regular tetrahedron.
+
+    A regular tetrahedron has 4 equilateral triangular faces.
+    Area of one equilateral triangle = (sqrt(3) / 4) * side^2
+    Total surface area = 4 * (sqrt(3) / 4) * side^2 = sqrt(3) * side^2
+    """
+    return math.sqrt(3) * side * side
+
+
+if __name__ == "__main__":
+    assert area_tetrahedron(3) == 15.588457268119894
+    print(area_tetrahedron(3))
+```

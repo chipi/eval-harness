@@ -1,0 +1,36 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to find the ratio of zeroes to non-zeroes in an array of integers.
+
+The ratio is:
+    number_of_zeroes / number_of_non_zeroes
+"""
+
+import math
+
+
+def zero_count(nums):
+    """
+    Return the ratio of zeroes to non-zeroes in the given list of integers.
+
+    If there are no non-zero values, return 0.0 to avoid division by zero.
+    """
+    zeroes = sum(1 for n in nums if n == 0)
+    non_zeroes = sum(1 for n in nums if n != 0)
+
+    if non_zeroes == 0:
+        return 0.0
+
+    return zeroes / non_zeroes
+
+
+if __name__ == "__main__":
+    assert math.isclose(
+        zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]),
+        0.181818,
+        rel_tol=0.001,
+    )
+
+    print("All tests passed.")
+```

@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def string_to_list(s):
+    """
+    Convert a string to a list of strings split on the space character.
+    
+    Args:
+        s (str): The input string to be split.
+    
+    Returns:
+        list: A list of strings obtained by splitting the input on spaces.
+    """
+    return s.split(' ')
+
+
+# Test the function
+assert string_to_list("python programming") == ['python', 'programming']
+print("Test passed!")
+print(string_to_list("python programming"))
+```
+
+**Explanation:**
+
+- The function `string_to_list` takes a string `s` as input.
+- It uses Python's built-in `str.split(' ')` method, which splits the string on the space character and returns a list of substrings.
+- The `assert` statement verifies that `string_to_list("python programming")` returns `['python', 'programming']`.
+- If the assertion passes, the script prints `"Test passed!"` along with the resulting list.
+
+**Note:** If you want to handle multiple consecutive spaces or leading/trailing spaces more gracefully, you could use `s.split()` (without arguments) instead, which splits on any whitespace and ignores empty strings. However, since the problem specifically says "split on the space character," `s.split(' ')` is the most literal interpretation.

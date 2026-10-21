@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Search a string for a regex pattern and return the matching substring,
+    start index, and end index.
+    
+    Args:
+        text: The string to search in
+        pattern: The regex pattern to search for
+    
+    Returns:
+        A tuple containing (matched_substring, start_index, end_index)
+        or None if no match is found
+    """
+    match = re.search(pattern, text)
+    if match:
+        return (match.group(), match.start(), match.end())
+    return None
+
+# Test the function
+if __name__ == "__main__":
+    result = find_literals('The quick brown fox jumps over the lazy dog.', 'fox')
+    print(f"Result: {result}")
+    assert result == ('fox', 16, 19), f"Expected ('fox', 16, 19) but got {result}"
+    print("Test passed!")
+```
+
+This solution:
+- Uses Python's `re` module for regex pattern matching
+- The `re.search()` function finds the first occurrence of the pattern in the text
+- Returns a tuple with the matched substring, start index, and end index
+- The start index is inclusive and the end index is exclusive (standard Python slicing behavior)
+- Includes the test case from the problem statement to verify correctness

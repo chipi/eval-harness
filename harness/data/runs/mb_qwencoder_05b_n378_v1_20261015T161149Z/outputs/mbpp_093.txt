@@ -1,0 +1,22 @@
+```python
+def power(a, b):
+    """
+    Calculate the value of 'a' raised to the power 'b'.
+
+    Args:
+    a (int): The base number.
+    b (int): The exponent.
+
+    Returns:
+    int: The result of 'a' raised to the power 'b'.
+    """
+    return a ** b
+
+# Test cases to verify the correctness of the function
+assert power(3, 4) == 81
+assert power(5, 2) == 25
+assert power(7, 3) == 343
+assert power(0, 5) == 0
+assert power(2, 0) == 1
+```
+

@@ -1,0 +1,18 @@
+```python
+def check_greater(arr, num):
+    """
+    This function checks if the entered number is greater than the elements of the given array.
+    """
+    for i in arr:
+        if i > num:
+            return True
+    return False
+
+# Test cases
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+assert check_greater([1, 2, 3, 4, 5], 6) == True
+assert check_greater([1, 2, 3, 4, 5], 5) == True
+assert check_greater([1, 2, 3, 4, 5], 1) == False
+assert check_greater([1, 2, 3, 4, 5], 0) == False
+assert check_greater([1, 2, 3, 4, 5], 7) == False
+```

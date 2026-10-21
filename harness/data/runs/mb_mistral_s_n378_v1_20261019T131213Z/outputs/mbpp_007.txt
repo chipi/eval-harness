@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_char_long(text):
+    """Find all words in a string that are at least 4 characters long.
+
+    Args:
+        text (str): The input string to search for words.
+
+    Returns:
+        list: A list of words that are at least 4 characters long.
+    """
+    words = text.split()
+    return [word for word in words if len(word) >= 4]
+
+# Test the function
+assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `find_char_long` that takes a string as input
+2. Splits the string into words using the `split()` method
+3. Uses a list comprehension to filter words that are at least 4 characters long
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function returns a list of words, but the test converts it to a set to match the expected output format.

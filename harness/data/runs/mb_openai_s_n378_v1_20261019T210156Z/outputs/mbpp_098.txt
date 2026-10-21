@@ -1,0 +1,21 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all numbers in the input sequence, then divide by its length.
+    """
+    if not numbers:
+        raise ValueError("Input list/tuple must not be empty.")
+
+    product = 1
+    for num in numbers:
+        product *= num
+
+    return product / len(numbers)
+
+
+if __name__ == "__main__":
+    assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+    print("Test passed.")
+```

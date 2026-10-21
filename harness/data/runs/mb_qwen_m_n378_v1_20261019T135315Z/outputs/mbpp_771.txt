@@ -1,0 +1,49 @@
+```python
+def check_expression(expression: str) -> bool:
+    """
+    Check if the given expression has balanced parentheses, brackets, and braces.
+    
+    Args:
+        expression: A string containing parentheses (), brackets [], and braces {}
+        
+    Returns:
+        True if all opening brackets have matching closing brackets in the correct order,
+        False otherwise.
+    """
+    # Stack to keep track of opening brackets
+    stack = []
+    
+    # Mapping of closing brackets to their corresponding opening brackets
+    bracket_map = {
+        ')': '(',
+        ']': '[',
+        '}': '{'
+    }
+    
+    # Set of opening brackets for quick lookup
+    opening_brackets = set(bracket_map.values())
+    
+    for char in expression:
+        if char in opening_brackets:
+            stack.append(char)
+        elif char in bracket_map:
+            # If it's a closing bracket
+            if not stack or stack[-1] != bracket_map[char]:
+                return False
+            stack.pop()
+    
+    # If stack is empty, all brackets were matched
+    return len(stack) == 0
+
+
+if __name__ == "__main__":
+    assert check_expression("{()}[{}]") == True
+    assert check_expression("()[]{}") == True
+    assert check_expression("(]") == False
+    assert check_expression("([)]") == False
+    assert check_expression("{[()]}") == True
+    assert check_expression("") == True
+    assert check_expression("(") == False
+    assert check_expression(")") == False
+    print("All tests passed!")
+```

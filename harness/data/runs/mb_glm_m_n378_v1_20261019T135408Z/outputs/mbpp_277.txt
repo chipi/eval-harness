@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def dict_filter(input_dict, n):
+    """
+    Filters a dictionary to only include entries with values greater than or equal to n.
+    
+    Args:
+        input_dict (dict): The input dictionary to filter.
+        n (int): The threshold value.
+        
+    Returns:
+        dict: A new dictionary containing only entries with values >= n.
+    """
+    return {key: value for key, value in input_dict.items() if value >= n}
+
+# Test cases
+def test_dict_filter():
+    # Test case from the problem statement
+    test_dict = {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}
+    expected = {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Pierre Cox': 190}
+    assert dict_filter(test_dict, 170) == expected, "Test case 1 failed"
+    
+    # Additional test cases
+    # Empty dictionary
+    assert dict_filter({}, 100) == {}, "Test case 2 failed"
+    
+    # All values below threshold
+    assert dict_filter({'a': 1, 'b': 2}, 5) == {}, "Test case 3 failed"
+    
+    # All values above threshold
+    assert dict_filter({'a': 10, 'b': 20}, 5) == {'a': 10, 'b': 20}, "Test case 4 failed"
+    
+    # Mixed values
+    assert dict_filter({'x': 5, 'y': 10, 'z': 3}, 5) == {'x': 5, 'y': 10}, "Test case 5 failed"
+    
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_dict_filter()
+```
+
+This script defines the `dict_filter` function that uses a dictionary comprehension to filter the input dictionary based on the threshold value `n`. The function returns a new dictionary containing only the key-value pairs where the value is greater than or equal to `n`.
+
+The script also includes a comprehensive test suite that verifies the function works correctly for various scenarios, including the test case provided in the problem statement and several additional edge cases. When run, it will print "All test cases passed!" if all assertions hold true.

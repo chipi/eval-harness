@@ -1,0 +1,16 @@
+```python
+def divisor(n: int) -> int:
+    """Return the number of positive divisors of n."""
+    if n == 0:
+        raise ValueError("Zero has infinitely many divisors")
+
+    n = abs(n)
+    count = 0
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count
+
+
+assert divisor(15) == 4
+```

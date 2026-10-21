@@ -1,0 +1,77 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function which returns nth catalan number.
+assert catalan_number(10)==16796
+"""
+
+def catalan_number(n: int) -> int:
+    """
+    Returns the nth Catalan number.
+    
+    The Catalan numbers are a sequence of natural numbers that occur in 
+    various counting problems. The nth Catalan number can be calculated
+    using the formula: C_n = (2n)! / ((n+1)! * n!)
+    
+    Args:
+        n: A non-negative integer representing the position in the sequence
+        
+    Returns:
+        The nth Catalan number
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    
+    # Using the formula: C_n = (2n)! / ((n+1)! * n!)
+    # We can compute this efficiently using multiplicative formula
+    # C_n = product of (n+k)/k for k=2 to n
+    
+    if n <= 1:
+        return 1
+    
+    result = 1
+    for k in range(2, n + 1):
+        result = result * (n + k) // k
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given assertion
+    assert catalan_number(10) == 16796, f"Expected 16796, got {catalan_number(10)}"
+    
+    # Additional test cases
+    test_cases = [
+        (0, 1),
+        (1, 1),
+        (2, 2),
+        (3, 5),
+        (4, 14),
+        (5, 42),
+        (6, 132),
+        (7, 429),
+        (8, 1430),
+        (9, 4862),
+        (10, 16796),
+    ]
+    
+    for n, expected in test_cases:
+        result = catalan_number(n)
+        assert result == expected, f"catalan_number({n}) = {result}, expected {expected}"
+        print(f"catalan_number({n}) = {result}")
+    
+    print("All tests passed!")
+```
+
+This solution implements the Catalan number calculation using an efficient multiplicative formula that avoids computing large factorials directly. The formula used is:
+
+C_n = ∏(n+k)/k for k=2 to n
+
+This approach:
+- Handles the base cases (n=0 and n=1 return 1)
+- Uses integer arithmetic throughout to avoid floating-point errors
+- Is efficient with O(n) time complexity and O(1) space complexity
+- Includes input validation for negative numbers
+- Passes the required assertion that `catalan_number(10) == 16796`

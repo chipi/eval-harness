@@ -1,0 +1,39 @@
+```python
+def eulerian_num(n, m):
+    """
+    Return the Eulerian number A(n, m), i.e. the number of permutations
+    of {1, 2, ..., n} with exactly m ascents.
+
+    Recurrence:
+        A(0, 0) = 1
+        A(n, m) = (m + 1) * A(n - 1, m) + (n - m) * A(n - 1, m - 1)
+
+    Valid for 0 <= m < n. Returns 0 for out-of-range inputs.
+    """
+    if n == 0:
+        return 1 if m == 0 else 0
+    if m < 0 or m >= n:
+        return 0
+
+    # DP over m values
+    dp = [0] * n
+    dp[0] = 1  # A(0, 0)
+
+    for i in range(1, n + 1):
+        new = [0] * n
+        for j in range(0, i):
+            val = 0
+            if j < len(dp):
+                val += (j + 1) * dp[j]
+            if j - 1 >= 0:
+                val += (i - j) * dp[j - 1]
+            new[j] = val
+        dp = new
+
+    return dp[m]
+
+
+if __name__ == "__main__":
+    assert eulerian_num(3, 1) == 4
+    print("All tests passed.")
+```

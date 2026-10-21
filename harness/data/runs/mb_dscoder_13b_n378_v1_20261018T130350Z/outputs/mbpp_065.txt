@@ -1,0 +1,16 @@
+```python
+def recursive_list_sum(lst):
+    """
+    Write a function to flatten a list and sum all of its elements.
+    """
+    total = 0
+    for i in lst:
+        if type(i) == list:
+            total += recursive_list_sum(i)
+        else:
+            total += i
+    return total
+
+# Test cases
+assert recursive_list_sum([1, 2, [3,4],[5,6]])==21
+```

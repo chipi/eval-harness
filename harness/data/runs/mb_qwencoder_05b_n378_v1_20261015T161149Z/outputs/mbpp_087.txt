@@ -1,0 +1,46 @@
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    
+    :param dict1: First dictionary
+    :param dict2: Second dictionary
+    :param dict3: Third dictionary
+    :return: A single dictionary containing all key-value pairs from all three input dictionaries
+    """
+    # Create a new dictionary to store the merged results
+    merged_dict = {}
+    
+    # Iterate over each key-value pair in the first dictionary
+    for key, value in dict1.items():
+        # If the key already exists in the merged dictionary, append the value
+        if key in merged_dict:
+            merged_dict[key].append(value)
+        else:
+            # Otherwise, add the key-value pair to the merged dictionary
+            merged_dict[key] = [value]
+    
+    # Iterate over each key-value pair in the second dictionary
+    for key, value in dict2.items():
+        # If the key already exists in the merged dictionary, append the value
+        if key in merged_dict:
+            merged_dict[key].append(value)
+        else:
+            # Otherwise, add the key-value pair to the merged dictionary
+            merged_dict[key] = [value]
+    
+    # Iterate over each key-value pair in the third dictionary
+    for key, value in dict3.items():
+        # If the key already exists in the merged dictionary, append the value
+        if key in merged_dict:
+            merged_dict[key].append(value)
+        else:
+            # Otherwise, add the key-value pair to the merged dictionary
+            merged_dict[key] = [value]
+    
+    return merged_dict
+
+# Test the function with the provided test case
+assert merge_dictionaries_three({ "R": "Red", "B": "Black", "P": "Pink" }, { "G": "Green", "W": "White" },{ "O": "Orange", "W": "White", "B": "Black" }) == {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+```
+

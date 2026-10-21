@@ -1,0 +1,14 @@
+```python
+def kth_element(arr, k):
+    """
+    Find the kth element in the given array using 1-based indexing.
+    """
+    return arr[k - 1]
+
+
+# Test cases
+assert kth_element([12, 3, 5, 7, 19], 2) == 3
+
+if __name__ == "__main__":
+    print(kth_element([12, 3, 5, 7, 19], 2))
+```

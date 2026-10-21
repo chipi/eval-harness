@@ -1,0 +1,10 @@
+```python
+def decimal_to_binary(number):
+    """Return the binary representation of a non-negative integer."""
+    if number < 0:
+        raise ValueError("number must be non-negative")
+    return format(number, "b")
+
+
+assert decimal_to_binary(8) == "1000"
+```

@@ -1,0 +1,46 @@
+Here's a self-contained Python script that implements pancake sort to solve the problem:
+
+```python
+def pancake_sort(arr):
+    """
+    Sort a list of elements using the pancake sort algorithm.
+    
+    Pancake sort works by repeatedly finding the maximum element in the 
+    unsorted portion, flipping it to the front, and then flipping it to 
+    its correct position at the end.
+    """
+    # Make a copy to avoid modifying the original list
+    result = arr.copy()
+    n = len(result)
+    
+    # Process each position from end to beginning
+    for curr_size in range(n, 1, -1):
+        # Find the index of the maximum element in the unsorted portion
+        max_idx = result.index(max(result[:curr_size]))
+        
+        # If the maximum is not already at the end of the unsorted portion
+        if max_idx != curr_size - 1:
+            # If the maximum is not at the beginning, flip it to the front
+            if max_idx != 0:
+                # Flip the subarray from 0 to max_idx
+                result[:max_idx + 1] = result[:max_idx + 1][::-1]
+            
+            # Flip the subarray from 0 to curr_size-1 to move max to its position
+            result[:curr_size] = result[:curr_size][::-1]
+    
+    return result
+
+
+# Test the function
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+print("Test passed! pancake_sort([15, 79, 25, 38, 69]) =", pancake_sort([15, 79, 25, 38, 69]))
+```
+
+This implementation of pancake sort:
+1. Creates a copy of the input array to avoid modifying the original
+2. Iterates from the end of the array to the beginning
+3. For each position, finds the maximum element in the unsorted portion
+4. If the maximum isn't already in its correct position, flips it to the front (if needed) and then flips it to its correct position at the end
+5. Returns the sorted array
+
+The algorithm gets its name from the analogy of flipping pancakes with a spatula - you can only flip a stack of pancakes from the top, similar to how we reverse prefixes of the array.

@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem, checking if a string contains the letter 'z' anywhere except at the start or end of the word:
+
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Check if a string contains 'z' except at the start and end of the word.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if 'z' is found in the middle of any word, False otherwise.
+    """
+    # Use regular expression to find 'z' not at the start or end of a word
+    # \Bz\B matches 'z' when it's not at a word boundary (i.e., in the middle of a word)
+    return bool(re.search(r'\Bz\B', text))
+
+# Test case
+assert text_match_wordz_middle("pythonzabc.") == True
+```
+
+### Explanation:
+1. The function `text_match_wordz_middle` uses a regular expression to check for the presence of 'z' in the middle of a word.
+2. The regex pattern `\Bz\B` ensures that 'z' is not at a word boundary (i.e., not at the start or end of a word).
+   - `\B` is a non-word boundary, so `z` must be surrounded by word characters (letters, digits, or underscores).
+3. The `re.search` function returns a match object if the pattern is found, or `None` otherwise. The `bool()` function converts this to `True` or `False`.
+4. The test case `assert text_match_wordz_middle("pythonzabc.") == True` verifies that the function works as expected. The 'z' in "pythonzabc" is in the middle of the word, so the function returns `True`.

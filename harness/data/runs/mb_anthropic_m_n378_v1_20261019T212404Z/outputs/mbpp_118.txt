@@ -1,0 +1,12 @@
+```python
+def string_to_list(s):
+    return s.split(' ')
+
+
+# Test cases
+assert string_to_list("python programming") == ['python', 'programming']
+assert string_to_list("hello world") == ['hello', 'world']
+assert string_to_list("a b c") == ['a', 'b', 'c']
+
+print(string_to_list("python programming"))
+```

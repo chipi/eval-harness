@@ -1,0 +1,13 @@
+```python
+def last(arr, x):
+    try:
+        return len(arr) - 1 - arr[::-1].index(x)
+    except ValueError:
+        return -1
+
+# Test cases
+assert last([1,2,3],1) == 0
+assert last([1,2,2,3],2) == 3
+assert last([1,2,3,4,5],6) == -1
+assert last([],1) == -1
+```

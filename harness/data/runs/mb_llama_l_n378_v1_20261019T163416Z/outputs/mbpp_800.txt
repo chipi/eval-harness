@@ -1,0 +1,10 @@
+```python
+def remove_all_spaces(s):
+    return s.replace(' ', '')
+
+def main():
+    print(remove_all_spaces('python  program'))  # Expected output: 'pythonprogram'
+
+if __name__ == "__main__":
+    main()
+```

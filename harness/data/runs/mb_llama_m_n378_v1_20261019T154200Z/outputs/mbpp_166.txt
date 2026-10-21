@@ -1,0 +1,23 @@
+```python
+def find_even_pair(nums):
+    """
+    This function counts the number of pairs of integers in a list that xor to an even number.
+    
+    Args:
+        nums (list): A list of integers.
+    
+    Returns:
+        int: The number of pairs of integers that xor to an even number.
+    """
+    count = 0
+    # Iterate over each pair of numbers in the list
+    for i in range(len(nums)):
+        for j in range(i + 1, len(nums)):
+            # Check if the xor of the pair is even
+            if (nums[i] ^ nums[j]) % 2 == 0:
+                count += 1
+    return count
+
+# Test the function
+print(find_even_pair([5, 4, 7, 2, 1]))  # Output: 4
+```

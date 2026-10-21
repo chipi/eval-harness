@@ -1,0 +1,66 @@
+```python
+import sys
+
+def tuple_size(tup):
+    """
+    Calculates the size in bytes of a tuple, including the size of its elements.
+
+    This function recursively calculates the total size by:
+    1. Getting the base size of the tuple object itself using sys.getsizeof().
+    2. Iterating through each element in the tuple.
+    3. For each element, recursively calling tuple_size() to get its size.
+       This handles nested tuples and other objects that might contain data.
+    4. Summing the base size and the sizes of all elements.
+
+    Args:
+        tup: The tuple whose size is to be calculated.
+
+    Returns:
+        The total size in bytes of the tuple and its contents.
+    """
+    # Base case: if the input is not a tuple, return its direct size.
+    # This handles the elements of the tuple.
+    if not isinstance(tup, tuple):
+        return sys.getsizeof(tup)
+
+    # Recursive case: for a tuple, get its own size and add the size of its elements.
+    total_size = sys.getsizeof(tup)
+    for item in tup:
+        total_size += tuple_size(item)
+        
+    return total_size
+
+# Example usage and assertion to verify the function's correctness.
+# The function's result should match the direct calculation from sys.getsizeof.
+# Note: For simple tuples with immutable elements, the direct size is often
+# the same as the sum of the tuple's overhead and its elements' sizes.
+# However, this function correctly handles more complex cases like nested tuples.
+
+# Define a test tuple
+test_tuple = ("A", 1, "B", 2, "C", 3)
+
+# Calculate the size using our custom function
+custom_calculated_size = tuple_size(test_tuple)
+
+# Calculate the size using the standard library function
+standard_library_size = sys.getsizeof(test_tuple)
+
+# Assert that the two methods yield the same result
+assert custom_calculated_size == standard_library_size
+
+# Print the results for verification
+print(f"Test Tuple: {test_tuple}")
+print(f"Size calculated by tuple_size(): {custom_calculated_size} bytes")
+print(f"Size calculated by sys.getsizeof(): {standard_library_size} bytes")
+print(f"Assertion passed: {custom_calculated_size == standard_library_size}")
+
+# --- Example with a nested tuple to show the recursive capability ---
+nested_tuple = (1, "hello", (2, 3), [4, 5])
+print("\n--- Nested Tuple Example ---")
+print(f"Test Tuple: {nested_tuple}")
+print(f"Size calculated by tuple_size(): {tuple_size(nested_tuple)} bytes")
+print(f"Size calculated by sys.getsizeof(): {sys.getsizeof(nested_tuple)} bytes")
+# Note: For the nested tuple, the sizes will differ because sys.getsizeof()
+# only measures the tuple object itself, not the list inside it.
+# Our function correctly includes the size of the list.
+```

@@ -1,0 +1,35 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Returns the sum of products of all possible subarrays (contiguous sublists) of the given list.
+    
+    For a list [a1, a2, ..., an], the sum is computed efficiently using the recurrence:
+    Let dp[i] = sum of products of all subarrays ending at index i.
+    Then dp[i] = arr[i] * (1 + dp[i-1])  (with dp[-1] = 0)
+    Total sum = sum(dp)
+    
+    Example:
+    >>> sum_Of_Subarray_Prod([1,2,3])
+    20
+    """
+    if not arr:
+        return 0
+    
+    total_sum = 0
+    dp_prev = 0  # dp for previous index
+    
+    for num in arr:
+        dp_curr = num * (1 + dp_prev)
+        total_sum += dp_curr
+        dp_prev = dp_curr
+    
+    return total_sum
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = sum_Of_Subarray_Prod([1, 2, 3])
+    print(f"sum_Of_Subarray_Prod([1,2,3]) = {result}")
+    assert result == 20, f"Expected 20 but got {result}"
+    print("Test passed!")
+```

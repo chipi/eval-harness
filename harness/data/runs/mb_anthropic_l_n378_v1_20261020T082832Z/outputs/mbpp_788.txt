@@ -1,0 +1,45 @@
+Looking at this problem, I need to create a function that combines a list and a string into a single tuple, where the list elements come first and the string is appended as the last element.
+
+```python
+"""
+Write a function to create a new tuple from the given string and list.
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+"""
+
+
+def new_tuple(test_list, test_str):
+    """
+    Create a new tuple from the given list and string.
+
+    The elements of the list are placed first, followed by the string
+    as the final element of the resulting tuple.
+
+    Args:
+        test_list (list): A list of elements.
+        test_str (str): A string to append as the last element.
+
+    Returns:
+        tuple: A tuple containing all list elements followed by the string.
+    """
+    return tuple(test_list + [test_str])
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+
+    # Additional test cases
+    assert new_tuple(["We", "are"], "Developers") == ('We', 'are', 'Developers')
+    assert new_tuple(["Part", "is"], "Wrong") == ('Part', 'is', 'Wrong')
+    assert new_tuple([], "alone") == ('alone',)
+    assert new_tuple(["a", "b", "c"], "d") == ('a', 'b', 'c', 'd')
+
+    print("All tests passed!")
+    print(new_tuple(["WEB", "is"], "best"))
+```
+
+**How it works:**
+1. `test_list + [test_str]` concatenates the original list with a single-element list containing the string, producing a new list like `["WEB", "is", "best"]`.
+2. `tuple(...)` converts that list into a tuple: `('WEB', 'is', 'best')`.
+
+This approach avoids mutating the input list (unlike using `append`), keeping the function side-effect free.

@@ -1,0 +1,17 @@
+```python
+def smallest_num(nums):
+    """
+    This function finds the smallest number in a given list of numbers.
+
+    Args:
+        nums (list): A list of numbers.
+
+    Returns:
+        int: The smallest number in the list.
+    """
+    return min(nums)
+
+# Example usage:
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+print(smallest_num([10, 20, 1, 45, 99]))  # Output: 1
+```

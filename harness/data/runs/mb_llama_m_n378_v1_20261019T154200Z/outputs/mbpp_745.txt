@@ -1,0 +1,31 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    This function finds numbers within a given range from startnum to endnum 
+    where every number is divisible by every digit it contains.
+
+    Args:
+        startnum (int): The start of the range (inclusive).
+        endnum (int): The end of the range (inclusive).
+
+    Returns:
+        list: A list of numbers in the range that are divisible by every digit they contain.
+    """
+    def is_divisible(num):
+        # Convert the number to a string to easily iterate over its digits
+        for digit in str(num):
+            # If the digit is 0, the number is not divisible by it
+            if digit == '0':
+                return False
+            # If the number is not divisible by the digit, return False
+            if num % int(digit) != 0:
+                return False
+        # If the number is divisible by all its digits, return True
+        return True
+
+    # Use a list comprehension to generate the list of divisible numbers
+    return [num for num in range(startnum, endnum + 1) if is_divisible(num)]
+
+# Test the function
+assert divisible_by_digits(1,22)==[1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+```

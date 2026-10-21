@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem by moving all zeroes to the end of the given list while maintaining the order of the non-zero elements:
+
+```python
+def move_zero(lst):
+    """
+    Moves all zeroes to the end of the list while maintaining the order of non-zero elements.
+
+    Args:
+        lst: List of integers which may contain zeroes.
+
+    Returns:
+        List with all zeroes moved to the end.
+    """
+    # Separate non-zero and zero elements
+    non_zero = [x for x in lst if x != 0]
+    zero = [x for x in lst if x == 0]
+
+    # Combine non-zero elements followed by zeroes
+    return non_zero + zero
+
+# Test the function
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+```
+
+### Explanation:
+1. The function `move_zero` takes a list `lst` as input.
+2. It creates two separate lists:
+   - `non_zero`: Contains all elements from the original list that are not zero.
+   - `zero`: Contains all elements from the original list that are zero.
+3. The function then returns the concatenation of `non_zero` and `zero`, which places all zeroes at the end while preserving the order of non-zero elements.
+
+The provided `assert` statement verifies that the function works as expected.

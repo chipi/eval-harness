@@ -1,0 +1,18 @@
+```python
+def extract_string(string_list, size):
+    """
+    Extracts specified size of strings from a given list of string values.
+
+    Parameters:
+    string_list (list): A list of string values.
+    size (int): The number of strings to extract.
+
+    Returns:
+    list: A list containing the extracted strings.
+    """
+    return string_list[:size]
+
+# Test the function with the provided test case
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+```
+

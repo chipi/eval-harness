@@ -1,0 +1,20 @@
+```python
+def test_duplicate(arr):
+    """
+    Write a function to find whether a given array of integers contains any duplicate element.
+    assert test_duplicate(([1,2,3,4,5]))==False
+    """
+    seen = set()
+    for num in arr:
+        if num in seen:
+            return True
+        seen.add(num)
+    return False
+
+if __name__ == '__main__':
+    assert test_duplicate([1, 2, 3, 4, 5]) == False
+    assert test_duplicate([1, 2, 3, 1, 5]) == True
+    assert test_duplicate([1, 1, 1, 1, 1]) == True
+    assert test_duplicate([]) == False
+    print("All test cases passed")
+```

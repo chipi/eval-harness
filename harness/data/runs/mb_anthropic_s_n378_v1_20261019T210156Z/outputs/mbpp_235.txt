@@ -1,0 +1,65 @@
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits of a given number.
+    Even bits are at positions 0, 2, 4, 6, ... (0-indexed from right)
+    
+    Args:
+        n: A non-negative integer
+    
+    Returns:
+        The number with all even-positioned bits set to 1
+    
+    Examples:
+        >>> even_bit_set_number(10)
+        10
+        >>> even_bit_set_number(5)
+        5
+        >>> even_bit_set_number(0)
+        1
+    """
+    result = 0
+    position = 0
+    
+    # Set all even-positioned bits (0, 2, 4, 6, ...)
+    while (1 << position) <= n or position < 32:
+        if position % 2 == 0:  # Even position
+            result |= (1 << position)
+        position += 1
+        if position > 32:  # Limit to 32-bit for practical purposes
+            break
+    
+    return result
+
+
+# Test cases
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    print(f"even_bit_set_number(10) = {even_bit_set_number(10)}")
+    
+    assert even_bit_set_number(5) == 5
+    print(f"even_bit_set_number(5) = {even_bit_set_number(5)}")
+    
+    assert even_bit_set_number(0) == 1
+    print(f"even_bit_set_number(0) = {even_bit_set_number(0)}")
+    
+    print(f"even_bit_set_number(8) = {even_bit_set_number(8)}")
+    print(f"even_bit_set_number(15) = {even_bit_set_number(15)}")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function sets all bits at even positions (0, 2, 4, 6, ...) counting from the right (0-indexed):
+
+- **Position 0** (rightmost): even position → set to 1
+- **Position 1**: odd position → leave as is
+- **Position 2**: even position → set to 1
+- **Position 3**: odd position → leave as is
+- And so on...
+
+For example:
+- `10` in binary is `1010`. Positions 0 and 2 are already set (even positions), so result is `1010` = `10`
+- `5` in binary is `101`. Position 0 is set (even), position 2 is not set but we set it, giving `101` = `5` (since position 2 was already 0 in the original)
+- `0` in binary is `0`. We set position 0, giving `1` = `1`

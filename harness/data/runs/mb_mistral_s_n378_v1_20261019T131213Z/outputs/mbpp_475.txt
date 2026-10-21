@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem of sorting a dictionary by its values in descending order:
+
+```python
+def sort_counter(dictionary):
+    """
+    Sorts a dictionary by its values in descending order and returns a list of tuples.
+
+    Args:
+        dictionary (dict): The dictionary to be sorted.
+
+    Returns:
+        list: A list of tuples sorted by the dictionary's values in descending order.
+
+    Example:
+        >>> sort_counter({'Math':81, 'Physics':83, 'Chemistry':87})
+        [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+    """
+    # Convert the dictionary items to a list of tuples and sort by the second element (value) in descending order
+    sorted_items = sorted(dictionary.items(), key=lambda item: item[1], reverse=True)
+    return sorted_items
+
+# Test the function
+if __name__ == "__main__":
+    test_dict = {'Math': 81, 'Physics': 83, 'Chemistry': 87}
+    assert sort_counter(test_dict) == [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+    print("Test passed!")
+```
+
+### Explanation:
+1. The `sort_counter` function takes a dictionary as input.
+2. It uses the `sorted` function to sort the dictionary items (key-value pairs) based on the values (the second element of each tuple).
+3. The `key=lambda item: item[1]` specifies that the sorting should be based on the second element of each tuple (the value).
+4. The `reverse=True` parameter ensures the sorting is in descending order.
+5. The sorted list of tuples is returned.
+6. The `if __name__ == "__main__":` block includes a test case to verify the function works as expected.
+
+The script is self-contained and can be run directly to test the function.

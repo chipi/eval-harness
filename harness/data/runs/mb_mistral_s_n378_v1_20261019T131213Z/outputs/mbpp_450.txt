@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_string(strings, size):
+    """
+    Extracts strings of a specified size from a list of strings.
+
+    Args:
+        strings: List of strings to filter
+        size: Integer size to match
+
+    Returns:
+        List of strings that have the specified size
+    """
+    return [s for s in strings if len(s) == size]
+
+# Test the function
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `extract_string` that takes a list of strings and a target size
+2. Uses a list comprehension to filter strings that match the target size
+3. Includes the test case from the problem statement
+4. Prints a confirmation message if the test passes
+
+The function will return all strings from the input list that have exactly the specified length. In the example, it correctly returns ['practice', 'solution'] as both have 8 characters.

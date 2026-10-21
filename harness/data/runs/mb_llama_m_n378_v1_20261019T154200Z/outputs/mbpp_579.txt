@@ -1,0 +1,25 @@
+```python
+def find_dissimilar(tuple1, tuple2):
+    """
+    This function finds the dissimilar elements in two given tuples.
+    
+    Args:
+        tuple1 (tuple): The first tuple.
+        tuple2 (tuple): The second tuple.
+    
+    Returns:
+        tuple: A tuple containing the dissimilar elements from both tuples.
+    """
+    # Convert the tuples to sets for efficient lookups
+    set1 = set(tuple1)
+    set2 = set(tuple2)
+    
+    # Find the dissimilar elements by taking the symmetric difference of the two sets
+    dissimilar = set1.symmetric_difference(set2)
+    
+    # Convert the result back to a tuple and return it
+    return tuple(dissimilar)
+
+# Example usage:
+print(find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)))  # Output: (3, 6, 7, 10)
+```

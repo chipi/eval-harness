@@ -1,0 +1,17 @@
+```python
+import re
+
+def find_literals(string, pattern):
+    match = re.search(pattern, string)
+    if match:
+        return match.group(), match.start(), match.end()
+    else:
+        return None, None, None
+
+# Test cases
+print(find_literals('The quick brown fox jumps over the lazy dog.', 'fox'))  # ('fox', 16, 19)
+print(find_literals('Hello, world!', 'world'))  # ('world', 7, 10)
+print(find_literals('1234567890', '123'))  # ('123', 0, 3)
+print(find_literals('Python is fun', 'Python'))  # ('Python', 0, 9)
+print(find_literals('No match here', 'fox'))  # (None, None, None)
+```

@@ -1,0 +1,12 @@
+```python
+def dict_filter(dictionary, n):
+    return {key: value for key, value in dictionary.items() if value >= n}
+
+def main():
+    dictionary = {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}
+    n = 170
+    print(dict_filter(dictionary, n))
+
+if __name__ == "__main__":
+    main()
+```

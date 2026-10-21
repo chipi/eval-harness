@@ -1,0 +1,82 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Finds the next perfect square greater than a given number n.
+    
+    Args:
+        n (int/float): The input number.
+        
+    Returns:
+        int: The smallest perfect square strictly greater than n.
+    """
+    # If n is negative, the next perfect square is 0 (0*0)
+    if n < 0:
+        return 0
+    
+    # Find the integer square root of n
+    # math.isqrt is used for integer efficiency, but math.sqrt works for floats
+    root = int(math.isqrt(int(n)))
+    
+    # Calculate the next integer
+    next_root = root + 1
+    
+    # If n is exactly a perfect square, we need the one after it.
+    # However, the logic (root + 1)^2 naturally handles cases where n is not a square.
+    # We must check if the current root squared is actually greater than n.
+    # If n = 35, root = 5, next_root = 6, 6^2 = 36. Correct.
+    # If n = 36, root = 6, next_root = 7, 7^2 = 49. Correct.
+    
+    # To handle the case where n is a perfect square itself:
+    # If root*root is equal to n, we must ensure we return the NEXT one.
+    # The logic (root + 1)**2 handles this if we check if root**2 == n.
+    # But actually, the simplest way is:
+    # Find the integer part of the square root, increment it, and square it.
+    # If n is 35, sqrt is 5.91, int is 5, next is 6, 6^2 is 36.
+    # If n is 36, sqrt is 6.0, int is 6, next is 7, 7^2 is 49.
+    
+    # Let's refine:
+    # We want the smallest integer k such that k^2 > n.
+    # k > sqrt(n)
+    # k = floor(sqrt(n)) + 1
+    
+    k = int(math.floor(math.sqrt(n + 1e-12))) # Adding epsilon to handle float precision
+    # A more robust way for integers:
+    k = int(math.isqrt(n)) + 1
+    
+    # If n is 35, isqrt(35) is 5. 5+1 = 6. 6^2 = 36.
+    # If n is 36, isqrt(36) is 6. 6+1 = 7. 7^2 = 49.
+    
+    # Wait, if n = 35, isqrt(35) is 5. 5+1 = 6. 6^2 = 36. Correct.
+    # If n = 36, isqrt(36) is 6. 6+1 = 7. 7^2 = 49. Correct.
+    
+    # Let's re-verify:
+    # If n = 35: isqrt(35) = 5. 5+1 = 6. 6^2 = 36.
+    # If n = 36: isqrt(36) = 6. 6+1 = 7. 7^2 = 49.
+    
+    # There is one edge case: if n is 35.9, isqrt(35) is 5. 5+1=6. 6^2=36.
+    # If n is 36.0, isqrt(36) is 6. 6+1=7. 7^2=49.
+    
+    # Let's use a more direct approach:
+    # Find the smallest integer k such that k*k > n
+    k = int(math.floor(math.sqrt(n))) + 1
+    return k * k
+
+def test_next_perfect_square():
+    # Test cases
+    assert next_Perfect_Square(35) == 36
+    assert next_Perfect_Square(0) == 1
+    assert next_Perfect_Square(1) == 4
+    assert next_Perfect_Square(8) == 9
+    assert next_Perfect_Square(15) == 16
+    assert next_Perfect_Square(16) == 25
+    assert next_Perfect_Square(-5) == 0
+    print("All tests passed!")
+
+if __name__ == "__main__":
+    test_next_perfect_square()
+    # Example usage:
+    num = 35
+    print(f"The next perfect square after {num} is {next_Perfect_Square(num)}")
+```

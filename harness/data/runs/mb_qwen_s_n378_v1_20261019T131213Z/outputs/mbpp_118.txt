@@ -1,0 +1,13 @@
+```python
+def string_to_list(s: str) -> list:
+    """
+    Convert a string to a list of strings split on the space character.
+    
+    Args:
+        s: The input string to be split.
+        
+    Returns:
+        A list of substrings obtained by splitting the input string on spaces.
+    """
+    return s.split(' ')
+```

@@ -1,0 +1,47 @@
+```python
+"""
+Write a function to find the item with maximum frequency in a given list.
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])==2
+"""
+
+from collections import Counter
+
+def max_occurrences(lst):
+    """
+    Finds the item with the maximum frequency in a given list.
+    
+    If there are multiple items with the same maximum frequency, 
+    the item that appears first in the list is returned.
+    
+    Args:
+        lst (list): A list of items.
+        
+    Returns:
+        The item with the highest frequency.
+    """
+    if not lst:
+        return None
+        
+    # Count the frequency of each item in the list
+    counts = Counter(lst)
+    
+    # Find the maximum frequency value
+    max_freq = max(counts.values())
+    
+    # Iterate through the original list to find the first item 
+    # that matches the maximum frequency. This handles ties 
+    # by returning the first encountered item with the max frequency.
+    for item in lst:
+        if counts[item] == max_freq:
+            return item
+
+if __name__ == "__main__":
+    # Test case provided in the problem description
+    sample_list = [2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]
+    result = max_occurrences(sample_list)
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == 2
+    print("Assertion passed.")
+```

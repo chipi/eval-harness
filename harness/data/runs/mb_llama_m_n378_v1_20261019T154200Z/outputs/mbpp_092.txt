@@ -1,0 +1,49 @@
+```python
+def is_undulating(n):
+    """
+    Checks whether the given number is undulating or not.
+    
+    A number is undulating if it alternates between increasing and decreasing digits.
+    
+    Parameters:
+    n (int): The number to check.
+    
+    Returns:
+    bool: True if the number is undulating, False otherwise.
+    """
+    # Convert the number to a string to easily access each digit
+    str_n = str(n)
+    
+    # If the number has less than 3 digits, it cannot be undulating
+    if len(str_n) < 3:
+        return False
+    
+    # Initialize the direction of the undulation
+    direction = None
+    
+    # Iterate over the digits in the number
+    for i in range(len(str_n) - 1):
+        # Calculate the difference between the current digit and the next digit
+        diff = int(str_n[i+1]) - int(str_n[i])
+        
+        # If the difference is 0, the number is not undulating
+        if diff == 0:
+            return False
+        
+        # If the direction is not set, set it
+        if direction is None:
+            direction = diff > 0
+        
+        # If the direction of the difference is not the same as the direction of the undulation, the number is not undulating
+        elif (diff > 0)!= direction:
+            return False
+        
+        # Flip the direction for the next iteration
+        direction = not direction
+    
+    # If the function has not returned False, the number is undulating
+    return True
+
+# Test the function
+print(is_undulating(1212121))  # True
+```

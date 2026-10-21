@@ -1,0 +1,26 @@
+```python
+def recursive_list_sum(data_list):
+    """
+    Recursively flattens a list and sums all of its elements.
+    
+    Args:
+        data_list: A list containing integers or other nested lists.
+        
+    Returns:
+        The sum of all integer elements in the nested structure.
+    """
+    total = 0
+    for element in data_list:
+        # Check if the element is a list (or tuple to handle the assertion case)
+        if isinstance(element, (list, tuple)):
+            # If it is a list, recurse deeper
+            total += recursive_list_sum(element)
+        else:
+            # If it is an integer, add it to the total
+            total += element
+    return total
+
+# Assertion to test the function
+assert recursive_list_sum(([1, 2, [3,4],[5,6]])) == 21
+print("Function executed successfully and assertion passed.")
+```

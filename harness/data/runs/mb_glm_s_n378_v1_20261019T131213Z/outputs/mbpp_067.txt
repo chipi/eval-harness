@@ -1,0 +1,59 @@
+```python
+def bell_number(n):
+    """
+    Calculates the Bell number for a given non-negative integer n.
+    The Bell number B(n) represents the number of ways to partition a set of n elements.
+
+    Args:
+        n: A non-negative integer.
+
+    Returns:
+        The Bell number B(n).
+
+    Raises:
+        ValueError: If n is a negative integer.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    if n == 0:
+        return 1
+
+    # Create a list to store the Bell numbers for the previous row.
+    # Initialize it with B(0) = 1.
+    bell_row = [1]
+
+    for i in range(1, n + 1):
+        # The first element of the new row is the last element of the previous row.
+        new_row = [bell_row[-1]]
+        
+        # Calculate subsequent elements using the recurrence relation:
+        # B(i, k) = B(i, k-1) + B(i-1, k-1)
+        # where B(i, k) is the k-th element of the i-th row.
+        for k in range(1, i):
+            new_row.append(new_row[k - 1] + bell_row[k - 1])
+            
+        # The last element of the new row is the sum of the previous row.
+        new_row.append(new_row[-1] + bell_row[-1])
+        
+        # Update bell_row to be the new_row for the next iteration.
+        bell_row = new_row
+
+    # The last element of the final row is the Bell number for n.
+    return bell_row[-1]
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test cases
+    assert bell_number(0) == 1, "Bell number for 0 should be 1"
+    assert bell_number(1) == 1, "Bell number for 1 should be 1"
+    assert bell_number(2) == 2, "Bell number for 2 should be 2"
+    assert bell_number(3) == 5, "Bell number for 3 should be 5"
+    assert bell_number(4) == 15, "Bell number for 4 should be 15"
+    assert bell_number(5) == 52, "Bell number for 5 should be 52"
+    
+    print("All assertions passed successfully!")
+    
+    # Demonstrate the calculation for n=2
+    print(f"\nCalculating Bell number for n=2:")
+    print(f"The number of ways to partition a set of 2 elements is: {bell_number(2)}")
+```

@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def move_num(s):
+    """
+    Move all digits in the string to the end, preserving the relative order
+    of both the non-digit characters and the digits.
+    """
+    non_digits = []
+    digits = []
+    for ch in s:
+        if ch.isdigit():
+            digits.append(ch)
+        else:
+            non_digits.append(ch)
+    return ''.join(non_digits) + ''.join(digits)
+
+
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+print("Test passed!")
+```
+
+**How it works:**
+1. Iterate through each character in the input string.
+2. If the character is a digit (`ch.isdigit()`), append it to the `digits` list.
+3. Otherwise, append it to the `non_digits` list.
+4. Concatenate the two lists — non-digits first, then digits — and join them into a single string.
+
+This preserves the original relative order of both the letters and the numbers, which matches the expected output `'Iloveyouthreethousand1143553000'`.

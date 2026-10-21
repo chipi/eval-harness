@@ -1,0 +1,8 @@
+```python
+def neg_nos(lst):
+    """Return a list of negative numbers from the input list."""
+    return [num for num in lst if num < 0]
+
+# Test the function
+assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+```

@@ -1,0 +1,50 @@
+Here's a self-contained Python script that calculates the Bell number for a given input `n`, which represents the number of ways to partition a set of `n` elements. The script includes the function `bell_number` and the provided assertion to verify its correctness.
+
+```python
+def bell_number(n):
+    """
+    Calculate the Bell number for a given n, which is the number of ways to partition a set of n elements.
+
+    Args:
+        n (int): The size of the set.
+
+    Returns:
+        int: The Bell number for the given n.
+    """
+    if n == 0:
+        return 1
+    # Create a 2D array to store Bell triangle numbers
+    bell = [[0] * (n + 1) for _ in range(n + 1)]
+    bell[0][0] = 1
+    for i in range(1, n + 1):
+        # The first element of each row is the last element of the previous row
+        bell[i][0] = bell[i - 1][i - 1]
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i][j - 1] + bell[i - 1][j - 1]
+    return bell[n][0]
+
+# Test the function with the provided assertion
+assert bell_number(2) == 2
+
+# Additional test cases to verify correctness
+assert bell_number(0) == 1
+assert bell_number(1) == 1
+assert bell_number(3) == 5
+assert bell_number(4) == 15
+assert bell_number(5) == 52
+
+print("All assertions passed!")
+```
+
+### Explanation:
+1. **Bell Number Calculation**: The Bell number for a set of size `n` is computed using the Bell triangle method. The Bell triangle is constructed such that:
+   - The first element of each row is the last element of the previous row.
+   - Each subsequent element in the row is the sum of the previous element in the same row and the element from the previous row and previous column.
+
+2. **Base Case**: The Bell number for `n = 0` is 1 (the empty set has one partition).
+
+3. **Assertions**: The script includes the provided assertion `bell_number(2) == 2` and additional test cases to ensure the function works correctly for other values of `n`.
+
+4. **Output**: If all assertions pass, the script prints "All assertions passed!".
+
+This script is self-contained and can be run directly to verify the correctness of the `bell_number` function.

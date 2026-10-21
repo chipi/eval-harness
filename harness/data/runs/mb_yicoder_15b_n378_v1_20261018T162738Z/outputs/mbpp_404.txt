@@ -1,0 +1,9 @@
+```python
+def minimum(a, b):
+    return a if a < b else b
+
+assert minimum(1,2) == 1
+assert minimum(5,1) == 1
+assert minimum(10,10) == 10
+assert minimum(-1,-2) == -2
+```

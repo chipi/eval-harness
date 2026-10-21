@@ -1,0 +1,23 @@
+```python
+def check(n):
+    """
+    Checks if a given number is one less than twice its reverse.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is one less than twice its reverse, False otherwise.
+    """
+    # Convert the number to a string to easily reverse it
+    str_n = str(n)
+    
+    # Reverse the string representation of the number
+    reversed_n = int(str_n[::-1])
+    
+    # Check if the number is one less than twice its reverse
+    return n == 2 * reversed_n - 1
+
+# Test the function
+assert not check(70)
+```

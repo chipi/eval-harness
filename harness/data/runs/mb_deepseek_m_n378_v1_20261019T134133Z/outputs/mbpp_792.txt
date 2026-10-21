@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to count the number of lists in a given number of lists.
+assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+"""
+
+
+def count_list(input_list):
+    """
+    Count the number of lists contained within the given list.
+
+    Args:
+        input_list (list): A list that may contain other lists.
+
+    Returns:
+        int: The number of list elements found in input_list.
+    """
+    count = 0
+    for item in input_list:
+        if isinstance(item, list):
+            count += 1
+    return count
+
+
+# Test cases
+assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+assert count_list([]) == 0
+assert count_list([1, 2, 3]) == 0
+assert count_list([[1], [2], [3], [4], [5]]) == 5
+assert count_list([[1, 2], 3, [4, 5], "hello", [6]]) == 3
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The `count_list` function iterates through each element of the input list.
+- It uses `isinstance(item, list)` to check whether the current element is itself a list.
+- If it is, the counter is incremented.
+- Finally, the total count is returned.
+
+The script also includes several test cases (including the one from the problem statement) to verify correctness. When run, it prints `All tests passed!` if everything works as expected.

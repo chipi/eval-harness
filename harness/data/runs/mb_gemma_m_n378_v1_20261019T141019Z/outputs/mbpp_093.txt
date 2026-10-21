@@ -1,0 +1,25 @@
+```python
+def power(a, b):
+    """
+    Calculates the value of 'a' to the power 'b'.
+    
+    Args:
+        a (int/float): The base.
+        b (int): The exponent.
+        
+    Returns:
+        int/float: The result of a raised to the power of b.
+    """
+    return a ** b
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert power(3, 4) == 81
+    
+    # Additional test cases
+    assert power(2, 3) == 8
+    assert power(5, 0) == 1
+    assert power(10, -1) == 0.1
+    
+    print("All tests passed!")
+```

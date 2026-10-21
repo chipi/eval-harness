@@ -1,0 +1,30 @@
+Here’s a self-contained Python script that solves the problem you described:  
+
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    Finds the first adverb and its start and end positions in a given sentence.
+    An adverb is defined as a word ending with 'ly' (case-insensitive).
+    Returns a tuple (start, end, adverb) or None if no adverb is found.
+    """
+    # Regex to find words ending with 'ly' (case-insensitive)
+    pattern = r'\b\w+ly\b'
+    match = re.search(pattern, sentence, re.IGNORECASE)
+    
+    if match:
+        start = match.start()
+        end = match.end()
+        adverb = match.group()
+        return (start, end, adverb)
+    return None
+
+# Example test case
+assert find_adverb_position("clearly!! we can see the sky") == (0, 7, 'clearly')
+print("Test passed!")
+
+# Additional test cases
+print(find_adverb_position("He runs quickly."))  # Expected: (7, 14, 'quickly')
+print(find_adverb_position("No adverb here."))   # Expected: None
+```

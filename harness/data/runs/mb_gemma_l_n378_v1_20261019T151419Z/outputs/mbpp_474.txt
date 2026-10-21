@@ -1,0 +1,13 @@
+```python
+def replace_char(string, old_char, new_char):
+    """
+    Replaces all occurrences of old_char with new_char in the given string.
+    """
+    return string.replace(old_char, new_char)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = replace_char("polygon", 'y', 'l')
+    assert result == "pollgon", f"Expected 'pollgon', but got '{result}'"
+    print("Test passed!")
+```

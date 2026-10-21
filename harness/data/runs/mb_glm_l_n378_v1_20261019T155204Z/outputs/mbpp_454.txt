@@ -1,0 +1,34 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Matches a word containing 'z'.
+    
+    Args:
+        text (str): The input string to search.
+        
+    Returns:
+        bool: True if a word containing 'z' is found, False otherwise.
+    """
+    # \b matches a word boundary
+    # \w* matches zero or more word characters (letters, digits, or underscores)
+    # z matches the literal character 'z'
+    # \w* matches zero or more word characters
+    # \b matches a word boundary
+    pattern = r'\b\w*z\w*\b'
+    
+    return bool(re.search(pattern, text))
+
+# Assertions to verify the correctness of the function
+if __name__ == "__main__":
+    assert text_match_wordz("pythonz.") == True
+    assert text_match_wordz("z.") == True
+    assert text_match_wordz("zoo") == True
+    assert text_match_wordz("blizzard") == True
+    assert text_match_wordz("python.") == False
+    assert text_match_wordz("hello world") == False
+    assert text_match_wordz("This is a zoo.") == True
+    assert text_match_wordz("no z here") == False
+    print("All tests passed!")
+```

@@ -1,0 +1,35 @@
+```python
+#!/usr/bin/env python3
+"""
+The input is defined as two lists of the same length.
+Write a function to count indices where the lists have the same values.
+
+Example:
+count_same_pair(
+    [1, 2, 3, 4, 5, 6, 7, 8],
+    [2, 2, 3, 1, 2, 6, 7, 9]
+) == 4
+"""
+
+def count_same_pair(list1, list2):
+    """
+    Count how many positions have the same value in both lists.
+
+    Args:
+        list1: First list.
+        list2: Second list.
+
+    Returns:
+        The number of indices where list1[i] == list2[i].
+    """
+    return sum(a == b for a, b in zip(list1, list2))
+
+
+if __name__ == "__main__":
+    assert count_same_pair(
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        [2, 2, 3, 1, 2, 6, 7, 9]
+    ) == 4
+
+    print("All tests passed.")
+```

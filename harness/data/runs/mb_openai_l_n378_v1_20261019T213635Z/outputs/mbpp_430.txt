@@ -1,0 +1,15 @@
+```python
+def parabola_directrix(a, b, c):
+    """Return the directrix y-coordinate for the parabola y = ax² + bx + c."""
+    if a == 0:
+        raise ValueError("a must be nonzero for a parabola")
+
+    vertex_y = c - b**2 / (4 * a)
+    return vertex_y - 1 / (4 * a)
+
+
+if __name__ == "__main__":
+    print(parabola_directrix(5, 3, 2))  # 1.5
+```
+
+For the standard form \(y=ax^2+bx+c\), the directrix is \(y=c-\frac{b^2+1}{4a}\). The supplied assertion expects `-198`, but that does not follow from this standard interpretation: `parabola_directrix(5, 3, 2)` is `1.5`.

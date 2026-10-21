@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def start_withp(words_list):
+    """
+    Returns a tuple of two words from a list of words that start with the letter 'p' (case-insensitive).
+
+    Args:
+        words_list: A list of strings where each string contains space-separated words.
+
+    Returns:
+        A tuple of two words starting with 'p'. If there are more than two, returns the first two found.
+        If there are fewer than two, raises a ValueError.
+    """
+    p_words = []
+    for item in words_list:
+        for word in item.split():
+            if word.lower().startswith('p'):
+                p_words.append(word)
+                if len(p_words) == 2:
+                    return tuple(p_words)
+    if len(p_words) < 2:
+        raise ValueError("Not enough words starting with 'p' found in the list")
+    return tuple(p_words)
+
+# Test case
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+```
+
+This script:
+1. Defines a function `start_withp` that takes a list of strings as input
+2. Iterates through each string in the list and splits it into individual words
+3. Checks if each word starts with 'p' (case-insensitive)
+4. Collects words starting with 'p' until it finds two, then returns them as a tuple
+5. Includes the provided test case to verify the function works correctly
+6. Raises a ValueError if fewer than two words starting with 'p' are found

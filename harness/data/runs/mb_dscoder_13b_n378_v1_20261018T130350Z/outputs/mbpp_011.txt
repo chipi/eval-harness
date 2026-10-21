@@ -1,0 +1,14 @@
+```python
+def remove_Occ(s, ch):
+    if s.count(ch) == 0:
+        return s
+    else:
+        return s.replace(ch, '', 1).replace(ch, '', s.count(ch)-1)
+
+# Testing the function
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("world", "o") == "wrld"
+assert remove_Occ("python", "y") == "pton"
+assert remove_Occ("test", "t") == "est"
+assert remove_Occ("test", "z") == "test"
+```

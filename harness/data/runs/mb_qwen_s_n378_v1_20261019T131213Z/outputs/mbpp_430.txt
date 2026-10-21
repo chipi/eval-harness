@@ -1,0 +1,30 @@
+```python
+def parabola_directrix(a, h, k):
+    """
+    Find the directrix of a parabola given in vertex form: y = a(x - h)^2 + k
+    
+    The vertex is at (h, k).
+    For a vertical parabola y = a(x-h)^2 + k:
+    - If a > 0, it opens upward. The focus is at (h, k + 1/(4a)) and the directrix is y = k - 1/(4a)
+    - If a < 0, it opens downward. The focus is at (h, k + 1/(4a)) and the directrix is y = k - 1/(4a)
+    
+    In both cases, the directrix is the horizontal line y = k - 1/(4a)
+    
+    Parameters:
+    a: coefficient of the squared term
+    h: x-coordinate of the vertex
+    k: y-coordinate of the vertex
+    
+    Returns:
+    The y-value of the directrix line
+    """
+    # Directrix is y = k - 1/(4a)
+    return k - 1 / (4 * a)
+
+
+# Test with the provided assertion
+if __name__ == "__main__":
+    result = parabola_directrix(5, 3, 2)
+    print(f"parabola_directrix(5, 3, 2) = {result}")
+    assert parabola_directrix(5, 3, 2) == -198, f"Expected -198 but got {result}"
+```

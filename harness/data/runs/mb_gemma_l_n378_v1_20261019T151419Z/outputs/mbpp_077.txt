@@ -1,0 +1,34 @@
+```python
+def is_Diff(n):
+    """
+    Checks if a number is divisible by 11.
+    
+    The logic used here is the alternating sum of digits:
+    A number is divisible by 11 if the alternating sum of its digits 
+    is divisible by 11.
+    """
+    # Convert number to string to iterate through digits
+    s = str(abs(n))
+    alternating_sum = 0
+    
+    for i in range(len(s)):
+        if i % 2 == 0:
+            alternating_sum += int(s[i])
+        else:
+            alternating_sum -= int(s[i])
+            
+    return alternating_sum % 11 == 0
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert is_Diff(12345) == False
+    
+    # Additional test cases
+    assert is_Diff(121) == True    # 1 - 2 + 1 = 0
+    assert is_Diff(1331) == True  # 1 - 3 + 3 - 1 = 0
+    assert is_Diff(10) == False
+    assert is_Diff(11) == True
+    
+    print("All tests passed!")
+```

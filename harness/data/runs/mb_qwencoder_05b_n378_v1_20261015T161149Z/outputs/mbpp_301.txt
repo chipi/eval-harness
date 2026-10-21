@@ -1,0 +1,29 @@
+```python
+def dict_depth(d):
+    """
+    Find the depth of a dictionary.
+
+    Args:
+    d (dict): The dictionary to be evaluated.
+
+    Returns:
+    int: The depth of the dictionary.
+    """
+    if not isinstance(d, dict):
+        raise TypeError("Input must be a dictionary.")
+    
+    max_depth = 0
+    for key, value in d.items():
+        current_depth = 1 + dict_depth(value)
+        max_depth = max(max_depth, current_depth)
+    
+    return max_depth
+
+# Test cases
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+assert dict_depth({}) == 0
+assert dict_depth({'a':1, 'b':2, 'c':3}) == 3
+assert dict_depth({'a':1, 'b':2, 'c':3, 'd':4}) == 4
+assert dict_depth({'a':1, 'b':2, 'c':3, 'd':4, 'e':5}) == 5
+```
+

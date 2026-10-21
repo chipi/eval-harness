@@ -1,0 +1,44 @@
+```python
+def catalan_number(n):
+    """
+    Returns the nth Catalan number.
+    
+    The nth Catalan number is given by the formula:
+    C(n) = (2n)! / ((n+1)! * n!)
+    
+    Or equivalently: C(n) = C(0)*C(n-1) + C(1)*C(n-2) + ... + C(n-1)*C(0)
+    
+    Args:
+        n: The index of the Catalan number to compute
+        
+    Returns:
+        The nth Catalan number
+    """
+    if n <= 1:
+        return 1
+    
+    # Use dynamic programming to compute Catalan numbers
+    catalan = [0] * (n + 1)
+    catalan[0] = 1
+    catalan[1] = 1
+    
+    for i in range(2, n + 1):
+        for j in range(i):
+            catalan[i] += catalan[j] * catalan[i - 1 - j]
+    
+    return catalan[n]
+
+
+# Test
+assert catalan_number(10) == 16796
+print(f"catalan_number(10) = {catalan_number(10)}")
+print("All tests passed!")
+```
+
+The solution uses dynamic programming to efficiently compute the nth Catalan number. The Catalan numbers follow the recurrence relation:
+
+C(n) = Σ(C(i) * C(n-1-i)) for i from 0 to n-1
+
+With base cases C(0) = 1 and C(1) = 1.
+
+This approach builds up a table of Catalan numbers from 0 to n, where each value is computed using previously calculated values, resulting in O(n²) time complexity and O(n) space complexity.

@@ -1,0 +1,30 @@
+```python
+def is_samepatterns(patterns, colors):
+    """
+    Checks whether the given colors follow the sequence given in the patterns array.
+
+    Args:
+        patterns (list): A list of patterns.
+        colors (list): A list of colors.
+
+    Returns:
+        bool: True if the colors follow the sequence, False otherwise.
+    """
+    if len(patterns)!= len(colors):
+        return False
+
+    pattern_to_color = {}
+    color_to_pattern = {}
+
+    for pattern, color in zip(patterns, colors):
+        if pattern not in pattern_to_color and color not in color_to_pattern:
+            pattern_to_color[pattern] = color
+            color_to_pattern[color] = pattern
+        elif pattern_to_color.get(pattern)!= color or color_to_pattern.get(color)!= pattern:
+            return False
+
+    return True
+
+# Test the function
+print(is_samepatterns(["red","green","green"], ["a", "b", "b"]))  # Should print: True
+```

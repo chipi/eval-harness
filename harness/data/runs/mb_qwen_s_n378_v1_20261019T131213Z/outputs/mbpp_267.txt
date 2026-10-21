@@ -1,0 +1,20 @@
+```python
+def square_Sum(n):
+    """
+    Returns the sum of the squares of the first n odd natural numbers.
+    
+    The first n odd natural numbers are: 1, 3, 5, ..., (2n-1)
+    We need to compute: 1^2 + 3^2 + 5^2 + ... + (2n-1)^2
+    
+    Args:
+        n (int): The number of odd natural numbers to consider.
+        
+    Returns:
+        int: The sum of the squares of the first n odd natural numbers.
+    """
+    total = 0
+    for i in range(1, n + 1):
+        odd_number = 2 * i - 1
+        total += odd_number ** 2
+    return total
+```

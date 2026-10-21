@@ -1,0 +1,69 @@
+Here's a self-contained Python script that solves the problem of finding the minimum number of rotations (greater than 0) required to get the same string:
+
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Find the minimum number of rotations (greater than 0) required to get the same string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Minimum number of rotations needed to get back to the original string
+    """
+    if not s:
+        return 0
+    
+    n = len(s)
+    
+    # Try all possible rotation amounts from 1 to n
+    for rotation in range(1, n + 1):
+        # Check if rotating by 'rotation' positions gives the same string
+        rotated = s[rotation:] + s[:rotation]
+        if rotated == s:
+            return rotation
+    
+    # This should never happen since rotating by n always gives the same string
+    return n
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test the given assertion
+    assert find_Rotations("aaaa") == 1
+    print("Test passed: find_Rotations('aaaa') == 1")
+    
+    # Additional test cases
+    test_cases = [
+        ("abab", 2),
+        ("abcabc", 3),
+        ("abcd", 4),
+        ("a", 1),
+        ("ab", 2),
+        ("abcde", 5),
+        ("xyzxyz", 3),
+        ("hello", 5)
+    ]
+    
+    for test_string, expected in test_cases:
+        result = find_Rotations(test_string)
+        print(f"find_Rotations('{test_string}') = {result} (expected: {expected})")
+        assert result == expected, f"Failed for '{test_string}': got {result}, expected {expected}"
+    
+    print("\nAll tests passed!")
+```
+
+This script works by:
+
+1. **Iterating through possible rotation amounts**: We try rotating the string by 1, 2, 3, ..., n positions (where n is the length of the string).
+
+2. **Checking each rotation**: For each rotation amount, we create the rotated string using slicing: `s[rotation:] + s[:rotation]`.
+
+3. **Finding the minimum**: We return the first rotation amount that produces the same string as the original.
+
+4. **Edge cases**: 
+   - Empty string returns 0
+   - Single character string returns 1
+   - Strings with no repeating pattern return their length (since rotating by the full length always gives the same string)
+
+The time complexity is O(n²) in the worst case, and space complexity is O(n) for creating the rotated strings.

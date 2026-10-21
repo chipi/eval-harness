@@ -1,0 +1,31 @@
+```python
+def frequency_lists(list_of_lists):
+    """
+    Find frequency of each element in a flattened list of lists.
+    
+    Args:
+        list_of_lists: A list containing multiple lists
+        
+    Returns:
+        A dictionary with elements as keys and their frequencies as values
+    """
+    frequency_dict = {}
+    
+    # Flatten the list of lists and count frequencies
+    for sublist in list_of_lists:
+        for element in sublist:
+            frequency_dict[element] = frequency_dict.get(element, 0) + 1
+    
+    return frequency_dict
+
+
+# Test the function
+if __name__ == "__main__":
+    result = frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]])
+    expected = {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+    
+    print(f"Result: {result}")
+    print(f"Expected: {expected}")
+    assert result == expected, f"Test failed! Got {result}, expected {expected}"
+    print("✓ Test passed!")
+```

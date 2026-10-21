@@ -1,0 +1,39 @@
+```python
+def bell_Number(n):
+    """
+    Calculates the nth Bell number using the Bell Triangle method.
+    The Bell number B(n) is the number of ways to partition a set of n elements.
+    """
+    if n == 0:
+        return 1
+    
+    # The Bell Triangle is a triangle of numbers similar to Pascal's triangle.
+    # bell[i][j] will store the value of the triangle.
+    bell = [[0 for _ in range(n + 1)] for _ in range(n + 1)]
+    
+    # Base case: B(0) = 1
+    bell[0][0] = 1
+    
+    for i in range(1, n + 1):
+        # The first element of the current row is the last element of the previous row
+        bell[i][0] = bell[i-1][i-1]
+        
+        # Fill the rest of the row: bell[i][j] = bell[i][j-1] + bell[i-1][j-1]
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i][j-1] + bell[i-1][j-1]
+            
+    # The nth Bell number is the first element of the nth row 
+    # (or the last element of the (n-1)th row).
+    # Based on our loop structure, the result for n is the first element of row n.
+    return bell[n][0]
+
+if __name__ == "__main__":
+    # Test cases
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(2) == 2
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    assert bell_Number(5) == 52
+    print("All tests passed!")
+```

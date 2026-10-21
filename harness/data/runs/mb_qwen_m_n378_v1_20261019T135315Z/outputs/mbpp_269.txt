@@ -1,0 +1,18 @@
+```python
+def ascii_value(char: str) -> int:
+    """
+    Returns the ASCII value of a given character.
+    
+    Args:
+        char: A single character string
+        
+    Returns:
+        The ASCII value of the character as an integer
+    """
+    return ord(char)
+
+
+if __name__ == "__main__":
+    assert ascii_value('A') == 65
+    print("All tests passed!")
+```

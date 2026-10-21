@@ -1,0 +1,10 @@
+```python
+def replace_spaces(input_string):
+    return input_string.replace(" ", "%20")
+
+# Test cases
+assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+assert replace_spaces("Hello World") == 'Hello%20World'
+assert replace_spaces("") == ''
+assert replace_spaces(" ") == '%20'
+```

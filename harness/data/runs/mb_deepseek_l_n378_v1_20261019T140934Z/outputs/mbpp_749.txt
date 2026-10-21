@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sort_numeric_strings(strings):
+    """
+    Sort a list of strings of numbers numerically.
+    
+    Args:
+        strings: List of strings representing numbers
+        
+    Returns:
+        List of integers sorted numerically
+    """
+    # Convert strings to integers, sort them, and return
+    return sorted(int(s) for s in strings)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    test_input = ['4', '12', '45', '7', '0', '100', '200', '-12', '-500']
+    expected_output = [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+    
+    result = sort_numeric_strings(test_input)
+    
+    # Verify the result
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Test passed!")
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+```
+
+This solution:
+1. Takes a list of strings representing numbers
+2. Converts each string to an integer using a generator expression
+3. Uses Python's built-in `sorted()` function to sort them numerically
+4. Returns the sorted list of integers
+5. Includes the test case from the problem to verify correctness

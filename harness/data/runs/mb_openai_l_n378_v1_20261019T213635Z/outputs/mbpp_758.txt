@@ -1,0 +1,13 @@
+```python
+from collections import Counter
+
+
+def unique_sublists(lists):
+    """Count occurrences of each sublist, using tuples as dictionary keys."""
+    return dict(Counter(tuple(sublist) for sublist in lists))
+
+
+assert unique_sublists(
+    [[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]]
+) == {(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+```

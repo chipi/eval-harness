@@ -1,0 +1,35 @@
+```python
+def sequence(n):
+    """
+    Find the nth number in the Newman-Conway sequence.
+    
+    The Newman-Conway sequence is defined as:
+    P(1) = 1
+    P(2) = 1
+    P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+    
+    Args:
+        n: The position in the sequence (1-indexed)
+    
+    Returns:
+        The nth number in the Newman-Conway sequence
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    if n == 1 or n == 2:
+        return 1
+    
+    # Build the sequence up to n using dynamic programming
+    p = [0] * (n + 1)  # 1-indexed
+    p[1] = 1
+    p[2] = 1
+    
+    for i in range(3, n + 1):
+        p[i] = p[p[i - 1]] + p[i - p[i - 1]]
+    
+    return p[n]
+
+
+# Test
+assert sequence(10) == 6
+```

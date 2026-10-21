@@ -1,0 +1,44 @@
+Looking at this problem, I need to extract all substrings that appear between pairs of double quotation marks.
+
+```python
+"""
+Write a function to extract values between quotation marks " " of the given string.
+assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+"""
+
+import re
+
+
+def extract_quotation(text):
+    """
+    Extract all values enclosed between double quotation marks in the given string.
+
+    Args:
+        text (str): The input string possibly containing quoted substrings.
+
+    Returns:
+        list: A list of the substrings found between pairs of double quotes.
+    """
+    return re.findall(r'"(.*?)"', text)
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+
+    # Additional test cases
+    assert extract_quotation('Cast your "favorite" entertainment "apps"') == ['favorite', 'apps']
+    assert extract_quotation('Watching "it" on "television"') == ['it', 'television']
+    assert extract_quotation('No quotes here') == []
+    assert extract_quotation('"" is empty') == ['']
+
+    print(extract_quotation('Cortex "A53" Based "multi" tasking "Processor"'))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `re.findall(r'"(.*?)"', text)` scans the string for a `"`, then captures the shortest possible run of characters (`.*?` is non-greedy) up to the next `"`.
+- The parentheses create a capture group, so `findall` returns only the inner content, excluding the quote characters themselves.
+- Matches don't overlap, so quotes are naturally paired up: 1st with 2nd, 3rd with 4th, etc.
+- If no quoted sections exist, an empty list is returned.

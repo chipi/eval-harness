@@ -1,0 +1,24 @@
+```python
+def check_K(tuples, k):
+    """
+    Check if the given tuples contain the k or not.
+
+    :param tuples: A tuple of integers
+    :param k: An integer to check for in the tuples
+    :return: True if k is found in any tuple, False otherwise
+    """
+    # Iterate through each tuple in the list
+    for tup in tuples:
+        # Check if the k is present in the current tuple
+        if k in tup:
+            return True
+    # If no k is found in any tuple, return False
+    return False
+
+# Test cases to verify the correctness of the function
+assert check_K((10, 4, 5, 6, 8), 6) == True
+assert check_K((10, 20, 30, 40, 50), 20) == True
+assert check_K((10, 20, 30, 40, 50), 50) == False
+assert check_K((10, 20, 30, 40, 50), 10) == False
+```
+

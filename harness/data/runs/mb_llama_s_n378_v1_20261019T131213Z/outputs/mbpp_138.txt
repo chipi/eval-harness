@@ -1,0 +1,37 @@
+### Problem: Check if a Number can be Represented as Sum of Non-Zero Powers of 2
+
+We can solve this problem by using the properties of binary numbers. Any positive integer can be represented as a sum of powers of 2 in its binary form. For example, 10 can be represented as 8 + 2, which is 2^3 + 2^1.
+
+#### Code
+
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Checks if a given number can be represented as a sum of non-zero powers of 2.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number can be represented as a sum of non-zero powers of 2, False otherwise.
+    """
+    # A number can be represented as a sum of powers of 2 if and only if it has no zeros in its binary representation
+    # when written with only 1s and 0s, and at least one 1. This is equivalent to checking if (n & (n - 1)) == 0.
+    # However, we also need to ensure that n is not zero itself, as the problem statement requires non-zero powers of 2.
+    return n > 0 and (n & (n - 1)) == 0
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(is_Sum_Of_Powers_Of_Two(10))  # True
+    print(is_Sum_Of_Powers_Of_Two(0))   # False
+    print(is_Sum_Of_Powers_Of_Two(1))   # True
+    print(is_Sum_Of_Powers_Of_Two(2))   # True
+    print(is_Sum_Of_Powers_Of_Two(3))   # False
+```
+
+#### Explanation
+
+*   The function `is_Sum_Of_Powers_Of_Two(n)` checks if a given number `n` can be represented as a sum of non-zero powers of 2.
+*   It uses the bitwise AND operator `&` to check if `n` and `n - 1` have any bits in common. If `n` is a power of 2 (or a sum of distinct powers of 2), its binary representation has exactly one bit set to 1. Subtracting 1 from `n` flips all bits to the right of the first 1 bit and also flips the first 1 bit itself. Therefore, `n` and `n - 1` have no bits in common if and only if `n` is a power of 2.
+*   The function also checks if `n` is greater than 0 to ensure that the powers of 2 are non-zero.

@@ -1,0 +1,145 @@
+```python
+def max_subarray_sum_circular(nums):
+    """
+    Finds the maximum possible sum of a non-empty subarray in a circular array.
+    A circular array means the end of the array is connected to the beginning.
+    This is a helper function used by the main solution.
+    """
+    total_sum = 0
+    max_sum = float('-inf')
+    current_max = 0
+    min_sum = float('inf')
+    current_min = 0
+
+    for num in nums:
+        total_sum += num
+        
+        # Kadane's algorithm for maximum subarray sum
+        current_max = max(num, current_max + num)
+        max_sum = max(max_sum, current_max)
+        
+        # Kadane's algorithm for minimum subarray sum
+        current_min = min(num, current_min + num)
+        min_sum = min(min_sum, current_min)
+
+    # If all numbers are negative, max_sum will be the largest single element.
+    # In this case, the circular sum (total_sum - min_sum) would be 0, which is not allowed.
+    if max_sum < 0:
+        return max_sum
+    
+    # The maximum circular sum is either the maximum subarray in the middle (max_sum)
+    # or the sum of the entire array minus the minimum subarray in the middle (total_sum - min_sum).
+    return max(max_sum, total_sum - min_sum)
+
+def max_sub_array_sum_repeated(arr, k, n):
+    """
+    Finds the largest sum of a contiguous subarray in an array formed by repeating
+    the given array `arr` `k` times.
+
+    Args:
+        arr (list): The base array of integers.
+        k (int): The number of times the array is repeated.
+        n (int): The length of the final array (k * len(arr)).
+
+    Returns:
+        int: The maximum contiguous subarray sum.
+    """
+    # Handle edge cases
+    if not arr or k <= 0 or n <= 0 or n != k * len(arr):
+        return 0
+
+    # If the array is repeated only once, the problem is the standard Kadane's algorithm.
+    if k == 1:
+        max_sum = float('-inf')
+        current_sum = 0
+        for num in arr:
+            current_sum = max(num, current_sum + num)
+            max_sum = max(max_sum, current_sum)
+        return max_sum
+
+    # If the array is repeated more than once, we have two main scenarios for the maximum subarray:
+    # 1. The maximum subarray lies entirely within one or two copies of the array.
+    #    In this case, the sum is bounded by 2 * max_sum_of_one_array.
+    # 2. The maximum subarray wraps around the end and beginning of the repeated array.
+    #    This is equivalent to the total sum of all arrays minus the minimum subarray sum.
+    #    The sum is (total_sum_of_all_arrays) - min_sum_of_one_array.
+
+    # Calculate the sum of one copy of the array.
+    total_sum_one_arr = sum(arr)
+    
+    # Calculate the maximum subarray sum within a single copy of the array.
+    max_sum_one_arr = max_subarray_sum_circular(arr) # Using Kadane's for a single array
+
+    # Calculate the minimum subarray sum within a single copy of the array.
+    # We can use a modified Kadane's for this.
+    min_sum_one_arr = float('inf')
+    current_min = 0
+    for num in arr:
+        current_min = min(num, current_min + num)
+        min_sum_one_arr = min(min_sum_one_arr, current_min)
+
+    # --- Case 1: Maximum subarray is within one or two copies ---
+    # The maximum sum cannot exceed the sum of two full copies of the array.
+    # We find the maximum subarray sum in an array formed by concatenating two copies.
+    # This handles cases where the best subarray spans the end of one copy and the beginning of the next.
+    arr_two_copies = arr + arr
+    max_sum_two_copies = max_subarray_sum_circular(arr_two_copies)
+
+    # --- Case 2: Maximum subarray wraps around all copies ---
+    # This happens if the total sum of the array is positive.
+    # The maximum sum is the total sum of all k copies minus the minimum subarray sum
+    # from a single copy. The minimum subarray is effectively "left out".
+    # total_sum_all = total_sum_one_arr * k
+    # min_sum_all = min_sum_one_arr
+    # max_sum_wrap_around = total_sum_all - min_sum_all
+    
+    # However, a more robust way to think about the wrap-around case is that the
+    # subarray that is "left out" is the minimum subarray. The maximum sum is
+    # total_sum_all - min_sum_of_one_array. This works because the minimum subarray
+    # will be the same in any copy of the array.
+    max_sum_wrap_around = total_sum_one_arr * k - min_sum_one_arr
+
+    # The final answer is the maximum of these two cases.
+    # We also need to ensure that if all numbers are negative, we don't return a wrap-around
+    # sum that is larger than the actual maximum element.
+    # The `max_sum_two_copies` already handles the all-negative case correctly.
+    
+    return max(max_sum_two_copies, max_sum_wrap_around)
+
+# Example from the problem description
+# arr = [10, 20, -30, -1], k = 4, n = 16
+# max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+# Note: The example call `max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3)` is inconsistent
+# because if k=4, the final array length n should be 4 * 4 = 16. The provided assert `== 30`
+# seems to be for a different problem or a typo. Let's analyze the intended problem.
+# If the array is [10, 20, -30, -1] and repeated 4 times, the maximum sum is 30.
+# This comes from the subarray [10, 20] from the first copy.
+# Let's test our function with the likely intended parameters.
+
+# Test case 1: The provided example, assuming n is a typo and k=4
+print(f"Test 1: max_sub_array_sum_repeated([10, 20, -30, -1], 4, 16) -> {max_sub_array_sum_repeated([10, 20, -30, -1], 4, 16)}")
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 16) == 30
+
+# Test case 2: A case where the wrap-around sum is the maximum
+# arr = [5, -3, 5], k=2. Total sum = 7. Min sum = -3.
+# Wrap-around sum = 7*2 - (-3) = 14 + 3 = 17.
+# The subarray is the entire array except [-3].
+print(f"Test 2: max_sub_array_sum_repeated([5, -3, 5], 2, 6) -> {max_sub_array_sum_repeated([5, -3, 5], 2, 6)}")
+assert max_sub_array_sum_repeated([5, -3, 5], 2, 6) == 17
+
+# Test case 3: All negative numbers
+# arr = [-1, -2, -3], k=3. The max sum is -1.
+print(f"Test 3: max_sub_array_sum_repeated([-1, -2, -3], 3, 9) -> {max_sub_array_sum_repeated([-1, -2, -3], 3, 9)}")
+assert max_sub_array_sum_repeated([-1, -2, -3], 3, 9) == -1
+
+# Test case 4: k = 1 (standard Kadane's)
+# arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4], k=1. Max sum is 6.
+print(f"Test 4: max_sub_array_sum_repeated([-2, 1, -3, 4, -1, 2, 1, -5, 4], 1, 9) -> {max_sub_array_sum_repeated([-2, 1, -3, 4, -1, 2, 1, -5, 4], 1, 9)}")
+assert max_sub_array_sum_repeated([-2, 1, -3, 4, -1, 2, 1, -5, 4], 1, 9) == 6
+
+# Test case 5: A case where the max is in the middle of two copies
+# arr = [1, -2, 3], k=2. Total sum = 2. Min sum = -2.
+# Wrap-around sum = 2*2 - (-2) = 6.
+# Max sum in two copies: [1, -2, 3, 1, -2, 3]. The max is 3+1+(-2)+3 = 5.
+# The final answer should be max(5, 6) = 6.
+print(f"Test

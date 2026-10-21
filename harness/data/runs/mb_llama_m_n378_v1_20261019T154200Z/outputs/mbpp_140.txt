@@ -1,0 +1,33 @@
+```python
+def extract_singly(lists):
+    """
+    This function takes a list of tuples as input and returns a set of numbers.
+    
+    It iterates over each tuple in the list, and then over each number in the tuple, 
+    adding it to the set. Since sets automatically eliminate duplicates, the result 
+    is a set of unique numbers from the input list of tuples.
+    """
+    result = set()
+    for lst in lists:
+        for num in lst:
+            result.add(num)
+    return result
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+print("Test passed")
+
+# Alternatively, you can use a set comprehension to achieve the same result in a more concise way
+def extract_singly_concise(lists):
+    """
+    This function takes a list of tuples as input and returns a set of numbers.
+    
+    It uses a set comprehension to iterate over each tuple in the list, and then 
+    over each number in the tuple, adding it to the set.
+    """
+    return set(num for lst in lists for num in lst)
+
+# Test the function
+assert set(extract_singly_concise([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+print("Test passed")
+```

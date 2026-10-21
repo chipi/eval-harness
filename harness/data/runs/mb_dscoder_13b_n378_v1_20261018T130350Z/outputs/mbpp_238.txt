@@ -1,0 +1,17 @@
+```python
+def number_of_substrings(s):
+    count = 0
+    for i in range(len(s)):
+        for j in range(i + 1, len(s) + 1):
+            count += 1
+    return count
+
+# Test cases
+assert number_of_substrings("abc") == 6
+assert number_of_substrings("a") == 1
+assert number_of_substrings("") == 0
+assert number_of_substrings("b") == 2
+assert number_of_substrings("bb") == 3
+assert number_of_substrings("abcabc") == 10
+assert number_of_substrings("abababab") == 21
+```

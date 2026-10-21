@@ -1,0 +1,11 @@
+```python
+def triangle_area(radius):
+    """Return the largest triangle area inscribed in a semicircle."""
+    if radius < 0:
+        return None
+    return radius ** 2
+
+
+assert triangle_area(-1) is None
+assert triangle_area(2) == 4
+```

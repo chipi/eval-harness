@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem using the `heapq` module to efficiently find the n largest integers from a list:
+
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    """
+    Find the n largest integers from a given list of numbers, returned in descending order.
+    
+    Args:
+        numbers (list): A list of integers.
+        n (int): The number of largest elements to find.
+        
+    Returns:
+        list: A list of the n largest integers in descending order.
+    """
+    if n <= 0:
+        return []
+    if n >= len(numbers):
+        return sorted(numbers, reverse=True)
+    
+    # Use heapq.nlargest to get the n largest elements
+    largest = heapq.nlargest(n, numbers)
+    # heapq.nlargest already returns the elements in descending order
+    return largest
+
+# Test cases
+assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+assert heap_queue_largest([1, 2, 3, 4, 5], 2) == [5, 4]
+assert heap_queue_largest([5, 4, 3, 2, 1], 5) == [5, 4, 3, 2, 1]
+assert heap_queue_largest([10, 20, 30], 0) == []
+assert heap_queue_largest([], 3) == []
+assert heap_queue_largest([1, 1, 1, 1], 2) == [1, 1]
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `heap_queue_largest`**:
+   - Takes a list of numbers and an integer `n` as input.
+   - Handles edge cases where `n` is 0 or greater than the length of the list.
+   - Uses `heapq.nlargest(n, numbers)` to efficiently find the `n` largest elements. This function returns the elements in descending order by default.
+   
+2. **Test Cases**:
+   - The provided test case checks if the function correctly returns the top 3 largest numbers from the list.
+   - Additional test cases cover scenarios like:
+     - A simple sorted list.
+     - When `n` is equal to the length of the list.
+     - When `n` is 0.
+     - An empty list.
+     - A list with duplicate elements.
+
+The script is self-contained and includes all necessary imports and test cases to verify correctness.

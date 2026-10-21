@@ -1,0 +1,72 @@
+Here's a self-contained Python script that checks whether a given number can be represented as the difference of two squares:
+
+```python
+def dif_Square(n):
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be represented as a difference of two squares (a² - b²) 
+    if and only if n is not congruent to 2 modulo 4.
+    In other words, n can be expressed as a² - b² if and only if:
+    - n is odd, OR
+    - n is divisible by 4
+    
+    Args:
+        n (int): The number to check
+        
+    Returns:
+        bool: True if n can be represented as difference of two squares, False otherwise
+    """
+    # A number can be represented as difference of two squares
+    # if and only if it's not of the form 4k + 2
+    return n % 4 != 2
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test the given assertion
+    assert dif_Square(5) == True
+    
+    # Additional test cases
+    assert dif_Square(1) == True   # 1 = 1² - 0²
+    assert dif_Square(2) == False  # 2 cannot be represented
+    assert dif_Square(3) == True   # 3 = 2² - 1²
+    assert dif_Square(4) == True   # 4 = 2² - 0²
+    assert dif_Square(6) == False  # 6 cannot be represented
+    assert dif_Square(7) == True   # 7 = 4² - 3²
+    assert dif_Square(8) == True   # 8 = 3² - 1²
+    assert dif_Square(9) == True   # 9 = 5² - 4²
+    assert dif_Square(10) == False # 10 cannot be represented
+    
+    print("All test cases passed!")
+    
+    # Demonstrate some examples
+    print("\nExamples of numbers that can be represented as difference of squares:")
+    for i in range(1, 16):
+        if dif_Square(i):
+            # Find one representation
+            found = False
+            for a in range(1, i + 2):
+                for b in range(a):
+                    if a*a - b*b == i:
+                        print(f"{i} = {a}² - {b}² = {a*a} - {b*b}")
+                        found = True
+                        break
+                if found:
+                    break
+        else:
+            print(f"{i} cannot be represented as difference of squares")
+```
+
+This script includes:
+
+1. **The main function `dif_Square(n)`**: Uses the mathematical property that a number can be represented as a difference of two squares if and only if it is not congruent to 2 modulo 4 (i.e., `n % 4 != 2`).
+
+2. **Mathematical explanation**: 
+   - Any odd number can be written as `((n+1)/2)² - ((n-1)/2)²`
+   - Any number divisible by 4 can be written as `(n/4 + 1)² - (n/4 - 1)²`
+   - Numbers of the form `4k + 2` cannot be represented this way
+
+3. **Test cases**: Includes the required assertion and additional test cases to verify correctness.
+
+4. **Demonstration**: Shows examples of numbers that can and cannot be represented as differences of squares, along with their actual representations.

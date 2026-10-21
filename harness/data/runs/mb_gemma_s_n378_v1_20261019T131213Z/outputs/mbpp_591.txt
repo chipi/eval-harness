@@ -1,0 +1,15 @@
+```python
+def swap_List(newList):
+  """
+  Write a python function to interchange the first and last elements in a list.
+  assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+  """
+  newList[0], newList[-1] = newList[-1], newList[0]
+  return newList
+
+# Example usage and assertion
+list1 = [12, 35, 9, 56, 24]
+swapped_list = swap_List(list1)
+print(swapped_list)
+assert swapped_list == [24, 35, 9, 56, 12]
+```

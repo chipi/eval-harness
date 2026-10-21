@@ -1,0 +1,16 @@
+```python
+def removezero_ip(ip):
+    # Split the ip address into its components
+    ip_components = ip.split('.')
+    
+    # Remove leading zeroes from each component
+    ip_components = [str(int(component)) for component in ip_components]
+    
+    # Join the components back into an ip address
+    ip = '.'.join(ip_components)
+    
+    return ip
+
+# Test the function
+assert removezero_ip("216.08.094.196")=='216.8.94.196'
+```

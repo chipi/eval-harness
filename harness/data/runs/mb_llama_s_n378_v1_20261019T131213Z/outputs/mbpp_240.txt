@@ -1,0 +1,50 @@
+```python
+def replace_list(list1, list2):
+    """
+    This function takes in two lists and replaces the last element of the first list with the elements of the second list.
+
+    Args:
+        list1 (list): The list whose last element will be replaced.
+        list2 (list): The list whose elements will replace the last element of list1.
+
+    Returns:
+        list: The modified list1 with its last element replaced by list2.
+    """
+    # Check if list1 is not empty
+    if list1:
+        # Replace the last element of list1 with list2
+        return list1[:-1] + list2
+    else:
+        # If list1 is empty, return list2
+        return list2
+
+# Test the function
+assert replace_list([1, 3, 5, 7, 9, 10],[2, 4, 6, 8])==[1, 3, 5, 7, 9, 2, 4, 6, 8]
+```
+
+You can also use the following version with more checks:
+
+```python
+def replace_list(list1, list2):
+    """
+    This function takes in two lists and replaces the last element of the first list with the elements of the second list.
+
+    Args:
+        list1 (list): The list whose last element will be replaced.
+        list2 (list): The list whose elements will replace the last element of list1.
+
+    Returns:
+        list: The modified list1 with its last element replaced by list2.
+    """
+    # Check if list1 is not empty
+    if not list1:
+        return list2
+    # Check if list2 is not empty
+    if not list2:
+        return list1
+    # Replace the last element of list1 with list2
+    return list1[:-1] + list2
+
+# Test the function
+assert replace_list([1, 3, 5, 7, 9, 10],[2, 4, 6, 8])==[1, 3, 5, 7, 9, 2, 4, 6, 8]
+```

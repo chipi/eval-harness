@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to count the number of occurrences of a number in a given list.
+assert frequency([1,2,3], 4) == 0
+"""
+
+def frequency(numbers, target):
+    """
+    Count the number of occurrences of a target number in a list.
+
+    Args:
+        numbers: List of numbers to search through
+        target: Number to count occurrences of
+
+    Returns:
+        int: Number of times target appears in numbers
+    """
+    return numbers.count(target)
+
+# Test cases
+assert frequency([1, 2, 3], 4) == 0
+assert frequency([1, 2, 2, 3, 2], 2) == 3
+assert frequency([], 5) == 0
+assert frequency([5, 5, 5, 5], 5) == 4
+assert frequency([1, 2, 3, 4, 5], 0) == 0
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a `frequency` function that uses Python's built-in `list.count()` method
+2. Includes the required test case from the problem statement
+3. Adds several additional test cases to verify the function works correctly
+4. Prints a success message if all tests pass
+
+The function is simple and efficient, with O(n) time complexity where n is the length of the list.

@@ -1,0 +1,28 @@
+```python
+def sum_range_list(lst: list, start: int, end: int) -> int:
+    """
+    Find the sum of numbers in a list within a range specified by two indices (inclusive).
+    
+    Args:
+        lst: The list of numbers.
+        start: The starting index (inclusive).
+        end: The ending index (inclusive).
+    
+    Returns:
+        The sum of elements from index start to end (inclusive).
+    """
+    return sum(lst[start:end + 1])
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert sum_range_list([2, 1, 5, 6, 8, 3, 4, 9, 10, 11, 8, 12], 8, 10) == 29
+    
+    # Additional test cases
+    assert sum_range_list([1, 2, 3, 4, 5], 0, 4) == 15
+    assert sum_range_list([1, 2, 3, 4, 5], 1, 3) == 9
+    assert sum_range_list([10], 0, 0) == 10
+    assert sum_range_list([], 0, 0) == 0  # Edge case with empty list may raise error, but let's handle it
+    
+    print("All tests passed!")
+```

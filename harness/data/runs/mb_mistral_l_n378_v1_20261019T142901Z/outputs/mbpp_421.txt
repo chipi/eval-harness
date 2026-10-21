@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+def concatenate_tuple(input_tuple, delimiter='-'):
+    """
+    Concatenates each element of a tuple into a string separated by the specified delimiter.
+
+    Args:
+        input_tuple (tuple): The tuple to be concatenated.
+        delimiter (str): The delimiter to use between elements. Defaults to '-'.
+
+    Returns:
+        str: The concatenated string.
+    """
+    # Convert each element to string and join with the delimiter
+    return delimiter.join(str(element) for element in input_tuple)
+
+# Test the function with the provided assertion
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+
+# Example usage
+if __name__ == "__main__":
+    print(concatenate_tuple(("ID", "is", 4, "UTS")))  # Output: ID-is-4-UTS
+```
+
+This script:
+1. Defines the `concatenate_tuple` function that takes a tuple and an optional delimiter
+2. Converts each element to a string (to handle non-string elements like the number 4)
+3. Joins them with the specified delimiter
+4. Includes the assertion test from the problem statement
+5. Has an example usage block that demonstrates the function when run directly

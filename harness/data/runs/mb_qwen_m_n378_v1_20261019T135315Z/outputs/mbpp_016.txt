@@ -1,0 +1,37 @@
+```python
+import re
+
+
+def text_lowercase_underscore(text: str) -> bool:
+    """
+    Returns True if the input string contains sequences of lowercase letters joined with an underscore.
+    
+    A valid pattern is one or more lowercase letters, followed by an underscore, 
+    followed by one or more lowercase letters.
+    
+    Args:
+        text: The input string to check.
+        
+    Returns:
+        True if the string contains at least one sequence of lowercase letters joined with an underscore, False otherwise.
+    """
+    # Pattern: one or more lowercase letters, underscore, one or more lowercase letters
+    pattern = r'[a-z]+_[a-z]+'
+    return bool(re.search(pattern, text))
+
+
+if __name__ == "__main__":
+    assert text_lowercase_underscore("aab_cbbbc") == True
+    assert text_lowercase_underscore("abc") == False
+    assert text_lowercase_underscore("ABC_DEF") == False
+    assert text_lowercase_underscore("a_b") == True
+    assert text_lowercase_underscore("_ab") == False
+    assert text_lowercase_underscore("ab_") == False
+    assert text_lowercase_underscore("") == False
+    assert text_lowercase_underscore("a1_b") == False  # '1' is not a lowercase letter, but 'a' and 'b' are separated by '1_' not just '_'
+    # Actually "a1_b" - let's check: the pattern [a-z]+_[a-z]+ would match... 
+    # In "a1_b", we have 'a', then '1', then '_', then 'b'. The pattern needs consecutive lowercase letters before underscore.
+    # So "a1_b" should be False because between 'a' and '_' there's '1'.
+    assert text_lowercase_underscore("a1_b") == False
+    print("All tests passed!")
+```

@@ -1,0 +1,11 @@
+```python
+def extract_quotation(s):
+    return [i.strip() for i in s.split('"') if i.strip()]
+
+# Test cases
+assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+assert extract_quotation('"Hello" "World"') == ['Hello', 'World']
+assert extract_quotation('""') == ['']
+assert extract_quotation('" "') == ['']
+assert extract_quotation('"Hello" "World" "Python"') == ['Hello', 'World', 'Python']
+```

@@ -1,0 +1,32 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Matches a word containing 'z' in the given text.
+    
+    A word is defined as a sequence of alphanumeric characters. 
+    This function checks if there is any word in the text that includes the letter 'z'.
+    
+    Args:
+    text (str): The input string to be checked.
+    
+    Returns:
+    bool: True if a word containing 'z' is found, False otherwise.
+    """
+    # The regex \w*z\w* matches any word containing 'z'
+    # \w* matches zero or more word characters (alphanumeric & underscore)
+    # z matches the literal 'z'
+    pattern = r'\w*z\w*'
+    return bool(re.search(pattern, text))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert text_match_wordz("pythonz.") == True
+    # Additional test cases
+    assert text_match_wordz("z.") == True
+    assert text_match_wordz("azb") == True
+    assert text_match_wordz("python.") == False
+    assert text_match_wordz("hello world") == False
+    print("All tests passed!")
+```

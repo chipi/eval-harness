@@ -1,0 +1,44 @@
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Search a string for a regex pattern and return the matching substring,
+    start index, and end index.
+    
+    Args:
+        text: The string to search in
+        pattern: The regex pattern to search for
+    
+    Returns:
+        A tuple of (matching_substring, start_index, end_index)
+        Returns None if no match is found
+    """
+    match = re.search(pattern, text)
+    if match:
+        return (match.group(), match.start(), match.end())
+    return None
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = find_literals('The quick brown fox jumps over the lazy dog.', 'fox')
+    assert result == ('fox', 16, 19), f"Expected ('fox', 16, 19), got {result}"
+    print(f"✓ Test 1 passed: {result}")
+    
+    # Additional test cases
+    result2 = find_literals('The quick brown fox jumps over the lazy dog.', 'quick')
+    assert result2 == ('quick', 4, 9), f"Expected ('quick', 4, 9), got {result2}"
+    print(f"✓ Test 2 passed: {result2}")
+    
+    result3 = find_literals('The quick brown fox jumps over the lazy dog.', 'dog')
+    assert result3 == ('dog', 40, 43), f"Expected ('dog', 40, 43), got {result3}"
+    print(f"✓ Test 3 passed: {result3}")
+    
+    result4 = find_literals('The quick brown fox jumps over the lazy dog.', 'xyz')
+    assert result4 is None, f"Expected None, got {result4}"
+    print(f"✓ Test 4 passed: {result4}")
+    
+    print("\nAll tests passed!")
+```

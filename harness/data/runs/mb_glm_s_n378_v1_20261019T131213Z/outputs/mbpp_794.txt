@@ -1,0 +1,44 @@
+```python
+import re
+
+def text_starta_endb(text: str) -> bool:
+    """
+    Checks if a string starts with 'a', has any characters in between, and ends with 'b'.
+
+    Args:
+        text: The string to check.
+
+    Returns:
+        True if the string matches the pattern, False otherwise.
+    """
+    # The regular expression pattern:
+    # ^       - Asserts the position at the start of the string.
+    # a       - Matches the literal character 'a'.
+    # .*      - Matches any character (except for line terminators) zero or more times.
+    #         - The '?' makes the '*' non-greedy, meaning it will match the shortest possible string.
+    #         - This is important to ensure the 'b' at the end is matched correctly.
+    # b       - Matches the literal character 'b'.
+    # $       - Asserts the position at the end of the string.
+    pattern = r"^a.*?b$"
+    
+    # re.search() looks for the pattern anywhere in the string.
+    # The ^ and $ anchors ensure it must match from the start to the end.
+    return bool(re.search(pattern, text))
+
+# Example usage and assertions:
+assert text_starta_endb("aabbbb") == True
+assert text_starta_endb("ab") == True
+assert text_starta_endb("acb") == True
+assert text_starta_endb("a b") == True
+assert text_starta_endb("a\nb") == True # The dot (.) does not match newline by default
+
+# Cases that should not match
+assert text_starta_endb("a") == False # Does not end with 'b'
+assert text_starta_endb("b") == False # Does not start with 'a'
+assert text_starta_endb("acbccc") == False # Does not end with 'b'
+assert text_starta_endb("aaccc") == False # Does not end with 'b'
+assert text_starta_endb("bbba") == False # Does not start with 'a'
+assert text_starta_endb("a b c") == False # Does not end with 'b'
+
+print("All assertions passed!")
+```

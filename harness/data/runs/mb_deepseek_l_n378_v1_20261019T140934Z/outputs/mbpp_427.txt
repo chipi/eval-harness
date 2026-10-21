@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def change_date_format(date_str):
+    """
+    Convert a date from yyyy-mm-dd format to dd-mm-yyyy format.
+    
+    Args:
+        date_str (str): Date string in yyyy-mm-dd format
+        
+    Returns:
+        str: Date string in dd-mm-yyyy format
+    """
+    # Split the date string by hyphens
+    year, month, day = date_str.split('-')
+    
+    # Return the date in dd-mm-yyyy format
+    return f"{day}-{month}-{year}"
+
+# Test the function
+assert change_date_format("2026-01-02") == '02-01-2026'
+print("Test passed!")
+```
+
+This solution:
+1. Takes a date string in `yyyy-mm-dd` format
+2. Splits it into year, month, and day components
+3. Reassembles them in `dd-mm-yyyy` format using an f-string
+4. Includes the assertion test to verify the function works correctly

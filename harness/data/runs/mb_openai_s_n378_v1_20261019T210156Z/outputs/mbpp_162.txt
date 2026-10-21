@@ -1,0 +1,16 @@
+```python
+def sum_series(n: int) -> int:
+    """
+    Calculate the sum: n + (n-2) + (n-4) + ... until the terms are <= 0.
+
+    Examples:
+        sum_series(6) -> 6 + 4 + 2 = 12
+        sum_series(5) -> 5 + 3 + 1 = 9
+    """
+    return sum(n - 2 * i for i in range(n // 2 + 1))
+
+
+if __name__ == "__main__":
+    assert sum_series(6) == 12
+    print("All tests passed.")
+```

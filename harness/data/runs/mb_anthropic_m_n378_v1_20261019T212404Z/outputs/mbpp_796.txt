@@ -1,0 +1,14 @@
+```python
+def return_sum(d):
+    """
+    Find the sum of all items in the given dictionary.
+    """
+    return sum(d.values())
+
+
+# Test
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+
+if __name__ == "__main__":
+    print(return_sum({'a': 100, 'b': 200, 'c': 300}))
+```

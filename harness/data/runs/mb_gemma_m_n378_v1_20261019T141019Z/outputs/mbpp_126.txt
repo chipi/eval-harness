@@ -1,0 +1,44 @@
+```python
+def sum_common_divisors(a, b):
+    """
+    Finds the sum of common divisors of two given numbers.
+    
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+        
+    Returns:
+        int: The sum of all common divisors.
+    """
+    # Ensure we are working with positive integers
+    a, b = abs(a), abs(b)
+    
+    # Find the greatest common divisor (GCD)
+    # Any common divisor of a and b must also be a divisor of their GCD
+    import math
+    gcd_val = math.gcd(a, b)
+    
+    common_sum = 0
+    # Iterate from 1 to the square root of the GCD to find all divisors efficiently
+    for i in range(1, int(math.sqrt(gcd_val)) + 1):
+        if gcd_val % i == 0:
+            # i is a divisor
+            common_sum += i
+            # If i is not the square root, the quotient (gcd_val // i) is also a divisor
+            if i*i != gcd_val:
+                common_sum += gcd_val // i
+                
+    return common_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Divisors of 10: 1, 2, 5, 10
+    # Divisors of 15: 1, 3, 5, 15
+    # Common divisors: 1, 5
+    # Sum: 1 + 5 = 6
+    result = sum_common_divisors(10, 15)
+    print(f"Sum of common divisors of 10 and 15: {result}")
+    
+    assert result == 6
+    print("Assertion passed!")
+```

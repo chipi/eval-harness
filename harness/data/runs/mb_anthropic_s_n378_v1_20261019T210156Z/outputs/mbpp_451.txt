@@ -1,0 +1,23 @@
+```python
+def remove_whitespaces(s):
+    """
+    Remove all whitespaces from the given string.
+    
+    Args:
+        s: A string that may contain whitespaces
+        
+    Returns:
+        A string with all whitespaces removed
+    """
+    return s.replace(' ', '')
+
+
+# Test cases
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+assert remove_whitespaces('Hello World') == 'HelloWorld'
+assert remove_whitespaces('   ') == ''
+assert remove_whitespaces('NoSpaces') == 'NoSpaces'
+assert remove_whitespaces('') == ''
+
+print("All tests passed!")
+```

@@ -1,0 +1,17 @@
+```python
+def maximum(num1, num2):
+    """
+    Write a python function to find the maximum of two numbers.
+    """
+    if num1 > num2:
+        return num1
+    else:
+        return num2
+
+# Test cases
+assert maximum(5,10) == 10
+assert maximum(10,5) == 10
+assert maximum(5,5) == 5
+assert maximum(-1,-2) == -1
+assert maximum(-10,-5) == -5
+```

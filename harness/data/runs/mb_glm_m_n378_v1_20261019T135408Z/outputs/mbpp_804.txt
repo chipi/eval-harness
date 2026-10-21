@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem. The function `is_product_even` checks whether the product of numbers in a list is even by determining if any number in the list is even (since the product of numbers is even if at least one of them is even):
+
+```python
+def is_product_even(numbers):
+    """
+    Check whether the product of numbers in a list is even or not.
+    
+    Args:
+        numbers (list): A list of integers.
+        
+    Returns:
+        bool: True if the product is even, False otherwise.
+    """
+    for num in numbers:
+        if num % 2 == 0:
+            return True
+    return False
+
+# Test cases
+assert is_product_even([1, 2, 3]) == True
+assert is_product_even([1, 3, 5]) == False
+assert is_product_even([2, 4, 6]) == True
+assert is_product_even([1]) == False
+assert is_product_even([]) == False  # Edge case: empty list, product is 1 (odd)
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function Logic**: The function iterates through each number in the list. If any number is even (i.e., divisible by 2), it immediately returns `True` because the product will be even. If no even numbers are found, it returns `False`.
+2. **Edge Case Handling**: An empty list is handled by returning `False` since the product of no numbers is typically considered 1 (which is odd).
+3. **Test Cases**: The script includes several test cases to verify the function's correctness, including the provided example and additional edge cases. The `assert` statements will raise an error if any test fails, otherwise, it prints a success message.

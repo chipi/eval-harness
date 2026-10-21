@@ -1,0 +1,36 @@
+```python
+def magic_square_test(matrix):
+    n = len(matrix)
+    if n == 0:
+        return False
+    for row in matrix:
+        if len(row) != n:
+            return False
+
+    magic_sum = sum(matrix[0])
+
+    # Check rows
+    for row in matrix:
+        if sum(row) != magic_sum:
+            return False
+
+    # Check columns
+    for col in range(n):
+        if sum(matrix[row][col] for row in range(n)) != magic_sum:
+            return False
+
+    # Check main diagonal
+    if sum(matrix[i][i] for i in range(n)) != magic_sum:
+        return False
+
+    # Check anti-diagonal
+    if sum(matrix[i][n - 1 - i] for i in range(n)) != magic_sum:
+        return False
+
+    return True
+
+
+if __name__ == "__main__":
+    assert magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]) == True
+    print("All tests passed.")
+```

@@ -1,0 +1,20 @@
+```python
+def max_Abs_Diff(arr):
+    """
+    Return the maximum absolute difference between any two elements in arr.
+
+    The maximum absolute difference is simply:
+        max(arr) - min(arr)
+    """
+    if not arr:
+        raise ValueError("Input array must not be empty")
+
+    return max(arr) - min(arr)
+
+
+# Example test
+assert max_Abs_Diff((2, 1, 5, 3)) == 4
+
+if __name__ == "__main__":
+    print(max_Abs_Diff((2, 1, 5, 3)))  # Output: 4
+```

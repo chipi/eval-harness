@@ -1,0 +1,16 @@
+```python
+def list_split(items, n):
+    """Return n lists, each containing every nth item from its starting position."""
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    return [items[i::n] for i in range(n)]
+
+
+assert list_split(
+    ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3
+) == [
+    ['a', 'd', 'g', 'j', 'm'],
+    ['b', 'e', 'h', 'k', 'n'],
+    ['c', 'f', 'i', 'l'],
+]
+```

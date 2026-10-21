@@ -1,0 +1,51 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check whether the given number can be represented as sum of non-zero powers of 2.
+    
+    A number can be represented as sum of non-zero powers of 2 if and only if
+    it has at least one bit set in its binary representation (i.e., n > 0).
+    
+    Actually, every positive integer can be represented as a sum of distinct powers of 2
+    (this is the binary representation). However, if the problem means "sum of one or more
+    non-zero powers of 2", then any positive integer works.
+    
+    If it means the number must be expressible as sum of powers of 2 (which is always true
+    for positive integers in binary), we check if n > 0.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        True if n can be represented as sum of non-zero powers of 2, False otherwise
+    """
+    # Every positive integer can be represented as sum of powers of 2 (binary representation)
+    # A number is valid if it's positive
+    return n > 0
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test with the provided example
+    assert is_Sum_Of_Powers_Of_Two(10) == True
+    print(f"is_Sum_Of_Powers_Of_Two(10) = {is_Sum_Of_Powers_Of_Two(10)}")  # 10 = 8 + 2 = 2^3 + 2^1
+    
+    # Additional test cases
+    assert is_Sum_Of_Powers_Of_Two(1) == True   # 1 = 2^0
+    assert is_Sum_Of_Powers_Of_Two(2) == True   # 2 = 2^1
+    assert is_Sum_Of_Powers_Of_Two(3) == True   # 3 = 2^1 + 2^0
+    assert is_Sum_Of_Powers_Of_Two(7) == True   # 7 = 2^2 + 2^1 + 2^0
+    assert is_Sum_Of_Powers_Of_Two(15) == True  # 15 = 2^3 + 2^2 + 2^1 + 2^0
+    assert is_Sum_Of_Powers_Of_Two(0) == False  # 0 cannot be represented
+    assert is_Sum_Of_Powers_Of_Two(-5) == False # Negative numbers cannot be represented
+    
+    print("All test cases passed!")
+```
+
+**Explanation:**
+
+Every positive integer can be uniquely represented as a sum of distinct powers of 2 (this is the basis of binary representation). For example:
+- 10 = 8 + 2 = 2³ + 2¹
+- 7 = 4 + 2 + 1 = 2² + 2¹ + 2⁰
+
+Therefore, a number can be represented as a sum of non-zero powers of 2 if and only if it is a positive integer (n > 0). Zero and negative numbers cannot be represented this way.

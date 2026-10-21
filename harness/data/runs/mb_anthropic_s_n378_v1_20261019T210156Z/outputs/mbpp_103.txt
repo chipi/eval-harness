@@ -1,0 +1,69 @@
+```python
+def eulerian_num(n, m):
+    """
+    Find the Eulerian number a(n, m).
+    
+    Eulerian numbers count the number of permutations of n elements
+    with exactly m descents (or ascents, depending on definition).
+    
+    Args:
+        n: The number of elements
+        m: The number of descents (0-indexed)
+    
+    Returns:
+        The Eulerian number a(n, m)
+    
+    Examples:
+        >>> eulerian_num(3, 1)
+        4
+    """
+    # Base cases
+    if n == 0:
+        return 1 if m == 0 else 0
+    if m < 0 or m >= n:
+        return 0
+    
+    # Use dynamic programming with memoization
+    # a(n, m) = (m+1) * a(n-1, m) + (n-m) * a(n-1, m-1)
+    
+    # Create a DP table
+    dp = [[0] * n for _ in range(n + 1)]
+    
+    # Base case: a(0, 0) = 1
+    dp[0][0] = 1
+    
+    # Fill the DP table
+    for i in range(1, n + 1):
+        for j in range(i):
+            if j == 0:
+                dp[i][j] = 1
+            else:
+                dp[i][j] = (j + 1) * dp[i - 1][j] + (i - j) * dp[i - 1][j - 1]
+    
+    return dp[n][m]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert eulerian_num(3, 1) == 4
+    print("Test passed: eulerian_num(3, 1) == 4")
+    
+    # Additional test cases
+    print(f"eulerian_num(1, 0) = {eulerian_num(1, 0)}")  # Should be 1
+    print(f"eulerian_num(2, 0) = {eulerian_num(2, 0)}")  # Should be 1
+    print(f"eulerian_num(2, 1) = {eulerian_num(2, 1)}")  # Should be 1
+    print(f"eulerian_num(3, 0) = {eulerian_num(3, 0)}")  # Should be 1
+    print(f"eulerian_num(3, 1) = {eulerian_num(3, 1)}")  # Should be 4
+    print(f"eulerian_num(3, 2) = {eulerian_num(3, 2)}")  # Should be 1
+    print(f"eulerian_num(4, 1) = {eulerian_num(4, 1)}")  # Should be 11
+```
+
+The script implements the Eulerian number calculation using dynamic programming. The Eulerian number a(n, m) represents the number of permutations of n elements with exactly m descents.
+
+The recurrence relation used is:
+- **a(n, m) = (m+1) × a(n-1, m) + (n-m) × a(n-1, m-1)**
+
+With base case:
+- **a(0, 0) = 1**
+
+The solution builds a DP table where `dp[i][j]` stores the Eulerian number a(i, j), and fills it iteratively using the recurrence relation.

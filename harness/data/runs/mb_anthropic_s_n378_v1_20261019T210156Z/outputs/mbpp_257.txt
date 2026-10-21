@@ -1,0 +1,20 @@
+```python
+def swap_numbers(first, second):
+    """
+    Takes in two numbers and returns a tuple with the second number and then the first number.
+    
+    Args:
+        first: The first number
+        second: The second number
+    
+    Returns:
+        A tuple with the second number followed by the first number
+    """
+    return (second, first)
+
+
+# Test the function
+assert swap_numbers(10, 20) == (20, 10)
+print("Test passed!")
+print(f"swap_numbers(10, 20) = {swap_numbers(10, 20)}")
+```

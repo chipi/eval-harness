@@ -1,0 +1,34 @@
+```python
+def lps(s):
+    n = len(s)
+    # Create a table to store results of subproblems
+    dp = [[0 for _ in range(n)] for _ in range(n)]
+ 
+    # Fill dp table in a bottom-up manner
+    # Palindromic subsequences of length 1 have length 1
+    for i in range(n):
+        dp[i][i] = 1
+ 
+    # Check for subsequences of length 2
+    for start in range(n - 1):
+        if s[start] == s[start + 1]:
+            dp[start][start + 1] = 2
+        else:
+            dp[start][start + 1] = 1
+ 
+    # Check for lengths greater than 2
+    # k is length of substring
+    for k in range(3, n + 1):
+        for start in range(n - k + 1):
+            end = start + k - 1
+            if s[start] == s[end]:
+                dp[start][end] = dp[start + 1][end - 1] + 2
+            else:
+                dp[start][end] = max(dp[start][end - 1], dp[start + 1][end])
+ 
+    # Return length of longest palindromic subsequence
+    return dp[0][n - 1]
+
+# Test the function
+print(lps("TENS FOR TENS"))  # Output: 5
+```

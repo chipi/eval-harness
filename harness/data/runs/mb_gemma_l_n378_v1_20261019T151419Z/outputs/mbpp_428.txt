@@ -1,0 +1,46 @@
+```python
+def shell_sort(arr):
+    """
+    Sorts the given array using the Shell Sort algorithm.
+    Shell sort is an optimization of insertion sort that allows 
+    the exchange of items that are far apart.
+    """
+    n = len(arr)
+    # Start with a big gap, then reduce the gap
+    gap = n // 2
+
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size.
+        # The first gap elements a[0..gap-1] are already in gapped order
+        # keep adding one more element until the entire array is gap sorted
+        for i in range(gap, n):
+            # add a[i] to the elements that have been gap sorted
+            # save a[i] in a temporary variable and make a hole at position i
+            temp = arr[i]
+            
+            # shift earlier gap-sorted elements up until the correct 
+            # location for a[i] is found
+            j = i
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            
+            # put temp (the original a[i]) in its correct location
+            arr[j] = temp
+        
+        # Reduce the gap for the next pass
+        gap //= 2
+        
+    return arr
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_array = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    expected_output = [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    
+    result = shell_sort(input_array)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Shell sort successful!")
+    print(f"Sorted array: {result}")
+```

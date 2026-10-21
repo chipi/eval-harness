@@ -1,0 +1,13 @@
+```python
+def large_product(first, second, count):
+    """Return the count largest products, using one factor from each list."""
+    products = (a * b for a in first for b in second)
+    return sorted(products, reverse=True)[:count]
+
+
+assert large_product(
+    [1, 2, 3, 4, 5, 6],
+    [3, 6, 8, 9, 10, 6],
+    3,
+) == [60, 54, 50]
+```

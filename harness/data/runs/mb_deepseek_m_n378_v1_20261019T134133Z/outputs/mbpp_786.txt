@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def right_insertion(sorted_list, value):
+    """
+    Locate the right insertion point for a specified value in sorted order.
+    Returns the index where the value should be inserted to maintain sorted order,
+    placing it after any existing equal elements.
+    """
+    left, right = 0, len(sorted_list)
+    
+    while left < right:
+        mid = (left + right) // 2
+        if sorted_list[mid] <= value:
+            left = mid + 1
+        else:
+            right = mid
+    
+    return left
+
+
+# Test the function
+assert right_insertion([1, 2, 4, 5], 6) == 4
+assert right_insertion([1, 2, 4, 5], 3) == 2
+assert right_insertion([1, 2, 4, 5], 0) == 0
+assert right_insertion([1, 2, 4, 5], 4) == 3
+assert right_insertion([], 5) == 0
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The `right_insertion` function uses binary search to find the correct insertion point:
+
+1. **Binary Search Approach**: We maintain two pointers, `left` and `right`, representing the search range.
+
+2. **Key Logic**: When `sorted_list[mid] <= value`, we move `left` to `mid + 1`. This ensures that if there are duplicate values equal to the target, we continue searching to the right, placing the insertion point *after* all equal elements.
+
+3. **Return Value**: When the loop ends, `left` points to the correct insertion index.
+
+**Test Cases:**
+- `right_insertion([1,2,4,5], 6)` → `4` (insert at end)
+- `right_insertion([1,2,4,5], 3)` → `2` (between 2 and 4)
+- `right_insertion([1,2,4,5], 0)` → `0` (insert at beginning)
+- `right_insertion([1,2,4,5], 4)` → `3` (after existing 4)
+- `right_insertion([], 5)` → `0` (empty list)
+
+The time complexity is O(log n), making it efficient for large sorted lists.

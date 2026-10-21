@@ -1,0 +1,22 @@
+```python
+def snake_to_camel(snake_str):
+    """
+    Converts a snake_case string to PascalCase (UpperCamelCase).
+    """
+    # Split the string by underscores
+    components = snake_str.split('_')
+    # Capitalize the first letter of each component and join them
+    # .capitalize() ensures the first letter is upper and the rest are lower
+    return ''.join(x.capitalize() for x in components)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert snake_to_camel('python_program') == 'PythonProgram'
+    
+    # Additional test cases
+    assert snake_to_camel('hello_world') == 'HelloWorld'
+    assert snake_to_camel('this_is_a_test') == 'ThisIsATest'
+    assert snake_to_camel('single') == 'Single'
+    
+    print("All tests passed!")
+```

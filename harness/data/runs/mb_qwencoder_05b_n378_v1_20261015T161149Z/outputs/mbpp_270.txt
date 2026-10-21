@@ -1,0 +1,22 @@
+```python
+def sum_even_and_even_index(numbers):
+    """
+    Write a python function to find the sum of even numbers at even positions of a list.
+    
+    :param numbers: List of integers
+    :return: Sum of even numbers at even positions
+    """
+    # Initialize sum to 0
+    total_sum = 0
+    
+    # Iterate over the list, checking only even indices
+    for index in range(0, len(numbers), 2):
+        if numbers[index] % 2 == 0:
+            total_sum += numbers[index]
+    
+    return total_sum
+
+# Test the function with the provided test case
+assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+```
+

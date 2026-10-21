@@ -1,0 +1,44 @@
+```python
+def test_duplicate(arr):
+    """
+    This function checks if a given array of integers contains any duplicate element.
+
+    Args:
+        arr (list): A list of integers.
+
+    Returns:
+        bool: True if the array contains any duplicate element, False otherwise.
+    """
+    seen = set()  # Create an empty set to store unique elements
+    for num in arr:  # Iterate over the array
+        if num in seen:  # Check if the current number is already in the set
+            return True  # If it is, return True (duplicate found)
+        seen.add(num)  # Add the current number to the set
+    return False  # If we've iterated over the entire array without finding duplicates, return False
+
+# Test the function
+assert not test_duplicate([1,2,3,4,5])
+assert test_duplicate([1,2,3,4,4])
+```
+
+However, a more Pythonic way to solve this problem would be:
+
+```python
+def test_duplicate(arr):
+    """
+    This function checks if a given array of integers contains any duplicate element.
+
+    Args:
+        arr (list): A list of integers.
+
+    Returns:
+        bool: True if the array contains any duplicate element, False otherwise.
+    """
+    return len(arr) != len(set(arr))
+
+# Test the function
+assert not test_duplicate([1,2,3,4,5])
+assert test_duplicate([1,2,3,4,4])
+```
+
+This version of the function works by comparing the length of the original array to the length of a set created from the array. A set in Python is an unordered collection of unique elements, so if there are any duplicates in the array, the set will be smaller. If the lengths are not equal, that means there were duplicates in the array.

@@ -1,0 +1,45 @@
+```python
+def first_non_repeating_character(s: str):
+    """
+    Finds the first non-repeated character in a given string.
+    
+    This function iterates through the string and returns the first character
+    that appears exactly once. If all characters are repeated or the string 
+    is empty, it returns None.
+    
+    Args:
+        s (str): The input string to be evaluated.
+        
+    Returns:
+        str or None: The first non-repeating character, or None if none exists.
+    """
+    # Dictionary to keep track of the frequency of each character
+    char_counts = {}
+    
+    # First pass: Count the occurrences of each character
+    for char in s:
+        char_counts[char] = char_counts.get(char, 0) + 1
+        
+    # Second pass: Find the first character with a count of exactly 1
+    for char in s:
+        if char_counts[char] == 1:
+            return char
+            
+    # If no non-repeating character is found, return None
+    return None
+
+# --- Test Cases ---
+if __name__ == "__main__":
+    # Provided assertion
+    assert first_non_repeating_character("abcabc") == None
+    
+    # Additional test cases to verify correctness
+    assert first_non_repeating_character("python") == "p"       # First character is unique
+    assert first_non_repeating_character("abacabad") == "c"     # 'c' is the first unique character
+    assert first_non_repeating_character("aabbcc") == None      # All characters repeat
+    assert first_non_repeating_character("") == None            # Empty string
+    assert first_non_repeating_character("swiss") == "w"        # 's' repeats, 'w' is the first unique
+    assert first_non_repeating_character("level") == "v"        # 'l' and 'e' repeat, 'v' is unique
+    
+    print("All test cases passed!")
+```

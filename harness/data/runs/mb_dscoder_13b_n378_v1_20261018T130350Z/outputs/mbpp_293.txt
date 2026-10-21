@@ -1,0 +1,11 @@
+```python
+import math
+
+def third_side_right_angle(hypotenuse, other_side):
+    # calculate third side using Pythagoras theorem
+    third_side = math.sqrt(hypotenuse**2 - other_side**2)
+    return third_side
+
+# test the function
+print(third_side_right_angle(7,8))
+```

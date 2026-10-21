@@ -1,0 +1,74 @@
+```python
+def check_integer(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+# Test cases
+assert check_integer("python") == False
+assert check_integer("12345") == True
+assert check_integer("-12345") == True
+assert check_integer("0") == True
+assert check_integer("abc") == False
+assert check_integer("123.45") == False
+assert check_integer("1e6") == True
+assert check_integer("-1e6") == True
+assert check_integer("+1e6") == True
+assert check_integer("1e-6") == True
+assert check_integer("-1e-6") == True
+assert check_integer("1e+6") == True
+assert check_integer("-1e+6") == True
+assert check_integer("1e0") == True
+assert check_integer("-1e0") == True
+assert check_integer("+1e0") == True
+assert check_integer("1e-0") == True
+assert check_integer("-1e-0") == True
+assert check_integer("1e1") == True
+assert check_integer("-1e1") == True
+assert check_integer("+1e1") == True
+assert check_integer("1e-1") == True
+assert check_integer("-1e-1") == True
+assert check_integer("1e2") == True
+assert check_integer("-1e2") == True
+assert check_integer("+1e2") == True
+assert check_integer("1e-2") == True
+assert check_integer("-1e-2") == True
+assert check_integer("1e3") == True
+assert check_integer("-1e3") == True
+assert check_integer("+1e3") == True
+assert check_integer("1e-3") == True
+assert check_integer("-1e-3") == True
+assert check_integer("1e4") == True
+assert check_integer("-1e4") == True
+assert check_integer("+1e4") == True
+assert check_integer("1e-4") == True
+assert check_integer("-1e-4") == True
+assert check_integer("1e5") == True
+assert check_integer("-1e5") == True
+assert check_integer("+1e5") == True
+assert check_integer("1e-5") == True
+assert check_integer("-1e-5") == True
+assert check_integer("1e6") == True
+assert check_integer("-1e6") == True
+assert check_integer("+1e6") == True
+assert check_integer("1e-6") == True
+assert check_integer("-1e-6") == True
+assert check_integer("1e7") == True
+assert check_integer("-1e7") == True
+assert check_integer("+1e7") == True
+assert check_integer("1e-7") == True
+assert check_integer("-1e-7") == True
+assert check_integer("1e8") == True
+assert check_integer("-1e8") == True
+assert check_integer("+1e8") == True
+assert check_integer("1e-8") == True
+assert check_integer("-1e-8") == True
+assert check_integer("1e9") == True
+assert check_integer("-1e9") == True
+assert check_integer("+1e9") == True
+assert check_integer("1e-9") == True
+assert check_integer("-1e-9") == True
+assert check_integer("1e10") == True
+assert check_integer("-1e10") ==

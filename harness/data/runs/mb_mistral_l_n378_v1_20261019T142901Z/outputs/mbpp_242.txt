@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem, enclosed in a markdown code block:
+
+```python
+"""
+Function to count the total number of characters in a string.
+Includes the assertion test as specified.
+"""
+
+def count_charac(s: str) -> int:
+    """Count the total number of characters in the input string.
+
+    Args:
+        s: Input string to count characters from.
+
+    Returns:
+        Total number of characters in the string.
+    """
+    return len(s)
+
+# Test the function with the provided assertion
+assert count_charac("python programming") == 18
+
+# Example usage
+if __name__ == "__main__":
+    test_string = "python programming"
+    print(f"Number of characters in '{test_string}': {count_charac(test_string)}")
+```
+
+This script:
+1. Defines the `count_charac` function that simply returns the length of the input string
+2. Includes the assertion test as specified in the problem
+3. Has an example usage block that demonstrates the function
+4. Is properly documented with a docstring
+
+The function works by using Python's built-in `len()` function which returns the number of characters in a string.

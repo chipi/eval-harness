@@ -1,0 +1,17 @@
+```python
+def sum_list(a, b):
+    """
+    Return a new list where each element is the sum of the corresponding
+    elements from lists a and b.
+
+    Example:
+    sum_list([10, 20, 30], [15, 25, 35]) -> [25, 45, 65]
+    """
+    return [x + y for x, y in zip(a, b)]
+
+
+# Test
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+
+print("All tests passed.")
+```

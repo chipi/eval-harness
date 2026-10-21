@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than a given number.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The next perfect square greater than n
+    """
+    # Find the square root of n and round up to the next integer
+    next_int = math.floor(math.sqrt(n)) + 1
+    
+    # Return the square of that integer
+    return next_int * next_int
+
+# Test the function
+if __name__ == "__main__":
+    assert next_Perfect_Square(35) == 36
+    print("Test passed! next_Perfect_Square(35) =", next_Perfect_Square(35))
+```
+
+The function works by:
+1. Taking the square root of the input number
+2. Rounding down to the nearest integer (using `math.floor()`)
+3. Adding 1 to get the next integer
+4. Squaring that integer to get the next perfect square
+
+For example, with input 35:
+- √35 ≈ 5.916
+- floor(5.916) = 5
+- 5 + 1 = 6
+- 6² = 36 ✓

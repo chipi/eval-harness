@@ -1,0 +1,31 @@
+```python
+from collections import Counter
+
+
+def max_occurrences(lst: list) -> int:
+    """
+    Find the item with maximum frequency in a given list.
+    
+    Args:
+        lst: A list of items
+        
+    Returns:
+        The item that appears most frequently in the list
+        
+    Example:
+        >>> max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])
+        2
+    """
+    if not lst:
+        raise ValueError("List cannot be empty")
+    
+    counter = Counter(lst)
+    # most_common(1) returns a list with one tuple (element, count)
+    return counter.most_common(1)[0][0]
+
+
+if __name__ == "__main__":
+    result = max_occurrences([2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2])
+    assert result == 2, f"Expected 2, got {result}"
+    print(f"Test passed! Result: {result}")
+```

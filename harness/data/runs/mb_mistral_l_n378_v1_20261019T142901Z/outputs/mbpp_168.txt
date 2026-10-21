@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def frequency(lst, num):
+    """
+    Count the number of occurrences of a number in a given list.
+
+    Args:
+        lst: List of numbers to search through
+        num: Number to count occurrences of
+
+    Returns:
+        int: Number of times the number appears in the list
+    """
+    return lst.count(num)
+
+# Test case
+assert frequency([1, 2, 3], 4) == 0
+```
+
+This solution:
+1. Defines a function `frequency` that takes a list and a number as input
+2. Uses Python's built-in `list.count()` method to count occurrences
+3. Includes the required assertion test that checks the function returns 0 when searching for 4 in [1, 2, 3]
+4. Is self-contained and will run without any additional dependencies

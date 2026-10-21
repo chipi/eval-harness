@@ -1,0 +1,41 @@
+```python
+def is_divisible_by_11(n):
+    """
+    Checks if a number is divisible by 11.
+    A number is divisible by 11 if the alternating sum of its digits is divisible by 11.
+    """
+    # Convert to absolute value to handle negative numbers
+    n = abs(n)
+    
+    # Convert number to string to iterate through digits
+    digits = [int(d) for d in str(n)]
+    
+    # Calculate alternating sum: (d1 - d2 + d3 - d4...)
+    alternating_sum = sum(digit if i % 2 == 0 else -digit for i, digit in enumerate(digits))
+    
+    return alternating_sum % 11 == 0
+
+def is_Diff(n):
+    """
+    Wrapper function to match the specific naming convention requested in the prompt.
+    """
+    return is_divisible_by_11(n)
+
+if __name__ == "__main__":
+    # Test cases
+    try:
+        # Provided assertion
+        assert is_Diff(12345) == False
+        
+        # Additional test cases
+        assert is_Diff(11) == True
+        assert is_Diff(121) == True
+        assert is_Diff(1331) == True
+        assert is_Diff(0) == True
+        assert is_Diff(1232) == True
+        assert is_Diff(123) == False
+        
+        print("All tests passed successfully!")
+    except AssertionError as e:
+        print("A test case failed!")
+```

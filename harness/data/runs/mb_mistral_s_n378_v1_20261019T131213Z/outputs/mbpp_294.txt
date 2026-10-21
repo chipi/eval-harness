@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem of finding the maximum value in a heterogeneous list, handling both strings and numbers appropriately:
+
+```python
+def max_val(heterogeneous_list):
+    """
+    Finds the maximum value in a heterogeneous list, comparing only numeric values.
+
+    Args:
+        heterogeneous_list: A list containing mixed types (strings and numbers)
+
+    Returns:
+        The maximum numeric value in the list, or None if no numbers are present
+
+    Examples:
+        >>> max_val(['Python', 3, 2, 4, 5, 'version'])
+        5
+        >>> max_val(['a', 'b', 'c'])
+        None
+    """
+    # Filter out non-numeric values
+    numbers = [x for x in heterogeneous_list if isinstance(x, (int, float))]
+
+    if not numbers:
+        return None
+
+    return max(numbers)
+
+# Test case
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `max_val` that takes a heterogeneous list
+2. Filters out non-numeric values (keeping only integers and floats)
+3. Returns the maximum value if numbers are present, or None if no numbers exist
+4. Includes a test case that matches the provided assertion
+5. Prints a confirmation message if the test passes
+
+The function handles edge cases like:
+- Lists with no numbers (returns None)
+- Lists with negative numbers
+- Lists with floating point numbers
+- Lists with mixed types (strings and numbers)

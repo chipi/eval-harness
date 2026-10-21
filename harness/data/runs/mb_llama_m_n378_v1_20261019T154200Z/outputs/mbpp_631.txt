@@ -1,0 +1,16 @@
+```python
+def replace_spaces(s):
+    """
+    Replaces whitespaces with an underscore and vice versa in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The modified string.
+    """
+    return s.replace(' ', '_')
+
+# Example usage:
+print(replace_spaces('Jumanji The Jungle'))  # Outputs: Jumanji_The_Jungle
+```

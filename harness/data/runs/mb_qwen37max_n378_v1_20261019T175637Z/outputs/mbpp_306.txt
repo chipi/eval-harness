@@ -1,0 +1,51 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of increasing subsequence from prefix until ith index
+    and also including a given kth element which is after i, i.e., k > i.
+    
+    Parameters:
+        arr: list of integers
+        n: length of array
+        i: index (1-based) up to which we consider the prefix
+        k: index (1-based) of the element that must be included (k > i)
+    
+    Returns:
+        Maximum sum of an increasing subsequence that ends at or before index i
+        and includes arr[k-1] as the next element in the subsequence.
+    """
+    # Convert to 0-based indexing
+    i0 = i - 1  # last index in prefix (0-based)
+    k0 = k - 1  # required element index (0-based)
+    
+    # We need to find the maximum sum increasing subsequence ending at some
+    # index j <= i0 such that arr[j] < arr[k0], and then add arr[k0].
+    # If no such j exists, the answer is just arr[k0] itself.
+    
+    # dp[j] = max sum of increasing subsequence ending exactly at index j
+    # considering only elements from arr[0..i0]
+    dp = [0] * n
+    for j in range(i0 + 1):
+        dp[j] = arr[j]
+        for p in range(j):
+            if arr[p] < arr[j]:
+                dp[j] = max(dp[j], dp[p] + arr[j])
+    
+    # Now find the best dp[j] where j <= i0 and arr[j] < arr[k0]
+    best_prefix = 0
+    found = False
+    for j in range(i0 + 1):
+        if arr[j] < arr[k0]:
+            best_prefix = max(best_prefix, dp[j])
+            found = True
+    
+    if found:
+        return best_prefix + arr[k0]
+    else:
+        # No valid predecessor; just the kth element alone
+        return arr[k0]
+
+
+# Test
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+```

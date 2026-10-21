@@ -1,0 +1,69 @@
+Here's a self-contained Python script that solves the maximum product subarray problem:
+
+```python
+"""
+Write a function to find the maximum product subarray of the given array.
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+"""
+
+
+def max_subarray_product(nums):
+    """
+    Find the maximum product of a contiguous subarray.
+
+    Uses dynamic programming tracking both the maximum and minimum
+    product ending at each position, since a negative number can turn
+    a minimum product into a maximum product.
+
+    Args:
+        nums: List of integers.
+
+    Returns:
+        The maximum product of any contiguous subarray.
+    """
+    if not nums:
+        return 0
+
+    # Track max and min products ending at the current position.
+    max_ending_here = nums[0]
+    min_ending_here = nums[0]
+    best = nums[0]
+
+    for num in nums[1:]:
+        # If num is negative, swapping max and min helps because
+        # multiplying by a negative flips their relative order.
+        if num < 0:
+            max_ending_here, min_ending_here = min_ending_here, max_ending_here
+
+        max_ending_here = max(num, max_ending_here * num)
+        min_ending_here = min(num, min_ending_here * num)
+
+        best = max(best, max_ending_here)
+
+    return best
+
+
+# Test the function
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+assert max_subarray_product([2, 3, -2, 4]) == 6
+assert max_subarray_product([-2, 0, -1]) == 0
+assert max_subarray_product([-2, 3, -4]) == 24
+assert max_subarray_product([0, 2]) == 2
+assert max_subarray_product([-2]) == -2
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+The key insight is that a negative number can flip a very small (most negative) product into a very large positive product. So we track two values at each position:
+
+- `max_ending_here`: the maximum product of a subarray ending at the current index.
+- `min_ending_here`: the minimum product of a subarray ending at the current index.
+
+When we encounter a negative number, we swap `max_ending_here` and `min_ending_here` before updating, because multiplying by a negative reverses their order.
+
+For the example `[1, -2, -3, 0, 7, -8, -2]`, the subarray `[7, -8, -2]` gives `7 × -8 × -2 = 112`, which is the maximum.
+
+**Time complexity:** O(n) — single pass through the array.  
+**Space complexity:** O(1) — only a few variables are used.

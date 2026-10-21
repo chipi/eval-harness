@@ -1,0 +1,16 @@
+```python
+def get_coordinates(coord):
+    rows, cols = coord
+    result = []
+    for i in range(rows-1, rows+2):
+        for j in range(cols-1, cols+2):
+            if i == rows and j == cols:
+                continue
+            result.append([i, j])
+    return result
+
+# Test cases
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+assert get_coordinates((1, 1)) == [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2]]
+assert get_coordinates((5, 5)) == [[4, 4], [4, 5], [4, 6], [5, 4], [5, 6], [6, 4], [6, 5], [6, 6]]
+```

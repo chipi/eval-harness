@@ -1,0 +1,47 @@
+Looking at this problem, I need to write a function that removes all lowercase letters (substrings of lowercase characters) from a given string, keeping everything else.
+
+```python
+"""
+Write a function to remove lowercase substrings from a given string.
+assert remove_lowercase("PYTHon")==('PYTH')
+"""
+
+import re
+
+
+def remove_lowercase(str1):
+    """
+    Remove all lowercase substrings from the given string.
+
+    A "lowercase substring" is any maximal run of lowercase letters (a-z).
+    Everything else (uppercase letters, digits, punctuation, spaces...) is kept.
+
+    >>> remove_lowercase("PYTHon")
+    'PYTH'
+    """
+    remove = re.compile(r'[a-z]')
+    return remove.sub('', str1)
+
+
+if __name__ == "__main__":
+    # Tests from the problem statement
+    assert remove_lowercase("PYTHon") == ('PYTH')
+    assert remove_lowercase("FInD") == ('FD')
+    assert remove_lowercase("STRinG") == ('STRG')
+
+    # A few extra sanity checks
+    assert remove_lowercase("") == ""
+    assert remove_lowercase("abcdef") == ""
+    assert remove_lowercase("ABC123xyz!") == "ABC123!"
+
+    print(remove_lowercase("PYTHon"))   # PYTH
+    print(remove_lowercase("FInD"))     # FD
+    print(remove_lowercase("STRinG"))   # STRG
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `re.compile(r'[a-z]')` builds a pattern matching any single lowercase ASCII letter.
+- `remove.sub('', str1)` replaces every match with an empty string, which effectively deletes every maximal run (substring) of lowercase letters.
+- For `"PYTHon"`, the lowercase run `"on"` is removed, leaving `"PYTH"`. ✅

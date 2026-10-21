@@ -1,0 +1,35 @@
+```python
+"""
+Write a function to check if each element of second tuple is smaller than its corresponding element in the first tuple.
+assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+"""
+
+
+def check_smaller(test_tup1, test_tup2):
+    """
+    Check if each element of the second tuple is smaller than its
+    corresponding element in the first tuple.
+
+    Args:
+        test_tup1: the reference tuple
+        test_tup2: the tuple whose elements must all be smaller
+
+    Returns:
+        True if every element of test_tup2 is strictly smaller than the
+        element at the same position in test_tup1, otherwise False.
+    """
+    return all(x > y for x, y in zip(test_tup1, test_tup2))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+
+    # Additional test cases
+    assert check_smaller((4, 5, 6), (3, 4, 5)) == True
+    assert check_smaller((11, 12, 13), (10, 11, 12)) == True
+    assert check_smaller((2, 3, 4), (1, 2, 3)) == True
+    assert check_smaller((1, 1, 1), (1, 1, 1)) == False
+
+    print("All tests passed!")
+```

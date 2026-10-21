@@ -1,0 +1,13 @@
+```python
+def string_to_list(text):
+    """
+    Converts a string to a list of strings split on the space character.
+    """
+    return text.split(' ')
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = string_to_list("python programming")
+    assert result == ['python', 'programming']
+    print(f"Test passed! Result: {result}")
+```

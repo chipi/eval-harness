@@ -1,0 +1,150 @@
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits of a given number.
+    
+    Even bits are bits at positions 0, 2, 4, ... (0-indexed from right).
+    This function sets all even-positioned bits to 1 while leaving odd-positioned bits unchanged.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The number with all even bits set to 1
+    """
+    # Create a mask that has 1s at all even bit positions (0, 2, 4, ...)
+    # For example, for 32-bit numbers: 0x55555555 = 01010101... in binary
+    # We need to handle arbitrary size integers, so we'll build the mask dynamically
+    
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    
+    # Determine how many bits we need to cover
+    if n == 0:
+        return 1  # Only bit 0 is even, set it
+    
+    # Find the highest bit position needed
+    # We need to set all even bits up to at least the highest bit of n
+    # But actually, "set all even bits" typically means within the range of bits that matter
+    # Let's think about this more carefully.
+    
+    # The standard interpretation: set all even-positioned bits (0, 2, 4, ...) to 1
+    # within the bit-length of the number or a reasonable fixed width.
+    
+    # Let's use a common approach: create a mask with alternating 1s starting from bit 0
+    # For a number with k bits, we want to ensure all even bits up to bit k-1 (or beyond) are set
+    
+    # Actually, let me reconsider. The problem says "set all even bits". 
+    # In most contexts, this means setting bits at positions 0, 2, 4, ... to 1.
+    # The result should have those bits as 1 regardless of their original value.
+    
+    # Let's determine the number of bits needed. We'll go up to the next multiple of 2 
+    # beyond the highest set bit, but actually we just need enough bits to cover all 
+    # even positions that could exist.
+    
+    # A simpler approach: keep extending the mask until it covers all relevant bits.
+    
+    mask = 0
+    bit_pos = 0
+    # We need to set even bits. Let's figure out how many bits to consider.
+    # If n has b bits, we might want to set even bits up to position b-1 or maybe b.
+    # Let's say we set all even bits from 0 up to the highest even bit <= max(highest bit of n, some reasonable limit)
+    
+    # Actually, let's look at the example: even_bit_set_number(10) == 10
+    # 10 in binary is 1010 (bits 3 and 1 are set, which are odd positions)
+    # Even bits are positions 0 and 2. Currently they are 0.
+    # Setting them would give us 1111 = 15, not 10.
+    
+    # Wait, that doesn't match. Let me re-read.
+    # Hmm, 10 = 1010_2. Bit positions: pos 0=0, pos 1=1, pos 2=0, pos 3=1.
+    # Even bits (pos 0, 2) are both 0. Setting them gives 1111 = 15.
+    # But the assertion says even_bit_set_number(10) == 10.
+    
+    # Maybe "even bits" refers to something else? Or maybe the function name is misleading?
+    # Perhaps it means: if all even bits are already set, return the number; otherwise set them?
+    # No, that still wouldn't make 10 -> 10.
+    
+    # Let me reconsider: maybe "even bits" means bits whose VALUE contributes to an even number?
+    # That doesn't make sense either.
+    
+    # Another interpretation: perhaps the problem wants us to check if all even-positioned bits are set,
+    # and if so return the number, otherwise... no.
+    
+    # Wait - maybe I'm misunderstanding the bit indexing. Some people index from left?
+    # Unlikely.
+    
+    # Let me try another interpretation: "set all even bits" might mean ensuring the number itself 
+    # has its even-valued bits properly handled... 
+    
+    # Actually, looking at similar problems online, there's a problem "Set all even bits of a number"
+    # where you set bits at even positions (0, 2, 4...). For 10 (1010), setting even bits gives 1111 = 15.
+    
+    # But the test case says 10 -> 10. This suggests maybe the function does something different.
+    
+    # Could it be that the function returns the number if all even bits are already set, 
+    # and otherwise sets them? For 10, even bits (pos 0, 2) are NOT set, so it should set them to get 15.
+    
+    # Unless... the problem considers only bits up to the most significant bit, and for 10 (1010),
+    # the even bits within the 4-bit representation are pos 0 and pos 2, both 0. Setting them gives 1111=15.
+    
+    # I wonder if there's a typo in the problem statement or my understanding.
+    
+    # Let me try yet another interpretation: maybe "even bits" means bits that are part of making 
+    # the number even? That's just bit 0.
+    
+    # Or perhaps the function should set all bits at even indices counting from the LEFT?
+    # 10 = 1010, from left: pos 0=1, pos 1=0, pos 2=1, pos 3=0. Even positions from left: 0, 2 -> already 1. So result is 10.
+    
+    # That matches! Let me verify with this interpretation.
+    
+    # If we count bit positions from the most significant bit (leftmost), then for 10 (binary 1010, 4 bits):
+    # Position 0 (MSB): 1
+    # Position 1: 0  
+    # Position 2: 1
+    # Position 3 (LSB): 0
+    # Even positions (0, 2) are already set to 1, so no change needed. Result: 10. ✓
+    
+    # But this seems like an unusual definition. Let me think if there's a more standard one.
+    
+    # Actually, I recall now - some problems define "even bits" as bits at even positions from LSB,
+    # and the typical solution uses a mask like 0x55555555. Let me double-check by trying other values.
+    
+    # Given the ambiguity, let me implement the most common interpretation (even positions from LSB)
+    # and see if I can reconcile with the test case.
+    
+    # For n=10 (1010), even positions from LSB (0,2): currently 0,0. Setting them: 1111 = 15.
+    # Test expects 10. Doesn't match.
+    
+    # For the MSB-based interpretation: works for 10.
+    
+    # Let me just go with what makes the test pass. Implementing based on the observation that
+    # for 10, the answer is 10, suggesting even bits (from some perspective) are already set.
+    
+    # I'll implement the standard approach (even positions from LSB) since that's the well-known problem,
+    # and assume the test case might have a different expectation or I should follow the standard algorithm.
+    
+    # Standard algorithm: OR with a mask that has 1s at all even bit positions.
+    
+    # Build mask dynamically for arbitrary precision
+    num_bits = n.bit_length()
+    # Ensure we cover at least up to the highest even bit position
+    # Round up to next even number + 1 to be safe
+    if num_bits % 2 == 0:
+        total_bits = num_bits + 1
+    else:
+        total_bits = num_bits
+    
+    mask = 0
+    for i in range(0, total_bits, 2):
+        mask |= (1 << i)
+    
+    return n | mask
+
+
+# Let me test: for n=10, bit_length=4, total_bits=5, mask covers bits 0,2,4 = 1+4+16=21
+# 10 | 21 = 1010 | 10101 = 11111 = 31. Still not 10.
+
+# I think the test case might be wrong or I'm fundamentally misunderstanding.
+# Let me just provide the standard implementation and note the discrepancy.
+
+# Actually, re-reading once more: perhaps the problem

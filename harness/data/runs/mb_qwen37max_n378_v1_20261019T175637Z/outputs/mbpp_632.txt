@@ -1,0 +1,10 @@
+```python
+def move_zero(lst):
+    """Move all zeroes to the end of the given list while maintaining relative order of non-zero elements."""
+    non_zeros = [x for x in lst if x != 0]
+    zeros = [x for x in lst if x == 0]
+    return non_zeros + zeros
+
+
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+```

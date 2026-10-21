@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def occurance_substring(text, substring):
+    """
+    Find the occurrence and position of a substring within a string.
+    Returns a tuple (substring, start_index, end_index) for the first match,
+    or None if there is no match.
+    """
+    index = text.find(substring)
+    if index == -1:
+        return None
+    return (substring, index, index + len(substring))
+
+
+# Test the function
+assert occurance_substring('python programming, python language', 'python') == ('python', 0, 6)
+print("Test passed!")
+```
+
+**Explanation:**
+
+- `text.find(substring)` returns the index of the first occurrence of `substring` in `text`, or `-1` if not found.
+- If found, we return a tuple containing:
+  - The substring itself
+  - The starting index
+  - The ending index (`start + len(substring)`)
+- If not found, we return `None`.
+
+**Output:**
+```
+Test passed!
+```

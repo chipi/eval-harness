@@ -1,0 +1,8 @@
+```python
+def toggle_string(s):
+    return s.swapcase()
+
+# Test
+assert toggle_string("Python") == ("pYTHON")
+print(toggle_string("Python"))
+```

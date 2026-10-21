@@ -1,0 +1,21 @@
+```python
+def is_woodball(number):
+    """
+    Check if the given number is woodball or not.
+
+    Args:
+    number (int): The number to check.
+
+    Returns:
+    bool: True if the number is woodball, False otherwise.
+    """
+    # Woodballs are numbers that can be expressed as the sum of two squares
+    return number == 4 * number - 1
+
+# Test cases to verify the correctness of the function
+assert is_woodball(383) == True
+assert is_woodball(204) == False
+assert is_woodball(169) == True
+assert is_woodball(170) == False
+```
+

@@ -1,0 +1,117 @@
+To solve this problem, we need to find the directrix of a parabola given certain parameters. The directrix of a parabola is a line that, along with the focus, defines the parabola. The standard form of a parabola that opens vertically is:
+
+\[ (x - h)^2 = 4p(y - k) \]
+
+where:
+- \((h, k)\) is the vertex of the parabola.
+- \(p\) is the distance from the vertex to the focus (and also from the vertex to the directrix).
+
+The directrix of such a parabola is the line \(y = k - p\).
+
+Given the function signature `parabola_directrix(5, 3, 2)`, we can infer that the parameters might represent the coefficients of the parabola's equation. However, the exact interpretation isn't clear from the problem statement alone. Given the assertion `assert parabola_directrix(5, 3, 2) == -198`, we can deduce that the function likely takes the coefficients \(a\), \(b\), and \(c\) of a quadratic equation in the form \(y = ax^2 + bx + c\) and computes the directrix.
+
+For a parabola in the form \(y = ax^2 + bx + c\):
+- The vertex form can be derived by completing the square.
+- The vertex \((h, k)\) is at \(h = -\frac{b}{2a}\) and \(k = c - \frac{b^2}{4a}\).
+- The value of \(p\) is \(\frac{1}{4a}\).
+- The directrix is then \(y = k - p\).
+
+Given \(a = 5\), \(b = 3\), and \(c = 2\):
+- \(h = -\frac{3}{2 \times 5} = -0.3\)
+- \(k = 2 - \frac{3^2}{4 \times 5} = 2 - \frac{9}{20} = \frac{40}{20} - \frac{9}{20} = \frac{31}{20} = 1.55\)
+- \(p = \frac{1}{4 \times 5} = \frac{1}{20} = 0.05\)
+- Directrix: \(y = 1.55 - 0.05 = 1.5\)
+
+This does not match the assertion `== -198`, so the interpretation must be different.
+
+Alternatively, if the parameters are the coefficients of the standard form \((x - h)^2 = 4p(y - k)\), but this seems less likely.
+
+Given the assertion, it's possible that the function is expected to compute something else, like the directrix in a different form or scaled by some factor. However, without more context, it's challenging to determine the exact formula.
+
+Given the assertion `parabola_directrix(5, 3, 2) == -198`, one possible interpretation is that the function computes the directrix as \( \text{directrix} = c - \frac{b^2 + 1}{4a} \), but this is speculative.
+
+For the given assertion to hold:
+- \(a = 5\), \(b = 3\), \(c = 2\)
+- \( \text{directrix} = 2 - \frac{3^2 + 1}{4 \times 5} = 2 - \frac{10}{20} = 2 - 0.5 = 1.5 \), which is not -198.
+
+Another possibility is that the function is computing the directrix for a parabola in the form \(x = ay^2 + by + c\), which opens horizontally. For such a parabola:
+- The vertex is at \((k, h)\) where \(h = -\frac{b}{2a}\) and \(k = c - \frac{b^2}{4a}\).
+- The directrix is \(x = k - \frac{1}{4a}\).
+
+Given \(a = 5\), \(b = 3\), \(c = 2\):
+- \(h = -\frac{3}{2 \times 5} = -0.3\)
+- \(k = 2 - \frac{9}{20} = \frac{31}{20} = 1.55\)
+- Directrix: \(x = 1.55 - \frac{1}{20} = 1.55 - 0.05 = 1.5\), still not -198.
+
+Given that none of these interpretations match the assertion, it's likely that the function is computing something else, such as the directrix scaled by a large factor or in a different context.
+
+Given the lack of clarity, the most plausible explanation is that the function is computing the directrix for a parabola in the form \(y = ax^2 + bx + c\) and then scaling it by some factor. For example, if the directrix is \(y = k - p\) and we scale it by \(4a^2\), we might get a large number.
+
+For \(a = 5\), \(b = 3\), \(c = 2\):
+- \(k = 2 - \frac{9}{20} = \frac{31}{20}\)
+- \(p = \frac{1}{20}\)
+- Directrix: \(y = \frac{31}{20} - \frac{1}{20} = \frac{30}{20} = 1.5\)
+- Scaling by \(4a^2 = 4 \times 25 = 100\): \(1.5 \times 100 = 150\), still not -198.
+
+Alternatively, if the function is computing \( (c - \frac{b^2 + 1}{4a}) \times (4a^2) \):
+- \( (2 - \frac{10}{20}) \times 100 = 1.5 \times 100 = 150 \), not -198.
+
+Given that none of these interpretations match, it's possible that the function is computing the directrix in a different form or that the assertion is a typo.
+
+However, to match the assertion `parabola_directrix(5, 3, 2) == -198`, one possible formula is:
+\[ \text{directrix} = c \times (b^2 - 4a) \]
+For \(a = 5\), \(b = 3\), \(c = 2\):
+\[ 2 \times (9 - 20) = 2 \times (-11) = -22 \], not -198.
+
+Another possibility is:
+\[ \text{directrix} = (c - \frac{b^2}{4a}) \times (4a^2) - b^2 \]
+For \(a = 5\), \(b = 3\), \(c = 2\):
+\[ (2 - \frac{9}{20}) \times 100 - 9 = 1.55 \times 100 - 9 = 155 - 9 = 146 \], not -198.
+
+Given the difficulty in matching the assertion, it's likely that the function is computing the directrix in a non-standard way or that the assertion is incorrect.
+
+However, to provide a function that passes the given assertion, we can simply return the hardcoded value for the given inputs:
+
+```python
+def parabola_directrix(a, b, c):
+    if a == 5 and b == 3 and c == 2:
+        return -198
+    # Add other cases as needed
+    return None
+```
+
+But this is not a general solution.
+
+Given the lack of clarity, here is a general function to compute the directrix for a parabola in the form \(y = ax^2 + bx + c\):
+
+```python
+def parabola_directrix(a, b, c):
+    h = -b / (2 * a)
+    k = c - (b ** 2) / (4 * a)
+    p = 1 / (4 * a)
+    directrix = k - p
+    return directrix
+```
+
+But this does not satisfy the assertion.
+
+Given the assertion, the only way to satisfy it is to return -198 for the inputs (5, 3, 2). Here is the code that does that:
+
+```python
+def parabola_directrix(a, b, c):
+    return -198
+```
+
+But this is not a meaningful solution.
+
+Given the ambiguity, the most plausible general solution is to compute the directrix for \(y = ax^2 + bx + c\) as \(y = k - p\), where \(k\) is the y-coordinate of the vertex and \(p\) is the distance from the vertex to the focus.
+
+Here is the correct general solution:
+
+```python
+def parabola_directrix(a, b, c):
+    # Vertex form: y = a(x - h)^2 + k, where h = -b/(2a), k = c - b^2/(4a)
+    h = -b / (2 * a)
+    k = c - (b ** 2) / (4 * a)
+    # For parabola y = a(x - h)^2 + k, the focus is at (h, k + 1/(4a))
+    #

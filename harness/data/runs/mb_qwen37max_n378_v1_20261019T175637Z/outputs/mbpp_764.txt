@@ -1,0 +1,8 @@
+```python
+def number_ctr(s):
+    """Count the number of digits in a given string."""
+    return sum(1 for c in s if c.isdigit())
+
+# Test
+assert number_ctr('program2bedone') == 1
+```

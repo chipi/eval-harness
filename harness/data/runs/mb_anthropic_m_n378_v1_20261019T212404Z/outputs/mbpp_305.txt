@@ -1,0 +1,16 @@
+```python
+def start_withp(words):
+    result = []
+    for phrase in words:
+        for word in phrase.split():
+            if word.lower().startswith('p'):
+                result.append(word)
+                if len(result) == 2:
+                    return tuple(result)
+    return tuple(result)
+
+
+if __name__ == "__main__":
+    assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+    print(start_withp(["Python PHP", "Java JavaScript", "c c++"]))
+```

@@ -1,0 +1,33 @@
+```python
+def decimal_to_binary(n):
+    """
+    Converts a decimal integer to its binary equivalent string representation.
+    
+    Args:
+        n (int): The decimal number to convert.
+        
+    Returns:
+        str: The binary representation of the number without leading zeros.
+    """
+    # Handle the edge case for 0 separately
+    if n == 0:
+        return "0"
+    
+    # bin(n) returns a string like '0b1000'
+    # [2:] slices the string to remove the '0b' prefix
+    return bin(n)[2:]
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert decimal_to_binary(8) == '1000'
+    
+    # Additional test cases
+    assert decimal_to_binary(0) == '0'
+    assert decimal_to_binary(1) == '1'
+    assert decimal_to_binary(2) == '10'
+    assert decimal_to_binary(10) == '1010'
+    assert decimal_to_binary(255) == '11111111'
+    
+    print("All tests passed!")
+```

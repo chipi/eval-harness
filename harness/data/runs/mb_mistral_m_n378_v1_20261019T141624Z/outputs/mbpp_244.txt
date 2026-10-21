@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than a given number n.
+    """
+    if n < 0:
+        return 0  # The next perfect square after any negative number is 0
+
+    root = math.isqrt(n)
+    # If n is already a perfect square, we want the next one
+    if root * root == n:
+        return (root + 1) ** 2
+    else:
+        return (root + 1) ** 2
+
+# Test case
+assert next_Perfect_Square(35) == 36
+```
+
+This solution:
+1. Uses `math.isqrt()` to get the integer square root of the input number
+2. Checks if the input is already a perfect square
+3. Returns the next perfect square by squaring either the next integer (if input wasn't a perfect square) or the integer after the root (if input was a perfect square)
+4. Handles negative numbers by returning 0 (the smallest perfect square)
+5. Includes the required test case with an assertion

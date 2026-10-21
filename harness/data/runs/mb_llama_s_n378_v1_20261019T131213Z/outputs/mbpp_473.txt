@@ -1,0 +1,59 @@
+```python
+def tuple_intersection(list1, list2):
+    """
+    This function finds the tuple intersection of elements in the given tuple list 
+    irrespective of their order.
+
+    Args:
+        list1 (list): The first list of tuples.
+        list2 (list): The second list of tuples.
+
+    Returns:
+        set: A set of tuples that are common in both lists.
+    """
+    # Convert the lists of tuples into sets of tuples, 
+    # where each tuple is sorted to ensure order doesn't matter
+    set1 = {tuple(sorted(t)) for t in list1}
+    set2 = {tuple(sorted(t)) for t in list2}
+
+    # Find the intersection of the two sets
+    intersection = set1 & set2
+
+    # Convert the intersection back into a set of tuples with the original order
+    # Not required as set of tuples is unordered and order doesn't matter
+    # However, to maintain original order in case of duplicates, 
+    # we can use a list of tuples and check for membership
+    return intersection
+
+
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)], [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(3, 4), (4, 5), (5, 6)}
+```
+
+However, to exactly match your assertion, here is a modified version:
+
+```python
+def tuple_intersection(list1, list2):
+    """
+    This function finds the tuple intersection of elements in the given tuple list 
+    irrespective of their order.
+
+    Args:
+        list1 (list): The first list of tuples.
+        list2 (list): The second list of tuples.
+
+    Returns:
+        set: A set of tuples that are common in both lists.
+    """
+    # Convert the lists of tuples into sets of tuples, 
+    # where each tuple is sorted to ensure order doesn't matter
+    set1 = {tuple(sorted(t)) for t in list1}
+    set2 = {tuple(sorted(t)) for t in list2}
+
+    # Find the intersection of the two sets
+    intersection = set1 & set2
+
+    return intersection
+
+
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)], [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(4, 5), (3, 4), (5, 6)}
+```

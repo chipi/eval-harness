@@ -1,0 +1,33 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    Returns the number of sequences of length n such that:
+    - Each element is a positive integer
+    - Each element is >= twice the previous element
+    - Each element is <= m
+    """
+    # dp[i][j] = number of sequences of length i ending with value j
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+
+    # Base case: sequences of length 1
+    for j in range(1, m + 1):
+        dp[1][j] = 1
+
+    # Fill DP table
+    for i in range(2, n + 1):
+        for j in range(1, m + 1):
+            # Previous value must be <= j // 2
+            for prev in range(1, j // 2 + 1):
+                dp[i][j] += dp[i - 1][prev]
+
+    # Sum all sequences of length n
+    return sum(dp[n][j] for j in range(1, m + 1))
+
+
+# Test the given assertion
+if __name__ == "__main__":
+    assert get_total_number_of_sequences(10, 4) == 4
+    print("Test passed!")
+```

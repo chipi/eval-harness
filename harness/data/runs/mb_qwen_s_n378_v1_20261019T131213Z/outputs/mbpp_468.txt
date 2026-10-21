@@ -1,0 +1,27 @@
+```python
+def max_product(arr):
+    """
+    Find the maximum product formed by multiplying numbers of an increasing subsequence.
+    
+    Args:
+        arr: List of integers
+        
+    Returns:
+        Maximum product of any increasing subsequence
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    # dp[i] will store the maximum product of an increasing subsequence ending at index i
+    dp = [1] * n
+    
+    for i in range(n):
+        dp[i] = arr[i]  # At minimum, the subsequence is just the element itself
+        for j in range(i):
+            if arr[j] < arr[i]:
+                # If we can extend the subsequence ending at j with arr[i]
+                dp[i] = max(dp[i], dp[j] * arr[i])
+    
+    return max(dp)
+```

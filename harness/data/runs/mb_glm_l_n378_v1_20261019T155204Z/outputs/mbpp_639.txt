@@ -1,0 +1,24 @@
+```python
+def sample_nam(names):
+    """
+    Sums the length of the names of a given list of names after removing 
+    the names that start with a lowercase letter.
+    
+    Args:
+        names (list of str): A list of name strings.
+        
+    Returns:
+        int: The sum of the lengths of the valid names.
+    """
+    total_length = 0
+    for name in names:
+        # Check if the string is not empty and starts with an uppercase letter
+        if name and name[0].isupper():
+            total_length += len(name)
+    return total_length
+
+# Assertion test based on the problem description
+if __name__ == "__main__":
+    assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+    print("Test passed successfully.")
+```

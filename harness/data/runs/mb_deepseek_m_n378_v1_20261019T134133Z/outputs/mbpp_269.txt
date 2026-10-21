@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def ascii_value(char):
+    """
+    Returns the ASCII value of a single character.
+    
+    Args:
+        char (str): A single character string.
+    
+    Returns:
+        int: The ASCII value of the character.
+    
+    Raises:
+        ValueError: If the input is not a single character.
+    """
+    if not isinstance(char, str) or len(char) != 1:
+        raise ValueError("Input must be a single character string.")
+    return ord(char)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert ascii_value('A') == 65
+    assert ascii_value('a') == 97
+    assert ascii_value('0') == 48
+    assert ascii_value(' ') == 32
+    assert ascii_value('!') == 33
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function uses Python's built-in `ord()` function, which returns the Unicode code point of a single character. For ASCII characters (code points 0–127), this is equivalent to the ASCII value.
+- Input validation ensures the argument is a single-character string; otherwise, a `ValueError` is raised.
+- The `assert` statements verify the expected behavior, including the required test case `ascii_value('A') == 65`.

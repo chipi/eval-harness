@@ -1,0 +1,36 @@
+Here's a self-contained Python script with the function to subtract two lists element-wise:
+
+```python
+def sub_list(list1, list2):
+    """
+    Subtract two lists element-wise.
+    
+    Args:
+        list1: First list of numbers
+        list2: Second list of numbers
+        
+    Returns:
+        A new list containing the element-wise difference (list1 - list2)
+    """
+    # Use zip to pair elements and list comprehension to calculate differences
+    return [a - b for a, b in zip(list1, list2)]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = sub_list([1, 2, 3], [4, 5, 6])
+    assert result == [-3, -3, -3], f"Expected [-3, -3, -3] but got {result}"
+    
+    print("Test passed!")
+    print(f"sub_list([1, 2, 3], [4, 5, 6]) = {result}")
+    
+    # Additional test cases
+    assert sub_list([5, 6, 7], [2, 3, 4]) == [3, 3, 3]
+    assert sub_list([0, 0, 0], [1, 2, 3]) == [-1, -2, -3]
+    assert sub_list([10, 20, 30], [5, 10, 15]) == [5, 10, 15]
+    
+    print("All tests passed!")
+```
+
+The `sub_list` function uses the `zip` function to pair corresponding elements from both lists, then uses a list comprehension to subtract each pair. This creates a new list with the element-wise differences. The function assumes both lists have the same length; if they don't, `zip` will stop at the shorter list by default.

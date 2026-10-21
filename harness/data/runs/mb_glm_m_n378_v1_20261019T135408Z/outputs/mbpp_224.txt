@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of counting the number of set bits (binary digits with value 1) in a given number:
+
+```python
+def count_Set_Bits(n):
+    """
+    Count the number of set bits (1s) in the binary representation of a given number.
+    
+    Args:
+        n (int): The input number (non-negative integer).
+    
+    Returns:
+        int: The count of set bits in the binary representation of n.
+    """
+    count = 0
+    while n > 0:
+        count += n & 1  # Check the least significant bit
+        n >>= 1         # Right shift to check the next bit
+    return count
+
+# Test cases
+assert count_Set_Bits(2) == 1  # Binary: 10
+assert count_Set_Bits(0) == 0  # Binary: 0
+assert count_Set_Bits(1) == 1  # Binary: 1
+assert count_Set_Bits(3) == 2  # Binary: 11
+assert count_Set_Bits(7) == 3  # Binary: 111
+assert count_Set_Bits(8) == 1  # Binary: 1000
+assert count_Set_Bits(15) == 4 # Binary: 1111
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `count_Set_Bits(n)`**:
+   - Initializes a counter `count` to 0.
+   - Enters a loop that continues as long as `n` is greater than 0.
+   - In each iteration:
+     - `n & 1` checks the least significant bit (LSB) of `n`. If it's 1, the counter is incremented.
+     - `n >>= 1` right-shifts `n` by 1 bit, effectively discarding the LSB and moving the next bit into the LSB position.
+   - Returns the total count of set bits.
+
+2. **Test Cases**:
+   - The function is tested with various numbers to ensure correctness. The `assert` statements will raise an error if any test fails.
+   - If all tests pass, it prints "All test cases passed!".
+
+This approach efficiently counts the set bits by examining each bit of the number individually. The time complexity is O(log n) since the loop runs once for each bit in the binary representation of `n`.

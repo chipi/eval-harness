@@ -1,0 +1,32 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Find the shared elements from the given two lists.
+    
+    Args:
+        list1: First list/tuple
+        list2: Second list/tuple
+    
+    Returns:
+        A list of elements that appear in both lists
+    """
+    return list(set(list1) & set(list2))
+
+
+# Test cases
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+print("Test passed!")
+
+# Additional test cases
+assert set(similar_elements([1, 2, 3], [3, 4, 5])) == set([3])
+assert set(similar_elements([1, 2, 3], [4, 5, 6])) == set([])
+assert set(similar_elements([1, 2, 3, 4], [2, 3, 4, 5])) == set([2, 3, 4])
+print("All tests passed!")
+```
+
+The solution uses set intersection (`&` operator) to find common elements between two lists. This approach:
+- Converts both lists to sets
+- Uses the intersection operator to find shared elements
+- Converts the result back to a list
+- Time complexity: O(n + m) where n and m are the lengths of the lists
+- Space complexity: O(min(n, m)) for the result set

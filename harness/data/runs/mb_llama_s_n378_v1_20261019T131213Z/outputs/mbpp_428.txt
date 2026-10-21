@@ -1,0 +1,60 @@
+```python
+def shell_sort(arr):
+    """
+    Sorts the given array using shell sort.
+
+    Args:
+        arr (list): The list of integers to be sorted.
+
+    Returns:
+        list: The sorted list of integers.
+    """
+    # Initialize the gap
+    gap = len(arr) // 2
+
+    # Continue the process until the gap is greater than zero
+    while gap > 0:
+        # Iterate over the array starting from the gap
+        for i in range(gap, len(arr)):
+            # Store the current element
+            temp = arr[i]
+            j = i
+
+            # Shift the previous elements to the right if they are greater than the current element
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+
+            # Place the current element at its correct position
+            arr[j] = temp
+
+        # Reduce the gap by half for the next iteration
+        gap //= 2
+
+    return arr
+
+
+# Example usage
+if __name__ == "__main__":
+    arr = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    print(shell_sort(arr))
+```
+
+**Explanation**
+
+*   The `shell_sort` function takes a list of integers as input and sorts it using the shell sort algorithm.
+*   The algorithm works by dividing the list into sublists with a gap between them.
+*   It then compares and swaps elements within each sublist, gradually reducing the gap until the entire list is sorted.
+*   The outer while loop controls the gap, which is initially set to half the length of the list and reduced by half in each iteration.
+*   The inner for loop iterates over the list, starting from the gap, and shifts elements to the right if they are greater than the current element.
+*   The current element is then placed at its correct position.
+
+**Time Complexity**
+
+*   Best-case: O(n log n)
+*   Average-case: O(n log n)
+*   Worst-case: O(n^2)
+
+**Space Complexity**
+
+*   O(1) because it only uses a constant amount of additional space.

@@ -1,0 +1,6 @@
+```python
+def replace_specialchar(text):
+    # Replace spaces, commas, and dots with colons
+    return text.replace(" ", ":").replace(",", ":").replace(".", ":")
+```
+

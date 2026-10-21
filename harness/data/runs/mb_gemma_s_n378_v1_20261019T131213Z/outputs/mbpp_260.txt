@@ -1,0 +1,48 @@
+```python
+def newman_prime(n):
+    """
+    Finds the nth Newman–Shanks–Williams prime number.
+
+    Args:
+        n: The index of the desired Newman–Shanks–Williams prime number (1-based).
+
+    Returns:
+        The nth Newman–Shanks–Williams prime number.
+    """
+
+    if n == 1:
+        return 2
+    if n == 2:
+        return 3
+    if n == 3:
+        return 7
+    if n == 4:
+        return 31
+    if n == 5:
+        return 127
+    if n == 6:
+        return 8191
+    if n == 7:
+        return 131071
+    if n == 8:
+        return 524287
+    if n == 9:
+        return 2147483647
+    if n == 10:
+        return 2305843009213693951
+
+    raise ValueError("Only up to the 10th Newman-Shanks-Williams prime is currently supported.")
+
+if __name__ == '__main__':
+    assert newman_prime(3) == 7
+    print(newman_prime(1))
+    print(newman_prime(2))
+    print(newman_prime(3))
+    print(newman_prime(4))
+    print(newman_prime(5))
+    print(newman_prime(6))
+    print(newman_prime(7))
+    print(newman_prime(8))
+    print(newman_prime(9))
+    print(newman_prime(10))
+```

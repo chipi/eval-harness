@@ -1,0 +1,53 @@
+```python
+def count_samepair(list1, list2, list3):
+    """
+    Counts the number of items that are identical in the same position across three given lists.
+
+    This function iterates through the lists in parallel and checks if the elements at the
+    current index are the same in all three lists. The count of such matching elements is returned.
+
+    Args:
+        list1 (list): The first list of items.
+        list2 (list): The second list of items.
+        list3 (list): The third list of items.
+
+    Returns:
+        int: The total count of items that are identical at the same position in all three lists.
+    """
+    # Initialize a counter to keep track of the number of matching items.
+    count = 0
+    
+    # Determine the minimum length of the three lists to avoid index errors.
+    # We only need to check up to the end of the shortest list.
+    min_length = min(len(list1), len(list2), len(list3))
+    
+    # Iterate through the lists from index 0 up to the length of the shortest list.
+    for i in range(min_length):
+        # Check if the elements at the current index are the same in all three lists.
+        if list1[i] == list2[i] == list3[i]:
+            # If they are, increment the counter.
+            count += 1
+            
+    # Return the final count.
+    return count
+
+# Example usage and assertion to verify the function's correctness.
+# This block will only run when the script is executed directly.
+if __name__ == "__main__":
+    # Define the test lists as provided in the problem description.
+    list_a = [1, 2, 3, 4, 5, 6, 7, 8]
+    list_b = [2, 2, 3, 1, 2, 6, 7, 9]
+    list_c = [2, 1, 3, 1, 2, 6, 7, 9]
+    
+    # Call the function with the test lists.
+    result = count_samepair(list_a, list_b, list_c)
+    
+    # Print the result for clarity.
+    print(f"The number of identical items in the same position is: {result}")
+    
+    # Assert that the result matches the expected value.
+    # If the result is not 3, an AssertionError will be raised.
+    assert result == 3, f"Assertion failed: Expected 3, but got {result}"
+    
+    print("Assertion passed successfully!")
+```

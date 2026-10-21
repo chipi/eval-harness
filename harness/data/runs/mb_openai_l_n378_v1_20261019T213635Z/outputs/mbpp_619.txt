@@ -1,0 +1,9 @@
+```python
+def move_num(text):
+    letters = ''.join(char for char in text if not char.isdigit())
+    numbers = ''.join(char for char in text if char.isdigit())
+    return letters + numbers
+
+
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+```

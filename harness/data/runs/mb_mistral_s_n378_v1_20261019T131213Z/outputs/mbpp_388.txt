@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of finding the highest power of 2 less than or equal to a given number `n`:
+
+```python
+def highest_power_of_2(n):
+    """
+    Find the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 <= n.
+    """
+    if n <= 0:
+        return 0
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    return power
+
+# Test the function
+assert highest_power_of_2(10) == 8
+assert highest_power_of_2(1) == 1
+assert highest_power_of_2(0) == 0
+assert highest_power_of_2(15) == 8
+assert highest_power_of_2(16) == 16
+assert highest_power_of_2(2147483647) == 1073741824  # 2^30
+
+print("All tests passed!")
+```
+
+### Explanation:
+1. The function `highest_power_of_2` starts by handling the edge case where `n` is 0 or negative, returning 0 in such cases.
+2. It initializes `power` to 1 (the smallest power of 2) and then doubles it in a loop until `power * 2` exceeds `n`.
+3. The loop exits when `power` is the largest power of 2 that is still less than or equal to `n`.
+4. The function includes several test cases to verify its correctness, including the provided example (`highest_power_of_2(10) == 8`).
+
+The script is self-contained and can be run directly to verify the solution.

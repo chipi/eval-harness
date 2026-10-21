@@ -1,0 +1,78 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence from the prefix up to index i,
+    that also includes the element at index k (where k > i).
+
+    Args:
+        arr: List of integers
+        n: Length of the array
+        i: The index up to which we consider the prefix (0-based)
+        k: The index of the element that must be included (0-based, k > i)
+
+    Returns:
+        The maximum sum of such a subsequence
+    """
+    if k <= i or k >= n:
+        return 0
+
+    # We need to find the maximum sum increasing subsequence ending at some index <= i
+    # that is less than arr[k], and then add arr[k] to it
+
+    max_sum = 0
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            # Find the maximum sum increasing subsequence ending at j
+            current_sum = arr[j]
+            for m in range(j):
+                if arr[m] < arr[j]:
+                    current_sum = max(current_sum, arr[j] + (dp[m] if 'dp' in locals() else 0))
+
+            if 'dp' not in locals():
+                dp = [0] * (i + 1)
+            dp[j] = current_sum
+            max_sum = max(max_sum, current_sum)
+
+    return max_sum + arr[k] if max_sum > 0 else 0
+
+# Test the function
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+```
+
+Here's a more efficient version using dynamic programming:
+
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence from the prefix up to index i,
+    that also includes the element at index k (where k > i).
+    """
+    if k <= i or k >= n:
+        return 0
+
+    # dp[j] will store the maximum sum of increasing subsequence ending at index j
+    dp = [0] * (i + 1)
+
+    for j in range(i + 1):
+        dp[j] = arr[j]
+        for m in range(j):
+            if arr[m] < arr[j]:
+                dp[j] = max(dp[j], dp[m] + arr[j])
+
+    # Now find the maximum sum among all elements before i that are less than arr[k]
+    max_sum = 0
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            max_sum = max(max_sum, dp[j])
+
+    return max_sum + arr[k] if max_sum > 0 else 0
+
+# Test the function
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+```
+
+The second version is more efficient as it properly implements dynamic programming to calculate the maximum sum increasing subsequence for all positions up to index i, then finds the maximum among those that can be extended by the element at index k. For the given test case:
+- The prefix up to index 4 is [1, 101, 2, 3, 100]
+- The element at index 6 is 5
+- The valid increasing subsequences from the prefix that can include 5 are those ending with elements < 5
+- The maximum sum is from [1, 2, 3] (sum = 6) + 5 = 11

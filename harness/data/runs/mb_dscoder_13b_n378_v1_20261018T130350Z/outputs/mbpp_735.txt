@@ -1,0 +1,29 @@
+```python
+def toggle_middle_bits(n):
+    """
+    Write a python function to toggle bits of the number except the first and the last bit.
+    """
+    # Convert the number to binary and remove the first two characters
+    binary = bin(n)[2:]
+    
+    # If the length of the binary string is less than 3, return the original number
+    if len(binary) < 3:
+        return n
+    
+    # Toggle the middle bits
+    middle_bits = binary[2:-2]
+    toggled_bits = ''.join('1' if bit == '0' else '0' for bit in middle_bits)
+    
+    # Convert the toggled bits back to an integer and return
+    return int(binary[:2] + toggled_bits + binary[-1], 2)
+
+# Test cases
+assert toggle_middle_bits(9) == 15
+assert toggle_middle_bits(10) == 12
+assert toggle_middle_bits(11) == 14
+assert toggle_middle_bits(12) == 14
+assert toggle_middle_bits(13) == 27
+assert toggle_middle_bits(27) == 33
+assert toggle_middle_bits(33) == 45
+assert toggle_middle_bits(45) == 61
+```

@@ -1,0 +1,29 @@
+```python
+def sort_numeric_strings(string_list):
+    """
+    Sorts a list of strings representing numbers numerically.
+    
+    Args:
+        string_list (list of str): A list containing strings that represent integers.
+        
+    Returns:
+        list of int: A list of integers sorted in ascending order.
+    """
+    # Convert each string to an integer and then sort the resulting list
+    return sorted([int(x) for x in string_list])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = ['4', '12', '45', '7', '0', '100', '200', '-12', '-500']
+    expected_output = [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+    
+    result = sort_numeric_strings(input_list)
+    
+    # Verification
+    print(f"Input:    {input_list}")
+    print(f"Result:   {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output, f"Assertion failed! Expected {expected_output}, but got {result}"
+    print("Assertion passed successfully!")
+```

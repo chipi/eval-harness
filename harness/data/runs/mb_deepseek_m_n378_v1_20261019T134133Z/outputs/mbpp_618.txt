@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def div_list(list1, list2):
+    """
+    Divide two lists element-wise.
+    
+    Args:
+        list1: The numerator list.
+        list2: The denominator list.
+    
+    Returns:
+        A new list containing the element-wise division results as floats.
+    """
+    return [a / b for a, b in zip(list1, list2)]
+
+
+if __name__ == "__main__":
+    assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `zip(list1, list2)` pairs up elements from both lists: `(4,1), (5,2), (6,3)`.
+- The list comprehension divides each pair: `4/1 = 4.0`, `5/2 = 2.5`, `6/3 = 2.0`.
+- Python's `/` operator always returns a float, so the result matches the expected `[4.0, 2.5, 2.0]`.
+
+**Note:** If the lists have different lengths, `zip` will stop at the shorter one. If you need to handle mismatched lengths or division by zero, you'd want to add explicit checks.

@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem of reversing only the vowels in a given string (where 'y' is not considered a vowel):
+
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverses only the vowels in a given string, where 'y' is not considered a vowel.
+
+    Args:
+        s: Input string to process
+
+    Returns:
+        String with vowels reversed
+    """
+    vowels = {'a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'}
+    s_list = list(s)
+    left, right = 0, len(s) - 1
+
+    while left < right:
+        # Find next vowel from left
+        while left < right and s_list[left] not in vowels:
+            left += 1
+        # Find next vowel from right
+        while left < right and s_list[right] not in vowels:
+            right -= 1
+        # Swap vowels
+        if left < right:
+            s_list[left], s_list[right] = s_list[right], s_list[left]
+            left += 1
+            right -= 1
+
+    return ''.join(s_list)
+
+# Test case
+assert reverse_vowels("Python") == "Python"
+```
+
+This solution:
+1. Defines the set of vowels (both lowercase and uppercase)
+2. Converts the string to a list for easy manipulation
+3. Uses a two-pointer approach to find and swap vowels from both ends
+4. Returns the modified string with vowels reversed
+5. Includes the required test case that verifies "Python" remains unchanged (since it has no vowels to reverse)

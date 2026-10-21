@@ -1,0 +1,12 @@
+```python
+def max_product_tuple(tuples_list):
+    max_product = 0
+    for t in tuples_list:
+        product = abs(t[0] * t[1])
+        if product > max_product:
+            max_product = product
+    return max_product
+
+# Test case
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+```

@@ -1,0 +1,66 @@
+```python
+def decimal_to_binary(n: int) -> str:
+    """
+    Converts a non-negative decimal integer to its binary string representation.
+
+    This function uses the standard method of repeatedly dividing the number by 2
+    and recording the remainders. The binary string is formed by reading the
+    remainders in reverse order.
+
+    Args:
+        n: A non-negative integer.
+
+    Returns:
+        A string representing the binary equivalent of the input number,
+        with no leading zeros.
+
+    Raises:
+        ValueError: If the input number is negative.
+    """
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+
+    # The binary representation of 0 is "0".
+    if n == 0:
+        return "0"
+
+    binary_digits = []
+    # The loop continues as long as the number is greater than 0.
+    while n > 0:
+        # Get the remainder when divided by 2 (this will be 0 or 1).
+        remainder = n % 2
+        # Prepend the remainder to the list to build the string in the correct order.
+        # Alternatively, one could append and then reverse the list at the end.
+        binary_digits.insert(0, str(remainder))
+        # Update the number by integer division with 2.
+        n = n // 2
+
+    # Join the list of characters to form the final binary string.
+    return "".join(binary_digits)
+
+# Example usage and assertions from the problem description:
+assert decimal_to_binary(8) == '1000'
+assert decimal_to_binary(0) == '0'
+assert decimal_to_binary(1) == '1'
+assert decimal_to_binary(2) == '10'
+assert decimal_to_binary(5) == '101'
+assert decimal_to_binary(13) == '1101'
+
+# Example of a more complex number
+assert decimal_to_binary(42) == '101010'
+
+# Example of handling invalid input
+try:
+    decimal_to_binary(-1)
+    assert False, "Expected a ValueError for negative input"
+except ValueError:
+    pass
+
+try:
+    decimal_to_binary(3.14)
+    assert False, "Expected a ValueError for non-integer input"
+except ValueError:
+    pass
+
+print("All assertions passed.")
+```

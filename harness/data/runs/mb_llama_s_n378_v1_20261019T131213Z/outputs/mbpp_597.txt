@@ -1,0 +1,156 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find kth element from two sorted arrays.
+
+    Args:
+        arr1 (list): The first sorted array.
+        arr2 (list): The second sorted array.
+        k (int): The position of the element to find.
+
+    Returns:
+        int: The kth element.
+
+    Raises:
+        ValueError: If k is larger than the total length of the two arrays.
+    """
+    # Check if k is within the bounds of the two arrays
+    if k < 1 or k > len(arr1) + len(arr2):
+        raise ValueError("k is out of bounds")
+
+    # Initialize two pointers for the two arrays
+    i, j = 0, 0
+
+    # Initialize a counter to keep track of the current position
+    count = 0
+
+    # Loop until we find the kth element
+    while i < len(arr1) and j < len(arr2):
+        # If the current element in arr1 is smaller, move to the next element in arr1
+        if arr1[i] < arr2[j]:
+            count += 1
+            if count == k:
+                return arr1[i]
+            i += 1
+        # If the current element in arr2 is smaller, move to the next element in arr2
+        else:
+            count += 1
+            if count == k:
+                return arr2[j]
+            j += 1
+
+    # If we have reached the end of one array, check the remaining elements in the other array
+    if i < len(arr1):
+        return arr1[i + k - count - 1]
+    else:
+        return arr2[j + k - count - 1]
+
+
+# Test the function
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```
+
+However, the code above does not handle edge cases perfectly and can be optimized. 
+
+Here is a more optimal solution using Python's built-in `heapq` module:
+
+```python
+import heapq
+
+def find_kth(arr1, arr2, k):
+    """
+    Find kth element from two sorted arrays.
+
+    Args:
+        arr1 (list): The first sorted array.
+        arr2 (list): The second sorted array.
+        k (int): The position of the element to find.
+
+    Returns:
+        int: The kth element.
+
+    Raises:
+        ValueError: If k is larger than the total length of the two arrays.
+    """
+    # Check if k is within the bounds of the two arrays
+    if k < 1 or k > len(arr1) + len(arr2):
+        raise ValueError("k is out of bounds")
+
+    # Use heapq.merge to merge the two sorted arrays
+    merged = heapq.merge(arr1, arr2)
+
+    # Advance to the kth element
+    for _ in range(k - 1):
+        next(merged)
+
+    # Return the kth element
+    return next(merged)
+
+
+# Test the function
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```
+
+Or using binary search:
+
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find kth element from two sorted arrays.
+
+    Args:
+        arr1 (list): The first sorted array.
+        arr2 (list): The second sorted array.
+        k (int): The position of the element to find.
+
+    Returns:
+        int: The kth element.
+
+    Raises:
+        ValueError: If k is larger than the total length of the two arrays.
+    """
+    # Check if k is within the bounds of the two arrays
+    if k < 1 or k > len(arr1) + len(arr2):
+        raise ValueError("k is out of bounds")
+
+    # Make sure arr1 is the smaller array
+    if len(arr1) > len(arr2):
+        arr1, arr2 = arr2, arr1
+
+    # Calculate the total length
+    total_length = len(arr1) + len(arr2)
+
+    # If k is larger than the length of arr2, adjust k and arr1, arr2
+    if k > len(arr2):
+        k -= len(arr2) - len(arr1)
+        arr1, arr2 = arr2, arr1
+
+    # Perform binary search
+    left, right = 0, len(arr1)
+    while left <= right:
+        i = (left + right) // 2
+        j = k - i
+
+        # If i is out of bounds, adjust the bounds
+        if i < 0 or i > len(arr1) or j < 0 or j > len(arr2):
+            if i < 0:
+                right = i
+            else:
+                left = i + 1
+            continue
+
+        # If arr1[i] is equal to arr2[j], return the value
+        if i == len(arr1) or (j != len(arr2) and arr1[i] > arr2[j]):
+            left = i + 1
+        elif j == len(arr2) or (i != len(arr1) and arr1[i] < arr2[j]):
+            right = i - 1
+        else:
+            return arr1[i]
+
+    # If we have not returned a value, return arr1[left]
+    return arr1[left - 1]
+
+
+# Test the function
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```

@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_string(strings, size):
+    """
+    Extract strings of a specified size from a given list of string values.
+    
+    Args:
+        strings (list): A list of string values.
+        size (int): The desired length of strings to extract.
+    
+    Returns:
+        list: A list containing only the strings whose length equals `size`.
+    """
+    return [s for s in strings if len(s) == size]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8)
+    print(result)
+    assert result == ['practice', 'solution']
+    print("Test passed!")
+```
+
+**Explanation:**
+
+- The function `extract_string` takes two arguments: a list of strings and a target `size`.
+- It uses a list comprehension to filter strings whose length equals `size`.
+- In the example, `'practice'` and `'solution'` both have 8 characters, so they are returned.
+- The `assert` statement verifies the expected output, and the script prints a confirmation message when the test passes.

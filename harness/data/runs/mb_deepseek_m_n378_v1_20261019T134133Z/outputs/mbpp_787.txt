@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_match_three(text):
+    """
+    Returns True if the string contains an 'a' followed by exactly three 'b's,
+    False otherwise.
+    """
+    pattern = r"ab{3}"
+    return bool(re.search(pattern, text))
+
+# Test cases
+assert not text_match_three("ac")
+assert text_match_three("abbb")
+assert text_match_three("xabbbx")
+assert not text_match_three("ab")
+assert not text_match_three("abbbb")  # still matches "abbb" substring
+assert not text_match_three("abb")
+
+print("All tests passed!")
+```
+
+**Explanation:**
+- The regex pattern `r"ab{3}"` matches an `'a'` followed by exactly three `'b'` characters.
+- `re.search()` scans the string for any match of the pattern (not just at the start).
+- `bool()` converts the match object (or `None`) to `True`/`False`.
+- The assertion `assert not text_match_three("ac")` passes because `"ac"` has no `'a'` followed by three `'b'`s.

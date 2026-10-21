@@ -1,0 +1,31 @@
+```python
+def find_Max_Num(digits):
+    """
+    This function takes a list of digits as input and returns the largest number that can be formed using these digits.
+
+    :param digits: A list of integers representing the digits.
+    :return: The largest number that can be formed using the given digits.
+    """
+    # Convert the digits to strings, sort them in descending order, and join them into a single string
+    max_num_str = ''.join(sorted(map(str, digits), reverse=True))
+    
+    # Convert the string back to an integer and return it
+    return int(max_num_str)
+
+# Test the function
+assert find_Max_Num([1,2,3]) == 321
+print(find_Max_Num([1,2,3]))  # Output: 321
+```
+
+This script defines a function `find_Max_Num` that takes a list of digits, converts them to strings, sorts them in descending order, joins them into a single string, and then converts the string back to an integer. The function is then tested with the provided assertion and a print statement. 
+
+**Explanation**
+
+*   The `sorted` function is used with the `reverse=True` argument to sort the digits in descending order.
+*   The `map` function is used to convert each digit to a string before sorting, because strings can be compared lexicographically.
+*   The `join` method is used to concatenate the sorted digits into a single string.
+*   Finally, the string is converted back to an integer using the `int` function. 
+
+**Time Complexity:** O(n log n) due to the sorting operation, where n is the number of digits.
+
+**Space Complexity:** O(n) for the sorted list of digits and the resulting string.

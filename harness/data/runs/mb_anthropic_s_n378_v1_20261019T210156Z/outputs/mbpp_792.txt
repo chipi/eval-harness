@@ -1,0 +1,24 @@
+```python
+def count_list(lists):
+    """
+    Count the number of lists in a given number of lists.
+    
+    Args:
+        lists: A list of lists
+        
+    Returns:
+        The count of lists (length of the outer list)
+    """
+    return len(lists)
+
+
+# Test cases
+assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+assert count_list([[1], [2], [3]]) == 3
+assert count_list([]) == 0
+assert count_list([[1, 2, 3, 4, 5]]) == 1
+
+print("All assertions passed!")
+```
+
+The solution is straightforward - the function simply returns the length of the outer list using `len()`, which counts how many lists are contained within it.

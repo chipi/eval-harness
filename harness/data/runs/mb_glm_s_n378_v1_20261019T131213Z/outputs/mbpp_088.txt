@@ -1,0 +1,91 @@
+```python
+from collections import Counter
+
+def freq_count(input_list):
+    """
+    Calculates the frequency of each element in a list and returns a dictionary.
+
+    This function utilizes the collections.Counter class, which is a specialized
+    dictionary subclass for counting hashable objects. It's highly efficient and
+    concise for this task.
+
+    Args:
+        input_list: A list of elements (can be of any hashable type).
+
+    Returns:
+        A dictionary where keys are the unique elements from the input list
+        and values are their corresponding frequencies (counts).
+    """
+    # The Counter object automatically counts the occurrences of each element.
+    # We convert it to a standard dictionary before returning.
+    return dict(Counter(input_list))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The input list from the problem
+    sample_list = [10, 10, 10, 10, 20, 20, 20, 20, 40, 40, 50, 50, 30]
+    
+    # The expected output dictionary
+    expected_output = {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+    
+    # Call the function to get the result
+    result = freq_count(sample_list)
+    
+    # Print the results for verification
+    print(f"Input List: {sample_list}")
+    print(f"Function Output: {result}")
+    print(f"Expected Output: {expected_output}")
+    
+    # The assert statement will raise an AssertionError if the result is not as expected.
+    # If the script runs without error, the assertion passes.
+    assert result == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+
+```
+
+### Alternative (Manual) Implementation
+
+For completeness, here is a version of the function that does not rely on the `collections` module, demonstrating the logic manually.
+
+```python
+def freq_count_manual(input_list):
+    """
+    Calculates the frequency of each element in a list manually.
+
+    This function iterates through the list and uses a dictionary to keep
+    track of the counts of each element.
+
+    Args:
+        input_list: A list of elements (can be of any hashable type).
+
+    Returns:
+        A dictionary where keys are the unique elements from the input list
+        and values are their corresponding frequencies (counts).
+    """
+    frequency = {}
+    for item in input_list:
+        # If the item is already in the dictionary, increment its count.
+        # Otherwise, add the item to the dictionary with a count of 1.
+        if item in frequency:
+            frequency[item] += 1
+        else:
+            frequency[item] = 1
+    return frequency
+
+# Example usage and assertion for the manual version
+if __name__ == "__main__":
+    sample_list = [10, 10, 10, 10, 20, 20, 20, 20, 40, 40, 50, 50, 30]
+    expected_output = {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+    
+    result_manual = freq_count_manual(sample_list)
+    
+    print("\n--- Manual Version ---")
+    print(f"Input List: {sample_list}")
+    print(f"Function Output: {result_manual}")
+    print(f"Expected Output: {expected_output}")
+    
+    assert result_manual == expected_output
+    
+    print("\nAssertion passed! The manual function works correctly.")
+```

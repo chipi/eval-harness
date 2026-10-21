@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem with the given assertion:
+
+```python
+"""
+Function to check if any value in one sequence exists in another sequence.
+"""
+
+def overlapping(seq1, seq2):
+    """
+    Check if there is any common element between two sequences.
+
+    Args:
+        seq1: First sequence (list, tuple, etc.)
+        seq2: Second sequence (list, tuple, etc.)
+
+    Returns:
+        bool: True if there is at least one common element, False otherwise
+    """
+    # Convert sequences to sets and check for intersection
+    return bool(set(seq1) & set(seq2))
+
+# Test case
+assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+```
+
+This solution:
+1. Takes two sequences as input
+2. Converts them to sets (which are unordered collections of unique elements)
+3. Uses the set intersection operation (`&`) to find common elements
+4. Returns True if there's any intersection, False otherwise
+5. Includes the required test case with the assertion
+
+The function will work with any sequence type (lists, tuples, etc.) and efficiently checks for overlapping elements.

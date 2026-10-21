@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_occurrence(s: str, substring: str = 'std') -> int:
+    """
+    Count the number of occurrences of a substring in a given string.
+
+    Args:
+        s: The string to search in.
+        substring: The substring to count (default is 'std').
+
+    Returns:
+        The number of occurrences of the substring in the string.
+    """
+    count = 0
+    start = 0
+    while True:
+        pos = s.find(substring, start)
+        if pos == -1:
+            break
+        count += 1
+        start = pos + 1
+    return count
+
+# Test the function
+assert count_occurrence("letstdlenstdporstd") == 3
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `count_occurrence` that counts occurrences of a substring (defaulting to 'std')
+2. Uses a while loop with `str.find()` to locate each occurrence
+3. Updates the count and search position after each find
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will work for any substring, not just 'std', making it more versatile.

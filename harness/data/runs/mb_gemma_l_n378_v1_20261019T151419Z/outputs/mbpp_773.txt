@@ -1,0 +1,25 @@
+```python
+def occurance_substring(text, substring):
+    """
+    Finds the first occurrence of a substring within a string.
+    Returns a tuple containing the substring, the start index, and the end index.
+    Returns None if no match is found.
+    """
+    # Find the starting index of the first occurrence
+    start_index = text.find(substring)
+    
+    # If find() returns -1, the substring was not found
+    if start_index == -1:
+        return None
+    
+    # Calculate the end index based on the length of the substring
+    end_index = start_index + len(substring)
+    
+    return (substring, start_index, end_index)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = occurance_substring('python programming, python language', 'python')
+    assert result == ('python', 0, 6)
+    print(f"Test passed! Result: {result}")
+```

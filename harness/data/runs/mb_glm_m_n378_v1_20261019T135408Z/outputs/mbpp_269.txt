@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of finding the ASCII value of a character:
+
+```python
+def ascii_value(char):
+    """
+    Returns the ASCII value of the given character.
+    
+    Args:
+        char (str): A single character string.
+        
+    Returns:
+        int: The ASCII value of the character.
+        
+    Raises:
+        ValueError: If the input is not a single character.
+    """
+    if len(char) != 1:
+        raise ValueError("Input must be a single character")
+    return ord(char)
+
+# Test cases
+assert ascii_value('A') == 65
+assert ascii_value('a') == 97
+assert ascii_value('0') == 48
+assert ascii_value(' ') == 32
+assert ascii_value('!') == 33
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `ascii_value` takes a single character as input.
+2. It checks if the input is exactly one character long; if not, it raises a `ValueError`.
+3. The built-in `ord()` function is used to get the ASCII value of the character.
+4. The script includes several test cases to verify the function works correctly for different characters.
+5. If all test cases pass, it prints a success message.
+
+The `ord()` function is the standard Python way to get the ASCII (or Unicode) value of a character, making this solution both simple and efficient.

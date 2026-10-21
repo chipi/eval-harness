@@ -1,0 +1,16 @@
+```python
+def remove_Occ(s, c):
+    # Remove the first occurrence of c
+    s = s.replace(c, '', 1)
+    # Remove the last occurrence of c
+    s = s.rstrip(c)
+    return s
+
+# Test cases
+assert remove_Occ("hello","l") == "heo"
+assert remove_Occ("world","d") == "worl"
+assert remove_Occ("python","p") == "ython"
+assert remove_Occ("programming","m") == "programmin"
+assert remove_Occ("example","x") == "exampl"
+```
+

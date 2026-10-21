@@ -1,0 +1,35 @@
+```python
+def find_Volume(base, height, length):
+    """
+    Calculates the volume of a triangular prism.
+    
+    The formula for the volume of a triangular prism is:
+    Volume = Area of triangular base * length of prism
+    Area of triangular base = 0.5 * base * height
+    
+    Args:
+        base (float): The base of the triangle.
+        height (float): The height of the triangle.
+        length (float): The length (or depth) of the prism.
+        
+    Returns:
+        float: The volume of the triangular prism.
+    """
+    # Area of the triangle = 0.5 * base * height
+    area_of_triangle = 0.5 * base * height
+    
+    # Volume = Area of triangle * length
+    volume = area_of_triangle * length
+    
+    return volume
+
+# Test case provided in the prompt
+if __name__ == "__main__":
+    # The prompt assertion: find_Volume(10, 8, 6) == 240
+    # Note: 0.5 * 10 * 8 * 6 = 240
+    result = find_Volume(10, 8, 6)
+    print(f"Result: {result}")
+    
+    assert result == 240
+    print("Assertion passed!")
+```

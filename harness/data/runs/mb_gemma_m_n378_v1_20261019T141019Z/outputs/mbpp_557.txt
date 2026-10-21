@@ -1,0 +1,20 @@
+```python
+def toggle_string(s: str) -> str:
+    """
+    Toggles the case of all characters in a string.
+    Uppercase characters become lowercase, and lowercase characters become uppercase.
+    """
+    return s.swapcase()
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert toggle_string("Python") == "pYTHON"
+    
+    # Additional test cases
+    assert toggle_string("hello") == "HELLO"
+    assert toggle_string("WORLD") == "world"
+    assert toggle_string("123!@#") == "123!@#"
+    assert toggle_string("") == ""
+    
+    print("All tests passed!")
+```

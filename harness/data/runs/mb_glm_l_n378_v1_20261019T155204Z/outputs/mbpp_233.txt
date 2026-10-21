@@ -1,0 +1,26 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculate the lateral surface area of a cylinder.
+    
+    The formula for the lateral surface area of a cylinder is:
+    2 * pi * r * h
+    
+    Parameters:
+    radius (float or int): The radius of the cylinder's base.
+    height (float or int): The height of the cylinder.
+    
+    Returns:
+    float: The lateral surface area of the cylinder.
+    """
+    return 2 * math.pi * radius * height
+
+if __name__ == "__main__":
+    # Testing the function with the provided assertion
+    assert math.isclose(lateralsuface_cylinder(10, 5), 314.15000000000003, rel_tol=0.001)
+    print("Assertion passed successfully.")
+```

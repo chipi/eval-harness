@@ -1,0 +1,8 @@
+```python
+def union_elements(first, second):
+    """Return the sorted union of two tuples as a tuple."""
+    return tuple(sorted(set(first) | set(second)))
+
+
+assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+```

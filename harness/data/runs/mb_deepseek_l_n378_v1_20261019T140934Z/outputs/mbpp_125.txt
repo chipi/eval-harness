@@ -1,0 +1,25 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def find_length(s: str) -> int:
+    """
+    Returns the maximum difference between the number of 0s and number of 1s
+    in any substring of the given binary string.
+    """
+    # Transform: 0 -> +1, 1 -> -1
+    # We want max (count0 - count1) = max subarray sum
+    max_diff = 0
+    current_sum = 0
+    
+    for ch in s:
+        value = 1 if ch == '0' else -1
+        current_sum = max(value, current_sum + value)
+        max_diff = max(max_diff, current_sum)
+    
+    return max_diff
+
+
+# Test
+assert find_length("11000010001") == 6
+print("Test passed!")
+```

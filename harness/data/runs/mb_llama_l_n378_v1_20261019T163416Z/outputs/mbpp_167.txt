@@ -1,0 +1,32 @@
+```python
+def next_power_of_2(n):
+    """
+    This function returns the smallest power of 2 greater than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The smallest power of 2 greater than or equal to n.
+    """
+    if n == 0:
+        return 1
+    # Subtract 1 from n to handle the case where n is already a power of 2
+    n -= 1
+    # Use bitwise shift to fill all the bits to the right of the leftmost set bit
+    n |= n >> 1
+    n |= n >> 2
+    n |= n >> 4
+    n |= n >> 8
+    n |= n >> 16
+    # Add 1 to n to get the next power of 2
+    n += 1
+    return n
+
+# Test the function
+assert next_power_of_2(0) == 1
+assert next_power_of_2(1) == 1
+assert next_power_of_2(2) == 2
+assert next_power_of_2(3) == 4
+assert next_power_of_2(10) == 16
+```

@@ -1,0 +1,8 @@
+```python
+def check(n):
+    reversed_n = int(str(n)[::-1])
+    return n == 2 * reversed_n - 1
+
+# Test case
+assert check(70) == False
+```

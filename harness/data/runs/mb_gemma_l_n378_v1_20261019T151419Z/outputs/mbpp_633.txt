@@ -1,0 +1,41 @@
+```python
+def pair_xor_Sum(arr, n):
+    """
+    Calculates the sum of XOR of all pairs of numbers in the given list.
+    
+    The logic used here is to iterate through each bit position (0 to 31).
+    For each bit, we count how many numbers have that bit set (1) and how many have it unset (0).
+    The number of pairs that will have a 1 at that bit position in their XOR result is 
+    (count of 1s) * (count of 0s).
+    The contribution to the total sum is then (count_1s * count_0s) * (2^bit_position).
+    """
+    total_sum = 0
+    
+    # Iterate through 32 bits (standard for integers)
+    for i in range(32):
+        count_1s = 0
+        for num in arr:
+            # Check if the i-th bit is set
+            if num & (1 << i):
+                count_1s += 1
+        
+        # Count of numbers with i-th bit unset
+        count_0s = n - count_1s
+        
+        # The number of pairs with different bits at position i is count_1s * count_0s
+        # Each such pair contributes 2^i to the total sum
+        total_sum += (count_1s * count_0s) * (1 << i)
+        
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [5, 9, 7, 6]
+    n = 4
+    result = pair_xor_Sum(test_arr, n)
+    print(f"The sum of XOR of all pairs for {test_arr} is: {result}")
+    
+    # Assertion check
+    assert pair_xor_Sum([5, 9, 7, 6], 4) == 47
+    print("Assertion passed!")
+```

@@ -1,0 +1,29 @@
+```python
+def even_Power_Sum(n):
+    """
+    This function calculates the sum of the first n even natural numbers raised to the fifth power.
+
+    Args:
+        n (int): The number of even natural numbers to be considered.
+
+    Returns:
+        int: The sum of the first n even natural numbers raised to the fifth power.
+    """
+    # Initialize sum to 0
+    total_sum = 0
+    
+    # Loop through the first n even natural numbers
+    for i in range(1, n + 1):
+        # Calculate the ith even natural number
+        even_num = 2 * i
+        
+        # Raise the even number to the fifth power and add it to the total sum
+        total_sum += even_num ** 5
+    
+    # Return the total sum
+    return total_sum
+
+# Test the function
+assert even_Power_Sum(2) == 1056
+print("All tests passed.")
+```

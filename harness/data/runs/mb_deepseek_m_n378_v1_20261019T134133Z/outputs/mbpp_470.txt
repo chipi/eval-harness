@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_pairwise(t):
+    """
+    Returns a tuple containing the pairwise sums of neighboring elements.
+    
+    Args:
+        t: A tuple of numbers.
+    
+    Returns:
+        A tuple where each element is the sum of two consecutive elements in t.
+    """
+    return tuple(t[i] + t[i + 1] for i in range(len(t) - 1))
+
+
+# Test the function
+assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+print("Test passed!")
+print(add_pairwise((1, 5, 7, 8, 10)))  # Output: (6, 12, 15, 18)
+```
+
+**How it works:**
+
+1. The function `add_pairwise` takes a tuple `t` as input.
+2. It uses a generator expression inside `tuple()` to iterate over indices `0` to `len(t) - 2`.
+3. For each index `i`, it computes `t[i] + t[i + 1]`, which is the sum of the current element and its neighbor.
+4. The result is a new tuple of these pairwise sums.
+
+**Example walkthrough** for `(1, 5, 7, 8, 10)`:
+- `1 + 5 = 6`
+- `5 + 7 = 12`
+- `7 + 8 = 15`
+- `8 + 10 = 18`
+
+Result: `(6, 12, 15, 18)` ✓

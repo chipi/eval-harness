@@ -1,0 +1,9 @@
+```python
+def noprofit_noloss(cost_price, selling_price):
+    """Return True if the selling price equals the cost price."""
+    return cost_price == selling_price
+
+
+assert noprofit_noloss(1500, 1200) == False
+assert noprofit_noloss(1500, 1500) == True
+```

@@ -1,0 +1,28 @@
+```python
+def is_Diff(n):
+    """
+    Return True if n is divisible by 11, otherwise False.
+
+    A number is divisible by 11 if the absolute value of the alternating
+    sum of its digits is divisible by 11.
+    """
+    n = abs(n)
+    odd_sum = 0
+    even_sum = 0
+    position = 0
+
+    while n > 0:
+        digit = n % 10
+        if position % 2 == 0:
+            odd_sum += digit
+        else:
+            even_sum += digit
+        position += 1
+        n //= 10
+
+    return (odd_sum - even_sum) % 11 == 0
+
+
+# Example assertion
+assert is_Diff(12345) == False
+```

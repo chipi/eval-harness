@@ -1,0 +1,45 @@
+```python
+def max_sub_array_sum_repeated(arr, k, n):
+    """
+    Find the largest sum of a contiguous array in the modified array 
+    which is formed by repeating the given array k times.
+
+    Args:
+    arr (list): The input array.
+    k (int): The number of times the array is repeated.
+    n (int): The size of the array.
+
+    Returns:
+    int: The maximum sum of a contiguous subarray.
+    """
+    # Calculate the maximum sum of a contiguous subarray in the given array
+    max_ending_here = max_so_far = arr[0] = float('-inf')
+    for i in range(n):
+        max_ending_here = max(arr[i], max_ending_here + arr[i])
+        max_so_far = max(max_so_far, max_ending_here)
+
+    # If all elements in the array are negative, return the maximum element
+    if max_so_far < 0:
+        return max(arr)
+
+    # If k is 1, return the maximum sum
+    if k == 1:
+        return max_so_far
+
+    # Calculate the total sum of the array
+    total_sum = sum(arr)
+
+    # If total sum is negative, the maximum sum will be the maximum subarray sum
+    if total_sum < 0:
+        return max_so_far
+
+    # Otherwise, the maximum sum will be the maximum of the maximum subarray sum 
+    # and the sum of the maximum subarray sum and (k-1) times the total sum
+    return max(max_so_far, (k - 1) * total_sum + max_so_far)
+
+
+# Test the function
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+```
+
+The provided Python function `max_sub_array_sum_repeated` calculates the maximum sum of a contiguous subarray in an array that has been repeated `k` times. The function uses Kadane's algorithm to find the maximum sum of a contiguous subarray in the given array, then considers the cases where the array is repeated `k` times. If all elements in the array are negative, the function returns the maximum element. If `k` is 1, the function returns the maximum sum of a contiguous subarray. Otherwise, the function calculates the total sum of the array and returns the maximum of the maximum subarray sum and the sum of the maximum subarray sum and `(k-1)` times the total sum.

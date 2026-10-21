@@ -1,0 +1,49 @@
+```python
+def extract_singly(lists):
+    """
+    This function takes a list of tuples, 
+    and returns a set of numbers.
+
+    Args:
+        lists (list): A list of tuples.
+
+    Returns:
+        set: A set of numbers.
+    """
+    # Initialize an empty set to store unique numbers
+    result = set()
+
+    # Iterate over each tuple in the list of tuples
+    for tup in lists:
+        # Update the set with numbers from the current tuple
+        result.update(tup)
+
+    # Return the set of numbers
+    return result
+
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+```
+
+Alternatively, you can solve this problem in a more Pythonic way:
+
+```python
+def extract_singly(lists):
+    """
+    This function takes a list of tuples, 
+    and returns a set of numbers.
+
+    Args:
+        lists (list): A list of tuples.
+
+    Returns:
+        set: A set of numbers.
+    """
+    # Use set union to get a set of all numbers
+    return set.union(*map(set, lists))
+
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+```

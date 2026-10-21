@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_Diff(num):
+    """
+    Check if a number is divisible by 11.
+    Uses the alternating sum of digits method:
+    A number is divisible by 11 if the difference between
+    the sum of digits at odd positions and the sum of digits
+    at even positions is divisible by 11.
+    
+    Args:
+        num: An integer to check
+        
+    Returns:
+        bool: True if divisible by 11, False otherwise
+    """
+    # Convert to string to process digits
+    num_str = str(abs(num))
+    
+    # Calculate alternating sum of digits
+    odd_sum = 0
+    even_sum = 0
+    
+    for i, digit in enumerate(num_str):
+        if i % 2 == 0:  # Even index (0-based) = odd position (1-based)
+            odd_sum += int(digit)
+        else:  # Odd index (0-based) = even position (1-based)
+            even_sum += int(digit)
+    
+    # Check if the difference is divisible by 11
+    diff = abs(odd_sum - even_sum)
+    return diff % 11 == 0
+
+
+# Test the function
+assert is_Diff(12345) == False
+print("Test passed! 12345 is not divisible by 11.")
+
+# Additional test cases
+print(f"11 is divisible by 11: {is_Diff(11)}")  # Should be True
+print(f"121 is divisible by 11: {is_Diff(121)}")  # Should be True
+print(f"12345 is divisible by 11: {is_Diff(12345)}")  # Should be False
+```
+
+This solution uses the divisibility rule for 11: a number is divisible by 11 if the alternating sum of its digits (starting from the left) is divisible by 11. The function works for both positive and negative numbers.

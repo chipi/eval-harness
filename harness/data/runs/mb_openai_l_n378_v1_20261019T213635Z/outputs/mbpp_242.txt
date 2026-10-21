@@ -1,0 +1,7 @@
+```python
+def count_charac(text):
+    return len(text)
+
+
+assert count_charac("python programming") == 18
+```

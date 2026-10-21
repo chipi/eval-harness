@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_blank(s, char):
+    """
+    Replaces blank spaces in the string with the given character.
+    
+    Args:
+        s (str): The input string.
+        char (str): The character to replace spaces with.
+        
+    Returns:
+        str: The string with spaces replaced by the given character.
+    """
+    return s.replace(' ', char)
+
+# Test cases
+assert replace_blank("hello people", '@') == "hello@people"
+assert replace_blank("hello world", '_') == "hello_world"
+assert replace_blank("no spaces", '*') == "no*spaces"
+assert replace_blank("  leading and trailing  ", '-') == "--leading-and-trailing--"
+assert replace_blank("", '!') == ""
+
+print("All test cases passed!")
+```
+
+This script defines a function `replace_blank` that takes a string and a character, replaces all spaces in the string with the given character using Python's built-in `str.replace()` method, and returns the modified string. The script includes several test cases to verify the function works correctly, including the example provided in the problem statement. If all assertions pass, it will print "All test cases passed!".

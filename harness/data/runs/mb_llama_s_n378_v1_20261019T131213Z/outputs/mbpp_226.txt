@@ -1,0 +1,21 @@
+```python
+def odd_values_string(s: str) -> str:
+    """
+    This function removes the characters which have odd index values of a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with characters at odd index values removed.
+    """
+    return s[::2]
+
+# Test the function
+assert odd_values_string('abcdef') == 'ace'
+print(odd_values_string('abcdef'))  # Output: 'ace'
+```
+
+In this script, we define a function `odd_values_string` that takes a string `s` as input and returns a new string that includes only the characters at even index values (0-based indexing). The slicing syntax `s[::2]` means start at the beginning of the string, go to the end, and step by 2, effectively selecting characters at even index values.
+
+When you run this script, it will test the function with the provided assertion and print the result of calling the function with the string `'abcdef'`. The output will be `'ace'`, which is the expected result.

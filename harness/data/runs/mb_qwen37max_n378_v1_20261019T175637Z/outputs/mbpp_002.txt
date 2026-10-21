@@ -1,0 +1,10 @@
+```python
+def similar_elements(tuple1, tuple2):
+    """Find the shared elements from the given two tuples/lists."""
+    return tuple(set(tuple1) & set(tuple2))
+
+
+# Test
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+print("All tests passed!")
+```

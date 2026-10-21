@@ -1,0 +1,18 @@
+```python
+def extract_singly(list_of_lists):
+    """
+    Flattens a list of lists (or tuples) into a single set of unique numbers.
+    
+    Args:
+        list_of_lists: A list containing iterables (like lists or tuples) of numbers.
+        
+    Returns:
+        A set of all unique numbers found in the nested iterables.
+    """
+    return {item for sublist in list_of_lists for item in sublist}
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+    print("Test passed successfully!")
+```

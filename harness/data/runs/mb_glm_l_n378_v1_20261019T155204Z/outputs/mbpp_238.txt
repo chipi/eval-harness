@@ -1,0 +1,32 @@
+Here is a self-contained Python script that solves the problem. 
+
+For a string of length `n`, a non-empty substring is defined by its starting index and ending index. There are `n` choices for the starting index and `n` choices for the ending index, but since the substring cannot be empty, the ending index must be greater than or equal to the starting index. The number of such combinations is exactly the sum of the first `n` natural numbers, which is `n * (n + 1) // 2`.
+
+```python
+def number_of_substrings(s: str) -> int:
+    """
+    Counts the number of non-empty substrings of a given string.
+    
+    A substring of length n has exactly n*(n+1)/2 non-empty substrings.
+    
+    Args:
+    s (str): The input string.
+    
+    Returns:
+    int: The total number of non-empty substrings.
+    """
+    n = len(s)
+    return n * (n + 1) // 2
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert number_of_substrings("abc") == 6
+    print("Assertion passed: number_of_substrings('abc') == 6")
+    
+    # Additional test cases
+    assert number_of_substrings("") == 0
+    assert number_of_substrings("a") == 1
+    assert number_of_substrings("ab") == 3
+    assert number_of_substrings("abcd") == 10
+    print("All assertions passed!")
+```

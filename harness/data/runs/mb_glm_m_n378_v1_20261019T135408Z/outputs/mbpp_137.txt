@@ -1,0 +1,26 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    Finds the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+    arr (list): A list of integers.
+    
+    Returns:
+    float: The ratio of zeroes to non-zeroes. Returns 0.0 if there are no non-zeroes to avoid division by zero.
+    """
+    zeroes = sum(1 for x in arr if x == 0)
+    non_zeroes = len(arr) - zeroes
+    
+    if non_zeroes == 0:
+        return 0.0  # Avoid division by zero; conventionally return 0.0 if no non-zeroes exist
+        
+    return zeroes / non_zeroes
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+    print("Test passed successfully!")
+```

@@ -1,0 +1,17 @@
+```python
+def snake_to_camel(snake_str):
+    """
+    Convert a snake case string to camel case string.
+
+    Args:
+        snake_str (str): The input snake case string.
+
+    Returns:
+        str: The converted camel case string.
+    """
+    components = snake_str.split('_')
+    return ''.join(x.capitalize() for x in components)
+
+# Example usage:
+print(snake_to_camel('python_program'))  # Output: PythonProgram
+```

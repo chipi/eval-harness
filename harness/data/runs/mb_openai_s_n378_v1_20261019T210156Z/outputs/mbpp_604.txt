@@ -1,0 +1,10 @@
+```python
+def reverse_words(s: str) -> str:
+    # Split the string by whitespace and reverse the order of the words
+    return " ".join(s.split()[::-1])
+
+
+if __name__ == "__main__":
+    assert reverse_words("python program") == "program python"
+    print("All tests passed.")
+```

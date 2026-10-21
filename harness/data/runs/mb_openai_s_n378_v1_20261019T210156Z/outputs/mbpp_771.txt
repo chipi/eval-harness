@@ -1,0 +1,31 @@
+```python
+def check_expression(expr: str) -> bool:
+    """
+    Return True if the expression has balanced brackets, otherwise False.
+
+    Supports:
+    - ()
+    - {}
+    - []
+
+    Examples:
+        check_expression("{()}[{}]") -> True
+        check_expression("({[)]}")    -> False
+    """
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+
+    for ch in expr:
+        if ch in "({[":
+            stack.append(ch)
+        elif ch in ")}]":
+            if not stack or stack.pop() != pairs[ch]:
+                return False
+
+    return len(stack) == 0
+
+
+if __name__ == "__main__":
+    assert check_expression("{()}[{}]") is True
+    print("All tests passed.")
+```

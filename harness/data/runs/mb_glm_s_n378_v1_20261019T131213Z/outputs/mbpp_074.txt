@@ -1,0 +1,83 @@
+```python
+def is_samepatterns(colors, patterns):
+    """
+    Checks if a list of colors follows the same pattern as a list of characters.
+
+    The function determines if the sequence of repetitions in the colors list
+    matches the sequence of repetitions in the patterns list. For example,
+    ["red", "green", "green"] has the pattern 'a', 'b', 'b' because 'red' is
+    unique (like 'a') and 'green' repeats (like 'b').
+
+    Args:
+        colors (list): A list of strings representing colors.
+        patterns (list): A list of single-character strings representing a pattern.
+
+    Returns:
+        bool: True if the color sequence matches the pattern sequence, False otherwise.
+    """
+    # A dictionary to map each unique color to its corresponding pattern character.
+    color_to_pattern = {}
+
+    # A dictionary to map each pattern character to its corresponding color.
+    # This ensures a one-to-one mapping, preventing cases like
+    # is_samepatterns(["red", "blue"], ["a", "a"]) from returning True.
+    pattern_to_color = {}
+
+    # Iterate through the color and pattern lists simultaneously.
+    for color, pattern_char in zip(colors, patterns):
+        # If the color has been seen before, check if its mapping is consistent.
+        if color in color_to_pattern:
+            # If the existing pattern for this color does not match the
+            # current pattern character, the pattern is broken.
+            if color_to_pattern[color] != pattern_char:
+                return False
+        else:
+            # If the color is new, it must be mapped to the current pattern_char.
+            color_to_pattern[color] = pattern_char
+
+        # If the pattern character has been seen before, check if its mapping is consistent.
+        if pattern_char in pattern_to_color:
+            # If the existing color for this pattern character does not match the
+            # current color, the pattern is broken (e.g., two different colors
+            # cannot map to the same pattern character).
+            if pattern_to_color[pattern_char] != color:
+                return False
+        else:
+            # If the pattern character is new, it must be mapped to the current color.
+            pattern_to_color[pattern_char] = color
+
+    # If the loop completes without finding any inconsistencies, the pattern matches.
+    return True
+
+# --- Example Usage ---
+
+# Example 1: The provided assertion
+pattern1 = ["red", "green", "green"]
+sequence1 = ["a", "b", "b"]
+print(f"Is {pattern1} the same as {sequence1}? {is_samepatterns(pattern1, sequence1)}")
+# Expected output: Is ['red', 'green', 'green'] the same as ['a', 'b', 'b']? True
+
+# Example 2: A different valid pattern
+pattern2 = ["apple", "banana", "cherry", "banana"]
+sequence2 = ["x", "y", "z", "y"]
+print(f"Is {pattern2} the same as {sequence2}? {is_samepatterns(pattern2, sequence2)}")
+# Expected output: Is ['apple', 'banana', 'cherry', 'banana'] the same as ['x', 'y', 'z', 'y']? True
+
+# Example 3: An invalid pattern (color 'red' is mapped to 'a' then 'b')
+pattern3 = ["red", "blue", "red"]
+sequence3 = ["a", "b", "c"]
+print(f"Is {pattern3} the same as {sequence3}? {is_samepatterns(pattern3, sequence3)}")
+# Expected output: Is ['red', 'blue', 'red'] the same as ['a', 'b', 'c']? False
+
+# Example 4: An invalid pattern (pattern 'a' is mapped to 'red' then 'blue')
+pattern4 = ["red", "blue", "green"]
+sequence4 = ["a", "a", "b"]
+print(f"Is {pattern4} the same as {sequence4}? {is_samepatterns(pattern4, sequence4)}")
+# Expected output: Is ['red', 'blue', 'green'] the same as ['a', 'a', 'b']? False
+
+# Example 5: Empty lists
+pattern5 = []
+sequence5 = []
+print(f"Is {pattern5} the same as {sequence5}? {is_samepatterns(pattern5, sequence5)}")
+# Expected output: Is [] the same as []? True
+```

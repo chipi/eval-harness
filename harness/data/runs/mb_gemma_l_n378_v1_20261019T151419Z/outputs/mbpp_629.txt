@@ -1,0 +1,15 @@
+```python
+def Split(numbers):
+    """
+    Finds and returns a list of even numbers from the provided list of numbers.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert Split([1, 2, 3, 4, 5]) == [2, 4]
+        print("Test passed!")
+    except AssertionError:
+        print("Test failed!")
+```

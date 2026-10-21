@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def _sum(arr):
+    """
+    Find the sum of an array.
+    
+    Args:
+        arr: A list of numbers
+        
+    Returns:
+        The sum of all elements in the array
+    """
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+# Test the function
+assert _sum([1, 2, 3]) == 6
+print("Test passed! The sum of [1, 2, 3] is", _sum([1, 2, 3]))
+```
+
+This script defines the `_sum` function that iterates through each element in the input array and accumulates the total. The assertion verifies that the function correctly calculates the sum of `[1, 2, 3]` as `6`.

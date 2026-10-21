@@ -1,0 +1,33 @@
+To solve this problem, we use the `sys.getsizeof` function, which is the standard way in Python to retrieve the memory consumption of an object in bytes.
+
+Here is the self-contained script:
+
+```python
+import sys
+
+def tuple_size(tup: tuple) -> int:
+    """
+    Returns the size in bytes of the given tuple.
+    
+    Note: sys.getsizeof returns the size of the container itself, 
+    not the recursive size of all objects contained within it.
+    """
+    return sys.getsizeof(tup)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_tuple = ("A", 1, "B", 2, "C", 3)
+    
+    # Calculate size using our function
+    result = tuple_size(test_tuple)
+    
+    # Expected size using sys.getsizeof directly
+    expected = sys.getsizeof(test_tuple)
+    
+    # Assertion to verify correctness
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    print(f"Tuple: {test_tuple}")
+    print(f"Size in bytes: {result}")
+    print("Assertion passed successfully!")
+```

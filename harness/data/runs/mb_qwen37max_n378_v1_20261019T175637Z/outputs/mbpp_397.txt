@@ -1,0 +1,9 @@
+```python
+def median_numbers(a, b, c):
+    """Find the median of three numbers."""
+    return float(sorted([a, b, c])[1])
+
+
+# Test
+assert median_numbers(25, 55, 65) == 55.0
+```

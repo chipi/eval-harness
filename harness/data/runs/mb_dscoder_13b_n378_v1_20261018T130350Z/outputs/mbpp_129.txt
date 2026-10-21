@@ -1,0 +1,18 @@
+```python
+def magic_square_test(matrix):
+    # Calculate the sum of each row, column and diagonal
+    row_sums = [sum(row) for row in matrix]
+    col_sums = [sum(column) for column in zip(*matrix)]
+    diag_sums = [matrix[i][i] for i in range(len(matrix))]
+    anti_diag_sums = [matrix[i][len(matrix)-i-1] for i in range(len(matrix))]
+    
+    # Check if all sums are equal
+    if len(set(row_sums + col_sums + diag_sums + anti_diag_sums)) == 1:
+        return True
+    else:
+        return False
+
+# Test cases
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]))  # Expected output: True
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 16, 4]]))  # Expected output: False
+```

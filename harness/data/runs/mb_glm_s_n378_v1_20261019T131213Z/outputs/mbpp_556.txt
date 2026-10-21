@@ -1,0 +1,76 @@
+```python
+"""
+Write a python function to count the number of pairs whose xor value is odd.
+assert find_Odd_Pair([5,4,7,2,1],5) == 6
+"""
+
+def find_Odd_Pair(arr, n):
+    """
+    Counts the number of pairs in an array whose XOR value is odd.
+
+    The XOR of two numbers is odd if and only if one number is odd and the other is even.
+    This is because:
+    - Odd numbers have their least significant bit (LSB) set to 1.
+    - Even numbers have their least significant bit (LSB) set to 0.
+    - XORing a 1 and a 0 results in 1, making the overall number odd.
+
+    Therefore, the problem reduces to counting the number of pairs where one element
+    is from the set of odd numbers and the other is from the set of even numbers.
+
+    Args:
+        arr (list): A list of integers.
+        n (int): The number of elements in the list. This argument is included
+                 to match the problem's signature but is not strictly necessary
+                 as the length of the list can be obtained directly.
+
+    Returns:
+        int: The total count of such pairs.
+    """
+    # Count the number of odd and even numbers in the array.
+    # A number is odd if its remainder when divided by 2 is 1.
+    odd_count = sum(1 for num in arr if num % 2 != 0)
+    even_count = n - odd_count
+
+    # The total number of valid pairs is the product of the counts
+    # of odd and even numbers.
+    return odd_count * even_count
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [5, 4, 7, 2, 1]
+    n = 5
+    result = find_Odd_Pair(input_list, n)
+    print(f"The input list is: {input_list}")
+    print(f"The number of pairs with an odd XOR value is: {result}")
+    assert result == 6, f"Assertion failed: Expected 6, but got {result}"
+    print("Assertion passed successfully.")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    # Test case 1: All odd numbers
+    test1 = find_Odd_Pair([1, 3, 5, 7], 4)
+    print(f"Test Case 1 (All odd): [1, 3, 5, 7] -> {test1} (Expected: 0)")
+    assert test1 == 0
+
+    # Test case 2: All even numbers
+    test2 = find_Odd_Pair([2, 4, 6, 8], 4)
+    print(f"Test Case 2 (All even): [2, 4, 6, 8] -> {test2} (Expected: 0)")
+    assert test2 == 0
+
+    # Test case 3: Mixed numbers
+    test3 = find_Odd_Pair([10, 21, 31, 40, 50], 5)
+    print(f"Test Case 3 (Mixed): [10, 21, 31, 40, 50] -> {test3} (Expected: 6)")
+    assert test3 == 6
+
+    # Test case 4: Empty list
+    test4 = find_Odd_Pair([], 0)
+    print(f"Test Case 4 (Empty list): [] -> {test4} (Expected: 0)")
+    assert test4 == 0
+
+    # Test case 5: Single element list
+    test5 = find_Odd_Pair([1], 1)
+    print(f"Test Case 5 (Single element): [1] -> {test5} (Expected: 0)")
+    assert test5 == 0
+
+    print("\nAll additional test cases passed!")
+```

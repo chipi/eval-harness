@@ -1,0 +1,51 @@
+```python
+def next_smallest_palindrome(n: int) -> int:
+    """
+    Return the smallest palindrome strictly greater than n.
+    
+    Examples:
+        next_smallest_palindrome(99) -> 101
+        next_smallest_palindrome(123) -> 131
+        next_smallest_palindrome(808) -> 818
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    s = str(n)
+    length = len(s)
+
+    # Special case: numbers like 9, 99, 999 -> 11, 101, 1001
+    if set(s) == {"9"}:
+        return n + 2 if length == 1 else int("1" + ("0" * (length - 1)) + "1")
+
+    # Mirror left half to right half
+    half = length // 2
+    if length % 2 == 0:
+        left = s[:half]
+        pal = left + left[::-1]
+    else:
+        left = s[:half + 1]
+        pal = left + left[:-1][::-1]
+
+    if int(pal) > n:
+        return int(pal)
+
+    # Increment the middle/left part, then mirror again
+    if length % 2 == 0:
+        prefix = s[:half]
+        incremented = str(int(prefix) + 1).zfill(half)
+        return int(incremented + incremented[::-1])
+    else:
+        prefix = s[:half + 1]
+        incremented = str(int(prefix) + 1).zfill(half + 1)
+        return int(incremented + incremented[:-1][::-1])
+
+
+if __name__ == "__main__":
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(123) == 131
+    assert next_smallest_palindrome(808) == 818
+    assert next_smallest_palindrome(9) == 11
+    assert next_smallest_palindrome(10) == 11
+    print("All tests passed.")
+```

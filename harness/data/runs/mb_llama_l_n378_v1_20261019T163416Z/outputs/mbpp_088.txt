@@ -1,0 +1,16 @@
+```python
+def freq_count(lst):
+    freq_dict = {}
+    for elem in lst:
+        if elem in freq_dict:
+            freq_dict[elem] += 1
+        else:
+            freq_dict[elem] = 1
+    return (freq_dict,)
+
+def main():
+    print(freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30]))
+
+if __name__ == "__main__":
+    main()
+```

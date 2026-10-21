@@ -1,0 +1,25 @@
+```python
+def two_unique_nums(nums):
+    """
+    Remove duplicate numbers from a given list, keeping only the numbers that appear exactly once.
+
+    Args:
+        nums (list): A list of numbers (can contain duplicates)
+
+    Returns:
+        list: A list containing only the numbers that appear exactly once in the input list,
+              in the order of their first occurrence.
+    """
+    from collections import Counter
+
+    # Count the occurrences of each number
+    count = Counter(nums)
+
+    # Filter numbers that appear exactly once, preserving order
+    result = [num for num in nums if count[num] == 1]
+
+    return result
+
+# Test the function
+assert two_unique_nums([1,2,3,2,3,4,5]) == [1, 4, 5]
+```

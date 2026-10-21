@@ -1,0 +1,30 @@
+```python
+import math
+
+def volume_cylinder(radius, height):
+    """
+    Calculate the volume of a cylinder.
+
+    Args:
+        radius (float): The radius of the cylinder.
+        height (float): The height of the cylinder.
+
+    Returns:
+        float: The volume of the cylinder.
+    """
+    # The formula for the volume of a cylinder is V = πr²h
+    volume = math.pi * (radius ** 2) * height
+    return volume
+
+# Example usage:
+if __name__ == "__main__":
+    radius = 10
+    height = 5
+    print(f"The volume of a cylinder with radius {radius} and height {height} is {volume_cylinder(radius, height)}")
+```
+
+You can run this script, and it will calculate and print the volume of a cylinder with the given radius and height. The `math.isclose` function is used in the unit test to account for floating-point precision errors. 
+
+Please note that this code uses the `math` module for the value of pi. The result is calculated using the formula for the volume of a cylinder: V = πr²h. 
+
+You can modify the radius and height variables in the example usage section to calculate the volume of different cylinders.

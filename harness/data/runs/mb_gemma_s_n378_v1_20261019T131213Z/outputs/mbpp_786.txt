@@ -1,0 +1,27 @@
+```python
+def right_insertion(nums, target):
+    """
+    Locates the right insertion point for a specified value in sorted order.
+
+    Args:
+        nums: A sorted list of numbers.
+        target: The value to insert.
+
+    Returns:
+        The index where the target should be inserted to maintain sorted order.
+    """
+    left, right = 0, len(nums)
+    while left < right:
+        mid = (left + right) // 2
+        if nums[mid] <= target:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+# Example usage and assertion
+assert right_insertion([1, 2, 4, 5], 6) == 4
+assert right_insertion([1, 2, 4, 5], 1) == 1
+assert right_insertion([1, 2, 4, 5], 3) == 2
+assert right_insertion([1, 2, 4, 5], 0) == 0
+```

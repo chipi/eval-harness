@@ -1,0 +1,11 @@
+```python
+def hexagonal_num(n):
+    return n * (2 * n - 1)
+
+# Test cases
+assert hexagonal_num(10) == 190
+assert hexagonal_num(20) == 1012
+assert hexagonal_num(30) == 1656
+assert hexagonal_num(40) == 2220
+assert hexagonal_num(50) == 2860
+```

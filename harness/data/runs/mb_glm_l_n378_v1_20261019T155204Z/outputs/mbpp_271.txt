@@ -1,0 +1,41 @@
+```python
+def even_Power_Sum(n):
+    """
+    Takes in an integer n and finds the sum of the first n even natural numbers 
+    that are raised to the fifth power.
+    
+    The first n even natural numbers are: 2, 4, 6, ..., 2n.
+    The function calculates: 2^5 + 4^5 + 6^5 + ... + (2n)^5.
+    
+    Args:
+        n (int): The number of even natural numbers to sum.
+        
+    Returns:
+        int: The sum of the first n even natural numbers raised to the fifth power.
+    """
+    total_sum = 0
+    
+    # Iterate from 1 to n to generate the first n even numbers
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        total_sum += even_number ** 5
+        
+    return total_sum
+
+# Driver code to test the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert even_Power_Sum(2) == 1056
+    print(f"even_Power_Sum(2) = {even_Power_Sum(2)}")
+    
+    # Additional test cases
+    # For n=1: 2^5 = 32
+    assert even_Power_Sum(1) == 32
+    print(f"even_Power_Sum(1) = {even_Power_Sum(1)}")
+    
+    # For n=3: 2^5 + 4^5 + 6^5 = 32 + 1024 + 7776 = 8832
+    assert even_Power_Sum(3) == 8832
+    print(f"even_Power_Sum(3) = {even_Power_Sum(3)}")
+    
+    print("All assertions passed.")
+```

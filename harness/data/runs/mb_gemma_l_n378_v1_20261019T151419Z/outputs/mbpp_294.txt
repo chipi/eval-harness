@@ -1,0 +1,24 @@
+```python
+def max_val(lst):
+    """
+    Finds the maximum value in a heterogeneous list.
+    Only numeric values (int, float) are considered for the maximum.
+    """
+    # Filter the list to keep only integers and floats
+    numeric_values = [x for x in lst if isinstance(x, (int, float))]
+    
+    # If the list contains numeric values, return the max; otherwise return None
+    return max(numeric_values) if numeric_values else None
+
+# Test the function
+if __name__ == "__main__":
+    # Provided test case
+    assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+    
+    # Additional test cases
+    assert max_val([10, 'apple', 20.5, 'orange']) == 20.5
+    assert max_val(['a', 'b', 'c']) is None
+    assert max_val([1, 2, 3]) == 3
+    
+    print("All tests passed!")
+```

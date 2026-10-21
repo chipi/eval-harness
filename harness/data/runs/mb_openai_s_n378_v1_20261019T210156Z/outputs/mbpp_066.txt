@@ -1,0 +1,19 @@
+```python
+def pos_count(nums):
+    """
+    Count the number of positive numbers in a list.
+
+    Args:
+        nums (list of int/float): The input list.
+
+    Returns:
+        int: Number of elements greater than 0.
+    """
+    return sum(1 for x in nums if x > 0)
+
+
+# Example usage / test
+if __name__ == "__main__":
+    assert pos_count([1, -2, 3, -4]) == 2
+    print("All tests passed.")
+```

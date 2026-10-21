@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem of removing odd-indexed characters from a string:
+
+```python
+def remove_odd(s: str) -> str:
+    """Remove characters at odd indices from the input string.
+
+    Args:
+        s: Input string to process
+
+    Returns:
+        String with only even-indexed characters (0-based index)
+    """
+    return ''.join([char for i, char in enumerate(s) if i % 2 == 0])
+
+# Test the function
+assert remove_odd("python") == "yhn"
+print("Test passed!")
+
+# Additional test cases
+print(remove_odd("hello"))  # Output: "hlo"
+print(remove_odd("123456"))  # Output: "135"
+print(remove_odd(""))  # Output: ""
+```
+
+This script:
+1. Defines a function `remove_odd` that takes a string and returns a new string with only characters at even indices
+2. Uses list comprehension with `enumerate` to filter characters
+3. Includes the required test case from the problem statement
+4. Adds some additional test cases to demonstrate the function's behavior
+5. Prints a confirmation message if the test passes
+
+The function works by:
+- Iterating through each character in the string with its index
+- Keeping only characters where the index is even (0, 2, 4, etc.)
+- Joining the remaining characters into a new string

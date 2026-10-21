@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to calculate the lateral surface area of a cube.
+
+The lateral surface area of a cube is the sum of the areas of its four vertical faces.
+For a cube with side length 's', each face has an area of s², so the total lateral
+surface area is 4 * s².
+"""
+
+def lateralsurface_cube(side_length):
+    """
+    Calculate the lateral surface area of a cube.
+
+    Parameters:
+    side_length (float or int): The length of a side of the cube.
+
+    Returns:
+    float or int: The lateral surface area of the cube.
+    """
+    return 4 * side_length ** 2
+
+# Test the function with the provided assertion
+assert lateralsurface_cube(5) == 100, "Test failed: lateralsurface_cube(5) should return 100"
+
+# Example usage
+if __name__ == "__main__":
+    side = 5
+    area = lateralsurface_cube(side)
+    print(f"The lateral surface area of a cube with side length {side} is {area}.")
+```
+
+This script:
+1. Defines the `lateralsurface_cube` function that calculates the lateral surface area
+2. Includes the assertion test as requested
+3. Has a docstring explaining the function
+4. Includes an example usage when run directly
+5. Will raise an AssertionError if the test fails (though in this case it will pass)

@@ -1,0 +1,51 @@
+```python
+def pack_consecutive_duplicates(lst):
+    """
+    Packs consecutive duplicates of a given list elements into sublists.
+    
+    Args:
+        lst (list): The input list containing elements to be packed.
+        
+    Returns:
+        list of lists: A list where consecutive identical elements are grouped together.
+    """
+    if not lst:
+        return []
+
+    result = []
+    if len(lst) == 0:
+        return result
+
+    # Initialize the first sublist with the first element
+    current_group = [lst[0]]
+
+    for i in range(1, len(lst)):
+        # If the current element is the same as the previous one, add to current group
+        if lst[i] == lst[i-1]:
+            current_group.append(lst[i])
+        else:
+            # Otherwise, close the current group and start a new one
+            result.append(current_group)
+            current_group = [lst[i]]
+    
+    # Append the last group processed
+    result.append(current_group)
+    
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]
+    expected_output = [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+    
+    actual_output = pack_consecutive_duplicates(input_list)
+    
+    assert actual_output == expected_output, f"Expected {expected_output}, but got {actual_output}"
+    
+    # Additional edge cases
+    assert pack_consecutive_duplicates([]) == []
+    assert pack_consecutive_duplicates([1, 1, 1]) == [[1, 1, 1]]
+    assert pack_consecutive_duplicates([1, 2, 3]) == [[1], [2], [3]]
+    
+    print("All tests passed!")
+```

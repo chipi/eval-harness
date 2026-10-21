@@ -1,0 +1,56 @@
+```python
+def rotate_right(lst, n):
+    """
+    Rotates a list to the right by a specified number of items.
+
+    Args:
+        lst (list): The list to be rotated.
+        n (int): The number of items to rotate to the right.
+
+    Returns:
+        list: The rotated list.
+    """
+    # Handle cases where n is larger than the list length or negative
+    # Using modulo to find the effective rotation count
+    effective_rotation = n % len(lst)
+    
+    # If the effective rotation is 0, the list remains unchanged
+    if effective_rotation == 0:
+        return lst
+        
+    # Slicing the list:
+    # 1. Take the last 'effective_rotation' elements.
+    # 2. Take all elements before the last 'effective_rotation' elements.
+    # 3. Concatenate the two slices.
+    return lst[-effective_rotation:] + lst[:-effective_rotation]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    rotation_steps = 3
+    expected_output = [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+    
+    result = rotate_right(input_list, rotation_steps)
+    
+    print(f"Original list: {input_list}")
+    print(f"Rotating right by {rotation_steps} steps.")
+    print(f"Result: {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output, f"Test failed: Expected {expected_output}, but got {result}"
+    print("Test passed!")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    # Test with rotation count larger than list length
+    assert rotate_right([1, 2, 3, 4], 6) == [3, 4, 1, 2]
+    print("Test 1 (large n) passed!")
+
+    # Test with rotation count of 0
+    assert rotate_right([1, 2, 3, 4], 0) == [1, 2, 3, 4]
+    print("Test 2 (n=0) passed!")
+
+    # Test with a single-element list
+    assert rotate_right([100], 5) == [100]
+    print("Test 3 (single element) passed!")
+```

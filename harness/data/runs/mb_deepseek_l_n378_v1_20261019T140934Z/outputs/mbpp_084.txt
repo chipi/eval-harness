@@ -1,0 +1,62 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sequence(n):
+    """
+    Find the nth number in the Newman-Conway sequence.
+    
+    The Newman-Conway sequence is defined as:
+    P(1) = 1
+    P(2) = 1
+    P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+    
+    Args:
+        n: The position in the sequence (1-indexed)
+    
+    Returns:
+        The nth number in the Newman-Conway sequence
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    # Base cases
+    if n == 1 or n == 2:
+        return 1
+    
+    # Initialize the sequence array
+    seq = [0] * (n + 1)
+    seq[1] = 1
+    seq[2] = 1
+    
+    # Fill the sequence using the recurrence relation
+    for i in range(3, n + 1):
+        seq[i] = seq[seq[i-1]] + seq[i - seq[i-1]]
+    
+    return seq[n]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given example
+    result = sequence(10)
+    print(f"sequence(10) = {result}")
+    assert sequence(10) == 6, f"Expected 6, but got {result}"
+    
+    # Additional test cases
+    print(f"sequence(1) = {sequence(1)}")
+    print(f"sequence(2) = {sequence(2)}")
+    print(f"sequence(3) = {sequence(3)}")
+    print(f"sequence(4) = {sequence(4)}")
+    print(f"sequence(5) = {sequence(5)}")
+    print(f"sequence(6) = {sequence(6)}")
+    print(f"sequence(7) = {sequence(7)}")
+    
+    print("All tests passed!")
+```
+
+This script implements the Newman-Conway sequence using dynamic programming. The sequence follows the recurrence relation:
+- P(1) = 1
+- P(2) = 1
+- P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+
+The function uses an array to store previously computed values, making it efficient for finding any nth number in the sequence. The test case `sequence(10) == 6` is verified, and additional test cases are included to demonstrate the function works correctly.

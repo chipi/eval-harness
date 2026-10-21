@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to check whether the given two integers have opposite sign or not.
+assert opposite_Signs(1,-2) == True
+"""
+
+def opposite_Signs(a, b):
+    """
+    Check if two integers have opposite signs.
+
+    Args:
+        a (int): First integer
+        b (int): Second integer
+
+    Returns:
+        bool: True if signs are opposite, False otherwise
+    """
+    return (a > 0 and b < 0) or (a < 0 and b > 0)
+
+# Test cases
+assert opposite_Signs(1, -2) == True
+assert opposite_Signs(-3, 4) == True
+assert opposite_Signs(5, 6) == False
+assert opposite_Signs(-7, -8) == False
+assert opposite_Signs(0, 5) == False  # 0 is considered positive in this context
+assert opposite_Signs(-9, 0) == False
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `opposite_Signs` that checks if two integers have opposite signs
+2. Includes the required test case from the problem statement
+3. Adds additional test cases to verify edge cases
+4. Prints a confirmation message if all tests pass
+
+The function works by checking two conditions:
+- If the first number is positive and the second is negative
+- Or if the first number is negative and the second is positive
+
+The function returns True if either condition is met, indicating opposite signs.

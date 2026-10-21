@@ -1,0 +1,37 @@
+```python
+def get_equal(tuples_list):
+    """
+    Check if all tuples in the given list have the same length.
+
+    Args:
+        tuples_list (list of tuple): List of tuples to check.
+
+    Returns:
+        bool: True if all tuples have equal length, False otherwise.
+    """
+    if not tuples_list:  # Empty list case
+        return True
+    
+    # Get the length of the first tuple
+    first_length = len(tuples_list[0])
+    
+    # Compare all other tuples' lengths to the first one
+    for tup in tuples_list[1:]:
+        if len(tup) != first_length:
+            return False
+    
+    return True
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert get_equal([(11, 22, 33), (44, 55, 66)]) == True
+    print("Test passed!")
+    
+    # Additional tests
+    assert get_equal([(1, 2), (3, 4), (5, 6)]) == True
+    assert get_equal([(1, 2, 3), (4, 5)]) == False
+    assert get_equal([]) == True
+    assert get_equal([(1,)]) == True
+    print("All additional tests passed!")
+```

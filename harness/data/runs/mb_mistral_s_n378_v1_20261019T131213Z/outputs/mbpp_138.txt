@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem of checking whether a given number can be represented as the sum of non-zero powers of 2:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check if the given number can be represented as the sum of non-zero powers of 2.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number can be represented as the sum of non-zero powers of 2, False otherwise.
+    """
+    if n <= 0:
+        return False
+
+    # The number can be represented as the sum of non-zero powers of 2
+    # if and only if it has no consecutive 1's in its binary representation
+    binary = bin(n)[2:]  # Get binary representation without '0b' prefix
+    for i in range(len(binary) - 1):
+        if binary[i] == '1' and binary[i+1] == '1':
+            return False
+    return True
+
+# Test cases
+assert is_Sum_Of_Powers_Of_Two(10) == True  # 10 = 8 + 2 (2^3 + 2^1)
+assert is_Sum_Of_Powers_Of_Two(15) == False  # 15 = 8 + 4 + 2 + 1 (has consecutive 1's in binary)
+assert is_Sum_Of_Powers_Of_Two(1) == True   # 1 = 1 (2^0)
+assert is_Sum_Of_Powers_Of_Two(0) == False  # 0 cannot be represented as sum of non-zero powers
+assert is_Sum_Of_Powers_Of_Two(5) == True   # 5 = 4 + 1 (2^2 + 2^0)
+assert is_Sum_Of_Powers_Of_Two(7) == False  # 7 = 4 + 2 + 1 (has consecutive 1's in binary)
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `is_Sum_Of_Powers_Of_Two` checks if the given number `n` can be represented as the sum of non-zero powers of 2.
+2. The key insight is that a number can be represented as the sum of non-zero powers of 2 if and only if its binary representation has no consecutive 1's. This is because consecutive 1's in binary would imply the presence of a power of 2 that is not a single bit (e.g., 3 in binary is `11`, which is 2 + 1, but 2 is not a power of 2 in this context).
+3. The function converts the number to its binary representation and checks for consecutive 1's. If any are found, it returns `False`; otherwise, it returns `True`.
+4. The test cases verify the correctness of the function.

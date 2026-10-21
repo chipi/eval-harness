@@ -1,0 +1,17 @@
+```python
+def div_list(list1, list2):
+    """
+    Divides two lists element-wise.
+
+    Args:
+        list1: First list of numbers (numerator)
+        list2: Second list of numbers (denominator)
+
+    Returns:
+        A new list with element-wise division results
+    """
+    return [a / b for a, b in zip(list1, list2)]
+
+# Test case
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+```

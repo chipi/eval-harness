@@ -1,0 +1,50 @@
+### Sum of Common Divisors Function
+#### Problem Statement
+Write a Python function to find the sum of common divisors of two given numbers.
+
+#### Solution
+
+```python
+def sum_common_divisors(num1, num2):
+    """
+    This function calculates the sum of common divisors of two given numbers.
+
+    Args:
+        num1 (int): The first number.
+        num2 (int): The second number.
+
+    Returns:
+        int: The sum of common divisors.
+    """
+    def get_divisors(n):
+        """Helper function to get divisors of a number."""
+        divisors = set()
+        for i in range(1, int(n**0.5) + 1):
+            if n % i == 0:
+                divisors.add(i)
+                divisors.add(n // i)
+        return divisors
+
+    # Get divisors for both numbers
+    divisors_num1 = get_divisors(num1)
+    divisors_num2 = get_divisors(num2)
+
+    # Find common divisors
+    common_divisors = divisors_num1 & divisors_num2
+
+    # Return the sum of common divisors
+    return sum(common_divisors)
+
+
+# Example usage:
+assert sum_common_divisors(10, 15) == 6
+```
+
+#### Explanation
+
+*   The `sum_common_divisors` function takes two numbers as input and calculates their common divisors.
+*   It uses a helper function `get_divisors` to find all divisors of a given number.
+*   The `get_divisors` function iterates up to the square root of the number to optimize the process.
+*   It returns the sum of common divisors.
+
+You can run this script and verify the result using the provided assertion.

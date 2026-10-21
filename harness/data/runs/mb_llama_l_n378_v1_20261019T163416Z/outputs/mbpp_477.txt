@@ -1,0 +1,10 @@
+```python
+def is_lower(s):
+    return s.lower()
+
+def main():
+    print(is_lower("InValid"))  # Should print: invalid
+
+if __name__ == "__main__":
+    main()
+```

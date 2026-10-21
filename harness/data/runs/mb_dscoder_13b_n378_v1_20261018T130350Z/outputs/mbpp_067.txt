@@ -1,0 +1,21 @@
+```python
+def bell_number(n):
+    """
+    Write a function to find the number of ways to partition a set of Bell numbers.
+    bell_number(2)==2
+    """
+    # Initialize the first two Bell numbers
+    bell = [1, 1]
+
+    # Calculate the next Bell numbers
+    for i in range(2, n+1):
+        bell.append(sum(bell[j] for j in range(i)))
+
+    return bell[n]
+
+# Test cases
+assert bell_number(2)==2
+assert bell_number(3)==5
+assert bell_number(4)==14
+assert bell_number(5)==42
+```

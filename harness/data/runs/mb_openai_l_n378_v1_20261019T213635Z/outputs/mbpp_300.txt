@@ -1,0 +1,14 @@
+```python
+import math
+
+
+def count_binary_seq(n):
+    """Count length-2n binary sequences whose two halves have equal sums."""
+    if n < 0:
+        raise ValueError("n must be nonnegative")
+    # Sum_k C(n, k)^2 = C(2n, n).
+    return math.comb(2 * n, n)
+
+
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```

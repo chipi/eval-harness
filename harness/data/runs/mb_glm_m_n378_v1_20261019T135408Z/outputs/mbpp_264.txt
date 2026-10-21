@@ -1,0 +1,36 @@
+```python
+def dog_age(human_years: int) -> int:
+    """
+    Calculate a dog's age in dog years.
+    
+    The standard formula for calculating a dog's age in dog years is:
+    - The first human year counts as 15 dog years.
+    - The second human year counts as 9 dog years.
+    - Each subsequent human year counts as 5 dog years.
+    
+    Args:
+        human_years (int): The age of the dog in human years.
+        
+    Returns:
+        int: The equivalent age in dog years.
+    """
+    if human_years <= 0:
+        return 0
+    elif human_years == 1:
+        return 15
+    elif human_years == 2:
+        return 24  # 15 + 9
+    else:
+        return 24 + (human_years - 2) * 5
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert dog_age(12) == 61
+    print("Assertion passed: dog_age(12) == 61")
+    
+    # Additional test cases
+    assert dog_age(1) == 15
+    assert dog_age(2) == 24
+    assert dog_age(3) == 29
+    print("All additional tests passed!")
+```

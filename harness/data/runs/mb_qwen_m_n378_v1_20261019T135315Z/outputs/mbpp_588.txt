@@ -1,0 +1,32 @@
+```python
+def big_diff(nums: list) -> int:
+    """
+    Find the difference between the largest and smallest value in a given list.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        The difference between the maximum and minimum values in the list
+        
+    Examples:
+        >>> big_diff([1, 2, 3, 4])
+        3
+        >>> big_diff([10, 3, 5, 6])
+        7
+        >>> big_diff([7, 2, 10, 9])
+        8
+    """
+    if not nums:
+        raise ValueError("List cannot be empty")
+    
+    return max(nums) - min(nums)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert big_diff([1, 2, 3, 4]) == 3
+    assert big_diff([10, 3, 5, 6]) == 7
+    assert big_diff([7, 2, 10, 9]) == 8
+    print("All tests passed!")
+```

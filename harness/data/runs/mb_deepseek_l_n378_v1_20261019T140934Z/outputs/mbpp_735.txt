@@ -1,0 +1,32 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def toggle_middle_bits(n: int) -> int:
+    """
+    Toggle all bits of the number except the first (most significant) and last (least significant) bits.
+    
+    Args:
+        n (int): Input integer.
+    
+    Returns:
+        int: Number with middle bits toggled.
+    """
+    if n == 0:
+        return 0
+    
+    # Find the position of the most significant bit
+    msb_pos = n.bit_length() - 1
+    
+    # Create a mask with 1s in all middle bit positions
+    # The mask has 1s from position 1 to msb_pos-1
+    mask = ((1 << msb_pos) - 1) ^ 1
+    
+    # Toggle the middle bits using XOR
+    return n ^ mask
+
+
+# Test the function
+if __name__ == "__main__":
+    assert toggle_middle_bits(9) == 15
+    print("Test passed!")
+```

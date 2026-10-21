@@ -1,0 +1,43 @@
+```python
+import re
+
+
+def start_withp(words_list: list) -> tuple:
+    """
+    Return two words from a list of words starting with letter 'p'.
+    
+    Args:
+        words_list: A list of strings, where each string may contain multiple words.
+        
+    Returns:
+        A tuple of two words that start with 'p' or 'P'.
+        
+    Example:
+        >>> start_withp(["Python PHP", "Java JavaScript", "c c++"])
+        ('Python', 'PHP')
+    """
+    p_words = []
+    for phrase in words_list:
+        # Split each phrase into individual words
+        words = phrase.split()
+        for word in words:
+            if word.startswith('p') or word.startswith('P'):
+                p_words.append(word)
+                if len(p_words) == 2:
+                    return (p_words[0], p_words[1])
+    
+    # If fewer than 2 words found, return what we have padded with None or just return available
+    if len(p_words) == 1:
+        return (p_words[0], None)
+    elif len(p_words) == 0:
+        return (None, None)
+    else:
+        return (p_words[0], p_words[1])
+
+
+if __name__ == "__main__":
+    result = start_withp(["Python PHP", "Java JavaScript", "c c++"])
+    print(result)
+    assert result == ('Python', 'PHP'), f"Expected ('Python', 'PHP'), got {result}"
+    print("Test passed!")
+```

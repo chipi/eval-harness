@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_first_elements(t):
+    """
+    Counts the number of elements that occur before the first tuple element in the given tuple.
+
+    Args:
+        t: A tuple that may contain nested tuples.
+
+    Returns:
+        The count of elements before the first nested tuple, or -1 if no nested tuple is found.
+    """
+    count = 0
+    for element in t:
+        if isinstance(element, tuple):
+            return count
+        count += 1
+    return -1  # Return -1 if no nested tuple is found
+
+# Test the function
+assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+assert count_first_elements((1, 2, 3, 4)) == -1
+assert count_first_elements(((1, 2), 3, 4)) == 0
+assert count_first_elements(()) == -1
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `count_first_elements` that iterates through the tuple and counts elements until it finds the first nested tuple
+2. Returns the count of elements before the first nested tuple
+3. Returns -1 if no nested tuple is found
+4. Includes test cases to verify the function works as expected
+5. The test case from the problem statement passes as expected (returns 3 for (1, 5, 7, (4, 6), 10))

@@ -1,0 +1,7 @@
+```python
+def sort_matrix(matrix):
+    return sorted(matrix, key=sum)
+
+# Test
+assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]])==[[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+```

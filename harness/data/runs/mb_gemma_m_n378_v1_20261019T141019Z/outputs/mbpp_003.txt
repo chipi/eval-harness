@@ -1,0 +1,28 @@
+```python
+def is_not_prime(n):
+    """
+    Identifies if a number is non-prime.
+    Returns True if the number is not prime, False if it is prime.
+    """
+    # Prime numbers must be greater than 1
+    if n <= 1:
+        return True
+    
+    # Check for factors from 2 up to the square root of n
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return True  # It has a divisor, so it is not prime
+            
+    return False  # No divisors found, so it is prime
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_not_prime(2) == False
+    assert is_not_prime(3) == False
+    assert is_not_prime(4) == True
+    assert is_not_prime(1) == True
+    assert is_not_prime(17) == False
+    assert is_not_prime(25) == True
+    
+    print("All assertions passed!")
+```

@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Check if a string has an 'a' followed by anything, ending in 'b'.
+    
+    Args:
+        text (str): The input string to check
+    
+    Returns:
+        bool: True if the string matches the pattern, False otherwise
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, text))
+
+
+# Test the function
+if __name__ == "__main__":
+    assert text_starta_endb("aabbbb")
+    assert text_starta_endb("ab")
+    assert text_starta_endb("axyzb")
+    assert not text_starta_endb("ba")
+    assert not text_starta_endb("aaa")
+    assert not text_starta_endb("b")
+    assert not text_starta_endb("abc")
+    
+    print("All assertions passed!")
+```
+
+The function uses the regex pattern `^a.*b$` where:
+- `^` anchors to the start of the string
+- `a` matches the literal character 'a'
+- `.*` matches any characters (zero or more)
+- `b` matches the literal character 'b'
+- `$` anchors to the end of the string

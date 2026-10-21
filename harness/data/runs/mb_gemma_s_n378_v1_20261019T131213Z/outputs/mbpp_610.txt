@@ -1,0 +1,30 @@
+```python
+def remove_kth_element(lst, k):
+  """
+  Removes the k'th element from a list and returns a new list.
+
+  Args:
+    lst: The input list.
+    k: The index of the element to remove (1-based index).
+
+  Returns:
+    A new list with the k'th element removed.
+  """
+  if not isinstance(lst, list):
+    raise TypeError("Input must be a list.")
+  if not isinstance(k, int):
+    raise TypeError("k must be an integer.")
+  if k < 1 or k > len(lst):
+    raise ValueError("k must be within the bounds of the list (1 <= k <= len(lst)).")
+
+  new_lst = lst[:k-1] + lst[k:]
+  return new_lst
+
+# Example usage and assertion
+assert remove_kth_element([1,1,2,3,4,4,5,1],3)==[1, 1, 3, 4, 4, 5, 1]
+assert remove_kth_element([1, 2, 3], 1) == [2, 3]
+assert remove_kth_element([1, 2, 3], 3) == [1, 2]
+assert remove_kth_element([5], 1) == []
+
+print("All test cases passed!")
+```

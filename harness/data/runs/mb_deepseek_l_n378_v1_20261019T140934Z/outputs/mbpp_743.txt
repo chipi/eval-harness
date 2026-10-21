@@ -1,0 +1,17 @@
+Here’s a self-contained Python script with the rotation function and an assertion to verify the result:
+
+```python
+def rotate_right(lst, n):
+    """
+    Rotates a list to the right by n positions.
+    """
+    if not lst:
+        return lst
+    n = n % len(lst)  # Handle cases where n is larger than list length
+    return lst[-n:] + lst[:-n]
+
+
+# Test case from the problem statement
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+print("Assertion passed!")
+```

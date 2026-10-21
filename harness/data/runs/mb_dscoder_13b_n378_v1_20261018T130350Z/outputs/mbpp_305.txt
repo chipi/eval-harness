@@ -1,0 +1,11 @@
+```python
+def start_withp(word_list):
+    result = []
+    for word in word_list:
+        if word.startswith('p'):
+            result.append(word)
+    return tuple(result)
+
+# Testing the function
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"])==('Python', 'PHP')
+```

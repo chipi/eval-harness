@@ -1,0 +1,41 @@
+```python
+"""
+Write a function to add a dictionary to the tuple. The output should be a tuple.
+assert add_dict_to_tuple((4, 5, 6), {"MSAM" : 1, "is" : 2, "best" : 3} ) == (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+"""
+
+
+def add_dict_to_tuple(test_tup, test_dict):
+    """
+    Append a dictionary to a tuple and return the result as a new tuple.
+
+    Parameters
+    ----------
+    test_tup : tuple
+        The original tuple.
+    test_dict : dict
+        The dictionary to append.
+
+    Returns
+    -------
+    tuple
+        A new tuple consisting of the original elements followed by the dictionary.
+    """
+    return tuple(test_tup) + (test_dict,)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert add_dict_to_tuple((4, 5, 6), {"MSAM": 1, "is": 2, "best": 3}) == (
+        4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3}
+    )
+
+    # A few more checks
+    assert add_dict_to_tuple((1, 2, 3), {"UTS": 2, "is": 4, "Worst": 3}) == (
+        1, 2, 3, {'UTS': 2, 'is': 4, 'Worst': 3}
+    )
+    assert add_dict_to_tuple((), {}) == ({},)
+
+    print(add_dict_to_tuple((4, 5, 6), {"MSAM": 1, "is": 2, "best": 3}))
+    print("All tests passed!")
+```

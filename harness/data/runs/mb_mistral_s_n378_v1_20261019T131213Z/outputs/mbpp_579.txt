@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem of finding dissimilar elements between two tuples:
+
+```python
+def find_dissimilar(tuple1, tuple2):
+    """
+    Find the dissimilar elements between two tuples.
+
+    Args:
+        tuple1: First input tuple
+        tuple2: Second input tuple
+
+    Returns:
+        A tuple containing elements that are in either tuple1 or tuple2 but not in both
+    """
+    set1 = set(tuple1)
+    set2 = set(tuple2)
+
+    # Elements in tuple1 but not in tuple2
+    dissimilar1 = set1 - set2
+    # Elements in tuple2 but not in tuple1
+    dissimilar2 = set2 - set1
+
+    # Combine and convert to a sorted tuple
+    result = tuple(sorted(dissimilar1.union(dissimilar2)))
+    return result
+
+# Test the function
+assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `find_dissimilar` that takes two tuples as input
+2. Converts each tuple to a set for efficient difference operations
+3. Finds elements that are in the first tuple but not the second, and vice versa
+4. Combines these differences and returns them as a sorted tuple
+5. Includes the test case from the problem statement to verify the function works correctly
+
+The function handles the example case correctly, returning `(3, 6, 7, 10)` as expected.

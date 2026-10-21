@@ -1,0 +1,43 @@
+### Divisibility by 11 Check
+#### Problem Statement
+Write a Python function to find whether a number is divisible by 11.
+
+#### Solution
+```python
+def is_divisible_by_11(n):
+    """
+    Checks if a number is divisible by 11.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is divisible by 11, False otherwise.
+    """
+    return n % 11 == 0
+
+# Example usage:
+print(is_divisible_by_11(12345))  # False
+print(is_divisible_by_11(121))    # True
+```
+Alternatively, for a more efficient solution using the alternating sum of digits for divisibility check:
+
+```python
+def is_divisible_by_11_alt(n):
+    """
+    Checks if a number is divisible by 11 using the alternating sum of digits.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is divisible by 11, False otherwise.
+    """
+    digits = [int(d) for d in str(n)]
+    alt_sum = sum(digits[::2]) - sum(digits[1::2])
+    return alt_sum % 11 == 0
+
+# Example usage:
+print(is_divisible_by_11_alt(12345))  # False
+print(is_divisible_by_11_alt(121))    # True
+```

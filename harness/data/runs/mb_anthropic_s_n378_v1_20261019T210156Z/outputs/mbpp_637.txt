@@ -1,0 +1,26 @@
+```python
+def noprofit_noloss(cost_price, selling_price):
+    """
+    Check whether the given amount has no profit and no loss.
+    
+    Args:
+        cost_price: The cost price of an item
+        selling_price: The selling price of an item
+    
+    Returns:
+        True if there is no profit and no loss (cost_price == selling_price)
+        False otherwise
+    """
+    return cost_price == selling_price
+
+
+# Test cases
+assert noprofit_noloss(1500, 1200) == False
+assert noprofit_noloss(1000, 1000) == True
+assert noprofit_noloss(500, 600) == False
+assert noprofit_noloss(2000, 2000) == True
+
+print("All assertions passed!")
+```
+
+The function `noprofit_noloss` checks if the cost price equals the selling price. When they are equal, there is no profit and no loss, so it returns `True`. Otherwise, it returns `False`.

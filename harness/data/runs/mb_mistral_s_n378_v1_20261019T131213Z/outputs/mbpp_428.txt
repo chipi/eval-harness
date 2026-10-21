@@ -1,0 +1,36 @@
+Here's a self-contained Python script that implements the Shell Sort algorithm and includes the provided assertion test:
+
+```python
+def shell_sort(arr):
+    n = len(arr)
+    # Start with a large gap, then reduce the gap
+    gap = n // 2
+
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size
+        for i in range(gap, n):
+            # Save the current element to be inserted
+            temp = arr[i]
+            j = i
+            # Shift earlier gap-sorted elements up until the correct location is found
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            # Put the original arr[i] in its correct location
+            arr[j] = temp
+        gap //= 2
+
+    return arr
+
+# Test the function
+assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+print("Test passed!")
+```
+
+This script:
+1. Implements the Shell Sort algorithm with a gap sequence that starts at n//2 and halves each iteration
+2. Uses insertion sort for each gap size
+3. Includes the provided assertion test case
+4. Prints a confirmation message if the test passes
+
+The Shell Sort algorithm works by first sorting elements that are far apart from each other and progressively reducing the gap between elements to be compared until the entire array is sorted. This makes it more efficient than simple insertion sort for medium-sized arrays.

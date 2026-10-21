@@ -1,0 +1,27 @@
+```python
+def sum_Of_product(n):
+    """
+    Write a python function to find the sum of the product of consecutive binomial co-efficients.
+    assert sum_Of_product(3) == 15
+    """
+    def binomial_coefficient(n, k):
+        if k < 0 or k > n:
+            return 0
+        if k == 0 or k == n:
+            return 1
+        if k > n // 2:
+            k = n - k
+        res = 1
+        for i in range(k):
+            res = res * (n - i) // (i + 1)
+        return res
+
+    sum_prod = 0
+    for i in range(n):
+        sum_prod += binomial_coefficient(n, i) * binomial_coefficient(n, i + 1)
+    return sum_prod
+
+if __name__ == '__main__':
+    assert sum_Of_product(3) == 15
+    print("All test cases passed")
+```

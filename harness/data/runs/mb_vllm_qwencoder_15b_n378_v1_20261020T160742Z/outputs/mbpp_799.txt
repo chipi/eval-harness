@@ -1,0 +1,25 @@
+```python
+def left_rotate(num, d):
+    """
+    Rotate left bits by d bits a given number. We assume that the number is 32 bit.
+    
+    Args:
+    num (int): The number to be rotated.
+    d (int): The number of bits to rotate the number to the left.
+    
+    Returns:
+    int: The result of rotating the number to the left by d bits.
+    """
+    # Ensure d is within the range [0, 31]
+    d = d % 32
+    
+    # Perform the rotation using bitwise operations
+    return ((num << d) | (num >> (32 - d)))
+
+# Test cases to verify the correctness of the solution
+assert left_rotate(16, 2) == 64
+assert left_rotate(8, 5) == 32
+assert left_rotate(1, 7) == 128
+assert left_rotate(255, 1) == 512
+assert left_rotate(0, 31) == 0
+```

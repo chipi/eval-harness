@@ -1,0 +1,43 @@
+```python
+def max_sub_array_sum(arr, n):
+    """
+    Finds the sum of the largest contiguous sublist using Kadane's Algorithm.
+    
+    Args:
+        arr (list): The list of integers.
+        n (int): The length of the list.
+        
+    Returns:
+        int: The maximum sum found.
+    """
+    # Initialize max_so_far with a very small number to handle lists with all negative numbers
+    # Initialize current_max to 0
+    max_so_far = float('-inf')
+    current_max = 0
+    
+    for i in range(n):
+        current_max += arr[i]
+        
+        # Update max_so_far if current_max is greater
+        if max_so_far < current_max:
+            max_so_far = current_max
+            
+        # If current_max becomes negative, reset it to 0
+        if current_max < 0:
+            current_max = 0
+            
+    return max_so_far
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [-2, -3, 4, -1, -2, 1, 5, -3]
+    length = len(test_list)
+    result = max_sub_array_sum(test_list, length)
+    
+    print(f"List: {test_list}")
+    print(f"Maximum contiguous sum: {result}")
+    
+    # Assertion check
+    assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+    print("Assertion passed!")
+```

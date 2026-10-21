@@ -1,0 +1,38 @@
+```python
+def second_smallest(lst: list) -> int | float:
+    """
+    Find the second smallest number in a list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The second smallest unique value in the list
+        
+    Raises:
+        ValueError: If the list has fewer than 2 unique elements
+    """
+    if not lst or len(lst) < 2:
+        raise ValueError("List must contain at least 2 elements")
+    
+    # Get unique values and sort them
+    unique_values = sorted(set(lst))
+    
+    if len(unique_values) < 2:
+        raise ValueError("List must contain at least 2 unique elements")
+    
+    return unique_values[1]
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+    
+    # Additional test cases
+    assert second_smallest([1, 1, 2, 2, 3]) == 2
+    assert second_smallest([5, 1]) == 5
+    assert second_smallest([-1, -2, -3]) == -2
+    assert second_smallest([1, 2, 3, 4, 5]) == 2
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def all_Characters_Same(s):
+    """Check if all characters in the string are the same."""
+    if not s:  # Handle empty string case
+        return True
+    first_char = s[0]
+    return all(char == first_char for char in s)
+
+# Test case
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("aaaa") == True
+assert all_Characters_Same("a") == True
+assert all_Characters_Same("") == True
+```
+
+The function works by:
+1. First checking if the string is empty (returns True for empty string)
+2. Taking the first character as reference
+3. Using Python's `all()` function to check if every character in the string matches the first character
+4. Returns True if all characters are the same, False otherwise
+
+The test cases verify:
+- A string with different characters ("python") returns False
+- A string with all same characters ("aaaa") returns True
+- A single-character string ("a") returns True
+- An empty string ("") returns True

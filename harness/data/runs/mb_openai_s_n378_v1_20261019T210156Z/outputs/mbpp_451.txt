@@ -1,0 +1,9 @@
+```python
+def remove_whitespaces(s: str) -> str:
+    return "".join(s.split())
+
+
+if __name__ == "__main__":
+    assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+    print("All tests passed.")
+```

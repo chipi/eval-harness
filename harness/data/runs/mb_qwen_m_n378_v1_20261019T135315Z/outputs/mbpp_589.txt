@@ -1,0 +1,50 @@
+```python
+import math
+
+
+def perfect_squares(a: int, b: int) -> list:
+    """
+    Find all perfect squares between two given numbers (inclusive).
+    
+    Args:
+        a: The lower bound
+        b: The upper bound
+    
+    Returns:
+        A list of perfect squares between a and b (inclusive)
+    
+    Examples:
+        >>> perfect_squares(1, 30)
+        [1, 4, 9, 16, 25]
+    """
+    # Ensure a <= b
+    if a > b:
+        a, b = b, a
+    
+    # Find the smallest integer whose square is >= a
+    start = math.ceil(math.sqrt(max(0, a)))
+    # Find the largest integer whose square is <= b
+    end = math.floor(math.sqrt(b))
+    
+    result = []
+    for i in range(start, end + 1):
+        square = i * i
+        if a <= square <= b:
+            result.append(square)
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert perfect_squares(1, 30) == [1, 4, 9, 16, 25], f"Test failed: {perfect_squares(1, 30)}"
+    
+    # Additional tests
+    assert perfect_squares(0, 1) == [0, 1]
+    assert perfect_squares(5, 10) == [9]
+    assert perfect_squares(17, 24) == []
+    assert perfect_squares(100, 100) == [100]
+    assert perfect_squares(30, 1) == [1, 4, 9, 16, 25]  # Should handle reversed bounds
+    
+    print("All tests passed!")
+```

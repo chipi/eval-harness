@@ -1,0 +1,17 @@
+```python
+def sample_nam(names):
+    """
+    Sum the length of names that start with an uppercase letter.
+    
+    Args:
+        names: A list of name strings
+        
+    Returns:
+        The sum of lengths of names starting with uppercase letters
+    """
+    total = 0
+    for name in names:
+        if name and name[0].isupper():
+            total += len(name)
+    return total
+```

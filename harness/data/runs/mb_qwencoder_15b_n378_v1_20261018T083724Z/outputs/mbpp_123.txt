@@ -1,0 +1,24 @@
+```python
+def amicable_numbers_sum(n):
+    def get_divisors(num):
+        divisors = [1]
+        for i in range(2, int(num**0.5) + 1):
+            if num % i == 0:
+                divisors.append(i)
+                if i != num // i:
+                    divisors.append(num // i)
+        return divisors
+
+    amicable_pairs = []
+    for i in range(1, n + 1):
+        divs_i = get_divisors(i)
+        divs_j = get_divisors(sum(divs_i))
+        if i != j and set(divs_i) == set(divs_j):
+            amicable_pairs.append((i, j))
+
+    return sum(x + y for x, y in amicable_pairs)
+
+# Test cases
+assert amicable_numbers_sum(999) == 504
+```
+

@@ -1,0 +1,20 @@
+```python
+def polar_rect(rho, theta):
+    """
+    Convert polar coordinates to rectangular coordinates.
+
+    Args:
+    rho (float): The radial distance from the origin.
+    theta (float): The angle in radians.
+
+    Returns:
+    tuple: A tuple containing the rectangular coordinates (x, y).
+    """
+    x = rho * math.cos(theta)
+    y = rho * math.sin(theta)
+    return (x, y)
+
+# Test cases
+assert polar_rect(3, 4) == ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+```
+

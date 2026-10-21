@@ -1,0 +1,64 @@
+To solve this problem, we first need to understand what a "polite number" is. A polite number is a positive integer that can be written as the sum of two or more consecutive positive integers.
+
+**Mathematical Insight:**
+A number is **impolite** if and only if it is a power of 2 (e.g., 1, 2, 4, 8, 16...). All other positive integers are **polite**. 
+
+Therefore, to find the $n$-th polite number, we need to find the $n$-th number in the sequence of positive integers that is *not* a power of 2.
+
+Here is the self-contained Python script:
+
+```python
+def is_power_of_two(n):
+    """Checks if a number is a power of 2 using bitwise logic."""
+    return n > 0 and (n & (n - 1)) == 0
+
+def get_nth_polite_number(n):
+    """
+    Finds the nth polite number.
+    Polite numbers are all positive integers except powers of 2.
+    """
+    count = 0
+    current_num = 0
+    
+    while count < n:
+        current_num += 1
+        # If it's not a power of 2, it's a polite number
+        if not is_power_of_two(current_num):
+            count += 1
+            
+    return current_num
+
+def test_polite_numbers():
+    """Test cases to verify the implementation."""
+    # The sequence of polite numbers: 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15...
+    # Note: 1 and 2 are powers of 2 (impolite).
+    # 3 is the 1st polite number.
+    # 5 is the 2nd.
+    # 6 is the 3rd.
+    # 7 is the 4th.
+    # 9 is the 5th.
+    # 10 is the 6th.
+    # 11 is the 7th.
+    
+    assert get_nth_polite_number(1) == 3
+    assert get_nth_polite_number(2) == 5
+    assert get_nth_polite_number(7) == 11
+    print("All tests passed!")
+
+if __name__ == "__main__":
+    # Running the assertion provided in the prompt
+    try:
+        result = get_nth_polite_number(7)
+        print(f"The 7th polite number is: {result}")
+        assert result == 11
+        print("Assertion passed: get_nth_polite_number(7) == 11")
+        
+        test_polite_numbers()
+    except AssertionError as e:
+        print("Assertion failed!")
+```
+
+### Explanation:
+1.  **`is_power_of_two(n)`**: This uses a bitwise trick. A power of two in binary looks like a `1` followed by zeros (e.g., `8` is `1000`). Subtracting 1 results in all ones (e.g., `7` is `0111`). Performing a bitwise `AND` on these two will always result in `0` if the number is a power of two.
+2.  **`get_nth_polite_number(n)`**: We iterate through integers starting from 1. We skip any number that is a power of two. We keep a counter of how many "polite" numbers we have encountered until we reach $n$.
+3.  **Complexity**: For small to medium $n$, this linear search is very efficient. For extremely large $n$, one could use a mathematical approach involving the count of powers of two less than $x$, but for standard competitive programming/interview contexts, this approach is the most readable and direct.

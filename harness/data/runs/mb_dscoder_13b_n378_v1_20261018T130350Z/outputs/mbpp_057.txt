@@ -1,0 +1,11 @@
+```python
+def find_Max_Num(lst):
+    return int(''.join(map(str, sorted(lst, reverse=True))))
+
+# Test cases
+assert find_Max_Num([1,2,3]) == 321
+assert find_Max_Num([9,8,7,6,5,4,3,2,1]) == 97654321
+assert find_Max_Num([1,1,1,1,1]) == 11111
+assert find_Max_Num([0,0,0,0,0]) == 0
+assert find_Max_Num([9,8,7,5,5,5,5,5,5]) == 987555555
+```

@@ -1,0 +1,69 @@
+```python
+def cube_sum(n):
+    """
+    This function calculates the sum of cubes of first n even natural numbers.
+
+    Args:
+        n (int): The number of even natural numbers.
+
+    Returns:
+        int: The sum of cubes of first n even natural numbers.
+    """
+    # Generate the first n even natural numbers
+    even_numbers = [i for i in range(2, 2 * n + 1, 2)]
+    
+    # Calculate the sum of cubes of these numbers
+    sum_of_cubes = sum([num ** 3 for num in even_numbers])
+    
+    return sum_of_cubes
+
+# Test the function
+assert cube_sum(2) == 72
+print("All tests passed.")
+```
+
+You can run this script to test the `cube_sum` function. The `assert` statement checks if the function returns the expected result for the input `2`. If the function works correctly, the script will print "All tests passed." 
+
+Alternatively, you can also write the function in a more mathematical way:
+
+```python
+def cube_sum(n):
+    """
+    This function calculates the sum of cubes of first n even natural numbers.
+
+    Args:
+        n (int): The number of even natural numbers.
+
+    Returns:
+        int: The sum of cubes of first n even natural numbers.
+    """
+    # Calculate the sum of cubes of first n even natural numbers
+    sum_of_cubes = sum((2 * i) ** 3 for i in range(1, n + 1))
+    
+    return sum_of_cubes
+
+# Test the function
+assert cube_sum(2) == 72
+print("All tests passed.")
+```
+
+Or even more concise:
+
+```python
+def cube_sum(n):
+    """
+    This function calculates the sum of cubes of first n even natural numbers.
+
+    Args:
+        n (int): The number of even natural numbers.
+
+    Returns:
+        int: The sum of cubes of first n even natural numbers.
+    """
+    # Calculate the sum of cubes of first n even natural numbers
+    return 8 * sum(i ** 3 for i in range(1, n + 1))
+
+# Test the function
+assert cube_sum(2) == 72
+print("All tests passed.")
+```

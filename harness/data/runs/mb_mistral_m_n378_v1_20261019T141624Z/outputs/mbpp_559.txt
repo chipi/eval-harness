@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem using Kadane's algorithm to find the maximum sum of a contiguous subarray:
+
+```python
+def max_sub_array_sum(arr, n):
+    max_current = max_global = arr[0]
+    for i in range(1, n):
+        max_current = max(arr[i], max_current + arr[i])
+        if max_current > max_global:
+            max_global = max_current
+    return max_global
+
+# Test case
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+```
+
+This solution:
+1. Initializes two variables to track the current maximum and global maximum
+2. Iterates through the array starting from the second element
+3. For each element, decides whether to start a new subarray or continue the current one
+4. Updates the global maximum whenever a new maximum is found
+5. Returns the global maximum at the end
+
+The test case passes as the maximum contiguous subarray sum is indeed 7 (from the subarray [4, -1, -2, 1, 5]).

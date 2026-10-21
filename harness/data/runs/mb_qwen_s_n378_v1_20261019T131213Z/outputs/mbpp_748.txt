@@ -1,0 +1,34 @@
+```python
+import re
+
+def capital_words_spaces(s: str) -> str:
+    """
+    Put spaces between words starting with capital letters in a given string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with spaces inserted before capital letters (except at the beginning)
+        
+    Examples:
+        >>> capital_words_spaces("Python")
+        'Python'
+        >>> capital_words_spaces("HelloWorld")
+        'Hello World'
+        >>> capital_words_spaces("ThisIsATest")
+        'This Is A Test'
+    """
+    # Insert a space before any uppercase letter that is not at the start of the string
+    result = re.sub(r'(?<!^)(?=[A-Z])', ' ', s)
+    return result
+
+# Test cases
+if __name__ == "__main__":
+    assert capital_words_spaces("Python") == 'Python'
+    assert capital_words_spaces("HelloWorld") == 'Hello World'
+    assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+    assert capital_words_spaces("ABC") == 'A B C'
+    assert capital_words_spaces("already spaced") == 'already spaced'
+    print("All tests passed!")
+```

@@ -1,0 +1,13 @@
+```python
+def sum(a, b):
+    total = 0
+    for i in range(1, min(a, b) + 1):
+        if a % i == 0 and b % i == 0:
+            total += i
+    return total
+
+
+if __name__ == "__main__":
+    assert sum(10, 15) == 6
+    print(sum(10, 15))
+```

@@ -1,0 +1,27 @@
+```python
+def count_Pairs(nums, n):
+    """
+    Counts the number of possible unordered pairs where both elements are unequal in a list of integers.
+
+    Args:
+        nums: A list of integers.
+        n: The length of the list.
+
+    Returns:
+        The number of unordered pairs with unequal elements.
+    """
+    count = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if nums[i] != nums[j]:
+                count += 1
+    return count
+
+# Example usage and assertion
+if __name__ == '__main__':
+    assert count_Pairs([1, 2, 1], 3) == 2
+    assert count_Pairs([1, 1, 1], 3) == 0
+    assert count_Pairs([1, 2, 3], 3) == 3
+    assert count_Pairs([1, 2, 2, 3], 4) == 4
+    print("All test cases passed!")
+```

@@ -1,0 +1,6 @@
+```python
+def round_and_sum(lst):
+    rounded = [round(x) for x in lst]
+    total = sum(rounded)
+    return total * len(lst)
+```

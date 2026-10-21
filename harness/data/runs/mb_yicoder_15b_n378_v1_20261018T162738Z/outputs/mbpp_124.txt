@@ -1,0 +1,16 @@
+```python
+import math
+import cmath
+
+def angle_complex(real, imag):
+    return cmath.phase(complex(real, imag))
+
+# Test cases
+assert math.isclose(angle_complex(0,1j), 1.5707963267948966, rel_tol=0.001)
+assert math.isclose(angle_complex(1,0), 0, rel_tol=0.001)
+assert math.isclose(angle_complex(0,0), 0, rel_tol=0.001)
+assert math.isclose(angle_complex(1,1), 0.7853981633974483, rel_tol=0.001)
+assert math.isclose(angle_complex(-1,1), 0.7853981633974483, rel_tol=0.001)
+assert math.isclose(angle_complex(-1,-1), 2.356194490192344, rel_tol=0.001)
+assert math.isclose(angle_complex(1,-1), 2.356194490192344, rel_tol=0.001)
+```

@@ -1,0 +1,70 @@
+Here's a self-contained Python script that calculates Bell numbers using the Bell triangle (Aitken's array) method:
+
+```python
+def bell_number(n):
+    """
+    Calculate the nth Bell number using the Bell triangle method.
+    
+    The Bell number B_n counts the number of ways to partition a set
+    of n elements into non-empty subsets.
+    
+    Args:
+        n (int): A non-negative integer.
+    
+    Returns:
+        int: The nth Bell number.
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    
+    # Bell triangle: row i has i+1 elements
+    # The first element of each row is the last element of the previous row
+    triangle = [[1]]
+    
+    for i in range(1, n + 1):
+        prev_row = triangle[i - 1]
+        new_row = [prev_row[-1]]  # first element = last element of previous row
+        for j in range(1, i + 1):
+            new_row.append(new_row[j - 1] + prev_row[j - 1])
+        triangle.append(new_row)
+    
+    # The Bell number B_n is the first element of row n
+    return triangle[n][0]
+
+
+# Test cases
+assert bell_number(0) == 1
+assert bell_number(1) == 1
+assert bell_number(2) == 2
+assert bell_number(3) == 5
+assert bell_number(4) == 15
+assert bell_number(5) == 52
+assert bell_number(6) == 203
+assert bell_number(7) == 877
+
+print("All tests passed!")
+print(f"bell_number(2) = {bell_number(2)}")
+print(f"bell_number(5) = {bell_number(5)}")
+print(f"bell_number(10) = {bell_number(10)}")
+```
+
+**How it works:**
+
+The Bell triangle (also called Aitken's array) is constructed as follows:
+- The first row is `[1]`.
+- For each subsequent row `i`:
+  - The first element equals the last element of the previous row.
+  - Each following element is the sum of the element to its left and the element directly above-left in the previous row.
+
+The Bell number `B_n` is the **first element** of row `n`.
+
+For example:
+```
+Row 0: [1]              → B_0 = 1
+Row 1: [1, 2]           → B_1 = 1
+Row 2: [2, 3, 5]        → B_2 = 2
+Row 3: [5, 7, 10, 15]   → B_3 = 5
+Row 4: [15, 20, 27, 37, 52] → B_4 = 15
+```
+
+This approach runs in O(n²) time and O(n²) space, which is efficient for reasonable values of `n`.

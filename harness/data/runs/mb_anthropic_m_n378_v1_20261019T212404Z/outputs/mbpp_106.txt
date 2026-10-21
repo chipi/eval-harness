@@ -1,0 +1,9 @@
+```python
+def add_lists(the_list, the_tuple):
+    return the_tuple + tuple(the_list)
+
+
+if __name__ == "__main__":
+    assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+    print(add_lists([5, 6, 7], (9, 10)))
+```

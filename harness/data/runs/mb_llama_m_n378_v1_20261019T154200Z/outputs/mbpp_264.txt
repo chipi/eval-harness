@@ -1,0 +1,21 @@
+```python
+def dog_age(human_age):
+    """
+    Calculate a dog's age in dog's years.
+
+    The common rule of thumb for calculating a dog's age in dog's years is to count the first two years as 10.5 years each, and then add 4 years for every year after that.
+
+    Args:
+        human_age (int): The age of the dog in human years.
+
+    Returns:
+        int: The age of the dog in dog's years.
+    """
+    if human_age <= 2:
+        return human_age * 10.5
+    else:
+        return 21 + (human_age - 2) * 4
+
+# Test the function
+print(dog_age(12))  # Output: 61
+```

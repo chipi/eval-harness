@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Function to count the number of True values in a list of booleans.
+
+>>> count([True, False, True])
+2
+>>> count([False, False, False])
+0
+>>> count([True, True, True, True])
+4
+>>> count([])
+0
+"""
+
+def count(booleans):
+    """Count the number of True values in the given list of booleans."""
+    return sum(booleans)
+
+# Test case
+assert count([True, False, True]) == 2
+```
+
+This solution:
+1. Defines a function `count` that takes a list of booleans
+2. Uses Python's built-in `sum()` function which treats `True` as 1 and `False` as 0
+3. Includes the required assertion test case
+4. Also includes additional doctests for verification
+
+The function works because in Python, `True` is equivalent to 1 and `False` is equivalent to 0 when used in arithmetic operations.

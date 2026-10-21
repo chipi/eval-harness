@@ -1,0 +1,21 @@
+Here’s a self-contained Python script that solves the problem as described:  
+
+```python
+def drop_empty(dictionary):
+    """
+    Removes items from a dictionary where the value is None or an empty collection.
+    
+    Args:
+        dictionary (dict): The input dictionary.
+    
+    Returns:
+        dict: A new dictionary with empty items removed.
+    """
+    return {key: value for key, value in dictionary.items() if value is not None and value != "" and value != [] and value != {}}
+
+# Test the function with the provided assertion
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+
+# Additional test cases
+print(drop_empty({'a': 1, 'b': None, 'c': '', 'd': [], 'e': {}, 'f': 'text'}))
+```

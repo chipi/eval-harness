@@ -1,0 +1,46 @@
+```python
+def pair_wise(lst):
+    """
+    Generates a list of all pairs of consecutive items in a given list.
+
+    Args:
+        lst: A list of items.
+
+    Returns:
+        A list of tuples, where each tuple contains a pair of consecutive
+        items from the input list. The order of items in the tuple is
+        preserved from the original list.
+
+    Examples:
+        >>> pair_wise([1, 1, 2, 3, 3, 4, 4, 5])
+        [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+        >>> pair_wise(['a', 'b', 'c'])
+        [('a', 'b'), ('b', 'c')]
+        >>> pair_wise([10])
+        []
+    """
+    # Use a list comprehension to iterate through the list up to the second-to-last element.
+    # For each index `i`, it creates a tuple `(lst[i], lst[i+1])`.
+    return [(lst[i], lst[i+1]) for i in range(len(lst) - 1)]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [1, 1, 2, 3, 3, 4, 4, 5]
+    expected_output = [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+    
+    result = pair_wise(input_list)
+    
+    print(f"Input list: {input_list}")
+    print(f"Generated pairs: {result}")
+    print(f"Expected pairs: {expected_output}")
+    
+    assert result == expected_output
+    print("\nAssertion passed: The generated pairs match the expected output.")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    assert pair_wise(['a', 'b', 'c']) == [('a', 'b'), ('b', 'c')]
+    assert pair_wise([10]) == []
+    assert pair_wise([]) == []
+    print("All additional test cases passed.")
+```

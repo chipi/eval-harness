@@ -1,0 +1,8 @@
+```python
+def extract_singly(groups):
+    """Return the unique numbers from a sequence of lists or tuples."""
+    return {number for group in groups for number in group}
+
+
+assert extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)]) == {1, 3, 4, 5, 7}
+```

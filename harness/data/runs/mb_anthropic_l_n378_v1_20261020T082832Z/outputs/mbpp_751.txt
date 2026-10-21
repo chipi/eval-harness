@@ -1,0 +1,59 @@
+Looking at this problem, I need to verify that for every node at index `i`, its value is less than or equal to its children at indices `2*i + 1` and `2*i + 2`.
+
+```python
+"""
+Write a function to check if the given array represents min heap or not.
+https://www.geeksforgeeks.org/how-to-check-if-a-given-array-represents-a-binary-heap/
+assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+"""
+
+
+def check_min_heap(arr, i=0):
+    """
+    Recursively check whether arr represents a min heap rooted at index i.
+
+    A 0-indexed array represents a min heap if, for every node i:
+        arr[i] <= arr[2*i + 1]  (if the left child exists)
+        arr[i] <= arr[2*i + 2]  (if the right child exists)
+    """
+    n = len(arr)
+
+    # A leaf node (no children) is trivially a valid min heap.
+    if 2 * i + 1 >= n:
+        return True
+
+    left = 2 * i + 1
+    right = 2 * i + 2
+
+    # Check the left child and its subtree.
+    left_ok = arr[i] <= arr[left] and check_min_heap(arr, left)
+
+    # Check the right child and its subtree (if it exists).
+    if right < n:
+        right_ok = arr[i] <= arr[right] and check_min_heap(arr, right)
+    else:
+        right_ok = True
+
+    return left_ok and right_ok
+
+
+if __name__ == "__main__":
+    assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+    assert check_min_heap([2, 3, 4, 5, 10, 15]) == True
+    assert check_min_heap([2, 10, 4, 5, 3, 15]) == False
+    assert check_min_heap([]) == True
+    assert check_min_heap([42]) == True
+    assert check_min_heap([1, 2]) == True
+    assert check_min_heap([2, 1]) == False
+
+    print("All test cases passed!")
+```
+
+**How it works:**
+
+- The array is interpreted as a complete binary tree where node `i` has children at `2*i + 1` and `2*i + 2`.
+- If `2*i + 1 >= n`, the node has no children — it's a leaf, so it's automatically a valid heap.
+- Otherwise, compare the node with each existing child, then recurse into those children.
+- The structure (completeness) is automatically guaranteed by the array representation, so only the heap-order property needs checking.
+
+**Complexity:** O(n) time, O(log n) space for the recursion stack.

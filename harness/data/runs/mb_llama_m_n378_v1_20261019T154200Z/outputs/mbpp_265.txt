@@ -1,0 +1,17 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list for every nth element, returning a list of the resulting lists.
+
+    Args:
+        lst (list): The input list to be split.
+        n (int): The interval at which to split the list.
+
+    Returns:
+        list: A list of lists, where each sublist contains every nth element from the input list.
+    """
+    return [[lst[i] for i in range(j, len(lst), n)] for j in range(n)]
+
+# Example usage:
+print(list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3))
+```

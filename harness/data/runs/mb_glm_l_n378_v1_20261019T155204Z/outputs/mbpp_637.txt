@@ -1,0 +1,33 @@
+```python
+def noprofit_noloss(actual_cost, sale_amount):
+    """
+    Checks whether the given amount has no profit and no loss.
+    
+    This condition occurs when the actual cost is equal to the sale amount.
+    
+    Args:
+        actual_cost (int/float): The original cost of the item.
+        sale_amount (int/float): The price at which the item is sold.
+        
+    Returns:
+        bool: True if there is no profit and no loss, False otherwise.
+    """
+    return actual_cost == sale_amount
+
+# Test cases based on the provided assertion and logical scenarios
+if __name__ == "__main__":
+    # Assertion from the problem description
+    # Cost is 1500, Sale is 1200. Since 1500 != 1200, there is a loss, so return False.
+    assert noprofit_noloss(1500, 1200) == False
+    print("Test Case 1 Passed: noprofit_noloss(1500, 1200) == False")
+    
+    # Additional test case: Equal amounts (No profit, no loss)
+    assert noprofit_noloss(1500, 1500) == True
+    print("Test Case 2 Passed: noprofit_noloss(1500, 1500) == True")
+    
+    # Additional test case: Profit scenario
+    assert noprofit_noloss(1200, 1500) == False
+    print("Test Case 3 Passed: noprofit_noloss(1200, 1500) == False")
+    
+    print("\nAll test cases passed successfully.")
+```

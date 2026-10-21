@@ -1,0 +1,25 @@
+Here’s a self-contained Python script that defines the function and includes the test case:
+
+```python
+"""
+Write a function to find the perimeter of a regular pentagon from the length of its sides.
+assert perimeter_pentagon(5) == 25
+"""
+
+def perimeter_pentagon(side_length):
+    """
+    Returns the perimeter of a regular pentagon given the length of one side.
+    
+    Parameters:
+    side_length (int or float): Length of one side of the pentagon.
+    
+    Returns:
+    int or float: The perimeter (5 times the side length).
+    """
+    return 5 * side_length
+
+# Test case
+if __name__ == "__main__":
+    assert perimeter_pentagon(5) == 25
+    print("Test passed!")
+```

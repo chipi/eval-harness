@@ -1,0 +1,35 @@
+```python
+def count_Primes_nums(n: int) -> int:
+    """
+    Returns the number of prime numbers less than the given non-negative number.
+    
+    Uses the Sieve of Eratosthenes algorithm for efficient counting.
+    """
+    if n <= 2:
+        return 0
+    
+    # Initialize a boolean array for primality
+    is_prime = [True] * n
+    is_prime[0] = is_prime[1] = False  # 0 and 1 are not prime
+    
+    # Sieve of Eratosthenes
+    for i in range(2, int(n ** 0.5) + 1):
+        if is_prime[i]:
+            # Mark multiples of i as non-prime
+            for j in range(i * i, n, i):
+                is_prime[j] = False
+    
+    # Count primes
+    return sum(is_prime)
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert count_Primes_nums(5) == 2
+    print("Test passed: count_Primes_nums(5) == 2")
+    
+    # Additional test cases
+    print(f"Primes less than 10: {count_Primes_nums(10)}")  # Should be 4 (2,3,5,7)
+    print(f"Primes less than 0: {count_Primes_nums(0)}")    # Should be 0
+    print(f"Primes less than 2: {count_Primes_nums(2)}")    # Should be 0
+```

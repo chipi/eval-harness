@@ -1,0 +1,25 @@
+```python
+def all_Characters_Same(s: str) -> bool:
+    """
+    Checks whether all characters in a given string are the same.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        bool: True if all characters are the same, False otherwise.
+    """
+    return len(set(s)) == 1
+
+# Example usage:
+if __name__ == "__main__":
+    print(all_Characters_Same("python"))  # Expected output: False
+    print(all_Characters_Same("aaaaaa"))  # Expected output: True
+```
+
+In this code:
+
+*   We define a function `all_Characters_Same` that takes a string `s` as input and returns a boolean value.
+*   Inside the function, we convert the string to a set, which removes duplicate characters. If all characters in the string are the same, the set will contain only one character.
+*   We then compare the length of the set to 1. If they are equal, it means all characters are the same, and we return `True`. Otherwise, we return `False`.
+*   In the example usage section, we demonstrate the function's behavior with two test cases.

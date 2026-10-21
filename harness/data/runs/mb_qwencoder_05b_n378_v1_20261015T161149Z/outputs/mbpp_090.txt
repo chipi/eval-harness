@@ -1,0 +1,20 @@
+```python
+def len_log(words):
+    # Initialize variables to keep track of the maximum length and the current word
+    max_length = 0
+    current_word = ""
+    
+    # Iterate through each word in the list
+    for word in words:
+        # Update the current word if the current word is longer than the maximum length
+        if len(word) > max_length:
+            max_length = len(word)
+            current_word = word
+        
+    # Return the length of the longest word
+    return max_length
+
+# Test the function with the provided test case
+assert len_log(["python", "PHP", "bigdata"]) == 7
+```
+

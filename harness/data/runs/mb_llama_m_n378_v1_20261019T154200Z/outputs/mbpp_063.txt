@@ -1,0 +1,29 @@
+```python
+def max_difference(pairs):
+    """
+    This function calculates the maximum difference between available pairs in the given tuple list.
+
+    Args:
+        pairs (list): A list of tuples, where each tuple contains two integers.
+
+    Returns:
+        int: The maximum difference between available pairs.
+    """
+    # Initialize max_diff as negative infinity
+    max_diff = float('-inf')
+    
+    # Iterate over each pair in the list
+    for pair in pairs:
+        # Calculate the difference between the two numbers in the pair
+        diff = abs(pair[0] - pair[1])
+        
+        # Update max_diff if the current difference is larger
+        if diff > max_diff:
+            max_diff = diff
+    
+    # Return the maximum difference found
+    return max_diff
+
+# Test the function
+print(max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]))  # Output: 7
+```

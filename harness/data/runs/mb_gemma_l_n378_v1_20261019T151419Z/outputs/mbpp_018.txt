@@ -1,0 +1,26 @@
+```python
+def remove_dirty_chars(main_string, dirty_chars):
+    """
+    Removes characters from the first string that are present in the second string.
+    
+    Args:
+        main_string (str): The original string to be cleaned.
+        dirty_chars (str): A string containing characters to be removed.
+        
+    Returns:
+        str: The cleaned string.
+    """
+    # Convert dirty_chars to a set for O(1) average time complexity lookups
+    chars_to_remove = set(dirty_chars)
+    
+    # Use a list comprehension to keep characters not in the set, then join them
+    return "".join([char for char in main_string if char not in chars_to_remove])
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = remove_dirty_chars("probasscurve", "pros")
+    expected = 'bacuve'
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print(f"Success! remove_dirty_chars('probasscurve', 'pros') == '{result}'")
+```

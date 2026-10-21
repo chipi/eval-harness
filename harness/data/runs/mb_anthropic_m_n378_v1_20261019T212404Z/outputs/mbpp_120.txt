@@ -1,0 +1,9 @@
+```python
+def max_product_tuple(lst):
+    return max(abs(a * b) for a, b in lst)
+
+
+if __name__ == "__main__":
+    assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+    print(max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]))
+```

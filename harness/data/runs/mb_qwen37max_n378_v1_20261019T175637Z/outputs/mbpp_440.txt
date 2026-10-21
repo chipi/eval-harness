@@ -1,0 +1,25 @@
+```python
+import re
+
+
+def find_adverb_position(sentence):
+    """
+    Find the first adverb and its position in a given sentence.
+    
+    Returns a tuple of (start_index, end_index, adverb_word) where end_index
+    is exclusive (i.e., sentence[start:end] == adverb_word).
+    """
+    # Common adverb suffixes pattern - words ending in -ly are typically adverbs
+    # We match word characters that end with 'ly'
+    pattern = r'\b\w+ly\b'
+    
+    match = re.search(pattern, sentence, re.IGNORECASE)
+    
+    if match:
+        start = match.start()
+        end = match.end()
+        word = match.group()
+        return (start, end, word)
+    
+    return None
+```

@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sort_matrix(matrix):
+    """
+    Sorts a matrix in ascending order according to the sum of its rows.
+
+    Args:
+        matrix: A list of lists (2D matrix) to be sorted.
+
+    Returns:
+        A new matrix with rows sorted by their sum in ascending order.
+    """
+    # Create a list of tuples containing each row and its sum
+    rows_with_sums = [(row, sum(row)) for row in matrix]
+
+    # Sort the rows based on their sums
+    sorted_rows = sorted(rows_with_sums, key=lambda x: x[1])
+
+    # Extract the sorted rows (without the sums)
+    sorted_matrix = [row for row, _ in sorted_rows]
+
+    return sorted_matrix
+
+# Test the function
+assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]]) == [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `sort_matrix` that takes a 2D matrix as input
+2. Creates a list of tuples where each tuple contains a row and its sum
+3. Sorts these tuples based on the sum values
+4. Extracts the sorted rows to form the final sorted matrix
+5. Includes a test case that matches the provided assertion
+
+The function preserves the original rows while only changing their order based on their sums.

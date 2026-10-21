@@ -1,0 +1,9 @@
+```python
+def multiple_to_single(nums):
+  """
+  Write a function to join a list of multiple integers into a single integer.
+  assert multiple_to_single([11, 33, 50])==113350
+  """
+  s = "".join(map(str, nums))
+  return int(s)
+```

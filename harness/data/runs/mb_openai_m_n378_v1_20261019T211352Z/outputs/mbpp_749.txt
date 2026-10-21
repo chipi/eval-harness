@@ -1,0 +1,32 @@
+```python
+"""
+Sort a given list of strings of numbers numerically.
+
+Example:
+assert sort_numeric_strings(['4','12','45','7','0','100','200','-12','-500']) == \
+       [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+"""
+
+def sort_numeric_strings(values):
+    """
+    Convert numeric strings to integers and return them sorted numerically.
+
+    Args:
+        values (list[str]): A list of strings representing integers.
+
+    Returns:
+        list[int]: A numerically sorted list of integers.
+    """
+    return sorted(int(value) for value in values)
+
+
+if __name__ == "__main__":
+    test_values = ['4', '12', '45', '7', '0', '100', '200', '-12', '-500']
+    expected = [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+
+    result = sort_numeric_strings(test_values)
+
+    print(result)
+    assert result == expected
+    print("All tests passed.")
+```

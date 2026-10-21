@@ -1,0 +1,22 @@
+```python
+def smallest_num(lst):
+    """
+    Find the smallest number in a list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The smallest number in the list
+    """
+    return min(lst)
+
+
+# Test cases
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+assert smallest_num([5, 2, 8, 1, 9]) == 1
+assert smallest_num([-10, -5, -20, 0]) == -20
+assert smallest_num([42]) == 42
+
+print("All tests passed!")
+```

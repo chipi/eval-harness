@@ -1,0 +1,45 @@
+```python
+def next_power_of_2(n):
+    """
+    Finds the smallest power of 2 greater than or equal to n.
+    
+    Args:
+        n (int): The input integer.
+        
+    Returns:
+        int: The smallest power of 2 >= n.
+    """
+    # Handle cases where n is 0 or negative
+    # Based on the requirement next_power_of_2(0) == 1
+    if n <= 1:
+        return 1
+    
+    # If n is already a power of 2, (n & (n - 1)) will be 0
+    # We subtract 1 to handle the case where n is already a power of 2
+    # so that the bit manipulation finds the next power correctly.
+    n -= 1
+    
+    # Use bit manipulation to set all bits to the right of the most significant bit
+    n |= n >> 1
+    n |= n >> 2
+    n |= n >> 4
+    n |= n >> 8
+    n |= n >> 16
+    n |= n >> 32  # Covers up to 64-bit integers
+    
+    return n + 1
+
+if __name__ == "__main__":
+    # Test cases
+    assert next_power_of_2(0) == 1
+    assert next_power_of_2(1) == 1
+    assert next_power_of_2(2) == 2
+    assert next_power_of_2(3) == 4
+    assert next_power_of_2(4) == 4
+    assert next_power_of_2(5) == 8
+    assert next_power_of_2(10) == 16
+    assert next_power_of_2(1023) == 1024
+    assert next_power_of_2(1024) == 1024
+    
+    print("All assertions passed!")
+```

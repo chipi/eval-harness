@@ -1,0 +1,16 @@
+```python
+def second_smallest(numbers):
+    """
+    Find the second smallest number in a list.
+    """
+    unique_numbers = list(set(numbers))
+    unique_numbers.sort()
+    return unique_numbers[1]
+
+
+# Test case
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+
+if __name__ == "__main__":
+    print(second_smallest([1, 2, -8, -2, 0, -2]))
+```

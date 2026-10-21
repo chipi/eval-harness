@@ -1,0 +1,25 @@
+```python
+def validate(n):
+    # Convert the number to a string to easily iterate over its digits
+    str_n = str(n)
+    
+    # Iterate over each digit in the string representation of the number
+    for i in range(len(str_n)):
+        # Get the current digit as an integer
+        digit = int(str_n[i])
+        
+        # Check if the frequency of the digit is greater than the digit itself
+        if digit > str_n.count(str(digit)):
+            return False
+    
+    # If all digits pass the check, return True
+    return True
+
+# Test cases to verify the correctness of the function
+assert validate(1234) == True
+assert validate(1111) == True
+assert validate(1235) == False
+assert validate(13579) == True
+assert validate(10) == False
+```
+

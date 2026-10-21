@@ -1,0 +1,26 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    # Initialize sum
+    sum = 0
+    # Iterate over even index binomial coefficients
+    for i in range(2*n):
+        # Check if index is even
+        if i % 2 == 0:
+            # Add to sum
+            sum += binomial_coeff(n, i)
+    return sum
+
+def binomial_coeff(n, k):
+    # Calculate binomial coefficient
+    return nCr(n, k) * (pow(k, 0.5) * pow(n - k, 0.5))
+
+def nCr(n, r):
+    # Calculate binomial coefficient
+    if r == 0 or r == n:
+        return 1
+    else:
+        return nCr(n - 1, r - 1) + nCr(n - 1, r)
+
+# Test cases
+assert even_binomial_Coeff_Sum(4) == 8
+```

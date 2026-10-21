@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Count the number of pairs in the list whose sum equals the target_sum.
+
+    Args:
+        numbers: List of integers
+        target_sum: Integer target sum for pairs
+
+    Returns:
+        Integer count of pairs that sum to target_sum
+    """
+    count = 0
+    n = len(numbers)
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            if numbers[i] + numbers[j] == target_sum:
+                count += 1
+
+    return count
+
+# Test case
+assert get_pairs_count([1,1,1,1], 2) == 6
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `get_pairs_count` that takes a list of numbers and a target sum
+2. Uses nested loops to check all possible pairs in the list
+3. Counts how many pairs sum to the target value
+4. Includes the required test case and prints a success message
+
+The function has a time complexity of O(n²) where n is the length of the input list, which is optimal for this problem since we need to check all possible pairs.

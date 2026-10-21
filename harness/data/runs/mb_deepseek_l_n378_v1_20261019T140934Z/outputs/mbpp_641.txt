@@ -1,0 +1,16 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def is_nonagonal(n):
+    """
+    Returns the nth nonagonal number.
+    Formula: N(n) = n * (7n - 5) / 2
+    """
+    return n * (7 * n - 5) // 2
+
+
+# Test the function
+if __name__ == "__main__":
+    assert is_nonagonal(10) == 325
+    print("Test passed!")
+```

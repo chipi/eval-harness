@@ -1,0 +1,15 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def union_elements(tup1, tup2):
+    """
+    Find the union of the elements of two given tuples and output them in sorted order.
+    """
+    return tuple(sorted(set(tup1) | set(tup2)))
+
+# Test the function
+if __name__ == "__main__":
+    result = union_elements((3, 4, 5, 6), (5, 7, 4, 10))
+    print(result)
+    assert result == (3, 4, 5, 6, 7, 10)
+```

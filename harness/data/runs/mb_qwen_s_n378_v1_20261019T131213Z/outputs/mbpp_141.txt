@@ -1,0 +1,43 @@
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list using the pancake sort algorithm.
+    
+    Pancake sort works by repeatedly finding the maximum element in the unsorted portion,
+    flipping it to the front, and then flipping it to its correct position at the end of 
+    the unsorted portion.
+    
+    Args:
+        arr: A list of comparable elements to be sorted.
+        
+    Returns:
+        The sorted list in ascending order.
+    """
+    def flip(arr, k):
+        """Reverse the first k+1 elements of arr."""
+        arr[:k+1] = arr[:k+1][::-1]
+    
+    n = len(arr)
+    # Start from the full array size and reduce the size one by one
+    for curr_size in range(n, 1, -1):
+        # Find index of the maximum element in arr[0..curr_size-1]
+        max_idx = 0
+        for i in range(1, curr_size):
+            if arr[i] > arr[max_idx]:
+                max_idx = i
+        
+        # If the maximum element is already at the correct position, skip
+        if max_idx != curr_size - 1:
+            # Flip the maximum element to the beginning
+            if max_idx != 0:
+                flip(arr, max_idx)
+            
+            # Flip the maximum element to its correct position
+            flip(arr, curr_size - 1)
+    
+    return arr
+
+
+# Test case
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+```

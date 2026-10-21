@@ -1,0 +1,25 @@
+```python
+def check_none(tup):
+    """
+    Checks if the given tuple contains any None value.
+    
+    Args:
+        tup (tuple): The tuple to check.
+        
+    Returns:
+        bool: True if None is present in the tuple, False otherwise.
+    """
+    # The 'in' operator in Python efficiently checks for membership
+    return None in tup
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert check_none((10, 4, 5, 6, None)) == True
+    
+    # Additional test cases
+    assert check_none((1, 2, 3)) == False
+    assert check_none((None,)) == True
+    assert check_none(()) == False
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,9 @@
+```python
+def find_star_num(n):
+    return 6 * n * (n - 1) + 1
+
+assert find_star_num(3) == 37
+
+if __name__ == "__main__":
+    print(find_star_num(3))
+```

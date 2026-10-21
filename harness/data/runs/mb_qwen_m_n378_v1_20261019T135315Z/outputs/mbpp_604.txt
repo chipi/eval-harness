@@ -1,0 +1,32 @@
+```python
+def reverse_words(s: str) -> str:
+    """
+    Reverse the order of words in a string separated by spaces.
+    
+    Args:
+        s: Input string with words separated by spaces
+        
+    Returns:
+        String with words in reversed order
+        
+    Example:
+        >>> reverse_words("python program")
+        'program python'
+    """
+    words = s.split(' ')
+    reversed_words = words[::-1]
+    return ' '.join(reversed_words)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert reverse_words("python program") == "program python"
+    
+    # Additional test cases
+    assert reverse_words("hello world foo") == "foo world hello"
+    assert reverse_words("single") == "single"
+    assert reverse_words("") == ""
+    assert reverse_words("a b c d") == "d c b a"
+    
+    print("All tests passed!")
+```

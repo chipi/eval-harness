@@ -1,0 +1,42 @@
+```python
+def max_aggregate(data):
+    """
+    Calculates the maximum aggregate score from a list of tuples (name, score).
+    If multiple names have the same aggregate, it returns the first one encountered.
+    """
+    # Dictionary to store the sum of scores for each name
+    aggregates = {}
+    
+    for name, score in data:
+        if name in aggregates:
+            aggregates[name] += score
+        else:
+            aggregates[name] = score
+            
+    # If the input list was empty, return None or handle accordingly
+    if not aggregates:
+        return None
+
+    # Find the name with the maximum aggregate value
+    # max() with a key function allows us to find the key based on its value
+    max_name = max(aggregates, key=aggregates.get)
+    
+    return (max_name, aggregates[max_name])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_data = [
+        ('Juan Whelan', 90),
+        ('Sabah Colley', 88),
+        ('Peter Nichols', 7),
+        ('Juan Whelan', 122),
+        ('Sabah Colley', 84)
+    ]
+    
+    result = max_aggregate(test_data)
+    expected = ('Juan Whelan', 212)
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    print(f"Success! Result: {result}")
+```

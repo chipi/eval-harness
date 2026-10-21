@@ -1,0 +1,21 @@
+```python
+def even_binomial_coeff_sum(n: int) -> int:
+    """
+    Return the sum of the even-index binomial coefficients in (1 + 1)^n,
+    i.e. C(n,0) + C(n,2) + C(n,4) + ...
+
+    For n >= 0, this sum equals 2^(n-1) when n > 0, and 1 when n = 0.
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    if n == 0:
+        return 1
+
+    return 2 ** (n - 1)
+
+
+if __name__ == "__main__":
+    assert even_binomial_coeff_sum(4) == 8
+    print("All tests passed.")
+```

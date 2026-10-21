@@ -1,0 +1,18 @@
+```python
+def reverse_words(s):
+    """
+    Reverses the order of words in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with the words reversed.
+    """
+    words = s.split()  # Split the string into a list of words
+    reversed_words = ' '.join(reversed(words))  # Reverse the list and join it back into a string
+    return reversed_words
+
+# Example usage:
+print(reverse_words("python program"))  # Output: "program python"
+```

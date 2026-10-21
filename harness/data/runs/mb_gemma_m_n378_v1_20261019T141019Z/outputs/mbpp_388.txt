@@ -1,0 +1,31 @@
+```python
+def highest_Power_of_2(n):
+    """
+    Finds the highest power of 2 that is less than or equal to n.
+    
+    Args:
+        n (int): The target integer.
+        
+    Returns:
+        int: The largest power of 2 <= n. Returns 0 if n < 1.
+    """
+    if n < 1:
+        return 0
+    
+    # Method: Bit manipulation
+    # The highest power of 2 is the value represented by the most significant bit.
+    # bit_length() returns the number of bits required to represent an integer in binary.
+    return 1 << (n.bit_length() - 1)
+
+if __name__ == "__main__":
+    # Test cases
+    assert highest_Power_of_2(10) == 8
+    assert highest_Power_of_2(1) == 1
+    assert highest_Power_of_2(16) == 16
+    assert highest_Power_of_2(17) == 16
+    assert highest_Power_of_2(31) == 16
+    assert highest_Power_of_2(32) == 32
+    assert highest_Power_of_2(0) == 0
+    
+    print("All assertions passed!")
+```

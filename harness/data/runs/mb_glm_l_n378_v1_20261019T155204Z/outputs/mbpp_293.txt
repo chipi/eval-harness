@@ -1,0 +1,25 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Find the third side of a right angled triangle.
+    
+    Given two sides of a right-angled triangle, this function calculates 
+    the length of the third side. It assumes the given sides could be either 
+    the two legs or one leg and the hypotenuse, returning the positive 
+    length of the remaining side.
+    
+    Args:
+        a (float): The length of the first side.
+        b (float): The length of the second side.
+        
+    Returns:
+        float: The length of the third side.
+    """
+    return math.sqrt(a**2 + b**2)
+
+if __name__ == '__main__':
+    assert otherside_rightangle(7, 8) == 10.63014581273465
+    print("Assertion passed successfully.")
+```

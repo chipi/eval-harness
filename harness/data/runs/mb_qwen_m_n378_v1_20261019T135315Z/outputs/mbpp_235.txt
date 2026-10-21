@@ -1,0 +1,79 @@
+```python
+def even_bit_set_number(n: int) -> int:
+    """
+    Set all even bits of a given number.
+    
+    Even bits are bits at positions 0, 2, 4, 6, ... (0-indexed from the right).
+    Setting a bit means turning it to 1.
+    
+    For example:
+    - 10 in binary is 1010
+    - Even bit positions (0, 2, 4, ...) need to be set to 1
+    - Position 0: already 0 -> set to 1
+    - Position 2: already 0 -> set to 1
+    - So we OR with a mask that has all even bits set
+    
+    The mask for all even bits can be generated as a pattern like 0x55555555... 
+    which in binary is 01010101... (bits at even positions are 1).
+    
+    Wait, let me reconsider. Position 0 is the least significant bit.
+    0x5 = 0101 in binary, so bit 0 is 1, bit 1 is 0, bit 2 is 1, bit 3 is 0.
+    So 0x55555555 has 1s at even positions (0, 2, 4, ...).
+    
+    To set all even bits, we OR the number with this mask.
+    
+    Let's verify with the example:
+    - n = 10 = 1010 in binary
+    - Mask = 0x55555555 (for 32-bit), but let's use enough bits
+    - 1010 OR 0101 = 1111 = 15? But the expected answer is 10.
+    
+    Hmm, that doesn't match. Let me re-read the problem.
+    
+    "Set all even bits" - maybe it means something different. Let me check:
+    assert even_bit_set_number(10) == 10
+    
+    10 in binary is 1010. If the result is also 10, then perhaps the even bits are already set?
+    
+    Let's think again. Maybe "even bits" refers to bits whose value is even? No, that doesn't make sense.
+    
+    Or maybe positions are 1-indexed? Position 1, 2, 3, ... where even positions are 2, 4, 6...
+    In 1-indexed: position 1 is LSB.
+    - 10 = 1010, positions (1-indexed): pos1=0, pos2=1, pos3=0, pos4=1
+    - Even positions: pos2=1, pos4=1 — already set. So result is 10. That matches!
+    
+    So with 1-indexed positions, even positions are 2, 4, 6, ... which correspond to 0-indexed positions 1, 3, 5, ...
+    The mask for 0-indexed odd positions would be 0xAAAA... (10101010 in binary).
+    
+    Let me verify: 10 = 1010, mask for odd 0-indexed positions (1, 3, ...) = ...1010
+    1010 OR 1010 = 1010 = 10. Yes!
+    
+    So the mask is 0xAAAAAAAA... for sufficient bits.
+    """
+    # Create a mask with bits at 0-indexed odd positions set (which are 1-indexed even positions)
+    # 0xAA = 10101010 in binary
+    # We need enough bits to cover the input number
+    if n < 0:
+        # Handle negative numbers by working with absolute value and preserving sign? 
+        # Actually, let's just work with the bit representation
+        # For simplicity, assume non-negative or use Python's infinite precision
+        pass
+    
+    # Determine how many bits we need
+    if n == 0:
+        num_bits = 1
+    else:
+        num_bits = n.bit_length()
+    
+    # Make sure we have enough bits; round up to even number of bits to get full pairs
+    if num_bits % 2 != 0:
+        num_bits += 1
+    
+    # Create mask: 0xAAAA... with num_bits bits
+    # 0xA = 1010, so repeating A gives us 1s at odd 0-indexed positions
+    mask = 0
+    for i in range(num_bits):
+        if i % 2 == 1:  # 0-indexed odd positions
+            mask |= (1 << i)
+    
+    return n | mask
+```

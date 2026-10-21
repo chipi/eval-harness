@@ -1,0 +1,17 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_series(n):
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+    return total
+
+# Test case
+assert sum_series(6) == 12
+```
+
+This script defines a function `sum_series(n)` that calculates the sum of the series (n - 2*i) from i=0 to n//2, stopping when the term becomes less than or equal to 0. The test case verifies that `sum_series(6)` returns 12, which matches the example (6 + 4 + 2 = 12).

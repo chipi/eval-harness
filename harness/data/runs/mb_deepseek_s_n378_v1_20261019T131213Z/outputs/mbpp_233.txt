@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that defines the function and includes the test assertion you provided:  
+
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculate the lateral surface area of a cylinder.
+    
+    Parameters:
+    radius (float): The radius of the cylinder's base.
+    height (float): The height of the cylinder.
+    
+    Returns:
+    float: The lateral surface area.
+    """
+    return 2 * math.pi * radius * height
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert math.isclose(lateralsuface_cylinder(10, 5), 314.15000000000003, rel_tol=0.001)
+    print("Test passed.")
+```

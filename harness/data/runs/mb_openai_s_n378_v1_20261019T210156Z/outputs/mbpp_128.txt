@@ -1,0 +1,24 @@
+```python
+def long_words(n, text):
+    """
+    Return a list of words from `text` that are longer than `n` characters.
+    
+    Parameters:
+        n (int): Minimum length threshold.
+        text (str): A string containing words separated by whitespace.
+    
+    Returns:
+        list[str]: Words with length greater than n.
+    """
+    return [word for word in text.split() if len(word) > n]
+
+
+# Example usage / test
+assert long_words(3, "python is a programming language") == [
+    "python",
+    "programming",
+    "language",
+]
+
+print("All tests passed.")
+```

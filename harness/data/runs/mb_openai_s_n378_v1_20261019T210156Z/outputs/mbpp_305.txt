@@ -1,0 +1,24 @@
+```python
+def start_withp(words):
+    """
+    Return the first two words found in the list that start with the letter 'p' or 'P'.
+
+    Example:
+    start_withp(["Python PHP", "Java JavaScript", "c c++"]) -> ('Python', 'PHP')
+    """
+    result = []
+
+    for phrase in words:
+        for word in phrase.split():
+            if word and word[0].lower() == 'p':
+                result.append(word)
+                if len(result) == 2:
+                    return tuple(result)
+
+    return tuple(result)
+
+
+if __name__ == "__main__":
+    assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+    print("All tests passed.")
+```

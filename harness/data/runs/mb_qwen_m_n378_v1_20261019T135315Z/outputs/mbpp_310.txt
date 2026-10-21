@@ -1,0 +1,31 @@
+```python
+def string_to_tuple(s: str) -> tuple:
+    """
+    Convert a given string to a tuple of characters.
+    
+    Args:
+        s: The input string to convert.
+        
+    Returns:
+        A tuple containing each character from the string.
+        
+    Example:
+        >>> string_to_tuple("python 3.0")
+        ('p', 'y', 't', 'h', 'o', 'n', ' ', '3', '.', '0')
+    """
+    return tuple(s)
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = string_to_tuple("python 3.0")
+    expected = ('p', 'y', 't', 'h', 'o', 'n', ' ', '3', '.', '0')
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    # Additional test cases
+    assert string_to_tuple("") == ()
+    assert string_to_tuple("a") == ('a',)
+    assert string_to_tuple("ab") == ('a', 'b')
+    
+    print("All tests passed!")
+```

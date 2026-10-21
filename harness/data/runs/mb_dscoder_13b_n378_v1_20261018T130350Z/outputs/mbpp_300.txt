@@ -1,0 +1,25 @@
+```python
+import math
+
+def count_binary_seq(n):
+    # Initialize count to 0
+    count = 0
+
+    # Loop through all possible binary sequences of length 2n
+    for i in range(2**n):
+        # Convert binary to string and split into list of bits
+        binary = list(bin(i)[2:].zfill(n))
+
+        # Check if sum of first n bits is equal to sum of last n bits
+        if sum(binary[:n]) == sum(binary[-n:]):
+            # If true, increment count
+            count += 1
+
+    return count
+
+# Test the function
+print(count_binary_seq(1))  # Output: 2
+
+# Assertion test
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```

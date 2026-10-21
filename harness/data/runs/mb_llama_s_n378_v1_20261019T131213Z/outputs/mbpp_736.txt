@@ -1,0 +1,37 @@
+```python
+def left_insertion(nums, target):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+
+    Args:
+        nums (list): A sorted list of numbers.
+        target (int): The target value to be inserted.
+
+    Returns:
+        int: The left insertion point for the target value.
+
+    """
+    left, right = 0, len(nums)
+    while left < right:
+        mid = (left + right) // 2
+        if nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+# Test the function
+assert left_insertion([1, 2, 4, 5], 6) == 4
+assert left_insertion([1, 2, 4, 5], 3) == 2
+assert left_insertion([1, 2, 4, 5], 0) == 0
+assert left_insertion([1, 2, 4, 5], 5) == 4
+assert left_insertion([1, 2, 4, 5], 1) == 0
+```
+
+This Python script defines a function `left_insertion` that uses a binary search approach to find the left insertion point for a specified value in a sorted list. The function takes a sorted list `nums` and a target value `target` as input and returns the left insertion point for the target value.
+
+The function uses two pointers, `left` and `right`, to represent the search range. It iteratively calculates the middle index `mid` and compares the value at `mid` with the target value. If the value at `mid` is less than the target value, it moves the `left` pointer to `mid + 1`. Otherwise, it moves the `right` pointer to `mid`. The process continues until `left` is no longer less than `right`.
+
+The function returns the `left` pointer, which represents the left insertion point for the target value.
+
+The script also includes several test cases to verify the correctness of the function.

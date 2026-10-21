@@ -1,0 +1,37 @@
+```python
+def unique_Element(lst):
+    """
+    Check whether a list of numbers contains only one distinct element or not.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        True if the list contains only one distinct element, False otherwise
+    """
+    if len(lst) == 0:
+        return True
+    
+    return len(set(lst)) == 1
+
+
+# Test cases
+assert unique_Element([1, 1, 1]) == True
+assert unique_Element([1, 2, 1]) == False
+assert unique_Element([5]) == True
+assert unique_Element([]) == True
+assert unique_Element([7, 7, 7, 7]) == True
+assert unique_Element([1, 1, 2]) == False
+
+print("All test cases passed!")
+```
+
+**Explanation:**
+
+The function `unique_Element()` works by:
+1. Converting the list to a `set`, which automatically removes all duplicate elements
+2. Checking if the length of the set equals 1 (meaning only one distinct element exists)
+3. Handling the edge case of an empty list by returning `True`
+
+**Time Complexity:** O(n) where n is the length of the list
+**Space Complexity:** O(n) for the set creation

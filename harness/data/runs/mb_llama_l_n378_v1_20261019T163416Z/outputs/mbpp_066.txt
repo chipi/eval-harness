@@ -1,0 +1,21 @@
+```python
+def pos_count(lst):
+    """
+    Counts the number of positive numbers in a list.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        int: The number of positive numbers in the list.
+    """
+    return sum(1 for num in lst if num > 0)
+
+def main():
+    # Test the function
+    assert pos_count([1, -2, 3, -4]) == 2
+    print("All tests passed.")
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem by calculating the product of the unique numbers in a given list:
+
+```python
+def unique_product(numbers):
+    """
+    Calculate the product of the unique numbers in a given list.
+
+    Args:
+        numbers (list): A list of numbers (can contain duplicates).
+
+    Returns:
+        int: The product of the unique numbers in the list.
+    """
+    unique_numbers = list(set(numbers))  # Convert to set to remove duplicates, then back to list
+    product = 1
+    for num in unique_numbers:
+        product *= num
+    return product
+
+# Test the function with the provided assertion
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+```
+
+### Explanation:
+1. The function `unique_product` takes a list of numbers as input.
+2. It converts the list to a set to remove duplicates, then converts it back to a list.
+3. It initializes `product` to 1 and then multiplies each unique number in the list to `product`.
+4. Finally, it returns the product of the unique numbers.
+5. The assertion checks that the function works correctly with the provided example. The unique numbers in `[10, 20, 30, 40, 20, 50, 60, 40]` are `[10, 20, 30, 40, 50, 60]`, and their product is `10 * 20 * 30 * 40 * 50 * 60 = 720000000`.

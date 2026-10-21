@@ -1,0 +1,46 @@
+```python
+"""
+Write a function to find the median of two sorted lists of same size.
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+"""
+
+
+def get_median(arr1, arr2, n):
+    """
+    Find the median of two sorted lists of the same size `n`.
+
+    The median of the combined 2*n elements is the average of the
+    n-th and (n+1)-th smallest elements (1-indexed).
+
+    This implementation merges the two sorted lists lazily, stopping
+    as soon as the two middle elements have been found, giving O(n)
+    time and O(1) extra space.
+    """
+    if n == 0:
+        raise ValueError("Lists must contain at least one element")
+    if len(arr1) != n or len(arr2) != n:
+        raise ValueError("Both lists must have length n")
+
+    i = j = 0
+    prev = curr = None
+
+    # We need elements at merged positions n-1 and n (0-indexed).
+    for count in range(n + 1):
+        prev = curr
+        if i < n and (j >= n or arr1[i] <= arr2[j]):
+            curr = arr1[i]
+            i += 1
+        else:
+            curr = arr2[j]
+            j += 1
+
+    return (prev + curr) / 2.0
+
+
+if __name__ == "__main__":
+    assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+    assert get_median([2, 4, 8, 9], [7, 13, 19, 28], 4) == 8.5
+    assert get_median([3, 6], [7, 12], 2) == 6.5
+    assert get_median([5], [10], 1) == 7.5
+    print("All tests passed!")
+```

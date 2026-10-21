@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the next smallest palindrome of a specified integer:
+
+```python
+def next_smallest_palindrome(n):
+    """
+    Find the next smallest palindrome of a specified integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The next smallest palindrome greater than n.
+
+    Examples:
+        >>> next_smallest_palindrome(99)
+        101
+    """
+    if n < 10:
+        return 11
+
+    n = str(n)
+    length = len(n)
+    half_length = (length + 1) // 2
+
+    # Generate the next number and check if it's a palindrome
+    for i in range(1, 10**5):  # Arbitrary large number to prevent infinite loops
+        candidate = str(int(n) + i)
+        if candidate == candidate[::-1]:
+            return int(candidate)
+
+    return -1  # Should never reach here for valid inputs
+
+# Test case
+assert next_smallest_palindrome(99) == 101
+```
+
+### Explanation:
+1. **Input Handling**: The function first checks if the input is a single-digit number, in which case the next palindrome is 11.
+2. **String Conversion**: The input number is converted to a string to facilitate palindrome checking.
+3. **Palindrome Check**: The function increments the number by 1 (or more if necessary) and checks if the result is a palindrome by comparing the string to its reverse.
+4. **Return Result**: The first palindrome found greater than the input number is returned as an integer.
+
+The test case `assert next_smallest_palindrome(99) == 101` verifies that the function works as expected.

@@ -1,0 +1,26 @@
+```python
+def replace_list(list1, list2):
+    """
+    Takes in two lists and replaces the last element of the first list 
+    with the elements of the second list.
+    
+    Args:
+        list1: The first list
+        list2: The second list whose elements will replace the last element of list1
+    
+    Returns:
+        A new list with the last element of list1 replaced by all elements of list2
+    """
+    return list1[:-1] + list2
+
+
+# Test the function
+assert replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 2, 4, 6, 8]
+print("Test passed!")
+print(replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]))
+```
+
+The solution works by:
+1. Taking all elements of `list1` except the last one using slice notation `list1[:-1]`
+2. Concatenating it with all elements of `list2` using the `+` operator
+3. This effectively replaces the last element of `list1` with all elements from `list2`

@@ -1,0 +1,14 @@
+```python
+def common_divisors_sum(a, b):
+    def divisors(n):
+        return {i for i in range(1, n + 1) if n % i == 0}
+
+    return sum(divisors(a) & divisors(b))
+
+# Test cases
+assert common_divisors_sum(10, 15) == 6
+assert common_divisors_sum(6, 12) == 12
+assert common_divisors_sum(100, 200) == 165
+assert common_divisors_sum(1000, 2000) == 1650
+assert common_divisors_sum(10000, 20000) == 16500
+```

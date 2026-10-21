@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem of checking the parity (odd or even) of a given number:
+
+```python
+def find_Parity(num):
+    """
+    Check if the given number is odd.
+    
+    Args:
+        num (int): The number to check.
+        
+    Returns:
+        bool: True if the number is odd, False otherwise.
+    """
+    return num % 2 != 0
+
+# Test cases
+assert find_Parity(12) == False
+assert find_Parity(13) == True
+assert find_Parity(0) == False
+assert find_Parity(-1) == True
+assert find_Parity(-2) == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `find_Parity` takes an integer `num` as input.
+2. It checks if the number is odd by using the modulo operator (`%`). If `num % 2` is not equal to 0, the number is odd, and the function returns `True`. Otherwise, it returns `False`.
+3. The test cases verify the function works for positive, zero, and negative numbers. The `assert` statements will raise an error if any test fails.
+4. If all test cases pass, the script prints "All test cases passed!".

@@ -1,0 +1,19 @@
+```python
+def is_not_prime(n: int) -> bool:
+    """
+    Returns True if n is not a prime number, False otherwise.
+    Handles edge cases: numbers less than 2 are considered non-prime.
+    """
+    if n < 2:
+        return True
+    # Check divisibility from 2 up to sqrt(n)
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return True
+    return False
+
+# Test the assertion
+if __name__ == "__main__":
+    assert is_not_prime(2) == False
+    print("Test passed: is_not_prime(2) returns False")
+```

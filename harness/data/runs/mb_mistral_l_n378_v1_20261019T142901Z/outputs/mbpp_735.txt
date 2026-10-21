@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem by toggling all bits of a number except the first and last bits:
+
+```python
+def toggle_middle_bits(n):
+    """
+    Toggle all bits of a number except the first and last bits.
+
+    Args:
+        n (int): The input number
+
+    Returns:
+        int: The number with middle bits toggled
+    """
+    if n == 0:
+        return 0
+
+    # Get the number of bits needed to represent the number
+    num_bits = n.bit_length()
+
+    # If number has less than 2 bits, return as is (nothing to toggle)
+    if num_bits <= 2:
+        return n
+
+    # Create a mask that has 1s in all positions except first and last
+    # For example, for 9 (1001), mask would be 0110
+    mask = (1 << (num_bits - 1)) - 1  # Creates 1s for all bits except first
+    mask = mask & ~1                  # Clears the last bit
+
+    # Toggle the bits using XOR
+    return n ^ mask
+
+# Test the function
+assert toggle_middle_bits(9) == 15
+assert toggle_middle_bits(0) == 0
+assert toggle_middle_bits(1) == 1
+assert toggle_middle_bits(2) == 2
+assert toggle_middle_bits(3) == 3
+assert toggle_middle_bits(10) == 12  # 1010 -> 1100
+assert toggle_middle_bits(15) == 9   # 1111 -> 1001
+assert toggle_middle_bits(17) == 23  # 10001 -> 10111
+
+print("All tests passed!")
+```
+
+### Explanation:
+1. The function first checks for edge cases (0 or numbers with ≤ 2 bits).
+2. It calculates the number of bits needed to represent the number.
+3. It creates a mask that has 1s in all bit positions except the first and last.
+4. The mask is then XORed with the original number to toggle the middle bits.
+5. The test cases verify the function works correctly, including the example from the problem (9 → 15).
+
+For the specific case of 9 (binary `1001`):
+- The mask becomes `0110` (binary)
+- XOR with `1001` gives `1111` (15 in decimal)

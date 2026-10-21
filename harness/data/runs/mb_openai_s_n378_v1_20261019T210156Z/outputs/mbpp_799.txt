@@ -1,0 +1,15 @@
+```python
+def left_rotate(n, d):
+    """
+    Rotate the 32-bit integer n left by d bits.
+    """
+    d %= 32
+    mask = 0xFFFFFFFF
+    n &= mask
+    return ((n << d) & mask) | (n >> (32 - d))
+
+
+if __name__ == "__main__":
+    assert left_rotate(16, 2) == 64
+    print("All tests passed.")
+```

@@ -1,0 +1,43 @@
+```python
+def sum_Of_product(n):
+    """
+    Finds the sum of the product of consecutive binomial co-efficients.
+    The sum is calculated as: sum_{k=0}^{n-1} C(n, k) * C(n, k+1).
+    
+    This is mathematically equivalent to the central binomial coefficient C(2n, n-1).
+    
+    Args:
+        n (int): The upper index of the binomial coefficients.
+        
+    Returns:
+        int: The sum of the product of consecutive binomial coefficients.
+        
+    Examples:
+        >>> sum_Of_product(3)
+        15
+        >>> sum_Of_product(4)
+        56
+    """
+    # We use the identity: sum_{k=0}^{n-1} C(n, k) * C(n, k+1) = C(2n, n-1)
+    # This is derived from the Vandermonde Identity.
+    
+    # Calculate the target binomial coefficient: C(2n, n-1)
+    # Formula: (2n)! / ((n-1)! * (2n - (n-1))!) = (2n)! / ((n-1)! * (n+1)!)
+    
+    numerator = 1
+    denominator = 1
+    
+    # Calculate (2n)! / (n+1)!
+    # This is the product of integers from (n+2) to 2n
+    for i in range(n + 2, 2 * n + 1):
+        numerator *= i
+        
+    # Calculate (n-1)!
+    for i in range(1, n):
+        denominator *= i
+        
+    return numerator // denominator
+
+# Asserting the test case provided in the problem description
+assert sum_Of_product(3) == 15
+```

@@ -1,0 +1,10 @@
+```python
+def test_duplicate(numbers):
+    """Return True if any integer appears more than once."""
+    return len(numbers) != len(set(numbers))
+
+
+if __name__ == "__main__":
+    assert test_duplicate([1, 2, 3, 4, 5]) is False
+    assert test_duplicate([1, 2, 3, 2]) is True
+```

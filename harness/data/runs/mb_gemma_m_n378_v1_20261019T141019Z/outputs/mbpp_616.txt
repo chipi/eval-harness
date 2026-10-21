@@ -1,0 +1,26 @@
+```python
+def tuple_modulo(tup1, tup2):
+    """
+    Takes two tuples of the same length and performs element-wise modulo.
+    
+    Args:
+        tup1 (tuple): The dividend tuple.
+        tup2 (tuple): The divisor tuple.
+        
+    Returns:
+        tuple: A tuple containing the results of (tup1[i] % tup2[i]).
+    """
+    # Use a generator expression within the tuple constructor to perform 
+    # element-wise modulo using zip to pair corresponding elements.
+    return tuple(a % b for a, b in zip(tup1, tup2))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+    
+    # Additional test cases
+    assert tuple_modulo((1, 2, 3), (1, 1, 1)) == (0, 0, 0)
+    assert tuple_modulo((10, 20), (3, 7)) == (1, 6)
+    
+    print("All tests passed!")
+```

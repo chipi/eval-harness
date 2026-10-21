@@ -1,0 +1,19 @@
+```python
+def odd_Equivalent(binary_string, num_rotations):
+    # Rotate the binary string
+    rotated_string = binary_string[-num_rotations:] + binary_string[:-num_rotations]
+
+    # Count the number of odd-indexed digits
+    count = 0
+    for i in range(len(rotated_string)):
+        if i % 2 != 0 and rotated_string[i] == '1':
+            count += 1
+
+    return count
+
+# Test cases
+assert odd_Equivalent("011001", 6) == 3
+assert odd_Equivalent("101010", 3) == 2
+assert odd_Equivalent("111000", 1) == 0
+assert odd_Equivalent("000000", 6) == 0
+```

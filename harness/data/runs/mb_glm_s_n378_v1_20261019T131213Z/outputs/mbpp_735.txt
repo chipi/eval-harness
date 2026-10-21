@@ -1,0 +1,56 @@
+```python
+"""
+Write a python function to toggle bits of the number except the first and the last bit. https://www.geeksforgeeks.org/toggle-bits-number-expect-first-last-bits/
+assert toggle_middle_bits(9) == 15
+"""
+
+def toggle_middle_bits(n: int) -> int:
+    """
+    Toggles all the bits of a number except the first and last bit.
+
+    Args:
+        n: An integer.
+
+    Returns:
+        An integer with the middle bits toggled.
+
+    Example:
+        >>> toggle_middle_bits(9)
+        15
+        >>> toggle_middle_bits(10)
+        5
+        >>> toggle_middle_bits(1)
+        1
+        >>> toggle_middle_bits(0)
+        0
+    """
+    # A number with all middle bits set to 1. For example, for 8-bit numbers,
+    # this mask is 0b00111110 (or 62 in decimal). The mask is created by
+    # shifting 1 left by 1, then subtracting 1 to create a block of 1s,
+    # and then shifting that block left by 1 to leave the first bit as 0.
+    # This mask will have the form 0b0...011...10.
+    mask = (1 << (n.bit_length() - 1)) - 1
+    mask = (mask << 1) | 1
+    
+    # If the number is 0 or 1, it has no middle bits to toggle.
+    # The bit_length of 0 is 0, and for 1 it's 1. In both cases,
+    # the mask calculation would result in 0, so XORing with 0 returns n.
+    if n == 0 or n.bit_length() < 2:
+        return n
+        
+    # XOR the number with the mask to toggle the middle bits.
+    # XOR (^) is a bitwise operation that returns 1 if the bits are different,
+    # and 0 if they are the same. This effectively flips the bits where the mask is 1.
+    return n ^ mask
+
+# Example usage and assertions
+if __name__ == "__main__":
+    assert toggle_middle_bits(9) == 15
+    assert toggle_middle_bits(10) == 5
+    assert toggle_middle_bits(1) == 1
+    assert toggle_middle_bits(0) == 0
+    assert toggle_middle_bits(15) == 0
+    assert toggle_middle_bits(240) == 255 # 11110000 -> 11111111
+    
+    print("All assertions passed.")
+```

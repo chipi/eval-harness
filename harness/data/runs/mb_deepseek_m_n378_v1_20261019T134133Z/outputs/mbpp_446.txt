@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_Occurrence(tup, lst):
+    """
+    Counts the total occurrences of all elements from lst within tup.
+    
+    Args:
+        tup: A tuple containing elements to search in.
+        lst: A list of elements whose occurrences need to be counted.
+    
+    Returns:
+        The total count of occurrences of elements from lst in tup.
+    """
+    return sum(tup.count(element) for element in lst)
+
+
+# Test the function
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b']) == 3
+print("Test passed!")
+```
+
+**Explanation:**
+- The function iterates over each element in the list `lst`.
+- For each element, it uses `tup.count(element)` to count how many times that element appears in the tuple.
+- It sums up all these counts using `sum()`.
+- In the example: `'a'` appears 2 times and `'b'` appears 1 time in the tuple, giving a total of `2 + 1 = 3`.

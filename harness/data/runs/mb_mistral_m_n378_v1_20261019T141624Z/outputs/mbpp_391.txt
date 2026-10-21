@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def convert_list_dictionary(ids, names, scores):
+    """
+    Convert three lists into a list of nested dictionaries.
+
+    Args:
+        ids: List of ID strings
+        names: List of name strings
+        scores: List of score integers
+
+    Returns:
+        List of dictionaries where each dictionary has the structure {id: {name: score}}
+    """
+    if len(ids) != len(names) or len(ids) != len(scores):
+        raise ValueError("All input lists must have the same length")
+
+    result = []
+    for id_, name, score in zip(ids, names, scores):
+        result.append({id_: {name: score}})
+
+    return result
+
+# Test case
+assert convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+) == [
+    {'S001': {'Adina Park': 85}},
+    {'S002': {'Leyton Marsh': 98}},
+    {'S003': {'Duncan Boyle': 89}},
+    {'S004': {'Saim Richards': 92}}
+]
+
+print("Test passed!")
+```
+
+This script:
+1. Defines the `convert_list_dictionary` function that takes three lists as input
+2. Checks that all input lists have the same length
+3. Uses `zip()` to iterate through the three lists simultaneously
+4. For each set of corresponding elements, creates a nested dictionary
+5. Returns a list of these nested dictionaries
+6. Includes the test case from the problem statement to verify the solution
+
+The function will raise a `ValueError` if the input lists have different lengths, which helps catch potential errors early.

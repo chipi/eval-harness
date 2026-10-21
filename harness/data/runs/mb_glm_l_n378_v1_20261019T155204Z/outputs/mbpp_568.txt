@@ -1,0 +1,18 @@
+```python
+def empty_list(n: int) -> list:
+    """
+    Create a list of N empty dictionaries.
+    
+    Args:
+        n (int): The number of empty dictionaries to create.
+        
+    Returns:
+        list: A list containing N empty dictionaries.
+    """
+    return [{} for _ in range(n)]
+
+# Example usage and assertion
+if __name__ == "__main__":
+    assert empty_list(5) == [{}, {}, {}, {}, {}]
+    print("Assertion passed!")
+```

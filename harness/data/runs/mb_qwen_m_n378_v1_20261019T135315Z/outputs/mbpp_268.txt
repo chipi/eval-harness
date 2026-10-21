@@ -1,0 +1,32 @@
+```python
+def find_star_num(n: int) -> int:
+    """
+    Find the n'th star number.
+    
+    A star number is a centered figurate number that represents a centered hexagram (six-pointed star).
+    The formula for the n-th star number is: 6n(n - 1) + 1
+    
+    Args:
+        n: The position in the sequence of star numbers (1-indexed)
+        
+    Returns:
+        The n-th star number
+        
+    Examples:
+        >>> find_star_num(1)
+        1
+        >>> find_star_num(2)
+        13
+        >>> find_star_num(3)
+        37
+    """
+    return 6 * n * (n - 1) + 1
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert find_star_num(3) == 37
+    assert find_star_num(1) == 1
+    assert find_star_num(2) == 13
+    print("All tests passed!")
+```

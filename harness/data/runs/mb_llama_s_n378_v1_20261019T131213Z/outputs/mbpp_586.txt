@@ -1,0 +1,32 @@
+```python
+def split_Arr(arr, n):
+    """
+    This function splits a list at the nth element and adds the first part to the end.
+
+    Args:
+        arr (list): The input list to be processed.
+        n (int): The index at which the list is split.
+
+    Returns:
+        list: The modified list.
+    """
+    # Check if n is within the bounds of the list
+    if n < 0 or n >= len(arr):
+        raise IndexError("n is out of range")
+
+    # Split the list into two parts at the nth index
+    first_part = arr[:n]
+    second_part = arr[n:]
+
+    # Combine the two parts in reverse order
+    result = second_part + first_part
+
+    return result
+
+
+# Test the function
+assert split_Arr([12,10,5,6,52,36],2) == [5,6,52,36,12,10]
+print("All tests passed.")
+```
+
+This script defines a function `split_Arr` that takes a list `arr` and an integer `n` as input, splits the list at the nth element, and adds the first part to the end. The function includes error checking to ensure that `n` is within the bounds of the list. The test case is included at the end to verify the function's correctness.

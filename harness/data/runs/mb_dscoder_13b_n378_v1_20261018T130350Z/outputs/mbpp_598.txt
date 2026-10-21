@@ -1,0 +1,23 @@
+```python
+def armstrong_number(num):
+    # Convert the number to a string to easily access each digit
+    num_str = str(num)
+    num_digits = len(num_str)
+    
+    # Calculate the sum of the digits raised to the power of the number of digits
+    sum_of_digits = sum(int(digit)**num_digits for digit in num_str)
+    
+    # Check if the sum is equal to the original number
+    return sum_of_digits == num
+
+# Test cases
+assert armstrong_number(153) == True
+assert armstrong_number(370) == True
+assert armstrong_number(371) == True
+assert armstrong_number(407) == True
+assert armstrong_number(1634) == True
+assert armstrong_number(8208) == True
+assert armstrong_number(9474) == True
+assert armstrong_number(1407) == False
+assert armstrong_number(1635) == False
+```

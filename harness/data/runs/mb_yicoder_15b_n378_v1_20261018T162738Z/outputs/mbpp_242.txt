@@ -1,0 +1,6 @@
+```python
+def count_characters(string):
+    return len(string)
+
+assert count_characters("python programming")==18
+```

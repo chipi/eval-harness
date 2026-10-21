@@ -1,0 +1,40 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Checks if the given text contains a word that includes the letter 'z'.
+
+    Args:
+        text: The input string to search.
+
+    Returns:
+        True if a word containing 'z' is found, False otherwise.
+    """
+    # The regex pattern looks for:
+    # \b       - a word boundary
+    # [a-zA-Z]* - zero or more alphabetic characters
+    # z        - the literal letter 'z'
+    # [a-zA-Z]* - zero or more alphabetic characters
+    # \b       - a word boundary
+    pattern = r'\b[a-zA-Z]*z[a-zA-Z]*\b'
+    
+    # re.search() finds the first location in the string that matches the pattern.
+    # It returns a match object if found, otherwise None.
+    # We convert the result to a boolean: True if a match is found, False otherwise.
+    return bool(re.search(pattern, text))
+
+# Example usage and assertion from the problem description
+assert text_match_wordz("pythonz.") == True
+
+# Additional test cases
+assert text_match_wordz("zoo") == True
+assert text_match_wordz("zebra") == True
+assert text_match_wordz("puzzle") == True
+assert text_match_wordz("fizz buzz") == True
+assert text_match_wordz("hello world") == False
+assert text_match_wordz("123z") == False # 'z' is not part of a word
+assert text_match_wordz("z") == True # A single 'z' is a word
+
+print("All tests passed!")
+```

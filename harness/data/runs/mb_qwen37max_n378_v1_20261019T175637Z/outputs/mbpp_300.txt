@@ -1,0 +1,16 @@
+```python
+import math
+
+
+def count_binary_seq(n):
+    """
+    Find the count of all binary sequences of length 2n such that
+    sum of first n bits is same as sum of last n bits.
+    
+    For each possible sum k (0 to n), there are C(n,k) ways to choose
+    the first n bits and C(n,k) ways to choose the last n bits.
+    Total = sum over k of C(n,k)^2 = C(2n, n)
+    """
+    # The answer is C(2n, n)
+    return float(math.comb(2 * n, n))
+```

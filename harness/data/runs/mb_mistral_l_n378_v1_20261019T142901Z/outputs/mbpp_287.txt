@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem, including the assertion as specified:
+
+```python
+"""
+Function to calculate the sum of squares of the first n even natural numbers.
+"""
+
+def square_Sum(n):
+    """
+    Calculate the sum of squares of the first n even natural numbers.
+
+    Args:
+        n (int): The number of even natural numbers to consider.
+
+    Returns:
+        int: The sum of squares of the first n even natural numbers.
+    """
+    sum_squares = 0
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        sum_squares += even_number ** 2
+    return sum_squares
+
+# Test the function with the provided assertion
+assert square_Sum(2) == 20
+
+# Example usage
+if __name__ == "__main__":
+    print(square_Sum(2))  # Output: 20
+    print(square_Sum(3))  # Output: 56 (2² + 4² + 6² = 4 + 16 + 36 = 56)
+```
+
+### Explanation:
+1. The function `square_Sum(n)` calculates the sum of squares of the first `n` even natural numbers.
+2. The first `n` even natural numbers are `2, 4, 6, ..., 2n`.
+3. The loop runs from `1` to `n`, and for each iteration, it calculates the even number as `2 * i` and adds its square to `sum_squares`.
+4. The assertion `assert square_Sum(2) == 20` verifies that the function works correctly for `n = 2` (since `2² + 4² = 4 + 16 = 20`).
+5. The `if __name__ == "__main__":` block allows the script to be run directly, demonstrating the function with examples.

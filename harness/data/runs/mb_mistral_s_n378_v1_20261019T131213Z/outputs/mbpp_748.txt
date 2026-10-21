@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to put spaces between words starting with capital letters in a given string.
+assert capital_words_spaces("Python") == 'Python'
+"""
+
+def capital_words_spaces(s):
+    """
+    Inserts spaces before capital letters in a string, except at the start of the string.
+
+    Args:
+        s (str): The input string to process
+
+    Returns:
+        str: The processed string with spaces before capital letters
+    """
+    if not s:
+        return s
+
+    result = []
+    for i, char in enumerate(s):
+        if char.isupper() and i != 0:
+            result.append(' ')
+        result.append(char)
+    return ''.join(result)
+
+# Test cases
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("helloWorld") == 'hello World'
+assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+assert capital_words_spaces("") == ''
+assert capital_words_spaces("a") == 'a'
+assert capital_words_spaces("A") == 'A'
+assert capital_words_spaces("aBcDeF") == 'a Bc De F'
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `capital_words_spaces` that processes the input string
+2. Handles edge cases (empty string, single character, etc.)
+3. Inserts spaces before capital letters that aren't at the start of the string
+4. Includes test cases that verify the function works as expected
+5. The test case from the problem statement is included and passes
+
+The function works by iterating through each character in the string and adding a space before any uppercase letter that isn't the first character.

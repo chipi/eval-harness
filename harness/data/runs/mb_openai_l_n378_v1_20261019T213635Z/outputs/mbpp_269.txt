@@ -1,0 +1,13 @@
+```python
+def ascii_value(char):
+    """Return the ASCII value of a single character."""
+    if len(char) != 1:
+        raise ValueError("Expected a single character")
+    value = ord(char)
+    if value > 127:
+        raise ValueError("Character is not ASCII")
+    return value
+
+
+assert ascii_value('A') == 65
+```

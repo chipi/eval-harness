@@ -1,0 +1,26 @@
+```python
+def union_elements(tuple1, tuple2):
+    """
+    Finds the union of the elements of two given tuples 
+    and returns them as a sorted tuple.
+    """
+    # Convert tuples to sets to find unique elements (union)
+    union_set = set(tuple1) | set(tuple2)
+    
+    # Convert the set back to a list, sort it, and return as a tuple
+    return tuple(sorted(list(union_set)))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = union_elements((3, 4, 5, 6), (5, 7, 4, 10))
+    expected = (3, 4, 5, 6, 7, 10)
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    # Additional test cases
+    assert union_elements((1, 2, 3), (3, 4, 5)) == (1, 2, 3, 4, 5)
+    assert union_elements((10, 20), (5, 10, 15)) == (5, 10, 15, 20)
+    assert union_elements((1, 1, 1), (1, 1)) == (1,)
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,7 @@
+```python
+def is_upper(text):
+    return text.upper()
+
+
+assert is_upper("person") == "PERSON"
+```

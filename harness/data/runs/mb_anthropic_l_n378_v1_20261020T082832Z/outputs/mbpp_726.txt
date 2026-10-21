@@ -1,0 +1,44 @@
+Looking at this problem, I need to create a function that multiplies each element with its successor, producing a tuple of length N from an input tuple of length N+1.
+
+```python
+"""
+Write a function that takes as input a tuple of numbers (t_1,...,t_{N+1}) and returns a tuple of length N where the i-th element of the tuple is equal to t_i * t_{i+1}.
+assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+"""
+
+
+def multiply_elements(test_tup):
+    """
+    Given a tuple (t_1, ..., t_{N+1}), return a tuple of length N whose
+    i-th element is t_i * t_{i+1}.
+
+    Examples:
+        >>> multiply_elements((1, 5, 7, 8, 10))
+        (5, 35, 56, 80)
+    """
+    return tuple(a * b for a, b in zip(test_tup, test_tup[1:]))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+
+    # Additional test cases
+    assert multiply_elements((2, 4, 5, 6, 7)) == (8, 20, 30, 42)
+    assert multiply_elements((12, 13, 14, 9, 15)) == (156, 182, 126, 135)
+    assert multiply_elements((10, 20)) == (200,)
+    assert multiply_elements((5,)) == ()
+    assert multiply_elements(()) == ()
+    assert multiply_elements((1.5, 2.0, -3)) == (3.0, -6.0)
+
+    print("All tests passed!")
+    print(multiply_elements((1, 5, 7, 8, 10)))
+```
+
+**How it works:**
+
+- `test_tup[1:]` is the tuple shifted left by one position.
+- `zip(test_tup, test_tup[1:])` pairs each element `t_i` with its successor `t_{i+1}`, producing exactly N pairs for an input of length N+1.
+- The generator expression multiplies each pair, and `tuple(...)` collects the results.
+
+Edge cases (empty tuple or single element) naturally return an empty tuple, since there are no adjacent pairs.

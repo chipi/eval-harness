@@ -1,0 +1,19 @@
+```python
+def right_insertion(nums, target):
+    left, right = 0, len(nums)
+    while left < right:
+        mid = (left + right) // 2
+        if nums[mid] <= target:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+def main():
+    nums = [1, 2, 4, 5]
+    target = 6
+    print(right_insertion(nums, target))  # Output: 4
+
+if __name__ == "__main__":
+    main()
+```

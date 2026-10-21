@@ -1,0 +1,32 @@
+```python
+#!/usr/bin/env python3
+"""
+Find minimum k records from a tuple list.
+
+Each record is assumed to be a tuple where the second element is the value used
+for ordering, e.g. ('Name', score). The function returns the k records with the
+smallest second-element values, sorted in ascending order by that value.
+"""
+
+def min_k(records, k):
+    """
+    Return the minimum k records from a list of tuples based on the second item.
+
+    Args:
+        records: List of tuples, where each tuple has at least two elements.
+        k: Number of minimum records to return.
+
+    Returns:
+        A list containing the k tuples with the smallest second values.
+    """
+    return sorted(records, key=lambda item: item[1])[:k]
+
+
+if __name__ == "__main__":
+    assert min_k(
+        [('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)],
+        2
+    ) == [('Akash', 2), ('Akshat', 4)]
+
+    print("All tests passed.")
+```

@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_average(n):
+    """
+    Find the sum and average of the first n natural numbers.
+    
+    Args:
+        n (int): The number of natural numbers to consider.
+    
+    Returns:
+        tuple: A tuple containing (sum, average) of the first n natural numbers.
+    """
+    if n <= 0:
+        return (0, 0.0)
+    
+    # Sum of first n natural numbers: n * (n + 1) / 2
+    total = n * (n + 1) // 2
+    average = total / n
+    
+    return (total, average)
+
+
+# Test the function
+assert sum_average(10) == (55, 5.5)
+print("Test passed!")
+print(f"sum_average(10) = {sum_average(10)}")
+print(f"sum_average(5) = {sum_average(5)}")
+print(f"sum_average(100) = {sum_average(100)}")
+```
+
+**Explanation:**
+
+1. **Formula for sum**: The sum of the first `n` natural numbers is given by the formula `n * (n + 1) / 2`. Using integer division `//` ensures we get an integer result.
+
+2. **Average calculation**: The average is simply the sum divided by `n`, which gives a float.
+
+3. **Edge case handling**: If `n <= 0`, we return `(0, 0.0)` to avoid division by zero.
+
+4. **Verification**: The assertion `sum_average(10) == (55, 5.5)` checks that:
+   - Sum: 1+2+3+...+10 = 55 ✓
+   - Average: 55/10 = 5.5 ✓
+
+**Output:**
+```
+Test passed!
+sum_average(10) = (55, 5.5)
+sum_average(5) = (15, 3.0)
+sum_average(100) = (5050, 50.5)
+```

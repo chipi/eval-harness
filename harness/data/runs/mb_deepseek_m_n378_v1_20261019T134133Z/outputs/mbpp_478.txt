@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_lowercase(s: str) -> str:
+    """
+    Remove all lowercase letters from the given string.
+    
+    Args:
+        s: The input string.
+    
+    Returns:
+        A new string with all lowercase letters removed.
+    """
+    return ''.join(ch for ch in s if not ch.islower())
+
+
+# Test cases
+assert remove_lowercase("PYTHon") == 'PYTH'
+assert remove_lowercase("helloWORLD") == 'WORLD'
+assert remove_lowercase("abcDEFghiJKL") == 'DEFJKL'
+assert remove_lowercase("alllowercase") == ''
+assert remove_lowercase("ALLUPPER") == 'ALLUPPER'
+assert remove_lowercase("") == ''
+assert remove_lowercase("123abc456DEF") == '123456DEF'
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function `remove_lowercase` iterates over each character in the input string `s`.
+2. It uses `ch.islower()` to check if the character is a lowercase letter.
+3. Only characters that are **not** lowercase are kept, and they're joined back into a new string using `''.join(...)`.
+4. The `assert` statements verify the expected behavior, including edge cases like empty strings, all-lowercase strings, and strings with digits.
+
+When you run this script, it will print `All tests passed!` if everything works correctly.

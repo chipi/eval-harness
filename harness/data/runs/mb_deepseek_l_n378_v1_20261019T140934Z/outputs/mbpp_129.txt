@@ -1,0 +1,44 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def magic_square_test(matrix):
+    """
+    Check if a given square matrix is a magic square.
+    A magic square has the same sum for all rows, columns, and both diagonals.
+    """
+    n = len(matrix)
+    if n == 0 or any(len(row) != n for row in matrix):
+        return False
+
+    # Calculate the target sum from the first row
+    target_sum = sum(matrix[0])
+
+    # Check rows
+    for row in matrix:
+        if sum(row) != target_sum:
+            return False
+
+    # Check columns
+    for col in range(n):
+        if sum(matrix[row][col] for row in range(n)) != target_sum:
+            return False
+
+    # Check main diagonal
+    if sum(matrix[i][i] for i in range(n)) != target_sum:
+        return False
+
+    # Check anti-diagonal
+    if sum(matrix[i][n - 1 - i] for i in range(n)) != target_sum:
+        return False
+
+    return True
+
+
+# Test the function
+if __name__ == "__main__":
+    assert magic_square_test([[7, 12, 1, 14],
+                              [2, 13, 8, 11],
+                              [16, 3, 10, 5],
+                              [9, 6, 15, 4]]) == True
+    print("All tests passed.")
+```

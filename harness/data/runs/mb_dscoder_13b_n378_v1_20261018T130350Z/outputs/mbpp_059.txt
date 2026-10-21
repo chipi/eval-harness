@@ -1,0 +1,11 @@
+```python
+def is_octagonal(n):
+    return n*(7*n - 5) // 2
+
+# Test cases
+assert is_octagonal(1) == 1
+assert is_octagonal(2) == 28
+assert is_octagonal(3) == 60
+assert is_octagonal(4) == 120
+assert is_octagonal(5) == 210
+```

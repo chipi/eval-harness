@@ -1,0 +1,22 @@
+```python
+def multiply_elements(t: tuple) -> tuple:
+    """
+    Takes a tuple of numbers (t_1, ..., t_{N+1}) and returns a tuple 
+    of length N where the i-th element is t_i * t_{i+1}.
+    """
+    # Use a generator expression to multiply adjacent elements
+    # zip(t, t[1:]) pairs (t_0, t_1), (t_1, t_2), etc.
+    return tuple(a * b for a, b in zip(t, t[1:]))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = (1, 5, 7, 8, 10)
+    expected_output = (5, 35, 56, 80)
+    result = multiply_elements(input_tuple)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed!")
+    print(f"Input: {input_tuple}")
+    print(f"Output: {result}")
+```

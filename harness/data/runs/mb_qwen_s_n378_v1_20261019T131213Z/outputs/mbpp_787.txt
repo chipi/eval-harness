@@ -1,0 +1,27 @@
+```python
+import re
+
+def text_match_three(text):
+    """
+    Matches a string that has an 'a' followed by exactly three 'b's.
+    
+    Args:
+        text (str): The input string to check.
+        
+    Returns:
+        bool: True if the pattern is found, False otherwise.
+    """
+    # Pattern: 'a' followed by exactly three 'b's
+    # We use \b or lookahead/lookbehind to ensure it's not part of more b's? 
+    # The problem says "an a followed by three 'b'". Usually this means at least one occurrence of "abb" but specifically three b's.
+    # Let's interpret as finding substring "abbb".
+    # However, standard regex exercises often mean matching the whole string or just checking existence.
+    # Given the assert `not text_match_three("ac")`, it implies we are checking for the presence of the pattern.
+    # If the input was "abbb", it should return True.
+    # If the input was "abbbb", does it match? "an a followed by three 'b'" could be interpreted strictly as exactly three, or at least three.
+    # Common interpretation in such simple exercises: find "abbb".
+    # Let's assume the task is to check if the string contains "abbb".
+    
+    pattern = r'abbb'
+    return bool(re.search(pattern, text))
+```

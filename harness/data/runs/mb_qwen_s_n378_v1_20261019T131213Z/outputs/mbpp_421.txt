@@ -1,0 +1,17 @@
+```python
+def concatenate_tuple(t):
+    """
+    Concatenate each element of a tuple by the delimiter '-'.
+    
+    Args:
+        t: A tuple containing elements to be concatenated.
+        
+    Returns:
+        A string with all elements of the tuple joined by '-'.
+    """
+    return '-'.join(str(item) for item in t)
+
+
+# Test case
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+```

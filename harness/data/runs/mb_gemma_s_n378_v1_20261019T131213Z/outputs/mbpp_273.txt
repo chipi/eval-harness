@@ -1,0 +1,16 @@
+```python
+def substract_elements(tuple1, tuple2):
+  """
+  Subtracts the elements of the first tuple by the elements of the second tuple with the same index.
+  For example:
+  substract_elements((10, 4, 5), (2, 5, 18)) == (8, -1, -13)
+  """
+  if len(tuple1) != len(tuple2):
+    raise ValueError("Tuples must have the same length")
+
+  result = tuple(a - b for a, b in zip(tuple1, tuple2))
+  return result
+
+# Example usage and assertion
+assert substract_elements((10, 4, 5), (2, 5, 18)) == (8, -1, -13)
+```

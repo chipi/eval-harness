@@ -1,0 +1,74 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Calculates the sum of products of all possible sublists (contiguous subarrays)
+    of a given list.
+
+    The solution leverages a mathematical insight to achieve an O(n) time complexity.
+    For each element arr[i], we determine how many times it appears in the product
+    of all subarrays. This count is given by (i + 1) * (n - i), where 'n' is the
+    length of the array. This formula accounts for the number of choices for the
+    start and end indices of subarrays that include arr[i].
+
+    Args:
+        arr: A list of numbers (integers or floats).
+
+    Returns:
+        The sum of the products of all possible contiguous subarrays.
+        
+    Example:
+        >>> sum_Of_Subarray_Prod([1, 2, 3])
+        20
+        >>> sum_Of_Subarray_Prod([1, 2, 3, 4])
+        84
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    # Iterate through each element of the array
+    for i in range(n):
+        # For the current element arr[i], calculate the number of subarrays
+        # in which it appears.
+        # The number of choices for the start index is (i + 1).
+        # The number of choices for the end index is (n - i).
+        # The total number of subarrays containing arr[i] is their product.
+        count_of_subarrays = (i + 1) * (n - i)
+        
+        # The element arr[i] is multiplied 'count_of_subarrays' times
+        # in the grand total sum of all subarray products.
+        total_sum += arr[i] * count_of_subarrays
+        
+    return total_sum
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    # Test case 1
+    input_list1 = [1, 2, 3]
+    expected_output1 = 20
+    result1 = sum_Of_Subarray_Prod(input_list1)
+    print(f"Input: {input_list1}")
+    print(f"Expected Output: {expected_output1}")
+    print(f"Calculated Output: {result1}")
+    assert result1 == expected_output1
+    print("Assertion passed for [1, 2, 3]!\n")
+
+    # Test case 2
+    input_list2 = [1, 2, 3, 4]
+    expected_output2 = 84
+    result2 = sum_Of_Subarray_Prod(input_list2)
+    print(f"Input: {input_list2}")
+    print(f"Expected Output: {expected_output2}")
+    print(f"Calculated Output: {result2}")
+    assert result2 == expected_output2
+    print("Assertion passed for [1, 2, 3, 4]!\n")
+
+    # Test case with negative numbers
+    input_list3 = [-1, 2, -3]
+    expected_output3 = -10
+    result3 = sum_Of_Subarray_Prod(input_list3)
+    print(f"Input: {input_list3}")
+    print(f"Expected Output: {expected_output3}")
+    print(f"Calculated Output: {result3}")
+    assert result3 == expected_output3
+    print("Assertion passed for [-1, 2, -3]!\n")
+```

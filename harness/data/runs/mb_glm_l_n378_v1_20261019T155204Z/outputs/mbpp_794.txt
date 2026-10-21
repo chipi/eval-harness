@@ -1,0 +1,38 @@
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Checks if the string contains a substring that starts with 'a' 
+    and ends with 'b'. The test case 'aabbbb' suggests that the 
+    pattern should match a non-empty sequence of characters between 
+    'a' and 'b', or simply 'a' followed by 'b'.
+    
+    This function uses regex to find 'a' followed by any characters 
+    (non-greedy match) ending in 'b'.
+    """
+    # Regex explanation:
+    # a      : Matches the character 'a'.
+    # .*?    : Matches any character (except newline) zero or more times.
+    #          The '?' makes it non-greedy (shortest match).
+    # b      : Matches the character 'b'.
+    pattern = r'a.*?b'
+    
+    # Search returns a Match object if the pattern is found anywhere in the string
+    match = re.search(pattern, text)
+    
+    # Return True if a match is found, False otherwise
+    return bool(match)
+
+# Asserting the provided test case
+assert text_starta_endb("aabbbb") == True, "Test Failed: 'aabbbb' should match"
+
+# Additional test cases to verify logic
+assert text_starta_endb("ab") == True, "Test Failed: 'ab' should match" 
+assert text_starta_endb("a123b") == True, "Test Failed: 'a123b' should match"
+assert text_starta_endb("acb") == True, "Test Failed: 'acb' should match"
+assert text_starta_endb("abc") == False, "Test Failed: 'abc' should not match"
+assert text_starta_endb("xyz") == False, "Test Failed: 'xyz' should not match"
+
+print("All tests passed!")
+```

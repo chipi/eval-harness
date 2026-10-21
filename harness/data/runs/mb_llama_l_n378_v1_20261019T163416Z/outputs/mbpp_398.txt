@@ -1,0 +1,13 @@
+```python
+def sum_of_digits(numbers):
+    return sum(sum(int(digit) for digit in str(num)) for num in numbers)
+
+def main():
+    numbers = [10, 2, 56]
+    result = sum_of_digits(numbers)
+    print(f"Sum of digits: {result}")
+    assert result == 14
+
+if __name__ == "__main__":
+    main()
+```

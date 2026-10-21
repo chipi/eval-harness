@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def count_X(tup, element):
+    """
+    Counts the occurrences of an element in a tuple.
+    
+    Args:
+        tup: The tuple to search in
+        element: The element to count
+        
+    Returns:
+        int: The number of occurrences of the element in the tuple
+    """
+    return tup.count(element)
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+    print("Assertion passed!")
+```

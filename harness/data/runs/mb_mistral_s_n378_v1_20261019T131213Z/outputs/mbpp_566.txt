@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def sum_digits(n):
+    """Return the sum of the digits of a non-negative integer."""
+    return sum(int(digit) for digit in str(n))
+
+# Test the function
+assert sum_digits(345) == 12
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `sum_digits` that takes a non-negative integer `n`
+2. Converts the number to a string to iterate through each digit
+3. Converts each digit back to an integer and sums them
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works for any non-negative integer, including 0 (which returns 0) and single-digit numbers (which return the number itself).

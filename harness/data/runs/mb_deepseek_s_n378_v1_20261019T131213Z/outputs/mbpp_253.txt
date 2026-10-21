@@ -1,0 +1,27 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def count_integer(lst):
+    """
+    Returns the number of integer elements in a given list.
+    
+    Args:
+        lst (list): The input list.
+    
+    Returns:
+        int: Count of integer elements.
+    """
+    count = 0
+    for item in lst:
+        if isinstance(item, int) and not isinstance(item, bool):
+            count += 1
+    return count
+
+# Test the function
+if __name__ == "__main__":
+    assert count_integer([1, 2, 'abc', 1.2]) == 2
+    assert count_integer([1, 2, 3, 4]) == 4
+    assert count_integer(['a', 'b', 'c']) == 0
+    assert count_integer([True, False, 1, 2]) == 2  # booleans are not counted as integers
+    print("All tests passed.")
+```

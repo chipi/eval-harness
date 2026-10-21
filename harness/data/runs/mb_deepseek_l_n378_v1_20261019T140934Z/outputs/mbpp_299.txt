@@ -1,0 +1,33 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+from collections import defaultdict
+
+def max_aggregate(data):
+    """
+    Calculate the maximum aggregate from the list of tuples.
+    Each tuple contains a name and a score. The function sums scores
+    for each name and returns the name with the highest total score.
+    """
+    aggregates = defaultdict(int)
+    
+    for name, score in data:
+        aggregates[name] += score
+    
+    # Find the name with the maximum aggregate score
+    max_name = max(aggregates, key=aggregates.get)
+    return (max_name, aggregates[max_name])
+
+# Test the function
+if __name__ == "__main__":
+    result = max_aggregate([
+        ('Juan Whelan', 90),
+        ('Sabah Colley', 88),
+        ('Peter Nichols', 7),
+        ('Juan Whelan', 122),
+        ('Sabah Colley', 84)
+    ])
+    print(result)
+    assert result == ('Juan Whelan', 212)
+    print("Test passed!")
+```

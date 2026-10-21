@@ -1,0 +1,11 @@
+```python
+def split_two_parts(lst, L):
+    """
+    Splits the given list into two parts where the first part has length L.
+    Returns the two parts as a tuple.
+    """
+    return (lst[:L], lst[L:])
+
+# Test case
+assert split_two_parts([1,1,2,3,4,4,5,1],3)==([1, 1, 2], [3, 4, 4, 5, 1])
+```

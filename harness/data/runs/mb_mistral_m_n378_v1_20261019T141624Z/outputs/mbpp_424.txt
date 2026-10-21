@@ -1,0 +1,7 @@
+```python
+def extract_rear(tuple_of_strings):
+    return [s[-1] for s in tuple_of_strings]
+
+# Test the function
+assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+```

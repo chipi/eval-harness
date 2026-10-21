@@ -1,0 +1,12 @@
+```python
+import math
+
+def radian_degree(deg):
+    return deg * math.pi / 180
+
+def main():
+    print(radian_degree(90))  # Expected output: 1.5707963267948966
+
+if __name__ == "__main__":
+    main()
+```

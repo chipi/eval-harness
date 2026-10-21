@@ -1,0 +1,48 @@
+```python
+def eulerian_num(n, m):
+    """
+    Compute the Eulerian number a(n, m), which counts the number of permutations
+    of the numbers 1 to n in which exactly m elements are greater than the previous
+    element (i.e., the number of "ascents" or "permutation ascents").
+
+    The Eulerian number a(n, m) can be computed using the following recurrence:
+    a(n, m) = (n - m) * a(n - 1, m - 1) + (m + 1) * a(n - 1, m)
+    with the base case a(0, 0) = 1 and a(n, m) = 0 if m < 0 or m >= n.
+
+    Args:
+        n (int): The size of the permutation (must be non-negative).
+        m (int): The number of ascents (must be non-negative).
+
+    Returns:
+        int: The Eulerian number a(n, m).
+
+    Raises:
+        ValueError: If n or m is negative, or if m >= n.
+    """
+    if n < 0 or m < 0:
+        raise ValueError("n and m must be non-negative")
+    if m >= n:
+        return 0  # By definition, a(n, m) = 0 if m >= n
+
+    # Initialize a DP table to store a(n, m) values
+    dp = [[0] * (n) for _ in range(n + 1)]
+    dp[0][0] = 1  # Base case
+
+    for i in range(1, n + 1):
+        for j in range(0, i):
+            if j == 0:
+                dp[i][j] = 1  # a(n, 0) = 1 for all n >= 1
+            else:
+                dp[i][j] = (i - j) * dp[i - 1][j - 1] + (j + 1) * dp[i - 1][j]
+
+    return dp[n][m]
+
+# Test cases
+assert eulerian_num(3, 1) == 4
+assert eulerian_num(3, 0) == 1
+assert eulerian_num(3, 2) == 1
+assert eulerian_num(4, 1) == 11
+assert eulerian_num(4, 2) == 11
+assert eulerian_num(5, 2) == 66
+print("All test cases passed!")
+```

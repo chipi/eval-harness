@@ -1,0 +1,24 @@
+```python
+def sum_of_divisors(n):
+    """Return the sum of divisors of n, excluding n itself."""
+    return sum(i for i in range(1, n) if n % i == 0)
+
+def amicable_numbers_sum(n):
+    """
+    Return the sum of all amicable numbers from 1 to n.
+    
+    An amicable number is a number for which the sum of its proper divisors 
+    (excluding the number itself) is equal to another number, and the sum of 
+    the proper divisors of that other number is equal to the original number.
+    """
+    amicable_numbers = set()
+    for i in range(1, n + 1):
+        j = sum_of_divisors(i)
+        if i != j and sum_of_divisors(j) == i and i < j:
+            amicable_numbers.add(i)
+            amicable_numbers.add(j)
+    return sum(amicable_numbers)
+
+# Test the function
+print(amicable_numbers_sum(999))  # Output: 31626
+```

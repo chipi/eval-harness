@@ -1,0 +1,196 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n: An integer to validate.
+    
+    Returns:
+        True if for every digit d in n, the count of d in n is <= d. False otherwise.
+    """
+    # Convert the number to a string to iterate over its digits
+    s = str(n)
+    
+    # Count the frequency of each digit
+    for digit_char in set(s):
+        digit = int(digit_char)
+        frequency = s.count(digit_char)
+        if frequency > digit:
+            return False
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    assert validate(1234) == True
+    assert validate(111) == False       # digit 1 appears 3 times, 3 > 1
+    assert validate(0) == True          # digit 0 appears 1 time, 1 > 0 -> False actually
+    assert validate(10) == True         # 1 appears once (1<=1), 0 appears once (1>0) -> False
+    assert validate(122) == True        # 1:1, 2:2 -> True
+    assert validate(221) == True        # 2:2, 1:1 -> True
+    assert validate(333) == False       # 3 appears 3 times, 3<=3 -> True actually
+    print("All tests passed!")
+```
+
+Wait — let me reconsider the edge cases carefully. The rule is: frequency of each digit ≤ the digit itself.
+
+- `validate(0)`: digit `0` appears once. Is `1 <= 0`? No → should be `False`.
+- `validate(10)`: digit `1` appears once (`1 <= 1` ✓), digit `0` appears once (`1 <= 0` ✗) → `False`.
+- `validate(333)`: digit `3` appears 3 times (`3 <= 3` ✓) → `True`.
+
+Let me fix the test cases accordingly:
+
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n: An integer to validate.
+    
+    Returns:
+        True if for every digit d in n, the count of d in n is <= d. False otherwise.
+    """
+    s = str(n)
+    for digit_char in set(s):
+        digit = int(digit_char)
+        if s.count(digit_char) > digit:
+            return False
+    return True
+
+
+if __name__ == "__main__":
+    assert validate(1234) == True
+    assert validate(111) == False       # 1 appears 3 times, 3 > 1
+    assert validate(0) == False         # 0 appears 1 time, 1 > 0
+    assert validate(10) == False        # 0 appears 1 time, 1 > 0
+    assert validate(122) == True        # 1:1, 2:2
+    assert validate(221) == True        # 2:2, 1:1
+    assert validate(333) == True        # 3 appears 3 times, 3 <= 3
+    assert validate(4444) == False      # 4 appears 4 times, 4 <= 4 -> True actually
+    print("All tests passed!")
+```
+
+Hmm, `4444` → digit `4` appears 4 times, `4 <= 4` → `True`. Let me correct:
+
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n: An integer to validate.
+    
+    Returns:
+        True if for every digit d in n, the count of d in n is <= d. False otherwise.
+    """
+    s = str(n)
+    for digit_char in set(s):
+        digit = int(digit_char)
+        if s.count(digit_char) > digit:
+            return False
+    return True
+
+
+if __name__ == "__main__":
+    assert validate(1234) == True
+    assert validate(111) == False       # 1 appears 3 times, 3 > 1
+    assert validate(0) == False         # 0 appears 1 time, 1 > 0
+    assert validate(10) == False        # 0 appears 1 time, 1 > 0
+    assert validate(122) == True        # 1:1, 2:2
+    assert validate(221) == True        # 2:2, 1:1
+    assert validate(333) == True        # 3 appears 3 times, 3 <= 3
+    assert validate(4444) == True       # 4 appears 4 times, 4 <= 4
+    assert validate(55555) == False     # 5 appears 5 times, 5 <= 5 -> True actually
+    print("All tests passed!")
+```
+
+I keep making the same mistake. `55555` → digit `5` appears 5 times, `5 <= 5` → `True`. Let me use a clearly failing case:
+
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n: An integer to validate.
+    
+    Returns:
+        True if for every digit d in n, the count of d in n is <= d. False otherwise.
+    """
+    s = str(n)
+    for digit_char in set(s):
+        digit = int(digit_char)
+        if s.count(digit_char) > digit:
+            return False
+    return True
+
+
+if __name__ == "__main__":
+    assert validate(1234) == True
+    assert validate(111) == False       # 1 appears 3 times, 3 > 1
+    assert validate(0) == False         # 0 appears 1 time, 1 > 0
+    assert validate(10) == False        # 0 appears 1 time, 1 > 0
+    assert validate(122) == True        # 1:1, 2:2
+    assert validate(221) == True        # 2:2, 1:1
+    assert validate(333) == True        # 3 appears 3 times, 3 <= 3
+    assert validate(4444) == True       # 4 appears 4 times, 4 <= 4
+    assert validate(55555) == True      # 5 appears 5 times, 5 <= 5
+    assert validate(666666) == True     # 6 appears 6 times, 6 <= 6
+    assert validate(7777777) == True    # 7 appears 7 times, 7 <= 7
+    assert validate(88888888) == True   # 8 appears 8 times, 8 <= 8
+    assert validate(999999999) == True  # 9 appears 9 times, 9 <= 9
+    assert validate(11) == False        # 1 appears 2 times, 2 > 1
+    assert validate(22) == True         # 2 appears 2 times, 2 <= 2
+    assert validate(33) == True         # 3 appears 2 times, 2 <= 3
+    print("All tests passed!")
+```
+
+This is the final, correct version:
+
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n: An integer to validate.
+    
+    Returns:
+        True if for every digit d in n, the count of d in n is <= d. False otherwise.
+    """
+    s = str(n)
+    for digit_char in set(s):
+        digit = int(digit_char)
+        if s.count(digit_char) > digit:
+            return False
+    return True
+
+
+if __name__ == "__main__":
+    assert validate(1234) == True
+    assert validate(111) == False
+    assert validate(0) == False
+    assert validate(10) == False
+    assert validate(122) == True
+    assert validate(221) == True
+    assert validate(333) == True
+    assert validate(4444) == True
+    assert validate(11) == False
+    assert validate(22) == True
+    assert validate(33) == True
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+1. Convert the integer `n` to a string `s` so we can easily iterate over its digits.
+2. Use `set(s)` to get each unique digit character (avoiding redundant checks).
+3. For each unique digit character, convert it to an integer `digit` and count how many times it appears in `s` using `s.count(digit_char)`.
+4. If the frequency exceeds the digit's value, return `False`.
+5. If all digits pass the check, return `True`.
+
+For example, `validate(1234)` returns `True` because each digit `1, 2, 3, 4` appears exactly once, and `1 <= 1`, `1 <=

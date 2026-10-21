@@ -1,0 +1,11 @@
+```python
+import re
+
+
+def check_str(text):
+    """Return True if text starts with a vowel (case-insensitive)."""
+    return bool(re.match(r"^[aeiou]", text, re.IGNORECASE))
+
+
+assert check_str("annie")
+```

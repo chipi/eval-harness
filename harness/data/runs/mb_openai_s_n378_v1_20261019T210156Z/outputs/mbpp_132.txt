@@ -1,0 +1,15 @@
+```python
+def tup_string(tup):
+    """
+    Convert a tuple of characters into a single string.
+    
+    Example:
+        ('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's') -> "exercises"
+    """
+    return ''.join(tup)
+
+
+if __name__ == "__main__":
+    assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+    print("All tests passed.")
+```

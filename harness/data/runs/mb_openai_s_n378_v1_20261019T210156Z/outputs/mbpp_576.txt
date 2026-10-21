@@ -1,0 +1,26 @@
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Return True if sub_list is a contiguous sublist of main_list, otherwise False.
+    """
+    if not sub_list:
+        return True
+    if len(sub_list) > len(main_list):
+        return False
+
+    for i in range(len(main_list) - len(sub_list) + 1):
+        if main_list[i:i + len(sub_list)] == sub_list:
+            return True
+    return False
+
+
+# Example assertion from the prompt
+assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+
+# Optional extra checks
+assert is_Sub_Array([1, 4, 3, 5], [4, 3]) == True
+assert is_Sub_Array([1, 4, 3, 5], []) == True
+assert is_Sub_Array([], [1]) == False
+
+print("All tests passed.")
+```

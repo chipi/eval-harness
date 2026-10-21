@@ -1,0 +1,18 @@
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+    """
+    # Sort the list in descending order and take the first n elements
+    return sorted(lst, reverse=True)[:n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100]
+    n = 2
+    result = larg_nnum(test_list, n)
+    
+    # Using set comparison as requested in the assert statement
+    assert set(result) == set([100, 90])
+    print(f"Success! The {n} largest numbers are: {result}")
+```

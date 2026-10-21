@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of finding the left insertion point for a specified value in a sorted list:
+
+```python
+def left_insertion(arr, x):
+    """
+    Find the left insertion point for a value in a sorted list.
+
+    The left insertion point is the index where the value would be inserted
+    to maintain the sorted order, with a preference for the leftmost position
+    in case of duplicates.
+
+    Args:
+        arr: A sorted list of elements
+        x: The value to find the insertion point for
+
+    Returns:
+        The index where x should be inserted to maintain sorted order
+    """
+    low, high = 0, len(arr)
+    while low < high:
+        mid = (low + high) // 2
+        if arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid
+    return low
+
+# Test cases
+assert left_insertion([1, 2, 4, 5], 6) == 4
+assert left_insertion([1, 2, 4, 4, 5], 4) == 2  # Leftmost position for duplicate
+assert left_insertion([1, 2, 4, 5], 0) == 0
+assert left_insertion([1, 2, 4, 5], 1) == 1
+assert left_insertion([1, 2, 4, 5], 3) == 2
+assert left_insertion([], 5) == 0  # Empty list case
+
+print("All test cases passed!")
+```
+
+This script:
+1. Implements a binary search algorithm to efficiently find the insertion point
+2. Handles edge cases like empty lists and duplicate values
+3. Includes test cases to verify the implementation
+4. Returns the leftmost position when there are duplicate values
+
+The function works by maintaining a search range (low to high) and narrowing it down until the correct insertion point is found. The algorithm runs in O(log n) time complexity, which is optimal for this problem.

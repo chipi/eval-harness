@@ -1,0 +1,61 @@
+To find the $n$-th Bell number, the most efficient way is to use the **Bell Triangle** (also known as the Aitken's array or the Peirce triangle). This method is similar to Pascal's triangle and avoids the complexity of calculating Stirling numbers of the second kind directly.
+
+Here is the self-contained Python script:
+
+```python
+def bell_Number(n):
+    """
+    Calculates the nth Bell number using the Bell Triangle method.
+    The Bell number B_n counts the number of ways to partition a set of n elements.
+    """
+    if n == 0:
+        return 1
+    if n == 1:
+        return 1
+
+    # Create a 2D list (triangle) to store values
+    # bell[i][j] will store the j-th element of the i-th row
+    bell = [[0 for _ in range(n + 1)] for _ in range(n + 1)]
+
+    # Base case
+    bell[0][0] = 1
+
+    for i in range(1, n + 1):
+        # The first element of the current row is the last element of the previous row
+        bell[i][0] = bell[i - 1][i - 1]
+
+        # Fill the rest of the row
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i - 1][j - 1] + bell[i][j - 1]
+
+    # The nth Bell number is the first element of the nth row 
+    # (or the last element of the (n-1)th row depending on indexing)
+    # In this construction, B_n is bell[n][0]
+    return bell[n][0]
+
+if __name__ == "__main__":
+    # Test cases
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(2) == 2
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    assert bell_Number(5) == 52
+    
+    print("All assertions passed!")
+    print(f"The 5th Bell number is: {bell_Number(5)}")
+```
+
+### Explanation:
+1.  **The Bell Triangle Logic**: 
+    *   The first row is `[1]`.
+    *   To start a new row, take the last number of the previous row and make it the first number of the current row.
+    *   To get the next number in a row, add the number to its left to the number directly above that left number.
+2.  **Complexity**: 
+    *   **Time Complexity**: $O(n^2)$, which is efficient for standard integer calculations.
+    *   **Space Complexity**: $O(n^2)$ to store the triangle (this can be optimized to $O(n)$ using a single array, but the triangle method is the most readable for demonstration).
+3.  **Example Walkthrough ($n=3$)**:
+    *   Row 0: `[1]`
+    *   Row 1: `[1, 2]` (Starts with 1 from above; $1+1=2$)
+    *   Row 2: `[2, 3, 5]` (Starts with 2 from above; $2+1=3$, $3+2=5$)
+    *   The Bell number $B_3$ is the first element of the next row or the last of the current: **5**.

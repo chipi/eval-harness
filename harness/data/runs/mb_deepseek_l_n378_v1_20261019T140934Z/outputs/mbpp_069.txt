@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_sublist(main_list, sublist):
+    """
+    Check whether a list contains the given sublist or not.
+    
+    Args:
+        main_list: The main list to search in
+        sublist: The sublist to search for
+    
+    Returns:
+        bool: True if sublist is found in main_list, False otherwise
+    """
+    # If sublist is empty, it's considered to be in any list
+    if not sublist:
+        return True
+    
+    # If sublist is longer than main list, it can't be contained
+    if len(sublist) > len(main_list):
+        return False
+    
+    # Check each possible starting position in the main list
+    for i in range(len(main_list) - len(sublist) + 1):
+        # Check if the slice matches the sublist
+        if main_list[i:i + len(sublist)] == sublist:
+            return True
+    
+    return False
+
+
+# Test the function with the given assertion
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+
+# Additional test cases to verify correctness
+assert is_sublist([2, 4, 3, 5, 7], [4, 3, 5]) == True
+assert is_sublist([2, 4, 3, 5, 7], [2, 4]) == True
+assert is_sublist([2, 4, 3, 5, 7], [5, 7]) == True
+assert is_sublist([2, 4, 3, 5, 7], []) == True
+assert is_sublist([2, 4, 3, 5, 7], [2, 4, 3, 5, 7]) == True
+assert is_sublist([2, 4, 3, 5, 7], [2, 4, 3, 5, 7, 8]) == False
+assert is_sublist([1, 2, 1, 2, 3], [1, 2, 3]) == True
+
+print("All tests passed!")
+```
+
+The function works by:
+1. Handling edge cases (empty sublist, sublist longer than main list)
+2. Iterating through all possible starting positions in the main list
+3. Comparing slices of the main list with the sublist
+4. Returning `True` if a match is found, `False` otherwise
+
+The assertion `is_sublist([2,4,3,5,7],[3,7])==False` passes because `[3,7]` does not appear as a contiguous subsequence in `[2,4,3,5,7]` (3 and 7 are not adjacent in the main list).

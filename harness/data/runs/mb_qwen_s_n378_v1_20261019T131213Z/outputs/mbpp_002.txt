@@ -1,0 +1,14 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Find the shared elements from the given two lists.
+    
+    Args:
+        list1: First list of elements
+        list2: Second list of elements
+    
+    Returns:
+        A set containing the common elements between the two lists
+    """
+    return set(list1) & set(list2)
+```

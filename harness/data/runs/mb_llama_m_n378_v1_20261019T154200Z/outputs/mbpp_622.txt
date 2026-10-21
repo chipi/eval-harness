@@ -1,0 +1,34 @@
+```python
+def get_median(arr1, arr2, n):
+    """
+    This function calculates the median of two sorted lists of the same size.
+    
+    Parameters:
+    arr1 (list): The first sorted list.
+    arr2 (list): The second sorted list.
+    n (int): The size of the lists.
+    
+    Returns:
+    float: The median of the combined list.
+    """
+    # Combine the two lists into one
+    combined = arr1 + arr2
+    
+    # Sort the combined list
+    combined.sort()
+    
+    # Calculate the median
+    mid = n * 2 // 2  # Since the total size is 2n, the middle index is n
+    
+    # If the total size is even, the median is the average of the two middle numbers
+    if (n * 2) % 2 == 0:
+        median = (combined[mid - 1] + combined[mid]) / 2
+    # If the total size is odd, the median is the middle number
+    else:
+        median = combined[mid]
+    
+    return median
+
+# Test the function
+print(get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5))  # Output: 16.0
+```

@@ -1,0 +1,54 @@
+To solve this problem, we need to find the number of binary sequences of length $2n$ where the sum of the first $n$ bits equals the sum of the last $n$ bits.
+
+**Mathematical Logic:**
+1. Let $k$ be the sum of the first $n$ bits. Since the bits are binary (0 or 1), $k$ can range from $0$ to $n$.
+2. The number of ways to choose $n$ bits such that their sum is $k$ is given by the binomial coefficient $\binom{n}{k}$.
+3. For the condition to be met, the sum of the last $n$ bits must also be $k$. The number of ways to choose these bits is also $\binom{n}{k}$.
+4. Since the choices for the first $n$ bits and the last $n$ bits are independent, the number of sequences for a specific $k$ is $\binom{n}{k} \times \binom{n}{k} = \binom{n}{k}^2$.
+5. The total count is the sum over all possible values of $k$: $\sum_{k=0}^{n} \binom{n}{k}^2$.
+6. Using Vandermonde's Identity, we know that $\sum_{k=0}^{n} \binom{n}{k}^2 = \binom{2n}{n}$.
+
+Here is the self-contained Python script:
+
+```python
+import math
+
+def count_binary_seq(n: int) -> float:
+    """
+    Finds the count of all binary sequences of length 2n such that 
+    the sum of the first n bits is the same as the sum of the last n bits.
+    
+    The formula derived is the sum of (n choose k)^2 for k from 0 to n,
+    which is mathematically equivalent to (2n choose n).
+    """
+    if n < 0:
+        return 0.0
+    
+    # Using math.comb (available in Python 3.8+) to calculate (2n choose n)
+    # We return float to satisfy the requirement of the assert statement provided.
+    return float(math.comb(2 * n, n))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    try:
+        assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+        print("Test passed: count_binary_seq(1) == 2.0")
+    except AssertionError:
+        print(f"Test failed: expected 2.0, got {count_binary_seq(1)}")
+
+    # Additional Test Cases
+    # n=2: (4 choose 2) = 6
+    # Sequences: (00,00), (01,01), (10,10), (11,11), (01,10), (10,01) -> Wait, sum logic:
+    # k=0: (00,00) -> 1 way
+    # k=1: (01,01), (01,10), (10,01), (10,10) -> 4 ways
+    # k=2: (11,11) -> 1 way
+    # Total = 1 + 4 + 1 = 6.
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+    print("Test passed: count_binary_seq(2) == 6.0")
+    
+    # n=3: (6 choose 3) = 20
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+    print("Test passed: count_binary_seq(3) == 20.0")
+    
+    print("\nAll tests passed successfully!")
+```

@@ -1,0 +1,69 @@
+```python
+def tuple_intersection(list1, list2):
+    """
+    Finds the tuple intersection of elements in two given lists of tuples,
+    irrespective of the order of elements within each tuple.
+
+    Args:
+        list1: A list of tuples.
+        list2: A list of tuples.
+
+    Returns:
+        A set of tuples that are present in both list1 and list2.
+        The order of elements within the returned tuples is preserved
+        as they appear in the first list (list1).
+    """
+    # Convert the second list into a set of normalized tuples.
+    # Normalizing (sorting) each tuple allows for order-agnostic comparison.
+    # For example, (3, 4) and (4, 3) will both become (3, 4) in the set.
+    set2_normalized = {tuple(sorted(t)) for t in list2}
+
+    # Use a set comprehension to find the intersection.
+    # Iterate through the first list. For each tuple, normalize it and check
+    # if it exists in the set of normalized tuples from the second list.
+    # If it does, add the original tuple (from list1) to the result set.
+    intersection_set = {t for t in list1 if tuple(sorted(t)) in set2_normalized}
+
+    return intersection_set
+
+# Example usage with the provided assertion
+if __name__ == "__main__":
+    list_a = [(3, 4), (5, 6), (9, 10), (4, 5)]
+    list_b = [(5, 4), (3, 4), (6, 5), (9, 11)]
+
+    # The expected result is a set containing the tuples as they appear in list_a.
+    # (3,4) from list_a matches (3,4) and (4,3) from list_b.
+    # (5,6) from list_a matches (5,6) and (6,5) from list_b.
+    # (4,5) from list_a matches (5,4) from list_b.
+    # (9,10) from list_a does not have a match in list_b.
+    expected_result = {(4, 5), (3, 4), (5, 6)}
+
+    result = tuple_intersection(list_a, list_b)
+
+    print(f"List 1: {list_a}")
+    print(f"List 2: {list_b}")
+    print(f"Calculated Intersection: {result}")
+    print(f"Expected Intersection:   {expected_result}")
+
+    assert result == expected_result
+    print("\nAssertion passed successfully!")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    # Test case 1: No intersection
+    assert tuple_intersection([(1, 2)], [(3, 4)]) == set()
+    print("Test case 1 (No intersection): Passed")
+
+    # Test case 2: One list is empty
+    assert tuple_intersection([(1, 2), (3, 4)], []) == set()
+    assert tuple_intersection([], [(1, 2), (3, 4)]) == set()
+    print("Test case 2 (Empty list): Passed")
+
+    # Test case 3: Duplicate tuples within a list
+    assert tuple_intersection([(1, 2), (1, 2)], [(2, 1)]) == {(1, 2)}
+    print("Test case 3 (Duplicates): Passed")
+
+    # Test case 4: Tuples of different lengths
+    assert tuple_intersection([(1, 2), (3, 4, 5)], [(2, 1), (4, 3)]) == {(1, 2)}
+    print("Test case 4 (Different lengths): Passed")
+```

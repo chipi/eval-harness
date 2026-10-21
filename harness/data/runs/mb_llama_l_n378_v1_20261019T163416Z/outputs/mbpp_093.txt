@@ -1,0 +1,11 @@
+```python
+def power(a, b):
+    return a ** b
+
+def main():
+    assert power(3, 4) == 81
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

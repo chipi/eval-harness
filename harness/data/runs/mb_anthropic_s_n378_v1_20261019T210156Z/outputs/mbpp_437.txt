@@ -1,0 +1,55 @@
+```python
+def remove_odd(s):
+    """
+    Remove characters at odd indices (1-indexed) from a string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with characters at odd positions removed
+        
+    Example:
+        remove_odd("python") == "yhn"
+        Positions: p(1) y(2) t(3) h(4) o(5) n(6)
+        Keep even positions (2,4,6): y, h, n
+    """
+    return s[1::2]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert remove_odd("python") == "yhn"
+    print("✓ remove_odd('python') == 'yhn'")
+    
+    # Additional test cases
+    assert remove_odd("abcdef") == "bdf"
+    print("✓ remove_odd('abcdef') == 'bdf'")
+    
+    assert remove_odd("a") == ""
+    print("✓ remove_odd('a') == ''")
+    
+    assert remove_odd("ab") == "b"
+    print("✓ remove_odd('ab') == 'b'")
+    
+    assert remove_odd("") == ""
+    print("✓ remove_odd('') == ''")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function uses Python's string slicing `s[1::2]` to:
+- Start at index 1 (the second character, which is at an even position when counting from 1)
+- Take every 2nd character from that point onward
+
+For "python":
+- Index 0: 'p' (position 1 - odd) ✗
+- Index 1: 'y' (position 2 - even) ✓
+- Index 2: 't' (position 3 - odd) ✗
+- Index 3: 'h' (position 4 - even) ✓
+- Index 4: 'o' (position 5 - odd) ✗
+- Index 5: 'n' (position 6 - even) ✓
+
+Result: "yhn" ✓

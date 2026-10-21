@@ -1,0 +1,11 @@
+```python
+def and_tuples(t1, t2):
+    """
+    This function takes two tuples as input and returns a new tuple.
+    The new tuple contains the elementwise minimum of the corresponding elements in the input tuples.
+    """
+    return tuple(min(a, b) for a, b in zip(t1, t2))
+
+# Test the function
+print(and_tuples((10, 4, 6, 9), (5, 2, 3, 3)))  # Output: (5, 2, 3, 3)
+```

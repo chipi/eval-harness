@@ -1,0 +1,43 @@
+```python
+def toggle_middle_bits(n: int) -> int:
+    """
+    Toggle all bits of the number except the first (most significant) and last (least significant) bit.
+    
+    For example, for n = 9 (binary: 1001):
+    - First bit (MSB) is 1, last bit (LSB) is 1
+    - Middle bits are 00, which get toggled to 11
+    - Result: 1111 in binary = 15
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The number with middle bits toggled
+    """
+    if n <= 1:
+        return n
+    
+    # Find the position of the most significant bit (number of bits - 1)
+    msb_pos = n.bit_length() - 1
+    
+    # If there are no middle bits (i.e., only 2 bits or less), return n unchanged
+    if msb_pos < 2:
+        return n
+    
+    # Create a mask that has 1s in all positions except the MSB and LSB
+    # Start with all bits set up to msb_pos
+    all_ones = (1 << (msb_pos + 1)) - 1  # e.g., for msb_pos=3, this is 1111
+    
+    # Clear the MSB and LSB from the mask
+    # MSB is at position msb_pos, LSB is at position 0
+    mask = all_ones & ~(1 << msb_pos) & ~1
+    
+    # XOR with the mask to toggle the middle bits
+    result = n ^ mask
+    
+    return result
+
+
+# Test cases
+assert toggle_middle_bits(9) == 15
+```

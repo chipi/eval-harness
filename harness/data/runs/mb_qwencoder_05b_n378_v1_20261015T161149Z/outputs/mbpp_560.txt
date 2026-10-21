@@ -1,0 +1,9 @@
+```python
+def union_elements(tuple1, tuple2):
+    # Use set intersection to find common elements and then convert back to tuple
+    return tuple(set(tuple1) & set(tuple2))
+
+# Test the function with the provided test case
+assert union_elements((3, 4, 5, 6),(5, 7, 4, 10) ) == (3, 4, 5, 6, 7, 10)
+```
+

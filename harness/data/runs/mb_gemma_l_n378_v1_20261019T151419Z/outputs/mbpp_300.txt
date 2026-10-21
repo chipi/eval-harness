@@ -1,0 +1,34 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Finds the count of all binary sequences of length 2n such that 
+    the sum of the first n bits is equal to the sum of the last n bits.
+    
+    Logic:
+    Let k be the number of 1s in the first n bits (0 <= k <= n).
+    The number of ways to choose k positions for 1s in the first n bits is C(n, k).
+    For the sum of the last n bits to also be k, there are also C(n, k) ways.
+    The total count is the sum of (C(n, k) * C(n, k)) for k from 0 to n.
+    
+    Identity: Sum_{k=0}^n (C(n, k)^2) = C(2n, n).
+    """
+    # Using the identity Sum of C(n, k)^2 = C(2n, n)
+    # math.comb is available in Python 3.8+
+    return float(math.comb(2 * n, n))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = count_binary_seq(1)
+    print(f"Result for n=1: {result}")
+    assert math.isclose(result, 2.0, rel_tol=0.001)
+    
+    # Additional test cases
+    # n=2: C(4, 2) = 6. (Sequences: 0000, 1111, 1010, 1001, 0110, 0101)
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+    # n=3: C(6, 3) = 20
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+    
+    print("All tests passed!")
+```

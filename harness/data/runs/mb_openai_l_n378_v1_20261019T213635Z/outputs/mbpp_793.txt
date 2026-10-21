@@ -1,0 +1,20 @@
+```python
+def last(arr, value):
+    """Return the index of the last occurrence of value, or -1 if absent."""
+    left, right = 0, len(arr)
+
+    while left < right:
+        mid = (left + right) // 2
+        if arr[mid] <= value:
+            left = mid + 1
+        else:
+            right = mid
+
+    index = left - 1
+    return index if index >= 0 and arr[index] == value else -1
+
+
+assert last([1, 2, 3], 1) == 0
+assert last([1, 2, 2, 3], 2) == 2
+assert last([1, 2, 3], 4) == -1
+```

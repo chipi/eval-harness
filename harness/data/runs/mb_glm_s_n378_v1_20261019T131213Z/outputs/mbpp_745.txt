@@ -1,0 +1,87 @@
+```python
+"""
+Write a function to find numbers within a given range from startnum to endnum where every number is divisible by every digit it contains.
+https://www.w3resource.com/python-exercises/lambda/python-lambda-exercise-24.php
+assert divisible_by_digits(1,22)==[1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+"""
+
+def divisible_by_digits(startnum: int, endnum: int) -> list[int]:
+    """
+    Finds numbers in a range [startnum, endnum] that are divisible by every digit they contain.
+
+    A number is considered valid if:
+    1. It does not contain the digit 0 (as division by zero is undefined).
+    2. The number is perfectly divisible by each of its non-zero digits.
+
+    Args:
+        startnum: The starting integer of the range (inclusive).
+        endnum: The ending integer of the range (inclusive).
+
+    Returns:
+        A list of integers that meet the criteria, sorted in ascending order.
+    """
+    result = []
+    # Iterate through each number in the specified range
+    for number in range(startnum, endnum + 1):
+        # Convert the number to a string to easily access its digits
+        str_num = str(number)
+        is_valid = True
+
+        # Check each digit of the number
+        for digit_char in str_num:
+            digit = int(digit_char)
+            
+            # Rule 1: If the digit is 0, the number is invalid.
+            if digit == 0:
+                is_valid = False
+                break
+            
+            # Rule 2: If the number is not divisible by the digit, it's invalid.
+            if number % digit != 0:
+                is_valid = False
+                break
+        
+        # If the number passed all checks, add it to our result list
+        if is_valid:
+            result.append(number)
+            
+    return result
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Define the test range
+    start_range = 1
+    end_range = 22
+    
+    # Get the result from the function
+    output = divisible_by_digits(start_range, end_range)
+    
+    # Define the expected output
+    expected_output = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+    
+    # Print the results for verification
+    print(f"Range: {start_range} to {end_range}")
+    print(f"Function Output: {output}")
+    print(f"Expected Output: {expected_output}")
+    
+    # Assert that the output matches the expected result
+    assert output == expected_output, f"Test failed: Expected {expected_output}, but got {output}"
+    
+    print("\nTest passed successfully!")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    # Test case 1: Single number range (valid)
+    assert divisible_by_digits(12, 12) == [12]
+    print("Test 12-12 passed: [12]")
+    
+    # Test case 2: Single number range (invalid due to 0)
+    assert divisible_by_digits(10, 10) == []
+    print("Test 10-10 passed: []")
+    
+    # Test case 3: A larger range
+    assert divisible_by_digits(1, 100) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22, 24, 36, 44, 48, 55, 66, 77, 88, 99]
+    print("Test 1-100 passed.")
+    
+    print("\nAll additional tests passed!")
+```

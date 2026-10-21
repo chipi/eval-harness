@@ -1,0 +1,22 @@
+```python
+def tetrahedral_number(n: int) -> int:
+    """
+    Return the nth tetrahedral number.
+
+    The nth tetrahedral number is:
+        T_n = n(n + 1)(n + 2) / 6
+
+    Examples:
+        tetrahedral_number(1) -> 1
+        tetrahedral_number(2) -> 4
+        tetrahedral_number(5) -> 35
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return n * (n + 1) * (n + 2) // 6
+
+
+if __name__ == "__main__":
+    assert tetrahedral_number(5) == 35
+    print("All tests passed.")
+```

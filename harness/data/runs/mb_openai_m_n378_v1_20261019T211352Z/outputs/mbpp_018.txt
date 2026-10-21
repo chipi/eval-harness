@@ -1,0 +1,28 @@
+```python
+#!/usr/bin/env python3
+"""
+Remove characters from the first string that are present in the second string.
+
+Example:
+    remove_dirty_chars("probasscurve", "pros") -> "bacuve"
+"""
+
+def remove_dirty_chars(s: str, dirty_chars: str) -> str:
+    """
+    Return a new string containing only the characters from `s`
+    that are not present in `dirty_chars`.
+    """
+    dirty_set = set(dirty_chars)
+    return "".join(char for char in s if char not in dirty_set)
+
+
+if __name__ == "__main__":
+    assert remove_dirty_chars("probasscurve", "pros") == "bacuve"
+
+    # Additional examples
+    assert remove_dirty_chars("hello world", "lo") == "he wrd"
+    assert remove_dirty_chars("abcdef", "") == "abcdef"
+    assert remove_dirty_chars("", "abc") == ""
+
+    print("All tests passed.")
+```

@@ -1,0 +1,22 @@
+```python
+def is_samepatterns(colors, patterns):
+    if len(colors) != len(patterns):
+        return False
+
+    color_to_pattern = {}
+    pattern_to_color = {}
+
+    for color, pattern in zip(colors, patterns):
+        if color not in color_to_pattern and pattern not in pattern_to_color:
+            color_to_pattern[color] = pattern
+            pattern_to_color[pattern] = color
+        elif color_to_pattern.get(color) != pattern or pattern_to_color.get(pattern) != color:
+            return False
+
+    return True
+
+# Test the function
+colors = ["red","green","green"]
+patterns = ["a", "b", "b"]
+print(is_samepatterns(colors, patterns))  # Expected output: True
+```

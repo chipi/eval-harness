@@ -1,0 +1,32 @@
+```python
+def highest_Power_of_2(n):
+    """
+    Finds the highest power of 2 that is less than or equal to n.
+    
+    Args:
+        n (int): The target number.
+        
+    Returns:
+        int: The largest power of 2 <= n.
+    """
+    if n < 1:
+        return 0  # Powers of 2 (2^x) are always positive
+    
+    # The highest power of 2 can be found by finding the position 
+    # of the most significant bit (MSB).
+    # bit_length() returns the number of bits required to represent an integer in binary.
+    # For example, 10 in binary is '1010', so 10.bit_length() is 4.
+    # The highest power of 2 is then 2^(bit_length - 1).
+    return 1 << (n.bit_length() - 1)
+
+if __name__ == "__main__":
+    # Test cases
+    assert highest_Power_of_2(10) == 8
+    assert highest_Power_of_2(1) == 1
+    assert highest_Power_of_2(16) == 16
+    assert highest_Power_of_2(31) == 16
+    assert highest_Power_of_2(32) == 32
+    assert highest_Power_of_2(100) == 64
+    
+    print("All tests passed!")
+```

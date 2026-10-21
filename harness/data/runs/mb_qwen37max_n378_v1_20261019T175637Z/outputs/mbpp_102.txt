@@ -1,0 +1,9 @@
+```python
+def snake_to_camel(snake_str: str) -> str:
+    """Convert a snake_case string to CamelCase (PascalCase) string."""
+    return ''.join(word.capitalize() for word in snake_str.split('_'))
+
+
+# Test
+assert snake_to_camel('python_program') == 'PythonProgram'
+```

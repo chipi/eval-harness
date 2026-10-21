@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem by implementing a function to find the left insertion point for a specified value in a sorted list:
+
+```python
+"""
+Function to locate the left insertion point for a specified value in sorted order.
+The left insertion point is the index at which the value would be inserted to maintain the sorted order.
+This is equivalent to the bisect_left function from the bisect module.
+"""
+
+def left_insertion(sorted_list, value):
+    """
+    Find the left insertion point for a value in a sorted list.
+
+    Args:
+        sorted_list: A list of elements sorted in ascending order.
+        value: The value to find the insertion point for.
+
+    Returns:
+        The index where the value should be inserted to maintain sorted order.
+    """
+    low = 0
+    high = len(sorted_list)
+
+    while low < high:
+        mid = (low + high) // 2
+        if sorted_list[mid] < value:
+            low = mid + 1
+        else:
+            high = mid
+    return low
+
+# Test case
+assert left_insertion([1, 2, 4, 5], 6) == 4
+
+# Additional test cases
+assert left_insertion([1, 2, 4, 5], 3) == 2
+assert left_insertion([1, 2, 4, 5], 0) == 0
+assert left_insertion([1, 2, 4, 5], 1) == 0
+assert left_insertion([1, 2, 4, 5], 5) == 3
+assert left_insertion([], 5) == 0
+```
+
+This script:
+1. Implements the `left_insertion` function using binary search to efficiently find the insertion point
+2. Includes the required test case from the problem statement
+3. Adds several additional test cases to verify the function works correctly
+4. The function returns the index where the value would be inserted to maintain the sorted order, which is the same behavior as Python's `bisect.bisect_left()` function
+
+The binary search approach ensures the function runs in O(log n) time complexity, which is optimal for this problem.

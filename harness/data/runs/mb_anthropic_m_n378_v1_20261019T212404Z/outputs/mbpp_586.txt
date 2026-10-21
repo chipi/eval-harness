@@ -1,0 +1,20 @@
+```python
+def split_Arr(arr, n):
+    """
+    Splits the list at the nth element and adds the first part to the end.
+    
+    :param arr: List to be split and rearranged
+    :param n: Index at which to split the list
+    :return: Rearranged list
+    """
+    return arr[n:] + arr[:n]
+
+
+# Test cases
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+
+if __name__ == "__main__":
+    print(split_Arr([12, 10, 5, 6, 52, 36], 2))
+    print(split_Arr([1, 2, 3, 4, 5], 1))
+    print(split_Arr([10, 20, 30, 40], 0))
+```

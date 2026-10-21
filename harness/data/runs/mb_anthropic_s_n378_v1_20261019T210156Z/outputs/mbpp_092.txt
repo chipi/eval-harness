@@ -1,0 +1,48 @@
+```python
+def is_undulating(n):
+    """
+    Check whether the given number is undulating or not.
+    
+    An undulating number is a number where the digits alternate between two values.
+    For example: 1212121, 121, 1010, etc.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        True if the number is undulating, False otherwise
+    """
+    # Convert to string to work with digits
+    s = str(abs(n))
+    
+    # Numbers with less than 2 digits are not undulating
+    if len(s) < 2:
+        return False
+    
+    # Check if digits alternate between exactly two values
+    # For a number to be undulating, digit at position i should equal digit at position i+2
+    for i in range(len(s) - 2):
+        if s[i] != s[i + 2]:
+            return False
+    
+    # Also verify that adjacent digits are different
+    for i in range(len(s) - 1):
+        if s[i] == s[i + 1]:
+            return False
+    
+    return True
+
+
+# Test cases
+assert is_undulating(1212121) == True
+assert is_undulating(121) == True
+assert is_undulating(1010) == True
+assert is_undulating(12121) == True
+assert is_undulating(111) == False
+assert is_undulating(123) == False
+assert is_undulating(1) == False
+assert is_undulating(12) == True
+assert is_undulating(121212) == True
+
+print("All test cases passed!")
+```

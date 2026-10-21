@@ -1,0 +1,59 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find the common elements in given nested lists.
+assert set(common_in_nested_lists([[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]]))==set([18, 12])
+"""
+
+
+def common_in_nested_lists(nested_lists):
+    """
+    Find the common elements across all sublists in a nested list.
+
+    Args:
+        nested_lists: A list of lists containing elements.
+
+    Returns:
+        A list of elements that appear in every sublist.
+    """
+    if not nested_lists:
+        return []
+
+    # Convert each sublist to a set for efficient intersection
+    sets = [set(sublist) for sublist in nested_lists]
+
+    # Start with the first set and intersect with the rest
+    common = sets[0]
+    for s in sets[1:]:
+        common = common.intersection(s)
+        if not common:
+            break
+
+    return list(common)
+
+
+# Test the function
+if __name__ == "__main__":
+    result = common_in_nested_lists(
+        [[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]]
+    )
+    assert set(result) == set([18, 12])
+    print("Test passed!")
+    print("Common elements:", sorted(result))
+```
+
+**How it works:**
+
+1. **Handle empty input**: If `nested_lists` is empty, return an empty list.
+2. **Convert to sets**: Each sublist is converted to a `set` for O(1) membership checks and efficient intersection.
+3. **Intersect**: Start with the first set and intersect it with each subsequent set. If the intersection becomes empty, we can break early.
+4. **Return as list**: Convert the final set back to a list.
+
+**Output:**
+```
+Test passed!
+Common elements: [12, 18]
+```
+
+The function correctly identifies `12` and `18` as the elements present in all three sublists.

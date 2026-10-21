@@ -1,0 +1,33 @@
+```python
+def min_val(lst: list) -> int | float:
+    """
+    Find the minimum numeric value in a heterogeneous list.
+    
+    Args:
+        lst: A list containing mixed types (numbers, strings, etc.)
+        
+    Returns:
+        The minimum numeric value found in the list.
+        
+    Raises:
+        ValueError: If no numeric values are found in the list.
+    """
+    numeric_values = [x for x in lst if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    
+    if not numeric_values:
+        raise ValueError("No numeric values found in the list")
+    
+    return min(numeric_values)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+    
+    # Additional test cases
+    assert min_val([10, 'hello', 3.5, 1, 'world']) == 1
+    assert min_val([-5, 'a', -10, 0, 'b']) == -10
+    assert min_val([7]) == 7
+    
+    print("All tests passed!")
+```

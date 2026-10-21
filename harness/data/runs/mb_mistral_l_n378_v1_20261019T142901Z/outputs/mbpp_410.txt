@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem by finding the minimum numeric value in a heterogeneous list:
+
+```python
+def min_val(heterogeneous_list):
+    """
+    Find the minimum numeric value in a heterogeneous list.
+
+    Args:
+        heterogeneous_list: A list containing a mix of types (e.g., strings, numbers)
+
+    Returns:
+        The minimum numeric value found in the list. Returns None if no numbers are found.
+    """
+    numbers = []
+    for item in heterogeneous_list:
+        if isinstance(item, (int, float)) and not isinstance(item, bool):
+            numbers.append(item)
+
+    if not numbers:
+        return None
+    return min(numbers)
+
+# Test case
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+```
+
+This solution:
+1. Iterates through the list and collects all numeric values (int or float, but not bool since bool is a subclass of int)
+2. Returns the minimum of these numbers
+3. Returns None if no numbers are found in the list
+4. Includes the required test case that passes the assertion
+
+The function handles the heterogeneous nature of the list by only considering numeric values when finding the minimum.

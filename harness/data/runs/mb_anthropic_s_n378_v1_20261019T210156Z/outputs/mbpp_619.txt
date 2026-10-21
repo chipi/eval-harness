@@ -1,0 +1,35 @@
+```python
+def move_num(s):
+    """
+    Move all numbers to the end of the given string.
+    
+    Args:
+        s: A string containing letters and numbers
+        
+    Returns:
+        A string with all letters first, followed by all numbers
+    """
+    letters = ''
+    numbers = ''
+    
+    for char in s:
+        if char.isdigit():
+            numbers += char
+        else:
+            letters += char
+    
+    return letters + numbers
+
+
+# Test
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+print("Test passed!")
+print(f"Result: {move_num('I1love143you55three3000thousand')}")
+```
+
+The solution works by:
+1. Iterating through each character in the input string
+2. Separating characters into two groups: letters and numbers
+3. Concatenating letters first, then numbers, to produce the final result
+
+This maintains the relative order of letters among themselves and numbers among themselves, while moving all numbers to the end.

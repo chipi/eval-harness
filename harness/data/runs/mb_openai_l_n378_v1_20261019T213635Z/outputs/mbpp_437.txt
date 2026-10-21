@@ -1,0 +1,8 @@
+```python
+def remove_odd(text):
+    """Return the characters at odd-numbered positions (1, 3, 5, ...)."""
+    return text[1::2]
+
+
+assert remove_odd("python") == "yhn"
+```

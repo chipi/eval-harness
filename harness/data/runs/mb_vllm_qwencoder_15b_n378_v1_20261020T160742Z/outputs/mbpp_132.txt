@@ -1,0 +1,16 @@
+```python
+def tup_string(tup):
+    """
+    Convert a tuple to a string.
+
+    Args:
+    tup (tuple): The input tuple.
+
+    Returns:
+    str: The string representation of the tuple.
+    """
+    return ''.join(map(str, tup))
+
+# Test cases
+assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+```

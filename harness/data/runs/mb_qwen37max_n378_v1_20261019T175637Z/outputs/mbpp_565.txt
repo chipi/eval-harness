@@ -1,0 +1,7 @@
+```python
+def split(s):
+    """Split a string into a list of individual characters."""
+    return list(s)
+
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+```

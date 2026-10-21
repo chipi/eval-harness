@@ -1,0 +1,15 @@
+```python
+def replace_spaces(s: str) -> str:
+    """
+    Replace spaces with underscores and underscores with spaces in a string.
+    
+    Example:
+        'Jumanji The Jungle' -> 'Jumanji_The_Jungle'
+    """
+    return s.replace(" ", "_").replace("_", " ")
+
+
+if __name__ == "__main__":
+    assert replace_spaces("Jumanji The Jungle") == "Jumanji_The_Jungle"
+    print("All tests passed.")
+```

@@ -1,0 +1,8 @@
+```python
+def rectangle_area(length, width):
+    """Find the area of a rectangle given its length and width."""
+    return length * width
+
+# Test
+assert rectangle_area(10, 20) == 200
+```

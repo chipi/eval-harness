@@ -1,0 +1,18 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Return the smallest perfect square strictly greater than n.
+    """
+    root = math.isqrt(n)          # largest integer root such that root*root <= n
+    return (root + 1) ** 2        # next square is strictly greater than n
+
+
+if __name__ == "__main__":
+    assert next_Perfect_Square(35) == 36
+    assert next_Perfect_Square(36) == 49
+    assert next_Perfect_Square(0) == 1
+    assert next_Perfect_Square(1) == 4
+    print("All tests passed.")
+```

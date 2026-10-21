@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def Find_Max(lst):
+    """
+    Find the element of a list having maximum length.
+    
+    Args:
+        lst: A list of elements (typically sublists or strings)
+    
+    Returns:
+        The element with the maximum length
+    """
+    if not lst:
+        return None
+    
+    return max(lst, key=len)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']])
+    assert result == ['A', 'B', 'C'], f"Expected [['A', 'B', 'C']], but got {result}"
+    
+    # Additional test cases
+    assert Find_Max(['hello', 'hi', 'greetings']) == 'greetings'
+    assert Find_Max([[1], [1, 2, 3], [1, 2]]) == [1, 2, 3]
+    assert Find_Max([]) == None
+    assert Find_Max(['a', 'b', 'c']) == 'a'  # Returns first max when multiple have same length
+    
+    print("All tests passed!")
+```

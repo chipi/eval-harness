@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def difference(n):
+    """
+    Find the difference between the sum of cubes of the first n natural numbers
+    and the sum of the first n natural numbers.
+    
+    Args:
+        n: A positive integer
+    
+    Returns:
+        The difference between sum of cubes and sum of first n natural numbers
+    """
+    # Sum of first n natural numbers: n(n+1)/2
+    sum_n = n * (n + 1) // 2
+    
+    # Sum of cubes of first n natural numbers: [n(n+1)/2]^2
+    sum_cubes = sum_n ** 2
+    
+    return sum_cubes - sum_n
+
+
+# Test the function
+if __name__ == "__main__":
+    assert difference(3) == 30
+    print("Test passed!")
+    
+    # Additional verification
+    # For n=3: 
+    # Sum of cubes: 1³ + 2³ + 3³ = 1 + 8 + 27 = 36
+    # Sum of numbers: 1 + 2 + 3 = 6
+    # Difference: 36 - 6 = 30
+```
+
+The solution uses the mathematical formulas:
+- Sum of first n natural numbers: `n(n+1)/2`
+- Sum of cubes of first n natural numbers: `[n(n+1)/2]²`
+
+This gives us an O(1) time complexity solution instead of iterating through all numbers.

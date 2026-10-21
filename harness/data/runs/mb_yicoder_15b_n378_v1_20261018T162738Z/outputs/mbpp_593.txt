@@ -1,0 +1,8 @@
+```python
+def removezero_ip(ip):
+    return '.'.join(map(str, map(int, ip.split('.'))))
+
+assert removezero_ip("216.08.094.196")==('216.8.94.196')
+assert removezero_ip("000.00.000.000")==('0.0.0.0')
+assert removezero_ip("127.0.0.1")==('127.0.0.1')
+```

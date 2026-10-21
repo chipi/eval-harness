@@ -1,0 +1,16 @@
+```python
+def next_Perfect_Square(n):
+    import math
+    root = math.sqrt(n)
+    if root * root != n:
+        return -1
+    next_square = root * 2
+    return int(next_square) + 1 if next_square != int(next_square) else int(next_square)
+
+# Test cases
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(14) == 16
+assert next_Perfect_Square(16) == 20
+assert next_Perfect_Square(37) == -1
+assert next_Perfect_Square(1) == 2
+```

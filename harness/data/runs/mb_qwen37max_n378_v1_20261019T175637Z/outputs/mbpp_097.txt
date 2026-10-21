@@ -1,0 +1,22 @@
+```python
+def frequency_lists(lists):
+    """
+    Find frequency of each element in a flattened list of lists, returned in a dictionary.
+    
+    Args:
+        lists: A list of lists containing elements to count.
+        
+    Returns:
+        A dictionary with elements as keys and their frequencies as values.
+    """
+    freq = {}
+    for sublist in lists:
+        for item in sublist:
+            freq[item] = freq.get(item, 0) + 1
+    return freq
+
+
+# Test
+assert frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]]) == {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+print("All tests passed!")
+```

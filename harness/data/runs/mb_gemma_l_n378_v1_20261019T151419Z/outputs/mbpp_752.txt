@@ -1,0 +1,49 @@
+```python
+def jacobsthal_num(n):
+    """
+    Calculates the nth Jacobsthal number.
+    The Jacobsthal sequence is defined by the recurrence relation:
+    J(n) = J(n-2) + 2*J(n-1)
+    with base cases:
+    J(0) = 0
+    J(1) = 1
+    """
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+    
+    # Iterative approach to calculate the nth number
+    # j_prev2 is J(n-2), j_prev1 is J(n-1)
+    j_prev2, j_prev1 = 0, 1
+    
+    for _ in range(2, n + 1):
+        current = j_prev2 + 2 * j_prev1
+        j_prev2 = j_prev1
+        j_prev1 = current
+        
+    return j_prev1
+
+if __name__ == "__main__":
+    # Test cases
+    test_cases = {
+        0: 0,
+        1: 1,
+        2: 1,
+        3: 3,
+        4: 5,
+        5: 11,
+        6: 21,
+        7: 43,
+        8: 85,
+        9: 171,
+        10: 341
+    }
+    
+    for n, expected in test_cases.items():
+        result = jacobsthal_num(n)
+        assert result == expected, f"Test failed for n={n}: expected {expected}, got {result}"
+        print(f"J({n}) = {result}")
+
+    print("\nAll tests passed successfully!")
+```

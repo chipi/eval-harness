@@ -1,0 +1,60 @@
+```python
+def get_total_number_of_sequences(m: int, n: int) -> int:
+    """
+    Find the number of possible sequences of length n, such that each element is a positive integer,
+    greater than or equal to twice the previous element, and less than or equal to m.
+    
+    Args:
+        m: The maximum value any element in the sequence can take.
+        n: The length of the sequence.
+    
+    Returns:
+        The number of valid sequences.
+    """
+    if n == 0:
+        return 1
+    
+    # dp[i][j] = number of sequences of length i ending with value j
+    # But we can optimize space by using a 1D array for current row
+    
+    # For sequences of length 1, any value from 1 to m is valid
+    # So dp[1][j] = 1 for all j in [1, m]
+    
+    # For sequences of length k > 1, dp[k][j] = sum of dp[k-1][i] for all i where 2*i <= j
+    # Which means i <= j/2, so i ranges from 1 to floor(j/2)
+    
+    # We'll use dynamic programming with O(m*n) time and O(m) space
+    
+    # Initialize dp for length 1
+    dp = [0] * (m + 1)
+    for j in range(1, m + 1):
+        dp[j] = 1
+    
+    # Build up for lengths 2 to n
+    for length in range(2, n + 1):
+        new_dp = [0] * (m + 1)
+        # For each possible ending value j, count sequences of this length ending at j
+        # new_dp[j] = sum(dp[i] for i in range(1, j//2 + 1))
+        # We can compute prefix sums of dp to make this efficient
+        
+        # Compute prefix sum of dp
+        prefix_sum = [0] * (m + 1)
+        for i in range(1, m + 1):
+            prefix_sum[i] = prefix_sum[i - 1] + dp[i]
+        
+        for j in range(1, m + 1):
+            max_prev = j // 2
+            if max_prev >= 1:
+                new_dp[j] = prefix_sum[max_prev]
+            else:
+                new_dp[j] = 0
+        
+        dp = new_dp
+    
+    # Total number of sequences of length n is sum of dp[j] for all j
+    return sum(dp)
+
+
+# Test
+assert get_total_number_of_sequences(10, 4) == 4
+```

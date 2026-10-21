@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def move_num(s):
+    numbers = []
+    non_numbers = []
+    for char in s:
+        if char.isdigit():
+            numbers.append(char)
+        else:
+            non_numbers.append(char)
+    return ''.join(non_numbers) + ''.join(numbers)
+
+# Test the function
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `move_num` that takes a string as input
+2. Separates the characters into two lists: one for digits and one for non-digits
+3. Joins the non-digit characters first, followed by the digits
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function handles the problem by:
+- Iterating through each character in the input string
+- Checking if the character is a digit using `isdigit()`
+- Building separate strings for numbers and non-numbers
+- Combining them in the required order (non-numbers first, then numbers)

@@ -1,0 +1,31 @@
+```python
+"""
+Write a python function to find the sublist having minimum length.
+assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+"""
+
+def Find_Min(list_of_lists):
+    """
+    Returns the sublist with the minimum length from a list of lists.
+    If there are multiple sublists with the same minimum length, 
+    the first one encountered is returned.
+    """
+    if not list_of_lists:
+        return None  # or [] depending on expected behavior for empty input
+    
+    min_sublist = list_of_lists[0]
+    min_length = len(min_sublist)
+    
+    for sublist in list_of_lists[1:]:
+        if len(sublist) < min_length:
+            min_length = len(sublist)
+            min_sublist = sublist
+    
+    return min_sublist
+
+
+# Optional: Simple test
+if __name__ == "__main__":
+    assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+    print("Test passed.")
+```

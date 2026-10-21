@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_odd(numbers):
+    """Remove odd numbers from a given list."""
+    return [num for num in numbers if num % 2 == 0]
+
+# Test the function
+assert remove_odd([1, 2, 3]) == [2]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `remove_odd` that takes a list of numbers as input
+2. Uses a list comprehension to filter out odd numbers (keeping only even numbers)
+3. Includes the required assertion test
+4. Prints a confirmation message if the test passes
+
+The function works by checking if each number is even (using the modulus operator `%`), and only including numbers that satisfy this condition in the returned list.

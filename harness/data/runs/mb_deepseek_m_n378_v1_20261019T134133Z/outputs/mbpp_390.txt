@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_string(lst, format_string):
+    """
+    Apply a given format string to all elements in a list.
+    
+    Args:
+        lst: A list of elements to be formatted
+        format_string: A format string with {0} placeholder
+    
+    Returns:
+        A list of formatted strings
+    """
+    return [format_string.format(item) for item in lst]
+
+
+# Test the function
+assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+print("Test passed!")
+```
+
+**Explanation:**
+
+1. **Function definition**: `add_string(lst, format_string)` takes two parameters:
+   - `lst`: the list of elements to format
+   - `format_string`: the format string containing `{0}` as a placeholder
+
+2. **List comprehension**: `[format_string.format(item) for item in lst]` iterates through each element in the list and applies the `.format()` method to substitute `{0}` with the current item.
+
+3. **Return value**: Returns a new list containing the formatted strings.
+
+4. **Assertion test**: Verifies that `add_string([1,2,3,4], 'temp{0}')` produces `['temp1', 'temp2', 'temp3', 'temp4']`.
+
+**Alternative implementations** (if you prefer not to use list comprehension):
+
+```python
+# Using map()
+def add_string(lst, format_string):
+    return list(map(lambda x: format_string.format(x), lst))
+
+# Using a for loop
+def add_string(lst, format_string):
+    result = []
+    for item in lst:
+        result.append(format_string.format(item))
+    return result
+```
+
+All three approaches produce the same result. The list comprehension version is the most Pythonic and concise.

@@ -1,0 +1,11 @@
+```python
+def max_product_tuple(lst):
+    lst.sort()
+    return max(lst[-1][0] * lst[-2][0], lst[-1][1] * lst[-2][1])
+
+# Test cases
+print(max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]))  # Expected output: 36
+print(max_product_tuple([(3, 5), (2, 7), (1, 8), (4, 9)]))  # Expected output: 30
+print(max_product_tuple([(1, 2), (3, 4), (5, 6), (7, 8)]))  # Expected output: 72
+print(max_product_tuple([(10, 20), (30, 40), (50, 60), (70, 80)]))  # Expected output: 2100
+```

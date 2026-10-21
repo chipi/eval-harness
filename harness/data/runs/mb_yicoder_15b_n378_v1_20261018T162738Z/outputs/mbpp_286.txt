@@ -1,0 +1,14 @@
+```python
+def max_sub_array_sum_repeated(arr, k, n):
+    # Calculate the sum of the array
+    total_sum = sum(arr)
+
+    # Calculate the sum of the array repeated k times
+    repeat_sum = sum(arr * k)
+
+    # The largest sum is the difference between the total sum and the sum of the array repeated k times
+    return total_sum - repeat_sum
+
+# Test the function
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+```

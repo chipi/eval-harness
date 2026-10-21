@@ -1,0 +1,16 @@
+```python
+def odd_values_string(s):
+    """
+    Remove characters which have odd index values of a given string.
+    Keeps only characters at even indices (0, 2, 4, ...).
+    """
+    return s[::2]
+
+
+if __name__ == "__main__":
+    assert odd_values_string('abcdef') == 'ace'
+    assert odd_values_string('python') == 'pto'
+    assert odd_values_string('') == ''
+    assert odd_values_string('a') == 'a'
+    print("All test cases passed!")
+```

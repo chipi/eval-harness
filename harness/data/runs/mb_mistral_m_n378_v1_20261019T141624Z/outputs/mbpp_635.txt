@@ -1,0 +1,44 @@
+Here's a self-contained Python script that implements the heap sort algorithm to solve the given problem:
+
+```python
+def heapify(arr, n, i):
+    largest = i
+    left = 2 * i + 1
+    right = 2 * i + 2
+
+    if left < n and arr[left] > arr[largest]:
+        largest = left
+
+    if right < n and arr[right] > arr[largest]:
+        largest = right
+
+    if largest != i:
+        arr[i], arr[largest] = arr[largest], arr[i]
+        heapify(arr, n, largest)
+
+def heap_sort(arr):
+    n = len(arr)
+
+    # Build a maxheap
+    for i in range(n // 2 - 1, -1, -1):
+        heapify(arr, n, i)
+
+    # Extract elements one by one
+    for i in range(n - 1, 0, -1):
+        arr[i], arr[0] = arr[0], arr[i]  # swap
+        heapify(arr, i, 0)
+
+    return arr
+
+# Test case
+assert heap_sort([1, 3, 5, 7, 9, 2, 4, 6, 8, 0]) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+```
+
+This script:
+1. Defines a `heapify` function to maintain the heap property
+2. Implements the `heap_sort` function that:
+   - First builds a max heap from the input array
+   - Then repeatedly extracts the maximum element and maintains the heap property
+3. Includes the required test case with an assertion to verify the implementation
+
+The heap sort algorithm has a time complexity of O(n log n) in all cases and is an in-place sorting algorithm.

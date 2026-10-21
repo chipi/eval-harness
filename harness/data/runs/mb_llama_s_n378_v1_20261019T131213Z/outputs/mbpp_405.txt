@@ -1,0 +1,32 @@
+```python
+def check_tuplex(tup, element):
+    """
+    This function checks whether an element exists within a tuple.
+
+    Args:
+        tup (tuple): The tuple to be searched.
+        element: The element to be searched for.
+
+    Returns:
+        bool: True if the element exists in the tuple, False otherwise.
+    """
+    return element in tup
+
+
+# Test the function
+def main():
+    tup = ("w", 3, "r", "e", "s", "o", "u", "r", "c", "e")
+    element = 'r'
+    print(check_tuplex(tup, element))  # Expected output: True
+
+
+if __name__ == "__main__":
+    main()
+```
+
+In this code:
+
+*   We define a function `check_tuplex` that takes a tuple `tup` and an `element` as arguments.
+*   Inside the function, we use the `in` operator to check if the `element` exists in the tuple `tup`.
+*   The function returns `True` if the element is found and `False` otherwise.
+*   In the `main` function, we test `check_tuplex` with a sample tuple and element, and print the result.

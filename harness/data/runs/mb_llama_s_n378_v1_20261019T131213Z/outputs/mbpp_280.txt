@@ -1,0 +1,30 @@
+```python
+def sequential_search(array, target):
+    """
+    Searches for an element in an array using sequential search.
+
+    Args:
+        array (list): The list of elements to search.
+        target: The element to search for.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating if the element is in the array
+               and the index position of the element (or -1 if the element is not found).
+    """
+    for i, element in enumerate(array):
+        if element == target:
+            return (True, i)
+    return (False, -1)
+
+# Example usage:
+def main():
+    array = [11, 23, 58, 31, 56, 77, 43, 12, 65, 19]
+    target = 31
+    result = sequential_search(array, target)
+    print(f"Element {target} found: {result[0]}, Index: {result[1]}")
+
+if __name__ == "__main__":
+    main()
+```
+
+You can run this script to test the `sequential_search` function. The `main` function demonstrates how to use the `sequential_search` function with an example array and target element. The output will indicate whether the target element was found and its index position.

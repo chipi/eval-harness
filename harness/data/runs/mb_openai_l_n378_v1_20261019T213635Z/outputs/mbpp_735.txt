@@ -1,0 +1,14 @@
+```python
+def toggle_middle_bits(n: int) -> int:
+    """Toggle the bits between the most and least significant bits of n."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if n.bit_length() <= 2:
+        return n
+
+    middle_mask = ((1 << (n.bit_length() - 1)) - 1) & ~1
+    return n ^ middle_mask
+
+
+assert toggle_middle_bits(9) == 15  # 1001 -> 1111
+```

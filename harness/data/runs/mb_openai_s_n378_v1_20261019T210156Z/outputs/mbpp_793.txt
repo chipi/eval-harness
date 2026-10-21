@@ -1,0 +1,33 @@
+```python
+def last(arr, target):
+    """
+    Return the last index of target in a sorted array arr.
+    If target is not present, return -1.
+    """
+    left, right = 0, len(arr) - 1
+    result = -1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            result = mid
+            left = mid + 1  # keep searching to the right
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return result
+
+
+# Example assertion from the prompt
+assert last([1, 2, 3], 1) == 0
+
+# A few extra checks
+assert last([1, 1, 1, 2, 2, 3], 1) == 2
+assert last([1, 2, 2, 2, 3], 2) == 3
+assert last([1, 2, 3], 4) == -1
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

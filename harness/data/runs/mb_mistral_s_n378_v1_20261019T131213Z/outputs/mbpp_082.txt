@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem of calculating the volume of a sphere:
+
+```python
+import math
+
+def volume_sphere(radius):
+    """
+    Calculate the volume of a sphere given its radius.
+
+    The formula for the volume of a sphere is (4/3) * π * r^3.
+
+    Parameters:
+    radius (float): The radius of the sphere
+
+    Returns:
+    float: The volume of the sphere
+    """
+    return (4/3) * math.pi * (radius ** 3)
+
+# Test the function
+assert math.isclose(volume_sphere(10), 4188.790204786391, rel_tol=0.001)
+```
+
+This script:
+1. Imports the math module to access the value of π
+2. Defines a function `volume_sphere` that takes a radius as input
+3. Implements the formula for the volume of a sphere: (4/3) * π * r³
+4. Includes the test case from the problem statement to verify the function works correctly
+
+The function will return the volume of a sphere with the given radius, and the assertion will pass if the calculation is correct within the specified tolerance.

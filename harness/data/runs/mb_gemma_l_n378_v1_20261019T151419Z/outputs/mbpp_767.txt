@@ -1,0 +1,33 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Counts the number of pairs in the list whose sum equals the target_sum.
+    
+    The function handles duplicate numbers by treating each index as a 
+    distinct element, meaning if the list is [1, 1, 1, 1] and the sum is 2,
+    there are 6 unique pairs of indices (0,1), (0,2), (0,3), (1,2), (1,3), (2,3).
+    """
+    count = 0
+    n = len(numbers)
+    
+    # Iterate through the list with two pointers to check every unique pair
+    for i in range(n):
+        for j in range(i + 1, n):
+            if numbers[i] + numbers[j] == target_sum:
+                count += 1
+                
+    return count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [1, 1, 1, 1]
+    test_sum = 2
+    result = get_pairs_count(test_list, test_sum)
+    
+    print(f"List: {test_list}, Target Sum: {test_sum}")
+    print(f"Number of pairs: {result}")
+    
+    # Assertion to verify the result
+    assert result == 6, f"Expected 6, but got {result}"
+    print("Assertion passed!")
+```

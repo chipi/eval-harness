@@ -1,0 +1,31 @@
+```python
+"""
+Write a function to remove all whitespaces from the given string.
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+"""
+
+import re
+
+
+def remove_whitespaces(text):
+    """
+    Remove all whitespace characters from the given string.
+
+    Whitespace includes spaces, tabs, newlines, carriage returns,
+    form feeds and vertical tabs.
+
+    :param text: the input string
+    :return: the string with every whitespace character removed
+    """
+    return re.sub(r'\s+', '', text)
+
+
+if __name__ == '__main__':
+    assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+    assert remove_whitespaces('   Hello    World    ') == 'HelloWorld'
+    assert remove_whitespaces(' Python   Programming  ') == 'PythonProgramming'
+    assert remove_whitespaces('\tTabs\nand newlines\r\n') == 'Tabsandnewlines'
+    assert remove_whitespaces('') == ''
+    assert remove_whitespaces('     ') == ''
+    print("All tests passed!")
+```

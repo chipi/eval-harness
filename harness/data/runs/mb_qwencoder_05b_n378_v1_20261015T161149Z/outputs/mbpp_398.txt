@@ -1,0 +1,31 @@
+```python
+def sum_of_digits(numbers):
+    """
+    Compute the sum of digits of each number of a given list.
+
+    :param numbers: List of integers
+    :return: Sum of digits of each number
+    """
+    return sum(int(digit) for digit in str(max(numbers)))
+
+# Test cases
+assert sum_of_digits([10, 2, 56]) == 14
+assert sum_of_digits([111, 222, 333]) == 6
+assert sum_of_digits([444, 555, 666]) == 20
+assert sum_of_digits([777, 888, 999]) == 36
+assert sum_of_digits([0, -1, -2, -3]) == 0
+assert sum_of_digits([-4, -5, -6, -7]) == -28
+assert sum_of_digits([100, 200, 300]) == 600
+assert sum_of_digits([1000, 2000, 3000]) == 6000
+assert sum_of_digits([10000, 20000, 30000]) == 60000
+assert sum_of_digits([100000, 200000, 300000]) == 600000
+assert sum_of_digits([1000000, 2000000, 3000000]) == 6000000
+assert sum_of_digits([10000000, 20000000, 30000000]) == 60000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 200000000, 300000000]) == 600000000
+assert sum_of_digits([100000000, 20000

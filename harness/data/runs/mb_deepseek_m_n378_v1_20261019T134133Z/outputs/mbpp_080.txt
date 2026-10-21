@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tetrahedral_number(n):
+    """
+    Calculate the nth tetrahedral number.
+    
+    The nth tetrahedral number is given by the formula:
+    T(n) = n * (n + 1) * (n + 2) / 6
+    
+    Args:
+        n (int): The position in the tetrahedral number sequence (1-indexed)
+    
+    Returns:
+        int: The nth tetrahedral number
+    """
+    return n * (n + 1) * (n + 2) // 6
+
+
+# Test the function
+assert tetrahedral_number(5) == 35
+print("Test passed!")
+print(f"Tetrahedral number 5: {tetrahedral_number(5)}")
+print(f"Tetrahedral number 1: {tetrahedral_number(1)}")
+print(f"Tetrahedral number 10: {tetrahedral_number(10)}")
+```
+
+**Explanation:**
+
+The nth tetrahedral number represents the number of dots in a tetrahedral arrangement with n layers. It's the sum of the first n triangular numbers:
+
+- T(n) = 1 + 3 + 6 + 10 + ... (triangular numbers)
+
+The closed-form formula is:
+- **T(n) = n(n+1)(n+2) / 6**
+
+For n=5: 5 × 6 × 7 / 6 = 210 / 6 = **35** ✓
+
+I used integer division (`//`) since the product of three consecutive integers is always divisible by 6, ensuring an exact integer result.

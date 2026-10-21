@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of finding the nth decagonal number and includes the assertion test:
+
+```python
+def is_num_decagonal(n):
+    """
+    Calculate the nth decagonal number.
+    
+    A decagonal number is a figurate number that represents a decagon.
+    The nth decagonal number is given by the formula: 4n^2 - 3n
+    
+    Args:
+        n (int): The term number (must be a positive integer)
+    
+    Returns:
+        int: The nth decagonal number
+    
+    Raises:
+        ValueError: If n is not a positive integer
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    return 4 * n * n - 3 * n
+
+# Test the function with the provided assertion
+assert is_num_decagonal(3) == 27, "Test failed: is_num_decagonal(3) should be 27"
+
+# Additional test cases
+print("Test cases:")
+print(f"1st decagonal number: {is_num_decagonal(1)}")  # Expected: 1
+print(f"2nd decagonal number: {is_num_decagonal(2)}")  # Expected: 10
+print(f"3rd decagonal number: {is_num_decagonal(3)}")  # Expected: 27
+print(f"4th decagonal number: {is_num_decagonal(4)}")  # Expected: 52
+print(f"5th decagonal number: {is_num_decagonal(5)}")  # Expected: 85
+
+print("\nAll tests passed successfully!")
+```
+
+### Explanation:
+1. **Formula**: The nth decagonal number is calculated using the formula `4n² - 3n`. This formula is derived from the pattern of decagonal numbers in mathematics.
+2. **Input Validation**: The function checks if `n` is a positive integer and raises a `ValueError` if not.
+3. **Assertion Test**: The provided assertion `is_num_decagonal(3) == 27` is included to verify the correctness of the function.
+4. **Additional Tests**: The script includes additional test cases to demonstrate the function's behavior for different values of `n`.
+
+When you run this script, it will print the first few decagonal numbers and confirm that all tests pass. The assertion will raise an error if the function doesn't return the expected value for `n=3`.

@@ -1,0 +1,14 @@
+```python
+def test_duplicate(arr):
+    return len(arr) != len(set(arr))
+
+
+# Test cases
+assert test_duplicate([1, 2, 3, 4, 5]) == False
+assert test_duplicate([1, 2, 3, 4, 4]) == True
+assert test_duplicate([1, 1, 2, 2, 3]) == True
+assert test_duplicate([]) == False
+assert test_duplicate([1]) == False
+
+print("All test cases passed!")
+```

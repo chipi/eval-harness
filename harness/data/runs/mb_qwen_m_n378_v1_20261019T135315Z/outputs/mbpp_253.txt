@@ -1,0 +1,40 @@
+```python
+def count_integer(lst: list) -> int:
+    """
+    Returns the number of integer elements in a given list.
+    
+    Args:
+        lst: A list containing various types of elements
+        
+    Returns:
+        The count of elements that are integers (not booleans, not floats)
+        
+    Examples:
+        >>> count_integer([1, 2, 'abc', 1.2])
+        2
+        >>> count_integer([1, 2, 3])
+        3
+        >>> count_integer(['a', 'b', 'c'])
+        0
+        >>> count_integer([True, False, 1])
+        1
+    """
+    count = 0
+    for item in lst:
+        # Check if the item is an integer but not a boolean
+        # In Python, bool is a subclass of int, so we need to exclude booleans
+        if isinstance(item, int) and not isinstance(item, bool):
+            count += 1
+    return count
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert count_integer([1, 2, 'abc', 1.2]) == 2
+    assert count_integer([1, 2, 3]) == 3
+    assert count_integer(['a', 'b', 'c']) == 0
+    assert count_integer([True, False, 1]) == 1
+    assert count_integer([]) == 0
+    assert count_integer([1.0, 2.5, 3.7]) == 0
+    print("All tests passed!")
+```

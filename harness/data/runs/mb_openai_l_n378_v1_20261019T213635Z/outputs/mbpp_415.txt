@@ -1,0 +1,19 @@
+```python
+def max_Product(numbers):
+    """Return the pair of values with the highest product."""
+    if len(numbers) < 2:
+        raise ValueError("At least two integers are required")
+
+    ordered = sorted(numbers)
+    smallest_pair = (ordered[0], ordered[1])
+    largest_pair = (ordered[-2], ordered[-1])
+
+    if smallest_pair[0] * smallest_pair[1] > largest_pair[0] * largest_pair[1]:
+        return smallest_pair
+    return largest_pair
+
+
+if __name__ == "__main__":
+    assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+    assert max_Product([-10, -3, 1, 2]) == (-10, -3)
+```

@@ -1,0 +1,29 @@
+### Parity Checker Function
+#### Problem Statement
+Write a Python function to determine whether the parity of a given number is odd.
+
+#### Code Solution
+```python
+def find_parity(n: int) -> bool:
+    """
+    This function checks whether the parity of a given number is odd.
+
+    Args:
+    n (int): The input number.
+
+    Returns:
+    bool: True if the parity is odd, False otherwise.
+    """
+    return n % 2 != 0
+
+# Example usage:
+if __name__ == "__main__":
+    assert not find_parity(12)  # False
+    assert find_parity(13)      # True
+```
+#### Explanation
+
+*   The function `find_parity` takes an integer `n` as input and returns a boolean value.
+*   It uses the modulus operator `%` to find the remainder of `n` divided by 2.
+*   If the remainder is not equal to 0, the function returns `True`, indicating that the parity is odd. Otherwise, it returns `False`.
+*   In the example usage, we demonstrate the function's behavior with the inputs 12 and 13.

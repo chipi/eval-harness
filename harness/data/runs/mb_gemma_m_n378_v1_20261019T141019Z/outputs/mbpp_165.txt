@@ -1,0 +1,53 @@
+```python
+def count_char_position(s: str) -> int:
+    """
+    Counts the number of characters in a string that occur at the same 
+    position in the string as in the English alphabet (case insensitive).
+    
+    The English alphabet positions are:
+    'a' -> 0, 'b' -> 1, 'c' -> 2, ..., 'z' -> 25
+    
+    Args:
+        s: The input string to check.
+        
+    Returns:
+        The count of characters where s[i].lower() == alphabet[i].
+    """
+    count = 0
+    for i, char in enumerate(s):
+        # Convert character to lowercase to ensure case insensitivity
+        lower_char = char.lower()
+        
+        # Check if the character is a lowercase English letter
+        if 'a' <= lower_char <= 'z':
+            # Calculate the expected character at this position in the alphabet
+            # ord('a') is 97. If i=0, expected is 'a'.
+            # We must ensure the index i doesn't exceed the alphabet range (0-25)
+            if i < 26:
+                expected_char = chr(ord('a') + i)
+                if lower_char == expected_char:
+                    count += 1
+                    
+    return count
+
+if __name__ == "__main__":
+    # Test cases
+    # "xbcefg"
+    # index 0: 'x' != 'a'
+    # index 1: 'b' == 'b' (Match 1)
+    # index 2: 'c' == 'c' (Match 2)
+    # index 3: 'e' != 'd'
+    # index 4: 'f' != 'e'
+    # index 5: 'g' != 'f'
+    assert count_char_position("xbcefg") == 2
+    
+    # Additional tests
+    assert count_char_position("abc") == 3
+    assert count_char_position("ABC") == 3  # Case insensitivity
+    assert count_char_position("z") == 0
+    assert count_char_position("a") == 1
+    assert count_char_position("123") == 0  # Non-alphabetic
+    assert count_char_position("abcdefghijklmnopqrstuvwxyz") == 26
+    
+    print("All tests passed!")
+```

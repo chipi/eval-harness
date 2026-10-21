@@ -1,0 +1,39 @@
+```python
+def max_Product(nums):
+    """
+    Finds a pair of integers in the given array that produces the highest product.
+    Handles both positive and negative integers.
+    """
+    if len(nums) < 2:
+        return None
+
+    # Sort the array to easily find the largest and smallest numbers
+    # The highest product can come from:
+    # 1. The two largest positive numbers
+    # 2. The two smallest negative numbers (since negative * negative = positive)
+    nums.sort()
+
+    # Product of the two largest numbers
+    prod_high = nums[-1] * nums[-2]
+    # Product of the two smallest numbers
+    prod_low = nums[0] * nums[1]
+
+    if prod_high >= prod_low:
+        # Return as a tuple in ascending order to match the assertion (7, 8)
+        return (nums[-2], nums[-1])
+    else:
+        # Return as a tuple in ascending order (e.g., -10, -8)
+        return (nums[0], nums[1])
+
+if __name__ == "__main__":
+    # Test case from the prompt
+    result = max_Product([1, 2, 3, 4, 7, 0, 8, 4])
+    print(f"Result: {result}")
+    assert result == (7, 8)
+    
+    # Additional test case with negative numbers
+    # (-10 * -10 = 100, which is > 2 * 5 = 10)
+    assert max_Product([-10, -10, 2, 5]) == (-10, -10)
+    
+    print("All tests passed!")
+```

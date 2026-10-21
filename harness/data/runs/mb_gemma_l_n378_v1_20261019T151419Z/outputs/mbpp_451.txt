@@ -1,0 +1,27 @@
+```python
+def remove_whitespaces(text: str) -> str:
+    """
+    Removes all whitespace characters from the given string.
+    
+    Args:
+        text (str): The input string containing potential whitespaces.
+        
+    Returns:
+        str: The string with all whitespaces removed.
+    """
+    # .split() without arguments splits by any whitespace character (space, tab, newline, etc.)
+    # "".join() concatenates the resulting list of words back together with no separator.
+    return "".join(text.split())
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_str = ' Google    Flutter '
+    expected_output = 'GoogleFlutter'
+    result = remove_whitespaces(input_str)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print(f"Input: '{input_str}'")
+    print(f"Output: '{result}'")
+    print("Assertion passed successfully!")
+```

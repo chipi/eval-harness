@@ -1,0 +1,45 @@
+Looking at this problem, I need to compute base^power and sum all the digits of the result.
+
+```python
+"""
+Write a function that takes base and power as arguments and calculate the sum of all digits of the base to the specified power.
+assert power_base_sum(2,100)==115
+"""
+
+
+def power_base_sum(base, power):
+    """
+    Calculate the sum of all digits of `base` raised to `power`.
+
+    Args:
+        base (int): The base number.
+        power (int): The exponent.
+
+    Returns:
+        int: Sum of the digits of base ** power.
+    """
+    return sum(int(digit) for digit in str(pow(base, power)))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert power_base_sum(2, 100) == 115
+
+    # A few extra sanity checks
+    assert power_base_sum(8, 10) == 37
+    assert power_base_sum(8, 15) == 62
+    assert power_base_sum(3, 3) == 9       # 27 -> 2 + 7
+    assert power_base_sum(10, 5) == 1      # 100000 -> 1
+
+    print("2 ** 100 =", 2 ** 100)
+    print("Sum of digits:", power_base_sum(2, 100))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. `pow(base, power)` computes `base ** power` — Python's integers have arbitrary precision, so huge results like `2**100 = 1267650600228229401496703205376` are handled exactly.
+2. `str(...)` converts the number to its decimal string representation.
+3. A generator expression converts each character back to an `int`, and `sum(...)` adds them up.
+
+For `2**100`, the digits `1+2+6+7+6+5+0+6+0+0+2+2+8+2+2+9+4+0+1+4+9+6+7+0+3+2+0+5+3+7+6` sum to **115**.

@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to check whether the given month number contains 30 days or not. Months are given as number from 1 to 12.
+assert check_monthnumber_number(6)==True
+"""
+
+def check_monthnumber_number(month_number):
+    """
+    Check if the given month number (1-12) has 30 days.
+
+    Args:
+        month_number (int): The month number (1-12)
+
+    Returns:
+        bool: True if the month has 30 days, False otherwise
+    """
+    # Months with 30 days: April (4), June (6), September (9), November (11)
+    months_with_30_days = {4, 6, 9, 11}
+
+    if month_number in months_with_30_days:
+        return True
+    return False
+
+# Test cases
+assert check_monthnumber_number(6) == True
+assert check_monthnumber_number(4) == True
+assert check_monthnumber_number(9) == True
+assert check_monthnumber_number(11) == True
+assert check_monthnumber_number(1) == False
+assert check_monthnumber_number(2) == False
+assert check_monthnumber_number(3) == False
+assert check_monthnumber_number(5) == False
+assert check_monthnumber_number(7) == False
+assert check_monthnumber_number(8) == False
+assert check_monthnumber_number(10) == False
+assert check_monthnumber_number(12) == False
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `check_monthnumber_number` that takes a month number (1-12) as input
+2. Uses a set of months that have 30 days for quick lookup
+3. Returns True if the input month is in the set, False otherwise
+4. Includes the required test case from the assertion
+5. Adds additional test cases to verify all months
+6. Prints a success message if all tests pass
+
+The function will return True for months 4 (April), 6 (June), 9 (September), and 11 (November), and False for all other months.

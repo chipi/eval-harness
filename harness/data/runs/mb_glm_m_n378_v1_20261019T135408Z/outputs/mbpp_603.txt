@@ -1,0 +1,59 @@
+```python
+def get_ludic(n):
+    """
+    Get all ludic numbers smaller than or equal to a given integer n.
+    
+    A ludic number is defined by a sieve process similar to the Sieve of Eratosthenes, 
+    but instead of eliminating multiples of each surviving number, we eliminate 
+    numbers at specific indices.
+    
+    Steps:
+    1. Start with a list of positive integers from 1 to n.
+    2. The first number in the list is 1, which is a ludic number.
+    3. Remove every 1st number (i.e., at index 1) from the remaining list. 
+       This removes all even numbers, leaving 1, 3, 5, 7, etc.
+    4. The next number in the list is 3, which is a ludic number.
+    5. Remove every 3rd number from the remaining list.
+    6. Continue this process until the list is exhausted.
+    
+    Args:
+        n (int): The upper bound (inclusive) for the ludic numbers.
+        
+    Returns:
+        list: A list of all ludic numbers <= n.
+    """
+    if n < 1:
+        return []
+        
+    # Initialize the list of numbers from 1 to n
+    nums = list(range(1, n + 1))
+    
+    # We start checking from index 1 (which initially holds the number 2)
+    i = 1
+    while i < len(nums):
+        # The step size is the current ludic number
+        step = nums[i]
+        
+        # Remove every `step`-th element from the remaining list
+        # We start removing from index `i + step`
+        j = i + step
+        while j < len(nums):
+            del nums[j]
+            j += step - 1  # Since the list shrinks by 1 after each deletion, the next target shifts left by 1
+            
+        # Move to the next ludic number
+        i += 1
+        
+    return nums
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert get_ludic(10) == [1, 2, 3, 5, 7]
+    print("Assertion passed: get_ludic(10) == [1, 2, 3, 5, 7]")
+    
+    # Additional test cases
+    assert get_ludic(25) == [1, 2, 3, 5, 7, 11, 13, 17, 23, 25]
+    assert get_ludic(1) == [1]
+    assert get_ludic(0) == []
+    print("All additional tests passed.")
+```

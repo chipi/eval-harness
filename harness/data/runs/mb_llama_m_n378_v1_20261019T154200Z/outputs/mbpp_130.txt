@@ -1,0 +1,24 @@
+```python
+from collections import Counter
+
+def max_occurrences(lst):
+    """
+    This function finds the item with maximum frequency in a given list.
+    
+    Parameters:
+    lst (list): The input list containing items.
+    
+    Returns:
+    item: The item with maximum frequency in the list.
+    """
+    # Count the frequency of each item in the list
+    freq = Counter(lst)
+    
+    # Find the item with maximum frequency
+    max_item = max(freq, key=freq.get)
+    
+    return max_item
+
+# Test the function
+print(max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]))  # Output: 2
+```

@@ -1,0 +1,17 @@
+```python
+def Diff(list1, list2):
+    """
+    Return the elements that are in list1 but not in list2,
+    preserving the order from list1.
+
+    Example:
+    Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) -> [10, 15, 20, 30]
+    """
+    set2 = set(list2)
+    return [x for x in list1 if x not in set2]
+
+
+if __name__ == "__main__":
+    assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 15, 20, 30]
+    print("All tests passed.")
+```

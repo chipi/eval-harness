@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem you described:  
+
+```python
+def remove_Occ(string, char):
+    first = string.find(char)
+    last = string.rfind(char)
+    
+    if first == -1 or last == -1 or first == last:
+        # If char appears only once or not at all, just remove that one occurrence
+        if first != -1:
+            return string[:first] + string[first+1:]
+        return string
+    
+    # Remove first and last occurrence
+    result = string[:first] + string[first+1:last] + string[last+1:]
+    return result
+
+# Test the assertion
+assert remove_Occ("hello", "l") == "heo"
+print("Test passed:", remove_Occ("hello", "l"))
+```

@@ -1,0 +1,31 @@
+```python
+def find_min_diff(arr, n):
+    """
+    Finds the minimum difference between any two elements in a given array.
+    
+    Parameters:
+    arr (tuple/list): The input array of numbers.
+    n (int): The number of elements in the array.
+    
+    Returns:
+    int: The minimum difference between any two elements.
+    """
+    # Sort the array to ensure the minimum difference is between adjacent elements
+    arr = sorted(arr)
+    
+    # Initialize minimum difference to a large value
+    min_diff = float('inf')
+    
+    # Iterate through the sorted array and compare adjacent elements
+    for i in range(n - 1):
+        diff = arr[i+1] - arr[i]
+        if diff < min_diff:
+            min_diff = diff
+            
+    return min_diff
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert find_min_diff((1, 5, 3, 19, 18, 25), 6) == 1
+    print("Test passed successfully.")
+```

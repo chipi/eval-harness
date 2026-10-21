@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def Split(numbers):
+    """
+    Returns a list of even numbers from the input list.
+    
+    Args:
+        numbers: A list of numbers.
+    
+    Returns:
+        A list containing only the even numbers from the input list.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+
+# Test the function
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+print("Test passed!")
+print(Split([1, 2, 3, 4, 5]))  # Output: [2, 4]
+```
+
+**Explanation:**
+
+- The function `Split` takes a list of numbers as input.
+- It uses a list comprehension to iterate through each number and checks if it's even using the modulo operator (`num % 2 == 0`).
+- If the number is even, it's included in the resulting list.
+- The `assert` statement verifies that `Split([1, 2, 3, 4, 5])` returns `[2, 4]`, which it does.

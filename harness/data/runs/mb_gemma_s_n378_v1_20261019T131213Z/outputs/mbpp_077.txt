@@ -1,0 +1,19 @@
+```python
+def is_Diff (n):
+  """
+  Write a python function to find whether a number is divisible by 11.
+  assert is_Diff (12345) == False
+  """
+  n = str(n)
+  sum_odd = 0
+  sum_even = 0
+  for i in range(len(n)):
+    if (i + 1) % 2 == 0:
+      sum_even += int(n[i])
+    else:
+      sum_odd += int(n[i])
+  if (sum_odd - sum_even) % 11 == 0:
+    return True
+  else:
+    return False
+```

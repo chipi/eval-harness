@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Calculate the sum of binomial coefficients at even indices
+    for the expansion of (1 + x)^n.
+    
+    The binomial coefficients are C(n, k) for k = 0, 1, ..., n.
+    We sum C(n, k) for all even k.
+    
+    Mathematical insight: 
+    Sum of C(n, k) for even k = 2^(n-1) for n >= 1.
+    """
+    if n <= 0:
+        return 0
+    return 2 ** (n - 1)
+
+
+# Test the function
+assert even_binomial_Coeff_Sum(4) == 8
+print("Test passed!")
+print(f"even_binomial_Coeff_Sum(4) = {even_binomial_Coeff_Sum(4)}")
+print(f"even_binomial_Coeff_Sum(5) = {even_binomial_Coeff_Sum(5)}")
+print(f"even_binomial_Coeff_Sum(6) = {even_binomial_Coeff_Sum(6)}")
+```
+
+**Explanation:**
+
+The binomial coefficients for `(1 + x)^n` are `C(n, 0), C(n, 1), ..., C(n, n)`.
+
+For example, with `n = 4`:
+- Coefficients: `1, 4, 6, 4, 1`
+- Even indices (0, 2, 4): `1 + 6 + 1 = 8` ✓
+
+**Key mathematical fact:** The sum of binomial coefficients at even indices equals `2^(n-1)` for `n ≥ 1`. This is because:
+- Total sum: `Σ C(n,k) = 2^n`
+- Alternating sum: `Σ (-1)^k C(n,k) = 0`
+- Adding these: `2 × (sum at even indices) = 2^n`, so sum at even indices = `2^(n-1)`
+
+This gives us an O(1) solution instead of computing each binomial coefficient individually.

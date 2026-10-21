@@ -1,0 +1,40 @@
+```python
+"""
+Write a Python function to find the last digit in the factorial of a given number.
+
+Examples:
+    4! = 24, so the last digit is 4
+    5! = 120, so the last digit is 0
+"""
+
+def last_Digit_Factorial(n):
+    """
+    Return the last digit of n!.
+
+    For any n >= 5, n! contains the factors 2 and 5,
+    which make the factorial end in 0.
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+
+    if n >= 5:
+        return 0
+
+    factorial = 1
+    for i in range(2, n + 1):
+        factorial *= i
+
+    return factorial % 10
+
+
+# Test cases
+assert last_Digit_Factorial(0) == 1
+assert last_Digit_Factorial(1) == 1
+assert last_Digit_Factorial(2) == 2
+assert last_Digit_Factorial(3) == 6
+assert last_Digit_Factorial(4) == 4
+assert last_Digit_Factorial(5) == 0
+assert last_Digit_Factorial(10) == 0
+
+print("All tests passed.")
+```

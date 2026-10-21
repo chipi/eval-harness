@@ -1,0 +1,33 @@
+```python
+def multiply_elements(numbers):
+    """
+    This function takes a tuple of numbers as input and returns a tuple of length N 
+    where the i-th element of the tuple is equal to t_i * t_{i+1}.
+
+    Args:
+        numbers (tuple): A tuple of numbers.
+
+    Returns:
+        tuple: A tuple where each element is the product of two consecutive elements in the input tuple.
+    """
+    # Check if the input is a tuple
+    if not isinstance(numbers, tuple):
+        raise TypeError("Input must be a tuple")
+
+    # Check if all elements in the tuple are numbers
+    if not all(isinstance(num, (int, float)) for num in numbers):
+        raise TypeError("All elements in the tuple must be numbers")
+
+    # Check if the tuple has at least two elements
+    if len(numbers) < 2:
+        raise ValueError("Tuple must have at least two elements")
+
+    # Use list comprehension and tuple slicing to generate the output tuple
+    return tuple(numbers[i] * numbers[i+1] for i in range(len(numbers) - 1))
+
+
+# Example usage:
+print(multiply_elements((1, 5, 7, 8, 10)))  # Output: (5, 35, 56, 80)
+```
+
+This Python script defines a function `multiply_elements` that takes a tuple of numbers as input and returns a tuple where each element is the product of two consecutive elements in the input tuple. The function includes input validation to ensure that the input is a tuple with at least two elements, all of which are numbers. The function uses a generator expression within the `tuple` function to efficiently generate the output tuple. The example usage demonstrates how to call the function with a sample input tuple.

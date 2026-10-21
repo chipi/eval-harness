@@ -1,0 +1,10 @@
+```python
+def find_Max_Num(digits):
+    # Sort the digits in descending order and join them into a string
+    sorted_digits = sorted(digits, reverse=True)
+    max_num = int(''.join(map(str, sorted_digits)))
+    return max_num
+
+# Test the function
+assert find_Max_Num([1, 2, 3]) == 321
+```

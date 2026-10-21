@@ -1,0 +1,37 @@
+```python
+def second_smallest(numbers):
+    """
+    Finds the second smallest number in a list.
+    
+    Args:
+        numbers (list): A list of numbers.
+        
+    Returns:
+        The second smallest number in the list.
+        
+    Raises:
+        ValueError: If the list has fewer than 2 unique elements.
+    """
+    if len(numbers) < 2:
+        raise ValueError("List must contain at least two elements.")
+
+    # Initialize smallest and second_smallest to infinity
+    smallest = float('inf')
+    second_smallest_val = float('inf')
+
+    for num in numbers:
+        if num < smallest:
+            second_smallest_val = smallest
+            smallest = num
+        elif num < second_smallest_val and num != smallest:
+            second_smallest_val = num
+
+    if second_smallest_val == float('inf'):
+        raise ValueError("List must contain at least two unique elements.")
+        
+    return second_smallest_val
+
+# Test the function with the provided assertion
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+print("Assertion passed.")
+```

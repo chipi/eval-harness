@@ -1,0 +1,26 @@
+```python
+def kth_element(arr, k):
+    """
+    Find the kth element in the given array using 1-based indexing.
+    
+    :param arr: List of integers
+    :param k: Index of the element to find
+    :return: The kth element in the array
+    """
+    # Check if the input is valid
+    if not isinstance(arr, list) or not isinstance(k, int) or k < 1 or k > len(arr):
+        raise ValueError("Invalid input")
+    
+    # Sort the array in ascending order
+    arr.sort()
+    
+    # Return the kth element
+    return arr[k - 1]
+
+# Test cases
+assert kth_element([12,3,5,7,19], 2) == 3
+assert kth_element([10,20,30,40,50], 3) == 35
+assert kth_element([1,2,3,4,5], 1) == 1
+assert kth_element([100,200,300,400,500], 5) == 450
+```
+

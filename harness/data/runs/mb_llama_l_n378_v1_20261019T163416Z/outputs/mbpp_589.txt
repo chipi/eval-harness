@@ -1,0 +1,36 @@
+```python
+def perfect_squares(start, end):
+    """
+    This function finds all perfect squares between two given numbers.
+
+    Args:
+        start (int): The start of the range (inclusive).
+        end (int): The end of the range (inclusive).
+
+    Returns:
+        list: A list of perfect squares between start and end.
+    """
+    # Initialize an empty list to store perfect squares
+    perfect_squares_list = []
+    
+    # Calculate the square root of the start and end numbers
+    start_sqrt = int(start ** 0.5)
+    end_sqrt = int(end ** 0.5) + 1
+    
+    # Iterate over the range of square roots
+    for i in range(start_sqrt, end_sqrt + 1):
+        # Calculate the square of the current number
+        square = i ** 2
+        
+        # Check if the square is within the given range
+        if start <= square <= end:
+            # If it is, add it to the list of perfect squares
+            perfect_squares_list.append(square)
+    
+    # Return the list of perfect squares
+    return perfect_squares_list
+
+# Test the function
+assert perfect_squares(1,30)==[1, 4, 9, 16, 25]
+print(perfect_squares(1,30))  # Output: [1, 4, 9, 16, 25]
+```

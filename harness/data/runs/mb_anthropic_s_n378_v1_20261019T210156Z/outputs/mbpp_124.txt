@@ -1,0 +1,34 @@
+```python
+import math
+import cmath
+
+def angle_complex(real, imag):
+    """
+    Get the angle (argument) of a complex number.
+    
+    Args:
+        real: The real part of the complex number
+        imag: The imaginary part of the complex number
+    
+    Returns:
+        The angle in radians
+    """
+    complex_num = complex(real, imag)
+    return cmath.phase(complex_num)
+
+
+# Test cases
+assert math.isclose(angle_complex(0, 1), 1.5707963267948966, rel_tol=0.001)
+assert math.isclose(angle_complex(1, 0), 0, rel_tol=0.001)
+assert math.isclose(angle_complex(1, 1), math.pi/4, rel_tol=0.001)
+assert math.isclose(angle_complex(-1, 0), math.pi, rel_tol=0.001)
+
+print("All tests passed!")
+```
+
+The solution uses Python's `cmath.phase()` function, which returns the angle (argument) of a complex number in radians. The angle is measured counterclockwise from the positive real axis.
+
+- For `0 + 1j` (purely imaginary on positive imaginary axis), the angle is π/2 ≈ 1.5707963267948966 radians (90°)
+- For `1 + 0j` (on positive real axis), the angle is 0
+- For `1 + 1j`, the angle is π/4 radians (45°)
+- For `-1 + 0j` (on negative real axis), the angle is π radians (180°)

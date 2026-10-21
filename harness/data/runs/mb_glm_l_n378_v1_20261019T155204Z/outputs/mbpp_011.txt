@@ -1,0 +1,46 @@
+```python
+def remove_Occ(s, ch):
+    """
+    Removes the first and last occurrence of a given character from the string.
+    
+    Args:
+        s (str): The input string.
+        ch (str): The character to be removed.
+        
+    Returns:
+        str: The modified string with the first and last occurrences of ch removed.
+    """
+    # Find the index of the first occurrence
+    first_idx = s.find(ch)
+    
+    # If the character is not found, return the original string immediately
+    if first_idx == -1:
+        return s
+        
+    # Find the index of the last occurrence
+    last_idx = s.rfind(ch)
+    
+    # Construct the new string by slicing out the first and last occurrences.
+    # We use string concatenation to combine the parts before the first occurrence,
+    # the parts between the two occurrences (excluding the characters themselves),
+    # and the part after the last occurrence.
+    
+    # Slice from start up to the first found character
+    part1 = s[:first_idx]
+    
+    # Slice from after the first character up to the last found character
+    part2 = s[first_idx + 1 : last_idx]
+    
+    # Slice from after the last character to the end
+    part3 = s[last_idx + 1:]
+    
+    return part1 + part2 + part3
+
+# Test cases
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("abcda", "a") == "bcd"
+assert remove_Occ("hello", "z") == "hello"
+assert remove_Occ("a", "a") == ""
+assert remove_Occ("aa", "a") == ""
+assert remove_Occ("aba", "a") == "b"
+```

@@ -1,0 +1,26 @@
+```python
+def is_Even(number):
+    """
+    Check whether the given number is even or not.
+
+    Args:
+    number (int): The number to check.
+
+    Returns:
+    bool: True if the number is even, False otherwise.
+    """
+    return number % 2 == 0
+
+# Test cases to verify the correctness of the function
+assert is_Even(1) == False
+assert is_Even(2) == True
+assert is_Even(3) == False
+assert is_Even(4) == True
+assert is_Even(5) == False
+assert is_Even(6) == True
+assert is_Even(7) == False
+assert is_Even(8) == True
+assert is_Even(9) == False
+assert is_Even(10) == True
+```
+

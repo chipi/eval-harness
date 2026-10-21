@@ -1,0 +1,50 @@
+```python
+def round_and_sum(numbers):
+    """
+    This function takes a list of numbers, rounds each number, 
+    calculates the total sum of the rounded numbers, 
+    multiplies it by the length of the list, and returns the result.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        int: The total sum of the rounded numbers multiplied by the length of the list.
+    """
+    # Round every number in the list
+    rounded_numbers = [round(num) for num in numbers]
+    
+    # Calculate the total sum of the rounded numbers
+    total_sum = sum(rounded_numbers)
+    
+    # Multiply the total sum by the length of the list
+    result = total_sum * len(numbers)
+    
+    return result
+
+# Test the function
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+print("All tests passed.")
+```
+
+You can also write this function in a more concise way:
+
+```python
+def round_and_sum(numbers):
+    """
+    This function takes a list of numbers, rounds each number, 
+    calculates the total sum of the rounded numbers, 
+    multiplies it by the length of the list, and returns the result.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        int: The total sum of the rounded numbers multiplied by the length of the list.
+    """
+    return sum(round(num) for num in numbers) * len(numbers)
+
+# Test the function
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+print("All tests passed.")
+```

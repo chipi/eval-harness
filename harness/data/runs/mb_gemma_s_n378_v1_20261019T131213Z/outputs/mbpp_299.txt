@@ -1,0 +1,35 @@
+```python
+def max_aggregate(list_of_tuples):
+    """
+    Calculates the maximum aggregate from the list of tuples.
+
+    Args:
+        list_of_tuples: A list of tuples, where each tuple contains a name (string) and a score (integer).
+
+    Returns:
+        A tuple containing the name with the maximum aggregate score and the score.
+    """
+    aggregate_scores = {}
+    for name, score in list_of_tuples:
+        if name in aggregate_scores:
+            aggregate_scores[name] += score
+        else:
+            aggregate_scores[name] = score
+
+    max_name = None
+    max_score = float('-inf')
+
+    for name, score in aggregate_scores.items():
+        if score > max_score:
+            max_score = score
+            max_name = name
+
+    return (max_name, max_score)
+
+# Example usage and assertion
+if __name__ == '__main__':
+    data = [('Juan Whelan', 90), ('Sabah Colley', 88), ('Peter Nichols', 7), ('Juan Whelan', 122), ('Sabah Colley', 84)]
+    result = max_aggregate(data)
+    print(result)
+    assert max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)])==('Juan Whelan', 212)
+```

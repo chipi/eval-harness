@@ -1,0 +1,32 @@
+```python
+def add_dict_to_tuple(tup, dictionary):
+    """
+    Adds a dictionary to the end of a tuple.
+    
+    Args:
+        tup (tuple): The original tuple.
+        dictionary (dict): The dictionary to be added.
+        
+    Returns:
+        tuple: A new tuple containing the original elements and the dictionary.
+    """
+    # In Python, to concatenate a single element to a tuple, 
+    # we wrap the element in a new tuple: (element,)
+    return tup + (dictionary,)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = (4, 5, 6)
+    input_dict = {"MSAM" : 1, "is" : 2, "best" : 3}
+    expected_output = (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+    
+    result = add_dict_to_tuple(input_tuple, input_dict)
+    
+    # Assertion to verify correctness
+    assert result == expected_output
+    
+    print("Test passed!")
+    print(f"Input Tuple: {input_tuple}")
+    print(f"Input Dict:  {input_dict}")
+    print(f"Result:      {result}")
+```

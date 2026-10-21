@@ -1,0 +1,50 @@
+Looking at this problem, I need to figure out the standard "dog years" calculation that gives `dog_age(12) == 61`.
+
+The common formula is:
+- First year of a dog's life = 10.5 dog years
+- Second year = another 10.5 dog years (so 21 total after 2 human years)
+- Each year after that = 4 dog years
+
+Let me verify: `21 + (12 - 2) * 4 = 21 + 40 = 61` ✓
+
+```python
+"""
+Write a function to calculate a dog's age in dog's years.
+assert dog_age(12)==61
+"""
+
+
+def dog_age(h_age):
+    """
+    Convert a dog's age in human years to "dog years".
+
+    Rules:
+      - The first two human years count as 10.5 dog years each (21 total).
+      - Every human year after that counts as 4 dog years.
+      - A negative age is invalid.
+    """
+    if h_age < 0:
+        return "input age is not valid"
+    elif h_age <= 2:
+        d_age = h_age * 10.5
+    else:
+        d_age = 21 + (h_age - 2) * 4
+    return d_age
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert dog_age(12) == 61
+
+    # A few extra checks
+    assert dog_age(15) == 73
+    assert dog_age(24) == 109
+    assert dog_age(2) == 21
+    assert dog_age(1) == 10.5
+    assert dog_age(0) == 0
+    assert dog_age(-5) == "input age is not valid"
+
+    print("All tests passed!")
+    for years in range(0, 16):
+        print(f"{years} human year(s) -> {dog_age(years)} dog year(s)")
+```

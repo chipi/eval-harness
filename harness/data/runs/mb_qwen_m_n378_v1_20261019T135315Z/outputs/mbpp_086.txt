@@ -1,0 +1,38 @@
+```python
+def centered_hexagonal_number(n: int) -> int:
+    """
+    Calculate the nth centered hexagonal number.
+    
+    The formula for the nth centered hexagonal number is:
+    H(n) = 3n(n-1) + 1
+    
+    Args:
+        n: The position in the sequence (1-indexed)
+        
+    Returns:
+        The nth centered hexagonal number
+        
+    Examples:
+        >>> centered_hexagonal_number(1)
+        1
+        >>> centered_hexagonal_number(2)
+        7
+        >>> centered_hexagonal_number(3)
+        19
+        >>> centered_hexagonal_number(10)
+        271
+    """
+    return 3 * n * (n - 1) + 1
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert centered_hexagonal_number(10) == 271, f"Expected 271, got {centered_hexagonal_number(10)}"
+    
+    # Additional tests
+    assert centered_hexagonal_number(1) == 1, f"Expected 1, got {centered_hexagonal_number(1)}"
+    assert centered_hexagonal_number(2) == 7, f"Expected 7, got {centered_hexagonal_number(2)}"
+    assert centered_hexagonal_number(3) == 19, f"Expected 19, got {centered_hexagonal_number(3)}"
+    
+    print("All tests passed!")
+```

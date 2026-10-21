@@ -1,0 +1,29 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverse only the vowels of a given string (where y is not a vowel).
+    """
+    vowels = set("aeiouAEIOU")
+    s_list = list(s)
+    i, j = 0, len(s_list) - 1
+
+    while i < j:
+        if s_list[i] not in vowels:
+            i += 1
+        elif s_list[j] not in vowels:
+            j -= 1
+        else:
+            s_list[i], s_list[j] = s_list[j], s_list[i]
+            i += 1
+            j -= 1
+
+    return "".join(s_list)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert reverse_vowels("Python") == "Python"
+    print("Test passed!")
+```

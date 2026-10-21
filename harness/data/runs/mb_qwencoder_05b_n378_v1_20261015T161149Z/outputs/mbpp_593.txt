@@ -1,0 +1,29 @@
+```python
+def removezero_ip(ip_address):
+    """
+    Remove leading zeroes from an ip address.
+
+    Args:
+    ip_address (str): The ip address from which leading zeroes need to be removed.
+
+    Returns:
+    str: The ip address without leading zeroes.
+    """
+    # Split the ip address into its components
+    components = ip_address.split('.')
+    
+    # Remove any leading zeros from each component
+    for i in range(len(components)):
+        if components[i] == '0':
+            components[i] = ''
+    
+    # Join the components back into a single string
+    return '.'.join(components)
+
+# Test cases
+assert removezero_ip("216.08.094.196") == ('216.8.94.196')
+assert removezero_ip("192.168.1.1") == ('192.168.1.1')
+assert removezero_ip("0.0.0.0") == ('0.0.0.0')
+assert removezero_ip("123.456.789.0") == ('123.456.789.0')
+```
+

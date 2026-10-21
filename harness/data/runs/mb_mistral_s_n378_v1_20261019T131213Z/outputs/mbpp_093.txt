@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to calculate the value of 'a' to the power 'b'.
+assert power(3,4) == 81
+"""
+
+def power(a, b):
+    """
+    Calculate a raised to the power of b.
+
+    Args:
+        a: The base number
+        b: The exponent
+
+    Returns:
+        The result of a^b
+    """
+    result = 1
+    for _ in range(b):
+        result *= a
+    return result
+
+# Test the function
+assert power(3, 4) == 81
+print("Test passed!")
+```
+
+This script:
+1. Defines a `power` function that calculates a^b using a simple loop
+2. Includes a docstring explaining the function's purpose and parameters
+3. Contains the required assertion test case
+4. Prints a success message if the test passes
+
+The function works for non-negative integer exponents. For a more complete solution that handles negative exponents and floating-point bases, you would need to add additional logic.

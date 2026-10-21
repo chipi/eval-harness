@@ -1,0 +1,16 @@
+```python
+def remove_Occ(text, char):
+    """Remove the first and last occurrences of char from text."""
+    first = text.find(char)
+    if first == -1:
+        return text
+
+    last = text.rfind(char)
+    if first == last:
+        return text[:first] + text[first + 1:]
+
+    return text[:first] + text[first + 1:last] + text[last + 1:]
+
+
+assert remove_Occ("hello", "l") == "heo"
+```

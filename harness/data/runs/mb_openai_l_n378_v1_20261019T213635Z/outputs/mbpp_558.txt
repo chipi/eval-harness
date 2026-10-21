@@ -1,0 +1,18 @@
+```python
+def digit_distance_nums(a: int, b: int) -> int:
+    """Return the sum of absolute differences between corresponding digits.
+
+    Leading zeros are used when the integers have different numbers of digits.
+    """
+    digits_a = str(abs(a))
+    digits_b = str(abs(b))
+    width = max(len(digits_a), len(digits_b))
+
+    return sum(
+        abs(int(x) - int(y))
+        for x, y in zip(digits_a.zfill(width), digits_b.zfill(width))
+    )
+
+
+assert digit_distance_nums(1, 2) == 1
+```

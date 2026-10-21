@@ -1,0 +1,31 @@
+```python
+def kth_element(arr, k):
+    """
+    This function finds the kth element in the given array using 1-based indexing.
+
+    Args:
+        arr (list): The input list of integers.
+        k (int): The position of the element to be found.
+
+    Returns:
+        int: The kth element in the array.
+
+    Raises:
+        IndexError: If k is less than 1 or greater than the length of the array.
+    """
+    # Check if k is within the valid range
+    if k < 1 or k > len(arr):
+        raise IndexError("k is out of range")
+
+    # Sort the array in ascending order
+    arr.sort()
+
+    # Return the kth element (adjusting for 0-based indexing)
+    return arr[k - 1]
+
+
+# Example usage:
+assert kth_element([12, 3, 5, 7, 19], 2) == 3
+```
+
+This script defines a function `kth_element` that takes an array and an integer `k` as input, checks if `k` is within the valid range, sorts the array, and returns the `k`th element. The example usage demonstrates how to use this function with the provided test case.

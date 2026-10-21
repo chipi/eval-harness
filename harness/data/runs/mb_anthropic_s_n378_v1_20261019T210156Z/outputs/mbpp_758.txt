@@ -1,0 +1,36 @@
+```python
+def unique_sublists(lst):
+    """
+    Count lists within a list and return a dictionary where each list 
+    (converted to a tuple) maps to its count of occurrences.
+    
+    Args:
+        lst: A list of lists
+        
+    Returns:
+        A dictionary with tuples as keys and their occurrence counts as values
+    """
+    result = {}
+    for sublist in lst:
+        # Convert the sublist to a tuple so it can be used as a dictionary key
+        tuple_key = tuple(sublist)
+        # Increment the count for this tuple
+        result[tuple_key] = result.get(tuple_key, 0) + 1
+    return result
+
+
+# Test with the provided assertion
+if __name__ == "__main__":
+    test_input = [[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]]
+    expected_output = {(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+    
+    result = unique_sublists(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Test passed: {result == expected_output}")
+    
+    assert result == expected_output, f"Expected {expected_output}, got {result}"
+    print("✓ Assertion passed!")
+```

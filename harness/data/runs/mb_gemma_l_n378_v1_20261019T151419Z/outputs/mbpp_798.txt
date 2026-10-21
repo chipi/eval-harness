@@ -1,0 +1,21 @@
+```python
+def _sum(arr):
+    """
+    Calculates the sum of all elements in a list.
+    """
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert _sum([1, 2, 3]) == 6
+    
+    # Additional test cases
+    assert _sum([10, 20, 30]) == 60
+    assert _sum([-1, 1]) == 0
+    assert _sum([]) == 0
+    
+    print("All tests passed!")
+```

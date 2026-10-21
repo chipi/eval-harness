@@ -1,0 +1,28 @@
+```python
+def empty_list(n):
+    """
+    Creates a list of N empty dictionaries.
+    
+    Note: We use a list comprehension to ensure that each dictionary 
+    is a unique object in memory. Using [{} ] * n would result in 
+    a list where every element points to the same dictionary object.
+    """
+    return [{} for _ in range(n)]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert empty_list(5) == [{}, {}, {}, {}, {}]
+        print("Assertion passed: empty_list(5) == [{}, {}, {}, {}, {}]")
+        
+        # Additional test to ensure object independence
+        test_list = empty_list(3)
+        test_list[0]['key'] = 'value'
+        if len(test_list[1]) == 0:
+            print("Independence test passed: Modifying one dict does not affect others.")
+        else:
+            print("Independence test failed: All dicts are the same object.")
+            
+    except AssertionError:
+        print("Assertion failed!")
+```

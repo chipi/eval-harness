@@ -1,0 +1,27 @@
+```python
+def comb_sort(lst):
+    """Sort a list of elements using the comb sort algorithm."""
+    arr = lst.copy()
+    n = len(arr)
+    gap = n
+    shrink_factor = 1.3
+    sorted_flag = False
+
+    while not sorted_flag:
+        gap = int(gap / shrink_factor)
+        if gap <= 1:
+            gap = 1
+            sorted_flag = True
+
+        for i in range(n - gap):
+            if arr[i] > arr[i + gap]:
+                arr[i], arr[i + gap] = arr[i + gap], arr[i]
+                sorted_flag = False
+
+    return arr
+
+
+# Test
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+print("All tests passed!")
+```

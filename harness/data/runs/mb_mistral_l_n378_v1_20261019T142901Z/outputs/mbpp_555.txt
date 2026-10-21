@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem, including the assertion as specified:
+
+```python
+"""
+Python function to find the difference between the sum of cubes of the first n natural numbers
+and the sum of the first n natural numbers.
+"""
+
+def difference(n):
+    """
+    Calculate the difference between the sum of cubes of the first n natural numbers
+    and the sum of the first n natural numbers.
+
+    Args:
+        n (int): The number of natural numbers to consider.
+
+    Returns:
+        int: The difference between the sum of cubes and the sum.
+    """
+    sum_n = n * (n + 1) // 2
+    sum_cubes = (n * (n + 1) // 2) ** 2
+    return sum_cubes - sum_n
+
+# Test the function with the provided assertion
+assert difference(3) == 30
+
+# Example usage
+if __name__ == "__main__":
+    print(difference(3))  # Output: 30
+    print(difference(5))  # Output: 210
+```
+
+### Explanation:
+1. **Sum of first n natural numbers**: This is calculated using the formula `n * (n + 1) // 2`.
+2. **Sum of cubes of first n natural numbers**: This is the square of the sum of the first n natural numbers, i.e., `(n * (n + 1) // 2) ** 2`.
+3. The difference is then simply `sum_cubes - sum_n`.
+
+The assertion `assert difference(3) == 30` verifies that the function works correctly for the given example. The example usage at the bottom demonstrates the function with additional inputs.

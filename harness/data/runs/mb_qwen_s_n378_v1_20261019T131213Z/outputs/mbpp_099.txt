@@ -1,0 +1,15 @@
+```python
+def decimal_to_binary(n: int) -> str:
+    """
+    Convert a decimal number to its binary equivalent as a string with no leading zeros.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        A string representing the binary equivalent of n with no leading zeros
+    """
+    if n == 0:
+        return '0'
+    return bin(n)[2:]
+```

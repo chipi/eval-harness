@@ -1,0 +1,26 @@
+```python
+def big_sum(arr):
+    """
+    Finds the sum of the largest and smallest value in a given array.
+    
+    Args:
+        arr (list): A list of numbers.
+        
+    Returns:
+        int/float: The sum of the maximum and minimum elements.
+        Raises ValueError if the array is empty.
+    """
+    if not arr:
+        raise ValueError("Array must not be empty")
+    
+    return max(arr) + min(arr)
+
+if __name__ == "__main__":
+    # Test cases
+    assert big_sum([1, 2, 3]) == 4
+    assert big_sum([10, -5, 20, 0]) == 15  # 20 + (-5)
+    assert big_sum([5, 5, 5, 5]) == 10     # 5 + 5
+    assert big_sum([1.5, 2.5, 3.5]) == 5.0 # 3.5 + 1.5
+    
+    print("All assertions passed!")
+```

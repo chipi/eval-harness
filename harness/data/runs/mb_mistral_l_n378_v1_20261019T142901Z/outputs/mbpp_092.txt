@@ -1,0 +1,39 @@
+Here's a self-contained Python script that checks whether a given number is undulating:
+
+```python
+"""
+An undulating number is a number that has a repeating pattern of two distinct digits.
+For example, 1212121 is undulating because it alternates between 1 and 2.
+"""
+
+def is_undulating(n):
+    s = str(n)
+    if len(s) < 3:
+        return False  # Need at least 3 digits to form a pattern
+
+    # Check if all digits alternate between two distinct digits
+    first_digit = s[0]
+    second_digit = s[1]
+
+    if first_digit == second_digit:
+        return False  # First two digits must be different
+
+    for i in range(2, len(s)):
+        expected_digit = first_digit if i % 2 == 0 else second_digit
+        if s[i] != expected_digit:
+            return False
+
+    return True
+
+# Test case
+assert is_undulating(1212121) == True
+```
+
+This script:
+1. Converts the number to a string to examine its digits
+2. Returns False if the number has fewer than 3 digits (can't form a pattern)
+3. Checks that the first two digits are different
+4. Verifies that all subsequent digits alternate between the first two digits
+5. Returns True if all checks pass
+
+The test case `assert is_undulating(1212121) == True` verifies that the function works correctly for the given example.

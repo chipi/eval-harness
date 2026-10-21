@@ -1,0 +1,12 @@
+```python
+import math
+
+def surface_Area(base_edge, height):
+    """Return the total surface area of a square pyramid."""
+    slant_height = math.sqrt(height**2 + (base_edge / 2)**2)
+    return base_edge**2 + 2 * base_edge * slant_height
+
+# For a base edge of 3 and a vertical height of 4, the area is about 34.63.
+# The stated assertion of 33 is inconsistent with these dimensions.
+print(surface_Area(3, 4))
+```

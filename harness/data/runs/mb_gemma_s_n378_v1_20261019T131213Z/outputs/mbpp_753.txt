@@ -1,0 +1,17 @@
+```python
+def min_k(test_list, k):
+  """
+  Finds the minimum k records from a list of tuples.
+
+  Args:
+    test_list: A list of tuples.
+    k: The number of minimum records to find.
+
+  Returns:
+    A list of the k minimum records.
+  """
+  return sorted(test_list, key=lambda x: x[1])[:k]
+
+# Test case
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+```

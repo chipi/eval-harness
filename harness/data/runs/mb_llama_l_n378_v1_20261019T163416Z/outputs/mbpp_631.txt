@@ -1,0 +1,10 @@
+```python
+def replace_spaces(s):
+    return s.replace(' ', '_')
+
+def main():
+    print(replace_spaces('Jumanji The Jungle'))  # Outputs: Jumanji_The_Jungle
+
+if __name__ == "__main__":
+    main()
+```

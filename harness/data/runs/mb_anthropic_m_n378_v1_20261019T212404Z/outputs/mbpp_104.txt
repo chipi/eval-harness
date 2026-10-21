@@ -1,0 +1,15 @@
+```python
+def sort_sublists(input_list):
+    return [sorted(sublist) for sublist in input_list]
+
+
+assert sort_sublists((["green", "orange"], ["black", "white"], ["white", "black", "orange"])) == [
+    ['green', 'orange'],
+    ['black', 'white'],
+    ['black', 'orange', 'white']
+]
+
+if __name__ == "__main__":
+    result = sort_sublists((["green", "orange"], ["black", "white"], ["white", "black", "orange"]))
+    print(result)
+```

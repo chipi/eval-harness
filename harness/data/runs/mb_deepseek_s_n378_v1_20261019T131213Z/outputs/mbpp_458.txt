@@ -1,0 +1,19 @@
+```python
+def rectangle_area(length: float, width: float) -> float:
+    """
+    Returns the area of a rectangle given its length and width.
+    
+    Args:
+        length (float): The length of the rectangle.
+        width (float): The width of the rectangle.
+    
+    Returns:
+        float: The area of the rectangle (length * width).
+    """
+    return length * width
+
+# Test the function with the provided assertion
+assert rectangle_area(10, 20) == 200, "Test failed: expected area 200 for dimensions 10x20"
+
+print("All tests passed!")
+```

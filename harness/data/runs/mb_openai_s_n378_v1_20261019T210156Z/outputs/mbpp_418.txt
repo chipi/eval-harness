@@ -1,0 +1,16 @@
+```python
+def Find_Max(lst):
+    """
+    Return the element in the list that has the maximum length.
+    If multiple elements have the same maximum length, the first one is returned.
+    """
+    if not lst:
+        raise ValueError("Input list must not be empty.")
+    return max(lst, key=len)
+
+
+# Example usage / simple test
+if __name__ == "__main__":
+    assert Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']]) == ['A', 'B', 'C']
+    print("All tests passed.")
+```

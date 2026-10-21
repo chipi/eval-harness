@@ -1,0 +1,19 @@
+```python
+def new_tuple(lst, string):
+    """
+    Creates a new tuple from the given list and string.
+    
+    Args:
+        lst (list): The list of elements to include in the tuple.
+        string (str): The string to append as the last element in the tuple.
+        
+    Returns:
+        tuple: A new tuple containing all elements of the list followed by the string.
+    """
+    return tuple(lst) + (string,)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+    print("Test passed successfully!")
+```

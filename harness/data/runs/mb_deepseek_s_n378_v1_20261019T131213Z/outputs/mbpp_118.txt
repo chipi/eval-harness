@@ -1,0 +1,19 @@
+```python
+def string_to_list(input_string):
+    """
+    Convert a string to a list of strings split on the space character.
+    
+    Args:
+        input_string (str): The string to be split.
+    
+    Returns:
+        list: A list of substrings split by spaces.
+    """
+    return input_string.split(" ")
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = string_to_list("python programming")
+    assert result == ['python', 'programming'], f"Expected ['python', 'programming'], but got {result}"
+    print("Test passed!")
+```

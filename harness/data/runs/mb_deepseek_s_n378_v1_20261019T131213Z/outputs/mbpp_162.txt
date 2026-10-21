@@ -1,0 +1,20 @@
+Here’s a self-contained Python script that implements the function and includes a quick test:  
+
+```python
+def sum_series(n: int) -> int:
+    """
+    Calculate the sum of (n - 2*i) for i from 0 to n // 2.
+    Example: sum_series(6) = 6 + 4 + 2 + 0 = 12
+    """
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term < 0:
+            break
+        total += term
+    return total
+
+# Test the function
+assert sum_series(6) == 12
+print("Test passed: sum_series(6) =", sum_series(6))
+```

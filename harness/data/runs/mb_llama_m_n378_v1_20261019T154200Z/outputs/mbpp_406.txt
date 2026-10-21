@@ -1,0 +1,18 @@
+```python
+def find_Parity(n):
+    """
+    This function determines whether the parity of a given number is odd.
+    
+    Parameters:
+    n (int): The number to check for parity.
+    
+    Returns:
+    bool: True if the parity is odd, False otherwise.
+    """
+    return n % 2!= 0
+
+# Test the function
+assert not find_Parity(12)
+print(find_Parity(12))  # Should print: False
+print(find_Parity(13))  # Should print: True
+```

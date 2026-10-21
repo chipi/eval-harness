@@ -1,0 +1,41 @@
+```python
+"""
+Write a function to convert degrees to radians.
+assert radian_degree(90)==1.5707963267948966
+"""
+
+import math
+
+
+def radian_degree(degrees):
+    """
+    Convert an angle from degrees to radians.
+
+    Parameters
+    ----------
+    degrees : float or int
+        The angle measured in degrees.
+
+    Returns
+    -------
+    float
+        The equivalent angle measured in radians.
+    """
+    return degrees * (math.pi / 180)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert radian_degree(90) == 1.5707963267948966
+
+    # A few extra sanity checks
+    assert radian_degree(0) == 0.0
+    assert radian_degree(180) == math.pi
+    assert radian_degree(360) == 2 * math.pi
+    assert radian_degree(-90) == -1.5707963267948966
+
+    print("All tests passed!")
+    print("90 degrees  =", radian_degree(90), "radians")
+    print("180 degrees =", radian_degree(180), "radians")
+    print("45 degrees  =", radian_degree(45), "radians")
+```

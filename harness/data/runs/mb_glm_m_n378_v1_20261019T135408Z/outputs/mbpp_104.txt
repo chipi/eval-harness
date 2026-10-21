@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem of sorting each sublist of strings in a given list of lists:
+
+```python
+def sort_sublists(list_of_lists):
+    """
+    Sort each sublist of strings in the given list of lists.
+    
+    Args:
+        list_of_lists: A list of lists, where each sublist contains strings.
+    
+    Returns:
+        A new list of lists where each sublist is sorted alphabetically.
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    input_data = (["green", "orange"], ["black", "white"], ["white", "black", "orange"])
+    expected_output = [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+    result = sort_sublists(input_data)
+    
+    print("Input:", input_data)
+    print("Expected Output:", expected_output)
+    print("Actual Output:", result)
+    
+    assert result == expected_output, "Test failed!"
+    print("Test passed!")
+```
+
+### Explanation:
+1. The function `sort_sublists` takes a list of lists as input.
+2. It uses a list comprehension to iterate over each sublist in the input list.
+3. For each sublist, it applies the `sorted()` function, which returns a new list with the elements sorted in alphabetical order.
+4. The result is a new list of lists where each sublist is sorted.
+5. The test case provided in the problem statement is used to verify the function's correctness. The input is a tuple of lists, and the expected output is a list of sorted lists. The assertion checks if the function's output matches the expected output. If it does, the test passes; otherwise, it raises an assertion error.

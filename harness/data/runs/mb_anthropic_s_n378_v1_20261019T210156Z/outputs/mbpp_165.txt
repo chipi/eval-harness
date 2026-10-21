@@ -1,0 +1,48 @@
+```python
+def count_char_position(s):
+    """
+    Count the number of characters in a string that occur at the same position 
+    in the string as in the English alphabet (case insensitive).
+    
+    Args:
+        s: A string to check
+        
+    Returns:
+        The count of characters at matching positions
+        
+    Example:
+        "xbcefg" -> 'b' is at index 1 (2nd position) and 'b' is the 2nd letter
+                 -> 'c' is at index 2 (3rd position) and 'c' is the 3rd letter
+                 -> Result: 2
+    """
+    count = 0
+    for i, char in enumerate(s):
+        # Convert char to lowercase for case-insensitive comparison
+        char_lower = char.lower()
+        
+        # Check if it's a letter
+        if char_lower.isalpha():
+            # Get the position in alphabet (a=1, b=2, ..., z=26)
+            alphabet_position = ord(char_lower) - ord('a') + 1
+            
+            # Get the position in the string (1-indexed)
+            string_position = i + 1
+            
+            # Check if they match
+            if alphabet_position == string_position:
+                count += 1
+    
+    return count
+
+
+# Test cases
+assert count_char_position("xbcefg") == 2
+assert count_char_position("abcdefg") == 6
+assert count_char_position("abc") == 3
+assert count_char_position("xyz") == 0
+assert count_char_position("ABCDEFG") == 6
+assert count_char_position("") == 0
+assert count_char_position("a") == 1
+
+print("All tests passed!")
+```

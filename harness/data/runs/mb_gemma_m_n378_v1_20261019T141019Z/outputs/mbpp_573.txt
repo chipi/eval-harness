@@ -1,0 +1,43 @@
+```python
+def unique_product(numbers):
+    """
+    Calculates the product of the unique numbers in a given list.
+    
+    Args:
+        numbers (list): A list of integers or floats.
+        
+    Returns:
+        int/float: The product of the unique elements in the list. 
+                   Returns 0 if the list is empty (or 1 depending on mathematical convention, 
+                   but here we handle the product logic).
+    """
+    # Convert the list to a set to extract unique elements
+    unique_numbers = set(numbers)
+    
+    if not unique_numbers:
+        return 0
+    
+    product = 1
+    for num in unique_numbers:
+        product *= num
+        
+    return product
+
+# Test case provided in the prompt
+if __name__ == "__main__":
+    # Test 1: Provided assertion
+    result = unique_product([10, 20, 30, 40, 20, 50, 60, 40])
+    expected = 720000000
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    # Test 2: List with all same numbers
+    assert unique_product([5, 5, 5, 5]) == 5
+    
+    # Test 3: List with negative numbers
+    assert unique_product([1, -2, 3, -2]) == -6  # Unique are 1, -2, 3
+    
+    # Test 4: Empty list
+    assert unique_product([]) == 0
+
+    print("All tests passed successfully!")
+```

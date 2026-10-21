@@ -1,0 +1,36 @@
+```python
+def is_samepatterns(patterns, strings):
+    """
+    Check whether the strings follow the sequence given in the patterns array.
+    
+    Args:
+        patterns: A list of pattern elements (e.g., ["a", "b", "b"])
+        strings: A list of string values (e.g., ["red", "green", "green"])
+    
+    Returns:
+        True if the mapping from patterns to strings is consistent and bijective,
+        False otherwise.
+    """
+    if len(patterns) != len(strings):
+        return False
+    
+    # Create a mapping from pattern to string
+    pattern_to_string = {}
+    # Create a mapping from string to pattern to ensure bijection
+    string_to_pattern = {}
+    
+    for p, s in zip(patterns, strings):
+        if p in pattern_to_string:
+            if pattern_to_string[p] != s:
+                return False
+        else:
+            pattern_to_string[p] = s
+        
+        if s in string_to_pattern:
+            if string_to_pattern[s] != p:
+                return False
+        else:
+            string_to_pattern[s] = p
+    
+    return True
+```

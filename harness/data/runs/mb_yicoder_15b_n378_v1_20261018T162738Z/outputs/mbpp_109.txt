@@ -1,0 +1,20 @@
+```python
+def odd_equivalent(binary_string, rotations):
+    # Convert binary string to decimal
+    decimal = int(binary_string, 2)
+    
+    # Rotate binary string to the right
+    rotated = decimal >> rotations
+    
+    # Convert rotated decimal back to binary and count the number of 1s
+    binary = bin(rotated).count('1')
+    
+    # Return the number of 1s
+    return binary
+
+# Test cases
+assert odd_equivalent("011001",6) == 3
+assert odd_equivalent("101010",2) == 2
+assert odd_equivalent("111111",1) == 7
+assert odd_equivalent("000000",3) == 0
+```

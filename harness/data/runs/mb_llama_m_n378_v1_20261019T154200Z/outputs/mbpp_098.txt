@@ -1,0 +1,27 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    This function multiplies all the numbers in a list and divides the result by the length of the list.
+
+    Args:
+        numbers (tuple): A tuple of numbers.
+
+    Returns:
+        float: The product of all numbers divided by the length of the list.
+    """
+    # Calculate the product of all numbers in the list
+    product = 1
+    for num in numbers:
+        product *= num
+    
+    # Divide the product by the length of the list
+    result = product / len(numbers)
+    
+    return result
+
+# Test the function
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+print("Test passed")
+```

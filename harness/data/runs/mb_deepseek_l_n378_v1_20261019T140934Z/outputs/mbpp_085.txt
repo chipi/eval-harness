@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def surfacearea_sphere(radius):
+    """
+    Calculate the surface area of a sphere.
+    
+    Args:
+        radius: The radius of the sphere
+        
+    Returns:
+        The surface area of the sphere (4 * π * r²)
+    """
+    return 4 * math.pi * radius ** 2
+
+# Test the function
+if __name__ == "__main__":
+    assert math.isclose(surfacearea_sphere(10), 1256.6370614359173, rel_tol=0.001)
+    print("Test passed!")
+```
+
+The function `surfacearea_sphere` calculates the surface area of a sphere using the formula **4πr²**, where `r` is the radius. The test assertion verifies that the result for a radius of 10 is approximately 1256.6370614359173 within a relative tolerance of 0.001.

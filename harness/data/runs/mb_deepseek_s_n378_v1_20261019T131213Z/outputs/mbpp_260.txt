@@ -1,0 +1,60 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def newman_prime(n):
+    """
+    Returns the nth Newman–Shanks–Williams prime number.
+    
+    The Newman–Shanks–Williams prime sequence is defined by:
+    S(0) = 1
+    S(1) = 1
+    S(n) = 2 * S(n-1) + S(n-2)
+    
+    A Newman–Shanks–Williams prime is a prime number that appears in this sequence.
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    
+    # Generate the sequence until we have found n primes
+    seq = [1, 1]
+    primes = []
+    
+    # Check if the first two terms are prime (they are not, but we handle generically)
+    if is_prime(seq[0]):
+        primes.append(seq[0])
+    if is_prime(seq[1]):
+        primes.append(seq[1])
+    
+    i = 2
+    while len(primes) < n:
+        next_val = 2 * seq[i-1] + seq[i-2]
+        seq.append(next_val)
+        if is_prime(next_val):
+            primes.append(next_val)
+        i += 1
+    
+    return primes[n-1]
+
+
+def is_prime(num):
+    """Helper function to check if a number is prime."""
+    if num < 2:
+        return False
+    if num == 2:
+        return True
+    if num % 2 == 0:
+        return False
+    for i in range(3, int(num**0.5) + 1, 2):
+        if num % i == 0:
+            return False
+    return True
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test cases
+    assert newman_prime(1) == 1  # First term is 1 (not prime, but sequence starts here)
+    assert newman_prime(2) == 1  # Second term is 1 (not prime)
+    assert newman_prime(3) == 7  # Third prime in the sequence is 7
+    print("All tests passed!")
+```

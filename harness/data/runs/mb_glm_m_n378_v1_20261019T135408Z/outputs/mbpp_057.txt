@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem of finding the largest number that can be formed with a given list of digits:
+
+```python
+def find_Max_Num(digits):
+    """
+    Find the largest number that can be formed with the given list of digits.
+    
+    Args:
+        digits (list): A list of integers representing digits.
+        
+    Returns:
+        int: The largest number formed by arranging the digits in descending order.
+    """
+    # Sort the digits in descending order
+    sorted_digits = sorted(digits, reverse=True)
+    
+    # Convert the sorted digits to a string and then to an integer
+    largest_num = int(''.join(map(str, sorted_digits)))
+    
+    return largest_num
+
+# Test cases
+assert find_Max_Num([1, 2, 3]) == 321
+assert find_Max_Num([4, 5, 6, 1]) == 6541
+assert find_Max_Num([9, 0, 1]) == 910
+assert find_Max_Num([7, 7, 7]) == 777
+assert find_Max_Num([0, 0, 0]) == 0
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Sorting the Digits**: The digits are sorted in descending order to form the largest possible number. For example, `[1, 2, 3]` becomes `[3, 2, 1]`.
+2. **Converting to String and Integer**: The sorted digits are then joined into a string (e.g., `"321"`) and converted back to an integer (e.g., `321`).
+3. **Test Cases**: The function is tested with several assertions to ensure it works correctly for different inputs, including edge cases like all zeros or repeated digits.
+
+This approach efficiently solves the problem by leveraging sorting and string manipulation.

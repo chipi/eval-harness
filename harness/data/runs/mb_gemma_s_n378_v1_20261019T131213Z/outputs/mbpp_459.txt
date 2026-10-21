@@ -1,0 +1,22 @@
+```python
+def remove_uppercase(s):
+  """
+  Removes uppercase substrings from a given string.
+
+  Args:
+    s: The input string.
+
+  Returns:
+    The string with all uppercase substrings removed.
+  """
+  result = ''
+  for char in s:
+    if 'A' <= char <= 'Z':
+      continue
+    else:
+      result += char
+  return result
+
+# Example usage and assertion
+assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+```

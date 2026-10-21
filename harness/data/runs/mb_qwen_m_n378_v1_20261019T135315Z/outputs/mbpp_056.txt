@@ -1,0 +1,47 @@
+```python
+def check(n: int) -> bool:
+    """
+    Check if a given number is one less than twice its reverse.
+    
+    That is, check if n == 2 * reverse(n) - 1
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        True if n equals 2 * reverse(n) - 1, False otherwise
+    """
+    # Get the reverse of the number
+    reverse_n = int(str(n)[::-1])
+    
+    # Check if n is one less than twice its reverse
+    return n == 2 * reverse_n - 1
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert check(70) == False
+    
+    # Let's verify with some examples
+    # If n = 2 * reverse(n) - 1
+    # For example, if reverse(n) = 36, then n = 2*36 - 1 = 71
+    # reverse(71) = 17, 2*17 - 1 = 33 != 71, so that doesn't work
+    
+    # Let's try: if n = 9, reverse = 9, 2*9 - 1 = 17 != 9
+    # If n = 1, reverse = 1, 2*1 - 1 = 1 == 1, so check(1) should be True
+    assert check(1) == True
+    
+    # If n = 71, reverse = 17, 2*17 - 1 = 33 != 71
+    assert check(71) == False
+    
+    # Let's find a case where it's true:
+    # n = 2 * rev(n) - 1
+    # Try n = 52, rev = 25, 2*25 - 1 = 49 != 52
+    # Try n = 49, rev = 94, 2*94 - 1 = 187 != 49
+    # Try n = 17, rev = 71, 2*71 - 1 = 141 != 17
+    # Try n = 31, rev = 13, 2*13 - 1 = 25 != 31
+    # Try n = 25, rev = 52, 2*52 - 1 = 103 != 25
+    # Try n = 103, rev = 301, 2*301 - 1 = 601 != 103
+    
+    print("All tests passed!")
+```

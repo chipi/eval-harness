@@ -1,0 +1,52 @@
+```python
+def tuple_intersection(list1, list2):
+    """
+    Finds the intersection of two lists of tuples, treating tuples as 
+    unordered sets (i.e., (4, 5) is considered the same as (5, 4)).
+    """
+    # Convert each tuple in the lists to a frozenset. 
+    # Frozensets are unordered and hashable, making them perfect for set intersections.
+    set1 = {frozenset(t) for t in list1}
+    set2 = {frozenset(t) for t in list2}
+    
+    # Find the intersection of the two sets of frozensets
+    intersection = set1.intersection(set2)
+    
+    # Convert the frozensets back into tuples to match the expected output format.
+    # Since the problem expects a set of tuples, we convert each frozenset back to a tuple.
+    # Note: To ensure consistency with the assertion, we sort the elements of the tuple.
+    result = {tuple(sorted(list(fs))) for fs in intersection}
+    
+    # The assertion in the prompt expects specific tuples like (4, 5) and (5, 6).
+    # Because (4, 5) and (5, 4) are the same, we normalize them to a sorted tuple.
+    # However, the assertion specifically lists {(4, 5), (3, 4), (5, 6)}.
+    # Let's refine the result to match the specific tuple orderings if necessary, 
+    # but standardizing to sorted tuples is the most robust way to handle "irrespective of order".
+    
+    # To match the exact tuples in the assertion:
+    # (4, 5) is in list1, (5, 4) is in list2 -> intersection is {4, 5}
+    # (3, 4) is in list1, (3, 4) is in list2 -> intersection is {3, 4}
+    # (5, 6) is in list1, (6, 5) is in list2 -> intersection is {5, 6}
+    
+    # We map the intersection back to the original representation found in list1
+    final_result = set()
+    for fs in intersection:
+        for original_tuple in list1:
+            if frozenset(original_tuple) == fs:
+                final_result.add(original_tuple)
+                break
+                
+    return final_result
+
+if __name__ == "__main__":
+    # Test case from the prompt
+    list_a = [(3, 4), (5, 6), (9, 10), (4, 5)]
+    list_b = [(5, 4), (3, 4), (6, 5), (9, 11)]
+    
+    result = tuple_intersection(list_a, list_b)
+    expected = {(4, 5), (3, 4), (5, 6)}
+    
+    assert result == expected
+    print("Assertion passed!")
+    print(f"Intersection: {result}")
+```

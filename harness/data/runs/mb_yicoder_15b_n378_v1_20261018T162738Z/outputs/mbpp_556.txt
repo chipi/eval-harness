@@ -1,0 +1,12 @@
+```python
+def find_Odd_Pair(arr,n):
+    count = 0
+    for i in range(0, n):
+        for j in range(i + 1, n):
+            if ((arr[i] ^ arr[j]) % 2 != 0):
+                count += 1
+    return count
+
+# Test cases
+print(find_Odd_Pair([5,4,7,2,1],5)) # Expected output: 6
+```

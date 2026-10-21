@@ -1,0 +1,30 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def digit_distance_nums(a: int, b: int) -> int:
+    """
+    Returns the sum of the per-digit difference between two integers.
+    The numbers are padded with leading zeros to match the length of the longer number.
+    """
+    # Convert to strings
+    sa = str(a)
+    sb = str(b)
+    
+    # Pad the shorter string with leading zeros
+    max_len = max(len(sa), len(sb))
+    sa = sa.zfill(max_len)
+    sb = sb.zfill(max_len)
+    
+    # Compute sum of absolute differences per digit
+    total = 0
+    for da, db in zip(sa, sb):
+        total += abs(int(da) - int(db))
+    
+    return total
+
+
+# Test the function
+if __name__ == "__main__":
+    assert digit_distance_nums(1, 2) == 1
+    print("All tests passed.")
+```

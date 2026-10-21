@@ -1,0 +1,74 @@
+Here's a self-contained Python script that solves the problem of checking whether a given matrix is a magic square:
+
+```python
+def magic_square_test(matrix):
+    """
+    Check if the given matrix is a magic square.
+    A magic square is a square matrix where the sum of numbers in each row,
+    each column, and both main diagonals are the same.
+    
+    Args:
+        matrix: A list of lists representing the square matrix.
+        
+    Returns:
+        bool: True if the matrix is a magic square, False otherwise.
+    """
+    # Check if the matrix is square
+    n = len(matrix)
+    if any(len(row) != n for row in matrix):
+        return False
+    
+    # Calculate the sum of the first row to compare with others
+    magic_sum = sum(matrix[0])
+    
+    # Check all rows
+    for row in matrix:
+        if sum(row) != magic_sum:
+            return False
+    
+    # Check all columns
+    for col in range(n):
+        col_sum = sum(matrix[row][col] for row in range(n))
+        if col_sum != magic_sum:
+            return False
+    
+    # Check main diagonal (top-left to bottom-right)
+    diag_sum = sum(matrix[i][i] for i in range(n))
+    if diag_sum != magic_sum:
+        return False
+    
+    # Check anti-diagonal (top-right to bottom-left)
+    anti_diag_sum = sum(matrix[i][n-1-i] for i in range(n))
+    if anti_diag_sum != magic_sum:
+        return False
+    
+    return True
+
+# Test cases
+assert magic_square_test([[7, 12, 1, 14], 
+                          [2, 13, 8, 11], 
+                          [16, 3, 10, 5], 
+                          [9, 6, 15, 4]]) == True
+
+assert magic_square_test([[2, 7, 6], 
+                          [9, 5, 1], 
+                          [4, 3, 8]]) == True
+
+assert magic_square_test([[1, 2, 3], 
+                          [4, 5, 6], 
+                          [7, 8, 9]]) == False
+
+assert magic_square_test([[1, 2], 
+                          [3, 4]]) == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Square Matrix Check**: The function first checks if the input matrix is square (i.e., the number of rows equals the number of columns for each row).
+2. **Magic Sum Calculation**: The sum of the first row is calculated and used as the reference "magic sum" that all other rows, columns, and diagonals must match.
+3. **Row and Column Checks**: The function checks if the sum of each row and each column matches the magic sum.
+4. **Diagonal Checks**: The function checks both the main diagonal (top-left to bottom-right) and the anti-diagonal (top-right to bottom-left) to ensure their sums match the magic sum.
+5. **Test Cases**: The function is tested with several matrices, including the provided example, a 3x3 magic square, a non-magic square, and a non-square matrix.
+
+The script will output "All test cases passed!" if all assertions hold true.

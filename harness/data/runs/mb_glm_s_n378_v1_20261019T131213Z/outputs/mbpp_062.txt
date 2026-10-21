@@ -1,0 +1,38 @@
+```python
+def smallest_num(numbers):
+    """
+    Finds the smallest number in a list of numbers.
+
+    Args:
+        numbers: A list of numbers (integers or floats).
+
+    Returns:
+        The smallest number in the list. Returns None if the list is empty.
+    """
+    # Handle the edge case of an empty list
+    if not numbers:
+        return None
+    
+    # Initialize the smallest number with the first element of the list
+    smallest = numbers[0]
+    
+    # Iterate through the list starting from the second element
+    for num in numbers[1:]:
+        # If the current number is smaller than the smallest found so far,
+        # update the smallest number.
+        if num < smallest:
+            smallest = num
+            
+    return smallest
+
+# Example usage and assertion from the problem description
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+
+# Additional test cases
+assert smallest_num([-5, 0, 5, 10]) == -5
+assert smallest_num([100]) == 100
+assert smallest_num([]) is None
+assert smallest_num([3.14, 2.71, 1.618]) == 1.618
+
+print("All assertions passed!")
+```

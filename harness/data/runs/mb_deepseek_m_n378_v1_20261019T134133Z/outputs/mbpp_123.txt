@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def amicable_numbers_sum(limit):
+    """
+    Sum all amicable numbers from 1 to a specified number (inclusive).
+    
+    Amicable numbers are two different numbers so related that the sum of the 
+    proper divisors of each is equal to the other number.
+    
+    Args:
+        limit (int): The upper bound (inclusive) to search for amicable numbers.
+    
+    Returns:
+        int: The sum of all amicable numbers from 1 to limit.
+    """
+    def sum_proper_divisors(n):
+        """Return the sum of proper divisors of n (divisors excluding n itself)."""
+        if n < 2:
+            return 0
+        total = 1  # 1 is always a proper divisor for n > 1
+        i = 2
+        while i * i <= n:
+            if n % i == 0:
+                total += i
+                if i != n // i:
+                    total += n // i
+            i += 1
+        return total
+    
+    amicable_sum = 0
+    for n in range(2, limit + 1):
+        partner = sum_proper_divisors(n)
+        # Check if partner is different, within range, and mutually amicable
+        if partner != n and partner <= limit:
+            if sum_proper_divisors(partner) == n:
+                amicable_sum += n
+    
+    return amicable_sum
+
+
+# Test the function
+assert amicable_numbers_sum(999) == 504
+print("Test passed!")
+print(f"Sum of amicable numbers from 1 to 999: {amicable_numbers_sum(999)}")
+```
+
+**Explanation:**
+
+1. **`sum_proper_divisors(n)`**: Computes the sum of all proper divisors of `n` (divisors excluding `n` itself). It uses an efficient O(√n) approach by iterating up to the square root of `n` and adding both `i` and `n // i` when `i` divides `n`.
+
+2. **Main loop**: For each number `n` from 2 to `limit`, we find its divisor sum `partner`. If `partner != n` and `partner <= limit`, we check whether `partner`'s divisor sum equals `n`. If so, `n` is part of an amicable pair, and we add it to the total.
+
+3. **Why the `partner <= limit` check?** This ensures we only count numbers within the specified range. The smallest amicable pair is (220, 284), and their sum is 504, which matches the expected output for `limit=999`.

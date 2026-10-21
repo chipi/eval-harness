@@ -1,0 +1,64 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    Find numbers within a given range where every number is divisible by every digit it contains.
+    
+    Args:
+        startnum (int): The starting number of the range (inclusive)
+        endnum (int): The ending number of the range (inclusive)
+    
+    Returns:
+        list: A list of numbers that are divisible by every digit they contain
+    """
+    result = []
+    
+    for num in range(startnum, endnum + 1):
+        # Convert number to string to get individual digits
+        digits = str(num)
+        
+        # Check if the number is divisible by every digit it contains
+        is_divisible = True
+        for digit_char in digits:
+            digit = int(digit_char)
+            
+            # Skip if digit is 0 (division by zero is undefined)
+            if digit == 0:
+                is_divisible = False
+                break
+            
+            # Check if the number is divisible by this digit
+            if num % digit != 0:
+                is_divisible = False
+                break
+        
+        # If the number is divisible by all its digits, add it to the result
+        if is_divisible:
+            result.append(num)
+    
+    return result
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+    print("Test passed!")
+    
+    # Additional test cases
+    print("divisible_by_digits(1, 22):", divisible_by_digits(1, 22))
+    print("divisible_by_digits(1, 50):", divisible_by_digits(1, 50))
+    print("divisible_by_digits(100, 200):", divisible_by_digits(100, 200))
+```
+
+This script defines a function `divisible_by_digits` that:
+
+1. **Iterates through each number** in the given range (inclusive of both start and end)
+2. **Converts each number to a string** to easily access individual digits
+3. **Checks each digit** of the number:
+   - Skips numbers containing 0 (since division by zero is undefined)
+   - Verifies that the number is divisible by each digit
+4. **Adds the number to the result list** if it passes all divisibility checks
+5. **Returns the list** of qualifying numbers
+
+The script includes the provided test assertion and additional test cases to demonstrate the function's behavior. When run, it will verify that the function produces the expected output and display results for other ranges as well.

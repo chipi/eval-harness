@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of checking if all elements in a tuple have the same data type:
+
+```python
+def check_type(t):
+    """
+    Check if all elements in the tuple have the same data type.
+    
+    Args:
+        t (tuple): The tuple to check.
+        
+    Returns:
+        bool: True if all elements have the same type, False otherwise.
+    """
+    if not t:  # Handle empty tuple
+        return True
+    first_type = type(t[0])
+    for item in t:
+        if type(item) != first_type:
+            return False
+    return True
+
+# Test cases
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+assert check_type((5, 6, '7', 3, 5, 6)) == False
+assert check_type(('a', 'b', 'c')) == True
+assert check_type((1.0, 2.0, 3.0)) == True
+assert check_type((1, 2.0, 3)) == False
+assert check_type(()) == True  # Empty tuple case
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `check_type(t)`**:
+   - Takes a tuple `t` as input.
+   - If the tuple is empty, it returns `True` (since there are no elements to compare).
+   - It checks the type of the first element and compares it with the types of all other elements in the tuple.
+   - If any element's type doesn't match the first element's type, it returns `False`.
+   - If all elements have the same type, it returns `True`.
+
+2. **Test Cases**:
+   - The provided test case `check_type((5, 6, 7, 3, 5, 6))` returns `True` as all elements are integers.
+   - Additional test cases are included to verify the function works with different data types, mixed types, and an empty tuple.
+
+The script is self-contained and includes assertions to verify the correctness of the solution.

@@ -1,0 +1,16 @@
+```python
+def add_pairwise(input_tuple):
+    """
+    Function to find the pairwise addition of neighboring elements in a tuple.
+
+    Args:
+        input_tuple: A tuple of numbers
+
+    Returns:
+        A tuple containing the sum of each pair of neighboring elements
+    """
+    return tuple(input_tuple[i] + input_tuple[i+1] for i in range(len(input_tuple)-1))
+
+# Test the function
+assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+```

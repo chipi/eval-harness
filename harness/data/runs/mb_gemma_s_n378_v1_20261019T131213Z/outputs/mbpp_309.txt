@@ -1,0 +1,22 @@
+```python
+def maximum(a, b):
+  """
+  Finds the maximum of two numbers.
+
+  Args:
+    a: The first number.
+    b: The second number.
+
+  Returns:
+    The larger of the two numbers.
+  """
+  if a > b:
+    return a
+  else:
+    return b
+
+assert maximum(5, 10) == 10
+assert maximum(10, 5) == 10
+assert maximum(5, 5) == 5
+
+```

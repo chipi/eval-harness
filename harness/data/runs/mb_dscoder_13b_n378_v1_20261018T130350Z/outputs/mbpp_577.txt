@@ -1,0 +1,57 @@
+```python
+def last_Digit_Factorial(n):
+    factorial = 1
+    for i in range(1, n + 1):
+        factorial *= i
+        while factorial % 10 == 0:
+            factorial //= 10
+        factorial %= 1000000000
+    return factorial % 10
+
+# Test cases
+assert last_Digit_Factorial(4) == 4
+assert last_Digit_Factorial(5) == 0
+assert last_Digit_Factorial(6) == 6
+assert last_Digit_Factorial(7) == 8
+assert last_Digit_Factorial(8) == 8
+assert last_Digit_Factorial(9) == 0
+assert last_Digit_Factorial(10) == 0
+assert last_Digit_Factorial(11) == 1
+assert last_Digit_Factorial(12) == 2
+assert last_Digit_Factorial(13) == 5
+assert last_Digit_Factorial(14) == 0
+assert last_Digit_Factorial(15) == 5
+assert last_Digit_Factorial(16) == 6
+assert last_Digit_Factorial(17) == 7
+assert last_Digit_Factorial(18) == 8
+assert last_Digit_Factorial(19) == 9
+assert last_Digit_Factorial(20) == 0
+assert last_Digit_Factorial(21) == 1
+assert last_Digit_Factorial(22) == 2
+assert last_Digit_Factorial(23) == 3
+assert last_Digit_Factorial(24) == 4
+assert last_Digit_Factorial(25) == 5
+assert last_Digit_Factorial(26) == 6
+assert last_Digit_Factorial(27) == 7
+assert last_Digit_Factorial(28) == 8
+assert last_Digit_Factorial(29) == 9
+assert last_Digit_Factorial(30) == 0
+assert last_Digit_Factorial(31) == 1
+assert last_Digit_Factorial(32) == 2
+assert last_Digit_Factorial(33) == 3
+assert last_Digit_Factorial(34) == 4
+assert last_Digit_Factorial(35) == 5
+assert last_Digit_Factorial(36) == 6
+assert last_Digit_Factorial(37) == 7
+assert last_Digit_Factorial(38) == 8
+assert last_Digit_Factorial(39) == 9
+assert last_Digit_Factorial(40) == 0
+assert last_Digit_Factorial(41) == 1
+assert last_Digit_Factorial(42) == 2
+assert last_Digit_Factorial(43) == 3
+assert last_Digit_Factorial(44) == 4
+assert last_Digit_Factorial(45) == 5
+assert last_Digit_Factorial(46) == 6
+assert last_Digit_Factorial(47) == 7
+assert last_Digit_Factorial(48) == 8
+assert last_Digit_Factorial(49

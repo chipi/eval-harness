@@ -1,0 +1,41 @@
+Here’s a self-contained Python script that solves the inversion counting problem:
+
+```python
+def get_Inv_Count(arr):
+    """
+    Count inversions in an array using a modified merge sort.
+    An inversion is a pair (i, j) such that i < j and arr[i] > arr[j].
+    """
+    def merge_and_count(left, right):
+        merged = []
+        i = j = inv_count = 0
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                j += 1
+                # All remaining elements in left are greater than right[j]
+                inv_count += len(left) - i
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        return merged, inv_count
+
+    def sort_and_count(arr):
+        if len(arr) <= 1:
+            return arr, 0
+        mid = len(arr) // 2
+        left, left_inv = sort_and_count(arr[:mid])
+        right, right_inv = sort_and_count(arr[mid:])
+        merged, merge_inv = merge_and_count(left, right)
+        return merged, left_inv + right_inv + merge_inv
+
+    _, total_inversions = sort_and_count(arr)
+    return total_inversions
+
+
+# Test the function
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+print("Test passed!")
+```

@@ -1,0 +1,51 @@
+Looking at this problem, I need to determine whether a number has **odd parity** — meaning it has an odd number of set bits (1s) in its binary representation.
+
+Let me verify with the test case: `12` in binary is `1100`, which has **2** set bits (an even count), so the parity is even → returns `False`. ✓
+
+```python
+"""
+Write a python function to find whether the parity of a given number is odd.
+assert find_Parity(12) == False
+"""
+
+
+def find_Parity(x):
+    """
+    Return True if the parity of x is odd (i.e., x has an odd number of
+    set bits in its binary representation), otherwise return False.
+    """
+    parity = 0
+    while x:
+        parity ^= x & 1   # toggle parity for each set bit
+        x >>= 1            # move to the next bit
+    return bool(parity)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_Parity(12) == False   # 12 -> 1100 -> two 1s -> even parity
+
+    # Additional checks
+    assert find_Parity(7) == True     # 7  -> 111  -> three 1s -> odd parity
+    assert find_Parity(10) == False   # 10 -> 1010 -> two 1s  -> even parity
+    assert find_Parity(18) == False   # 18 -> 10010 -> two 1s -> even parity
+    assert find_Parity(1) == True     # 1  -> 1    -> one 1   -> odd parity
+    assert find_Parity(0) == False    # 0  -> 0    -> zero 1s -> even parity
+
+    print("All tests passed!")
+    for n in range(10):
+        print(f"{n:>2} ({n:>04b}) -> odd parity: {find_Parity(n)}")
+```
+
+**How it works:**
+- Repeatedly inspect the least-significant bit with `x & 1`.
+- XOR it into `parity`, which flips between `0` and `1` for every `1` bit encountered.
+- Shift right (`x >>= 1`) until all bits are consumed.
+- The final `parity` is `1` if the count of set bits was odd, `0` otherwise.
+
+A one-liner alternative using Python's built-in bit counting:
+
+```python
+def find_Parity(x):
+    return bin(x).count('1') % 2 == 1
+```

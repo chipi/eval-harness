@@ -1,0 +1,47 @@
+```python
+#!/usr/bin/env python3
+"""
+Count binary sequences of length 2n such that the sum of the first n bits
+equals the sum of the last n bits.
+
+For each possible number of 1s, k, in the first half:
+- There are C(n, k) ways to choose those 1s in the first half.
+- There are C(n, k) ways to choose the same number of 1s in the second half.
+
+So the answer is:
+
+    sum(C(n, k)^2 for k in range(n + 1))
+
+This is also equal to C(2n, n).
+"""
+
+import math
+
+
+def count_binary_seq(n):
+    """
+    Return the count of binary sequences of length 2n where the first n bits
+    and the last n bits have the same sum.
+
+    Parameters:
+        n (int): Half the length of the binary sequence.
+
+    Returns:
+        int: Number of valid binary sequences.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    return math.comb(2 * n, n)
+
+
+if __name__ == "__main__":
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+
+    # Additional simple checks
+    assert count_binary_seq(0) == 1
+    assert count_binary_seq(2) == 6
+    assert count_binary_seq(3) == 20
+
+    print("All tests passed.")
+```

@@ -1,0 +1,25 @@
+```python
+def multiply_int(a: int, b: int) -> int:
+    """
+    This function multiplies two integers.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+
+    Returns:
+        int: The product of a and b.
+    """
+    return a * b
+
+# Test the function
+assert multiply_int(10, 20) == 200
+```
+
+You can save this script to a file (e.g., `multiply_int.py`) and run it to verify that the `assert` statement passes, indicating that the function works as expected. 
+
+To run this script, make sure you have Python installed on your system. You can execute the script using a Python interpreter:
+
+```bash
+python multiply_int.py
+```

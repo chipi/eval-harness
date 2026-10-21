@@ -1,0 +1,32 @@
+```python
+def consecutive_duplicates(lst):
+    """
+    Removes consecutive duplicates from a list.
+    If a value appears multiple times in a row, only the first occurrence is kept.
+    """
+    if not lst:
+        return []
+    
+    # Initialize the result list with the first element
+    result = [lst[0]]
+    
+    # Iterate through the list starting from the second element
+    for i in range(1, len(lst)):
+        # Only append the element if it is different from the previous one
+        if lst[i] != lst[i-1]:
+            result.append(lst[i])
+            
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]
+    expected_output = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4]
+    
+    result = consecutive_duplicates(input_list)
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed!")
+    print(f"Input:  {input_list}")
+    print(f"Output: {result}")
+```

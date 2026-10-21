@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of merging three lists into a single sorted list:
+
+```python
+def merge_sorted_list(list1, list2, list3):
+    """
+    Merge three lists into a single sorted list.
+    
+    Args:
+        list1 (list): First list of numbers.
+        list2 (list): Second list of numbers.
+        list3 (list): Third list of numbers.
+    
+    Returns:
+        list: A single sorted list containing all elements from the three input lists.
+    """
+    # Combine all three lists into one
+    combined_list = list1 + list2 + list3
+    # Sort the combined list
+    combined_list.sort()
+    return combined_list
+
+# Test the function with the provided example
+assert merge_sorted_list([25, 24, 15, 4, 5, 29, 110], [19, 20, 11, 56, 25, 233, 154], [24, 26, 54, 48]) == [4, 5, 11, 15, 19, 20, 24, 24, 25, 25, 26, 29, 48, 54, 56, 110, 154, 233]
+
+# Print a success message if the assertion passes
+print("All tests passed!")
+```
+
+### Explanation:
+1. **Combining Lists**: The three input lists are combined into a single list using the `+` operator, which concatenates the lists.
+2. **Sorting**: The combined list is then sorted in ascending order using the `sort()` method.
+3. **Testing**: The function is tested with the provided example using an `assert` statement to ensure the output matches the expected result. If the assertion passes, a success message is printed.
+
+This approach is straightforward and leverages Python's built-in list operations to achieve the desired result efficiently.

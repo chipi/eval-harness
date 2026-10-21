@@ -1,0 +1,29 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check whether the given number can be represented as sum of non-zero powers of 2.
+    
+    A number can be represented as a sum of distinct non-zero powers of 2 if and only if
+    it is a positive integer. This is because every positive integer has a unique binary
+    representation, which is essentially a sum of distinct powers of 2 (including 2^0 = 1).
+    
+    However, we need to consider what "non-zero powers of 2" means. Powers of 2 are:
+    2^0 = 1, 2^1 = 2, 2^2 = 4, 2^3 = 8, ...
+    
+    All these are non-zero values. So any positive integer can be written as a sum of 
+    distinct powers of 2 (its binary representation).
+    
+    But wait - let's reconsider. The problem says "sum of non-zero powers of 2". 
+    Every power of 2 (2^k for k >= 0) is non-zero. So any positive integer can be 
+    represented as a sum of distinct powers of 2.
+    
+    Actually, I think the key insight is simpler: any positive integer n > 0 can be 
+    expressed as a sum of distinct powers of 2 (binary representation). For n <= 0, 
+    it cannot be expressed as such since all powers of 2 are positive.
+    
+    Let me verify with the example: 10 = 8 + 2 = 2^3 + 2^1, so True.
+    
+    Therefore, the function returns True if n is a positive integer, False otherwise.
+    """
+    return n > 0
+```

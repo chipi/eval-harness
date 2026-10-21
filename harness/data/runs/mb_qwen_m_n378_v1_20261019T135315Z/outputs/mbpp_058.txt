@@ -1,0 +1,49 @@
+```python
+def opposite_Signs(a: int, b: int) -> bool:
+    """
+    Check whether two integers have opposite signs.
+    
+    Two numbers have opposite signs if one is positive and the other is negative.
+    Zero is considered neither positive nor negative, so if either number is zero,
+    they do not have opposite signs.
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        True if a and b have opposite signs, False otherwise
+    
+    Examples:
+        >>> opposite_Signs(1, -2)
+        True
+        >>> opposite_Signs(-1, 2)
+        True
+        >>> opposite_Signs(1, 2)
+        False
+        >>> opposite_Signs(-1, -2)
+        False
+        >>> opposite_Signs(0, 1)
+        False
+        >>> opposite_Signs(0, -1)
+        False
+    """
+    # Two numbers have opposite signs if their product is negative
+    # This works because positive * negative = negative
+    # We need to handle the case where either number is 0
+    if a == 0 or b == 0:
+        return False
+    return (a > 0 and b < 0) or (a < 0 and b > 0)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert opposite_Signs(1, -2) == True
+    assert opposite_Signs(-1, 2) == True
+    assert opposite_Signs(1, 2) == False
+    assert opposite_Signs(-1, -2) == False
+    assert opposite_Signs(0, 1) == False
+    assert opposite_Signs(0, -1) == False
+    assert opposite_Signs(0, 0) == False
+    print("All tests passed!")
+```

@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_in_range(l, r):
+    """
+    Find the sum of all odd natural numbers within the range [l, r] (inclusive).
+    
+    Args:
+        l (int): The lower bound of the range (inclusive).
+        r (int): The upper bound of the range (inclusive).
+    
+    Returns:
+        int: The sum of all odd natural numbers in the range.
+    """
+    total = 0
+    for num in range(l, r + 1):
+        if num % 2 != 0:
+            total += num
+    return total
+
+
+# Test cases
+assert sum_in_range(2, 5) == 8  # 3 + 5 = 8
+assert sum_in_range(1, 10) == 25  # 1 + 3 + 5 + 7 + 9 = 25
+assert sum_in_range(4, 4) == 0  # No odd numbers
+assert sum_in_range(1, 1) == 1  # 1
+assert sum_in_range(7, 7) == 7  # 7
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **Function definition**: `sum_in_range(l, r)` takes two integers `l` and `r` representing the inclusive range.
+
+2. **Iteration**: We loop through every number from `l` to `r` (inclusive) using `range(l, r + 1)`.
+
+3. **Odd check**: For each number, we check if it's odd using `num % 2 != 0`. If it is, we add it to the running total.
+
+4. **Return**: Finally, we return the accumulated sum.
+
+5. **Assertions**: The provided test case `sum_in_range(2, 5) == 8` verifies correctness (3 + 5 = 8), along with additional edge cases.
+
+**Alternative one-liner** (if you prefer a more concise version):
+
+```python
+def sum_in_range(l, r):
+    return sum(num for num in range(l, r + 1) if num % 2 != 0)
+```
+
+Both versions produce the same result. The first is more readable for beginners, while the second is more Pythonic.

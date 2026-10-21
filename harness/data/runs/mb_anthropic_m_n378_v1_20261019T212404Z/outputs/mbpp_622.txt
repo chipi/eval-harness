@@ -1,0 +1,13 @@
+```python
+def get_median(arr1, arr2, n):
+    merged = sorted(arr1 + arr2)
+    total = 2 * n
+    mid1 = merged[total // 2 - 1]
+    mid2 = merged[total // 2]
+    return (mid1 + mid2) / 2.0
+
+
+if __name__ == "__main__":
+    assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+    print("All test cases passed!")
+```

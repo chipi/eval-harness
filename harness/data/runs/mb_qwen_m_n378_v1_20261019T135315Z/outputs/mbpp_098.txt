@@ -1,0 +1,24 @@
+```python
+import math
+from functools import reduce
+
+def multiply_num(nums):
+    """
+    Multiply all the numbers in a list and divide by the length of the list.
+    
+    Args:
+        nums: A tuple or list of numbers
+        
+    Returns:
+        The product of all numbers divided by the length of the list
+    """
+    if not nums:
+        return 0
+    
+    product = reduce(lambda x, y: x * y, nums)
+    return product / len(nums)
+
+
+# Test the function with the provided assertion
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+```

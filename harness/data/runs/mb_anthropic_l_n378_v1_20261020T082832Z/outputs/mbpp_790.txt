@@ -1,0 +1,56 @@
+Looking at this problem, I need to check whether every even index contains an even number.
+
+Let me analyze the test case: `[3,2,1]`
+- Index 0 (even) → value 3 (odd) → fails
+- So result is `False` ✓
+
+Here's the solution:
+
+```python
+"""
+Write a python function to check whether every even index contains even numbers of a given list.
+assert even_position([3,2,1]) == False
+"""
+
+
+def even_position(nums):
+    """
+    Check whether every even index of the list contains an even number.
+
+    Args:
+        nums: a list of integers
+
+    Returns:
+        True if for every even index i, nums[i] is even; False otherwise.
+    """
+    return all(nums[i] % 2 == 0 for i in range(len(nums)) if i % 2 == 0)
+
+
+if __name__ == "__main__":
+    # Provided test
+    assert even_position([3, 2, 1]) == False
+
+    # Additional tests
+    assert even_position([2, 1, 4]) == True
+    assert even_position([4, 1, 2, 3]) == True
+    assert even_position([1, 2, 3]) == False
+    assert even_position([]) == True          # vacuously true
+    assert even_position([0]) == True
+    assert even_position([2, 3, 5, 7, 8]) == False
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. `range(len(nums))` generates all valid indices.
+2. The filter `if i % 2 == 0` keeps only the even indices (0, 2, 4, ...).
+3. For each of those indices, we test `nums[i] % 2 == 0` (value is even).
+4. `all(...)` returns `True` only if every such check passes; it short-circuits on the first failure.
+
+An equivalent, slightly more "Pythonic" version using slicing:
+
+```python
+def even_position(nums):
+    return all(n % 2 == 0 for n in nums[::2])
+```

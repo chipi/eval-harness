@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem by removing the first and last occurrence of a given character from a string:
+
+```python
+def remove_Occ(s, char):
+    """
+    Remove the first and last occurrence of a given character from the string.
+    
+    Args:
+        s (str): The input string.
+        char (str): The character to remove.
+    
+    Returns:
+        str: The string with first and last occurrence of the character removed.
+    """
+    first_occurrence = s.find(char)
+    last_occurrence = s.rfind(char)
+    
+    if first_occurrence == -1 or last_occurrence == -1:
+        return s
+    
+    # Remove the first occurrence
+    s = s[:first_occurrence] + s[first_occurrence + 1:]
+    
+    # Adjust the last occurrence index if necessary (since we removed a character)
+    if last_occurrence > first_occurrence:
+        last_occurrence -= 1
+    
+    # Remove the last occurrence
+    s = s[:last_occurrence] + s[last_occurrence + 1:]
+    
+    return s
+
+# Test cases
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("abcabc", "a") == "bcbc"
+assert remove_Occ("test", "t") == "es"
+assert remove_Occ("python", "z") == "python"  # Character not present
+assert remove_Occ("a", "a") == ""  # Single character
+assert remove_Occ("aa", "a") == ""  # Two same characters
+assert remove_Occ("abca", "a") == "bc"  # First and last same character
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Finding Occurrences**: The function first finds the first and last occurrences of the given character using `str.find()` and `str.rfind()` methods.
+2. **Handling Edge Cases**: If the character is not found (`find` returns -1), the original string is returned.
+3. **Removing First Occurrence**: The first occurrence is removed by slicing the string before and after the character.
+4. **Adjusting Last Occurrence**: If the last occurrence is after the first, its index is adjusted by -1 because we've already removed one character.
+5. **Removing Last Occurrence**: The last occurrence is then removed similarly.
+6. **Test Cases**: The script includes several test cases to verify the function works correctly, including edge cases like the character not being present or the string having only one or two occurrences of the character.

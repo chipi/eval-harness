@@ -1,0 +1,37 @@
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Matches a string that has an 'a' followed by anything, ending in 'b'.
+    
+    Args:
+        text: The string to check
+        
+    Returns:
+        True if the string matches the pattern, False otherwise
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, text))
+
+
+# Test cases
+assert text_starta_endb("aabbbb")
+assert text_starta_endb("ab")
+assert text_starta_endb("aXYZb")
+assert not text_starta_endb("ba")
+assert not text_starta_endb("a")
+assert not text_starta_endb("b")
+assert not text_starta_endb("bab")
+
+print("All tests passed!")
+```
+
+The solution uses a regular expression pattern `^a.*b$` where:
+- `^` - Start of string
+- `a` - Literal 'a' character
+- `.*` - Any character (except newline) zero or more times
+- `b` - Literal 'b' character
+- `$` - End of string
+
+This ensures the string starts with 'a', has anything in between, and ends with 'b'.

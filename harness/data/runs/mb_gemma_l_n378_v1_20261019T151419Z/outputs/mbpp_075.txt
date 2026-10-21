@@ -1,0 +1,29 @@
+```python
+def find_tuples(tuple_list, k):
+    """
+    Finds tuples from the given list where all elements are divisible by k.
+    
+    Args:
+        tuple_list (list): A list of tuples containing integers.
+        k (int): The divisor to check against.
+        
+    Returns:
+        list: A list of tuples that satisfy the condition.
+    """
+    # Use a list comprehension to filter tuples
+    # all() returns True if all elements in the iterable satisfy the condition
+    return [tup for tup in tuple_list if all(element % k == 0 for element in tup)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [(6, 24, 12), (7, 9, 6), (12, 18, 21)]
+    k_value = 6
+    result = find_tuples(test_list, k_value)
+    
+    print(f"Input: {test_list}, k: {k_value}")
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == [(6, 24, 12)], f"Expected [(6, 24, 12)], but got {result}"
+    print("Assertion passed!")
+```

@@ -1,0 +1,22 @@
+```python
+def replace_char(string, char_to_replace, replacement_char):
+  """
+  Replaces all occurrences of a character in a string with another character.
+
+  Args:
+    string: The input string.
+    char_to_replace: The character to be replaced.
+    replacement_char: The character to replace with.
+
+  Returns:
+    The string with the characters replaced.
+  """
+  return string.replace(char_to_replace, replacement_char)
+
+# Example usage and assertion
+assert replace_char("polygon",'y','l')==("pollgon")
+assert replace_char("hello world", 'o', '0') == "hell0 w0rld"
+assert replace_char("banana", 'a', 'u') == "bununu"
+assert replace_char("test", 'z', 'x') == "test" # No change if char not found
+assert replace_char("", 'a', 'b') == "" # Empty string case
+```

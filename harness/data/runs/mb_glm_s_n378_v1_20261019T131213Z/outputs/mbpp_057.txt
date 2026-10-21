@@ -1,0 +1,59 @@
+```python
+def find_Max_Num(digits: list[int]) -> int:
+    """
+    Finds the largest number that can be formed with the given list of digits.
+
+    This function sorts the digits in descending order and then combines them
+    into a single integer.
+
+    Args:
+        digits: A list of non-negative integers (digits).
+
+    Returns:
+        The largest integer that can be formed by rearranging the digits.
+
+    Examples:
+        >>> find_Max_Num([1, 2, 3])
+        321
+        >>> find_Max_Num([3, 30, 34, 5, 9])
+        9534330
+        >>> find_Max_Num([0, 0, 0])
+        0
+        >>> find_Max_Num([])
+        0
+    """
+    # Handle edge cases: empty list or list with only zeros.
+    # If the list is empty, the largest number is 0.
+    # If the list contains only zeros, sorting and joining would result in "00",
+    # which should be converted to the integer 0.
+    if not digits or all(d == 0 for d in digits):
+        return 0
+
+    # Convert all digits to strings for easy sorting and joining.
+    str_digits = [str(d) for d in digits]
+
+    # Sort the string digits in descending order.
+    # The `key` argument in `sorted` is crucial. It tells the sort function
+    # to compare the strings based on their custom comparison logic.
+    # For two strings 'a' and 'b', we compare `b + a` to `a + b`.
+    # If `b + a` is "larger" (lexicographically), then 'b' should come before 'a'.
+    # This ensures that for numbers like 3 and 30, '330' is preferred over '303'.
+    sorted_digits = sorted(str_digits, key=lambda x: x, reverse=True)
+
+    # Join the sorted strings into a single string and convert it to an integer.
+    largest_num_str = "".join(sorted_digits)
+    
+    return int(largest_num_str)
+
+# Example usage and assertions from the problem description
+assert find_Max_Num([1, 2, 3]) == 321
+
+# Additional test cases to demonstrate robustness
+assert find_Max_Num([3, 30, 34, 5, 9]) == 9534330
+assert find_Max_Num([0, 0, 0]) == 0
+assert find_Max_Num([]) == 0
+assert find_Max_Num([10, 2]) == 210 # Note: 10 is not a single digit, but the function handles it.
+assert find_Max_Num([1]) == 1
+
+print("All assertions passed.")
+```

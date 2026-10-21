@@ -1,0 +1,37 @@
+### Integer Check Function
+#### Problem Description
+The goal is to create a function that checks if a given string represents an integer.
+
+#### Solution
+
+```python
+def check_integer(s):
+    """
+    Checks if a string represents an integer.
+
+    Args:
+        s (str): The input string to check.
+
+    Returns:
+        bool: True if the string represents an integer, False otherwise.
+    """
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+# Example usage:
+if __name__ == "__main__":
+    print(check_integer("123"))  # Expected output: True
+    print(check_integer("-456"))  # Expected output: True
+    print(check_integer("python"))  # Expected output: False
+    print(check_integer("123.45"))  # Expected output: False
+```
+
+#### Explanation
+
+*   The function `check_integer(s)` attempts to convert the input string `s` into an integer using `int(s)`.
+*   If the conversion is successful, the function returns `True`, indicating that the string represents an integer.
+*   If the conversion fails (i.e., a `ValueError` is raised), the function returns `False`, indicating that the string does not represent an integer.
+*   The example usage demonstrates the function's behavior with different inputs.

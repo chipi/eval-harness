@@ -1,0 +1,39 @@
+```python
+#!/usr/bin/env python3
+"""
+Locate the right insertion point for a specified value in sorted order.
+
+The right insertion point is the index where the value should be inserted
+to keep the list sorted, placing it after any existing equal values.
+
+Example:
+    right_insertion([1, 2, 4, 5], 6) == 4
+"""
+
+def right_insertion(sorted_list, value):
+    """
+    Return the index where `value` should be inserted in `sorted_list`
+    while maintaining sorted order, inserting to the right of equal values.
+    """
+    left, right = 0, len(sorted_list)
+
+    while left < right:
+        mid = (left + right) // 2
+
+        if value < sorted_list[mid]:
+            right = mid
+        else:
+            left = mid + 1
+
+    return left
+
+
+if __name__ == "__main__":
+    assert right_insertion([1, 2, 4, 5], 6) == 4
+    assert right_insertion([1, 2, 4, 5], 3) == 2
+    assert right_insertion([1, 2, 4, 5], 0) == 0
+    assert right_insertion([1, 2, 4, 5], 4) == 3
+    assert right_insertion([1, 2, 2, 2, 4], 2) == 4
+
+    print("All tests passed.")
+```

@@ -1,0 +1,53 @@
+```python
+def difference(n: int) -> int:
+    """
+    This function calculates the difference between the sum of cubes of the first n natural numbers 
+    and the sum of the first n natural numbers.
+
+    Args:
+        n (int): A positive integer.
+
+    Returns:
+        int: The difference between the sum of cubes and the sum of the first n natural numbers.
+    """
+    # Calculate the sum of cubes of the first n natural numbers
+    sum_of_cubes = sum(i**3 for i in range(1, n+1))
+    
+    # Calculate the sum of the first n natural numbers
+    sum_of_natural_numbers = n * (n + 1) // 2
+    
+    # Return the difference
+    return sum_of_cubes - sum_of_natural_numbers
+
+
+# Test the function
+assert difference(3) == 30
+```
+
+You can run this script to test the function with the provided unit test. The function `difference(n)` takes an integer `n` as input and returns the difference between the sum of cubes of the first `n` natural numbers and the sum of the first `n` natural numbers. 
+
+Alternatively, you can also use the mathematical formulas for the sum of cubes and sum of natural numbers to make the function more efficient:
+
+```python
+def difference(n: int) -> int:
+    """
+    This function calculates the difference between the sum of cubes of the first n natural numbers 
+    and the sum of the first n natural numbers.
+
+    Args:
+        n (int): A positive integer.
+
+    Returns:
+        int: The difference between the sum of cubes and the sum of the first n natural numbers.
+    """
+    # Calculate the sum of cubes of the first n natural numbers
+    sum_of_cubes = (n * (n + 1) // 2) ** 2
+    
+    # Calculate the sum of the first n natural numbers
+    sum_of_natural_numbers = n * (n + 1) // 2
+    
+    # Return the difference
+    return sum_of_cubes - sum_of_natural_numbers
+```
+
+This version of the function has a time complexity of O(1), making it more efficient for large inputs.

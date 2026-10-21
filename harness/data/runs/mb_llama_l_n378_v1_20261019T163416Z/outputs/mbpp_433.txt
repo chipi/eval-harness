@@ -1,0 +1,12 @@
+```python
+def check_greater(arr, num):
+    return all(i < num for i in arr)
+
+def main():
+    arr = [1, 2, 3, 4, 5]
+    num = 4
+    print(check_greater(arr, num))  # Output: False
+
+if __name__ == "__main__":
+    main()
+```

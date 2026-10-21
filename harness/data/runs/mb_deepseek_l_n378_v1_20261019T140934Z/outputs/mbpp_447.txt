@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def cube_nums(nums):
+    """
+    Find cubes of individual elements in a list.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        A list containing the cube of each element
+    """
+    return [num ** 3 for num in nums]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expected = [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+    assert result == expected, f"Test failed! Expected {expected}, but got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    print(cube_nums([0, -1, -2]))  # [0, -1, -8]
+    print(cube_nums([0.5, 1.5]))   # [0.125, 3.375]
+```
+
+The function uses a list comprehension to iterate through each element in the input list and compute its cube using the exponentiation operator (`**`). The test case from the problem is included to verify the function works correctly.

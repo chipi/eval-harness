@@ -1,0 +1,51 @@
+To solve this problem, we need to find the smallest positive integer $k$ such that rotating the string by $k$ positions results in the original string. 
+
+Mathematically, this is equivalent to finding the smallest period of the string. A common and efficient way to solve this is to concatenate the string with itself (`s + s`), remove the first and last characters to avoid matching the original string at index 0 or index $n$, and then find the first occurrence of the original string within that concatenated string.
+
+Here is the self-contained script:
+
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Finds the minimum number of rotations (greater than 0) 
+    required to get the same string.
+    """
+    if not s:
+        return 0
+    
+    # Concatenate the string with itself
+    combined = s + s
+    
+    # Find the first occurrence of s in combined starting from index 1
+    # We search in combined[1:-1] to ensure we don't find the 
+    # original string at index 0 or index len(s)
+    # The index returned + 1 will be the number of rotations.
+    # However, a simpler way is to search in combined[1:]
+    idx = combined.find(s, 1)
+    
+    # If find returns -1, it means no rotation works (shouldn't happen for valid strings)
+    # If idx is found, it represents the minimum rotation count.
+    return idx if idx!= -1 else 0
+
+def test_find_rotations():
+    # Test cases
+    assert find_Rotations("aaaa") == 1, "Failed on 'aaaa'"
+    assert find_Rotations("abab") == 2, "Failed on 'abab'"
+    assert find_Rotations("abc") == 3, "Failed on 'abc'"
+    assert find_Rotations("abcabc") == 3, "Failed on 'abcabc'"
+    assert find_Rotations("aaaaa") == 1, "Failed on 'aaaaa'"
+    assert find_Rotations("a") == 1, "Failed on 'a'"
+    
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_find_rotations()
+```
+
+### Explanation:
+1.  **The Logic**: If a string $S$ of length $n$ can be rotated by $k$ positions to result in $S$, then $S$ must be a periodic string.
+2.  **The Trick**: By creating `s + s`, we represent every possible rotation of the string as a substring of length $n$.
+3.  **The Search**: We search for the first occurrence of `s` within `s + s`, but we start the search from index `1` to ignore the trivial rotation of 0.
+4.  **Complexity**: 
+    *   **Time Complexity**: $O(n)$, where $n$ is the length of the string (due to the efficiency of Python's string searching algorithm).
+    *   **Space Complexity**: $O(n)$ to store the concatenated string.

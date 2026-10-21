@@ -1,0 +1,11 @@
+```python
+def check_type(tup):
+    """Check if all elements in a tuple have the same data type."""
+    if len(tup) == 0:
+        return True
+    first_type = type(tup[0])
+    return all(type(item) == first_type for item in tup)
+
+
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+```

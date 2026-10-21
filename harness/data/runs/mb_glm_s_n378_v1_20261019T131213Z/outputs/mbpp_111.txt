@@ -1,0 +1,66 @@
+```python
+def common_in_nested_lists(nested_lists):
+    """
+    Finds the common elements present in all nested lists.
+
+    Args:
+        nested_lists: A list of lists, where each inner list contains elements.
+
+    Returns:
+        A set containing the elements that are present in every inner list.
+        Returns an empty set if there are no common elements or if the input is empty.
+    """
+    # Handle edge cases: empty input or no lists to compare
+    if not nested_lists:
+        return set()
+
+    # Start with the first list as the initial set of common elements
+    common_elements = set(nested_lists[0])
+
+    # Iterate through the rest of the lists
+    for lst in nested_lists[1:]:
+        # Update the common_elements set to be the intersection
+        # with the current list. This keeps only elements found in both.
+        common_elements.intersection_update(lst)
+
+    return common_elements
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_lists = [[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]]
+    expected_output = {12, 18}
+    
+    result = common_in_nested_lists(input_lists)
+    
+    print(f"Input nested lists: {input_lists}")
+    print(f"Common elements found: {result}")
+    print(f"Expected common elements: {expected_output}")
+    
+    # The assertion will pass if the function works correctly
+    assert result == expected_output
+    
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    
+    # Test case 1: No common elements
+    test1 = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    assert common_in_nested_lists(test1) == set()
+    print(f"Test 1 Passed: No common elements in {test1}. Result: {common_in_nested_lists(test1)}")
+
+    # Test case 2: One list is empty
+    test2 = [[1, 2, 3], [], [1, 3]]
+    assert common_in_nested_lists(test2) == set()
+    print(f"Test 2 Passed: One list is empty in {test2}. Result: {common_in_nested_lists(test2)}")
+
+    # Test case 3: All lists are identical
+    test3 = [[10, 20], [10, 20], [10, 20]]
+    assert common_in_nested_lists(test3) == {10, 20}
+    print(f"Test 3 Passed: All lists identical in {test3}. Result: {common_in_nested_lists(test3)}")
+    
+    # Test case 4: Empty input
+    test4 = []
+    assert common_in_nested_lists(test4) == set()
+    print(f"Test 4 Passed: Empty input. Result: {common_in_nested_lists(test4)}")
+    
+    print("\nAll tests passed successfully!")
+```

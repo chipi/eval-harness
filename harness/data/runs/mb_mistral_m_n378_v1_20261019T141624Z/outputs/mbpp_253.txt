@@ -1,0 +1,20 @@
+```python
+def count_integer(lst):
+    """
+    Returns the number of integer elements in a given list.
+
+    Args:
+        lst: A list containing elements of various types.
+
+    Returns:
+        int: The count of integer elements in the list.
+    """
+    count = 0
+    for element in lst:
+        if isinstance(element, int) and not isinstance(element, bool):
+            count += 1
+    return count
+
+# Test case
+assert count_integer([1, 2, 'abc', 1.2]) == 2
+```

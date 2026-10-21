@@ -1,0 +1,27 @@
+```python
+def maxAverageOfPath(matrix):
+    """Return the maximum average cost of a right/down path."""
+    n = len(matrix)
+    if n == 0 or any(len(row) != n for row in matrix):
+        raise ValueError("matrix must be a non-empty square matrix")
+
+    # Every path visits exactly 2*n - 1 cells, so maximizing the
+    # average is equivalent to maximizing the total cost.
+    dp = [[0] * n for _ in range(n)]
+
+    for r in range(n):
+        for c in range(n):
+            if r == 0 and c == 0:
+                dp[r][c] = matrix[r][c]
+            elif r == 0:
+                dp[r][c] = dp[r][c - 1] + matrix[r][c]
+            elif c == 0:
+                dp[r][c] = dp[r - 1][c] + matrix[r][c]
+            else:
+                dp[r][c] = max(dp[r - 1][c], dp[r][c - 1]) + matrix[r][c]
+
+    return dp[-1][-1] / (2 * n - 1)
+
+
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+```

@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def opposite_Signs(x, y):
+    """
+    Check whether two integers have opposite signs.
+    
+    Args:
+        x (int): First integer
+        y (int): Second integer
+    
+    Returns:
+        bool: True if the integers have opposite signs, False otherwise
+    """
+    return (x < 0) != (y < 0)
+
+
+# Test cases
+assert opposite_Signs(1, -2) == True
+assert opposite_Signs(-1, 2) == True
+assert opposite_Signs(1, 2) == False
+assert opposite_Signs(-1, -2) == False
+assert opposite_Signs(0, 1) == False
+assert opposite_Signs(0, -1) == False
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+- `(x < 0)` evaluates to `True` if `x` is negative, `False` otherwise.
+- `(y < 0)` evaluates to `True` if `y` is negative, `False` otherwise.
+- The `!=` operator returns `True` when the two boolean values differ, meaning one number is negative and the other is non-negative.
+
+**Note on zero:** This implementation treats `0` as non-negative, so `opposite_Signs(0, 1)` and `opposite_Signs(0, -1)` both return `False`. If you want `0` to be treated differently (e.g., as having no sign), you can adjust the logic accordingly.

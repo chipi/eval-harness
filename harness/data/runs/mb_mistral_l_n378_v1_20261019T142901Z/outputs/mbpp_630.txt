@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem by generating all adjacent coordinates (including diagonals) for a given coordinate tuple:
+
+```python
+def get_coordinates(coord):
+    """
+    Returns all adjacent coordinates (including diagonals) of the given coordinate tuple.
+
+    Args:
+        coord (tuple): A coordinate tuple (x, y)
+
+    Returns:
+        list: List of adjacent coordinate lists [x, y]
+    """
+    x, y = coord
+    adjacent = []
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            if dx == 0 and dy == 0:
+                continue  # Skip the original coordinate
+            adjacent.append([x + dx, y + dy])
+    return adjacent
+
+# Test the function
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 5], [4, 3], [4, 4], [4, 5]]
+```
+
+Note: There appears to be a small discrepancy in the expected output in your example. The coordinate `[3, 4]` (the original coordinate) should not be included in the output, but your expected output shows it. The function above correctly excludes the original coordinate. If you specifically want to include the original coordinate in the output, you can remove the `if dx == 0 and dy == 0` check. Here's that version:
+
+```python
+def get_coordinates(coord):
+    """
+    Returns all adjacent coordinates (including diagonals) of the given coordinate tuple,
+    including the original coordinate itself.
+
+    Args:
+        coord (tuple): A coordinate tuple (x, y)
+
+    Returns:
+        list: List of adjacent coordinate lists [x, y]
+    """
+    x, y = coord
+    adjacent = []
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            adjacent.append([x + dx, y + dy])
+    return adjacent
+
+# Test the function
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+```

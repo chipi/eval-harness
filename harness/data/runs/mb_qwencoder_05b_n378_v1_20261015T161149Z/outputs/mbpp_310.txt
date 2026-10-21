@@ -1,0 +1,9 @@
+```python
+def string_to_tuple(s):
+    # Convert the string to a tuple of characters
+    return tuple(s)
+
+# Test cases to verify the correctness of the function
+assert string_to_tuple("python 3.0") == ('p', 'y', 't', 'h', 'o', 'n', '3', '.', '0')
+```
+

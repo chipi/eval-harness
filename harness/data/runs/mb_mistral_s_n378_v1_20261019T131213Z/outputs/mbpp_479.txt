@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def first_digit(number):
+    """
+    Returns the first digit of a given number.
+
+    Args:
+        number (int): The input number.
+
+    Returns:
+        int: The first digit of the number.
+
+    Examples:
+        >>> first_digit(123)
+        1
+        >>> first_digit(0)
+        0
+        >>> first_digit(-456)
+        4
+    """
+    # Convert the number to a string to handle negative numbers and zero
+    num_str = str(abs(number))
+    # The first character of the string is the first digit
+    return int(num_str[0])
+
+# Test cases
+assert first_digit(123) == 1
+assert first_digit(0) == 0
+assert first_digit(-456) == 4
+assert first_digit(7) == 7
+assert first_digit(1000) == 1
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `first_digit` that takes an integer as input
+2. Converts the absolute value of the number to a string to handle negative numbers
+3. Returns the first character of the string as an integer
+4. Includes several test cases to verify the function works correctly
+5. Prints a success message if all tests pass
+
+The function handles all edge cases including:
+- Positive numbers
+- Negative numbers
+- Zero
+- Single-digit numbers
+- Numbers with leading zeros (though these don't exist in standard integer representation)

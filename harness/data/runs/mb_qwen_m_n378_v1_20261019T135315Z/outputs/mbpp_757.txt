@@ -1,0 +1,48 @@
+```python
+def count_reverse_pairs(str_list: list) -> int:
+    """
+    Count the number of pairs of reverse strings in the given string list.
+    
+    A pair consists of two strings where one is the reverse of the other.
+    Each string can only be used in one pair.
+    
+    Args:
+        str_list: A list of strings
+        
+    Returns:
+        The number of reverse string pairs
+        
+    Example:
+        >>> count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"])
+        2
+    """
+    count = 0
+    seen = {}
+    
+    for s in str_list:
+        reversed_s = s[::-1]
+        if reversed_s in seen and seen[reversed_s] > 0:
+            count += 1
+            seen[reversed_s] -= 1
+        else:
+            if s in seen:
+                seen[s] += 1
+            else:
+                seen[s] = 1
+    
+    return count
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+    
+    # Additional test cases
+    assert count_reverse_pairs([]) == 0
+    assert count_reverse_pairs(["abc"]) == 0
+    assert count_reverse_pairs(["abc", "cba"]) == 1
+    assert count_reverse_pairs(["abc", "cba", "abc", "cba"]) == 2
+    assert count_reverse_pairs(["aa", "aa"]) == 1  # "aa" reversed is "aa"
+    
+    print("All tests passed!")
+```

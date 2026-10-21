@@ -1,0 +1,15 @@
+```python
+import math
+
+def angle_complex(z):
+    """
+    Get the angle (argument) of a complex number.
+    
+    Args:
+        z: A complex number
+        
+    Returns:
+        The angle in radians, in the range [-pi, pi]
+    """
+    return math.atan2(z.imag, z.real)
+```

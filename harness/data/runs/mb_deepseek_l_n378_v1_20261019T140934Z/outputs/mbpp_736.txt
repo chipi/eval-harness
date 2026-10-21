@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def left_insertion(arr, target):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+    
+    Args:
+        arr: A sorted list of numbers
+        target: The value to find the insertion point for
+    
+    Returns:
+        The index where the target should be inserted to maintain sorted order
+    """
+    left, right = 0, len(arr)
+    
+    while left < right:
+        mid = (left + right) // 2
+        if arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid
+    
+    return left
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    
+    # Additional test cases
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 0) == 0
+    assert left_insertion([1, 2, 4, 5], 1) == 0
+    assert left_insertion([1, 2, 4, 5], 5) == 3
+    assert left_insertion([], 1) == 0
+    assert left_insertion([1, 1, 1, 2, 2, 3], 1) == 0
+    assert left_insertion([1, 1, 1, 2, 2, 3], 2) == 3
+    
+    print("All tests passed!")
+```
+
+This implementation uses binary search to find the leftmost position where the target value should be inserted to maintain the sorted order. The function returns the index where the target would be inserted, which is the same as the number of elements strictly less than the target.

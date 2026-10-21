@@ -1,0 +1,17 @@
+```python
+def count_X(tup, element):
+    """
+    Count how many times `element` appears in `tup`.
+    """
+    count = 0
+    for item in tup:
+        if item == element:
+            count += 1
+    return count
+
+
+# Example test
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+
+print("All tests passed.")
+```

@@ -1,0 +1,39 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def convert(z):
+    """
+    Convert a complex number to polar coordinates (r, theta).
+    
+    Args:
+        z: A complex number (can be int, float, or complex type)
+    
+    Returns:
+        Tuple (r, theta) where r is the magnitude and theta is the angle in radians.
+    """
+    # Convert to complex type to handle all numeric inputs
+    z = complex(z)
+    
+    # Calculate magnitude (r)
+    r = abs(z)
+    
+    # Calculate angle (theta) in radians
+    theta = math.atan2(z.imag, z.real)
+    
+    return (r, theta)
+
+# Test cases
+if __name__ == "__main__":
+    # Test the given assertion
+    assert convert(1) == (1.0, 0.0)
+    
+    # Additional test cases
+    assert convert(1j) == (1.0, math.pi/2)
+    assert convert(-1) == (1.0, math.pi)
+    assert convert(1+1j) == (math.sqrt(2), math.pi/4)
+    assert convert(0) == (0.0, 0.0)
+    
+    print("All tests passed!")
+```

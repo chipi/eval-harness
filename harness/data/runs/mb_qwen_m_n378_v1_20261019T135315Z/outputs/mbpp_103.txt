@@ -1,0 +1,66 @@
+```python
+def eulerian_num(n: int, m: int) -> int:
+    """
+    Compute the Eulerian number A(n, m), which counts the number of permutations
+    of {1, 2, ..., n} with exactly m ascents (positions i where p[i] < p[i+1]).
+    
+    The Eulerian numbers satisfy the recurrence:
+    A(n, m) = (n - m) * A(n-1, m-1) + (m + 1) * A(n-1, m)
+    
+    Base cases:
+    A(0, 0) = 1
+    A(n, 0) = 1 for n >= 0
+    A(n, m) = 0 if m < 0 or m >= n
+    
+    Args:
+        n: The size of the permutation set {1, ..., n}
+        m: The number of ascents
+    
+    Returns:
+        The Eulerian number A(n, m)
+    """
+    # Handle edge cases
+    if n < 0 or m < 0:
+        return 0
+    if m >= n:
+        return 0
+    if n == 0 and m == 0:
+        return 1
+    
+    # Use dynamic programming to build up the table
+    # dp[i][j] = A(i, j)
+    dp = [[0] * (n + 1) for _ in range(n + 1)]
+    
+    # Base case: A(0, 0) = 1
+    dp[0][0] = 1
+    
+    for i in range(1, n + 1):
+        for j in range(0, i):
+            if j == 0:
+                dp[i][j] = 1
+            else:
+                dp[i][j] = (i - j) * dp[i - 1][j - 1] + (j + 1) * dp[i - 1][j]
+    
+    return dp[n][m]
+
+
+if __name__ == "__main__":
+    # Test the given assertion
+    assert eulerian_num(3, 1) == 4, f"Expected 4, got {eulerian_num(3, 1)}"
+    
+    # Additional tests
+    # A(1, 0) = 1 (only permutation [1], 0 ascents)
+    assert eulerian_num(1, 0) == 1
+    
+    # A(2, 0) = 1 (permutation [2,1] has 0 ascents)
+    assert eulerian_num(2, 0) == 1
+    # A(2, 1) = 1 (permutation [1,2] has 1 ascent)
+    assert eulerian_num(2, 1) == 1
+    
+    # A(3, 0) = 1, A(3, 1) = 4, A(3, 2) = 1
+    assert eulerian_num(3, 0) == 1
+    assert eulerian_num(3, 1) == 4
+    assert eulerian_num(3, 2) == 1
+    
+    print("All tests passed!")
+```

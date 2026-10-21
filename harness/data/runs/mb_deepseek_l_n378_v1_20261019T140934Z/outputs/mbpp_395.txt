@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def first_non_repeating_character(s):
+    """
+    Find the first non-repeated character in a given string.
+    
+    Args:
+        s: Input string
+    
+    Returns:
+        The first non-repeating character, or None if all characters repeat
+    """
+    # Count occurrences of each character
+    char_count = {}
+    for char in s:
+        char_count[char] = char_count.get(char, 0) + 1
+    
+    # Find the first character with count 1
+    for char in s:
+        if char_count[char] == 1:
+            return char
+    
+    return None
+
+# Test the function
+assert first_non_repeating_character("abcabc") == None
+assert first_non_repeating_character("abca") == "b"
+assert first_non_repeating_character("aabbc") == "c"
+assert first_non_repeating_character("") == None
+assert first_non_repeating_character("a") == "a"
+assert first_non_repeating_character("aabb") == None
+
+print("All tests passed!")
+```
+
+The function works by:
+1. First counting the frequency of each character in the string using a dictionary
+2. Then iterating through the string again to find the first character that appears exactly once
+3. Returning `None` if no such character exists
+
+The time complexity is O(n) where n is the length of the string, and space complexity is O(k) where k is the number of unique characters.

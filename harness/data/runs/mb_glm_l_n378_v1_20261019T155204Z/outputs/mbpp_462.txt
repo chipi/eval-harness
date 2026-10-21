@@ -1,0 +1,41 @@
+```python
+def combinations_list(lst):
+    """
+    Finds all possible combinations of the elements of a given list.
+    The combinations are generated in a specific order where elements are 
+    added one by one, and each new element is combined with all previously 
+    generated combinations.
+    """
+    result = [[]]
+    for item in lst:
+        # For each item, we take all existing combinations and create new ones
+        # by appending the current item to them.
+        new_combinations = [comb + [item] for comb in result]
+        result.extend(new_combinations)
+    return result
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    test_list = ['orange', 'red', 'green', 'blue']
+    expected_output = [
+        [], 
+        ['orange'], 
+        ['red'], 
+        ['red', 'orange'], 
+        ['green'], 
+        ['green', 'orange'], 
+        ['green', 'red'], 
+        ['green', 'red', 'orange'], 
+        ['blue'], 
+        ['blue', 'orange'], 
+        ['blue', 'red'], 
+        ['blue', 'red', 'orange'], 
+        ['blue', 'green'], 
+        ['blue', 'green', 'orange'], 
+        ['blue', 'green', 'red'], 
+        ['blue', 'green', 'red', 'orange']
+    ]
+    
+    assert combinations_list(test_list) == expected_output
+    print("Test passed successfully!")
+```

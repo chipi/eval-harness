@@ -1,0 +1,47 @@
+```python
+def odd_length_sum(arr):
+    """
+    Return the sum of all odd-length subarrays of arr.
+
+    Example:
+        [1, 2, 4]
+        Odd-length subarrays are:
+        [1] -> 1
+        [2] -> 2
+        [4] -> 4
+        [1,2,4] -> 7
+        Total = 14
+    """
+    n = len(arr)
+    total = 0
+
+    # For each element arr[i], count how many odd-length subarrays include it.
+    for i, x in enumerate(arr):
+        left_choices = i + 1
+        right_choices = n - i
+
+        # Number of subarrays containing arr[i] = left_choices * right_choices
+        # We need only those with odd length.
+        # An element is included in an odd-length subarray when:
+        # (number of elements chosen on left + number chosen on right + 1) is odd
+        # which means left + right is even.
+        odd_count = 0
+
+        # Count pairs (l, r) where l in [0, left_choices-1], r in [0, right_choices-1]
+        # and l + r is even.
+        # This can be computed by parity counts.
+        left_even = (left_choices + 1) // 2
+        left_odd = left_choices // 2
+        right_even = (right_choices + 1) // 2
+        right_odd = right_choices // 2
+
+        odd_count = left_even * right_even + left_odd * right_odd
+        total += x * odd_count
+
+    return total
+
+
+if __name__ == "__main__":
+    assert odd_length_sum([1, 2, 4]) == 14
+    print("All tests passed.")
+```

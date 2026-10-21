@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem by counting the number of possible unordered pairs where both elements are unequal:
+
+```python
+"""
+Function to count the number of possible unordered pairs where both elements are unequal.
+
+The approach is:
+1. Calculate the total number of possible unordered pairs (n choose 2) = n*(n-1)/2
+2. Subtract the number of pairs where elements are equal (count of each duplicate element choose 2)
+3. The result is the count of pairs with unequal elements
+"""
+
+def count_Pairs(lst, n):
+    from collections import Counter
+
+    # Count the frequency of each element
+    freq = Counter(lst)
+
+    # Calculate total possible unordered pairs
+    total_pairs = n * (n - 1) // 2
+
+    # Calculate pairs with equal elements
+    equal_pairs = sum(v * (v - 1) // 2 for v in freq.values())
+
+    # The result is total pairs minus equal pairs
+    return total_pairs - equal_pairs
+
+# Test case
+assert count_Pairs([1, 2, 1], 3) == 2
+```
+
+This solution:
+1. Uses `collections.Counter` to count frequencies of each element
+2. Calculates the total number of possible unordered pairs (n choose 2)
+3. Calculates the number of pairs where elements are equal (for each duplicate value)
+4. Returns the difference between total pairs and equal pairs
+
+The test case `assert count_Pairs([1,2,1],3) == 2` passes because:
+- Total pairs: 3*2/2 = 3
+- Equal pairs: (2*1/2) = 1 (from the two 1s)
+- Unequal pairs: 3 - 1 = 2

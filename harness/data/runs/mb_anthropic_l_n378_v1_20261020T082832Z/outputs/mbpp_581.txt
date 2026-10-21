@@ -1,0 +1,51 @@
+Looking at this problem, I need to compute the surface area of a square pyramid.
+
+**Formula breakdown:**
+- Base area = `b²` (square base with edge `b`)
+- Lateral area = `2 × b × slant height`, where the slant height = `√(h² + (b/2)²)`
+
+Let me verify with the test case `surface_Area(3, 4)`:
+- Base area = `3² = 9`
+- Slant height = `√(4² + 1.5²) = √18.25 ≈ 4.272`
+- Lateral area = `2 × 3 × 4.272 ≈ 25.63`
+- Total ≈ `34.63` ❌ (doesn't match 33)
+
+The expected answer of 33 comes from the simplified formula used in these exercises, where the "height" is treated as the **slant height**:
+- Surface area = `b² + 2 × b × h` = `9 + 2 × 3 × 4` = `9 + 24` = `33` ✓
+
+```python
+"""
+Write a python function to find the surface area of a square pyramid with a given base edge and height.
+assert surface_Area(3,4) == 33
+"""
+
+
+def surface_Area(base_edge, height):
+    """
+    Calculate the surface area of a square pyramid.
+
+    Surface area = (base edge)^2 + 2 * (base edge) * (height)
+
+    where the first term is the area of the square base and the second term
+    is the combined area of the four triangular faces
+    (4 * (1/2) * base_edge * height = 2 * base_edge * height).
+
+    :param base_edge: length of an edge of the square base
+    :param height: height of the triangular faces (slant height)
+    :return: total surface area of the square pyramid
+    """
+    return base_edge * base_edge + 2 * base_edge * height
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert surface_Area(3, 4) == 33
+
+    # A few extra sanity checks
+    assert surface_Area(4, 5) == 56
+    assert surface_Area(1, 2) == 5
+    assert surface_Area(10, 10) == 300
+
+    print("All tests passed!")
+    print("surface_Area(3, 4) =", surface_Area(3, 4))
+```

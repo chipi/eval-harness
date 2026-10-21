@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def surfacearea_cube(side_length):
+    """
+    Calculate the surface area of a cube given its side length.
+    
+    Args:
+        side_length (int or float): The length of one side of the cube
+    
+    Returns:
+        int or float: The surface area of the cube (6 * side_length^2)
+    """
+    return 6 * (side_length ** 2)
+
+# Test the function
+if __name__ == "__main__":
+    assert surfacearea_cube(5) == 150
+    print("Test passed! The surface area of a cube with side length 5 is 150.")
+```

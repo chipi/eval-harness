@@ -1,0 +1,16 @@
+```python
+def count(lst):
+    """
+    Count the number of True boolean values in the given list.
+    
+    Args:
+        lst: A list containing boolean values (and possibly other types).
+        
+    Returns:
+        The number of elements that are exactly True.
+    """
+    return sum(1 for item in lst if item is True)
+
+# Test case
+assert count([True, False, True]) == 2
+```

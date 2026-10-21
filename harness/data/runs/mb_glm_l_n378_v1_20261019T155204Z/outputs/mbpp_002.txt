@@ -1,0 +1,19 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Finds the shared elements between two lists (or tuples).
+    
+    Args:
+        list1: The first list or tuple.
+        list2: The second list or tuple.
+        
+    Returns:
+        A list of elements that are present in both list1 and list2.
+    """
+    return list(set(list1) & set(list2))
+
+# Example assertion based on the problem description
+if __name__ == "__main__":
+    assert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))
+    print("Assertion passed!")
+```

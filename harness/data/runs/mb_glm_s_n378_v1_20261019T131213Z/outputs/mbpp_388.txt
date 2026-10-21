@@ -1,0 +1,59 @@
+```python
+def highest_Power_of_2(n: int) -> int:
+    """
+    Finds the highest power of 2 that is less than or equal to n.
+
+    This function uses a bit manipulation trick. The binary representation of a
+    number that is a power of 2 (e.g., 8 is 1000) has a single '1' bit.
+    The highest power of 2 less than or equal to 'n' will have its single '1'
+    bit in the same position as the leftmost '1' bit of 'n'.
+
+    The expression `n |= n >> 1` propagates the leftmost '1' bit to all
+    positions to its right. Repeating this for bit lengths up to 32 (for
+    a 32-bit integer) fills all bits from the leftmost '1' to the end.
+    Finally, adding 1 to this number and performing a right shift by 1
+    effectively isolates the original leftmost '1' bit, giving the desired power of 2.
+
+    Args:
+        n: A non-negative integer.
+
+    Returns:
+        The highest power of 2 that is less than or equal to n.
+        Returns 0 if n is 0.
+
+    Examples:
+        >>> highest_Power_of_2(10)
+        8
+        >>> highest_Power_of_2(1)
+        1
+        >>> highest_Power_of_2(0)
+        0
+        >>> highest_Power_of_2(1024)
+        1024
+    """
+    if n <= 0:
+        return 0
+    
+    # This operation propagates the leftmost set bit to all lower bits.
+    # For example, if n is 10 (binary 1010), after this it becomes 1111 (15).
+    n |= n >> 1
+    n |= n >> 2
+    n |= n >> 4
+    n |= n >> 8
+    n |= n >> 16
+    
+    # At this point, n is of the form 2^k - 1. Adding 1 gives 2^k.
+    # Right-shifting by 1 gives 2^(k-1), which is the original highest power of 2.
+    return (n + 1) >> 1
+
+# Example usage and assertions
+if __name__ == "__main__":
+    assert highest_Power_of_2(10) == 8
+    assert highest_Power_of_2(1) == 1
+    assert highest_Power_of_2(0) == 0
+    assert highest_Power_of_2(1024) == 1024
+    assert highest_Power_of_2(1023) == 512
+    assert highest_Power_of_2(513) == 512
+    
+    print("All assertions passed successfully!")
+```

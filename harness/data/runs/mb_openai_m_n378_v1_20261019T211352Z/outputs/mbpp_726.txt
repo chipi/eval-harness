@@ -1,0 +1,25 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function that takes as input a tuple of numbers (t_1,...,t_{N+1})
+and returns a tuple of length N where the i-th element is t_i * t_{i+1}.
+"""
+
+def multiply_elements(numbers):
+    """
+    Return a tuple containing the product of each pair of adjacent elements.
+
+    Example:
+        multiply_elements((1, 5, 7, 8, 10)) -> (5, 35, 56, 80)
+    """
+    return tuple(numbers[i] * numbers[i + 1] for i in range(len(numbers) - 1))
+
+
+if __name__ == "__main__":
+    assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+    assert multiply_elements((2, 3)) == (6,)
+    assert multiply_elements((4,)) == ()
+    assert multiply_elements(()) == ()
+
+    print("All tests passed.")
+```

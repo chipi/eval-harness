@@ -1,0 +1,26 @@
+```python
+def eulerian_num(n, m):
+    # Initialize a 2D array with all values as 0
+    eulerian = [[0 for x in range(m+1)] for y in range(n+1)]
+
+    # Base case: a(0, 0) = 1
+    eulerian[0][0] = 1
+
+    # Fill up the 2D array in a bottom-up manner
+    for i in range(1, n+1):
+        for j in range(min(i, m)+1):
+            # For each cell, add the value from the left and top cells
+            eulerian[i][j] = eulerian[i-1][j] + eulerian[i][j-1]
+            if j < i:
+                eulerian[i][j] += eulerian[i-1][j-1]
+
+    # Return the value at the bottom-right corner
+    return eulerian[n][m]
+
+# Test cases
+assert eulerian_num(3, 1) == 4
+assert eulerian_num(4, 2) == 14
+assert eulerian_num(5, 3) == 42
+assert eulerian_num(6, 4) == 122
+assert eulerian_num(7, 5) == 442
+```

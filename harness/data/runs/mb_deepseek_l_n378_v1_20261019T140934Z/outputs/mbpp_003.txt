@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_not_prime(n):
+    """
+    Identify non-prime numbers.
+    Returns True if the number is not prime, False if it is prime.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        bool: True if n is not prime, False if n is prime
+    """
+    # Handle edge cases
+    if n <= 1:
+        return True  # Numbers less than or equal to 1 are not prime
+    
+    if n == 2:
+        return False  # 2 is prime
+    
+    if n % 2 == 0:
+        return True  # Even numbers greater than 2 are not prime
+    
+    # Check odd divisors up to square root of n
+    for i in range(3, int(n ** 0.5) + 1, 2):
+        if n % i == 0:
+            return True  # Found a divisor, so n is not prime
+    
+    return False  # No divisors found, so n is prime
+
+
+# Test the function
+assert is_not_prime(2) == False
+print("Test passed! is_not_prime(2) returns False as expected.")
+```

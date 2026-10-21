@@ -1,0 +1,32 @@
+```python
+def count_integer(lst):
+    """
+    Returns the number of integer elements in a given list.
+    
+    Args:
+        lst (list): A list containing various data types.
+        
+    Returns:
+        int: The count of elements that are of type int.
+    """
+    count = 0
+    for element in lst:
+        # We use type() instead of isinstance() if we want to strictly 
+        # exclude booleans, as isinstance(True, int) returns True.
+        if type(element) is int:
+            count += 1
+    return count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert count_integer([1, 2, 'abc', 1.2]) == 2
+    
+    # Additional test cases
+    assert count_integer([1, 'a', 2, 3, 4.5]) == 3
+    assert count_integer(['a', 'b', 'c']) == 0
+    assert count_integer([]) == 0
+    assert count_integer([True, False, 1, 2]) == 2  # Booleans are technically ints in Python, 
+                                                   # but type() check handles them as distinct.
+    
+    print("All tests passed!")
+```

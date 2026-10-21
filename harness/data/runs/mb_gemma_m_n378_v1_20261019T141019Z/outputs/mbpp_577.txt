@@ -1,0 +1,43 @@
+To find the last digit of a factorial, we can observe a pattern:
+1. $0! = 1$ (Last digit: 1)
+2. $1! = 1$ (Last digit: 1)
+3. $2! = 2$ (Last digit: 2)
+4. $3! = 6$ (Last digit: 6)
+5. $4! = 24$ (Last digit: 4)
+6. $5! = 120$ (Last digit: 0)
+
+For any $n \ge 5$, the factorial will always end in $0$ because the product will include both a $2$ and a $5$ ($2 \times 5 = 10$). Therefore, we only need to calculate the factorial for numbers less than 5.
+
+Here is the self-contained Python script:
+
+```python
+def last_Digit_Factorial(n):
+    """
+    Returns the last digit of the factorial of a given number n.
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers.")
+    
+    # For n >= 5, the factorial always ends in 0 (because it contains 2 * 5)
+    if n >= 5:
+        return 0
+    
+    # For n < 5, we can calculate the factorial directly
+    result = 1
+    for i in range(1, n + 1):
+        result *= i
+        
+    return result % 10
+
+if __name__ == "__main__":
+    # Test cases
+    assert last_Digit_Factorial(0) == 1  # 0! = 1
+    assert last_Digit_Factorial(1) == 1  # 1! = 1
+    assert last_Digit_Factorial(2) == 2  # 2! = 2
+    assert last_Digit_Factorial(3) == 6  # 3! = 6
+    assert last_Digit_Factorial(4) == 4  # 4! = 24
+    assert last_Digit_Factorial(5) == 0  # 5! = 120
+    assert last_Digit_Factorial(10) == 0 # 10! = 3628800
+    
+    print("All assertions passed!")
+```

@@ -1,0 +1,14 @@
+```python
+import re
+
+
+def extract_quotation(text):
+    """Return the text between each pair of double quotation marks."""
+    return re.findall(r'"([^"]*)"', text)
+
+
+if __name__ == "__main__":
+    assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == [
+        "A53", "multi", "Processor"
+    ]
+```

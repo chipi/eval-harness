@@ -1,0 +1,36 @@
+```python
+def eulerian_num(n, m):
+    """
+    Calculates the Eulerian number a(n, m).
+
+    The Eulerian number a(n, m) is the number of permutations of the numbers 1 to n
+    such that there are exactly m ascents. An ascent is a position i such that
+    the i-th number is less than the (i+1)-th number.
+
+    Args:
+        n: The number of elements in the permutation.
+        m: The number of ascents in the permutation.
+
+    Returns:
+        The Eulerian number a(n, m).
+    """
+
+    if n == 0:
+        return 0 if m > 0 else 1
+    if m < 0 or m >= n:
+        return 0
+    if n == 1:
+        return 1 if m == 0 else 0
+
+    dp = [[0 for _ in range(m + 1)] for _ in range(n + 1)]
+
+    dp[0][0] = 1
+
+    for i in range(1, n + 1):
+        for j in range(m + 1):
+            dp[i][j] = (i - j) * dp[i - 1][j] + (j + 1) * dp[i - 1][j - 1]
+
+    return dp[n][m]
+
+assert eulerian_num(3, 1) == 4
+```

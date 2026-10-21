@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_smaller(tuple1, tuple2):
+    """
+    Check if each element of the second tuple is smaller than its corresponding element in the first tuple.
+
+    Args:
+        tuple1: First tuple of numbers
+        tuple2: Second tuple of numbers (must be same length as tuple1)
+
+    Returns:
+        bool: True if all elements in tuple2 are smaller than corresponding elements in tuple1, False otherwise
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must be of the same length")
+
+    for a, b in zip(tuple1, tuple2):
+        if b >= a:
+            return False
+    return True
+
+# Test case
+assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `check_smaller` that takes two tuples as input
+2. First checks if the tuples are of equal length (raises an error if not)
+3. Uses `zip` to iterate through corresponding elements of both tuples
+4. Returns False immediately if any element in the second tuple is not smaller than the corresponding element in the first tuple
+5. Returns True only if all elements in the second tuple are smaller
+6. Includes the provided test case and a success message
+
+The function will return False for the given test case because 2 is not smaller than 1, 3 is not smaller than 2, and 4 is not smaller than 3.

@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def Find_Max(lst):
+    """
+    Finds the element of a list having maximum length.
+
+    Args:
+        lst: A list of elements (can be lists or other iterables)
+
+    Returns:
+        The element with the maximum length in the input list
+    """
+    if not lst:  # Handle empty list case
+        return None
+    return max(lst, key=len)
+
+# Test case
+assert Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']]) == ['A', 'B', 'C']
+
+# Additional test cases
+assert Find_Max([]) is None
+assert Find_Max([[], [1], [1, 2]]) == [1, 2]
+assert Find_Max(['a', 'ab', 'abc']) == 'abc'
+```
+
+This solution:
+1. Uses Python's built-in `max()` function with the `key=len` parameter to find the element with maximum length
+2. Handles the edge case of an empty input list by returning None
+3. Includes the required test case plus additional test cases for verification
+4. Works with any iterable elements in the list (not just lists)

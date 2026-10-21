@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_lower(string):
+    """
+    Convert the given string to lower case.
+    
+    Args:
+        string (str): The input string to convert.
+    
+    Returns:
+        str: The lower case version of the input string.
+    """
+    return string.lower()
+
+
+# Test the function
+assert is_lower("InValid") == "invalid"
+assert is_lower("HELLO WORLD") == "hello world"
+assert is_lower("Already Lower") == "already lower"
+assert is_lower("123ABC") == "123abc"
+assert is_lower("") == ""
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `is_lower` takes a string as input and uses Python's built-in `str.lower()` method to convert all uppercase characters to lowercase.
+- The `str.lower()` method returns a new string with all cased characters converted to lowercase, leaving non-alphabetic characters (like digits and symbols) unchanged.
+- The `assert` statements verify that the function behaves correctly for various inputs, including mixed case, all uppercase, already lowercase, alphanumeric, and empty strings.

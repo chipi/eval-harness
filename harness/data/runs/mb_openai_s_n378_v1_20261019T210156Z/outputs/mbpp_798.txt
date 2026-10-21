@@ -1,0 +1,13 @@
+```python
+def _sum(arr):
+    """Return the sum of all numbers in the input array."""
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+
+# Test
+assert _sum([1, 2, 3]) == 6
+print("All tests passed.")
+```

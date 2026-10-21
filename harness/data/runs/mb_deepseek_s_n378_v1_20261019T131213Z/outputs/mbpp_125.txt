@@ -1,0 +1,29 @@
+```python
+def find_length(s: str) -> int:
+    """
+    Returns the maximum difference (number of 0s - number of 1s) in any substring
+    of the given binary string.
+    """
+    # We treat '0' as +1 and '1' as -1, then find the maximum subarray sum.
+    # This is Kadane's algorithm.
+    max_diff = 0
+    current_sum = 0
+    
+    for char in s:
+        # Convert character to value: '0' -> 1, '1' -> -1
+        val = 1 if char == '0' else -1
+        
+        # Kadane's update: either start new subarray or extend existing one
+        current_sum = max(val, current_sum + val)
+        max_diff = max(max_diff, current_sum)
+    
+    return max_diff
+
+
+# Test the function with the given example
+if __name__ == "__main__":
+    result = find_length("11000010001")
+    print(result)  # Expected output: 6
+    assert result == 6, f"Test failed: expected 6, got {result}"
+    print("Test passed.")
+```

@@ -1,0 +1,29 @@
+```python
+def count_list(lists):
+    """
+    Count the number of lists in a given list of lists.
+    
+    Args:
+        lists: A list containing multiple sublists
+        
+    Returns:
+        The number of sublists in the given list
+        
+    Example:
+        >>> count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]])
+        4
+    """
+    return len(lists)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+    
+    # Additional test cases
+    assert count_list([]) == 0
+    assert count_list([[]]) == 1
+    assert count_list([[1], [2], [3]]) == 3
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,50 @@
+Here's a self-contained Python script that checks if two lists follow the same pattern, as described in the problem:
+
+```python
+def is_samepatterns(words, patterns):
+    """
+    Check if the sequence of words follows the same pattern as the sequence of patterns.
+
+    Args:
+        words: List of words to check
+        patterns: List of pattern elements
+
+    Returns:
+        bool: True if the patterns match, False otherwise
+    """
+    if len(words) != len(patterns):
+        return False
+
+    word_to_pattern = {}
+    pattern_to_word = {}
+
+    for word, pattern in zip(words, patterns):
+        # Check word to pattern mapping
+        if word in word_to_pattern:
+            if word_to_pattern[word] != pattern:
+                return False
+        else:
+            word_to_pattern[word] = pattern
+
+        # Check pattern to word mapping
+        if pattern in pattern_to_word:
+            if pattern_to_word[pattern] != word:
+                return False
+        else:
+            pattern_to_word[pattern] = word
+
+    return True
+
+# Test case
+assert is_samepatterns(["red","green","green"], ["a", "b", "b"]) == True
+```
+
+This solution:
+1. First checks if the lists are the same length
+2. Creates two dictionaries to maintain bidirectional mappings between words and patterns
+3. For each word-pattern pair:
+   - Verifies the word maps to the same pattern as before
+   - Verifies the pattern maps to the same word as before
+4. Returns True only if all mappings are consistent
+
+The test case provided in the problem passes with this implementation. The function will return True for lists that follow the same pattern (like the example) and False for those that don't.

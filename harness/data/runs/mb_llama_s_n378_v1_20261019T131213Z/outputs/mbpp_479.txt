@@ -1,0 +1,48 @@
+```python
+def first_digit(n):
+    """
+    This function finds the first digit of a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The first digit of the input number.
+    """
+    return int(str(abs(n))[0])
+
+# Test the function
+assert first_digit(123) == 1
+assert first_digit(-123) == 1
+assert first_digit(5) == 5
+assert first_digit(12345) == 1
+```
+
+This script defines a function `first_digit(n)` that converts the absolute value of the input number to a string, extracts the first character, converts it back to an integer, and returns it. The `assert` statements at the end are used to test the function with different inputs. 
+
+Alternatively, you can solve this problem mathematically without converting the number to a string:
+
+```python
+def first_digit(n):
+    """
+    This function finds the first digit of a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The first digit of the input number.
+    """
+    n = abs(n)
+    while n >= 10:
+        n //= 10
+    return n
+
+# Test the function
+assert first_digit(123) == 1
+assert first_digit(-123) == 1
+assert first_digit(5) == 5
+assert first_digit(12345) == 1
+```
+
+This version of the function works by repeatedly dividing the input number by 10 until it is less than 10, effectively removing the last digit each time. The final result is the first digit of the original number.

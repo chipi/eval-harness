@@ -1,0 +1,29 @@
+```python
+import re
+
+def start_withp(words):
+    """
+    Return the first two words from the given list that start with the letter 'p'
+    (case-insensitive).
+
+    Example:
+    >>> start_withp(["Python PHP", "Java JavaScript", "c c++"])
+    ('Python', 'PHP')
+    """
+    result = []
+
+    for item in words:
+        for word in re.findall(r"\b\w+\b", item):
+            if word.lower().startswith("p"):
+                result.append(word)
+                if len(result) == 2:
+                    return tuple(result)
+
+    return tuple(result)
+
+
+# Test
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+
+print("All tests passed.")
+```

@@ -1,0 +1,26 @@
+```python
+def sum(a, b):
+    """
+    Return the sum of all common divisors of two positive integers a and b.
+    Example:
+        sum(10, 15) -> 1 + 5 = 6
+    """
+    # Common divisors of a and b are exactly the divisors of gcd(a, b)
+    def gcd(x, y):
+        while y:
+            x, y = y, x % y
+        return x
+
+    g = gcd(a, b)
+    total = 0
+    for i in range(1, int(g ** 0.5) + 1):
+        if g % i == 0:
+            total += i
+            if i != g // i:
+                total += g // i
+    return total
+
+
+# Given test
+assert sum(10, 15) == 6
+```

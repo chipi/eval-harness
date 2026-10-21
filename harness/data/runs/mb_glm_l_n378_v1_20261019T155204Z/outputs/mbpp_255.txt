@@ -1,0 +1,23 @@
+```python
+import itertools
+
+def combinations_colors(colors, n):
+    """
+    Generates all combinations (with repetition) of the elements of the list 
+    and returns a list with a tuple for each combination.
+    
+    Args:
+    colors (list): A list of elements (e.g., strings representing colors).
+    n (int): The length of each combination.
+    
+    Returns:
+    list: A list of tuples, where each tuple is a combination of length n.
+    """
+    # itertools.combinations_with_replacement generates combinations with repetition
+    return list(itertools.combinations_with_replacement(colors, n))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+    print("Test passed successfully!")
+```

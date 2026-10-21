@@ -1,0 +1,31 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def is_octagonal(n):
+    """
+    Returns the nth octagonal number.
+    
+    The nth octagonal number is given by the formula:
+    P_n = n * (3n - 2)
+    
+    Args:
+        n (int): The position in the sequence (1-indexed)
+    
+    Returns:
+        int: The nth octagonal number
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return n * (3 * n - 2)
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given example
+    assert is_octagonal(5) == 65
+    print("Test passed: is_octagonal(5) == 65")
+    
+    # Print first few octagonal numbers for reference
+    print("First 10 octagonal numbers:")
+    for i in range(1, 11):
+        print(f"P_{i} = {is_octagonal(i)}")
+```

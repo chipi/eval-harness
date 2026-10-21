@@ -1,0 +1,6 @@
+```python
+def lateralsurface_cube(side):
+    return 4 * side * side
+
+assert lateralsurface_cube(5) == 100
+```

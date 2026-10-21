@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_samepatterns(colors, patterns):
+    """
+    Check if the patterns array follows the same sequence as the colors array.
+    
+    Args:
+        colors: List of strings representing colors
+        patterns: List of strings representing patterns
+    
+    Returns:
+        bool: True if both arrays follow the same pattern, False otherwise
+    """
+    if len(colors) != len(patterns):
+        return False
+    
+    # Create mappings for both arrays
+    color_map = {}
+    pattern_map = {}
+    
+    for i in range(len(colors)):
+        color = colors[i]
+        pattern = patterns[i]
+        
+        # Check if color has been seen before
+        if color in color_map:
+            # If color was seen before, the corresponding pattern should match
+            if color_map[color] != pattern:
+                return False
+        else:
+            # First time seeing this color
+            color_map[color] = pattern
+        
+        # Check if pattern has been seen before
+        if pattern in pattern_map:
+            # If pattern was seen before, the corresponding color should match
+            if pattern_map[pattern] != color:
+                return False
+        else:
+            # First time seeing this pattern
+            pattern_map[pattern] = color
+    
+    return True
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    
+    # Additional test cases
+    assert is_samepatterns(["red", "green", "red"], ["a", "b", "a"]) == True
+    assert is_samepatterns(["red", "green", "red"], ["a", "b", "b"]) == False
+    assert is_samepatterns(["red", "red", "red"], ["a", "a", "a"]) == True
+    assert is_samepatterns(["red", "green", "blue"], ["a", "b", "c"]) == True
+    assert is_samepatterns(["red", "green"], ["a", "b", "c"]) == False
+    
+    print("All tests passed!")
+```
+
+The function works by:
+1. First checking if both arrays have the same length
+2. Creating two dictionaries to track mappings between colors and patterns
+3. For each position, checking if the current color-pattern pair is consistent with previously seen pairs
+4. Returning `True` only if all pairs are consistent throughout both arrays

@@ -1,0 +1,42 @@
+```python
+def find_Parity(n: int) -> bool:
+    """
+    Determine whether the parity of a given number is odd.
+    
+    Parity refers to whether the number of 1-bits in the binary representation
+    of the number is odd or even. Returns True if the parity is odd (odd number
+    of 1-bits), False if the parity is even.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        True if the number has odd parity (odd number of 1-bits), False otherwise.
+    """
+    # Count the number of 1-bits in the binary representation
+    count = 0
+    num = abs(n)  # Handle negative numbers by taking absolute value
+    while num > 0:
+        count += num & 1
+        num >>= 1
+    
+    # Return True if the count of 1-bits is odd
+    return count % 2 == 1
+
+
+# Test cases
+if __name__ == "__main__":
+    assert find_Parity(12) == False, f"Expected False for 12, got {find_Parity(12)}"
+    # 12 in binary is 1100, which has 2 ones (even parity) -> False
+    
+    assert find_Parity(7) == True, f"Expected True for 7, got {find_Parity(7)}"
+    # 7 in binary is 111, which has 3 ones (odd parity) -> True
+    
+    assert find_Parity(0) == False, f"Expected False for 0, got {find_Parity(0)}"
+    # 0 in binary is 0, which has 0 ones (even parity) -> False
+    
+    assert find_Parity(1) == True, f"Expected True for 1, got {find_Parity(1)}"
+    # 1 in binary is 1, which has 1 one (odd parity) -> True
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,11 @@
+```python
+def count_first_elements(items):
+    """Count the elements before the first tuple in items."""
+    for index, item in enumerate(items):
+        if isinstance(item, tuple):
+            return index
+    return len(items)
+
+
+assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+```

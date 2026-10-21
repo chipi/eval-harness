@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem by finding the union of elements from two given tuples and returning them in sorted order:
+
+```python
+def union_elements(tuple1, tuple2):
+    """
+    Find the union of elements from two tuples and return them in sorted order.
+
+    Args:
+        tuple1 (tuple): First input tuple
+        tuple2 (tuple): Second input tuple
+
+    Returns:
+        tuple: Sorted tuple containing the union of elements from both input tuples
+    """
+    # Convert tuples to sets to find union, then back to sorted tuple
+    union_set = set(tuple1).union(set(tuple2))
+    return tuple(sorted(union_set))
+
+# Test the function
+assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+```
+
+This solution:
+1. Takes two tuples as input
+2. Converts them to sets to efficiently find the union of elements
+3. Converts the result back to a tuple and sorts it
+4. Returns the sorted tuple
+5. Includes the assertion test from the problem statement
+
+The function will work with any two tuples containing comparable elements (elements that can be sorted).

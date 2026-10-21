@@ -1,0 +1,17 @@
+```python
+def two_unique_nums(nums):
+    count = {}
+    for num in nums:
+        if num in count:
+            count[num] += 1
+        else:
+            count[num] = 1
+    return [num for num, freq in count.items() if freq == 1]
+
+def main():
+    nums = [1, 2, 3, 2, 3, 4, 5]
+    print(two_unique_nums(nums))  # Output: [1, 4, 5]
+
+if __name__ == "__main__":
+    main()
+```

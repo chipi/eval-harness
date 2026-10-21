@@ -1,0 +1,17 @@
+```python
+def is_Diff(n):
+    """
+    Checks if a number is divisible by 11.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is divisible by 11, False otherwise.
+    """
+    return n % 11 == 0
+
+# Example usage:
+print(is_Diff(12345))  # Output: False
+print(is_Diff(121))    # Output: True
+```

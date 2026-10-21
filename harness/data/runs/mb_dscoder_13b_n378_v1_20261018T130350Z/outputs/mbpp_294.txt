@@ -1,0 +1,10 @@
+```python
+def max_val(lst):
+    """
+    Write a function to find the maximum value in a given heterogeneous list.
+    """
+    return max(lst)
+
+# Testing the function
+assert max_val(['Python', 3, 2, 4, 5, 'version'])==5
+```

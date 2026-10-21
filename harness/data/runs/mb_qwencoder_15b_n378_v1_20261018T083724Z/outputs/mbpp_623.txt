@@ -1,0 +1,18 @@
+```python
+def nth_nums(nums, n):
+    """
+    Compute the n-th power of each number in a list.
+
+    Args:
+    nums (list): A list of numbers.
+    n (int): The power to which each number should be raised.
+
+    Returns:
+    list: A new list containing the n-th powers of the original numbers.
+    """
+    return [num ** n for num in nums]
+
+# Test cases to verify the correctness of the solution
+assert nth_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10],2) == [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+```
+

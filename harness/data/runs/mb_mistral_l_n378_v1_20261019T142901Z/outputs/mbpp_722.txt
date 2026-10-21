@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the given problem:
+
+```python
+def filter_data(students, min_height, min_weight):
+    """
+    Filters students whose height and weight are both above the given minimums.
+
+    Args:
+        students: Dictionary with student names as keys and (height, weight) tuples as values
+        min_height: Minimum height threshold
+        min_weight: Minimum weight threshold
+
+    Returns:
+        Dictionary containing only students who meet both height and weight requirements
+    """
+    return {
+        name: (height, weight)
+        for name, (height, weight) in students.items()
+        if height > min_height and weight > min_weight
+    }
+
+# Test case
+assert filter_data(
+    {
+        'Cierra Vega': (6.2, 70),
+        'Alden Cantrell': (5.9, 65),
+        'Kierra Gentry': (6.0, 68),
+        'Pierre Cox': (5.8, 66)
+    },
+    6.0,
+    70
+) == {'Cierra Vega': (6.2, 70)}
+```
+
+This solution:
+1. Uses a dictionary comprehension to filter the students
+2. Checks both height and weight conditions (using `>` to be above the minimum)
+3. Returns a new dictionary with only the qualifying students
+4. Includes the provided test case as an assertion to verify correctness

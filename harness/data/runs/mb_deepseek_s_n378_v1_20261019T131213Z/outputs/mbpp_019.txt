@@ -1,0 +1,25 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def test_duplicate(arr):
+    """
+    Returns True if the array contains any duplicate elements, otherwise False.
+    """
+    seen = set()
+    for num in arr:
+        if num in seen:
+            return True
+        seen.add(num)
+    return False
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test
+    assert test_duplicate([1, 2, 3, 4, 5]) == False
+    # Additional tests
+    assert test_duplicate([1, 2, 3, 4, 5, 1]) == True
+    assert test_duplicate([]) == False
+    assert test_duplicate([7]) == False
+    assert test_duplicate([-1, 0, 1, -1]) == True
+    print("All tests passed.")
+```

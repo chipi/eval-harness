@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def round_and_sum(numbers):
+    rounded_numbers = [round(num) for num in numbers]
+    total_sum = sum(rounded_numbers)
+    return total_sum * len(numbers)
+
+# Test the function
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `round_and_sum` that:
+   - Rounds each number in the input list using a list comprehension
+   - Calculates the sum of the rounded numbers
+   - Returns the sum multiplied by the length of the list
+2. Includes the test case from the problem statement
+3. Prints a confirmation message if the test passes
+
+The function will work for any list of numbers, not just the specific test case provided.

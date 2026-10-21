@@ -1,0 +1,23 @@
+```python
+def max_run_uppercase(s: str) -> int:
+    """
+    Return the length of the longest contiguous run of uppercase letters in s.
+    """
+    max_run = 0
+    current_run = 0
+
+    for ch in s:
+        if ch.isupper():
+            current_run += 1
+            if current_run > max_run:
+                max_run = current_run
+        else:
+            current_run = 0
+
+    return max_run
+
+
+if __name__ == "__main__":
+    assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+    print("All tests passed.")
+```

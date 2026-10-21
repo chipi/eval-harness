@@ -1,0 +1,25 @@
+```python
+from datetime import datetime
+
+def change_date_format(date_str):
+    """
+    This function converts a date string from yyyy-mm-dd format to dd-mm-yyyy format.
+
+    Args:
+        date_str (str): The date string in yyyy-mm-dd format.
+
+    Returns:
+        str: The date string in dd-mm-yyyy format.
+    """
+    # Parse the input date string into a datetime object
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    
+    # Format the datetime object into the desired output format
+    output_date_str = date_obj.strftime("%d-%m-%Y")
+    
+    return output_date_str
+
+# Test the function
+assert change_date_format("2026-01-02") == '02-01-2026'
+print(change_date_format("2026-01-02"))  # Output: 02-01-2026
+```

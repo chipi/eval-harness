@@ -1,0 +1,21 @@
+```python
+def maximum(a, b):
+    """
+    This function returns the maximum of two numbers.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+
+    Returns:
+        int: The maximum of a and b.
+    """
+    if a >= b:
+        return a
+    else:
+        return b
+
+# Test the function
+assert maximum(5, 10) == 10
+print("Test passed.")
+```

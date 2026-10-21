@@ -1,0 +1,18 @@
+# The codeqwen15_7b arm served by vLLM on the DGX (GB10) instead of transformers. Same model,
+# revision, precision, prompt and token budget as arm_codeqwen15_7b_n378.yaml; the prompt is
+# rendered locally with the model's tokenizer and sent to /v1/completions, greedy.
+# Its own config_id: vLLM's greedy decoding is not bit-identical to transformers'.
+config_id: mb_vllm_codeqwen15_7b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: vllm
+  model: Qwen/CodeQwen1.5-7B-Chat
+  revision: 7b0cc3380fe815e6f08fe2f80c03e05a8b1883d8
+  precision: bf16
+  max_new_tokens: 768
+  base_url: http://dgx-llm-1:9100/v1
+  api_key_env: EVAL_VLLM_API_KEY
+  family: qwen-coder
+  price_tier: free
+  prompt_file: prompt.txt

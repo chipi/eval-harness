@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_Occurrence(input_tuple, elements_list):
+    """
+    Counts the occurrence of all elements in the list within the tuple.
+
+    Args:
+        input_tuple: A tuple containing elements to search through
+        elements_list: A list of elements to count occurrences of
+
+    Returns:
+        The total count of all specified elements in the tuple
+    """
+    count = 0
+    for element in elements_list:
+        count += input_tuple.count(element)
+    return count
+
+# Test case
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b']) == 3
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `count_Occurrence` that takes a tuple and a list as input
+2. Initializes a counter to 0
+3. For each element in the list, counts how many times it appears in the tuple and adds to the total
+4. Returns the total count
+5. Includes the provided test case with an assertion
+6. Prints a success message if the test passes
+
+The function works by leveraging the tuple's `count()` method to find occurrences of each element in the list, then summing these counts.

@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_tuples(tuples_list, k):
+    """
+    Find tuples which have all elements divisible by k from the given list of tuples.
+
+    Args:
+        tuples_list: List of tuples to check
+        k: The divisor to check against
+
+    Returns:
+        List of tuples where all elements are divisible by k
+    """
+    result = []
+    for t in tuples_list:
+        if all(element % k == 0 for element in t):
+            result.append(t)
+    return result
+
+# Test case
+assert find_tuples([(6, 24, 12), (7, 9, 6), (12, 18, 21)], 6) == [(6, 24, 12)]
+```
+
+The function works by:
+1. Iterating through each tuple in the input list
+2. Checking if all elements in the tuple are divisible by k (using the `all()` function with a generator expression)
+3. If all elements are divisible by k, adding the tuple to the result list
+4. Returning the list of qualifying tuples
+
+The test case verifies that the function correctly returns only the tuple where all elements are divisible by 6.

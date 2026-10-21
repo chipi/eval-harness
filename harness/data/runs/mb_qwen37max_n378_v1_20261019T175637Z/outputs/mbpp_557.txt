@@ -1,0 +1,9 @@
+```python
+def toggle_string(s):
+    """Toggle the case of all characters in a string."""
+    return s.swapcase()
+
+
+# Test
+assert toggle_string("Python") == "pYTHON"
+```

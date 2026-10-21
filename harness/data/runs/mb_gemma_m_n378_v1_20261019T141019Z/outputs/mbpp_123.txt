@@ -1,0 +1,53 @@
+```python
+def amicable_numbers_sum(limit):
+    """
+    Calculates the sum of all amicable numbers up to (but not including) the limit.
+    
+    An amicable number is a number that is part of an amicable pair. 
+    Two numbers a and b are amicable if the sum of proper divisors of a 
+    equals b, and the sum of proper divisors of b equals a (where a != b).
+    """
+    
+    def get_sum_of_divisors(n):
+        """Helper function to calculate the sum of proper divisors of n."""
+        if n < 2:
+            return 0
+        total = 1
+        for i in range(2, int(n**0.5) + 1):
+            if n % i == 0:
+                total += i
+                other_divisor = n // i
+                if other_divisor != i:
+                    total += other_divisor
+        return total
+
+    # Precompute the sum of divisors for all numbers up to the limit
+    # to avoid redundant calculations.
+    div_sums = [0] * (limit + 1)
+    for i in range(1, limit + 1):
+        div_sums[i] = get_sum_of_divisors(i)
+
+    amicable_sum = 0
+    for a in range(1, limit + 1):
+        b = div_sums[a]
+        # Check conditions:
+        # 1. b must be different from a
+        # 2. b must be within a range we can check (or we calculate its sum)
+        # 3. The sum of divisors of b must equal a
+        if a != b and b <= limit:
+            if div_sums[b] == a:
+                amicable_sum += a
+        elif a != b and b > limit:
+            # If b is outside our precomputed list, calculate it on the fly
+            if get_sum_of_divisors(b) == a:
+                amicable_sum += a
+                
+    return amicable_sum
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = amicable_numbers_sum(999)
+    print(f"Sum of amicable numbers up to 999: {result}")
+    assert result == 504
+    print("Assertion passed!")
+```

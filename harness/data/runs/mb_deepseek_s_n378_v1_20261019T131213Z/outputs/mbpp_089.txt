@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def closest_num(n):
+    """
+    Find the closest smaller number than n.
+    
+    Args:
+        n (int): The input number
+        
+    Returns:
+        int: The closest smaller number
+    """
+    if n <= 0:
+        return None  # No smaller number exists for non-positive integers
+    return n - 1
+
+# Test cases
+assert closest_num(11) == 10
+assert closest_num(1) == 0
+assert closest_num(100) == 99
+assert closest_num(5) == 4
+
+print("All tests passed!")
+```

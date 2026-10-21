@@ -1,0 +1,28 @@
+```python
+def max_sub_array_sum(arr, n):
+    """
+    Find the sum of the largest contiguous sublist in the given list.
+    
+    Args:
+        arr: List of integers
+        n: Length of the list (can be used to validate or limit search)
+    
+    Returns:
+        The maximum sum of any contiguous subarray
+    """
+    if not arr:
+        return 0
+    
+    # Kadane's algorithm
+    max_current = max_global = arr[0]
+    
+    for i in range(1, len(arr)):
+        max_current = max(arr[i], max_current + arr[i])
+        max_global = max(max_global, max_current)
+    
+    return max_global
+
+
+# Test case
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+```

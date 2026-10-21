@@ -1,0 +1,21 @@
+# The gemma_l arm on MBPP+. Same model, tier, price and settings as the arm of the same
+# name in every other experiment here; only the task differs. It gets EvalPlus's instruct
+# prompt (../prompt.txt, sha in the fingerprint) at temperature 0, and its reply is scored
+# by running the extracted function against MBPP's tests and EvalPlus's, in the sandbox.
+# max_tokens 2048 leaves a short function ample room; `truncated` records any reply
+# that hit it anyway.
+config_id: mb_gemma_l_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-gemma-31b
+  family: gemma
+  price_tier: large
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  usd_per_mtok_in: 0.1
+  usd_per_mtok_out: 0.2
+  prompt_file: prompt.txt
+  max_tokens: 2048

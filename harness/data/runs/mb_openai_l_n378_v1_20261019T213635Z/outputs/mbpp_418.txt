@@ -1,0 +1,8 @@
+```python
+def Find_Max(items):
+    """Return the element with the greatest length."""
+    return max(items, key=len)
+
+
+assert Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']]) == ['A', 'B', 'C']
+```

@@ -1,0 +1,15 @@
+```python
+def move_zero(nums):
+    """
+    Move all zeros to the end of the list while preserving the order of non-zero elements.
+    Returns a new list.
+    """
+    non_zero = [x for x in nums if x != 0]
+    zero_count = len(nums) - len(non_zero)
+    return non_zero + [0] * zero_count
+
+
+if __name__ == "__main__":
+    assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+    print("All tests passed.")
+```

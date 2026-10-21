@@ -1,0 +1,36 @@
+```python
+import math
+
+def even_binomial_Coeff_Sum(n):
+    """
+    This function calculates the sum of even index binomial coefficients.
+
+    Args:
+        n (int): A positive integer.
+
+    Returns:
+        int: The sum of even index binomial coefficients.
+
+    Raises:
+        ValueError: If n is not a positive integer.
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("Input must be a positive integer.")
+
+    # Use the Binomial Theorem to find the sum of all binomial coefficients
+    # (1 + 1)^n = 2^n = sum(C(n, k) for k in range(n+1))
+    # and the property that C(n, k) = C(n, n-k) to find the sum of even index coefficients
+    # (1 + 1)^n = sum(C(n, k) for k in range(n+1)) = sum(C(n, k) for k in range(n//2+1)) + sum(C(n, n-k) for k in range(n//2+1))
+    # = 2 * sum(C(n, k) for k in range(n//2+1)) if n is even
+    # = 2 * sum(C(n, k) for k in range((n-1)//2+1)) if n is odd
+    # and (1 - 1)^n = 0 = sum(C(n, k) * (-1)^k for k in range(n+1)) = sum(C(n, k) for k in range(n+1)) if k is even - sum(C(n, k) for k in range(n+1)) if k is odd
+    # = sum(C(n, k) for k in range(n+1)) if k is even - sum(C(n, k) for k in range(n+1)) if k is odd
+    # So, sum(C(n, k) for k in range(n+1)) if k is even = 2^(n-1)
+
+    return 2 ** (n - 1)
+
+# Test the function
+print(even_binomial_Coeff_Sum(4))  # Output: 8
+```
+
+You can run this script to test the function with different inputs. The function `even_binomial_Coeff_Sum(n)` takes an integer `n` as input and returns the sum of even index binomial coefficients. The function uses the properties of binomial coefficients and the Binomial Theorem to calculate the sum efficiently. It also includes error checking to ensure that the input is a positive integer.

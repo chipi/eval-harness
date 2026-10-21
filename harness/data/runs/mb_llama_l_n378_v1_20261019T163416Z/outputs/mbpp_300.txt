@@ -1,0 +1,9 @@
+```python
+import math
+
+def count_binary_seq(n):
+    return math.comb(2*n, n)
+
+# Test the function
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```

@@ -1,0 +1,10 @@
+```python
+def word_len(word):
+    return len(word) % 2 != 0
+
+# Test cases
+assert word_len("Hadoop") == False
+assert word_len("Python") == True
+assert word_len("") == False
+assert word_len(" ") == False
+```

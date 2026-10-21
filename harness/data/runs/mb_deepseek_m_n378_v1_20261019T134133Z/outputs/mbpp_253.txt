@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_integer(lst):
+    """
+    Returns the number of integer elements in a given list.
+    
+    Note: In Python, booleans are subclasses of integers, so we explicitly
+    exclude them to count only true integer values.
+    """
+    count = 0
+    for item in lst:
+        if isinstance(item, int) and not isinstance(item, bool):
+            count += 1
+    return count
+
+
+# Test cases
+if __name__ == "__main__":
+    assert count_integer([1, 2, 'abc', 1.2]) == 2
+    assert count_integer([1, 2, 3, 4, 5]) == 5
+    assert count_integer(['a', 'b', 1.5, 2.5]) == 0
+    assert count_integer([]) == 0
+    assert count_integer([True, False, 1, 2]) == 2  # booleans excluded
+    assert count_integer([-1, 0, 1, 2.0, '3']) == 3
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function iterates through each element in the list.
+- It uses `isinstance(item, int)` to check if the element is an integer.
+- Since `bool` is a subclass of `int` in Python (`True == 1`, `False == 0`), we add `not isinstance(item, bool)` to avoid counting booleans as integers.
+- The counter is incremented for each valid integer and returned at the end.
+
+**Output:**
+```
+All tests passed!
+```

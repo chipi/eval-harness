@@ -1,0 +1,23 @@
+```python
+def replace_char(string, old_char, new_char):
+    """
+    Replace all occurrences of a character in a string with another character.
+    
+    Args:
+        string: The input string
+        old_char: The character to be replaced
+        new_char: The character to replace with
+    
+    Returns:
+        A new string with all occurrences of old_char replaced by new_char
+    """
+    return string.replace(old_char, new_char)
+
+
+# Test the function
+assert replace_char("polygon", 'y', 'l') == "pollgon"
+print("Test passed!")
+print(f"replace_char('polygon', 'y', 'l') = '{replace_char('polygon', 'y', 'l')}'")
+```
+
+The solution uses Python's built-in `str.replace()` method, which replaces all occurrences of a substring with another substring. In this case, it replaces all occurrences of the character `'y'` with `'l'` in the string `"polygon"`, resulting in `"pollgon"`.

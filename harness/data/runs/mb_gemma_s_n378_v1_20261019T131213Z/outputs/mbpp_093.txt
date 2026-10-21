@@ -1,0 +1,13 @@
+```python
+def power(a, b):
+  """
+  Calculate the value of 'a' to the power 'b'.
+  For example:
+  power(3,4) == 81
+  """
+  return a**b
+
+if __name__ == '__main__':
+  assert power(3,4) == 81
+  print("All test cases passed")
+```

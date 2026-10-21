@@ -1,0 +1,57 @@
+Here's a self-contained Python script that solves the problem by converting multiple lists into a nested dictionary structure as specified:
+
+```python
+def convert_list_dictionary(*lists):
+    """
+    Convert multiple lists into a nested dictionary structure.
+    The first list provides the outer keys, the second list provides the inner keys,
+    and the third list provides the values.
+    
+    Args:
+        *lists: Variable number of lists to be converted.
+                Expected order: outer_keys, inner_keys, values.
+    
+    Returns:
+        list: A list of nested dictionaries.
+    """
+    if len(lists) < 3:
+        raise ValueError("At least three lists are required: outer keys, inner keys, and values.")
+    
+    outer_keys, inner_keys, values = lists[0], lists[1], lists[2]
+    
+    if not (len(outer_keys) == len(inner_keys) == len(values)):
+        raise ValueError("All lists must have the same length.")
+    
+    result = []
+    for outer_key, inner_key, value in zip(outer_keys, inner_keys, values):
+        nested_dict = {outer_key: {inner_key: value}}
+        result.append(nested_dict)
+    
+    return result
+
+# Test the function with the provided example
+assert convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+) == [
+    {'S001': {'Adina Park': 85}},
+    {'S002': {'Leyton Marsh': 98}},
+    {'S003': {'Duncan Boyle': 89}},
+    {'S004': {'Saim Richards': 92}}
+]
+
+print("Test passed successfully!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `convert_list_dictionary` takes a variable number of lists (`*lists`), allowing flexibility in the number of input lists.
+2. **Input Validation**: 
+   - Checks if at least three lists are provided (outer keys, inner keys, and values).
+   - Ensures all lists have the same length to avoid mismatched data.
+3. **Nested Dictionary Construction**: 
+   - Uses `zip` to iterate over the three lists simultaneously.
+   - For each triplet of elements (outer key, inner key, value), it creates a nested dictionary and appends it to the result list.
+4. **Testing**: The function is tested with the provided example to ensure correctness. The `assert` statement will raise an error if the output doesn't match the expected result.
+
+This script is self-contained and includes the necessary validation and testing to ensure it works as intended.

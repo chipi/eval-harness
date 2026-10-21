@@ -1,0 +1,36 @@
+```python
+def remove_odd(s: str) -> str:
+    """
+    Removes characters at odd indices (0-indexed) from a string.
+    In the context of the example "python" -> "yhn":
+    p (0), y (1), t (2), h (3), o (4), n (5)
+    The characters at odd indices are y, h, n.
+    Wait, looking at the assertion: remove_odd("python") == "yhn"
+    Indices of "python":
+    p: 0
+    y: 1
+    t: 2
+    h: 3
+    o: 4
+    n: 5
+    If the result is "yhn", it means we are KEEPING the characters at odd indices
+    and removing the characters at even indices.
+    """
+    # We use slicing with a step of 2, starting from index 1 to get odd indices
+    return s[1::2]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = remove_odd("python")
+    print(f"Result: {result}")
+    
+    # Assertion check
+    assert result == "yhn", f"Expected 'yhn', but got '{result}'"
+    
+    # Additional test cases
+    assert remove_odd("abcde") == "bd"
+    assert remove_odd("a") == ""
+    assert remove_odd("") == ""
+    
+    print("All tests passed!")
+```

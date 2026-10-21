@@ -1,0 +1,14 @@
+```python
+def find_length(s):
+    max_diff = 0
+    count = 0
+    max_ending_here = 0
+    for c in s:
+        count += 1 if c == '0' else -1
+        max_ending_here = max(0, max_ending_here + abs(count - (count - 1 if c == '0' else count + 1)))
+        max_diff = max(max_diff, max_ending_here)
+    return max_diff
+
+# Test the function
+print(find_length("11000010001"))  # Output: 6
+```

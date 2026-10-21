@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_intersection(list1, list2):
+    """
+    Find the intersection of tuples in two lists, treating tuples as unordered.
+    
+    Args:
+        list1: First list of tuples
+        list2: Second list of tuples
+    
+    Returns:
+        A set of tuples that appear in both lists (order-independent within tuples)
+    """
+    # Normalize tuples by sorting their elements to handle order-independence
+    normalized1 = {tuple(sorted(t)) for t in list1}
+    normalized2 = {tuple(sorted(t)) for t in list2}
+    
+    # Find intersection of normalized tuples
+    common = normalized1 & normalized2
+    
+    # Return the result using the original form from list1 where possible
+    result = set()
+    for t in list1:
+        if tuple(sorted(t)) in common:
+            result.add(t)
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    result = tuple_intersection(
+        [(3, 4), (5, 6), (9, 10), (4, 5)],
+        [(5, 4), (3, 4), (6, 5), (9, 11)]
+    )
+    print(result)
+    assert result == {(4, 5), (3, 4), (5, 6)}
+    print("Test passed!")
+```
+
+**How it works:**
+
+1. **Normalization**: Each tuple is sorted so that `(5, 4)` and `(4, 5)` become the same normalized form `(4, 5)`. This handles the "irrespective of order" requirement.
+
+2. **Set intersection**: We use Python's set intersection (`&`) to find tuples that appear in both lists.
+
+3. **Preserve original form**: We iterate through `list1` and add the original (non-sorted) tuples that match the intersection, so the output uses the representation from the first list.
+
+**Output:**
+```
+{(3, 4), (4, 5), (5, 6)}
+```
+
+The assertion passes because the result matches the expected set `{(4, 5), (3, 4), (5, 6)}`.

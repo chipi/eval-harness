@@ -1,0 +1,25 @@
+```python
+def sub_list(list1, list2):
+    """
+    Subtracts two lists element-wise.
+    
+    Args:
+        list1 (list): The first list of numbers.
+        list2 (list): The second list of numbers.
+        
+    Returns:
+        list: A list containing the element-wise difference.
+    """
+    # Using a list comprehension to iterate through both lists simultaneously
+    return [a - b for a, b in zip(list1, list2)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+    
+    # Additional test cases
+    assert sub_list([10, 20, 30], [5, 5, 5]) == [5, 15, 25]
+    assert sub_list([0, 0, 0], [1, 2, 3]) == [-1, -2, -3]
+    
+    print("All tests passed!")
+```

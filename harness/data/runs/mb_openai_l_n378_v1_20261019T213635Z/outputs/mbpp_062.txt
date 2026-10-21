@@ -1,0 +1,7 @@
+```python
+def smallest_num(numbers):
+    return min(numbers)
+
+
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+```

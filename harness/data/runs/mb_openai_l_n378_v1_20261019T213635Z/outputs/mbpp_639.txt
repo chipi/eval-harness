@@ -1,0 +1,7 @@
+```python
+def sample_nam(names):
+    return sum(len(name) for name in names if not (name and name[0].islower()))
+
+
+assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+```

@@ -1,0 +1,166 @@
+```python
+def dog_age(human_years):
+    """
+    Calculate a dog's age in dog years.
+    
+    The common rule of thumb is:
+    - The first year of a dog's life equals 15 human years.
+    - The second year equals an additional 9 human years (total 24).
+    - Each subsequent year equals an additional 5 human years.
+    
+    However, looking at the assertion `dog_age(12) == 61`, let's reverse-engineer the formula.
+    If we use the standard "15 + 9 + 5*(n-2)" formula for n >= 2:
+    For n=12: 15 + 9 + 5*(10) = 24 + 50 = 74. This does not match 61.
+    
+    Let's try another common simplified formula: 7 * human_years.
+    7 * 12 = 84. No.
+    
+    Let's look for a linear relationship or specific piecewise function that yields 61 for 12.
+    Maybe it's based on a different standard? 
+    Some sources say: First year = 15, Second year = 9, Subsequent years = 5.
+    Wait, let's re-read carefully. Is there a simpler formula often used in coding challenges?
+    
+    Let's check if the formula is simply `human_years * 5 + something`?
+    Or maybe `human_years * 4 + 13`? 12*4+13 = 61. That works for 12.
+    Does this make sense for other ages?
+    Age 1: 1*4+13 = 17. (Standard is 15).
+    Age 2: 2*4+13 = 21. (Standard is 24).
+    
+    Let's try another hypothesis. What if the problem implies a specific non-standard calculation?
+    Often, these problems come from specific datasets or older textbooks.
+    
+    Let's look at the difference between 61 and 12.
+    61 / 12 ≈ 5.08.
+    
+    Let's reconsider the standard formula but maybe applied differently?
+    Actually, there is a known variation where:
+    Year 1: 15
+    Year 2: 9
+    Years 3+: 5
+    
+    Let's check if the input `12` refers to something else? No, "dog's age" usually means human years equivalent.
+    
+    Let's try to find a formula f(x) such that f(12)=61.
+    If we assume a linear model f(x) = ax + b.
+    We need more data points to be sure, but we only have one assert.
+    
+    However, many online coding platforms use a simplified version:
+    `dog_age = human_age * 7` -> 84.
+    
+    Let's look at the number 61 again.
+    If the first two years are 15 and 9 (total 24), then remaining 10 years contribute 61 - 24 = 37.
+    37 / 10 = 3.7 per year. This is not a standard integer multiplier.
+    
+    What if the formula is:
+    If age <= 2:
+       ...
+    Else:
+       ...
+       
+    Let's try: `age * 5 + 1`? 12*5+1 = 61.
+    Let's test this against common knowledge.
+    Age 1: 6. (Too low, usually 15).
+    Age 2: 11. (Too low, usually 24).
+    
+    There is a possibility the problem uses a very specific, perhaps outdated or simplified, rule.
+    One common simple rule taught in some contexts is just multiplying by 5 after the first few years, but the base might be different.
+    
+    Let's look at another potential source. Some calculators use:
+    Year 1: 15
+    Year 2: 9
+    Year 3: 5
+    Year 4: 5
+    ...
+    
+    Let's try to search for "dog age 12 is 61".
+    A quick mental check suggests that some specific algorithms define:
+    Dog Age = Human Age * 5 + 1? No.
+    
+    Actually, let's look at the formula: `human_years * 5 + 1` gives 61 for 12.
+    But `human_years * 7` is the most famous wrong answer.
+    
+    Is it possible the formula is:
+    If human_years == 1: return 15
+    If human_years == 2: return 24
+    Else: return 24 + (human_years - 2) * 5 ?
+    For 12: 24 + 10*5 = 74.
+    
+    What if the rate for subsequent years is different?
+    To get 61 from 12 using the first 2 years as 24:
+    Remaining years = 10.
+    Remaining dog years = 61 - 24 = 37.
+    Rate = 3.7. Unlikely.
+    
+    What if the first year is different?
+    Let's assume the formula is simply `human_years * 5 + 1`.
+    Why would that be? It doesn't align with veterinary science.
+    
+    Let's consider another popular approximation:
+    Small dogs age slower, large dogs faster. But no size is given.
+    
+    Let's look at the prompt again. `assert dog_age(12)==61`.
+    This is a hard constraint. I must write a function that satisfies this.
+    Without other test cases, I have to guess the intended logic.
+    
+    Common variations found in beginner programming exercises:
+    1. `age * 7`
+    2. Piecewise: 1->15, 2->24, >2->24+(age-2)*5
+    
+    Neither matches 61.
+    
+    Let's try: `age * 4 + 13`?
+    12 * 4 + 13 = 48 + 13 = 61.
+    
+    Let's try: `age * 5 + 1`?
+    12 * 5 + 1 = 61.
+    
+    Which is more likely to be the "intended" simple math problem?
+    Often, these problems are arbitrary. However, `age * 5 + 1` is slightly cleaner than `age * 4 + 13`.
+    
+    Wait, could it be related to the AKC chart or similar?
+    According to some charts, a 12-year-old dog is roughly 60-70 depending on size.
+    For a medium-sized dog, 12 human years is often cited around 60-65.
+    Specifically, some tables list:
+    1 yr: 15
+    2 yrs: 24
+    3 yrs: 28
+    4 yrs: 32
+    5 yrs: 36
+    6 yrs: 40
+    7 yrs: 44
+    8 yrs: 48
+    9 yrs: 52
+    10 yrs: 56
+    11 yrs: 60
+    12 yrs: 64
+    
+    This table adds 4 years per human year after the first two.
+    Formula: 24 + (age - 2) * 4.
+    For 12: 24 + 10 * 4 = 64. Close to 61, but not exact.
+    
+    What if the increment is different?
+    If we want 61 at age 12.
+    Base 24. Diff 37 over 10 years. 3.7/year.
+    
+    What if the base is different?
+    Maybe the first year is 15, second is 9 (total 24).
+    
+    Let's try a different starting point.
+    Maybe the formula is `human_years * 5 + 1`?
+    Let's check age 1: 6.
+    Age 2: 11.
+    This seems too low compared to reality.
+    
+    How about `human_years * 4 + 13`?
+    Age 1: 17.
+    Age 2: 21.
+    Age 12: 61.
+    
+    There is a known simplified formula sometimes used in code challenges:
+    `dog_age = human_age * 7`
+    
+    Is it possible the user made a typo in the assertion or expects a specific obscure formula?
+    Given I must pass the assert, I will implement the formula that fits the single data point provided, assuming a linear relationship which is common in simple exercises unless piecewise is specified.
+    
+    However, `y = mx + c`. With one point, infinite lines exist.
+    Usually, these functions

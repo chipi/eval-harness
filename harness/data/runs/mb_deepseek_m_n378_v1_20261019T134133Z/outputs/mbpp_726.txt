@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiply_elements(t):
+    """
+    Takes a tuple of numbers (t_1, ..., t_{N+1}) and returns a tuple of length N
+    where the i-th element is t_i * t_{i+1}.
+    """
+    return tuple(t[i] * t[i + 1] for i in range(len(t) - 1))
+
+
+# Test the function
+assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function `multiply_elements` accepts a tuple `t` of length `N+1`.
+2. It uses a generator expression inside `tuple(...)` to iterate over indices `i` from `0` to `N-1` (i.e., `range(len(t) - 1)`).
+3. For each index `i`, it computes the product `t[i] * t[i + 1]`, producing a new tuple of length `N`.
+4. The assertion verifies the example: `(1*5, 5*7, 7*8, 8*10) == (5, 35, 56, 80)`.

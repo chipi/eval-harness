@@ -1,0 +1,14 @@
+```python
+def and_tuples(t1, t2):
+    """
+    Extract the elementwise AND of two tuples.
+    
+    Args:
+        t1: First tuple
+        t2: Second tuple
+    
+    Returns:
+        A tuple containing the elementwise bitwise AND of corresponding elements from t1 and t2.
+    """
+    return tuple(a & b for a, b in zip(t1, t2))
+```

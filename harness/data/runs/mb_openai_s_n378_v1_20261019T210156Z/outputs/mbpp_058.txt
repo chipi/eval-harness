@@ -1,0 +1,22 @@
+```python
+def opposite_Signs(a, b):
+    """
+    Return True if a and b have opposite signs, otherwise False.
+    Zero is considered neither positive nor negative, so any pair involving 0 returns False.
+    """
+    return (a > 0 and b < 0) or (a < 0 and b > 0)
+
+
+if __name__ == "__main__":
+    # Provided test
+    assert opposite_Signs(1, -2) is True
+
+    # Additional quick checks
+    assert opposite_Signs(-1, 2) is True
+    assert opposite_Signs(1, 2) is False
+    assert opposite_Signs(-1, -2) is False
+    assert opposite_Signs(0, -2) is False
+    assert opposite_Signs(0, 2) is False
+
+    print("All tests passed.")
+```

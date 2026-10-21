@@ -1,0 +1,15 @@
+```python
+import math
+
+def polar_rect(r, theta):
+    # Convert polar coordinates to rectangular coordinates
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+    return (x, y)
+
+# Test cases
+assert polar_rect(3, 4) == (5.0, 0.9272952180016122)
+assert polar_rect(1, math.pi/2) == (0, 1)
+assert polar_rect(1, math.pi) == (-1, 0)
+assert polar_rect(1, 3*math.pi/2) == (0, -1)
+```

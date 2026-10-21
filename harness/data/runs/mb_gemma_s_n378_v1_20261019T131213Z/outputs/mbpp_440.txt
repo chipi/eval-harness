@@ -1,0 +1,29 @@
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    Finds the first adverb and its positions in a given sentence.
+
+    Args:
+        sentence: The input sentence (string).
+
+    Returns:
+        A tuple containing the start position, end position, and the adverb itself.
+        Returns None if no adverb is found.
+    """
+    match = re.search(r'\w+ly', sentence)
+    if match:
+        return (match.start(), match.end(), match.group(0))
+    else:
+        return None
+
+# Example usage and assertion
+if __name__ == '__main__':
+    assert find_adverb_position("clearly!! we can see the sky") == (0, 7, 'clearly')
+    assert find_adverb_position("quickly run") == (0, 7, 'quickly')
+    assert find_adverb_position("This is a sentence") is None
+    assert find_adverb_position("happily ever after") == (0, 7, 'happily')
+    assert find_adverb_position("  slowly") == (2, 8, 'slowly')
+    print("All test cases passed!")
+```

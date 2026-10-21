@@ -1,0 +1,14 @@
+```python
+def count_char_position(s):
+    count = 0
+    for i, ch in enumerate(s):
+        if ch.isalpha():
+            if (ord(ch.lower()) - ord('a')) == i:
+                count += 1
+    return count
+
+
+if __name__ == "__main__":
+    assert count_char_position("xbcefg") == 2
+    print(count_char_position("xbcefg"))
+```

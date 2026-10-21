@@ -1,0 +1,51 @@
+Here is the self-contained Python script that solves the problem. It calculates the Bell number, which represents the number of ways to partition a set of `n` elements.
+
+```python
+def bell_number(n: int) -> int:
+    """
+    Finds the number of ways to partition a set of n elements (Bell number).
+    
+    This function uses the Bell triangle method to compute the nth Bell number.
+    
+    Args:
+        n (int): The number of elements in the set.
+        
+    Returns:
+        int: The nth Bell number.
+        
+    Examples:
+        >>> bell_number(2)
+        2
+        >>> bell_number(3)
+        5
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer.")
+    if n == 0:
+        return 1
+        
+    # Initialize the Bell triangle with the first row
+    bell = [[0] * n for _ in range(n)]
+    bell[0][0] = 1
+    
+    # Build the Bell triangle
+    for i in range(1, n):
+        # The first element of each row is the last element of the previous row
+        bell[i][0] = bell[i-1][i-1]
+        
+        # Fill in the rest of the row
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i-1][j-1] + bell[i][j-1]
+            
+    # The Bell number is the last element of the last row
+    return bell[n-1][n-1]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert bell_number(2) == 2
+    print("Assertion passed: bell_number(2) == 2")
+    
+    # Print a few more Bell numbers to demonstrate functionality
+    for i in range(6):
+        print(f"bell_number({i}) = {bell_number(i)}")
+```

@@ -1,0 +1,35 @@
+```python
+def is_majority(arr, n, x):
+    """
+    Return True if x is the majority element in the sorted array arr of length n.
+    A majority element appears more than n//2 times.
+    """
+    if n == 0:
+        return False
+
+    # Find the first occurrence of x using binary search
+    left, right = 0, n - 1
+    first = -1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == x:
+            first = mid
+            right = mid - 1
+        elif arr[mid] < x:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    if first == -1:
+        return False
+
+    # Check if the element at index first + n//2 is still x
+    # If x occurs more than n/2 times, this position must also be x.
+    check_index = first + n // 2
+    return check_index < n and arr[check_index] == x
+
+
+if __name__ == "__main__":
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    print("All tests passed.")
+```

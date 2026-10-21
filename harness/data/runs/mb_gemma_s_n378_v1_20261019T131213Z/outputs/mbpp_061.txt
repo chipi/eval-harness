@@ -1,0 +1,18 @@
+```python
+def count_Substrings(s):
+    """
+    Write a python function to count the number of substrings with the sum of digits equal to their length.
+    assert count_Substrings('112112') == 6
+    """
+    count = 0
+    n = len(s)
+    for i in range(n):
+        for j in range(i, n):
+            sub = s[i:j+1]
+            sum_digits = 0
+            for digit in sub:
+                sum_digits += int(digit)
+            if sum_digits == len(sub):
+                count += 1
+    return count
+```

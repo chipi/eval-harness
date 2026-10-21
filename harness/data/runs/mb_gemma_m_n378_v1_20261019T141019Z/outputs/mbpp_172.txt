@@ -1,0 +1,25 @@
+```python
+def count_occurance(input_string: str) -> int:
+    """
+    Counts the number of occurrences of the string 'std' in a given string.
+    
+    Args:
+        input_string (str): The string to search within.
+        
+    Returns:
+        int: The number of times 'std' appears in the string.
+    """
+    return input_string.count('std')
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert count_occurance("letstdlenstdporstd") == 3
+    
+    # Additional test cases
+    assert count_occurance("stdstdstd") == 3
+    assert count_occurance("no occurrences here") == 0
+    assert count_occurance("") == 0
+    assert count_occurance("STDs are different") == 0  # Case sensitivity check
+    
+    print("All tests passed!")
+```

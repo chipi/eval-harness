@@ -1,0 +1,34 @@
+```python
+def combinations_colors(lst, n):
+    """
+    Generate all combinations with repetition of length n from the given list.
+    
+    Args:
+        lst: A list of elements.
+        n: The length of each combination.
+    
+    Returns:
+        A list of tuples, where each tuple is a combination with repetition of length n.
+    """
+    if n == 0:
+        return [()]
+    
+    result = []
+    
+    def backtrack(start, current_combination):
+        if len(current_combination) == n:
+            result.append(tuple(current_combination))
+            return
+        
+        for i in range(start, len(lst)):
+            current_combination.append(lst[i])
+            backtrack(i, current_combination)  # Allow repetition by starting at i (not i+1)
+            current_combination.pop()
+    
+    backtrack(0, [])
+    return result
+
+
+# Test case
+assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+```

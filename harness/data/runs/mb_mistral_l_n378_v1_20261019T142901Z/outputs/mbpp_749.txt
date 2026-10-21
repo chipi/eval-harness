@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem by sorting a list of numeric strings numerically:
+
+```python
+def sort_numeric_strings(numeric_strings):
+    """
+    Sorts a list of strings representing numbers in numerical order.
+
+    Args:
+        numeric_strings: List of strings representing numbers (can include negative numbers)
+
+    Returns:
+        List of integers sorted in numerical order
+    """
+    return sorted(map(int, numeric_strings))
+
+# Test the function
+assert sort_numeric_strings(['4','12','45','7','0','100','200','-12','-500']) == [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+
+# Example usage
+if __name__ == "__main__":
+    test_list = ['4','12','45','7','0','100','200','-12','-500']
+    print("Original list:", test_list)
+    print("Sorted list:", sort_numeric_strings(test_list))
+```
+
+This solution:
+1. Takes a list of numeric strings as input
+2. Converts each string to an integer using `map(int, numeric_strings)`
+3. Uses Python's built-in `sorted()` function to sort the integers
+4. Returns the sorted list of integers
+
+The function handles both positive and negative numbers correctly, as demonstrated in the test case. The example usage at the bottom shows how the function works with the provided test case.

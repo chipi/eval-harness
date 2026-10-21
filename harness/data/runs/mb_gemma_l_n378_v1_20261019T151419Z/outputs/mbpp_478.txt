@@ -1,0 +1,28 @@
+```python
+import re
+
+def remove_lowercase(text):
+    """
+    Removes all lowercase characters from a given string.
+    
+    Args:
+        text (str): The input string.
+        
+    Returns:
+        str: The string with all lowercase characters removed.
+    """
+    # Use a regular expression to substitute all lowercase letters [a-z] with an empty string
+    return re.sub(r'[a-z]', '', text)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert remove_lowercase("PYTHon") == 'PYTH'
+    
+    # Additional test cases
+    assert remove_lowercase("Hello World") == 'H W'
+    assert remove_lowercase("PYTHON") == 'PYTHON'
+    assert remove_lowercase("python") == ''
+    assert remove_lowercase("123abc456DEF") == '123456DEF'
+    
+    print("All tests passed!")
+```

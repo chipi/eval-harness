@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to check if a given tuple contains the value k.
+"""
+
+def check_K(tuple_data, k):
+    """
+    Check if the value k is present in the given tuple.
+
+    Args:
+        tuple_data (tuple): The tuple to search in.
+        k: The value to search for.
+
+    Returns:
+        bool: True if k is found in the tuple, False otherwise.
+    """
+    return k in tuple_data
+
+# Test the function with the provided assertion
+assert check_K((10, 4, 5, 6, 8), 6) == True
+
+# Additional test cases for verification
+assert check_K((1, 2, 3), 4) == False
+assert check_K((), 1) == False
+assert check_K(('a', 'b', 'c'), 'b') == True
+assert check_K((1.5, 2.5, 3.5), 2.5) == True
+
+print("All tests passed!")
+```

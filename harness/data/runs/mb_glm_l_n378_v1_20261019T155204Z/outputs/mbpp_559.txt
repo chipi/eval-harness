@@ -1,0 +1,28 @@
+```python
+def max_sub_array_sum(arr, n):
+    """
+    Finds the sum of the largest contiguous sublist in the given list.
+    Uses Kadane's algorithm to achieve O(n) time complexity.
+    """
+    if n == 0:
+        return 0
+        
+    max_so_far = float('-inf')
+    max_ending_here = 0
+    
+    for i in range(n):
+        max_ending_here = max_ending_here + arr[i]
+        
+        if max_so_far < max_ending_here:
+            max_so_far = max_ending_here
+            
+        if max_ending_here < 0:
+            max_ending_here = 0
+            
+    return max_so_far
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+    print("Test passed successfully!")
+```

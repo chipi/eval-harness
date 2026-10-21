@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem of finding the largest sum of a contiguous subarray in a modified array formed by repeating the given array `k` times, with the constraint that the subarray can span at most `m` repetitions of the original array:
+
+```python
+def max_sub_array_sum_repeated(arr, k, m):
+    """
+    Find the largest sum of a contiguous subarray in the modified array formed by repeating the given array k times,
+    where the subarray can span at most m repetitions of the original array.
+
+    Args:
+        arr: The input array.
+        k: The number of times the array is repeated.
+        m: The maximum number of repetitions the subarray can span.
+
+    Returns:
+        The maximum sum of a contiguous subarray under the given constraints.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # The modified array is arr repeated k times, so its length is n * k.
+    # We need to find the maximum subarray sum where the subarray spans at most m repetitions.
+    # This means the subarray can have a maximum length of n * m.
+
+    # To handle this, we can use Kadane's algorithm with a sliding window approach.
+    # The idea is to keep track of the maximum subarray sum for all possible subarrays
+    # that span up to m repetitions (i.e., up to n * m elements).
+
+    max_sum = float('-inf')
+    current_sum = 0
+    window_sums = [0] * (n * m + 1)  # To store cumulative sums for the sliding window
+
+    # Precompute cumulative sums for the original array to handle the sliding window efficiently
+    cumulative = [0] * (n * k + 1)
+    for i in range(1, n * k + 1):
+        cumulative[i] = cumulative[i - 1] + arr[i % n]
+
+    # Now, for each possible starting point, compute the maximum subarray sum
+    # that ends at a position up to m repetitions (i.e., up to n * m elements from the start)
+    for i in range(n * k):
+        # The maximum subarray ending at i is the maximum of:
+        # 1. The current element itself
+        # 2. The current element plus the maximum subarray ending at i-1
+        # But we also need to consider the constraint that the subarray spans at most m repetitions.
+        # So, we can only look back up to n * m elements from i.
+        start = max(0, i - n * m + 1)
+        current_max = cumulative[i + 1] - cumulative[start]
+        if current_max > max_sum:
+            max_sum = current_max
+
+    return max_sum
+
+# Test the function with the provided assertion
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+```
+
+### Explanation:
+1. **Problem Analysis**: The problem requires finding the maximum sum of a contiguous subarray in an array formed by repeating the original array `k` times, with the constraint that the subarray can span at most `m` repetitions of the original array. This means the subarray can have a maximum length of `n * m`, where `n` is the length of the original array.
+
+2. **Approach**:
+   - **Cumulative Sum Array**: We first compute a cumulative sum array to efficiently calculate the sum of any subarray.
+   - **Sliding Window**: For each possible starting point of the subarray, we consider the maximum subarray sum that ends at that point and spans at most `m` repetitions. This is done by looking back up to `n * m` elements from the current position using the cumulative sum array.
+
+3. **Efficiency**: The algorithm runs in O(n * k) time, which is efficient for moderate values of `k` and `m`. The space complexity is O(n * k) due to the storage of the cumulative sum array.
+
+4. **Test Case**: The provided test case checks the function with the input `[10, 20, -30, -1]`, `k = 4`, and `m = 3`, which should return `30` as the maximum subarray sum under the given constraints.

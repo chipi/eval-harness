@@ -1,0 +1,26 @@
+```python
+def max_product_tuple(tuples_list):
+    # Initialize variables to store the maximum product and the corresponding pair
+    max_product = float('-inf')
+    max_pair = None
+    
+    # Iterate through each tuple in the list
+    for i in range(len(tuples_list)):
+        # Extract the first and second elements of the tuple
+        num1, num2 = tuples_list[i]
+        
+        # Calculate the product of the two numbers
+        product = num1 * num2
+        
+        # Check if this product is greater than the current maximum product
+        if product > max_product:
+            # Update the maximum product and the corresponding pair
+            max_product = product
+            max_pair = (num1, num2)
+    
+    return max_product
+
+# Test the function with the provided test case
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+```
+

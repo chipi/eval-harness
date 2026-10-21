@@ -1,0 +1,24 @@
+```python
+def power_base_sum(base, power):
+    # Convert the base to a string to easily iterate over its digits
+    base_str = str(base)
+    # Initialize the sum to 0
+    total = 0
+    # Iterate over each digit in the base
+    for digit_str in base_str:
+        # Convert the digit back to an integer and raise it to the power
+        digit = int(digit_str)
+        total += digit ** power
+    # Return the total sum
+    return total
+
+# Test cases
+assert power_base_sum(2,100)==115
+assert power_base_sum(3,200)==115
+assert power_base_sum(4,300)==115
+assert power_base_sum(5,400)==115
+assert power_base_sum(6,500)==115
+assert power_base_sum(7,600)==115
+assert power_base_sum(8,700)==115
+assert power_base_sum(9,800)==115
+```

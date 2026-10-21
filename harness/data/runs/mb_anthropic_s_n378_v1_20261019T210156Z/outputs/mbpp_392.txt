@@ -1,0 +1,56 @@
+```python
+def get_max_sum(n):
+    """
+    Find the maximum sum possible using the equation:
+    f(n) = max((f(n/2) + f(n/3) + f(n/4) + f(n/5)), n)
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The maximum sum for the given n
+    """
+    # Memoization dictionary to store already computed values
+    memo = {}
+    
+    def f(x):
+        # Base case
+        if x == 0:
+            return 0
+        
+        # Check if already computed
+        if x in memo:
+            return memo[x]
+        
+        # Recursive case: max of n or sum of f(n/2) + f(n/3) + f(n/4) + f(n/5)
+        # Using integer division
+        sum_of_divisions = f(x // 2) + f(x // 3) + f(x // 4) + f(x // 5)
+        result = max(x, sum_of_divisions)
+        
+        # Store in memo
+        memo[x] = result
+        return result
+    
+    return f(n)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert get_max_sum(60) == 106
+    print("Test passed: get_max_sum(60) == 106")
+    
+    # Additional test cases
+    print(f"get_max_sum(1) = {get_max_sum(1)}")
+    print(f"get_max_sum(10) = {get_max_sum(10)}")
+    print(f"get_max_sum(100) = {get_max_sum(100)}")
+```
+
+The solution uses **dynamic programming with memoization** to efficiently compute the maximum sum:
+
+1. **Base case**: `f(0) = 0`
+2. **Recursive case**: For any `n > 0`, we compute `f(n) = max(n, f(n//2) + f(n//3) + f(n//4) + f(n//5))`
+3. **Memoization**: We store computed values to avoid redundant calculations
+
+For `n = 60`:
+- We recursively compute the sum of divisions and compare it with `n` itself
+- The function returns the maximum value, which is `106`

@@ -1,0 +1,28 @@
+```python
+def validate(n: int) -> bool:
+    """
+    Returns True if for every digit in n, the frequency of that digit is less than or equal to the digit itself.
+    Otherwise returns False.
+    """
+    # Convert to string to iterate over digits
+    s = str(n)
+    
+    # Count frequency of each digit
+    freq = {}
+    for ch in s:
+        digit = int(ch)
+        freq[digit] = freq.get(digit, 0) + 1
+    
+    # Check the condition for each digit present
+    for digit, count in freq.items():
+        if count > digit:
+            return False
+    return True
+
+# Example test
+if __name__ == "__main__":
+    print(validate(1234))  # Expected: True
+    print(validate(1123))  # 1 appears twice -> 2 > 1 -> False
+    print(validate(222))   # 2 appears three times -> 3 > 2 -> False
+    print(validate(0))     # 0 appears once -> 1 > 0 -> False
+```

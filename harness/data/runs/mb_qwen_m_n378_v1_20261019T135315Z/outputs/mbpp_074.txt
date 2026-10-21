@@ -1,0 +1,54 @@
+```python
+def is_samepatterns(colors: list, patterns: list) -> bool:
+    """
+    Check whether the colors list follows the same pattern as the patterns list.
+    
+    Args:
+        colors: A list of color strings.
+        patterns: A list of pattern characters/strings.
+        
+    Returns:
+        True if the colors follow the same pattern as the patterns array, False otherwise.
+        
+    Example:
+        >>> is_samepatterns(["red","green","green"], ["a", "b", "b"])
+        True
+        >>> is_samepatterns(["red","green","blue"], ["a", "b", "b"])
+        False
+    """
+    if len(colors) != len(patterns):
+        return False
+    
+    # Map from pattern to color and from color to pattern
+    pattern_to_color = {}
+    color_to_pattern = {}
+    
+    for color, pattern in zip(colors, patterns):
+        # Check if pattern already mapped to a different color
+        if pattern in pattern_to_color:
+            if pattern_to_color[pattern] != color:
+                return False
+        else:
+            pattern_to_color[pattern] = color
+        
+        # Check if color already mapped to a different pattern
+        if color in color_to_pattern:
+            if color_to_pattern[color] != pattern:
+                return False
+        else:
+            color_to_pattern[color] = pattern
+    
+    return True
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    assert is_samepatterns(["red", "green", "blue"], ["a", "b", "b"]) == False
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "c"]) == False
+    assert is_samepatterns(["red", "red", "green"], ["a", "a", "b"]) == True
+    assert is_samepatterns(["red", "red", "green"], ["a", "b", "b"]) == False
+    assert is_samepatterns([], []) == True
+    assert is_samepatterns(["red"], ["a"]) == True
+    print("All tests passed!")
+```

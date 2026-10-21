@@ -1,0 +1,20 @@
+```python
+def count_Pairs(lst, n):
+    """
+    Count the number of possible unordered pairs where both elements are unequal.
+    
+    Args:
+        lst: List of integers
+        n: Length parameter (not strictly needed but kept for API compatibility)
+    
+    Returns:
+        Number of unordered pairs (i, j) where i < j and lst[i] != lst[j]
+    """
+    count = 0
+    length = len(lst)
+    for i in range(length):
+        for j in range(i + 1, length):
+            if lst[i] != lst[j]:
+                count += 1
+    return count
+```

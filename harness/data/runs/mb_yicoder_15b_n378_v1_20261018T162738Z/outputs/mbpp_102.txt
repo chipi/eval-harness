@@ -1,0 +1,11 @@
+```python
+def snake_to_camel(snake_str):
+    components = snake_str.split('_')
+    return ''.join(x.title() for x in components)
+
+# Test cases
+assert snake_to_camel('python_program') == 'PythonProgram'
+assert snake_to_camel('python_program_test') == 'PythonProgramTest'
+assert snake_to_camel('python_program_test_case') == 'PythonProgramTestCase'
+assert snake_to_camel('python_program_test_case_example') == 'PythonProgramTestCaseExample'
+```

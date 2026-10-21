@@ -1,0 +1,53 @@
+```python
+def triangle_area(radius):
+    """
+    Find the area of the largest triangle that can be inscribed in a semicircle with a given radius.
+    
+    The largest triangle inscribed in a semicircle has its base as the diameter of the semicircle
+    and its third vertex on the semicircle. The maximum area occurs when the height is equal to
+    the radius (when the third vertex is at the top of the semicircle).
+    
+    Area = (1/2) * base * height = (1/2) * (2 * radius) * radius = radius^2
+    
+    Args:
+        radius: The radius of the semicircle
+        
+    Returns:
+        The area of the largest inscribed triangle, or None if radius is invalid
+    """
+    # Handle invalid input
+    if radius is None or radius < 0:
+        return None
+    
+    # For a semicircle with radius r, the largest inscribed triangle has:
+    # - Base = diameter = 2r
+    # - Height = r (when vertex is at the top of the semicircle)
+    # - Area = (1/2) * base * height = (1/2) * 2r * r = r^2
+    
+    area = radius ** 2
+    return area
+
+
+# Test cases
+if __name__ == "__main__":
+    assert triangle_area(-1) == None, "Negative radius should return None"
+    assert triangle_area(0) == 0, "Zero radius should return 0"
+    assert triangle_area(1) == 1, "Radius 1 should return area 1"
+    assert triangle_area(2) == 4, "Radius 2 should return area 4"
+    assert triangle_area(5) == 25, "Radius 5 should return area 25"
+    assert triangle_area(10) == 100, "Radius 10 should return area 100"
+    
+    print("All test cases passed!")
+```
+
+**Explanation:**
+
+The largest triangle that can be inscribed in a semicircle has:
+- Its **base** equal to the **diameter** of the semicircle (2r)
+- Its **third vertex** on the semicircle at the point that maximizes height
+- The **maximum height** equals the **radius** (r) when the vertex is at the top
+
+Therefore, the area formula is:
+- Area = ½ × base × height = ½ × 2r × r = **r²**
+
+The function returns `None` for invalid inputs (negative or None radius) and returns r² for valid positive radii.

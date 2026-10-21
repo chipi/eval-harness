@@ -1,0 +1,48 @@
+```python
+def magic_square_test(matrix):
+    """
+    Calculate whether the matrix is a magic square.
+    
+    A magic square is an n x n matrix where:
+    1. The sum of each row is equal to the same constant (magic constant).
+    2. The sum of each column is equal to the same constant.
+    3. The sum of both main diagonals is equal to the same constant.
+    
+    Args:
+        matrix: A list of lists representing the square matrix.
+        
+    Returns:
+        True if the matrix is a magic square, False otherwise.
+    """
+    # Check if the matrix is empty or not square
+    if not matrix or not all(len(row) == len(matrix) for row in matrix):
+        return False
+    
+    n = len(matrix)
+    
+    # Calculate the expected magic constant from the first row
+    magic_constant = sum(matrix[0])
+    
+    # Check all rows have the same sum
+    for row in matrix:
+        if sum(row) != magic_constant:
+            return False
+    
+    # Check all columns have the same sum
+    for col in range(n):
+        col_sum = sum(matrix[row][col] for row in range(n))
+        if col_sum != magic_constant:
+            return False
+    
+    # Check the main diagonal (top-left to bottom-right)
+    diag1_sum = sum(matrix[i][i] for i in range(n))
+    if diag1_sum != magic_constant:
+        return False
+    
+    # Check the anti-diagonal (top-right to bottom-left)
+    diag2_sum = sum(matrix[i][n - 1 - i] for i in range(n))
+    if diag2_sum != magic_constant:
+        return False
+    
+    return True
+```

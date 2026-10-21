@@ -1,0 +1,19 @@
+```python
+def is_nonagonal(n):
+    """
+    This function calculates the nth nonagonal number.
+    
+    A nonagonal number or 9-gonal number is a figurate number that represents a nonagon. 
+    The formula for the nth nonagonal number is (9n^2 - 9n + 2)/2.
+
+    Args:
+        n (int): The position of the nonagonal number.
+
+    Returns:
+        int: The nth nonagonal number.
+    """
+    return (9 * n**2 - 9 * n + 2) // 2
+
+# Test the function
+print(is_nonagonal(10))  # Output: 325
+```

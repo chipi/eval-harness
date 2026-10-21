@@ -1,0 +1,69 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Count the number of inversions in an array.
+    An inversion is a pair (i, j) such that i < j and arr[i] > arr[j].
+    
+    Uses a modified merge sort algorithm for O(n log n) efficiency.
+    """
+    def merge_sort_and_count(arr, temp_arr, left, right):
+        if left >= right:
+            return 0
+        
+        mid = (left + right) // 2
+        inv_count = 0
+        
+        # Count inversions in left half
+        inv_count += merge_sort_and_count(arr, temp_arr, left, mid)
+        # Count inversions in right half
+        inv_count += merge_sort_and_count(arr, temp_arr, mid + 1, right)
+        # Count inversions during merge
+        inv_count += merge_and_count(arr, temp_arr, left, mid, right)
+        
+        return inv_count
+    
+    def merge_and_count(arr, temp_arr, left, mid, right):
+        i = left      # Pointer for left subarray
+        j = mid + 1   # Pointer for right subarray
+        k = left      # Pointer for merged subarray
+        inv_count = 0
+        
+        while i <= mid and j <= right:
+            if arr[i] <= arr[j]:
+                temp_arr[k] = arr[i]
+                i += 1
+            else:
+                # All elements from i to mid are greater than arr[j]
+                inv_count += (mid - i + 1)
+                temp_arr[k] = arr[j]
+                j += 1
+            k += 1
+        
+        # Copy remaining elements from left subarray
+        while i <= mid:
+            temp_arr[k] = arr[i]
+            i += 1
+            k += 1
+        
+        # Copy remaining elements from right subarray
+        while j <= right:
+            temp_arr[k] = arr[j]
+            j += 1
+            k += 1
+        
+        # Copy merged elements back to original array
+        for idx in range(left, right + 1):
+            arr[idx] = temp_arr[idx]
+        
+        return inv_count
+    
+    # Create a copy to avoid modifying the original array
+    arr_copy = arr[:]
+    temp_arr = [0] * len(arr_copy)
+    return merge_sort_and_count(arr_copy, temp_arr, 0, len(arr_copy) - 1)
+
+
+if __name__ == "__main__":
+    assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+    print("All tests passed!")
+```

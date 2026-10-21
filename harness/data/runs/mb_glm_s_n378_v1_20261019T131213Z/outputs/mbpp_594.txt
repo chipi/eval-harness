@@ -1,0 +1,60 @@
+```python
+def diff_even_odd(numbers: list[int]) -> int:
+    """
+    Finds the difference between the first even and first odd number in a list.
+
+    This function iterates through the list to find the first occurrence of an
+    even number and the first occurrence of an odd number. It then returns the
+    difference (first_even - first_odd).
+
+    Args:
+        numbers: A list of integers.
+
+    Returns:
+        The difference between the first even and first odd number.
+        Returns 0 if the list does not contain at least one even and one odd number.
+
+    Examples:
+        >>> diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8])
+        3
+        >>> diff_even_odd([2, 4, 6, 8])
+        0
+        >>> diff_even_odd([1, 3, 5, 7])
+        0
+        >>> diff_even_odd([1, 2, 3, 4])
+        1
+        >>> diff_even_odd([])
+        0
+    """
+    first_even = None
+    first_odd = None
+
+    for num in numbers:
+        if num % 2 == 0 and first_even is None:
+            first_even = num
+        elif num % 2 != 0 and first_odd is None:
+            first_odd = num
+        
+        # Optimization: if we've found both, no need to continue searching
+        if first_even is not None and first_odd is not None:
+            break
+
+    # If both an even and an odd number were found, return their difference.
+    # Otherwise, return 0 as per the problem's implicit requirement.
+    if first_even is not None and first_odd is not None:
+        return first_even - first_odd
+    else:
+        return 0
+
+# Example usage and assertions from the problem description
+assert diff_even_odd([1,3,5,7,4,1,6,8]) == 3
+
+# Additional test cases to ensure robustness
+assert diff_even_odd([2, 4, 6, 8]) == 0 # No odd numbers
+assert diff_even_odd([1, 3, 5, 7]) == 0 # No even numbers
+assert diff_even_odd([1, 2, 3, 4]) == 1 # First even is 2, first odd is 1
+assert diff_even_odd([]) == 0 # Empty list
+assert diff_even_odd([5, 7, 9, 2]) == -3 # First even is 2, first odd is 5
+
+print("All assertions passed.")
+```

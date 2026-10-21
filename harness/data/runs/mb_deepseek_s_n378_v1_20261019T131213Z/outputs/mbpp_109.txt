@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem as described:  
+
+```python
+def odd_Equivalent(binary_str, rotations):
+    """
+    Returns the number of distinct binary strings (considering rotations) that
+    have an odd integer value when interpreted as binary.
+    """
+    n = len(binary_str)
+    seen = set()
+    count_odd = 0
+    
+    for i in range(rotations):
+        # Rotate the string by i positions
+        rotated = binary_str[i:] + binary_str[:i]
+        if rotated not in seen:
+            seen.add(rotated)
+            # Check if the binary value is odd (last character is '1')
+            if rotated[-1] == '1':
+                count_odd += 1
+    
+    return count_odd
+
+# Test the function with the given example
+if __name__ == "__main__":
+    assert odd_Equivalent("011001", 6) == 3
+    print("Test passed.")
+```

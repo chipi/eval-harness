@@ -1,0 +1,25 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def dif_Square(n):
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be expressed as the difference of two squares if and only if
+    n is not of the form 4k + 2 (i.e., n % 4 != 2).
+    """
+    if n < 0:
+        return False
+    return n % 4 != 2
+
+# Test the function
+if __name__ == "__main__":
+    assert dif_Square(5) == True
+    assert dif_Square(4) == True
+    assert dif_Square(2) == False
+    assert dif_Square(6) == False
+    assert dif_Square(0) == True
+    assert dif_Square(1) == True
+    assert dif_Square(3) == True
+    print("All tests passed!")
+```

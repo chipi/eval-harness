@@ -1,0 +1,10 @@
+```python
+def is_num_decagonal(n):
+    return 4 * n * n - 3 * n
+
+# Test
+assert is_num_decagonal(3) == 27
+
+if __name__ == "__main__":
+    print(is_num_decagonal(3))
+```

@@ -1,0 +1,23 @@
+```python
+def rear_extract(tuples):
+    """
+    This function takes in a list of tuples and returns a list containing the rear element of each tuple.
+
+    Args:
+        tuples (list): A list of tuples.
+
+    Returns:
+        list: A list containing the rear element of each tuple.
+    """
+    # Use list comprehension to extract the last element of each tuple
+    return [t[-1] for t in tuples]
+
+# Test the function
+print(rear_extract([(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)]))  # Output: [21, 20, 19]
+```
+
+In this code:
+
+*   We define a function `rear_extract` that takes a list of tuples as input.
+*   Inside the function, we use list comprehension to create a new list containing the last element of each tuple. In Python, `t[-1]` is used to access the last element of a tuple `t`.
+*   Finally, we test the function with the provided example.

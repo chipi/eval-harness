@@ -1,0 +1,32 @@
+```python
+def second_smallest(nums):
+    """
+    Return the second smallest number in a list.
+    If the smallest value appears more than once, the second smallest may be
+    the same as the smallest.
+    """
+    if len(nums) < 2:
+        raise ValueError("List must contain at least two numbers.")
+
+    first = second = float('inf')
+
+    for x in nums:
+        if x < first:
+            second = first
+            first = x
+        elif first < x < second:
+            second = x
+        elif x == first and second == float('inf'):
+            # Handles cases like [1, 1, 2] where second smallest is 1
+            second = first
+
+    if second == float('inf'):
+        raise ValueError("No second smallest number found.")
+
+    return second
+
+
+if __name__ == "__main__":
+    assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+    print("All tests passed.")
+```

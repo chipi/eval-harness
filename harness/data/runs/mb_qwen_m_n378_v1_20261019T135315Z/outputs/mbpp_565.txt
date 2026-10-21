@@ -1,0 +1,29 @@
+```python
+def split(s: str) -> list:
+    """
+    Split a string into a list of its individual characters.
+    
+    Args:
+        s: The input string to split.
+        
+    Returns:
+        A list of characters from the input string.
+        
+    Examples:
+        >>> split('python')
+        ['p', 'y', 't', 'h', 'o', 'n']
+    """
+    return list(s)
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+    
+    # Additional test cases
+    assert split('') == []
+    assert split('a') == ['a']
+    assert split('hello') == ['h', 'e', 'l', 'l', 'o']
+    
+    print("All tests passed!")
+```

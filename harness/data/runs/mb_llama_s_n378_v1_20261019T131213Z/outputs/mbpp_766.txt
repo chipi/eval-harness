@@ -1,0 +1,22 @@
+```python
+def pair_wise(lst):
+    """
+    Returns a list of all pairs of consecutive items in a given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: A list of tuples, where each tuple contains a pair of consecutive items.
+    """
+    return [(lst[i], lst[i+1]) for i in range(len(lst)-1)]
+
+# Example usage:
+def main():
+    print(pair_wise([1,1,2,3,3,4,4,5]))  # Output: [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+
+if __name__ == "__main__":
+    main()
+```
+
+This script defines a function `pair_wise` that uses list comprehension to generate the pairs of consecutive items. The `main` function demonstrates how to use `pair_wise` with an example list. The `if __name__ == "__main__":` block ensures that `main` is only executed when the script is run directly, not when it's imported as a module.

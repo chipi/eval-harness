@@ -1,0 +1,85 @@
+```python
+import heapq
+
+def large_product(list1, list2, n):
+    """
+    Finds the n largest products from two given lists, selecting one factor from each list.
+
+    This function uses a max-heap approach to efficiently find the top n products.
+    It first sorts both lists in descending order. Then, it uses a max-heap (simulated
+    with negative values in a min-heap) to keep track of the largest products found so far.
+    The heap stores tuples of (-product, index1, index2) to allow efficient retrieval
+    of the next largest product and its factors' indices.
+
+    Args:
+        list1 (list): The first list of numbers.
+        list2 (list): The second list of numbers.
+        n (int): The number of largest products to find.
+
+    Returns:
+        list: A list containing the n largest products, sorted in descending order.
+              Returns an empty list if n is 0 or if the input lists are empty.
+    """
+    if not list1 or not list2 or n <= 0:
+        return []
+
+    # Sort both lists in descending order to facilitate a max-heap approach.
+    # This allows us to start with the largest possible products.
+    list1_sorted = sorted(list1, reverse=True)
+    list2_sorted = sorted(list2, reverse=True)
+
+    # Use a min-heap to simulate a max-heap by storing negative values.
+    # The heap will store tuples: (-product, index1, index2).
+    # This allows us to efficiently pop the smallest negative value (which is the
+    # largest positive product) and push new candidates.
+    heap = []
+    
+    # Push the product of the largest elements from both lists as the initial candidate.
+    # We use negative values for the product to simulate a max-heap.
+    heapq.heappush(heap, (-list1_sorted[0] * list2_sorted[0], 0, 0))
+
+    # A set to keep track of the index pairs (i, j) that have already been added to the heap.
+    # This prevents duplicate entries and redundant processing.
+    visited = set()
+    visited.add((0, 0))
+
+    result = []
+
+    # Loop n times to find the n largest products.
+    for _ in range(n):
+        if not heap:
+            # If the heap is exhausted before finding n products, it means there are
+            # fewer than n unique products. Break the loop.
+            break
+
+        # Pop the largest product from the heap (remember to negate it back to positive).
+        neg_product, i, j = heapq.heappop(heap)
+        current_product = -neg_product
+        result.append(current_product)
+
+        # Find the next potential candidates by moving one index in each list.
+        # Candidate 1: Move the index in the first list (i+1, j).
+        if i + 1 < len(list1_sorted) and (i + 1, j) not in visited:
+            heapq.heappush(heap, (-list1_sorted[i + 1] * list2_sorted[j], i + 1, j))
+            visited.add((i + 1, j))
+
+        # Candidate 2: Move the index in the second list (i, j+1).
+        if j + 1 < len(list2_sorted) and (i, j + 1) not in visited:
+            heapq.heappush(heap, (-list1_sorted[i] * list2_sorted[j + 1], i, j + 1))
+            visited.add((i, j + 1))
+
+    return result
+
+# Example usage and assertion from the problem description
+assert large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3) == [60, 54, 50]
+
+# Additional test cases
+assert large_product([10, 2, 3], [5, 8, 1], 2) == [80, 30]
+assert large_product([-1, -2, -3], [-4, -5, -6], 2) == [30, 24] # Products of negatives
+assert large_product([1, 2], [3, 4], 5) == [8, 6, 4, 3] # n is larger than unique products
+assert large_product([], [1, 2], 3) == [] # Empty list
+assert large_product([1, 2], [], 3) == [] # Empty list
+assert large_product([1, 2], [3, 4], 0) == [] # n is 0
+
+print("All assertions passed.")
+```

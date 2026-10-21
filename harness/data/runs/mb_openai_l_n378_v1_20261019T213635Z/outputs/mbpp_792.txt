@@ -1,0 +1,8 @@
+```python
+def count_list(items):
+    """Count the lists directly contained in items."""
+    return sum(isinstance(item, list) for item in items)
+
+
+assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+```

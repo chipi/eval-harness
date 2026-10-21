@@ -1,0 +1,24 @@
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    This function checks if a given string starts with 'a' followed by any characters and ends with 'b'.
+    
+    Parameters:
+    text (str): The input string to be checked.
+    
+    Returns:
+    bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r'^a.*b$'
+    if re.match(pattern, text):
+        return True
+    else:
+        return False
+
+# Test the function
+print(text_starta_endb("aabbbb"))  # Should return True
+print(text_starta_endb("baabbb"))  # Should return False
+print(text_starta_endb("aabbbc"))  # Should return False
+```

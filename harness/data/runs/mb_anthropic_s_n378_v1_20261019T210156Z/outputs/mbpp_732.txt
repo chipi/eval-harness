@@ -1,0 +1,73 @@
+```python
+def replace_specialchar(text):
+    """
+    Replace all occurrences of spaces, commas, or dots with a colon.
+    
+    Args:
+        text: A string containing spaces, commas, or dots
+        
+    Returns:
+        A string with spaces, commas, and dots replaced by colons
+    """
+    result = ""
+    for char in text:
+        if char in (' ', ',', '.'):
+            result += ':'
+        else:
+            result += char
+    return result
+
+
+# Test the function
+assert replace_specialchar('Python language, Programming language.') == 'Python:language::Programming:language:'
+print("Test passed!")
+print(f"Result: {replace_specialchar('Python language, Programming language.')}")
+```
+
+**Alternative solution using `str.translate()`:**
+
+```python
+def replace_specialchar(text):
+    """
+    Replace all occurrences of spaces, commas, or dots with a colon.
+    
+    Args:
+        text: A string containing spaces, commas, or dots
+        
+    Returns:
+        A string with spaces, commas, and dots replaced by colons
+    """
+    translation_table = str.maketrans(' ,.', ':::')
+    return text.translate(translation_table)
+
+
+# Test the function
+assert replace_specialchar('Python language, Programming language.') == 'Python:language::Programming:language:'
+print("Test passed!")
+print(f"Result: {replace_specialchar('Python language, Programming language.')}")
+```
+
+**Alternative solution using `str.replace()`:**
+
+```python
+def replace_specialchar(text):
+    """
+    Replace all occurrences of spaces, commas, or dots with a colon.
+    
+    Args:
+        text: A string containing spaces, commas, or dots
+        
+    Returns:
+        A string with spaces, commas, and dots replaced by colons
+    """
+    text = text.replace(' ', ':')
+    text = text.replace(',', ':')
+    text = text.replace('.', ':')
+    return text
+
+
+# Test the function
+assert replace_specialchar('Python language, Programming language.') == 'Python:language::Programming:language:'
+print("Test passed!")
+print(f"Result: {replace_specialchar('Python language, Programming language.')}")
+```

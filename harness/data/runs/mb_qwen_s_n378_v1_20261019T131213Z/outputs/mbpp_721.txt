@@ -1,0 +1,57 @@
+```python
+def maxAverageOfPath(matrix):
+    """
+    Given a square matrix of size N*N, find the path from top-left to bottom-right
+    (moving only right or down) that has the maximum average cost.
+    
+    The average is computed as total cost divided by number of cells visited.
+    Since all paths from top-left to bottom-right in an N*N grid have exactly 
+    2*N - 1 cells, maximizing the average is equivalent to maximizing the total sum.
+    
+    Args:
+        matrix: A list of lists representing a square matrix
+        
+    Returns:
+        The maximum average value along any valid path
+    """
+    if not matrix or not matrix[0]:
+        return 0
+    
+    n = len(matrix)
+    
+    # All paths from (0,0) to (n-1,n-1) with moves right/down have exactly 2*n - 1 steps/cells
+    # So maximizing average == maximizing sum
+    # Use dynamic programming to find maximum sum path
+    
+    # dp[i][j] represents the maximum sum to reach cell (i,j)
+    dp = [[0] * n for _ in range(n)]
+    
+    # Initialize starting point
+    dp[0][0] = matrix[0][0]
+    
+    # Fill first row (can only come from left)
+    for j in range(1, n):
+        dp[0][j] = dp[0][j-1] + matrix[0][j]
+    
+    # Fill first column (can only come from above)
+    for i in range(1, n):
+        dp[i][0] = dp[i-1][0] + matrix[i][0]
+    
+    # Fill rest of the dp table
+    for i in range(1, n):
+        for j in range(1, n):
+            dp[i][j] = max(dp[i-1][j], dp[i][j-1]) + matrix[i][j]
+    
+    # Maximum sum path ends at dp[n-1][n-1]
+    max_sum = dp[n-1][n-1]
+    
+    # Number of cells in any path is 2*n - 1
+    num_cells = 2 * n - 1
+    
+    # Return the average
+    return max_sum / num_cells
+
+
+# Test case
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+```

@@ -1,0 +1,38 @@
+```python
+def convert_list_dictionary(keys, values, scores):
+    """
+    Converts three lists into a list of nested dictionaries.
+
+    Each dictionary in the resulting list has the structure:
+    {key: {value: score}}
+
+    Args:
+        keys: A list of keys for the outer dictionary.
+        values: A list of values for the inner dictionary.
+        scores: A list of scores associated with the values.
+
+    Returns:
+        A list of dictionaries, where each dictionary contains one key-value pair
+        and its associated score.
+    """
+    # Use zip to iterate over the three lists in parallel
+    # The * operator unpacks the lists into separate arguments for zip
+    return [{k: {v: s}} for k, v, s in zip(keys, values, scores)]
+
+# Example usage with the provided assertion
+if __name__ == "__main__":
+    list1 = ["S001", "S002", "S003", "S004"]
+    list2 = ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"]
+    list3 = [85, 98, 89, 92]
+
+    result = convert_list_dictionary(list1, list2, list3)
+    
+    # Print the result to verify
+    print(f"Input lists:\n  Keys: {list1}\n  Values: {list2}\n  Scores: {list3}\n")
+    print(f"Output: {result}")
+
+    # The assertion from the problem description
+    assert convert_list_dictionary(["S001", "S002", "S003", "S004"],["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"] ,[85, 98, 89, 92]) == [{'S001': {'Adina Park': 85}}, {'S002': {'Leyton Marsh': 98}}, {'S003': {'Duncan Boyle': 89}}, {'S004': {'Saim Richards': 92}}]
+
+    print("\nAssertion passed successfully!")
+```

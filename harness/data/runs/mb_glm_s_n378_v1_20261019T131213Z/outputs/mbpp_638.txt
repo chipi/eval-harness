@@ -1,0 +1,43 @@
+```python
+import math
+
+def wind_chill(velocity_kmh: float, temperature_c: float) -> int:
+    """
+    Calculates the wind chill index rounded to the next integer.
+
+    The wind chill index is an index that combines air temperature and wind speed
+    to describe the perceived feeling on human skin. The formula used is the
+    one adopted by Environment and Climate Change Canada for temperatures at or
+    below 10°C and wind speeds above 4.8 km/h.
+
+    Args:
+        velocity_kmh: The wind velocity in kilometers per hour (km/h).
+        temperature_c: The air temperature in degrees Celsius (°C).
+
+    Returns:
+        The wind chill index, rounded up to the nearest integer.
+    """
+    # The formula is only valid for temperatures at or below 10°C and wind speeds above 4.8 km/h.
+    # For other conditions, the wind chill is considered to be the same as the air temperature.
+    if temperature_c > 10 or velocity_kmh <= 4.8:
+        return math.ceil(temperature_c)
+
+    # Apply the wind chill formula
+    # WCI = 13.12 + 0.6215 * T - 11.37 * V^0.16 + 0.3965 * T * V^0.16
+    # where T is the temperature in °C and V is the wind speed in km/h.
+    wci = (13.12 + (0.6215 * temperature_c) -
+           (11.37 * (velocity_kmh ** 0.16)) +
+           (0.3965 * temperature_c * (velocity_kmh ** 0.16)))
+
+    # Round the result up to the next integer
+    return math.ceil(wci)
+
+# Example usage and assertion from the problem description
+assert wind_chill(120, 35) == 40
+
+# Additional test cases
+assert wind_chill(10, 5) == 0
+assert wind_chill(20, -10) == -17
+assert wind_chill(5, 5) == 5  # Wind speed is not > 4.8 km/h
+assert wind_chill(50, 15) == 15 # Temperature is not <= 10°C
+```

@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def issort_list(lst):
+    """
+    Check whether a specified list is sorted in ascending order.
+    
+    Args:
+        lst: A list of comparable elements
+    
+    Returns:
+        True if the list is sorted in ascending order, False otherwise
+    """
+    if len(lst) <= 1:
+        return True
+    
+    for i in range(len(lst) - 1):
+        if lst[i] > lst[i + 1]:
+            return False
+    
+    return True
+
+
+# Test the function
+assert issort_list([1,2,4,6,8,10,12,14,16,17]) == True
+assert issort_list([1,2,4,6,8,10,12,14,16,17,15]) == False
+assert issort_list([]) == True
+assert issort_list([5]) == True
+assert issort_list([1,1,1,1]) == True
+assert issort_list([3,2,1]) == False
+
+print("All tests passed!")
+```
+
+This script defines an `issort_list` function that:
+1. Returns `True` for lists with 0 or 1 elements (trivially sorted)
+2. Iterates through the list comparing adjacent elements
+3. Returns `False` if any element is greater than the next one
+4. Returns `True` if the entire list is in non-decreasing order
+
+The function handles edge cases like empty lists, single-element lists, and lists with duplicate values.

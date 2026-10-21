@@ -1,0 +1,45 @@
+```python
+def prime_num(n):
+    """
+    Checks if a given integer is a prime number.
+    
+    Args:
+        n (int): The integer to check.
+        
+    Returns:
+        bool: True if n is prime, False otherwise.
+    """
+    # Prime numbers must be greater than 1
+    if n <= 1:
+        return False
+    
+    # 2 and 3 are prime numbers
+    if n <= 3:
+        return True
+    
+    # Eliminate even numbers and multiples of 3
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    
+    # Check divisors from 5 up to the square root of n
+    # We use the 6k +/- 1 rule for optimization
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+        
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    assert prime_num(13) == True
+    assert prime_num(1) == False
+    assert prime_num(2) == True
+    assert prime_num(4) == False
+    assert prime_num(17) == True
+    assert prime_num(25) == False
+    assert prime_num(97) == True
+    
+    print("All tests passed!")
+```

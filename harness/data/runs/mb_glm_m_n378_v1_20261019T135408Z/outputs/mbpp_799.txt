@@ -1,0 +1,37 @@
+Here's a self-contained Python script that implements the left rotation of a 32-bit number by `d` bits:
+
+```python
+def left_rotate(n, d):
+    """
+    Rotate the bits of a 32-bit number n left by d bits.
+    
+    Args:
+        n (int): The number to rotate (assumed to be 32-bit).
+        d (int): The number of bits to rotate left by.
+    
+    Returns:
+        int: The result of rotating n left by d bits.
+    """
+    # Ensure d is within 0-31 (since rotating by 32 is the same as no rotation)
+    d = d % 32
+    # Left rotate n by d bits
+    return ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+
+# Test cases
+assert left_rotate(16, 2) == 64, "Test case 1 failed"
+assert left_rotate(0x80000000, 1) == 1, "Test case 2 failed"  # Rotating the highest bit to the lowest
+assert left_rotate(0x12345678, 4) == 0x23456781, "Test case 3 failed"
+assert left_rotate(0x12345678, 32) == 0x12345678, "Test case 4 failed"  # No rotation
+assert left_rotate(0x12345678, 0) == 0x12345678, "Test case 5 failed"  # No rotation
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Modulo Operation**: The rotation amount `d` is taken modulo 32 to handle cases where `d` is larger than 31 (since rotating by 32 bits is the same as no rotation).
+2. **Bit Rotation**: 
+   - `n << d` shifts the bits of `n` left by `d` positions.
+   - `n >> (32 - d)` shifts the bits of `n` right by `32 - d` positions to capture the bits that would wrap around.
+   - The bitwise OR `|` combines these two results to achieve the rotation.
+3. **Masking**: The result is masked with `0xFFFFFFFF` to ensure it remains a 32-bit number (handles overflow).
+4. **Test Cases**: The script includes several test cases to verify correctness, including the one provided in the problem statement.

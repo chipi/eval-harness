@@ -1,0 +1,57 @@
+Here's a self-contained Python script with the `is_undulating` function:
+
+```python
+def is_undulating(num):
+    """
+    Check if a number is undulating.
+    An undulating number follows the pattern ababab... where 'a' and 'b' are distinct digits.
+    
+    Args:
+        num: An integer to check
+        
+    Returns:
+        bool: True if the number is undulating, False otherwise
+    """
+    # Convert number to string for easy character access
+    s = str(num)
+    
+    # Undulating numbers need at least 2 digits
+    if len(s) < 2:
+        return False
+    
+    # The first two digits must be different
+    if s[0] == s[1]:
+        return False
+    
+    # Check if the pattern alternates
+    # s[0] should equal s[2], s[4], ... (even indices)
+    # s[1] should equal s[3], s[5], ... (odd indices)
+    for i in range(2, len(s)):
+        # Even index should match s[0], odd index should match s[1]
+        if i % 2 == 0:
+            if s[i] != s[0]:
+                return False
+        else:
+            if s[i] != s[1]:
+                return False
+    
+    return True
+
+
+# Test the function
+assert is_undulating(1212121) == True
+assert is_undulating(12) == True
+assert is_undulating(121) == True
+assert is_undulating(11) == False
+assert is_undulating(123) == False
+assert is_undulating(12123) == False
+assert is_undulating(123123) == False
+
+print("All tests passed!")
+```
+
+The function works by:
+1. Converting the number to a string
+2. Checking that the number has at least 2 digits
+3. Verifying the first two digits are different
+4. Checking that digits at even positions match the first digit and digits at odd positions match the second digit

@@ -1,0 +1,20 @@
+```python
+import re
+
+def text_match_three(text):
+    """
+    This function checks if the given text matches the pattern 'abbb'.
+    
+    Args:
+        text (str): The input string to be checked.
+    
+    Returns:
+        bool: True if the text matches the pattern, False otherwise.
+    """
+    pattern = re.compile(r'abbb')
+    return bool(pattern.fullmatch(text))
+
+# Test the function
+print(text_match_three("abbb"))  # True
+print(text_match_three("ac"))    # False
+```

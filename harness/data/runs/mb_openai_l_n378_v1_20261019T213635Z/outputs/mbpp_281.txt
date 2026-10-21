@@ -1,0 +1,8 @@
+```python
+def all_unique(items):
+    return len(items) == len(set(items))
+
+
+assert all_unique([1, 2, 3]) is True
+assert all_unique([1, 2, 1]) is False
+```

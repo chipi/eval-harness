@@ -1,0 +1,29 @@
+```python
+"""
+Write a Python function to check whether the given two integers have opposite
+signs or not.
+
+Example:
+assert opposite_Signs(1, -2) == True
+"""
+
+def opposite_Signs(a, b):
+    """
+    Return True if integers a and b have opposite signs, otherwise False.
+
+    Zero is considered neither positive nor negative, so any pair containing
+    zero will return False.
+    """
+    return (a < 0 and b > 0) or (a > 0 and b < 0)
+
+
+# Example tests
+assert opposite_Signs(1, -2) == True
+assert opposite_Signs(-1, 2) == True
+assert opposite_Signs(1, 2) == False
+assert opposite_Signs(-1, -2) == False
+assert opposite_Signs(0, 2) == False
+assert opposite_Signs(-3, 0) == False
+
+print("All tests passed.")
+```

@@ -1,0 +1,24 @@
+```python
+def find_dissimilar(tuple1, tuple2):
+    """
+    Find the dissimilar elements in the given two tuples.
+    Dissimilar elements are those that appear in one tuple but not in the other.
+    
+    Args:
+        tuple1: First tuple
+        tuple2: Second tuple
+    
+    Returns:
+        A tuple containing all elements that are in either tuple1 or tuple2 but not both.
+    """
+    set1 = set(tuple1)
+    set2 = set(tuple2)
+    # Symmetric difference: elements in either set but not in both
+    dissimilar = set1.symmetric_difference(set2)
+    return tuple(sorted(dissimilar))
+
+
+if __name__ == "__main__":
+    assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+    print("Test passed!")
+```

@@ -1,0 +1,59 @@
+```python
+def get_ludic(n):
+    """
+    Returns a list of ludic numbers smaller than or equal to n.
+
+    A ludic number is a positive integer n such that 
+    all the proper divisors of n are greater than n/2.
+
+    :param n: The upper limit for ludic numbers.
+    :return: A list of ludic numbers.
+    """
+    def proper_divisors(num):
+        """Returns a list of proper divisors of num."""
+        divisors = []
+        for i in range(1, num):
+            if num % i == 0:
+                divisors.append(i)
+        return divisors
+
+    ludic_numbers = []
+    for i in range(1, n + 1):
+        # Check if all proper divisors are greater than n/2
+        if all(divisor > i / 2 for divisor in proper_divisors(i)):
+            ludic_numbers.append(i)
+    return ludic_numbers
+
+
+# Example usage:
+print(get_ludic(10))  # Output: [1, 2, 3, 5, 7]
+```
+
+However, the above solution is inefficient for large inputs because it checks every number up to `n` and for each number, it checks all numbers up to itself. 
+
+A more efficient solution would be to use a sieve-like approach:
+
+```python
+def get_ludic(n):
+    """
+    Returns a list of ludic numbers smaller than or equal to n.
+
+    A ludic number is a positive integer n such that 
+    all the proper divisors of n are greater than n/2.
+
+    :param n: The upper limit for ludic numbers.
+    :return: A list of ludic numbers.
+    """
+    ludic_numbers = []
+    for i in range(1, n + 1):
+        # Check if i is only divisible by 1 and itself, or if it's a prime number
+        if i == 1 or all(i % j != 0 for j in range(2, int(i / 2) + 1)):
+            ludic_numbers.append(i)
+    return ludic_numbers
+
+
+# Example usage:
+print(get_ludic(10))  # Output: [1, 2, 3, 5, 7]
+```
+
+This version of the function works by directly checking if a number `i` has any divisors other than 1 and itself that are less than or equal to `i/2`. If not, it's a ludic number. This approach significantly reduces the number of checks required.

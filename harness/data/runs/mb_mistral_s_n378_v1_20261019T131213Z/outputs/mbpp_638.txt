@@ -1,0 +1,38 @@
+Here's a self-contained Python script that calculates the wind chill index rounded to the next integer, given wind velocity in km/h and temperature in Celsius:
+
+```python
+import math
+
+def wind_chill(wind_velocity, temperature):
+    """
+    Calculate the wind chill index rounded to the next integer.
+
+    Parameters:
+    wind_velocity (float): Wind speed in km/h
+    temperature (float): Temperature in Celsius
+
+    Returns:
+    int: Wind chill index rounded to the next integer
+    """
+    # Convert wind velocity from km/h to m/s (required by the formula)
+    wind_speed = wind_velocity / 3.6
+
+    # Calculate wind chill index using the standard formula
+    wind_chill_index = 13.12 + 0.6215 * temperature - 11.37 * (wind_speed ** 0.16) + 0.3965 * temperature * (wind_speed ** 0.16)
+
+    # Round to the next integer (using math.ceil)
+    return math.ceil(wind_chill_index)
+
+# Test case
+assert wind_chill(120, 35) == 40
+```
+
+This script:
+1. Imports the math module for the ceil function
+2. Defines the wind_chill function that takes wind velocity (km/h) and temperature (Celsius)
+3. Converts the wind velocity to m/s (required by the standard wind chill formula)
+4. Calculates the wind chill index using the standard formula
+5. Rounds the result to the next integer using math.ceil
+6. Includes the test case from the problem statement
+
+The formula used is the standard wind chill formula that combines temperature and wind speed to calculate perceived temperature. The result is then rounded up to the nearest integer as requested.

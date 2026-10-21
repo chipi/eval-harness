@@ -1,0 +1,17 @@
+```python
+def find_Index(n):
+    # Initialize result
+    index = 0
+
+    # Calculate triangular number
+    triangular_number = 0
+
+    # Calculate index
+    while True:
+        index += 1
+        triangular_number += index
+
+        # Check if number of digits in triangular number is n
+        if len(str(triangular_number)) == n:
+            return index
+```

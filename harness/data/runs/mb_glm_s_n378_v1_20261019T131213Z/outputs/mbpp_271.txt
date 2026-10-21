@@ -1,0 +1,45 @@
+```python
+def even_Power_Sum(n: int) -> int:
+    """
+    Calculates the sum of the first n even natural numbers, each raised to the fifth power.
+
+    An even natural number can be represented as 2k, where k is a natural number.
+    The first n even numbers are 2*1, 2*2, ..., 2*n.
+    The function computes the sum: (2*1)^5 + (2*2)^5 + ... + (2*n)^5.
+
+    Args:
+        n: A non-negative integer representing the count of even numbers to sum.
+
+    Returns:
+        The sum of the first n even natural numbers raised to the fifth power.
+
+    Examples:
+        >>> even_Power_Sum(2)
+        1056
+        >>> even_Power_Sum(3)
+        1056 + 8192 = 9248
+        >>> even_Power_Sum(0)
+        0
+    """
+    if n < 0:
+        raise ValueError("Input 'n' must be a non-negative integer.")
+    
+    # The sum can be expressed as sum((2*i)^5) for i from 1 to n.
+    # This is equivalent to 2^5 * sum(i^5) for i from 1 to n.
+    # 2^5 = 32.
+    # We can use a generator expression for a concise and efficient solution.
+    return sum((2 * i) ** 5 for i in range(1, n + 1))
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    # Test case from the problem
+    assert even_Power_Sum(2) == 1056, f"Test failed: even_Power_Sum(2) returned {even_Power_Sum(2)}, expected 1056"
+    
+    # Additional test cases
+    assert even_Power_Sum(0) == 0, f"Test failed: even_Power_Sum(0) returned {even_Power_Sum(0)}, expected 0"
+    assert even_Power_Sum(1) == 32, f"Test failed: even_Power_Sum(1) returned {even_Power_Sum(1)}, expected 32"
+    assert even_Power_Sum(3) == 9248, f"Test failed: even_Power_Sum(3) returned {even_Power_Sum(3)}, expected 9248"
+    assert even_Power_Sum(5) == 80000, f"Test failed: even_Power_Sum(5) returned {even_Power_Sum(5)}, expected 80000"
+
+    print("All tests passed successfully!")
+```

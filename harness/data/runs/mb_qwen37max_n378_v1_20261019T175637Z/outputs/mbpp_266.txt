@@ -1,0 +1,20 @@
+```python
+def lateralsurface_cube(side):
+    """
+    Find the lateral surface area of a cube given its side length.
+    
+    The lateral surface area of a cube is the area of the four vertical faces,
+    which equals 4 * side^2.
+    
+    Args:
+        side: The side length of the cube.
+        
+    Returns:
+        The lateral surface area of the cube.
+    """
+    return 4 * side * side
+
+
+# Test
+assert lateralsurface_cube(5) == 100
+```

@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def even_Power_Sum(n):
+    """
+    Calculate the sum of the first n even natural numbers raised to the fifth power.
+
+    Args:
+        n (int): The number of even natural numbers to consider.
+
+    Returns:
+        int: The sum of the first n even natural numbers each raised to the fifth power.
+    """
+    total = 0
+    count = 0
+    num = 2  # The first even natural number
+
+    while count < n:
+        total += num ** 5
+        num += 2  # Move to the next even number
+        count += 1
+
+    return total
+
+# Test the function with the provided assertion
+assert even_Power_Sum(2) == 1056
+```
+
+### Explanation:
+1. The function `even_Power_Sum` takes an integer `n` as input.
+2. It initializes `total` to 0 to accumulate the sum, `count` to 0 to keep track of how many even numbers have been processed, and `num` to 2 (the first even natural number).
+3. The loop continues until `count` reaches `n`. In each iteration:
+   - The current even number (`num`) is raised to the fifth power and added to `total`.
+   - `num` is incremented by 2 to get the next even number.
+   - `count` is incremented by 1.
+4. The function returns the accumulated `total`.
+5. The assertion checks that `even_Power_Sum(2)` returns `1056`, which is correct because:
+   - The first 2 even numbers are 2 and 4.
+   - \(2^5 + 4^5 = 32 + 1024 = 1056\).

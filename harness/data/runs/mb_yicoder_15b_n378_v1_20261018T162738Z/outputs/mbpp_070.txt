@@ -1,0 +1,14 @@
+```python
+def get_equal(tuples):
+    if len(tuples) == 0:
+        return True
+    else:
+        return len(tuples[0]) == len(tuples) and all(len(t) == len(tuples[0]) for t in tuples)
+
+# Test cases
+print(get_equal([(11, 22, 33), (44, 55, 66)]))  # Expected output: True
+print(get_equal([(11, 22), (33, 44, 55, 66)]))  # Expected output: False
+print(get_equal([(11,), (22,), (33,), (44,), (55,)]))  # Expected output: True
+print(get_equal([(11, 22, 33), (44, 55)]))  # Expected output: False
+print(get_equal([]))  # Expected output: True
+```

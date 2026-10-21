@@ -1,0 +1,29 @@
+```python
+def number_of_substrings(s: str) -> int:
+    """
+    This function calculates the number of non-empty substrings of a given string.
+    
+    Args:
+    s (str): The input string.
+    
+    Returns:
+    int: The number of non-empty substrings.
+    """
+    count = 0
+    n = len(s)
+    
+    # Generate all possible substrings
+    for i in range(n):
+        for j in range(i + 1, n + 1):
+            # Check if the substring is not empty
+            if s[i:j]:
+                count += 1
+                
+    return count
+
+# Test the function
+assert number_of_substrings("abc") == 6
+print(number_of_substrings("abc"))  # Output: 6
+```
+
+This script defines a function `number_of_substrings` that takes a string `s` as input and returns the number of non-empty substrings. It uses nested loops to generate all possible substrings of the input string and increments a counter for each non-empty substring found. The function is then tested with the string "abc" to verify that it returns the expected result.

@@ -1,0 +1,45 @@
+```python
+"""
+Write a python function to check whether any value in a sequence exists in a sequence or not.
+assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+"""
+
+def overlapping(seq1, seq2):
+    """
+    Check if any value from seq1 exists in seq2 (or vice versa).
+    
+    Args:
+        seq1: First sequence (list, tuple, etc.)
+        seq2: Second sequence (list, tuple, etc.)
+    
+    Returns:
+        True if there is at least one common element, False otherwise.
+    """
+    # Convert to sets for efficient intersection check
+    return bool(set(seq1) & set(seq2))
+
+
+# Test cases
+if __name__ == "__main__":
+    # Original test
+    assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+    print("Test 1 passed: No overlap")
+    
+    # Test with overlap
+    assert overlapping([1,2,3],[3,4,5]) == True
+    print("Test 2 passed: Overlap exists")
+    
+    # Test with empty sequences
+    assert overlapping([], [1,2,3]) == False
+    print("Test 3 passed: Empty sequence")
+    
+    # Test with identical sequences
+    assert overlapping([1,2,3],[1,2,3]) == True
+    print("Test 4 passed: Identical sequences")
+    
+    # Test with different types (tuple and list)
+    assert overlapping((1,2,3), [4,5,6]) == False
+    print("Test 5 passed: Different sequence types")
+    
+    print("\nAll tests passed!")
+```

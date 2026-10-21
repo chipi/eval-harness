@@ -1,0 +1,41 @@
+Looking at this problem, I need to find the maximum absolute product of the two numbers within each tuple.
+
+Let me verify with the example:
+- `(2, 7)` → |2 × 7| = 14
+- `(2, 6)` → |2 × 6| = 12
+- `(1, 8)` → |1 × 8| = 8
+- `(4, 9)` → |4 × 9| = 36 ← maximum
+
+```python
+"""
+Write a function to find the maximum absolute product between numbers in pairs of tuples within a given list.
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)] )==36
+"""
+
+
+def max_product_tuple(list1):
+    """
+    Return the maximum absolute product of the numbers inside each tuple
+    of the given list of pairs.
+
+    :param list1: list of tuples, each containing two numbers
+    :return: maximum value of abs(x * y) over all (x, y) in list1
+    """
+    if not list1:
+        raise ValueError("The input list must contain at least one tuple.")
+    return max(abs(x * y) for x, y in list1)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+
+    # Additional test cases
+    assert max_product_tuple([(10, 20), (15, 2), (5, 10)]) == 200
+    assert max_product_tuple([(11, 44), (10, 15), (20, 5), (12, 9)]) == 484
+    assert max_product_tuple([(-3, 4), (2, 2)]) == 12
+    assert max_product_tuple([(0, 5), (-1, -1)]) == 1
+
+    print("All tests passed!")
+    print(max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]))  # 36
+```

@@ -1,0 +1,15 @@
+```python
+def last_Digit_Factorial(n):
+    """
+    Find the last digit in factorial of a given number.
+    
+    For n >= 5, n! contains factors 2 and 5, so it ends in 0.
+    For n < 5, we compute directly.
+    """
+    if n >= 5:
+        return 0
+    factorial = 1
+    for i in range(1, n + 1):
+        factorial *= i
+    return factorial % 10
+```

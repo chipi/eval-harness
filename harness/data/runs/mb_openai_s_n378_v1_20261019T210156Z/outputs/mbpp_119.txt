@@ -1,0 +1,29 @@
+```python
+def search(arr):
+    """
+    Return the element that appears only once in a sorted array
+    where every other element appears exactly twice.
+    """
+    left, right = 0, len(arr) - 1
+
+    while left < right:
+        mid = (left + right) // 2
+
+        # Make mid even so it points to the first index of a pair
+        if mid % 2 == 1:
+            mid -= 1
+
+        if arr[mid] == arr[mid + 1]:
+            # Unique element is to the right
+            left = mid + 2
+        else:
+            # Unique element is at mid or to the left
+            right = mid
+
+    return arr[left]
+
+
+if __name__ == "__main__":
+    assert search([1, 1, 2, 2, 3]) == 3
+    print("All tests passed.")
+```

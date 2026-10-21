@@ -1,0 +1,34 @@
+```python
+import math
+import cmath
+
+def convert(complex_num):
+    """
+    Converts a complex number to polar coordinates (r, theta).
+    r is the magnitude (absolute value).
+    theta is the phase angle in radians.
+    """
+    # Ensure the input is treated as a complex number
+    z = complex(complex_num)
+    
+    # cmath.polar returns a tuple (r, phi)
+    r, phi = cmath.polar(z)
+    
+    return (float(r), float(phi))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # 1 is treated as 1 + 0j
+    result = convert(1)
+    print(f"convert(1) -> {result}")
+    assert result == (1.0, 0.0)
+
+    # Additional test cases
+    # 1 + 1j should have r = sqrt(2) and theta = pi/4
+    result_complex = convert(1 + 1j)
+    print(f"convert(1 + 1j) -> {result_complex}")
+    assert math.isclose(result_complex[0], math.sqrt(2))
+    assert math.isclose(result_complex[1], math.pi / 4)
+
+    print("All tests passed!")
+```

@@ -1,0 +1,66 @@
+```python
+def is_undulating(n: int) -> bool:
+    """
+    Check whether the given number is undulating or not.
+    
+    An undulating number is a number that has the digit pattern ABABAB... 
+    where A and B are different digits and the pattern continues.
+    
+    Args:
+        n: The integer to check
+        
+    Returns:
+        True if the number is undulating, False otherwise
+    """
+    # Convert to string for digit manipulation
+    s = str(n)
+    
+    # A number with less than 3 digits cannot be undulating (need at least AB)
+    if len(s) < 3:
+        return False
+    
+    # Get first two digits (A and B)
+    a, b = s[0], s[1]
+    
+    # A and B must be different
+    if a == b:
+        return False
+    
+    # Check that the pattern ABAB... holds for all digits
+    for i, digit in enumerate(s):
+        if i % 2 == 0:
+            # Even positions (0, 2, 4, ...) should be A
+            if digit != a:
+                return False
+        else:
+            # Odd positions (1, 3, 5, ...) should be B
+            if digit != b:
+                return False
+    
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert is_undulating(1212121) == True
+    print("Test 1 passed: 1212121 is undulating")
+    
+    # Additional test cases
+    assert is_undulating(121) == True
+    print("Test 2 passed: 121 is undulating")
+    
+    assert is_undulating(123) == False  # pattern breaks at third digit
+    print("Test 3 passed: 123 is not undulating")
+    
+    assert is_undulating(111) == False  # same digit repeated
+    print("Test 4 passed: 111 is not undulating")
+    
+    assert is_undulating(12) == False  # too short
+    print("Test 5 passed: 12 is not undulating")
+    
+    assert is_undulating(81818181) == True
+    print("Test 6 passed: 81818181 is undulating")
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,10 @@
+```python
+def number_ctr(s):
+    return sum(1 for ch in s if ch.isdigit())
+
+
+assert number_ctr('program2bedone') == 1
+
+if __name__ == "__main__":
+    print(number_ctr('program2bedone'))
+```

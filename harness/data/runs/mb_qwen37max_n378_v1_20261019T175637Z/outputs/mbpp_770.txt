@@ -1,0 +1,18 @@
+```python
+def odd_num_sum(n):
+    """
+    Find the sum of fourth power of first n odd natural numbers.
+    
+    The first n odd natural numbers are: 1, 3, 5, ..., (2n-1)
+    Returns the sum of their fourth powers.
+    """
+    total = 0
+    for i in range(1, n + 1):
+        odd = 2 * i - 1
+        total += odd ** 4
+    return total
+
+
+# Test
+assert odd_num_sum(2) == 82  # 1^4 + 3^4 = 1 + 81 = 82
+```

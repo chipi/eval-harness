@@ -1,0 +1,37 @@
+```python
+def cube_nums(nums):
+    """
+    This function takes a list of numbers as input and returns a new list containing the cubes of each number.
+
+    Args:
+        nums (list): A list of numbers.
+
+    Returns:
+        list: A list of cubes of the input numbers.
+    """
+    # Use list comprehension to generate a new list with cubes of each number
+    return [num ** 3 for num in nums]
+
+# Test the function
+assert cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+```
+
+Alternatively, you can use the `map` function in combination with a lambda function to achieve the same result:
+
+```python
+def cube_nums(nums):
+    """
+    This function takes a list of numbers as input and returns a new list containing the cubes of each number.
+
+    Args:
+        nums (list): A list of numbers.
+
+    Returns:
+        list: A list of cubes of the input numbers.
+    """
+    # Use map function to generate a new list with cubes of each number
+    return list(map(lambda x: x ** 3, nums))
+
+# Test the function
+assert cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+```

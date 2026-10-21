@@ -1,0 +1,133 @@
+{
+  "adapter": "examples/code-mbpp-plus/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "79f02239d03edfc6faa0c7c1e3ed6d58d764682d",
+    "source": "git"
+  },
+  "config_id": "mb_qwencoder_15b_n378_v1",
+  "created_at": "2026-10-18T13:03:49Z",
+  "dataset_id": "mbppplus_378",
+  "fingerprint": {
+    "arm": {
+      "config_id": "mb_qwencoder_15b_n378_v1",
+      "params": {
+        "family": "qwen-coder",
+        "max_new_tokens": 768,
+        "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+        "precision": "fp32",
+        "price_tier": "free",
+        "prompt_file": "prompt.txt",
+        "provider": "local",
+        "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a"
+      }
+    },
+    "data": {
+      "dataset_id": "mbppplus_378",
+      "items_sha256": "bdc8a93cb44edbfc172656c31d5d1fe6407e78e469861fe83177ccf40f5902ef",
+      "n_items": 378,
+      "reference_id": "gold/mbppplus_378",
+      "reference_tier": "gold",
+      "references_sha256": "28cb6d415d57f58fbfdb7d6618714ef489dba65dba08ea51c65de680ad8c37ec"
+    },
+    "hash": "a18559e5d655eea43540594c31d2477a55400c39431d6ab34ea4288db54a363b",
+    "host": {
+      "cpu_count": 32,
+      "label": "omarchy",
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/code-mbpp-plus/adapter.py",
+        "sha256": "2a8b00dd296d2f485e042ea2b9b1c94826dd44ee7ba801327a40f34753d666c6"
+      },
+      "harness": {
+        "commit": "79f02239d03e",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "code_sha256": "be9fe5a900dd6f7514d44f5ccea74c7d558e5b9abfbadf691ab801b0338a6e20",
+        "decoding": "greedy",
+        "device": "cpu",
+        "id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+        "identity_declared": true,
+        "loaded_dtype": "float32",
+        "loaded_revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+        "max_new_tokens": 768,
+        "pin_satisfied": true,
+        "precision": "fp32",
+        "prompt_sha256": "65e89c87d749ee294ce4069d771f97c1fe99a6def34a59035b25a12fdcd33cdf",
+        "python": "3.11.16",
+        "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+        "revision_source": "hf-snapshot",
+        "sandbox": "linux-namespaces",
+        "sandbox_probe": {
+          "catches_wrong_code": "fail",
+          "fork": "pass",
+          "network": "error",
+          "runs_code": "pass",
+          "timeout": "timeout",
+          "write_home": "error"
+        },
+        "scorer_sha256": "4b639a9170d3c2a8819305375680b58f87bc2e0941b66101312b1f270a158444",
+        "weight_files": [
+          "model.safetensors:3087467144"
+        ]
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "code_found": "descriptive",
+    "pass_base": "quality",
+    "pass_plus": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "syntax_ok": "descriptive",
+    "timeout": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 378,
+  "params": {
+    "family": "qwen-coder",
+    "max_new_tokens": 768,
+    "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "precision": "fp32",
+    "price_tier": "free",
+    "prompt_file": "prompt.txt",
+    "provider": "local",
+    "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a"
+  },
+  "primary_metric": "pass_plus",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "mb_qwencoder_15b_n378_v1_20261018T083724Z",
+  "scores": {
+    "code_found": 1.0,
+    "cost_usd": 0.0,
+    "latency_ms": 41219.17272,
+    "pass_base": 0.637566,
+    "pass_plus": 0.544974,
+    "resumed": 0.0,
+    "syntax_ok": 1.0,
+    "timeout": 0.002646,
+    "tokens_in": 124.433862,
+    "tokens_out": 186.05291,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 47036.0,
+    "total_tokens_out": 70328.0,
+    "truncated": 0.044974
+  },
+  "warmup_ms": 243622.072
+}

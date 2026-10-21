@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def list_tuple(lst):
+    """
+    Convert a list to a tuple.
+    
+    Args:
+        lst: A list of elements
+        
+    Returns:
+        A tuple containing the same elements as the input list
+    """
+    return tuple(lst)
+
+# Test the function
+if __name__ == "__main__":
+    assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+    print("Test passed!")
+```

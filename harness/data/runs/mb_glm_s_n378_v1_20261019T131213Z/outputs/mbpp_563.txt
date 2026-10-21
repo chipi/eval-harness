@@ -1,0 +1,62 @@
+```python
+import re
+
+def extract_values(s: str) -> list[str]:
+    """
+    Extracts values enclosed in double quotation marks from a string.
+
+    This function uses a regular expression to find all non-greedy matches
+    for a pattern that starts with a double quote, captures any characters
+    in between, and ends with a double quote.
+
+    Args:
+        s: The input string to search within.
+
+    Returns:
+        A list of strings found inside the double quotes.
+        Returns an empty list if no matches are found.
+
+    Example:
+        >>> extract_values('"Python", "PHP", "Java"')
+        ['Python', 'PHP', 'Java']
+        >>> extract_values('No quotes here')
+        []
+        >>> extract_values('Single "quote" and another "one"')
+        ['quote', 'one']
+    """
+    # The regex pattern r'"(.*?)"' works as follows:
+    # "   - matches a literal double quote
+    # (   - starts a capturing group
+    # .*? - matches any character (.) zero or more times (*),
+    #       but in a non-greedy way (?) to stop at the first quote
+    # )   - ends the capturing group
+    # "   - matches a literal closing double quote
+    pattern = r'"(.*?)"'
+    
+    # re.findall() finds all non-overlapping matches of the pattern in the string
+    # and returns them as a list of strings. The captured group content is returned.
+    return re.findall(pattern, s)
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    input_string = '"Python", "PHP", "Java"'
+    expected_output = ['Python', 'PHP', 'Java']
+    
+    result = extract_values(input_string)
+    
+    print(f"Input string: {input_string}")
+    print(f"Extracted values: {result}")
+    print(f"Expected output: {expected_output}")
+    
+    assert result == expected_output
+    print("\nAssertion passed!")
+
+    # Additional test cases
+    assert extract_values('No quotes here') == []
+    assert extract_values('Single "quote" and another "one"') == ['quote', 'one']
+    assert extract_values('Unmatched "quote') == []
+    assert extract_values('') == []
+    assert extract_values('""') == ['']
+    
+    print("All additional assertions passed!")
+```

@@ -1,0 +1,19 @@
+```python
+def tetrahedral_number(n):
+    """
+    Find the nth tetrahedral number.
+    
+    The nth tetrahedral number is given by the formula: n * (n + 1) * (n + 2) / 6
+    
+    Args:
+        n: A positive integer representing the position in the tetrahedral number sequence.
+        
+    Returns:
+        The nth tetrahedral number.
+    """
+    return n * (n + 1) * (n + 2) // 6
+
+
+# Test
+assert tetrahedral_number(5) == 35
+```

@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem of checking if two sequences follow the same pattern:
+
+```python
+def is_samepatterns(seq1, seq2):
+    if len(seq1) != len(seq2):
+        return False
+
+    # Create mapping dictionaries for both sequences
+    map1 = {}
+    map2 = {}
+
+    for a, b in zip(seq1, seq2):
+        # Check if the mapping from seq1 to seq2 is consistent
+        if a in map1:
+            if map1[a] != b:
+                return False
+        else:
+            map1[a] = b
+
+        # Check if the mapping from seq2 to seq1 is consistent
+        if b in map2:
+            if map2[b] != a:
+                return False
+        else:
+            map2[b] = a
+
+    return True
+
+# Test cases
+assert is_samepatterns(["red","green","green"], ["a", "b", "b"]) == True
+assert is_samepatterns(["red","green","blue"], ["a", "b", "c"]) == True
+assert is_samepatterns(["red","green","green"], ["a", "a", "b"]) == False
+assert is_samepatterns(["red","green","green"], ["a", "b", "a"]) == False
+assert is_samepatterns([], []) == True
+assert is_samepatterns(["x"], ["y"]) == True
+assert is_samepatterns(["x", "x"], ["y", "y"]) == True
+
+print("All test cases passed!")
+```
+
+This script defines a function `is_samepatterns` that checks if two sequences follow the same pattern by:
+1. First verifying they have the same length
+2. Creating two mapping dictionaries to track the relationships between elements
+3. Ensuring that each element in the first sequence maps to exactly one element in the second sequence and vice versa
+4. Returning True only if all mappings are consistent
+
+The test cases verify various scenarios including:
+- Basic matching patterns
+- Non-matching patterns
+- Empty sequences
+- Single-element sequences
+- Repeated elements

@@ -1,0 +1,20 @@
+```python
+def overlapping(seq1, seq2):
+    # Convert the sequences to sets to remove duplicates
+    set1 = set(seq1)
+    set2 = set(seq2)
+
+    # Check if any value in the first set exists in the second set
+    if any(item in set2 for item in set1):
+        return True
+    else:
+        return False
+
+# Test cases
+assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+assert overlapping([1,2,3,4,5],[1,2,3,4,5]) == True
+assert overlapping([],[]) == False
+assert overlapping([],[1,2,3,4,5]) == False
+assert overlapping([1,2,3,4,5],[]) == False
+assert overlapping([1,2,3,4,5],[6,7,8,9,1,2,3,4,5,6,7,8,9]) == True
+```

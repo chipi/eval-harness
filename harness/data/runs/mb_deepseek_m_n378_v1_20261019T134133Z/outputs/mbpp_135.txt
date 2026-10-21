@@ -1,0 +1,24 @@
+Here’s a self-contained Python script that calculates the nth hexagonal number and verifies it against the given test case:
+
+```python
+"""
+Write a function to find the nth hexagonal number.
+assert hexagonal_num(10) == 190
+"""
+
+def hexagonal_num(n):
+    """
+    Returns the nth hexagonal number.
+    Formula: H(n) = 2n^2 - n
+    """
+    return 2 * n * n - n
+
+
+# Tests
+assert hexagonal_num(10) == 190
+assert hexagonal_num(1) == 1
+assert hexagonal_num(2) == 6
+assert hexagonal_num(3) == 15
+
+print("All tests passed.")
+```

@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem using the `re` module to find a regex pattern in a string and return the matching substring along with its start and end indices:
+
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Search a string for a regex pattern and return the matching substring,
+    start index, and end index.
+
+    Args:
+        text (str): The string to search.
+        pattern (str): The regex pattern to search for.
+
+    Returns:
+        tuple: A tuple containing (matching_substring, start_index, end_index).
+               Returns (None, -1, -1) if no match is found.
+    """
+    match = re.search(pattern, text)
+    if match:
+        return (match.group(), match.start(), match.end())
+    else:
+        return (None, -1, -1)
+
+# Test the function
+assert find_literals('The quick brown fox jumps over the lazy dog.', 'fox') == ('fox', 16, 19)
+print("Test passed!")
+```
+
+### Explanation:
+1. The `find_literals` function uses `re.search` to find the first occurrence of the `pattern` in the `text`.
+2. If a match is found, it returns a tuple containing:
+   - The matched substring (`match.group()`)
+   - The start index of the match (`match.start()`)
+   - The end index of the match (`match.end()`)
+3. If no match is found, it returns `(None, -1, -1)`.
+4. The provided test case checks that the function works as expected.
+
+You can run this script directly, and it will print "Test passed!" if the assertion is satisfied.

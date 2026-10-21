@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Returns True if the string starts with 'a' and ends with 'b',
+    with anything in between. Otherwise returns False.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, text))
+
+# Test cases
+assert text_starta_endb("aabbbb") == True
+assert text_starta_endb("ab") == True
+assert text_starta_endb("a123b") == True
+assert text_starta_endb("ba") == False
+assert text_starta_endb("a") == False
+assert text_starta_endb("b") == False
+assert text_starta_endb("abc") == False
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The regex pattern `^a.*b$` breaks down as:
+  - `^` — anchors the match at the start of the string.
+  - `a` — requires the first character to be `'a'`.
+  - `.*` — matches any characters (except newlines by default) zero or more times.
+  - `b` — requires the last character to be `'b'`.
+  - `$` — anchors the match at the end of the string.
+
+- `re.match()` returns a match object if the pattern matches from the beginning, otherwise `None`. Wrapping it in `bool()` converts the result to `True`/`False`.
+
+- The assertion `text_starta_endb("aabbbb")` passes because the string starts with `'a'` and ends with `'b'`.

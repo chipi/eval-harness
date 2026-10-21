@@ -1,0 +1,41 @@
+```python
+"""
+Write a python function to find the minimum difference between any two elements in a given array.
+https://www.geeksforgeeks.org/find-minimum-difference-pair/
+
+assert find_min_diff((1,5,3,19,18,25),6) == 1
+"""
+
+
+def find_min_diff(arr, n):
+    """
+    Find the minimum difference between any two elements in the array.
+
+    Approach: sort the array, then the pair with the minimum difference must be
+    adjacent in the sorted order. Scan adjacent pairs and keep the smallest gap.
+
+    Time complexity:  O(n log n)
+    Space complexity: O(n) for the sorted copy
+    """
+    if n < 2:
+        return 0  # not enough elements to form a pair
+
+    arr = sorted(arr)
+
+    diff = float('inf')
+    for i in range(n - 1):
+        gap = arr[i + 1] - arr[i]
+        if gap < diff:
+            diff = gap
+
+    return diff
+
+
+if __name__ == "__main__":
+    assert find_min_diff((1, 5, 3, 19, 18, 25), 6) == 1
+    assert find_min_diff((4, 3, 2, 6), 4) == 1
+    assert find_min_diff((30, 5, 20, 9), 4) == 4
+    assert find_min_diff((1, 19, -4, 31, 38, 25, 100), 7) == 5
+    print("All tests passed!")
+    print(find_min_diff((1, 5, 3, 19, 18, 25), 6))
+```

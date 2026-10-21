@@ -1,0 +1,22 @@
+```python
+#!/usr/bin/env python3
+
+def replace_spaces(s: str) -> str:
+    """
+    Replace all spaces in the given string with '%20'.
+
+    Example:
+    >>> replace_spaces("My Name is Dawood")
+    'My%20Name%20is%20Dawood'
+    """
+    return s.replace(" ", "%20")
+
+
+if __name__ == "__main__":
+    assert replace_spaces("My Name is Dawood") == "My%20Name%20is%20Dawood"
+    assert replace_spaces("") == ""
+    assert replace_spaces("NoSpaces") == "NoSpaces"
+    assert replace_spaces(" leading and trailing ") == "%20leading%20and%20trailing%20"
+
+    print("All tests passed.")
+```

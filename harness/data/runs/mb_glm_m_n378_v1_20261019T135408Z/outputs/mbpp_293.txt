@@ -1,0 +1,25 @@
+To find the third side of a right-angled triangle when two sides are given, we use the Pythagorean theorem ($a^2 + b^2 = c^2$). 
+
+Depending on whether the given sides are the two shorter sides (legs) or one shorter side (leg) and the longest side (hypotenuse), the formula for the third side changes:
+1. If both given sides are legs, the third side (hypotenuse) is $\sqrt{a^2 + b^2}$.
+2. If one given side is the hypotenuse, the third side (leg) is $\sqrt{|a^2 - b^2|}$.
+
+Since the problem's test case `otherside_rightangle(7, 8) == 10.63014581273465` yields a result greater than both inputs, it implies that the function should calculate the hypotenuse assuming the two given sides are the legs of the right-angled triangle.
+
+Here is the self-contained Python script:
+
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Finds the third side (hypotenuse) of a right-angled triangle 
+    given the other two sides (legs).
+    """
+    return math.sqrt(a**2 + b**2)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert otherside_rightangle(7, 8) == 10.63014581273465
+    print("Assertion passed successfully!")
+```

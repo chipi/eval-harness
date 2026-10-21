@@ -1,0 +1,56 @@
+Looking at this problem, I need to count the number of digit characters in a string.
+
+```python
+"""
+Write a python function to count number of digits in a given string.
+assert number_ctr('program2bedone') == 1
+"""
+
+
+def number_ctr(s):
+    """
+    Count the number of digit characters in a given string.
+
+    Args:
+        s (str): The input string to examine.
+
+    Returns:
+        int: The count of digit characters ('0'-'9') found in the string.
+    """
+    count = 0
+    for ch in s:
+        if ch.isdigit():
+            count += 1
+    return count
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert number_ctr('program2bedone') == 1
+
+    # Additional test cases
+    assert number_ctr('3wonders') == 1
+    assert number_ctr('123') == 3
+    assert number_ctr('3wond-1ers2') == 3
+    assert number_ctr('') == 0
+    assert number_ctr('no digits here!') == 0
+    assert number_ctr('a1b2c3d4e5') == 5
+
+    print("All tests passed!")
+    print("number_ctr('program2bedone') =", number_ctr('program2bedone'))
+```
+
+**How it works:**
+
+1. Initialize a counter `count` to 0.
+2. Iterate over each character `ch` in the string `s`.
+3. Use `ch.isdigit()` to check whether the character is a digit (`'0'` through `'9'`).
+4. Increment the counter for each digit found.
+5. Return the final count.
+
+**Alternative one-liner approach:**
+
+```python
+def number_ctr(s):
+    return sum(ch.isdigit() for ch in s)
+```

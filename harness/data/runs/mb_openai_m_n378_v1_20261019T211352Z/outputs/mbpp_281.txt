@@ -1,0 +1,24 @@
+```python
+"""
+Write a python function to check if the elements of a given list are unique or not.
+
+Example:
+assert all_unique([1, 2, 3]) == True
+"""
+
+def all_unique(items):
+    """
+    Return True if all elements in the given list are unique, otherwise False.
+    """
+    return len(items) == len(set(items))
+
+
+# Example tests
+assert all_unique([1, 2, 3]) == True
+assert all_unique([1, 2, 2, 3]) == False
+assert all_unique([]) == True
+assert all_unique(["a", "b", "c"]) == True
+assert all_unique(["a", "b", "a"]) == False
+
+print("All tests passed.")
+```

@@ -1,0 +1,35 @@
+Looking at this problem:
+
+- Filter out names that start with a lowercase letter
+- Sum the lengths of the remaining names
+
+Check: `['Dylan', 'Diana', 'Joanne']` → 5 + 5 + 6 = 16 ✓
+
+```python
+"""
+Write a function to sum the length of the names of a given list of names after removing the names that start with a lowercase letter.
+assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith'])==16
+"""
+
+
+def sample_nam(sample_names):
+    """
+    Remove names starting with a lowercase letter, then return the total
+    length of the remaining names.
+    """
+    filtered = [name for name in sample_names if name and name[0].isupper()]
+    return sum(len(name) for name in filtered)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+
+    # Additional test cases
+    assert sample_nam(["php", "res", "Python", "abcd", "Java", "aaa"]) == 10
+    assert sample_nam(["abcd", "Python", "abba", "aba"]) == 6
+    assert sample_nam([]) == 0
+
+    print("All tests passed!")
+    print(sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']))
+```

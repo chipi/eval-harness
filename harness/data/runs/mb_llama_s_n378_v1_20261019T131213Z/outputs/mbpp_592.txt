@@ -1,0 +1,45 @@
+```python
+import math
+
+def calculate_binomial_coefficient(n, k):
+    """
+    Calculate the binomial coefficient (n choose k).
+    
+    Args:
+    n (int): The total number of items.
+    k (int): The number of items to choose.
+    
+    Returns:
+    int: The binomial coefficient (n choose k).
+    """
+    return math.comb(n, k)
+
+def sum_of_product(n):
+    """
+    Calculate the sum of the product of consecutive binomial coefficients.
+    
+    Args:
+    n (int): The input number.
+    
+    Returns:
+    int: The sum of the product of consecutive binomial coefficients.
+    """
+    total_sum = 0
+    for i in range(n):
+        # Calculate the product of consecutive binomial coefficients
+        product = calculate_binomial_coefficient(n, i) * calculate_binomial_coefficient(n, i + 1)
+        total_sum += product
+    return total_sum
+
+def main():
+    assert sum_of_product(3) == 15
+
+if __name__ == "__main__":
+    main()
+```
+
+In this code:
+
+*   We define a function `calculate_binomial_coefficient` to calculate the binomial coefficient using the `math.comb` function.
+*   The `sum_of_product` function calculates the sum of the product of consecutive binomial coefficients.
+*   In the `main` function, we test the `sum_of_product` function with the provided assertion.

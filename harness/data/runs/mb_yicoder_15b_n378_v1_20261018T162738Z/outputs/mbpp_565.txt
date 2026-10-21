@@ -1,0 +1,9 @@
+```python
+def split_string_into_characters(s):
+    return list(s)
+
+# Test cases
+assert split_string_into_characters('python') == ['p','y','t','h','o','n']
+assert split_string_into_characters('hello') == ['h','e','l','l','o']
+assert split_string_into_characters('world') == ['w','o','r','l','d']
+```

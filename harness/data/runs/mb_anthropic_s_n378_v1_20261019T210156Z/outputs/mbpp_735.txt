@@ -1,0 +1,78 @@
+```python
+def toggle_middle_bits(n):
+    """
+    Toggle all bits of a number except the first and last bit.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The number with middle bits toggled
+        
+    Example:
+        toggle_middle_bits(9) == 15
+        9 in binary is 1001
+        Toggle middle bits: 1111 = 15
+    """
+    if n <= 2:
+        return n
+    
+    # Find the position of the most significant bit
+    # We need to find how many bits are in the number
+    temp = n
+    bit_count = 0
+    while temp > 0:
+        bit_count += 1
+        temp >>= 1
+    
+    # If the number has 2 or fewer bits, no middle bits to toggle
+    if bit_count <= 2:
+        return n
+    
+    # Create a mask with 1s for all middle bits (excluding first and last)
+    # For example, if we have 4 bits: 1001
+    # We want to toggle bits at positions 1 and 2 (0-indexed from right)
+    # Mask should be: 0110 = 6
+    
+    mask = 0
+    for i in range(1, bit_count - 1):
+        mask |= (1 << i)
+    
+    # XOR with mask to toggle the middle bits
+    result = n ^ mask
+    return result
+
+
+# Test cases
+if __name__ == "__main__":
+    assert toggle_middle_bits(9) == 15, f"Expected 15, got {toggle_middle_bits(9)}"
+    print("✓ toggle_middle_bits(9) == 15")
+    
+    # Additional test cases
+    assert toggle_middle_bits(5) == 7, f"Expected 7, got {toggle_middle_bits(5)}"
+    print("✓ toggle_middle_bits(5) == 7")
+    
+    assert toggle_middle_bits(1) == 1, f"Expected 1, got {toggle_middle_bits(1)}"
+    print("✓ toggle_middle_bits(1) == 1")
+    
+    assert toggle_middle_bits(2) == 2, f"Expected 2, got {toggle_middle_bits(2)}"
+    print("✓ toggle_middle_bits(2) == 2")
+    
+    assert toggle_middle_bits(15) == 9, f"Expected 9, got {toggle_middle_bits(15)}"
+    print("✓ toggle_middle_bits(15) == 9")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+1. **Find bit count**: First, we determine how many bits are needed to represent the number.
+
+2. **Create mask**: We create a bitmask with 1s in all positions except the first (rightmost) and last (leftmost) bits.
+
+3. **Toggle using XOR**: We XOR the original number with the mask. XOR toggles bits where the mask has 1s.
+
+**Example walkthrough for `toggle_middle_bits(9)`:**
+- 9 in binary: `1001` (4 bits)
+- Middle bits are at positions 1 and 2: `0110` (mask = 6)
+- 9 XOR 6 = `1001` XOR `0110` = `1111` = 15 ✓

@@ -1,0 +1,12 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list for every nth element, returning a list of the resulting lists.
+    For example:
+    list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'],3)==[['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+    """
+    result = [[] for _ in range(n)]
+    for i, item in enumerate(lst):
+        result[i % n].append(item)
+    return result
+```

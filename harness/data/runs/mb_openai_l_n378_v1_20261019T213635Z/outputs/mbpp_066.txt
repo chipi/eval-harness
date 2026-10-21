@@ -1,0 +1,7 @@
+```python
+def pos_count(numbers):
+    return sum(number > 0 for number in numbers)
+
+
+assert pos_count([1, -2, 3, -4]) == 2
+```

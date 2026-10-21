@@ -1,0 +1,28 @@
+```python
+def check_smaller(tuple1, tuple2):
+  """
+  Checks if each element of the second tuple is smaller than its corresponding element in the first tuple.
+
+  Args:
+    tuple1: The first tuple.
+    tuple2: The second tuple.
+
+  Returns:
+    True if each element of tuple2 is smaller than its corresponding element in tuple1, False otherwise.
+  """
+  if len(tuple1) != len(tuple2):
+    return False  # Tuples must have the same length
+
+  for i in range(len(tuple1)):
+    if tuple2[i] >= tuple1[i]:
+      return False
+
+  return True
+
+# Example usage and assertion
+assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+assert check_smaller((5, 6, 7), (1, 2, 3)) == True
+assert check_smaller((1, 2, 3), (0, 1, 2)) == True
+assert check_smaller((1, 2, 3), (1, 2, 3)) == False
+assert check_smaller((1, 2), (0, 1)) == True
+```

@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_average(n):
+    """
+    Find sum and average of first n natural numbers.
+    
+    Args:
+        n: A positive integer representing how many natural numbers to consider
+        
+    Returns:
+        A tuple containing (sum, average) of first n natural numbers
+    """
+    # Calculate sum using the formula: n * (n + 1) / 2
+    total_sum = n * (n + 1) // 2
+    
+    # Calculate average
+    average = total_sum / n
+    
+    return (total_sum, average)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given assertion
+    assert sum_average(10) == (55, 5.5), "Test failed for n=10"
+    
+    # Additional test cases
+    assert sum_average(1) == (1, 1.0), "Test failed for n=1"
+    assert sum_average(5) == (15, 3.0), "Test failed for n=5"
+    assert sum_average(100) == (5050, 50.5), "Test failed for n=100"
+    
+    print("All tests passed!")
+    print(f"sum_average(10) = {sum_average(10)}")
+```
+
+This solution:
+- Uses the mathematical formula `n * (n + 1) / 2` to efficiently calculate the sum of first n natural numbers
+- Calculates the average by dividing the sum by n
+- Returns both values as a tuple
+- Includes the required assertion test and additional test cases for verification

@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_run_uppercase(s):
+    """
+    Find the maximum run of consecutive uppercase characters in the given string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Integer representing the length of the longest consecutive uppercase sequence
+    """
+    max_run = 0
+    current_run = 0
+    
+    for char in s:
+        if char.isupper():
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+    
+    return max_run
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+    
+    # Additional test cases
+    assert max_run_uppercase('') == 0
+    assert max_run_uppercase('abc') == 0
+    assert max_run_uppercase('ABC') == 3
+    assert max_run_uppercase('ABCdefGHI') == 3
+    assert max_run_uppercase('aBcDeFgH') == 1
+    
+    print("All tests passed!")
+```
+
+The function works by:
+1. Iterating through each character in the string
+2. Keeping track of the current consecutive uppercase run
+3. Updating the maximum run whenever we find a longer sequence
+4. Resetting the current run to 0 when we encounter a non-uppercase character
+
+The test case from the problem confirms that `'GeMKSForGERksISBESt'` has a maximum run of 5 uppercase characters (the sequence "ISBES").

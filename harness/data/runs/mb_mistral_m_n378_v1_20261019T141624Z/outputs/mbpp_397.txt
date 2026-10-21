@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem of finding the median of three numbers:
+
+```python
+def median_numbers(a, b, c):
+    """
+    Returns the median of three numbers.
+    """
+    # Compare the three numbers to find the median
+    if (a <= b <= c) or (c <= b <= a):
+        return float(b)
+    elif (b <= a <= c) or (c <= a <= b):
+        return float(a)
+    else:
+        return float(c)
+
+# Test case
+assert median_numbers(25, 55, 65) == 55.0
+```
+
+This script defines a function `median_numbers` that takes three numbers as input and returns the median value as a float. The function works by checking all possible orderings of the three numbers to determine which one is in the middle. The test case provided in the problem statement is included as an assertion to verify the correctness of the function.

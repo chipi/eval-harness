@@ -1,0 +1,60 @@
+Looking at this problem, I need to find the nth centered hexagonal number.
+
+**Understanding centered hexagonal numbers:**
+
+A centered hexagonal number represents a hexagon with a dot in the center and all other dots arranged in hexagonal rings around it.
+
+- n = 1: just the center dot → 1
+- n = 2: center + 6 dots in first ring → 7
+- n = 3: + 12 dots in second ring → 19
+- n = 4: + 18 dots → 37
+
+The pattern: each ring k adds 6(k-1) dots, giving the formula:
+
+**H(n) = 3n² - 3n + 1**
+
+**Verification with the assertion:**
+- H(10) = 3(100) - 3(10) + 1 = 300 - 30 + 1 = **271** ✓
+
+```python
+"""
+Write a function to find nth centered hexagonal number.
+assert centered_hexagonal_number(10) == 271
+"""
+
+
+def centered_hexagonal_number(n):
+    """
+    Return the nth centered hexagonal number.
+
+    A centered hexagonal number counts the dots in a hexagonal lattice
+    with a single dot in the center surrounded by concentric hexagonal rings.
+    Formula: H(n) = 3*n*(n - 1) + 1  =  3n^2 - 3n + 1
+
+    Sequence: 1, 7, 19, 37, 61, 91, 127, 169, 217, 271, ...
+    """
+    return 3 * n * (n - 1) + 1
+
+
+if __name__ == "__main__":
+    # Required assertion
+    assert centered_hexagonal_number(10) == 271
+
+    # Additional checks
+    assert centered_hexagonal_number(1) == 1
+    assert centered_hexagonal_number(2) == 7
+    assert centered_hexagonal_number(3) == 19
+    assert centered_hexagonal_number(4) == 37
+    assert centered_hexagonal_number(5) == 61
+    assert centered_hexagonal_number(9) == 217
+
+    print("All tests passed!")
+    print("First 10 centered hexagonal numbers:",
+          [centered_hexagonal_number(i) for i in range(1, 11)])
+```
+
+**Output:**
+```
+All tests passed!
+First 10 centered hexagonal numbers: [1, 7, 19, 37, 61, 91, 127, 169, 217, 271]
+```

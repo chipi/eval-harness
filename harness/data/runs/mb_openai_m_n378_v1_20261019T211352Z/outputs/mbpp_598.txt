@@ -1,0 +1,34 @@
+```python
+"""
+Write a function to check whether the given number is Armstrong or not.
+
+An Armstrong number is a number that is equal to the sum of its own digits
+each raised to the power of the number of digits.
+
+Example:
+153 = 1^3 + 5^3 + 3^3 = 153
+"""
+
+def armstrong_number(num):
+    # Armstrong numbers are typically considered for non-negative integers
+    if num < 0:
+        return False
+
+    digits = str(num)
+    power = len(digits)
+
+    total = sum(int(digit) ** power for digit in digits)
+
+    return total == num
+
+
+# Test cases
+assert armstrong_number(153) == True
+assert armstrong_number(370) == True
+assert armstrong_number(371) == True
+assert armstrong_number(407) == True
+assert armstrong_number(123) == False
+assert armstrong_number(0) == True
+
+print("All tests passed.")
+```

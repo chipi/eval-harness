@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of finding the area of the largest triangle that can be inscribed in a semicircle with a given radius. The script includes the function `triangle_area` and handles the edge case where the radius is negative by returning `None`.
+
+```python
+"""
+This script defines a function to calculate the area of the largest triangle that can be inscribed in a semicircle with a given radius.
+The largest triangle inscribed in a semicircle is a right-angled triangle with the diameter as its base and the height equal to the radius.
+The area of such a triangle is (radius^2).
+"""
+
+import math
+
+def triangle_area(radius):
+    """
+    Calculate the area of the largest triangle that can be inscribed in a semicircle with the given radius.
+
+    Parameters:
+    radius (float): The radius of the semicircle.
+
+    Returns:
+    float: The area of the largest inscribed triangle, or None if the radius is negative.
+    """
+    if radius < 0:
+        return None
+    return radius ** 2
+
+# Test the function
+assert triangle_area(-1) == None
+assert math.isclose(triangle_area(1), 1.0)
+assert math.isclose(triangle_area(2), 4.0)
+assert math.isclose(triangle_area(0), 0.0)
+
+print("All tests passed!")
+```
+
+### Explanation:
+1. **Function `triangle_area`**:
+   - The function first checks if the radius is negative. If so, it returns `None`.
+   - For a non-negative radius, the area of the largest triangle inscribed in a semicircle is given by \( \text{radius}^2 \). This is because the largest such triangle is a right-angled triangle with the diameter as the base and the radius as the height. The area is \( \frac{1}{2} \times \text{base} \times \text{height} = \frac{1}{2} \times 2r \times r = r^2 \).
+
+2. **Assertions**:
+   - The first assertion checks that the function returns `None` for a negative radius.
+   - The subsequent assertions verify the correctness of the function for positive radii and zero.
+
+3. **`math.isclose`**:
+   - This is used to handle floating-point precision issues when comparing the results.

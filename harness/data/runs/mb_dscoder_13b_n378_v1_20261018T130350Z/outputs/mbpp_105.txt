@@ -1,0 +1,10 @@
+```python
+def count_booleans(lst):
+    """
+    Write a python function to count true booleans in the given list.
+    """
+    return lst.count(True)
+
+# Testing the function
+assert count_booleans([True, False, True]) == 2
+```

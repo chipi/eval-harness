@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of finding the right insertion point for a specified value in a sorted list:
+
+```python
+def right_insertion(arr, val):
+    """
+    Find the right insertion point for a value in a sorted list.
+
+    Args:
+        arr: A sorted list of numbers.
+        val: The value to insert.
+
+    Returns:
+        The index where the value should be inserted to maintain sorted order.
+    """
+    left, right = 0, len(arr)
+    while left < right:
+        mid = (left + right) // 2
+        if arr[mid] < val:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+# Test case
+assert right_insertion([1, 2, 4, 5], 6) == 4
+print("Test passed!")
+```
+
+This script:
+1. Implements a binary search algorithm to efficiently find the insertion point
+2. Handles the case where the value is larger than all elements in the list
+3. Includes the test case from the problem statement
+4. Prints a confirmation message if the test passes
+
+The function works by:
+- Starting with a search range from 0 to the length of the array
+- Narrowing down the search range by comparing the middle element with the target value
+- Returning the left pointer when the search completes, which will be the correct insertion point

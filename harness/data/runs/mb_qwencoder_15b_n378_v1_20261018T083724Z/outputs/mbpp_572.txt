@@ -1,0 +1,11 @@
+```python
+def two_unique_nums(nums):
+    # Convert list to set to remove duplicates
+    unique_nums = set(nums)
+    # Convert set back to list
+    return list(unique_nums)
+
+# Test cases
+assert two_unique_nums([1,2,3,2,3,4,5]) == [1, 4, 5]
+```
+

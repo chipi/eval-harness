@@ -1,0 +1,46 @@
+```python
+def convert_list_dictionary(list1, list2, list3):
+    """
+    Convert three lists into a list of nested dictionaries.
+    
+    Args:
+        list1: List of IDs
+        list2: List of names
+        list3: List of values
+    
+    Returns:
+        List of nested dictionaries where each dictionary has the structure:
+        {id: {name: value}}
+    """
+    result = []
+    for id_val, name, value in zip(list1, list2, list3):
+        result.append({id_val: {name: value}})
+    return result
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    assert convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92]
+    ) == [
+        {'S001': {'Adina Park': 85}},
+        {'S002': {'Leyton Marsh': 98}},
+        {'S003': {'Duncan Boyle': 89}},
+        {'S004': {'Saim Richards': 92}}
+    ]
+    
+    print("All tests passed!")
+    
+    # Additional test case
+    result = convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92]
+    )
+    print("Result:", result)
+```
+
+The solution uses the `zip()` function to iterate through all three lists simultaneously, pairing corresponding elements from each list. For each triplet, it creates a nested dictionary with the structure `{id: {name: value}}` and appends it to the result list.

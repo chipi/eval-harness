@@ -1,0 +1,13 @@
+```python
+def first_Digit(n):
+    while n >= 10:
+        n = n // 10
+    return n
+
+def main():
+    # Test the function
+    print(first_Digit(123))  # Expected output: 1
+
+if __name__ == "__main__":
+    main()
+```

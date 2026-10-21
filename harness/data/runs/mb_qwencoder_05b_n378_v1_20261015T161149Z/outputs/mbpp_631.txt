@@ -1,0 +1,9 @@
+```python
+def replace_spaces(s):
+    # Replace all spaces with underscores
+    return s.replace(" ", "_")
+
+# Test the function with the provided test case
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+```
+

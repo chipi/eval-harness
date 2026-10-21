@@ -1,0 +1,11 @@
+```python
+def count_occurance(s):
+    return s.count('std')
+
+# Test cases
+assert count_occurance("letstdlenstdporstd") == 3
+assert count_occurance("stdstdstd") == 3
+assert count_occurance("std") == 1
+assert count_occurance("") == 0
+assert count_occurance("no std here") == 0
+```

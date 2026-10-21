@@ -1,0 +1,32 @@
+```python
+def tuple_intersection(list1, list2):
+    """
+    Find the intersection of tuples from two lists, treating tuples as unordered sets of two elements.
+    
+    Args:
+        list1: List of tuples
+        list2: List of tuples
+    
+    Returns:
+        Set of tuples that appear in both lists (order of elements within tuple doesn't matter)
+    """
+    # Convert each tuple to a frozenset for order-independent comparison
+    set1 = {frozenset(t) for t in list1}
+    set2 = {frozenset(t) for t in list2}
+    
+    # Find intersection
+    intersection_frozensets = set1 & set2
+    
+    # Convert back to tuples (sorted to maintain consistent order)
+    result = set()
+    for fs in intersection_frozensets:
+        # Convert frozenset back to tuple, sorted for consistency
+        result.add(tuple(sorted(fs)))
+    
+    return result
+
+
+# Test with the given assertion
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)] , [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(4, 5), (3, 4), (5, 6)}
+print("Test passed!")
+```

@@ -1,0 +1,18 @@
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Matches a string that starts with 'a', followed by anything, and ends with 'b'.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, text))
+
+
+if __name__ == "__main__":
+    assert text_starta_endb("aabbbb")
+    assert text_starta_endb("ab")
+    assert not text_starta_endb("bab")
+    assert not text_starta_endb("aa")
+    print("All tests passed!")
+```

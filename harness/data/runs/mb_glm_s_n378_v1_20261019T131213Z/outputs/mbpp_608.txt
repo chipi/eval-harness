@@ -1,0 +1,55 @@
+```python
+def bell_Number(n):
+    """
+    Calculate the nth Bell number, which represents the number of ways to partition a set of n elements.
+
+    Args:
+        n (int): A non-negative integer representing the position in the Bell number sequence.
+
+    Returns:
+        int: The nth Bell number.
+
+    Raises:
+        ValueError: If n is a negative integer.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    if n == 0:
+        return 1
+
+    # Create a Bell triangle to store intermediate results.
+    # The triangle has n rows.
+    bell_triangle = [[0] * (n + 1) for _ in range(n + 1)]
+
+    # The first element of the first row is the 0th Bell number.
+    bell_triangle[0][0] = 1
+
+    for i in range(1, n + 1):
+        # The first element of each row is the last element of the previous row.
+        bell_triangle[i][0] = bell_triangle[i - 1][i - 1]
+
+        for j in range(1, i + 1):
+            # Each subsequent element is the sum of the element to its left
+            # and the element diagonally above-left.
+            bell_triangle[i][j] = bell_triangle[i][j - 1] + bell_triangle[i - 1][j - 1]
+
+    # The nth Bell number is the last element of the nth row.
+    return bell_triangle[n][n]
+
+# Example usage and assertions
+if __name__ == "__main__":
+    # Test cases
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(2) == 2
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    assert bell_Number(5) == 52
+
+    print("All assertions passed successfully!")
+
+    # Demonstrate the Bell triangle for n=4
+    print("\nBell Triangle for n=4:")
+    for i in range(5):
+        print(bell_triangle[i])
+```

@@ -1,0 +1,27 @@
+```python
+def max_product(numbers):
+    """Return the maximum product of a nonempty strictly increasing subsequence."""
+    if not numbers:
+        raise ValueError("numbers must not be empty")
+
+    # Both extremes matter: multiplying a negative number can turn the
+    # smallest (most negative) product into the largest positive product.
+    max_ending = []
+    min_ending = []
+
+    for i, value in enumerate(numbers):
+        largest = smallest = value
+        for j in range(i):
+            if numbers[j] < value:
+                for product in (max_ending[j], min_ending[j]):
+                    candidate = product * value
+                    largest = max(largest, candidate)
+                    smallest = min(smallest, candidate)
+        max_ending.append(largest)
+        min_ending.append(smallest)
+
+    return max(max_ending)
+
+
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+```

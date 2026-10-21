@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def divisible_by_digits(startnum, endnum):
+    result = []
+    for num in range(startnum, endnum + 1):
+        digits = [int(d) for d in str(num) if d != '0']
+        if all(num % d == 0 for d in digits):
+            result.append(num)
+    return result
+
+# Test the function
+assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+print(divisible_by_digits(1, 22))  # Output: [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+```
+
+The script defines a function `divisible_by_digits` that:
+1. Takes a start and end number as input
+2. Iterates through all numbers in that range
+3. For each number, extracts its non-zero digits
+4. Checks if the number is divisible by all its digits
+5. Collects and returns all numbers that meet this condition
+
+The test case verifies that the function works correctly for the given example.

@@ -1,0 +1,26 @@
+```python
+def toggle_string(s):
+  """
+  Toggles the case of all characters in a string.
+
+  Args:
+    s: The input string.
+
+  Returns:
+    The string with the case of each character toggled.
+  """
+  toggled_string = ""
+  for char in s:
+    if 'a' <= char <= 'z':
+      toggled_string += char.upper()
+    elif 'A' <= char <= 'Z':
+      toggled_string += char.lower()
+    else:
+      toggled_string += char
+  return toggled_string
+
+# Example usage and assertion
+assert toggle_string("Python") == "pYTHON"
+assert toggle_string("Hello World") == "hELLO wORLD"
+assert toggle_string("123abcABC") == "123ABCabc"
+```

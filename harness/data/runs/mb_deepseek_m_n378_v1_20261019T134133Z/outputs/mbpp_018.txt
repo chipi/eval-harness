@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_dirty_chars(s1: str, s2: str) -> str:
+    """
+    Remove characters from s1 that are present in s2.
+    
+    Args:
+        s1: The string to remove characters from.
+        s2: The string containing characters to remove.
+    
+    Returns:
+        A new string with all characters from s2 removed from s1.
+    """
+    dirty = set(s2)
+    return ''.join(ch for ch in s1 if ch not in dirty)
+
+
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+print("Test passed!")
+```
+
+**Explanation:**
+
+1. **`set(s2)`** — Convert the second string into a set for O(1) membership lookups. This makes the overall algorithm O(n + m) instead of O(n × m).
+2. **Generator expression** — Iterate through each character in `s1` and keep only those not in the dirty set.
+3. **`''.join(...)`** — Combine the kept characters back into a single string.
+
+For the example `"probasscurve"` with dirty chars `"pros"`:
+- `p`, `r`, `o`, `s` are removed
+- Remaining: `b`, `a`, `c`, `u`, `v`, `e` → `"bacuve"` ✅

@@ -1,0 +1,64 @@
+### Inversion Count Problem
+#### Problem Statement
+The goal is to write a Python function that counts the number of inversions in an array. An inversion is a pair of elements in the array that are in the wrong order, i.e., a larger element appears before a smaller element.
+
+#### Solution
+
+```python
+def get_Inv_Count(arr):
+    """
+    Counts the number of inversions in an array.
+
+    Args:
+        arr (list): The input array.
+
+    Returns:
+        int: The number of inversions in the array.
+    """
+    def merge_sort(arr):
+        if len(arr) <= 1:
+            return arr, 0
+
+        mid = len(arr) // 2
+        left, inv_left = merge_sort(arr[:mid])
+        right, inv_right = merge_sort(arr[mid:])
+
+        merged, inv_merge = merge(left, right)
+
+        return merged, inv_left + inv_right + inv_merge
+
+    def merge(left, right):
+        merged = []
+        i = j = inv_count = 0
+
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                inv_count += len(left) - i
+                j += 1
+
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+
+        return merged, inv_count
+
+    _, inv_count = merge_sort(arr)
+    return inv_count
+
+# Example usage:
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+```
+
+#### Explanation
+
+*   The `get_Inv_Count` function uses the merge sort algorithm to count the number of inversions in the array.
+*   The `merge_sort` function recursively divides the array into two halves until each half has one element, and then merges the halves while counting the inversions.
+*   The `merge` function merges two sorted arrays and counts the inversions between them.
+*   The inversion count is calculated by incrementing the count by the number of remaining elements in the left array whenever an element from the right array is appended to the merged array.
+
+#### Time Complexity
+
+*   The time complexity of this solution is O(n log n) due to the merge sort algorithm.

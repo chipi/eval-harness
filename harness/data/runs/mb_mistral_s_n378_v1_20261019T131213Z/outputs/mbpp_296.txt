@@ -1,0 +1,60 @@
+Here's a self-contained Python script that solves the problem of counting inversions in an array using a modified merge sort approach (which is efficient with O(n log n) time complexity):
+
+```python
+def get_Inv_Count(arr):
+    """
+    Counts the number of inversions in an array using a modified merge sort approach.
+
+    An inversion is a pair of indices (i, j) such that i < j and arr[i] > arr[j].
+
+    Args:
+        arr: List of integers to count inversions in.
+
+    Returns:
+        int: Number of inversions in the array.
+    """
+    def merge_and_count(left, right):
+        result = []
+        i = j = 0
+        inv_count = 0
+
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                result.append(left[i])
+                i += 1
+            else:
+                # All remaining elements in left are greater than right[j]
+                result.append(right[j])
+                inv_count += len(left) - i
+                j += 1
+
+        result.extend(left[i:])
+        result.extend(right[j:])
+        return result, inv_count
+
+    def merge_sort_and_count(arr):
+        if len(arr) <= 1:
+            return arr, 0
+
+        mid = len(arr) // 2
+        left, inv_left = merge_sort_and_count(arr[:mid])
+        right, inv_right = merge_sort_and_count(arr[mid:])
+        merged, inv_merge = merge_and_count(left, right)
+
+        return merged, inv_left + inv_right + inv_merge
+
+    _, total_inversions = merge_sort_and_count(arr)
+    return total_inversions
+
+# Test case
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+print("Test passed!")
+```
+
+This script:
+1. Implements a modified merge sort that counts inversions during the merge step
+2. The `merge_and_count` function handles the merging of two sorted subarrays while counting inversions
+3. The `merge_sort_and_count` function recursively splits the array and combines the results
+4. Includes the test case from the problem statement
+
+The time complexity is O(n log n) which is optimal for this problem, and the space complexity is O(n) due to the temporary arrays used during merging.

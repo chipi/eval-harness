@@ -1,0 +1,15 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Returns a tuple of elements that are common to both input lists.
+    """
+    # Convert to sets to find intersection, then back to tuple
+    return tuple(set(list1) & set(list2))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = similar_elements((3, 4, 5, 6), (5, 7, 4, 10))
+    expected = (4, 5)
+    assert set(result) == set(expected), f"Test failed: {result} != {expected}"
+    print("Test passed. Shared elements:", result)
+```

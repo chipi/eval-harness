@@ -1,0 +1,19 @@
+```python
+def opposite_Signs(a, b):
+    """
+    This function checks whether two given integers have opposite signs or not.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+
+    Returns:
+        bool: True if the integers have opposite signs, False otherwise.
+    """
+    return (a >= 0 and b < 0) or (a < 0 and b >= 0)
+
+# Example usage:
+print(opposite_Signs(1, -2))  # Expected output: True
+print(opposite_Signs(1, 2))   # Expected output: False
+print(opposite_Signs(-1, -2)) # Expected output: False
+```

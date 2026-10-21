@@ -1,0 +1,55 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find the kth element (1-indexed) from two sorted arrays.
+
+    Args:
+        arr1: First sorted array
+        arr2: Second sorted array
+        k: The kth position (1-indexed) to find
+
+    Returns:
+        The kth element from the merged sorted arrays
+    """
+    # Ensure arr1 is the smaller array for efficient binary search
+    if len(arr1) > len(arr2):
+        arr1, arr2 = arr2, arr1
+
+    n, m = len(arr1), len(arr2)
+    low, high = 0, n
+
+    while low <= high:
+        # Partition point in arr1
+        partition1 = (low + high) // 2
+        # Partition point in arr2 (k elements total, minus partition1)
+        partition2 = k - partition1
+
+        # Handle edge cases where partition is at boundaries
+        max_left1 = float('-inf') if partition1 == 0 else arr1[partition1 - 1]
+        min_right1 = float('inf') if partition1 == n else arr1[partition1]
+
+        max_left2 = float('-inf') if partition2 == 0 else arr2[partition2 - 1]
+        min_right2 = float('inf') if partition2 == m else arr2[partition2]
+
+        # Check if we found the correct partition
+        if max_left1 <= min_right2 and max_left2 <= min_right1:
+            # The kth element is the maximum of the left partitions
+            return max(max_left1, max_left2)
+        elif max_left1 > min_right2:
+            # Too many elements from arr1, move partition left
+            high = partition1 - 1
+        else:
+            # Too few elements from arr1, move partition right
+            low = partition1 + 1
+
+    # Should never reach here if inputs are valid
+    raise ValueError("Invalid input arrays or k value")
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5)
+    print(f"Result: {result}")
+    assert result == 6, f"Expected 6 but got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,31 @@
+```python
+def len_log(words):
+    """
+    Finds the length of the longest word in a list of strings.
+    
+    Args:
+        words (list): A list of strings.
+        
+    Returns:
+        int: The length of the longest string. Returns 0 if the list is empty.
+    """
+    if not words:
+        return 0
+    
+    # Use the max function with the len function as the key to find the longest word,
+    # then return the length of that word.
+    longest_word = max(words, key=len)
+    return len(longest_word)
+
+# Test the function
+if __name__ == "__main__":
+    # Provided test case
+    assert len_log(["python", "PHP", "bigdata"]) == 7
+    
+    # Additional test cases
+    assert len_log(["a", "bb", "ccc"]) == 3
+    assert len_log([]) == 0
+    assert len_log(["single"]) == 6
+    
+    print("All tests passed!")
+```

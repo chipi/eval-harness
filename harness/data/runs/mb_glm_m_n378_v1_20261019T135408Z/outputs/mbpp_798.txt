@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem with a function to find the sum of an array, including the assertion test:
+
+```python
+def _sum(arr):
+    """
+    Calculate the sum of all elements in an array.
+    
+    Args:
+        arr (list): A list of numbers.
+        
+    Returns:
+        int or float: The sum of all elements in the array.
+    """
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+# Test the function
+assert _sum([1, 2, 3]) == 6
+assert _sum([0, 0, 0]) == 0
+assert _sum([-1, -2, -3]) == -6
+assert _sum([1.5, 2.5, 3.0]) == 7.0
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `_sum` that takes an array (list) as input
+2. Iterates through each element in the array and accumulates the sum
+3. Returns the total sum
+4. Includes several test cases using assertions to verify the function works correctly
+5. Prints a success message if all tests pass
+
+The function handles both integers and floating-point numbers, as well as negative numbers and zero. The assertions will raise an error if any test fails, otherwise the script will complete successfully.

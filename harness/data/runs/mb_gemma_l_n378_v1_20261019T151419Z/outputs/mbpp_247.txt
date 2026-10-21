@@ -1,0 +1,45 @@
+```python
+def lps(s: str) -> int:
+    """
+    Finds the length of the longest palindromic subsequence in the given string.
+    A subsequence is a sequence that can be derived from another sequence by 
+    deleting zero or more elements without changing the order of the remaining elements.
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+
+    # Create a 2D table to store lengths of palindromic subsequences
+    # dp[i][j] will store the length of the longest palindromic subsequence of s[i..j]
+    dp = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Every single character is a palindrome of length 1
+    for i in range(n):
+        dp[i][i] = 1
+
+    # Build the table. cl is the length of the substring being considered.
+    for cl in range(2, n + 1):
+        for i in range(n - cl + 1):
+            j = i + cl - 1
+            # If there are only 2 characters and they are the same
+            if s[i] == s[j] and cl == 2:
+                dp[i][j] = 2
+            # If the first and last characters are the same
+            elif s[i] == s[j]:
+                dp[i][j] = dp[i + 1][j - 1] + 2
+            # If the first and last characters are different
+            else:
+                dp[i][j] = max(dp[i][j - 1], dp[i + 1][j])
+
+    return dp[0][n - 1]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # "TENS FOR TENS" -> Longest Palindromic Subsequence could be "T N S N T" or "S O S" etc.
+    # In "TENS FOR TENS", the characters 'T', 'E', 'N', 'S' appear twice.
+    # One possible LPS is "T N S N T" (length 5) or "S E N E S" (length 5).
+    result = lps("TENS FOR TENS")
+    print(f"lps('TENS FOR TENS') == {result}")
+    assert result == 5
+    print("Assertion passed!")
+```

@@ -1,0 +1,35 @@
+```python
+#!/usr/bin/env python3
+"""
+Check whether two integers differ at exactly one bit position.
+
+Two numbers differ at exactly one bit position iff their XOR has exactly
+one bit set. For example:
+13 = 1101
+ 9 = 1001
+XOR = 0100, which has one set bit, so the answer is True.
+"""
+
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Return True if integers a and b differ at exactly one bit position,
+    otherwise return False.
+    """
+    x = a ^ b
+
+    # x must be nonzero, and a power of two has exactly one set bit.
+    return x != 0 and (x & (x - 1)) == 0
+
+
+# Example test
+assert differ_At_One_Bit_Pos(13, 9) == True
+
+# Additional basic tests
+assert differ_At_One_Bit_Pos(1, 1) == False
+assert differ_At_One_Bit_Pos(1, 0) == True
+assert differ_At_One_Bit_Pos(7, 3) == True
+assert differ_At_One_Bit_Pos(7, 0) == False
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

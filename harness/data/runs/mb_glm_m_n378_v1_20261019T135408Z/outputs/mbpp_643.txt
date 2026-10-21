@@ -1,0 +1,38 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains the letter 'z', except at the start and end of a word.
+    
+    A word is defined as a sequence of alphanumeric characters. This function uses
+    a regular expression to find a 'z' that is both preceded and followed by an
+    alphanumeric character, ensuring it is not at the start or the end of a word.
+    
+    Args:
+        text (str): The input string to check.
+        
+    Returns:
+        bool: True if such a 'z' exists, False otherwise.
+    """
+    # \w matches any alphanumeric character (equivalent to [a-zA-Z0-9_])
+    # \wz\w matches 'z' that has at least one alphanumeric character on both sides
+    pattern = r'\wz\w'
+    return bool(re.search(pattern, text))
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert text_match_wordz_middle("pythonzabc.") == True
+    
+    # Additional test cases to verify edge cases
+    assert text_match_wordz_middle("zoo") == False          # 'z' is at the start of the word
+    assert text_match_wordz_middle("quiz") == False         # 'z' is at the end of the word
+    assert text_match_wordz_middle("pizza") == True         # 'z' is in the middle of the word
+    assert text_match_wordz_middle("z") == False            # Single 'z' is both start and end
+    assert text_match_wordz_middle("azb") == True           # 'z' perfectly in the middle
+    assert text_match_wordz_middle("z z") == False          # Standalone 'z'
+    assert text_match_wordz_middle("hello world") == False  # No 'z' at all
+    
+    print("All test cases passed!")
+```

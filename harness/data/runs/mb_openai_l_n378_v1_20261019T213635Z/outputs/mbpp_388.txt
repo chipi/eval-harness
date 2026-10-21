@@ -1,0 +1,10 @@
+```python
+def highest_Power_of_2(n):
+    """Return the highest power of 2 less than or equal to n."""
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 1 << (n.bit_length() - 1)
+
+
+assert highest_Power_of_2(10) == 8
+```

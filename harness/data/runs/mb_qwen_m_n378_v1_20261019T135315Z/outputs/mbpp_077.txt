@@ -1,0 +1,40 @@
+```python
+def is_Diff(n: int) -> bool:
+    """
+    Check if a number is divisible by 11.
+    
+    A number is divisible by 11 if the difference between the sum of digits
+    at odd positions and the sum of digits at even positions is divisible by 11.
+    
+    Args:
+        n: The number to check
+        
+    Returns:
+        True if the number is divisible by 11, False otherwise
+    """
+    # Handle negative numbers
+    n = abs(n)
+    
+    # Convert to string to access individual digits
+    digits = [int(d) for d in str(n)]
+    
+    # Sum of digits at odd positions (0-indexed: positions 0, 2, 4, ...)
+    # and even positions (0-indexed: positions 1, 3, 5, ...)
+    odd_sum = sum(digits[i] for i in range(0, len(digits), 2))
+    even_sum = sum(digits[i] for i in range(1, len(digits), 2))
+    
+    diff = odd_sum - even_sum
+    
+    return diff % 11 == 0
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_Diff(12345) == False
+    assert is_Diff(121) == True  # 121 / 11 = 11
+    assert is_Diff(11) == True
+    assert is_Diff(0) == True
+    assert is_Diff(22) == True
+    assert is_Diff(123456789) == False
+    print("All tests passed!")
+```

@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def Extract(sublists):
+    """
+    Returns a list containing the first element of each sublist.
+    
+    Args:
+        sublists: A list of sublists (each sublist is a list of elements).
+        
+    Returns:
+        A list of the first elements of each sublist.
+        
+    Example:
+        >>> Extract([[1, 2], [3, 4, 5], [6, 7, 8, 9]])
+        [1, 3, 6]
+    """
+    return [sublist[0] for sublist in sublists]
+
+# Test the function
+assert Extract([[1, 2], [3, 4, 5], [6, 7, 8, 9]]) == [1, 3, 6]
+print("Test passed!")
+```
+
+This script defines the `Extract` function which uses a list comprehension to extract the first element (`sublist[0]`) from each sublist in the input list. The assertion at the end verifies that the function works as expected for the given example. If the assertion passes, it prints "Test passed!".

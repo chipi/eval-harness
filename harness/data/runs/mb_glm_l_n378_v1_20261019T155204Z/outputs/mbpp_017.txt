@@ -1,0 +1,18 @@
+```python
+def square_perimeter(side_length):
+    """
+    Calculates the perimeter of a square given its side length.
+    
+    The perimeter of a square is calculated as 4 * side_length.
+    
+    Args:
+        side_length (int or float): The length of one side of the square.
+        
+    Returns:
+        int or float: The perimeter of the square.
+    """
+    return 4 * side_length
+
+# Test assertion
+assert square_perimeter(10) == 40
+```

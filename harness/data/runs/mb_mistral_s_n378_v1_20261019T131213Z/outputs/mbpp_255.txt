@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem using a recursive approach to generate all combinations with repetition:
+
+```python
+def combinations_colors(elements, n):
+    def _combinations(current, remaining, n):
+        if n == 0:
+            return [tuple(current)]
+        if not remaining:
+            return []
+        result = []
+        for i in range(len(remaining)):
+            result.extend(_combinations(current + [remaining[i]], remaining[i:], n - 1))
+        return result
+
+    if n <= 0:
+        return []
+    return _combinations([], elements, n)
+
+# Test case
+assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+print("Test passed!")
+```
+
+This script:
+1. Defines a nested helper function `_combinations` that recursively builds combinations
+2. Handles the base cases (when n=0 or no elements remain)
+3. For each element, recursively builds combinations with that element
+4. Returns all combinations as tuples in a list
+5. Includes the test case from the problem statement
+
+The function works for any list of elements and any positive integer n, generating all possible combinations with repetition of length n.

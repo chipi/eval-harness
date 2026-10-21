@@ -1,0 +1,18 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def Find_Min(lst):
+    """
+    Returns the sublist with the minimum length from a list of lists.
+    If there are multiple sublists with the same minimum length,
+    the first one encountered is returned.
+    """
+    if not lst:
+        return []
+    return min(lst, key=len)
+
+# Test the function
+if __name__ == "__main__":
+    assert Find_Min([[1], [1, 2], [1, 2, 3]]) == [1]
+    print("Test passed!")
+```

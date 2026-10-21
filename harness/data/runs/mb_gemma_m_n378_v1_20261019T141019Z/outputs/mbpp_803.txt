@@ -1,0 +1,51 @@
+```python
+import math
+
+def is_perfect_square(n: int) -> bool:
+    """
+    Checks whether the given number is a perfect square or not.
+    
+    A perfect square is an integer that is the square of an integer.
+    For example, 1, 4, 9, 16, 25 are perfect squares.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if n is a perfect square, False otherwise.
+    """
+    # Negative numbers cannot be perfect squares in the realm of real numbers
+    if n < 0:
+        return False
+    
+    # 0 is considered a perfect square (0*0)
+    if n == 0:
+        return True
+
+    # Calculate the integer square root
+    root = int(math.isqrt(n))
+    
+    # Check if the square of the root equals the original number
+    return root * root == n
+
+if __name__ == "__main__":
+    # Test cases provided in the prompt and additional edge cases
+    try:
+        # Provided assertion
+        assert not is_perfect_square(10), "Test Case Failed: 10 is not a perfect square"
+        
+        # Additional test cases
+        assert is_perfect_square(1), "Test Case Failed: 1 is a perfect square"
+        assert is_perfect_square(4), "Test Case Failed: 4 is a perfect square"
+        assert is_perfect_square(16), "Test Case Failed: 16 is a perfect square"
+        assert is_perfect_square(25), "Test Case Failed: 25 is a perfect square"
+        assert not is_perfect_square(2), "Test Case Failed: 2 is not a perfect square"
+        assert not is_perfect_square(8), "Test Case Failed: 8 is not a perfect square"
+        assert is_perfect_square(0), "Test Case Failed: 0 is a perfect square"
+        assert not is_perfect_square(-4), "Test Case Failed: Negative numbers are not perfect squares"
+        
+        print("All test cases passed!")
+        
+    except AssertionError as e:
+        print(f"Assertion Error: {e}")
+```

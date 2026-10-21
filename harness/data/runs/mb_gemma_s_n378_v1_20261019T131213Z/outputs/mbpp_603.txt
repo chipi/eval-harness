@@ -1,0 +1,27 @@
+```python
+def get_ludic(n):
+    """
+    Write a function to get all lucid numbers smaller than or equal to a given integer.
+    assert get_ludic(10) == [1, 2, 3, 5, 7]
+    """
+    lucid_numbers = []
+    for i in range(1, n + 1):
+        if is_lucid(i):
+            lucid_numbers.append(i)
+    return lucid_numbers
+
+def is_lucid(n):
+    """
+    Check if a number is lucid.
+    A number is lucid if it is equal to the floor of the square root of the sum of its digits.
+    """
+    sum_of_digits = sum(int(digit) for digit in str(n))
+    sqrt_sum = sum_of_digits**0.5
+    return n == int(sqrt_sum)
+
+if __name__ == '__main__':
+    print(get_ludic(10))
+    assert get_ludic(10) == [1, 2, 3, 5, 7]
+    print(get_ludic(20))
+    assert get_ludic(20) == [1, 2, 3, 5, 7, 18]
+```

@@ -1,0 +1,59 @@
+```python
+def is_Diff(n):
+    # Calculate the alternating sum of digits
+    alt_sum = sum(int(digit) * (-1)**(index+1) for index, digit in enumerate(str(n)))
+    
+    # Check if the number is divisible by 11
+    return alt_sum % 11 == 0
+
+# Test cases
+assert is_Diff(12345) == False
+assert is_Diff(12346) == True
+assert is_Diff(12347) == False
+assert is_Diff(12348) == True
+assert is_Diff(12349) == False
+assert is_Diff(12350) == True
+assert is_Diff(12351) == False
+assert is_Diff(12352) == True
+assert is_Diff(12353) == False
+assert is_Diff(12354) == True
+assert is_Diff(12355) == False
+assert is_Diff(12356) == True
+assert is_Diff(12357) == False
+assert is_Diff(12358) == True
+assert is_Diff(12359) == False
+assert is_Diff(12360) == True
+assert is_Diff(12361) == False
+assert is_Diff(12362) == True
+assert is_Diff(12363) == False
+assert is_Diff(12364) == True
+assert is_Diff(12365) == False
+assert is_Diff(12366) == True
+assert is_Diff(12367) == False
+assert is_Diff(12368) == True
+assert is_Diff(12369) == False
+assert is_Diff(12370) == True
+assert is_Diff(12371) == False
+assert is_Diff(12372) == True
+assert is_Diff(12373) == False
+assert is_Diff(12374) == True
+assert is_Diff(12375) == False
+assert is_Diff(12376) == True
+assert is_Diff(12377) == False
+assert is_Diff(12378) == True
+assert is_Diff(12379) == False
+assert is_Diff(12380) == True
+assert is_Diff(12381) == False
+assert is_Diff(12382) == True
+assert is_Diff(12383) == False
+assert is_Diff(12384) == True
+assert is_Diff(12385) == False
+assert is_Diff(12386) == True
+assert is_Diff(12387) == False
+assert is_Diff(12388) == True
+assert is_Diff(12389) == False
+assert is_Diff(12390) == True
+assert is_Diff(12391) == False
+assert is_Diff(12392) == True
+assert is_Diff(12393) == False
+assert is_Diff(12394

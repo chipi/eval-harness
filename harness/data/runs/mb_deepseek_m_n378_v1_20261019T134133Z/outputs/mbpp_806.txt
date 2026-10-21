@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_run_uppercase(s: str) -> int:
+    """
+    Find the maximum run of consecutive uppercase characters in the given string.
+    
+    Args:
+        s: Input string to search.
+    
+    Returns:
+        Length of the longest run of consecutive uppercase characters.
+    """
+    max_run = 0
+    current_run = 0
+    
+    for ch in s:
+        if ch.isupper():
+            current_run += 1
+            if current_run > max_run:
+                max_run = current_run
+        else:
+            current_run = 0
+    
+    return max_run
+
+
+if __name__ == "__main__":
+    assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+    assert max_run_uppercase('') == 0
+    assert max_run_uppercase('abc') == 0
+    assert max_run_uppercase('ABC') == 3
+    assert max_run_uppercase('aBcDeF') == 1
+    assert max_run_uppercase('ABcDEFgHI') == 3
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. We iterate through each character in the string.
+2. If the character is uppercase (`ch.isupper()`), we increment `current_run`.
+3. If `current_run` exceeds `max_run`, we update `max_run`.
+4. If the character is not uppercase, we reset `current_run` to 0.
+5. Finally, we return `max_run`.
+
+For the example `'GeMKSForGERksISBESt'`:
+- `G` → run=1
+- `e` → reset
+- `MKSF` → run=4
+- `o` → reset
+- `r` → reset
+- `GER` → run=3
+- `k` → reset
+- `s` → reset
+- `ISBES` → run=**5** ← maximum
+- `t` → reset
+
+Result: **5** ✓

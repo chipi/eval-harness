@@ -1,0 +1,32 @@
+```python
+def big_sum(arr):
+    """
+    This function calculates the sum of the largest and smallest value in a given array.
+
+    Args:
+        arr (list): A list of numbers.
+
+    Returns:
+        int: The sum of the largest and smallest value in the array.
+
+    Raises:
+        ValueError: If the input array is empty.
+    """
+    if not arr:
+        raise ValueError("Array cannot be empty")
+
+    return max(arr) + min(arr)
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(big_sum([1, 2, 3]))  # Output: 4
+```
+
+In this code:
+
+*   We define a function `big_sum` that takes an array `arr` as input.
+*   We check if the array is empty and raise a `ValueError` if it is.
+*   We use the built-in `max` and `min` functions to find the largest and smallest values in the array, respectively.
+*   We return the sum of these two values.
+*   In the example usage section, we demonstrate how to use the `big_sum` function with the array `[1, 2, 3]`.

@@ -1,0 +1,36 @@
+```python
+def centered_hexagonal_number(n):
+    """
+    Calculates the nth centered hexagonal number.
+
+    A centered hexagonal number is a centered figurate number that represents a hexagon
+    with a dot in the center and all other dots surrounding the center in a hexagonal lattice.
+    The formula for the nth centered hexagonal number is: 3 * n * (n - 1) + 1
+
+    Args:
+        n (int): The position of the centered hexagonal number to find (1-based index).
+
+    Returns:
+        int: The nth centered hexagonal number.
+    """
+    if not isinstance(n, int) or n < 1:
+        raise ValueError("Input must be a positive integer.")
+    return 3 * n * (n - 1) + 1
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Test the function with the provided example
+    result = centered_hexagonal_number(10)
+    print(f"The 10th centered hexagonal number is: {result}")
+
+    # Assertion to verify the result
+    assert result == 271, f"Assertion failed: centered_hexagonal_number(10) returned {result}, expected 271"
+
+    # Additional test cases
+    assert centered_hexagonal_number(1) == 1, "Test case for n=1 failed"
+    assert centered_hexagonal_number(2) == 7, "Test case for n=2 failed"
+    assert centered_hexagonal_number(3) == 19, "Test case for n=3 failed"
+    assert centered_hexagonal_number(4) == 37, "Test case for n=4 failed"
+
+    print("All assertions passed successfully!")
+```

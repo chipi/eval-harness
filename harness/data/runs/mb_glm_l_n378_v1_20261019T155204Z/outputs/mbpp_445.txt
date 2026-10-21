@@ -1,0 +1,22 @@
+```python
+def index_multiplication(test_tup1, test_tup2):
+    """
+    Performs index wise multiplication of tuple elements in the given two tuples.
+    
+    Args:
+        test_tup1 (tuple): The first tuple of tuples containing numbers.
+        test_tup2 (tuple): The second tuple of tuples containing numbers.
+        
+    Returns:
+        tuple: A new tuple of tuples where each element is the product of 
+               corresponding elements from the input tuples.
+    """
+    # Using a nested generator expression to iterate through the tuples
+    # and multiply corresponding elements.
+    result = tuple(tuple(a * b for a, b in zip(sub1, sub2)) 
+                   for sub1, sub2 in zip(test_tup1, test_tup2))
+    return result
+
+# Assertion to verify the function works as expected
+assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)),((6, 7), (3, 9), (1, 1), (7, 3)) ) == ((6, 21), (12, 45), (2, 9), (7, 30))
+```

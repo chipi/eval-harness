@@ -1,0 +1,11 @@
+```python
+def check_element(lst, element):
+    return all(i == element for i in lst)
+
+# Test cases
+assert check_element(["green", "orange", "black", "white"],'blue')==False
+assert check_element(["blue", "blue", "blue", "blue"],'blue')==True
+assert check_element(["red", "red", "red", "red"],'red')==True
+assert check_element(["green", "green", "green", "green"],'green')==True
+assert check_element(["yellow", "yellow", "yellow", "yellow"],'yellow')==True
+```

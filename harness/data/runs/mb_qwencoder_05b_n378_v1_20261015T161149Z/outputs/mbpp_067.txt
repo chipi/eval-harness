@@ -1,0 +1,29 @@
+```python
+def bell_number(n):
+    """
+    Calculate the number of ways to partition a set of Bell numbers.
+    
+    Args:
+    n (int): The number of Bell numbers to partition.
+    
+    Returns:
+    int: The number of ways to partition the set of Bell numbers.
+    """
+    # Base case: if n is 0 or 1, there's only one way to partition it
+    if n == 0 or n == 1:
+        return 1
+    
+    # Initialize the result to 0
+    result = 0
+    
+    # Iterate from 2 to n
+    for i in range(2, n + 1):
+        # Calculate the number of ways to partition the set of Bell numbers
+        result += bell_number(i - 1) * bell_number(n - i)
+    
+    return result
+
+# Test the function with the provided test case
+assert bell_number(2) == 2
+```
+

@@ -1,0 +1,17 @@
+```python
+def count_Substrings(s: str) -> int:
+    """Count substrings whose digit sum equals their length."""
+    counts = {0: 1}
+    balance = 0
+    total = 0
+
+    for char in s:
+        balance += int(char) - 1
+        total += counts.get(balance, 0)
+        counts[balance] = counts.get(balance, 0) + 1
+
+    return total
+
+
+assert count_Substrings("112112") == 6
+```

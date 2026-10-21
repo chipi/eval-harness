@@ -1,0 +1,17 @@
+```python
+def remove_dirty_chars(s1, s2):
+    # Convert both strings to sets for efficient lookup
+    set_s1 = set(s1)
+    set_s2 = set(s2)
+    
+    # Use set difference to find characters in s1 not in s2
+    result = ''.join(set_s1 - set_s2)
+    
+    return result
+
+# Test cases to verify the correctness of the solution
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+assert remove_dirty_chars("hello world", "world") == 'helo'
+assert remove_dirty_chars("data science", "science") == 'dta'
+assert remove_dirty_chars("programming", "gaming") == 'proramming'
+```

@@ -1,0 +1,12 @@
+```python
+def min_of_three(a, b, c):
+    return min(a, b, c)
+
+
+assert min_of_three(10, 20, 0) == 0
+assert min_of_three(1, 2, 3) == 1
+assert min_of_three(5, 5, 5) == 5
+
+if __name__ == "__main__":
+    print(min_of_three(10, 20, 0))
+```

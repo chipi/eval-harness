@@ -1,0 +1,15 @@
+```python
+def smallest_num(lst):
+    """Find the smallest number in a list."""
+    if not lst:
+        raise ValueError("List is empty")
+    smallest = lst[0]
+    for num in lst[1:]:
+        if num < smallest:
+            smallest = num
+    return smallest
+
+
+# Test
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+```

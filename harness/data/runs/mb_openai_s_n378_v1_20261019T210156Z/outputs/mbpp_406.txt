@@ -1,0 +1,13 @@
+```python
+def find_Parity(n):
+    """
+    Return True if n is odd, otherwise False.
+    """
+    return n % 2 != 0
+
+
+if __name__ == "__main__":
+    assert find_Parity(12) == False
+    assert find_Parity(7) == True
+    print("All tests passed.")
+```

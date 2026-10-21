@@ -1,0 +1,20 @@
+Here's a self-contained Python script that checks if a number is divisible by 11, along with the given test case:
+
+```python
+def is_Diff(number):
+    """
+    Check if a number is divisible by 11.
+
+    Args:
+        number (int): The number to check.
+
+    Returns:
+        bool: True if the number is divisible by 11, False otherwise.
+    """
+    return number % 11 == 0
+
+# Test case
+assert is_Diff(12345) == False
+```
+
+This script defines the `is_Diff` function which returns `True` if the input number is divisible by 11 (i.e., the remainder when divided by 11 is 0), and `False` otherwise. The test case `assert is_Diff(12345) == False` verifies that 12345 is not divisible by 11 (which is correct, since 12345 ÷ 11 ≈ 1122.2727...).

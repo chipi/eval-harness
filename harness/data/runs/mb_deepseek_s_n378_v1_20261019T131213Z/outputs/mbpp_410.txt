@@ -1,0 +1,22 @@
+```python
+def min_val(lst):
+    """
+    Find the minimum numeric value in a heterogeneous list.
+    
+    Args:
+        lst: A list containing mixed types (numbers and other types)
+    
+    Returns:
+        The minimum numeric value among all numbers in the list.
+        If no numbers are present, returns None.
+    """
+    # Filter out only numeric values (int and float)
+    numbers = [x for x in lst if isinstance(x, (int, float))]
+    
+    # Return the minimum if numbers exist, otherwise None
+    return min(numbers) if numbers else None
+
+# Test the function with the given assertion
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+print("Test passed!")
+```

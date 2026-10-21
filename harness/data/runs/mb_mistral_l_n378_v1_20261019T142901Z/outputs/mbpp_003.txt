@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem by defining a function to identify non-prime numbers:
+
+```python
+"""
+Function to identify non-prime numbers.
+A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.
+"""
+
+def is_not_prime(n):
+    """Returns True if n is not a prime number, False otherwise."""
+    if n <= 1:
+        return True
+    if n == 2:
+        return False
+    if n % 2 == 0:
+        return True
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return True
+    return False
+
+# Test case
+assert is_not_prime(2) == False
+```
+
+This script:
+1. Defines the `is_not_prime` function that checks if a number is not prime
+2. Handles edge cases (numbers ≤ 1, even numbers)
+3. Checks divisibility up to the square root of the number for efficiency
+4. Includes the required test case that verifies `is_not_prime(2)` returns `False`

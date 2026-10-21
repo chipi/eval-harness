@@ -1,0 +1,20 @@
+```python
+def dif_Square(n: int) -> bool:
+    """
+    Returns True if the given number can be represented as the difference 
+    of two squares (i.e., a^2 - b^2 = n for some integers a, b), else False.
+    
+    A number can be expressed as the difference of two squares if and only if
+    it is not of the form 2 (mod 4). In other words, n % 4 != 2.
+    """
+    # The mathematical condition: n % 4 != 2
+    return n % 4 != 2
+
+# Example test
+if __name__ == "__main__":
+    print(dif_Square(5))  # Expected: True
+    print(dif_Square(2))  # Expected: False (since 2 % 4 == 2)
+    print(dif_Square(7))  # Expected: True (7 % 4 = 3)
+    print(dif_Square(8))  # Expected: True (8 % 4 = 0)
+    print(dif_Square(10)) # Expected: False (10 % 4 = 2)
+```

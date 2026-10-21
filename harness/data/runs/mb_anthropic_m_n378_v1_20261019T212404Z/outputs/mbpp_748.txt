@@ -1,0 +1,20 @@
+```python
+import re
+
+def capital_words_spaces(text):
+    return re.sub(r'(?<!^)(?=[A-Z])', ' ', text)
+
+# Test cases
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("PythonProgrammingExamples") == 'Python Programming Examples'
+assert capital_words_spaces("GetReadyToBeCodingFreak") == 'Get Ready To Be Coding Freak'
+
+print("All test cases passed!")
+```
+
+This script defines the function `capital_words_spaces` which uses a regular expression to insert a space before every uppercase letter, except when it occurs at the very beginning of the string (`(?<!^)` ensures we don't add a leading space).
+
+**Explanation:**
+- `(?=[A-Z])` is a lookahead that matches a position just before an uppercase letter.
+- `(?<!^)` is a negative lookbehind that ensures this position is not the start of the string.
+- `re.sub` replaces each such position with a single space, effectively splitting words at capital letters while leaving the first word's capital letter intact.

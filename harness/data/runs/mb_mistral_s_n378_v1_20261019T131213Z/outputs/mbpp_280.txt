@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem using a sequential search approach:
+
+```python
+def sequential_search(arr, element):
+    """
+    Perform a sequential search for an element in an array.
+
+    Args:
+        arr: List of elements to search through
+        element: Element to search for
+
+    Returns:
+        tuple: (found: bool, index: int) where index is the position of the element
+               or -1 if not found
+    """
+    for index, value in enumerate(arr):
+        if value == element:
+            return (True, index)
+    return (False, -1)
+
+# Test case
+assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+print("Test passed!")
+```
+
+This script:
+1. Defines the `sequential_search` function that takes an array and an element as input
+2. Uses a for loop with `enumerate` to check each element in the array
+3. Returns a tuple with (True, index) if the element is found
+4. Returns (False, -1) if the element is not found
+5. Includes the test case from the problem statement to verify the function works correctly
+
+The function will work for any type of elements in the array (numbers, strings, etc.) as long as the equality comparison (`==`) is properly defined for those types.

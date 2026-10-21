@@ -1,0 +1,52 @@
+```python
+def get_ludic(n):
+    """
+    Get all lucid numbers smaller than or equal to n.
+
+    Args:
+    n (int): The upper limit for generating lucid numbers.
+
+    Returns:
+    list: A list of lucid numbers less than or equal to n.
+    """
+    lucids = []
+    i = 1
+    while True:
+        if is_lucid(i):
+            lucids.append(i)
+        if i > n:
+            break
+        i += 1
+    return lucids
+
+def is_lucid(num):
+    """
+    Check if a number is lucid.
+
+    Args:
+    num (int): The number to check.
+
+    Returns:
+    bool: True if the number is lucid, False otherwise.
+    """
+    if num < 2:
+        return False
+    for i in range(2, int(num**0.5) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+# Test cases
+assert get_ludic(10) == [1, 2, 3, 5, 7]
+assert get_ludic(1) == [1]
+assert get_ludic(2) == [1, 2]
+assert get_ludic(3) == [1, 2, 3]
+assert get_ludic(4) == [1, 2, 3, 5]
+assert get_ludic(5) == [1, 2, 3, 5, 7]
+assert get_ludic(6) == [1, 2, 3, 5, 7, 11]
+assert get_ludic(7) == [1, 2, 3, 5, 7, 11, 13]
+assert get_ludic(8) == [1, 2, 3, 5, 7, 11, 13, 17]
+assert get_ludic(9) == [1, 2, 3, 5, 7, 11, 13, 17, 19]
+assert get_ludic(100) == [1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
+```
+

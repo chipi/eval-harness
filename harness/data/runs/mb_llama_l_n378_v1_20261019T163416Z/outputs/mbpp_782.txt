@@ -1,0 +1,28 @@
+```python
+def odd_length_sum(arr):
+    """
+    This function calculates the sum of all odd length subarrays.
+
+    Args:
+    arr (list): A list of integers.
+
+    Returns:
+    int: The sum of all odd length subarrays.
+
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    # Iterate over all possible subarray lengths
+    for length in range(1, n + 1, 2):
+        # Iterate over all possible subarrays of the current length
+        for i in range(n - length + 1):
+            # Calculate the sum of the current subarray
+            total_sum += sum(arr[i:i + length])
+    
+    return total_sum
+
+# Test the function
+assert odd_length_sum([1,2,4]) == 14
+print("All test cases pass")
+```

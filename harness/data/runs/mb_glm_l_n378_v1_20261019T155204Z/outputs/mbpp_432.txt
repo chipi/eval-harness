@@ -1,0 +1,47 @@
+```python
+"""
+Write a function to find the median length of a trapezium.
+assert median_trapezium(15,25,35)==20
+"""
+
+def median_trapezium(base1, base2, height):
+    """
+    Calculates the length of the median (midsegment) of a trapezium (trapezoid).
+    
+    The median of a trapezium is the segment connecting the midpoints of the 
+    non-parallel sides (legs). Its length is the average of the lengths of 
+    the two parallel bases.
+    
+    Formula: Median = (base1 + base2) / 2
+    
+    Note: The problem description includes a 'height' parameter in the 
+    function call (15, 25, 35), but the calculation of the median length 
+    relies solely on the lengths of the two parallel bases. The height 
+    does not affect the length of the median.
+    
+    Parameters:
+    base1 (float or int): The length of the first parallel side.
+    base2 (float or int): The length of the second parallel side.
+    height (float or int): The height of the trapezium (unused in calculation 
+                           but included for interface compatibility).
+                           
+    Returns:
+    float: The length of the median.
+    """
+    return (base1 + base2) / 2
+
+# Test cases
+if __name__ == "__main__":
+    # Test case provided in the problem description
+    # median_trapezium(15, 25, 35) -> bases are 15 and 25. Height is 35.
+    # Median = (15 + 25) / 2 = 40 / 2 = 20
+    assert median_trapezium(15, 25, 35) == 20
+    print("Test case 1 passed: median_trapezium(15, 25, 35) == 20")
+    
+    # Additional test cases
+    assert median_trapezium(10, 20, 5) == 15
+    print("Test case 2 passed: median_trapezium(10, 20, 5) == 15")
+    
+    assert median_trapezium(4, 6, 10) == 5
+    print("Test case 3 passed: median_trapezium(4, 6, 10) == 5")
+```

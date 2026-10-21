@@ -1,0 +1,41 @@
+```python
+def start_withp(words_list):
+    """
+    Return two words from a list of words starting with letter 'p'.
+    
+    Args:
+        words_list: A list of strings containing words separated by spaces
+        
+    Returns:
+        A tuple of two words that start with 'p' (case-insensitive)
+    """
+    p_words = []
+    
+    for item in words_list:
+        # Split each item by spaces to get individual words
+        words = item.split()
+        for word in words:
+            # Check if word starts with 'p' or 'P'
+            if word.lower().startswith('p'):
+                p_words.append(word)
+                # Return as soon as we have two words
+                if len(p_words) == 2:
+                    return tuple(p_words)
+    
+    return tuple(p_words)
+
+
+# Test cases
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+print("Test passed!")
+print(start_withp(["Python PHP", "Java JavaScript", "c c++"]))
+```
+
+The function works as follows:
+
+1. Iterates through each string in the input list
+2. Splits each string by spaces to get individual words
+3. Checks if each word starts with 'p' (case-insensitive using `.lower()`)
+4. Collects words starting with 'p' in a list
+5. Returns a tuple of the first two words found that start with 'p'
+6. For the given test case, it finds "Python" and "PHP" from the first string and returns them as a tuple

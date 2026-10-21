@@ -1,0 +1,19 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def odd_Equivalent(s, n):
+    """
+    Returns the number of times the binary string has an odd decimal value
+    when rotated n times.
+    """
+    count = 0
+    for i in range(n):
+        rotated = s[i:] + s[:i]  # Rotate left by i positions
+        if int(rotated, 2) % 2 == 1:  # Check if decimal value is odd
+            count += 1
+    return count
+
+# Test the function
+assert odd_Equivalent("011001", 6) == 3
+print("Test passed!")
+```

@@ -1,0 +1,90 @@
+```python
+def count_reverse_pairs(string_list):
+    """
+    Counts the number of pairs of strings in the list where one string 
+    is the reverse of the other.
+    
+    Args:
+        string_list (list of str): The list of strings to check.
+        
+    Returns:
+        int: The count of reverse pairs found.
+    """
+    count = 0
+    # We use a copy of the list to track elements we have already paired
+    # to avoid counting the same pair twice or using the same element twice.
+    temp_list = list(string_list)
+    
+    i = 0
+    while i < len(temp_list):
+        current_str = temp_list[i]
+        # Calculate the reverse of the current string
+        reversed_str = current_str[::-1]
+        
+        # Look for the reversed string in the remaining part of the list
+        found_match = False
+        for j in range(i + 1, len(temp_list)):
+            if temp_list[j] == reversed_str:
+                count += 1
+                # Remove the matched element so it isn't used in another pair
+                temp_list.pop(j)
+                found_match = True
+                break
+        
+        # If a match was found, we don't increment i because the list size changed
+        # and the next element has shifted into the current index i.
+        # If no match was found, move to the next element.
+        if not found_match:
+            i += 1
+        else:
+            # Even if found, we remove the current element to move forward
+            temp_list.pop(i)
+            
+    return count
+
+# Alternative, more efficient implementation using a Frequency Map (Dictionary)
+def count_reverse_pairs_efficient(string_list):
+    """
+    An O(n) implementation using a frequency dictionary.
+    """
+    from collections import Counter
+    counts = Counter(string_list)
+    pair_count = 0
+    
+    # We iterate through the unique strings in the counter
+    for s in list(counts.keys()):
+        rev = s[::-1]
+        
+        if s == rev:
+            # Special case: Palindromes (e.g., "aba")
+            # Number of pairs is n * (n - 1) // 2
+            n = counts[s]
+            pair_count += (n * (n - 1)) // 2
+            counts[s] = 0 # Mark as processed
+        elif counts[rev] > 0:
+            # Standard case: "abc" and "cba"
+            # The number of pairs is the minimum of the two counts
+            num_pairs = min(counts[s], counts[rev])
+            pair_count += num_pairs
+            # Set both to 0 so we don't double count when we reach 'rev'
+            counts[s] = 0
+            counts[rev] = 0
+            
+    return pair_count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = ["julia", "best", "tseb", "for", "ailuj"]
+    expected_output = 2
+    
+    # Using the standard logic for the specific problem requirement
+    # Note: The prompt's example implies we are looking for unique pairings.
+    result = count_reverse_pairs_efficient(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Expected: {expected_output}")
+    print(f"Result: {result}")
+    
+    assert result == expected_output, f"Test failed: expected {expected_output}, got {result}"
+    print("Assertion passed!")
+```

@@ -1,0 +1,8 @@
+```python
+def split_Arr(lst, n):
+    """Split a list at the nth element and add the first part to the end."""
+    return lst[n:] + lst[:n]
+
+
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+```

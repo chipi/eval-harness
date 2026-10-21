@@ -1,0 +1,28 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    # Calculate the length of the array
+    length = len(arr)
+    
+    # Calculate the total sum of the array
+    total_sum = sum(arr)
+    
+    # Calculate the total sum of the repeated array
+    repeated_sum = n * k * (total_sum - (n - 1) * (total_sum // (n - k)))
+    
+    # Calculate the maximum sum of the subarray
+    max_sum = max(arr)
+    
+    # Calculate the maximum subarray sum
+    max_sub_array_sum = max(max_sum * (i - 1) + sum(arr[:i]) for i in range(1, length + 1))
+    
+    # Calculate the minimum subarray sum
+    min_sub_array_sum = min(min_sum + sum(arr[i:i + k]) for i in range(length - k + 1) if sum(arr[i:i + k]) > min_sum)
+    
+    # Calculate the maximum subarray sum
+    max_sub_array_sum = max(max_sub_array_sum, max_sub_array_sum - min_sub_array_sum)
+    
+    return max_sub_array_sum
+
+# Test the function
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+```

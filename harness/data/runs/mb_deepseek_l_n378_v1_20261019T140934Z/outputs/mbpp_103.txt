@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def eulerian_num(n, m):
+    """
+    Calculate the Eulerian number a(n, m).
+    
+    The Eulerian number a(n, m) is the number of permutations of the numbers 
+    1 to n in which exactly m elements are greater than the previous element.
+    
+    Args:
+        n (int): The size of the permutation
+        m (int): The number of ascents
+        
+    Returns:
+        int: The Eulerian number a(n, m)
+    """
+    # Base cases
+    if m >= n or n == 0:
+        return 0
+    if m == 0:
+        return 1
+    
+    # Use dynamic programming to compute Eulerian numbers
+    # dp[i][j] will store a(i, j)
+    dp = [[0] * (n + 1) for _ in range(n + 1)]
+    
+    # Initialize base cases
+    for i in range(1, n + 1):
+        dp[i][0] = 1  # a(i, 0) = 1 for all i >= 1
+    
+    # Fill the DP table using the recurrence relation:
+    # a(n, m) = (n - m) * a(n-1, m-1) + (m + 1) * a(n-1, m)
+    for i in range(2, n + 1):
+        for j in range(1, min(i, m + 1)):
+            dp[i][j] = (i - j) * dp[i-1][j-1] + (j + 1) * dp[i-1][j]
+    
+    return dp[n][m]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert eulerian_num(3, 1) == 4, f"Expected 4, got {eulerian_num(3, 1)}"
+    
+    # Additional test cases
+    assert eulerian_num(4, 1) == 11
+    assert eulerian_num(4, 2) == 11
+    assert eulerian_num(5, 2) == 66
+    assert eulerian_num(3, 0) == 1
+    assert eulerian_num(3, 2) == 1
+    
+    print("All tests passed!")
+    print(f"a(3, 1) = {eulerian_num(3, 1)}")
+```
+
+This implementation uses dynamic programming to compute Eulerian numbers efficiently. The recurrence relation used is:
+
+**a(n, m) = (n - m) × a(n-1, m-1) + (m + 1) × a(n-1, m)**
+
+with base cases:
+- a(n, 0) = 1 for all n ≥ 1
+- a(0, m) = 0 for m > 0
+- a(n, m) = 0 for m ≥ n
+
+The function correctly returns 4 for a(3, 1), which matches the expected output in the problem statement.

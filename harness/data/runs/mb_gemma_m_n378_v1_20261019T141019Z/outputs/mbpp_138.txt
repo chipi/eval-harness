@@ -1,0 +1,47 @@
+To solve this problem, we need to understand that any positive integer can be represented as a sum of powers of 2 (this is the basis of the binary number system). 
+
+The only case where a number **cannot** be represented as a sum of **non-zero** powers of 2 is if the number itself is 0 (since $2^n$ is always positive for any integer $n$, and the sum of positive numbers cannot be zero). However, for any integer $n > 0$, there is always a unique binary representation that satisfies this condition.
+
+Here is the self-contained script:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Checks whether the given number can be represented as a sum of 
+    non-zero powers of 2.
+    
+    In mathematics, every positive integer has a unique representation 
+    as a sum of distinct powers of 2 (its binary form). 
+    The only integer that cannot be represented as a sum of 
+    positive powers of 2 is 0 (or negative numbers, depending on definition).
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if n can be represented as a sum of powers of 2, False otherwise.
+    """
+    # A sum of non-zero powers of 2 (2^0, 2^1, 2^2...) will always be > 0.
+    # Therefore, any integer greater than 0 can be represented.
+    return n > 0
+
+def run_tests():
+    # Test cases
+    test_cases = [
+        (10, True),   # 10 = 2^3 + 2^1 (8 + 2)
+        (1, True),    # 1 = 2^0
+        (8, True),    # 8 = 2^3
+        (0, False),   # Cannot be formed by positive powers
+        (7, True),    # 7 = 2^2 + 2^1 + 2^0 (4 + 2 + 1)
+        (-5, False),  # Negative numbers cannot be formed
+    ]
+
+    for val, expected in test_cases:
+        result = is_Sum_Of_Powers_Of_Two(val)
+        assert result == expected, f"Test failed for {val}: expected {expected}, got {result}"
+        print(f"Test passed: {val} -> {result}")
+
+if __name__ == "__main__":
+    run_tests()
+    print("\nAll assertions passed successfully!")
+```

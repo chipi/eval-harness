@@ -1,0 +1,15 @@
+```python
+def tuple_intersection(tuple_list1, tuple_list2):
+    set1 = set(frozenset(t) for t in tuple_list1)
+    set2 = set(frozenset(t) for t in tuple_list2)
+    intersection = set1 & set2
+    return set(tuple(sorted(fs)) for fs in intersection)
+
+def main():
+    tuple_list1 = [(3, 4), (5, 6), (9, 10), (4, 5)]
+    tuple_list2 = [(5, 4), (3, 4), (6, 5), (9, 11)]
+    print(tuple_intersection(tuple_list1, tuple_list2))  # Expected output: {(3, 4), (4, 5), (5, 6)}
+
+if __name__ == "__main__":
+    main()
+```

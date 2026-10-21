@@ -1,0 +1,13 @@
+```python
+def count_charac(s):
+    """
+    Write a function to count the total number of characters in a string.
+    
+    :param s: The input string
+    :return: The total number of characters in the string
+    """
+    return len(s)
+
+# Test cases
+assert count_charac("python programming") == 18
+```

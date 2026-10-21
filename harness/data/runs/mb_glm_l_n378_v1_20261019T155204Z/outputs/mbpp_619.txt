@@ -1,0 +1,13 @@
+```python
+def move_num(s: str) -> str:
+    """
+    Move all the numbers to the end of the given string.
+    """
+    non_digits = [ch for ch in s if not ch.isdigit()]
+    digits = [ch for ch in s if ch.isdigit()]
+    return ''.join(non_digits + digits)
+
+if __name__ == "__main__":
+    assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+    print("Test passed!")
+```

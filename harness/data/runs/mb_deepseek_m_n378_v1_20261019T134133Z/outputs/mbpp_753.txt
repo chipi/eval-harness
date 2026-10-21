@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find minimum k records from tuple list.
+https://www.geeksforgeeks.org/python-find-minimum-k-records-from-tuple-list/
+- in this case a verbatim copy of test cases
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+"""
+
+
+def min_k(tuple_list, k):
+    """
+    Find the minimum k records from a tuple list based on the second element.
+
+    Args:
+        tuple_list (list of tuples): A list of (name, value) tuples.
+        k (int): The number of minimum records to return.
+
+    Returns:
+        list of tuples: The k tuples with the smallest second element,
+                        sorted in ascending order by the second element.
+    """
+    # Sort the list by the second element of each tuple (ascending)
+    sorted_list = sorted(tuple_list, key=lambda x: x[1])
+    # Return the first k elements
+    return sorted_list[:k]
+
+
+# Test cases
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 1) == [('Akash', 2)]
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 4) == [
+    ('Akash', 2), ('Akshat', 4), ('Nikhil', 8), ('Manjeet', 10)
+]
+assert min_k([('a', 5), ('b', 1), ('c', 3)], 2) == [('b', 1), ('c', 3)]
+assert min_k([], 3) == []
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **`sorted(tuple_list, key=lambda x: x[1])`** — Sorts the list of tuples by the second element (the numeric value) in ascending order.
+2. **`sorted_list[:k]`** — Slices the first `k` elements from the sorted list, which are the minimum `k` records.
+3. The function handles edge cases like `k` larger than the list length (returns the whole sorted list) and empty input lists.
+
+**Output:**
+```
+All tests passed!
+```

@@ -1,0 +1,42 @@
+```python
+def Diff(list1, list2):
+    """
+    Calculates the difference between two lists, returning elements present in the first list
+    but not in the second, while preserving the original order from the first list.
+
+    Args:
+        list1 (list): The initial list.
+        list2 (list): The list of elements to remove from list1.
+
+    Returns:
+        list: A new list containing elements from list1 that are not in list2.
+    """
+    # Create a set from list2 for fast O(1) average time complexity lookups.
+    # This is more efficient than using the 'in' operator on a list.
+    set2 = set(list2)
+    
+    # Use a list comprehension to build the result.
+    # It iterates through each item in list1 and includes it in the new list
+    # only if it is not found in the set created from list2.
+    # This preserves the original order of elements from list1.
+    return [item for item in list1 if item not in set2]
+
+# Example usage and assertion to verify the function's correctness.
+if __name__ == "__main__":
+    # Define the input lists as per the problem description.
+    list_a = [10, 15, 20, 25, 30, 35, 40]
+    list_b = [25, 40, 35]
+
+    # Call the function and store the result.
+    result = Diff(list_a, list_b)
+
+    # Assert that the result matches the expected output.
+    # The `assert` statement will raise an AssertionError if the condition is False.
+    # If the script runs without error, the assertion is successful.
+    assert result == [10, 20, 30, 15]
+
+    print("Assertion passed! The function works correctly.")
+    print(f"List 1: {list_a}")
+    print(f"List 2: {list_b}")
+    print(f"Difference: {result}")
+```

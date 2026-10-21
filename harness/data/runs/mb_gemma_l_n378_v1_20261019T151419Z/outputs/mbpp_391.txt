@@ -1,0 +1,36 @@
+```python
+def convert_list_dictionary(*lists):
+    """
+    Converts multiple lists into a list of nested dictionaries.
+    The first list provides the outer keys, the second list provides the inner keys,
+    and the third list provides the values.
+    """
+    # Use zip to iterate through the lists in parallel
+    # Each 'item' will be a tuple: (outer_key, inner_key, value)
+    result = []
+    for outer_key, inner_key, value in zip(*lists):
+        # Create a nested dictionary structure: {outer_key: {inner_key: value}}
+        nested_dict = {outer_key: {inner_key: value}}
+        result.append(nested_dict)
+    
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    list1 = ["S001", "S002", "S003", "S004"]
+    list2 = ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"]
+    list3 = [85, 98, 89, 92]
+    
+    expected_output = [
+        {'S001': {'Adina Park': 85}}, 
+        {'S002': {'Leyton Marsh': 98}}, 
+        {'S003': {'Duncan Boyle': 89}}, 
+        {'S004': {'Saim Richards': 92}}
+    ]
+    
+    actual_output = convert_list_dictionary(list1, list2, list3)
+    
+    assert actual_output == expected_output
+    print("Assertion passed!")
+    print(actual_output)
+```

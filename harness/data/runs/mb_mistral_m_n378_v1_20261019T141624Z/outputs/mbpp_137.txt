@@ -1,0 +1,13 @@
+```python
+import math
+
+def zero_count(arr):
+    zero_count = sum(1 for num in arr if num == 0)
+    non_zero_count = len(arr) - zero_count
+    if non_zero_count == 0:
+        return 0.0  # Avoid division by zero if all elements are zero
+    return zero_count / (zero_count + non_zero_count)
+
+# Test case
+assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+```

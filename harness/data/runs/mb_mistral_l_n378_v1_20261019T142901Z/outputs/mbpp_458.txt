@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+"""
+Function to calculate the area of a rectangle.
+The area of a rectangle is calculated by multiplying its length by its width.
+"""
+
+def rectangle_area(length: float, width: float) -> float:
+    """
+    Calculate the area of a rectangle.
+
+    Args:
+        length: The length of the rectangle.
+        width: The width of the rectangle.
+
+    Returns:
+        The area of the rectangle (length * width).
+    """
+    return length * width
+
+# Test the function with the provided assertion
+assert rectangle_area(10, 20) == 200, "Test failed: rectangle_area(10, 20) should return 200"
+
+# Optional: Print a success message if the test passes
+print("Test passed successfully!")
+```
+
+This script:
+1. Defines a function `rectangle_area` that takes length and width as parameters
+2. Returns the product of length and width (the area)
+3. Includes the required assertion test
+4. Has type hints for better code documentation
+5. Includes a docstring explaining the function
+6. Prints a success message if the test passes
+
+The function will work with both integers and floating-point numbers.

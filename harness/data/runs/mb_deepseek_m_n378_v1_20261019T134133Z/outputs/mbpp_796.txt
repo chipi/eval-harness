@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def return_sum(dictionary):
+    """
+    Returns the sum of all values in the given dictionary.
+    
+    Args:
+        dictionary (dict): A dictionary with numeric values.
+    
+    Returns:
+        The sum of all values in the dictionary.
+    """
+    return sum(dictionary.values())
+
+
+# Test the function
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+print("Test passed!")
+print(return_sum({'a': 100, 'b': 200, 'c': 300}))  # Output: 600
+```
+
+**Explanation:**
+
+- `dictionary.values()` returns a view of all the values in the dictionary.
+- `sum()` adds them all together.
+- The `assert` statement verifies the function works as expected for the given test case.
+
+If you want a version that works even with non-numeric values (skipping them), you could use a generator expression instead:
+
+```python
+def return_sum(dictionary):
+    return sum(v for v in dictionary.values() if isinstance(v, (int, float)))
+```
+
+But for the given problem, the simple `sum(dictionary.values())` is sufficient.

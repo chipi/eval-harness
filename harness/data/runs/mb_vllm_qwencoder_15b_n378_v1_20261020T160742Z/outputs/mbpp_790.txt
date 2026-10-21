@@ -1,0 +1,13 @@
+```python
+def even_position(lst):
+    for i in range(0, len(lst), 2):  # Iterate over even indices
+        if lst[i] % 2 != 0:  # Check if the number at the current even index is odd
+            return False  # Return False if any odd number is found at an even index
+    return True  # Return True if all even indices contain even numbers
+
+# Test cases
+assert even_position([3,2,1]) == False
+assert even_position([4,6,8,10]) == True
+assert even_position([5,7,9,11]) == False
+assert even_position([2,4,6,8]) == True
+```

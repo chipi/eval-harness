@@ -1,0 +1,10 @@
+```python
+def sort_counter(d):
+    # Convert the dictionary to a list of tuples and sort it
+    sorted_list = sorted(d.items(), key=lambda x: x[1])
+    # Return the sorted list of tuples
+    return sorted_list
+
+# Test the function
+assert sort_counter({'Math':81, 'Physics':83, 'Chemistry':87})==[('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+```

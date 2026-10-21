@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def nth_nums(nums, n):
+    """
+    Compute the n-th power of each number in a list.
+    
+    Args:
+        nums: List of numbers
+        n: The power to raise each number to
+        
+    Returns:
+        List containing each number raised to the n-th power
+    """
+    return [x ** n for x in nums]
+
+# Test the function
+if __name__ == "__main__":
+    result = nth_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2)
+    expected = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Result: {result}")
+```
+
+This script defines the `nth_nums` function that takes a list of numbers and an exponent `n`, then returns a new list where each element is raised to the power of `n`. The function uses a list comprehension for a clean and efficient implementation. The included test case verifies that the function works correctly with the provided example.

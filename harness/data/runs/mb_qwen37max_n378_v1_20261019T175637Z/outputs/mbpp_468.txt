@@ -1,0 +1,29 @@
+```python
+def max_product(arr):
+    """
+    Find the maximum product formed by multiplying numbers of an increasing subsequence.
+    
+    We use dynamic programming where dp[i] represents the maximum product of an 
+    increasing subsequence ending at index i.
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    # dp[i] = max product of increasing subsequence ending at arr[i]
+    dp = [arr[i] for i in range(n)]
+    
+    for i in range(1, n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                candidate = dp[j] * arr[i]
+                if candidate > dp[i]:
+                    dp[i] = candidate
+    
+    return max(dp)
+
+
+# Test
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+print("All tests passed!")
+```

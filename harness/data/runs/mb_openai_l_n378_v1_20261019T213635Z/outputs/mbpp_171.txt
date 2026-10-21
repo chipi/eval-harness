@@ -1,0 +1,8 @@
+```python
+def perimeter_pentagon(side_length):
+    """Return the perimeter of a regular pentagon."""
+    return 5 * side_length
+
+
+assert perimeter_pentagon(5) == 25
+```

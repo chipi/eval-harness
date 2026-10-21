@@ -1,0 +1,33 @@
+```python
+import re
+
+def find_adverb_position(sentence: str):
+    """
+    Find the first adverb and its position in a given sentence.
+    
+    Args:
+        sentence: A string containing words, possibly with punctuation.
+        
+    Returns:
+        A tuple (start_index, end_index, adverb_word) for the first adverb found,
+        or None if no adverb is found.
+    """
+    # Common adverbs ending in 'ly' - we'll use a regex to find words ending in 'ly'
+    # We need to handle punctuation properly
+    
+    # Split into tokens while preserving positions
+    # Use regex to find word boundaries and check if they end with 'ly'
+    
+    # Pattern to match words that end with 'ly'
+    # \b ensures word boundary, [a-zA-Z]+ matches letters, ly at the end
+    pattern = r'\b([a-zA-Z]+ly)\b'
+    
+    match = re.search(pattern, sentence)
+    if match:
+        start = match.start(1)
+        end = match.end(1)
+        adverb = match.group(1)
+        return (start, end, adverb)
+    
+    return None
+```

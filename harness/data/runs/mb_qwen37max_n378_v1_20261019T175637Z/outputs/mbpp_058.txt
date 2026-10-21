@@ -1,0 +1,5 @@
+```python
+def opposite_Signs(a, b):
+    """Check whether two integers have opposite signs."""
+    return (a ^ b) < 0
+```

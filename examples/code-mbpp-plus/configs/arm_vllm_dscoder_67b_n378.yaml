@@ -1,0 +1,18 @@
+# The dscoder_67b arm served by vLLM on the DGX (GB10) instead of transformers. Same model,
+# revision, precision, prompt and token budget as arm_dscoder_67b_n378.yaml; the prompt is
+# rendered locally with the model's tokenizer and sent to /v1/completions, greedy.
+# Its own config_id: vLLM's greedy decoding is not bit-identical to transformers'.
+config_id: mb_vllm_dscoder_67b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: vllm
+  model: deepseek-ai/deepseek-coder-6.7b-instruct
+  revision: e5d64addd26a6a1db0f9b863abf6ee3141936807
+  precision: bf16
+  max_new_tokens: 768
+  base_url: http://dgx-llm-1:9100/v1
+  api_key_env: EVAL_VLLM_API_KEY
+  family: deepseek-coder
+  price_tier: free
+  prompt_file: prompt.txt

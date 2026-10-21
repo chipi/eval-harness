@@ -1,0 +1,63 @@
+```python
+def last_Digit_Factorial(n):
+    """
+    Find the last digit in factorial of a given number.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The last digit of n!
+        
+    Examples:
+        >>> last_Digit_Factorial(4)
+        4
+        >>> last_Digit_Factorial(5)
+        0
+        >>> last_Digit_Factorial(0)
+        1
+    """
+    if n < 0:
+        return None
+    
+    # For n >= 5, n! will always end with 0 because it will have factors of both 2 and 5
+    if n >= 5:
+        return 0
+    
+    # For n < 5, calculate factorial directly
+    factorial = 1
+    for i in range(1, n + 1):
+        factorial *= i
+    
+    # Return the last digit
+    return factorial % 10
+
+
+# Test cases
+if __name__ == "__main__":
+    assert last_Digit_Factorial(4) == 4, "Test failed for n=4"
+    assert last_Digit_Factorial(5) == 0, "Test failed for n=5"
+    assert last_Digit_Factorial(0) == 1, "Test failed for n=0"
+    assert last_Digit_Factorial(1) == 1, "Test failed for n=1"
+    assert last_Digit_Factorial(2) == 2, "Test failed for n=2"
+    assert last_Digit_Factorial(3) == 6, "Test failed for n=3"
+    assert last_Digit_Factorial(10) == 0, "Test failed for n=10"
+    
+    print("All tests passed!")
+    print(f"last_Digit_Factorial(4) = {last_Digit_Factorial(4)}")
+    print(f"last_Digit_Factorial(5) = {last_Digit_Factorial(5)}")
+    print(f"last_Digit_Factorial(0) = {last_Digit_Factorial(0)}")
+```
+
+**Explanation:**
+
+The solution uses an optimization based on the mathematical property that any factorial of n ≥ 5 will always end with 0. This is because:
+- 5! = 120 (ends with 0)
+- Any n ≥ 5 will have at least one factor of 5 and multiple factors of 2, resulting in a factor of 10, which makes the last digit 0.
+
+For n < 5, we simply calculate the factorial and return its last digit using the modulo operator (%).
+
+**Verification:**
+- 4! = 24, last digit = 4 ✓
+- 5! = 120, last digit = 0 ✓
+- 0! = 1, last digit = 1 ✓

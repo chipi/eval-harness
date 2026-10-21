@@ -1,0 +1,5 @@
+```python
+def add_dict_to_tuple(tup, dct):
+    """Add a dictionary to the end of a tuple and return the new tuple."""
+    return tup + (dct,)
+```

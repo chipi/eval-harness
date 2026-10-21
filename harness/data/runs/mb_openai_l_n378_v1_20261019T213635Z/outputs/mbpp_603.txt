@@ -1,0 +1,26 @@
+```python
+def get_ludic(n):
+    """Return all ludic numbers less than or equal to n."""
+    if n < 1:
+        return []
+
+    numbers = list(range(1, n + 1))
+    index = 1  # The first number after 1 is the first sieving number.
+
+    while index < len(numbers):
+        step = numbers[index]
+        # Count positions starting with 1, removing every step-th number.
+        numbers = [
+            value
+            for position, value in enumerate(numbers, start=1)
+            if position % step != 0 or position <= index + 1
+        ]
+        index += 1
+
+    return numbers
+
+
+if __name__ == "__main__":
+    assert get_ludic(10) == [1, 2, 3, 5, 7]
+    print(get_ludic(10))
+```

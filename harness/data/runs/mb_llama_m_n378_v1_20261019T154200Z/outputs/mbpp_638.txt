@@ -1,0 +1,27 @@
+```python
+def wind_chill(wind_velocity, temperature):
+    """
+    Calculate the wind chill index rounded to the next integer given the wind velocity in km/h and a temperature in celsius.
+
+    Args:
+        wind_velocity (float): The wind velocity in km/h.
+        temperature (float): The temperature in celsius.
+
+    Returns:
+        int: The wind chill index rounded to the next integer.
+    """
+    # Convert wind velocity from km/h to m/s
+    wind_velocity_m_s = wind_velocity * 1000 / 3600
+    
+    # Calculate wind chill index using the formula: WCI = 13.12 + 0.6215T - 11.37(V^0.16) + 0.3965T(V^0.16)
+    # where T is the temperature in celsius and V is the wind velocity in m/s
+    wind_chill_index = 13.12 + 0.6215 * temperature - 11.37 * (wind_velocity_m_s ** 0.16) + 0.3965 * temperature * (wind_velocity_m_s ** 0.16)
+    
+    # Round the wind chill index to the next integer
+    wind_chill_index = int(round(wind_chill_index))
+    
+    return wind_chill_index
+
+# Test the function
+print(wind_chill(120, 35))  # Output: 40
+```

@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem by adding spaces before capital letters (except the first one) in a given string:
+
+```python
+def capital_words_spaces(s):
+    """
+    Adds spaces before capital letters in a string (except the first character).
+
+    Args:
+        s (str): Input string to process
+
+    Returns:
+        str: String with spaces added before capital letters
+    """
+    if not s:
+        return s
+
+    result = [s[0]]  # Start with the first character
+
+    for char in s[1:]:
+        if char.isupper():
+            result.append(' ')
+        result.append(char)
+
+    return ''.join(result)
+
+# Test case
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("HelloWorld") == 'Hello World'
+assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+assert capital_words_spaces("") == ''
+assert capital_words_spaces("a") == 'a'
+assert capital_words_spaces("ABC") == 'A B C'
+```
+
+The function works by:
+1. Starting with the first character of the string
+2. Iterating through the remaining characters
+3. Adding a space before any uppercase character (except the first one)
+4. Joining all characters back together into a string
+
+The test cases verify that:
+- Single words remain unchanged
+- Multiple capitalized words get spaces between them
+- Edge cases (empty string, single character) work correctly
+- All-caps strings get spaces between each letter

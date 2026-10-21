@@ -1,0 +1,36 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiplies all numbers in a list and divides the result by the length of the list.
+    
+    Args:
+        numbers (tuple or list): A sequence of numbers.
+        
+    Returns:
+        float: The product of all numbers divided by the count of numbers.
+               Returns 0.0 if the list is empty to avoid division by zero.
+    """
+    if not numbers:
+        return 0.0
+    
+    product = 1
+    for num in numbers:
+        product *= num
+        
+    return product / len(numbers)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = (8, 2, 3, -1, 7)
+    expected_output = -67.2
+    result = multiply_num(test_input)
+    
+    # Verification
+    assert math.isclose(result, expected_output, rel_tol=0.001), f"Expected {expected_output}, but got {result}"
+    
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    print("Assertion passed successfully!")
+```

@@ -1,0 +1,24 @@
+```python
+def sum_series(n: int) -> int:
+    """
+    Calculate the sum of the series (n - 2*i) from i=0 to n // 2.
+
+    Args:
+    n (int): The input number.
+
+    Returns:
+    int: The sum of the series.
+
+    Example:
+    >>> sum_series(6)
+    12
+    """
+    return sum(n - 2*i for i in range(n // 2 + 1))
+
+# Test the function
+if __name__ == "__main__":
+    assert sum_series(6) == 12
+    print("All tests passed.")
+```
+
+This Python script defines a function `sum_series` that calculates the sum of the series (n - 2*i) from i=0 to n // 2. The function uses a generator expression within the built-in `sum` function to efficiently compute the sum. The `if __name__ == "__main__":` block tests the function with the provided example.

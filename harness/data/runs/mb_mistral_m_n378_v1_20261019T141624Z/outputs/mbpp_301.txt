@@ -1,0 +1,18 @@
+Here's a self-contained Python script that solves the problem of finding the depth of a dictionary:
+
+```python
+def dict_depth(d):
+    if not isinstance(d, dict) or not d:
+        return 0
+    return 1 + max(dict_depth(v) for v in d.values())
+
+# Test case
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+```
+
+This solution:
+1. Checks if the input is not a dictionary or is empty, in which case it returns 0
+2. Otherwise, it returns 1 plus the maximum depth of all values in the dictionary
+3. The test case verifies that the function works correctly for the given example
+
+The function uses recursion to traverse through nested dictionaries, calculating the depth at each level. The `max()` function ensures we get the deepest path in the dictionary structure.

@@ -1,0 +1,26 @@
+```python
+def odd_Equivalent(s, n):
+    """
+    Find the number of numbers with an odd value when rotating a binary string the given number of times.
+    
+    Args:
+        s: A binary string
+        n: Number of rotations
+    
+    Returns:
+        The count of rotated strings that represent odd numbers
+    """
+    length = len(s)
+    if length == 0:
+        return 0
+    
+    count = 0
+    for i in range(n):
+        # Rotate the string by i positions
+        rotated = s[i % length:] + s[:i % length]
+        # Check if the last character is '1' (which means the binary number is odd)
+        if rotated[-1] == '1':
+            count += 1
+    
+    return count
+```

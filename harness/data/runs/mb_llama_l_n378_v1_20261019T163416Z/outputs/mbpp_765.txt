@@ -1,0 +1,25 @@
+```python
+def is_polite(n):
+    """
+    This function calculates the nth polite number.
+    
+    A polite number is a positive integer that can be expressed as the sum of 
+    two or more consecutive positive integers. For example, 3 (1+2), 5 (2+3), 
+    6 (1+2+3), 7 (3+4), 9 (2+3+4 or 4+5), 10 (1+2+3+4), 11 (5+6), etc.
+
+    :param n: The position of the polite number to be found.
+    :return: The nth polite number.
+    """
+    count = 0
+    num = 1
+    while True:
+        # Check if a number is polite by checking if it is not a power of 2
+        if (num & (num - 1)) != 0:
+            count += 1
+            if count == n:
+                return num
+        num += 1
+
+# Test the function
+assert is_polite(7) == 11
+```

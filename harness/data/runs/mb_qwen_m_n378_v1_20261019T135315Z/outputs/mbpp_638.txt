@@ -1,0 +1,37 @@
+```python
+import math
+
+
+def wind_chill(wind_speed: float, temperature: float) -> int:
+    """
+    Calculate the wind chill index rounded to the next integer.
+    
+    The wind chill formula (used by Environment Canada and other agencies) is:
+    WCI = 13.12 + 0.6215 * T - 11.37 * V^0.16 + 0.3965 * T * V^0.16
+    
+    Where:
+    - T is the air temperature in degrees Celsius
+    - V is the wind speed in km/h
+    
+    Note: This formula is typically valid for temperatures <= 10°C and wind speeds >= 4.8 km/h.
+    However, we'll apply it as given for the problem.
+    
+    The result is rounded up to the next integer (ceiling).
+    """
+    # Wind chill formula
+    v = wind_speed
+    t = temperature
+    
+    # Calculate wind chill using the standard formula
+    wind_chill_index = 13.12 + 0.6215 * t - 11.37 * (v ** 0.16) + 0.3965 * t * (v ** 0.16)
+    
+    # Round to the next integer (ceiling)
+    return math.ceil(wind_chill_index)
+
+
+if __name__ == "__main__":
+    # Test case from the problem
+    assert wind_chill(120, 35) == 40, f"Expected 40, got {wind_chill(120, 35)}"
+    
+    print("All tests passed!")
+```

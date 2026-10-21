@@ -1,0 +1,12 @@
+```python
+def sequential_search(array, element):
+    for index, value in enumerate(array):
+        if value == element:
+            return True, index
+    return False, -1
+
+
+if __name__ == "__main__":
+    assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+    assert sequential_search([11, 23, 58], 99) == (False, -1)
+```

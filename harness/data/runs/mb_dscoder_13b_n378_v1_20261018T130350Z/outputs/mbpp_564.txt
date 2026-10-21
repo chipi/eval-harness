@@ -1,0 +1,16 @@
+```python
+def count_Pairs(lst):
+    count = 0
+    for i in range(len(lst)):
+        for j in range(i+1, len(lst)):
+            if lst[i] != lst[j]:
+                count += 1
+    return count
+
+# Test cases
+assert count_Pairs([1,2,1]) == 2
+assert count_Pairs([1,2,3,4,5]) == 3
+assert count_Pairs([1,1,1,1,1]) == 0
+assert count_Pairs([1,2,3,4,5,5,5,5]) == 3
+assert count_Pairs([1,2,3,4,4,4,4,4]) == 2
+```

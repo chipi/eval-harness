@@ -1,0 +1,34 @@
+```python
+def diff_even_odd(numbers):
+    """
+    Finds the difference between the first even number and the first odd number 
+    in a given list.
+    """
+    first_even = None
+    first_odd = None
+
+    for num in numbers:
+        # Find the first even number if not already found
+        if first_even is None and num % 2 == 0:
+            first_even = num
+        
+        # Find the first odd number if not already found
+        if first_odd is None and num % 2 != 0:
+            first_odd = num
+            
+        # Optimization: break early if both are found
+        if first_even is not None and first_odd is not None:
+            break
+
+    # Return the difference if both were found, otherwise handle missing values
+    if first_even is not None and first_odd is not None:
+        return first_even - first_odd
+    else:
+        return None
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # First even: 4, First odd: 1 -> 4 - 1 = 3
+    assert diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 3
+    print("Test passed!")
+```

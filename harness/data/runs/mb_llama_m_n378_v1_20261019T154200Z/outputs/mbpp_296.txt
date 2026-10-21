@@ -1,0 +1,24 @@
+```python
+def get_Inv_Count(arr):
+    """
+    This function counts the number of inversions in an array.
+    An inversion is a pair of elements in the array where the first element is greater than the second element.
+
+    Args:
+        arr (list): The input array.
+
+    Returns:
+        int: The number of inversions in the array.
+    """
+    inv_count = 0
+    for i in range(len(arr)):
+        for j in range(i+1, len(arr)):
+            if arr[i] > arr[j]:
+                inv_count += 1
+    return inv_count
+
+# Example usage:
+print(get_Inv_Count([1,20,6,4,5]))  # Output: 5
+```
+
+This script defines a function `get_Inv_Count` that takes an array as input and returns the number of inversions in the array. The function uses a nested loop to compare each pair of elements in the array, and increments the inversion count whenever it finds a pair where the first element is greater than the second element. The example usage at the end demonstrates how to use the function with the provided test case.

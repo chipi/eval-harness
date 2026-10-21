@@ -1,0 +1,23 @@
+```python
+def sumofFactors(n):
+    """
+    Find the sum of even factors of a number.
+    """
+    total = 0
+    for i in range(1, n + 1):
+        if n % i == 0 and i % 2 == 0:
+            total += i
+    return total
+
+
+# Test cases
+assert sumofFactors(18) == 26
+assert sumofFactors(30) == 48
+assert sumofFactors(1) == 0
+
+print("All test cases passed!")
+```
+
+This script defines the function `sumofFactors(n)` which iterates through all numbers from 1 to `n`, checks if each number is a factor of `n` (i.e., `n % i == 0`) and if that factor is even (`i % 2 == 0`). If both conditions are true, it adds the factor to the running total.
+
+For `n = 18`, the factors are 1, 2, 3, 6, 9, 18. The even factors among these are 2, 6, and 18, which sum to 26, matching the assertion.

@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem as specified:
+
+```python
+"""
+Function to extract strings of a specified length from a given list of strings.
+"""
+
+def extract_string(strings, length):
+    """
+    Extracts strings of a specified length from a list of strings.
+
+    Args:
+        strings (list): List of strings to filter.
+        length (int): Desired length of strings to extract.
+
+    Returns:
+        list: List of strings with the specified length.
+    """
+    return [s for s in strings if len(s) == length]
+
+# Test case
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+
+# Example usage
+if __name__ == "__main__":
+    test_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+    print(extract_string(test_list, 8))  # Output: ['practice', 'solution']
+```
+
+This script:
+1. Defines the `extract_string` function that takes a list of strings and a length as input
+2. Uses a list comprehension to filter strings that match the specified length
+3. Includes the required assertion test case
+4. Provides an example usage when run directly
+
+The function will return all strings from the input list that have exactly the specified length.

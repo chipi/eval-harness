@@ -1,0 +1,23 @@
+```python
+"""
+Write a function to round every number of a given list of numbers and print
+the total sum multiplied by the length of the list.
+
+Example:
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+"""
+
+def round_and_sum(numbers):
+    """
+    Round every number in the list, sum the rounded values,
+    then multiply the sum by the length of the list.
+    """
+    rounded_sum = sum(round(num) for num in numbers)
+    return rounded_sum * len(numbers)
+
+
+# Test case
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+
+print("All tests passed.")
+```

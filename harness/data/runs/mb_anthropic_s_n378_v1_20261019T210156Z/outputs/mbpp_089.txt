@@ -1,0 +1,32 @@
+```python
+def closest_num(n):
+    """
+    Find the closest smaller number than n.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The closest smaller number than n, which is n - 1
+        
+    Examples:
+        >>> closest_num(11)
+        10
+        >>> closest_num(5)
+        4
+        >>> closest_num(0)
+        -1
+    """
+    return n - 1
+
+
+# Test cases
+if __name__ == "__main__":
+    assert closest_num(11) == 10
+    assert closest_num(5) == 4
+    assert closest_num(0) == -1
+    assert closest_num(100) == 99
+    print("All tests passed!")
+```
+
+The solution is straightforward: the closest smaller number than any number `n` is simply `n - 1`. This works for all integers, including negative numbers and zero.

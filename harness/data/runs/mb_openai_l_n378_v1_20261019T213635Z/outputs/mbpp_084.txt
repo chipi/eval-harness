@@ -1,0 +1,15 @@
+```python
+def sequence(n: int) -> int:
+    """Return the nth Newman–Conway number (1-indexed)."""
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+
+    values = [0, 1, 1]  # values[1] = values[2] = 1
+    for i in range(3, n + 1):
+        previous = values[i - 1]
+        values.append(values[previous] + values[i - previous])
+    return values[n]
+
+
+assert sequence(10) == 6
+```

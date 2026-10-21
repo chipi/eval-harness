@@ -1,0 +1,26 @@
+```python
+import re
+
+
+def find_adverb_position(sentence):
+    """Return (start, end, adverb) for the first adverb, or None if absent.
+
+    The end position is exclusive.
+    """
+    common_adverbs = {
+        "again", "almost", "already", "also", "always", "away", "clearly",
+        "early", "enough", "fast", "hard", "here", "just", "late", "never",
+        "now", "often", "quite", "rather", "soon", "still", "then", "there",
+        "today", "tomorrow", "too", "very", "well", "yesterday",
+    }
+
+    for match in re.finditer(r"\b[A-Za-z]+\b", sentence):
+        word = match.group()
+        if word.lower() in common_adverbs or word.lower().endswith("ly"):
+            return match.start(), match.end(), word
+
+    return None
+
+
+assert find_adverb_position("clearly!! we can see the sky") == (0, 7, "clearly")
+```

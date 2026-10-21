@@ -1,0 +1,40 @@
+```python
+def perfect_squares(start, end):
+    """
+    Find all perfect squares between two given numbers (inclusive).
+    
+    Args:
+        start: The starting number (inclusive)
+        end: The ending number (inclusive)
+    
+    Returns:
+        A list of perfect squares between start and end
+    """
+    result = []
+    i = 1
+    while i * i <= end:
+        square = i * i
+        if square >= start:
+            result.append(square)
+        i += 1
+    return result
+
+
+# Test cases
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+assert perfect_squares(10, 100) == [16, 25, 36, 49, 64, 81, 100]
+assert perfect_squares(1, 1) == [1]
+assert perfect_squares(2, 3) == []
+assert perfect_squares(50, 150) == [64, 81, 100, 121, 144]
+
+print("All test cases passed!")
+```
+
+The solution works by:
+1. Starting with `i = 1` and computing `i * i` (perfect squares)
+2. Checking if each perfect square falls within the range `[start, end]`
+3. Adding valid perfect squares to the result list
+4. Continuing until `i * i` exceeds the `end` value
+
+Time complexity: O(√n) where n is the end value
+Space complexity: O(k) where k is the number of perfect squares in the range

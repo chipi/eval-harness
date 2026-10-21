@@ -1,0 +1,10 @@
+```python
+def max_product_tuple(pairs):
+    """Return the largest absolute product of the two numbers in any tuple."""
+    return max(abs(a * b) for a, b in pairs)
+
+
+if __name__ == "__main__":
+    assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+    assert max_product_tuple([(-5, 3), (2, 4)]) == 15
+```

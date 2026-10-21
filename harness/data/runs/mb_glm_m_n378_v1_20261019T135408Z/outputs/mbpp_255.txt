@@ -1,0 +1,25 @@
+```python
+from itertools import product
+
+def combinations_colors(lst, n):
+    """
+    Generates all combinations (with repetition) of the elements of the list 
+    and returns a list with a tuple for each combination.
+    
+    This is mathematically equivalent to the n-ary Cartesian product of the list with itself.
+    
+    :param lst: List of elements to combine
+    :param n: Length of each combination
+    :return: List of tuples representing each combination
+    """
+    return list(product(lst, repeat=n))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+    print("Test passed!")
+    
+    # Additional test to demonstrate combinations with repetition
+    assert combinations_colors(["Red", "Green"], 2) == [('Red', 'Red'), ('Red', 'Green'), ('Green', 'Red'), ('Green', 'Green')]
+    print("Additional test passed!")
+```

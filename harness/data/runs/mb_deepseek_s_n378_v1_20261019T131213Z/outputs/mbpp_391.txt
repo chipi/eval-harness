@@ -1,0 +1,56 @@
+Here's a self-contained Python script to solve your problem:
+
+```python
+def convert_list_dictionary(keys, names, scores):
+    """
+    Convert multiple lists into a list of nested dictionaries.
+    
+    Args:
+        keys: List of keys (e.g., student IDs)
+        names: List of names
+        scores: List of scores
+    
+    Returns:
+        List of nested dictionaries
+    """
+    result = []
+    for i in range(len(keys)):
+        nested_dict = {keys[i]: {names[i]: scores[i]}}
+        result.append(nested_dict)
+    return result
+
+# Test the function with the given assertion
+assert convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+) == [
+    {'S001': {'Adina Park': 85}},
+    {'S002': {'Leyton Marsh': 98}},
+    {'S003': {'Duncan Boyle': 89}},
+    {'S004': {'Saim Richards': 92}}
+]
+
+# Additional test cases
+print("Test 1 passed!")
+
+# Test with different data
+result2 = convert_list_dictionary(["A", "B"], ["Alice", "Bob"], [95, 87])
+print(f"Result 2: {result2}")
+# Expected: [{'A': {'Alice': 95}}, {'B': {'Bob': 87}}]
+
+# Test with single element lists
+result3 = convert_list_dictionary(["X"], ["Xavier"], [100])
+print(f"Result 3: {result3}")
+# Expected: [{'X': {'Xavier': 100}}]
+
+print("\nAll tests passed!")
+```
+
+This script defines a function `convert_list_dictionary` that takes three lists as input and combines them into a list of nested dictionaries. The function:
+
+1. Iterates through the lists using index positions
+2. Creates a nested dictionary for each index: outer key from the first list, inner key from the second list, and value from the third list
+3. Appends each nested dictionary to the result list
+
+The function also includes the specified assertion test and additional test cases to verify its correctness.

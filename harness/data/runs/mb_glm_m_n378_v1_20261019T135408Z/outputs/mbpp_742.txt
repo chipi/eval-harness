@@ -1,0 +1,24 @@
+```python
+import math
+
+def area_tetrahedron(a):
+    """
+    Calculate the total surface area of a regular tetrahedron given its edge length.
+    
+    The surface area of a regular tetrahedron is the sum of the areas of its 
+    four equilateral triangular faces. The formula is:
+    Area = sqrt(3) * a^2
+    
+    Parameters:
+    a (float): The length of the edge of the regular tetrahedron.
+    
+    Returns:
+    float: The total surface area of the regular tetrahedron.
+    """
+    return math.sqrt(3) * (a ** 2)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert area_tetrahedron(3) == 15.588457268119894
+    print("Test passed successfully!")
+```

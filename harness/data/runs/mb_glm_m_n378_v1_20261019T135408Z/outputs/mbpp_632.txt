@@ -1,0 +1,24 @@
+```python
+def move_zero(lst):
+    """
+    Move all zeroes to the end of the given list while maintaining the 
+    relative order of the non-zero elements.
+    
+    Args:
+    lst (list): A list of integers which may contain zeroes.
+    
+    Returns:
+    list: A new list with all zeroes moved to the end.
+    """
+    # Collect all non-zero elements first to maintain their relative order
+    non_zeros = [x for x in lst if x != 0]
+    # Count the number of zeroes in the original list
+    zero_count = lst.count(0)
+    # Append the zeroes to the end of the non-zero elements list
+    return non_zeros + [0] * zero_count
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+    print("Test passed successfully!")
+```

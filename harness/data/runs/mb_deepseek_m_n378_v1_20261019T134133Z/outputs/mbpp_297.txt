@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def flatten_list(nested_list):
+    """
+    Flatten a nested list structure into a single flat list.
+    
+    Args:
+        nested_list: A list that may contain nested lists at any depth.
+    
+    Returns:
+        A flat list containing all non-list elements in order.
+    """
+    result = []
+    for item in nested_list:
+        if isinstance(item, list):
+            result.extend(flatten_list(item))
+        else:
+            result.append(item)
+    return result
+
+
+if __name__ == "__main__":
+    assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [
+        0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120
+    ]
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Iterate through each item** in the input list.
+2. **Check if the item is a list** using `isinstance(item, list)`.
+3. If it's a list, **recursively flatten** it and extend the result with the flattened sublist.
+4. If it's not a list, **append it directly** to the result.
+5. Return the accumulated `result` list.
+
+This recursive approach handles arbitrarily deep nesting, not just one level. For example, `flatten_list([1, [2, [3, [4]]]])` would return `[1, 2, 3, 4]`.

@@ -1,0 +1,14 @@
+```python
+def min_k(lst, k):
+    # Sorting the list of tuples based on the second element of each tuple
+    lst.sort(key = lambda x: x[1])
+    # Returning the first 'k' records
+    return lst[:k]
+
+# Test cases
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+assert min_k([('Akshat', 4), ('Akash', 2), ('Manjeet', 10), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+assert min_k([('Akash', 2), ('Akshat', 4), ('Manjeet', 10), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+assert min_k([('Akshat', 4), ('Akash', 2), ('Manjeet', 10), ('Nikhil', 8)], 3) == [('Akash', 2), ('Akshat', 4), ('Manjeet', 10)]
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 1) == [('Akshat', 4)]
+```

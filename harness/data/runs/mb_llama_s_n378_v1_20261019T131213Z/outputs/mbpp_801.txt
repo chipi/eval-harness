@@ -1,0 +1,64 @@
+```python
+def test_three_equal(a: int, b: int, c: int) -> int:
+    """
+    This function takes three integers as input and returns the count of equal numbers.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+        c (int): The third integer.
+
+    Returns:
+        int: The count of equal numbers.
+    """
+    # Create a list of the input integers
+    nums = [a, b, c]
+    
+    # Use a dictionary to count the occurrence of each number
+    count_dict = {}
+    for num in nums:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+    
+    # Find the number with the maximum count
+    max_count = max(count_dict.values())
+    
+    # Return the count of equal numbers
+    return max_count
+
+# Test the function
+print(test_three_equal(1, 1, 1))  # Output: 3
+print(test_three_equal(1, 2, 3))  # Output: 1
+print(test_three_equal(1, 1, 2))  # Output: 2
+```
+
+Alternatively, you can use Python's built-in `Counter` class from the `collections` module to make the function more concise:
+
+```python
+from collections import Counter
+
+def test_three_equal(a: int, b: int, c: int) -> int:
+    """
+    This function takes three integers as input and returns the count of equal numbers.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+        c (int): The third integer.
+
+    Returns:
+        int: The count of equal numbers.
+    """
+    # Create a Counter object to count the occurrence of each number
+    count = Counter([a, b, c])
+    
+    # Return the maximum count
+    return max(count.values())
+
+# Test the function
+print(test_three_equal(1, 1, 1))  # Output: 3
+print(test_three_equal(1, 2, 3))  # Output: 1
+print(test_three_equal(1, 1, 2))  # Output: 2
+```

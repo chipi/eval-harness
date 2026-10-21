@@ -1,0 +1,89 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Write a python function to count inversions in an array.
+    An inversion is a pair (arr[i], arr[j]) such that i < j and arr[i] > arr[j].
+    This function uses a modified Merge Sort to count inversions in O(n log n) time.
+    
+    assert get_Inv_Count([1,20,6,4,5]) == 5
+    """
+    # Create a temporary list to store the sorted array during merge process
+    temp_arr = [0] * len(arr)
+    return _merge_sort(arr, temp_arr, 0, len(arr) - 1)
+
+def _merge_sort(arr, temp_arr, left, right):
+    """
+    Helper function that sorts the array and returns the inversion count.
+    """
+    inv_count = 0
+    
+    # Base case: if the subarray has one element, it's already sorted
+    if left < right:
+        # Calculate the midpoint
+        mid = (left + right) // 2
+        
+        # Recursively count inversions in the left half
+        inv_count += _merge_sort(arr, temp_arr, left, mid)
+        
+        # Recursively count inversions in the right half
+        inv_count += _merge_sort(arr, temp_arr, mid + 1, right)
+        
+        # Merge the two halves and count split inversions
+        inv_count += _merge(arr, temp_arr, left, mid, right)
+        
+    return inv_count
+
+def _merge(arr, temp_arr, left, mid, right):
+    """
+    Helper function to merge two sorted subarrays and count inversions.
+    """
+    i = left      # Starting index for left subarray
+    j = mid + 1   # Starting index for right subarray
+    k = left      # Starting index for the merged subarray
+    inv_count = 0
+    
+    # Traverse both subarrays
+    while i <= mid and j <= right:
+        # If element from left subarray is smaller or equal, no inversion
+        if arr[i] <= arr[j]:
+            temp_arr[k] = arr[i]
+            i += 1
+        else:
+            # Element from right subarray is smaller -> inversion found
+            temp_arr[k] = arr[j]
+            inv_count += (mid - i + 1)
+            j += 1
+        k += 1
+        
+    # Copy remaining elements of left subarray, if any
+    while i <= mid:
+        temp_arr[k] = arr[i]
+        i += 1
+        k += 1
+        
+    # Copy remaining elements of right subarray, if any
+    while j <= right:
+        temp_arr[k] = arr[j]
+        j += 1
+        k += 1
+        
+    # Copy the sorted subarray back to the original array
+    for idx in range(left, right + 1):
+        arr[idx] = temp_arr[idx]
+        
+    return inv_count
+
+# Test block
+if __name__ == "__main__":
+    # Test case provided in the problem description
+    test_arr = [1, 20, 6, 4, 5]
+    result = get_Inv_Count(test_arr)
+    print(f"Array: [1, 20, 6, 4, 5] -> Inversion Count: {result}")
+    assert result == 5, f"Expected 5, got {result}"
+    
+    # Additional test cases
+    assert get_Inv_Count([1, 1, 1, 1]) == 0
+    assert get_Inv_Count([4, 3, 2, 1]) == 6
+    assert get_Inv_Count([1, 2, 3, 4]) == 0
+    print("All assertions passed.")
+```

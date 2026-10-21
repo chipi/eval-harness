@@ -1,0 +1,51 @@
+```python
+def max_product_tuple(tuples_list):
+    """
+    Find the maximum absolute product between numbers in pairs of tuples.
+    
+    Args:
+        tuples_list: A list of tuples, each containing two numbers
+        
+    Returns:
+        The maximum absolute product of any pair of numbers from the tuples
+    """
+    max_product = 0
+    
+    # Iterate through each tuple in the list
+    for tuple_pair in tuples_list:
+        # Calculate the absolute product of the two numbers in the tuple
+        product = abs(tuple_pair[0] * tuple_pair[1])
+        # Update max_product if current product is larger
+        max_product = max(max_product, product)
+    
+    return max_product
+
+
+# Test cases
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+print("Test passed! max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) = 36")
+
+# Additional test cases
+assert max_product_tuple([(1, 2), (3, 4)]) == 12
+print("Test passed! max_product_tuple([(1, 2), (3, 4)]) = 12")
+
+assert max_product_tuple([(-5, 3), (2, 8)]) == 16
+print("Test passed! max_product_tuple([(-5, 3), (2, 8)]) = 16")
+
+assert max_product_tuple([(10, 10)]) == 100
+print("Test passed! max_product_tuple([(10, 10)]) = 100")
+
+print("\nAll tests passed!")
+```
+
+The script defines a function `max_product_tuple()` that:
+1. Iterates through each tuple in the input list
+2. Calculates the absolute product of the two numbers in each tuple
+3. Keeps track of the maximum product found
+4. Returns the maximum product
+
+For the given example `[(2, 7), (2, 6), (1, 8), (4, 9)]`:
+- (2, 7) → |2 × 7| = 14
+- (2, 6) → |2 × 6| = 12
+- (1, 8) → |1 × 8| = 8
+- (4, 9) → |4 × 9| = 36 ✓ (maximum)

@@ -1,0 +1,24 @@
+```python
+def issort_list(lst):
+    """
+    Check if a specified list is sorted or not.
+
+    Args:
+    lst (list): The list to be checked.
+
+    Returns:
+    bool: True if the list is sorted, False otherwise.
+    """
+    return all(lst[i] <= lst[i+1] for i in range(len(lst)-1))
+
+# Test cases
+assert issort_list([1,2,4,6,8,10,12,14,16,17]) == True
+assert issort_list([1,3,5,7,9,11,13,15,17,19]) == True
+assert issort_list([1,3,5,7,9,11,13,15,17,20]) == False
+assert issort_list([]) == True  # An empty list is considered sorted
+assert issort_list([10]) == True  # A single-element list is considered sorted
+assert issort_list([1,2,3,4,5,6,7,8,9,10]) == True
+assert issort_list([10,9,8,7,6,5,4,3,2,1]) == True
+assert issort_list([1,3,2,4,5,6,7,8,9,10]) == False
+```
+

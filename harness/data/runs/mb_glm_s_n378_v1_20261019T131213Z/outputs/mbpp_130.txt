@@ -1,0 +1,57 @@
+```python
+from collections import Counter
+
+def max_occurrences(input_list):
+    """
+    Finds the item with the maximum frequency in a given list.
+
+    If the list is empty, the function returns None.
+    If there are multiple items with the same maximum frequency,
+    the function returns the one that appears first in the list.
+
+    Args:
+        input_list: A list of items.
+
+    Returns:
+        The item with the highest frequency. Returns None for an empty list.
+    """
+    if not input_list:
+        return None
+
+    # Counter is a dictionary subclass for counting hashable objects.
+    # It creates a mapping of items to their counts.
+    counts = Counter(input_list)
+
+    # The most_common(n) method returns a list of the n most common
+    # elements and their counts from the most common to the least.
+    # We ask for the single most common element (n=1).
+    # The result is a list containing a single tuple, e.g., [(item, count)].
+    most_common_item = counts.most_common(1)[0]
+
+    # We return the item part of the tuple.
+    return most_common_item[0]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    test_list = [2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]
+    result = max_occurrences(test_list)
+    print(f"The list is: {test_list}")
+    print(f"The item with maximum frequency is: {result}")
+    assert result == 2
+    print("Assertion passed.")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    # Test with an empty list
+    assert max_occurrences([]) is None
+    print("Test with empty list passed.")
+
+    # Test with a list where all items are unique
+    assert max_occurrences([10, 20, 30]) == 10 # Returns the first one
+    print("Test with all unique items passed.")
+
+    # Test with a list where multiple items have the same max frequency
+    # The function should return the one that appears first.
+    assert max_occurrences(['a', 'b', 'c', 'b', 'a']) == 'a'
+    print("Test with tied max frequency passed.")
+```

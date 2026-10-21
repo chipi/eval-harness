@@ -1,0 +1,38 @@
+```python
+def check_integer(s):
+    """
+    Check if a string represents an integer or not.
+    
+    Args:
+        s: A string to check
+        
+    Returns:
+        True if the string represents an integer, False otherwise
+    """
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
+# Test cases
+assert check_integer("python") == False
+assert check_integer("123") == True
+assert check_integer("-456") == True
+assert check_integer("0") == True
+assert check_integer("12.34") == False
+assert check_integer("") == False
+assert check_integer("12a") == False
+assert check_integer("+789") == True
+
+print("All assertions passed!")
+```
+
+The function works by attempting to convert the string to an integer using `int()`. If the conversion succeeds, it returns `True`; if it raises a `ValueError`, it returns `False`. This handles various cases including:
+- Regular integers: `"123"` → `True`
+- Negative integers: `"-456"` → `True`
+- Positive sign: `"+789"` → `True`
+- Non-integer strings: `"python"` → `False`
+- Decimal numbers: `"12.34"` → `False`
+- Empty strings: `""` → `False`

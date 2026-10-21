@@ -1,0 +1,65 @@
+```python
+def sum_of_common_divisors(a, b):
+    """
+    Find the sum of common divisors of two given numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+    
+    Returns:
+        Sum of all common divisors
+    
+    Example:
+        >>> sum_of_common_divisors(10, 15)
+        6
+    """
+    # Find the GCD to limit our search
+    from math import gcd
+    
+    # Common divisors of a and b are divisors of gcd(a, b)
+    common_gcd = gcd(a, b)
+    
+    # Find all divisors of the GCD and sum them
+    divisor_sum = 0
+    for i in range(1, int(common_gcd**0.5) + 1):
+        if common_gcd % i == 0:
+            divisor_sum += i
+            # Add the corresponding divisor if it's different
+            if i != common_gcd // i:
+                divisor_sum += common_gcd // i
+    
+    return divisor_sum
+
+
+# Test cases
+assert sum_of_common_divisors(10, 15) == 6
+print("Test passed: sum_of_common_divisors(10, 15) == 6")
+
+# Additional test cases
+assert sum_of_common_divisors(12, 18) == 12  # Common divisors: 1, 2, 3, 6
+print("Test passed: sum_of_common_divisors(12, 18) == 12")
+
+assert sum_of_common_divisors(7, 13) == 1  # Common divisors: 1 (both prime)
+print("Test passed: sum_of_common_divisors(7, 13) == 1")
+
+assert sum_of_common_divisors(20, 30) == 12  # Common divisors: 1, 2, 5, 10
+print("Test passed: sum_of_common_divisors(20, 30) == 12")
+
+print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution works by:
+
+1. **Finding the GCD**: Common divisors of two numbers are exactly the divisors of their GCD (Greatest Common Divisor).
+
+2. **Finding divisors efficiently**: Instead of checking all numbers up to the GCD, we only check up to √GCD. For each divisor `i` found, we also add its complement `GCD/i`.
+
+3. **Summing divisors**: We accumulate all divisors and return their sum.
+
+For the example `sum_of_common_divisors(10, 15)`:
+- GCD(10, 15) = 5
+- Divisors of 5: 1, 5
+- Sum: 1 + 5 = 6 ✓

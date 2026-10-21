@@ -1,0 +1,12 @@
+```python
+def remove_uppercase(s: str) -> str:
+    """
+    Remove all uppercase letters from the given string.
+    """
+    return ''.join(ch for ch in s if not ch.isupper())
+
+
+if __name__ == "__main__":
+    assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+    print("All tests passed.")
+```

@@ -1,0 +1,33 @@
+```python
+"""
+Write a python function to calculate the product of the unique numbers in a given list.
+
+Example:
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+"""
+
+def unique_product(numbers):
+    """
+    Return the product of the unique numbers in the given list.
+
+    Duplicates are counted only once.
+    """
+    product = 1
+
+    for num in set(numbers):
+        product *= num
+
+    return product
+
+
+if __name__ == "__main__":
+    assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+
+    # Additional simple tests
+    assert unique_product([1, 2, 2, 3]) == 6
+    assert unique_product([5, 5, 5]) == 5
+    assert unique_product([0, 1, 2, 2]) == 0
+    assert unique_product([]) == 1
+
+    print("All tests passed.")
+```

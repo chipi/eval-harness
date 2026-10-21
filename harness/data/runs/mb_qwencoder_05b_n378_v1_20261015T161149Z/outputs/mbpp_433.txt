@@ -1,0 +1,19 @@
+```python
+def check_greater(arr, n):
+    # Iterate through the array starting from the second element
+    for i in range(1, n):
+        # Check if the current element is greater than the previous one
+        if arr[i] > arr[i - 1]:
+            return True
+    # If no such element is found, return False
+    return False
+
+# Test cases to verify the correctness of the function
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+assert check_greater([10, 20, 30, 40, 50], 5) == True
+assert check_greater([1, 20, 30, 40, 50], 6) == False
+assert check_greater([100, 200, 300, 400, 500], 7) == True
+assert check_greater([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10) == True
+assert check_greater([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 11) == False
+```
+

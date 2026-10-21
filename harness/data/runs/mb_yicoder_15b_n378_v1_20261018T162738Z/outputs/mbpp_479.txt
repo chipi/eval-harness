@@ -1,0 +1,10 @@
+```python
+def first_Digit(n):
+    return int(str(n)[0])
+
+assert first_Digit(123) == 1
+assert first_Digit(456) == 4
+assert first_Digit(789) == 7
+assert first_Digit(1000) == 1
+assert first_Digit(12345) == 1
+```

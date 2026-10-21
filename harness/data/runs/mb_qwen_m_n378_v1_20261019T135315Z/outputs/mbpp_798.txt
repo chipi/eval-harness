@@ -1,0 +1,32 @@
+```python
+def _sum(arr):
+    """
+    Find the sum of an array.
+    
+    Args:
+        arr: A list of numbers
+        
+    Returns:
+        The sum of all elements in the array
+        
+    Examples:
+        >>> _sum([1, 2, 3])
+        6
+        >>> _sum([])
+        0
+        >>> _sum([5])
+        5
+    """
+    return sum(arr)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert _sum([1, 2, 3]) == 6
+    assert _sum([]) == 0
+    assert _sum([5]) == 5
+    assert _sum([-1, 1]) == 0
+    assert _sum([10, 20, 30, 40]) == 100
+    
+    print("All test cases passed!")
+```

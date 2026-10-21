@@ -1,0 +1,32 @@
+```python
+import math
+
+def volume_sphere(radius):
+    """
+    Calculates the volume of a sphere given its radius.
+    Formula: V = (4/3) * pi * r^3
+    """
+    if radius < 0:
+        raise ValueError("The radius cannot be negative.")
+    
+    volume = (4/3) * math.pi * (radius ** 3)
+    return volume
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    try:
+        result = volume_sphere(10)
+        expected = 4188.790204786391
+        
+        assert math.isclose(result, expected, rel_tol=0.001)
+        
+        print(f"Success! Radius: 10")
+        print(f"Calculated Volume: {result}")
+        print(f"Expected Volume:   {expected}")
+        print("Assertion passed.")
+        
+    except AssertionError:
+        print("Assertion failed: The calculated volume is not close enough to the expected value.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+```

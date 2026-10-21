@@ -1,0 +1,12 @@
+```python
+def is_Even(n: int) -> bool:
+    """
+    Returns True if the given number is even, False otherwise.
+    """
+    return n % 2 == 0
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert is_Even(1) == False
+    print("Test passed: is_Even(1) returns False")
+```

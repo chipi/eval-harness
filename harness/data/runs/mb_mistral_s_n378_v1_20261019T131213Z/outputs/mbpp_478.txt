@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def remove_lowercase(s: str) -> str:
+    """
+    Removes all lowercase substrings from the given string.
+
+    Args:
+        s: The input string to process.
+
+    Returns:
+        A new string with all lowercase substrings removed.
+
+    Examples:
+        >>> remove_lowercase("PYTHon")
+        'PYTH'
+    """
+    result = []
+    for char in s:
+        if char.isupper():
+            result.append(char)
+    return ''.join(result)
+
+# Test the function
+assert remove_lowercase("PYTHon") == "PYTH"
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `remove_lowercase` that takes a string and returns a new string with all lowercase characters removed
+2. Uses a list to build the result efficiently
+3. Includes a docstring with the function's purpose, arguments, return value, and an example
+4. Contains an assertion to verify the function works as expected
+5. Prints a confirmation message if the test passes
+
+The function works by iterating through each character in the input string and only keeping characters that are uppercase (using the `isupper()` method).

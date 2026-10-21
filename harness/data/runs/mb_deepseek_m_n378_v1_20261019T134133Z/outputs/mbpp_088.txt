@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to get the frequency of all the elements in a list, returned as a dictionary.
+assert freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30])==({10: 4, 20: 4, 40: 2, 50: 2, 30: 1})
+"""
+
+
+def freq_count(lst):
+    """
+    Return a dictionary mapping each unique element in `lst` to its frequency.
+
+    Args:
+        lst (list): A list of hashable elements.
+
+    Returns:
+        dict: A dictionary where keys are the unique elements of `lst`
+              and values are their respective counts.
+    """
+    freq = {}
+    for item in lst:
+        freq[item] = freq.get(item, 0) + 1
+    return freq
+
+
+# --- Tests ---
+if __name__ == "__main__":
+    # Provided assertion
+    assert freq_count([10, 10, 10, 10, 20, 20, 20, 20, 40, 40, 50, 50, 30]) == (
+        {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+    )
+
+    # Additional tests
+    assert freq_count([]) == {}
+    assert freq_count([1]) == {1: 1}
+    assert freq_count(["a", "b", "a", "c", "b", "a"]) == {"a": 3, "b": 2, "c": 1}
+    assert freq_count([1, 2, 3]) == {1: 1, 2: 1, 3: 1}
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Initialize an empty dictionary** `freq` to store element-to-count mappings.
+2. **Iterate through the list** once, using `dict.get(item, 0)` to fetch the current count (defaulting to `0` if the item hasn't been seen yet), then increment it by `1`.
+3. **Return the dictionary** containing the frequency of every element.
+
+**Complexity:**
+- Time: `O(n)` — a single pass through the list.
+- Space: `O(k)` — where `k` is the number of unique elements.
+
+**Note on ordering:** In Python 3.7+, dictionaries preserve insertion order, so the output will list keys in the order they first appear in the input list — matching the expected result in the assertion.

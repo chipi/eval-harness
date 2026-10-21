@@ -1,0 +1,15 @@
+```python
+def get_median(list1, list2, n):
+    combined = sorted(list1 + list2)
+    if n % 2 == 0:
+        return (combined[n//2 - 1] + combined[n//2]) / 2
+    else:
+        return combined[n//2]
+
+# Test cases
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+assert get_median([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 5) == 5.5
+assert get_median([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 1) == 5
+assert get_median([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 2) == 5.5
+assert get_median([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 3) == 6
+```

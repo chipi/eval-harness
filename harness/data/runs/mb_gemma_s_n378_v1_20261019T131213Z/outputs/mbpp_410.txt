@@ -1,0 +1,26 @@
+```python
+def min_val(lst):
+  """
+  Finds the minimum value in a given heterogeneous list.
+
+  Args:
+    lst: A list containing various data types.
+
+  Returns:
+    The minimum value in the list.  If the list is empty, returns None.
+    Only compares numbers.  Non-numeric types are ignored.
+  """
+  numbers = [x for x in lst if isinstance(x, (int, float))]
+  if not numbers:
+    return None
+  return min(numbers)
+
+# Example usage and assertion
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+assert min_val(['a', 'b', 'c']) is None
+assert min_val([10, 5, 15, 0]) == 0
+assert min_val([]) is None
+assert min_val([2.5, 1.0, 3.7]) == 1.0
+
+print("All test cases passed!")
+```

@@ -1,0 +1,54 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Count inversions in an array.
+
+    Args:
+    arr (list): The input array.
+
+    Returns:
+    int: The number of inversions in the array.
+    """
+    def merge_sort(arr):
+        if len(arr) <= 1:
+            return arr
+
+        mid = len(arr) // 2
+        left_half = merge_sort(arr[:mid])
+        right_half = merge_sort(arr[mid:])
+        
+        i = j = k = 0
+        
+        while i < len(left_half) and j < len(right_half):
+            if left_half[i] <= right_half[j]:
+                arr[k] = left_half[i]
+                i += 1
+            else:
+                arr[k] = right_half[j]
+                j += 1
+                k += 1
+            
+            # Increment inversion count for each element in right half
+            while j < len(right_half) and right_half[j] <= arr[k]:
+                inversion_count += len(left_half) - i
+                j += 1
+        
+        while i < len(left_half):
+            arr[k] = left_half[i]
+            i += 1
+            k += 1
+        
+        while j < len(right_half):
+            arr[k] = right_half[j]
+            j += 1
+            k += 1
+    
+    inversion_count = 0
+    merge_sort(arr)
+    
+    return inversion_count
+
+# Test cases
+assert get_Inv_Count([1,20,6,4,5]) == 5
+```
+

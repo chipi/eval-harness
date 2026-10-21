@@ -1,0 +1,25 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def maximize_elements(tup1, tup2):
+    """
+    Maximize the given two tuples element-wise.
+    For each pair of tuples at the same index, return a new tuple
+    with the maximum of each corresponding element.
+    """
+    return tuple(
+        tuple(max(a, b) for a, b in zip(pair1, pair2))
+        for pair1, pair2 in zip(tup1, tup2)
+    )
+
+
+# Test the function
+if __name__ == "__main__":
+    result = maximize_elements(
+        ((1, 3), (4, 5), (2, 9), (1, 10)),
+        ((6, 7), (3, 9), (1, 1), (7, 3))
+    )
+    expected = ((6, 7), (4, 9), (2, 9), (7, 10))
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,42 @@
+```python
+def find_dissimilar(tuple1, tuple2):
+    """
+    Find the dissimilar elements in the given two tuples.
+    
+    Args:
+        tuple1: First tuple
+        tuple2: Second tuple
+    
+    Returns:
+        A tuple containing elements that are in tuple1 or tuple2 but not in both
+    """
+    set1 = set(tuple1)
+    set2 = set(tuple2)
+    
+    # Find symmetric difference: elements in either set but not in both
+    dissimilar = set1.symmetric_difference(set2)
+    
+    # Convert back to tuple and sort for consistent output
+    result = tuple(sorted(dissimilar))
+    
+    return result
+
+
+# Test cases
+if __name__ == "__main__":
+    assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+    print("Test passed!")
+    
+    # Additional test cases
+    print(find_dissimilar((1, 2, 3), (3, 4, 5)))  # (1, 2, 4, 5)
+    print(find_dissimilar((1, 2), (1, 2)))  # ()
+    print(find_dissimilar((1, 2, 3), (4, 5, 6)))  # (1, 2, 3, 4, 5, 6)
+```
+
+The solution uses Python's `set.symmetric_difference()` method to find elements that exist in either tuple but not in both. The steps are:
+
+1. Convert both tuples to sets
+2. Find the symmetric difference (elements in either set but not in both)
+3. Convert the result back to a sorted tuple for consistent output
+
+This efficiently solves the problem in O(n + m) time complexity where n and m are the lengths of the two tuples.

@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def concatenate_tuple(tup, delimiter='-'):
+    """
+    Concatenate each element of a tuple using the given delimiter.
+    
+    Args:
+        tup: A tuple containing elements to concatenate.
+        delimiter: The string used to join the elements (default is '-').
+    
+    Returns:
+        A string with all tuple elements joined by the delimiter.
+    """
+    return delimiter.join(str(element) for element in tup)
+
+
+# Test the function
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+print(concatenate_tuple(("ID", "is", 4, "UTS")))
+```
+
+**Explanation:**
+
+1. **`concatenate_tuple(tup, delimiter='-')`** — The function accepts a tuple and an optional delimiter (defaulting to `'-'`).
+
+2. **`str(element) for element in tup`** — A generator expression that converts each element to a string. This is necessary because the tuple may contain non-string types (like the integer `4` in the example).
+
+3. **`delimiter.join(...)`** — Joins all the stringified elements using the specified delimiter.
+
+4. **Assertion** — Verifies the function produces the expected output `'ID-is-4-UTS'`.
+
+**Output:**
+```
+ID-is-4-UTS
+```

@@ -1,0 +1,33 @@
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Searches a string for a regex pattern.
+    Returns a tuple containing the matching substring, the start index, and the end index.
+    If no match is found, returns None.
+    """
+    match = re.search(pattern, text)
+    if match:
+        return match.group(), match.start(), match.end()
+    return None
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = find_literals('The quick brown fox jumps over the lazy dog.', 'fox')
+    expected = ('fox', 16, 19)
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    # Additional test cases
+    # 1. Regex pattern (digits)
+    assert find_literals('User ID: 12345', r'\d+') == ('12345', 8, 13)
+    
+    # 2. No match
+    assert find_literals('Hello world', 'python') is None
+    
+    # 3. Case sensitivity
+    assert find_literals('Hello World', 'world') is None
+    
+    print("All tests passed!")
+```

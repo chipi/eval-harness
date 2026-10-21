@@ -1,0 +1,30 @@
+```python
+import math
+from typing import List, Union, Tuple
+
+def multiply_num(numbers: Union[List[Union[int, float]], Tuple[Union[int, float], ...]]) -> float:
+    """
+    Multiplies all the numbers in a list/tuple and divides the result by the length of the list.
+
+    Args:
+        numbers: A list or tuple of numbers (int or float).
+
+    Returns:
+        The product of all numbers divided by the length of the list, as a float.
+    """
+    if not numbers:
+        raise ValueError("The input list/tuple cannot be empty.")
+
+    product = 1.0
+    for num in numbers:
+        product *= num
+
+    return product / len(numbers)
+
+# Example usage and test
+if __name__ == "__main__":
+    # Test the provided assertion
+    result = multiply_num((8, 2, 3, -1, 7))
+    assert math.isclose(result, -67.2, rel_tol=0.001), f"Expected -67.2, but got {result}"
+    print(f"Test passed: multiply_num((8, 2, 3, -1, 7)) = {result}")
+```

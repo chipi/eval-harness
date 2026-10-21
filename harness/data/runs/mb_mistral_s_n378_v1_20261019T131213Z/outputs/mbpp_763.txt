@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem of finding the minimum difference between any two elements in a given array, with the constraint that the difference must be less than or equal to a specified value (6 in the example):
+
+```python
+def find_min_diff(arr, max_diff):
+    """
+    Find the minimum difference between any two elements in the array where the difference is <= max_diff.
+    Returns the minimum difference found, or None if no such pair exists.
+
+    Args:
+        arr: List or tuple of numbers
+        max_diff: Maximum allowed difference between elements
+
+    Returns:
+        Minimum difference found (or None if no valid pair exists)
+    """
+    arr_sorted = sorted(arr)
+    min_diff = None
+
+    for i in range(len(arr_sorted) - 1):
+        current_diff = arr_sorted[i+1] - arr_sorted[i]
+        if current_diff <= max_diff:
+            if min_diff is None or current_diff < min_diff:
+                min_diff = current_diff
+
+    return min_diff
+
+# Test case
+assert find_min_diff((1, 5, 3, 19, 18, 25), 6) == 1
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `find_min_diff` that takes an array and a maximum allowed difference
+2. Sorts the array to make it easier to find adjacent elements with small differences
+3. Iterates through the sorted array to find the smallest difference between adjacent elements that is ≤ max_diff
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function returns the minimum difference found (or None if no valid pair exists). In the example case, it correctly returns 1 (the difference between 18 and 19).

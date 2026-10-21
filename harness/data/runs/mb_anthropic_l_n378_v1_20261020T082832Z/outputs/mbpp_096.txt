@@ -1,0 +1,61 @@
+Looking at this problem, I need to count how many positive integers divide the given number evenly.
+
+For `divisor(15)`: the divisors are 1, 3, 5, 15 → that's 4 divisors. ✓
+
+Here's an efficient solution using the fact that divisors come in pairs around √n:
+
+```python
+"""
+Write a python function to find the number of divisors of a given integer.
+assert divisor(15) == 4
+"""
+
+
+def divisor(n):
+    """
+    Return the number of positive divisors of the integer n.
+
+    Divisors are found in pairs (d, n // d), so we only need to iterate
+    up to sqrt(n), giving O(sqrt(n)) time complexity.
+    """
+    n = abs(n)           # handle negative inputs by using the magnitude
+    if n == 0:
+        return 0         # every integer divides 0; count is undefined/infinite
+
+    count = 0
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            if i * i == n:
+                count += 1      # perfect square: the pair is the same number
+            else:
+                count += 2      # count both i and n // i
+        i += 1
+    return count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert divisor(15) == 4          # 1, 3, 5, 15
+
+    # Additional sanity checks
+    assert divisor(1) == 1           # 1
+    assert divisor(2) == 2           # 1, 2
+    assert divisor(9) == 3           # 1, 3, 9
+    assert divisor(12) == 6          # 1, 2, 3, 4, 6, 12
+    assert divisor(36) == 9          # 1, 2, 3, 4, 6, 9, 12, 18, 36
+    assert divisor(97) == 2          # prime
+    assert divisor(100) == 9         # 1, 2, 4, 5, 10, 20, 25, 50, 100
+
+    print("All tests passed!")
+
+    # Simple demo
+    for value in (15, 28, 49, 1024):
+        print(f"divisor({value}) = {divisor(value)}")
+```
+
+**How it works:**
+
+1. If `i` divides `n`, then `n // i` is also a divisor — so each discovered divisor below √n contributes 2 to the count.
+2. When `i * i == n` (a perfect square), `i` and `n // i` are identical, so it contributes only 1.
+3. Looping only to √n makes this much faster than checking every number from 1 to n.

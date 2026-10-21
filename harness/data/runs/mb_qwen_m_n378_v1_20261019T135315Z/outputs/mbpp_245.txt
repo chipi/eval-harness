@@ -1,0 +1,51 @@
+```python
+def max_sum(arr):
+    """
+    Find the maximum sum of a bitonic subsequence in the given array.
+    A bitonic sequence is first strictly increasing and then strictly decreasing.
+    
+    Approach:
+    - For each element, compute the maximum sum of an increasing subsequence ending at that element (from left).
+    - For each element, compute the maximum sum of a decreasing subsequence starting at that element (from right).
+    - The maximum bitonic subsequence sum through element i is inc[i] + dec[i] - arr[i] (since arr[i] is counted twice).
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    
+    # inc[i] = maximum sum of increasing subsequence ending at index i
+    inc = [0] * n
+    for i in range(n):
+        inc[i] = arr[i]  # At minimum, the subsequence contains just arr[i]
+        for j in range(i):
+            if arr[j] < arr[i]:  # strictly increasing
+                if inc[j] + arr[i] > inc[i]:
+                    inc[i] = inc[j] + arr[i]
+    
+    # dec[i] = maximum sum of decreasing subsequence starting at index i
+    dec = [0] * n
+    for i in range(n - 1, -1, -1):
+        dec[i] = arr[i]  # At minimum, the subsequence contains just arr[i]
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:  # strictly decreasing from i onwards
+                if dec[j] + arr[i] > dec[i]:
+                    dec[i] = dec[j] + arr[i]
+    
+    # Find maximum bitonic sum
+    max_bitonic_sum = 0
+    for i in range(n):
+        # Bitonic subsequence through i: increasing part ends at i, decreasing part starts at i
+        # arr[i] is included in both inc[i] and dec[i], so subtract once
+        current_sum = inc[i] + dec[i] - arr[i]
+        if current_sum > max_bitonic_sum:
+            max_bitonic_sum = current_sum
+    
+    return max_bitonic_sum
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+    print("All tests passed!")
+```

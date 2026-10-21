@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem of finding the lateral surface area of a cube given its side length:
+
+```python
+def lateralsurface_cube(side_length):
+    """
+    Calculate the lateral surface area of a cube.
+    
+    The lateral surface area of a cube is the area of the four vertical faces.
+    Since each face is a square with area side_length^2, the lateral surface area is 4 * side_length^2.
+    
+    Args:
+        side_length (float or int): The length of the side of the cube.
+        
+    Returns:
+        float or int: The lateral surface area of the cube.
+    """
+    return 4 * side_length ** 2
+
+# Test the function with the provided assertion
+assert lateralsurface_cube(5) == 100
+
+# Additional test cases
+print(lateralsurface_cube(5))  # Expected output: 100
+print(lateralsurface_cube(3))  # Expected output: 36
+print(lateralsurface_cube(0))  # Expected output: 0
+print(lateralsurface_cube(2.5))  # Expected output: 25.0
+```
+
+### Explanation:
+1. **Function Definition**: The function `lateralsurface_cube` takes one parameter, `side_length`, which is the length of the side of the cube.
+2. **Lateral Surface Area Calculation**: The lateral surface area of a cube is the area of the four vertical faces. Each face is a square with area `side_length^2`, so the total lateral surface area is `4 * side_length^2`.
+3. **Assertion**: The provided assertion `assert lateralsurface_cube(5) == 100` is included to verify that the function works correctly for the given example.
+4. **Additional Test Cases**: Additional test cases are included to demonstrate the function's correctness for different inputs, including integers, zero, and a floating-point number.
+
+This script is self-contained and can be run directly to verify the function's correctness.

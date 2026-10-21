@@ -1,0 +1,21 @@
+```python
+def count_first_elements(tup):
+    """
+    Finds the number of elements that occur before the first 
+    tuple element encountered in the given tuple.
+    """
+    for index, element in enumerate(tup):
+        if isinstance(element, tuple):
+            return index
+    # Return the length of the tuple if no tuple element is found
+    return len(tup)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_tuple = (1, 5, 7, (4, 6), 10)
+    result = count_first_elements(test_tuple)
+    print(f"Input: {test_tuple} | Result: {result}")
+    
+    assert result == 3, f"Expected 3, but got {result}"
+    print("Assertion passed!")
+```

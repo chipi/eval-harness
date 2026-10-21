@@ -1,0 +1,10 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Function to find the shared elements from the given two lists.
+    """
+    return set(i for i in list1 if i in list2)
+
+# Testing the function
+assert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == set((4, 5))
+```

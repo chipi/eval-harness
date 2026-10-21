@@ -1,0 +1,18 @@
+```python
+def max_aggregate(lst):
+    # Create a dictionary to store the aggregate scores for each student
+    aggregate_scores = {}
+    for student, score in lst:
+        if student in aggregate_scores:
+            aggregate_scores[student] += score
+        else:
+            aggregate_scores[student] = score
+
+    # Find the student with the maximum aggregate score
+    max_student = max(aggregate_scores, key=aggregate_scores.get)
+
+    return max_student, aggregate_scores[max_student]
+
+# Test the function
+assert max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)])==('Juan Whelan', 212)
+```

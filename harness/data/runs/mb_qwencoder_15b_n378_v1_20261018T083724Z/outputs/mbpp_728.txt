@@ -1,0 +1,21 @@
+```python
+def sum_list(list_a, list_b):
+    """
+    Takes two lists of numbers and returns a new list containing the sums of the corresponding elements.
+    
+    Args:
+    list_a (list): The first list of numbers.
+    list_b (list): The second list of numbers.
+    
+    Returns:
+    list: A new list containing the sums of the corresponding elements from list_a and list_b.
+    """
+    return [a + b for a, b in zip(list_a, list_b)]
+
+# Test cases to verify the correctness of the solution
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+assert sum_list([1, 2, 3], [4, 5, 6]) == [5, 7, 9]
+assert sum_list([-1, -2, -3], [-4, -5, -6]) == [-5, -7, -9]
+print("All test cases passed!")
+```
+

@@ -1,0 +1,38 @@
+```python
+def find_Odd_Pair(A, N):
+    """
+    Count the number of pairs whose XOR value is odd.
+    
+    XOR of two numbers is odd if and only if one number is even and the other is odd.
+    This is because:
+    - The least significant bit (LSB) determines if a number is odd or even.
+    - XOR of two bits is 1 if they are different.
+    - So XOR result is odd (LSB = 1) when one number has LSB=0 (even) and the other has LSB=1 (odd).
+    
+    Therefore, we count the number of even numbers and odd numbers, and the answer is
+    count_even * count_odd.
+    
+    Args:
+        A: List of integers
+        N: Length of the list
+    
+    Returns:
+        Number of pairs with odd XOR value
+    """
+    count_even = 0
+    count_odd = 0
+    
+    for i in range(N):
+        if A[i] % 2 == 0:
+            count_even += 1
+        else:
+            count_odd += 1
+    
+    return count_even * count_odd
+
+
+# Test the function
+if __name__ == "__main__":
+    assert find_Odd_Pair([5, 4, 7, 2, 1], 5) == 6
+    print("All tests passed!")
+```

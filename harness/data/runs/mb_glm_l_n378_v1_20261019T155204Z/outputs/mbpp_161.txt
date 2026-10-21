@@ -1,0 +1,23 @@
+```python
+def remove_elements(original_list, elements_to_remove):
+    """
+    Remove all elements from the original_list that are present in elements_to_remove.
+    
+    Args:
+        original_list (list): The list from which elements will be removed.
+        elements_to_remove (list): The list containing elements to be removed from original_list.
+        
+    Returns:
+        list: A new list with the specified elements removed.
+    """
+    # Convert elements_to_remove to a set for O(1) lookups
+    remove_set = set(elements_to_remove)
+    
+    # Use a list comprehension to filter out elements present in remove_set
+    return [item for item in original_list if item not in remove_set]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert remove_elements([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 10]
+    print("Test passed!")
+```

@@ -1,0 +1,32 @@
+```python
+def get_coordinates(coord):
+    """
+    Extracts all the adjacent coordinates of the given coordinate tuple,
+    including the coordinate itself (a 3x3 grid centered at the input).
+    
+    Args:
+        coord (tuple): A tuple representing (x, y) coordinates.
+        
+    Returns:
+        list: A list of lists containing the coordinates.
+    """
+    x, y = coord
+    adjacent_coords = []
+    
+    # Iterate through the range of x-1 to x+1 and y-1 to y+1
+    for i in range(x - 1, x + 2):
+        for j in range(y - 1, y + 2):
+            adjacent_coords.append([i, j])
+            
+    return adjacent_coords
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = get_coordinates((3, 4))
+    expected = [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+    
+    assert result == expected
+    print("Assertion passed!")
+    print(f"Input: (3, 4)")
+    print(f"Output: {result}")
+```

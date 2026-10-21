@@ -1,0 +1,9 @@
+```python
+def sum_names(names):
+    return sum(len(name) for name in names if name[0].isupper())
+
+# Test cases
+assert sum_names(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 26
+assert sum_names(['John', 'Jane', 'Alice', 'Bob', 'Charlie', 'David']) == 21
+assert sum_names(['Eve', 'Mike', 'Lisa', 'Sam', 'Tom', 'Jerry']) == 13
+```

@@ -1,0 +1,25 @@
+```python
+def recursive_list_sum(lst):
+    """
+    This function recursively flattens a list and sums all of its elements.
+
+    Args:
+        lst (list): A list that may contain nested lists.
+
+    Returns:
+        int: The sum of all elements in the list.
+    """
+    total = 0
+    for element in lst:
+        if isinstance(element, list):
+            # If the element is a list, recursively call the function
+            total += recursive_list_sum(element)
+        else:
+            # If the element is not a list, add it to the total
+            total += element
+    return total
+
+# Test the function
+assert recursive_list_sum([1, 2, [3,4],[5,6]]) == 21
+print("All tests passed.")
+```

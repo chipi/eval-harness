@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem with the required function and includes the assertion test:
+
+```python
+def swap_numbers(first, second):
+    """
+    Takes two numbers and returns a tuple with the second number first, then the first number.
+    
+    Args:
+        first: The first number.
+        second: The second number.
+    
+    Returns:
+        A tuple (second, first).
+    """
+    return (second, first)
+
+# Test the function
+assert swap_numbers(10, 20) == (20, 10), "Test case failed: swap_numbers(10, 20) should return (20, 10)"
+
+print("All tests passed!")
+```
+
+This script defines the `swap_numbers` function that takes two parameters and returns them in a tuple in reversed order. The assertion tests the function with the provided example case. If the assertion passes, it will print "All tests passed!". If it fails, it will raise an AssertionError with a descriptive message.

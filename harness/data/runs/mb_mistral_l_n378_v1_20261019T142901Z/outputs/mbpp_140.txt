@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem by flattening a list of tuples (or lists) into a single set of numbers:
+
+```python
+def extract_singly(list_of_lists):
+    """
+    Flattens a list of lists (or tuples) into a single set of numbers.
+
+    Args:
+        list_of_lists: A list containing iterables (lists, tuples, etc.) of numbers.
+
+    Returns:
+        A set containing all the numbers from the nested iterables.
+    """
+    result = set()
+    for sublist in list_of_lists:
+        result.update(sublist)
+    return result
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == {3, 4, 5, 7, 1}
+```
+
+### Explanation:
+1. The function `extract_singly` takes a list of iterables (like tuples or lists) as input.
+2. It initializes an empty set `result` to store the unique numbers.
+3. It iterates over each sublist in the input and uses the `update` method to add all elements of the sublist to the set.
+4. The function returns the set containing all unique numbers from the nested iterables.
+5. The assertion checks that the function works as expected by comparing the output to the expected set `{1, 3, 4, 5, 7}`. Note that sets are unordered, so the order of elements in the assertion doesn't matter.

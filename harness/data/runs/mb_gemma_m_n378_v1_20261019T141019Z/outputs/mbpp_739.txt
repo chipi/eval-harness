@@ -1,0 +1,46 @@
+```python
+import math
+
+def find_Index(n):
+    """
+    Finds the index of the smallest triangular number with n digits.
+    
+    A triangular number is given by the formula: T_k = (k * (k + 1)) / 2
+    A number with n digits is at least 10^(n-1).
+    
+    We need to solve for the smallest integer k such that:
+    (k * (k + 1)) / 2 >= 10^(n-1)
+    
+    Expanding the inequality:
+    k^2 + k - 2 * 10^(n-1) >= 0
+    
+    Using the quadratic formula for k^2 + k - C = 0:
+    k = (-1 + sqrt(1 + 8 * 10^(n-1))) / 2
+    """
+    if n <= 0:
+        return None
+    
+    # The lower bound for an n-digit number
+    lower_bound = 10**(n - 1)
+    
+    # Using the quadratic formula to find the positive root of k^2 + k - 2*lower_bound = 0
+    # k = (-1 + sqrt(1 + 8 * lower_bound)) / 2
+    # We use math.isqrt or float math. Since n can be large, we use float for the root.
+    
+    discriminant = 1 + 8 * lower_bound
+    k = (-1 + math.sqrt(discriminant)) / 2
+    
+    # Since we need the smallest integer k that satisfies the inequality,
+    # we take the ceiling of the result.
+    return math.ceil(k)
+
+if __name__ == "__main__":
+    # Test cases
+    assert find_Index(2) == 4  # T_4 = (4*5)/2 = 10 (smallest 2-digit)
+    assert find_Index(3) == 14 # T_14 = (14*15)/2 = 105 (smallest 3-digit)
+    assert find_Index(4) == 45 # T_45 = (45*46)/2 = 1035 (smallest 4-digit)
+    
+    print("All tests passed!")
+    print(f"Index for 2 digits: {find_Index(2)}")
+    print(f"Index for 3 digits: {find_Index(3)}")
+```

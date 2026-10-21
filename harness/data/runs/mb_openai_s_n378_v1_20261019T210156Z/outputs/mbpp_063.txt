@@ -1,0 +1,19 @@
+```python
+def max_difference(tuples):
+    """
+    Find the maximum absolute difference between values in each pair.
+
+    Example:
+        [(3, 5), (1, 7), (10, 3), (1, 2)] -> max difference is 7
+        because abs(10 - 3) = 7
+    """
+    if not tuples:
+        raise ValueError("Input list must not be empty.")
+
+    return max(abs(a - b) for a, b in tuples)
+
+
+if __name__ == "__main__":
+    assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+    print("All tests passed.")
+```

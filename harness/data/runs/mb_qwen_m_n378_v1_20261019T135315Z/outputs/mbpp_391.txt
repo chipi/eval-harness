@@ -1,0 +1,40 @@
+```python
+def convert_list_dictionary(keys, names, values):
+    """
+    Convert three lists into a list of nested dictionaries.
+    
+    Each element in the result is a dictionary where:
+    - The outer key is from the 'keys' list
+    - The inner key is from the 'names' list
+    - The inner value is from the 'values' list
+    
+    Args:
+        keys: List of outer keys (e.g., student IDs)
+        names: List of inner keys (e.g., student names)
+        values: List of values (e.g., scores)
+    
+    Returns:
+        A list of nested dictionaries
+    """
+    result = []
+    for key, name, value in zip(keys, names, values):
+        result.append({key: {name: value}})
+    return result
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92]
+    )
+    expected = [
+        {'S001': {'Adina Park': 85}},
+        {'S002': {'Leyton Marsh': 98}},
+        {'S003': {'Duncan Boyle': 89}},
+        {'S004': {'Saim Richards': 92}}
+    ]
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("All tests passed!")
+```

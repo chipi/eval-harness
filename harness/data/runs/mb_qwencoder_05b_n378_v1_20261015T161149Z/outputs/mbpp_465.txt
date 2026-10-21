@@ -1,0 +1,15 @@
+```python
+def drop_empty(dictionary):
+    """
+    Drop empty items from a given dictionary.
+
+    :param dictionary: The dictionary from which empty items will be dropped.
+    :return: A new dictionary with all empty items removed.
+    """
+    # Use a list comprehension to filter out empty values
+    return {key: value for key, value in dictionary.items() if value}
+
+# Test the function with the provided test case
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+```
+

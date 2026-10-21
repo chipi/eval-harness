@@ -1,0 +1,51 @@
+Here is a self-contained Python script that solves the problem. It uses the dynamic programming approach (specifically, the Bell triangle method) to efficiently compute the nth Bell number.
+
+```python
+def bell_Number(n: int) -> int:
+    """
+    Finds the nth Bell number.
+    
+    The Bell numbers count the number of ways to partition a set of n elements.
+    This function uses the Bell triangle method for efficient computation.
+    
+    Args:
+        n (int): The index of the Bell number to find (non-negative integer).
+        
+    Returns:
+        int: The nth Bell number.
+        
+    Example:
+        >>> bell_Number(2)
+        2
+        >>> bell_Number(3)
+        5
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    if n == 0:
+        return 1
+        
+    # Initialize a list to store the current row of the Bell triangle
+    dp = [0] * n
+    dp[0] = 1
+    
+    for i in range(1, n):
+        # The first element of the new row is the last element of the previous row
+        dp[i] = dp[i - 1]
+        
+        # Compute the rest of the elements in the current row
+        for j in range(i - 1, 0, -1):
+            dp[j] = dp[j] + dp[j - 1]
+            
+    # The nth Bell number is the last element of the (n-1)th row
+    return dp[n - 1]
+
+# Example usage and assertion
+if __name__ == "__main__":
+    assert bell_Number(2) == 2
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    print("All assertions passed.")
+```

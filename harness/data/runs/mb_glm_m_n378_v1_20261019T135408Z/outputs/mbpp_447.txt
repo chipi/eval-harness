@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem of finding the cubes of individual elements in a list:
+
+```python
+def cube_nums(nums):
+    """
+    Returns a list containing the cubes of each element in the input list.
+    
+    Args:
+        nums (list): A list of numbers.
+    
+    Returns:
+        list: A list where each element is the cube of the corresponding element in nums.
+    """
+    return [x ** 3 for x in nums]
+
+# Test the function
+assert cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+print("Test passed!")
+```
+
+### Explanation:
+1. The function `cube_nums` takes a list of numbers as input.
+2. It uses a list comprehension to compute the cube of each element in the input list (`x ** 3`).
+3. The result is returned as a new list.
+4. The `assert` statement checks if the function works correctly for the given test case. If the assertion passes, it prints "Test passed!". If it fails, an `AssertionError` will be raised.

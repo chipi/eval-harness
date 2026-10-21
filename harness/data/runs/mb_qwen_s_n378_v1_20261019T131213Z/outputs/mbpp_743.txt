@@ -1,0 +1,25 @@
+```python
+def rotate_right(lst, n):
+    """
+    Rotate a given list by specified number of items to the right direction.
+    
+    Args:
+        lst: The input list to rotate.
+        n: The number of items to rotate to the right.
+        
+    Returns:
+        A new list rotated to the right by n positions.
+    """
+    if not lst:
+        return []
+    
+    # Normalize n to handle cases where n is larger than the length of the list
+    n = n % len(lst)
+    
+    # If n is 0 after normalization, no rotation needed
+    if n == 0:
+        return lst[:]
+    
+    # The last n elements come first, followed by the remaining elements
+    return lst[-n:] + lst[:-n]
+```

@@ -1,0 +1,58 @@
+```python
+def magic_square_test(matrix):
+    """
+    Checks if a given matrix is a magic square.
+
+    Args:
+        matrix: A list of lists representing the square matrix.
+
+    Returns:
+        True if the matrix is a magic square, False otherwise.
+    """
+    n = len(matrix)
+    if n == 0:
+        return False  # Empty matrix is not a magic square
+
+    # Calculate the expected sum (sum of the first row)
+    expected_sum = sum(matrix[0])
+
+    # Check row sums
+    for row in matrix:
+        if sum(row) != expected_sum:
+            return False
+
+    # Check column sums
+    for col in range(n):
+        col_sum = 0
+        for row in range(n):
+            col_sum += matrix[row][col]
+        if col_sum != expected_sum:
+            return False
+
+    # Check main diagonal sum
+    main_diag_sum = 0
+    for i in range(n):
+        main_diag_sum += matrix[i][i]
+    if main_diag_sum != expected_sum:
+        return False
+
+    # Check secondary diagonal sum
+    secondary_diag_sum = 0
+    for i in range(n):
+        secondary_diag_sum += matrix[i][n - 1 - i]
+    if secondary_diag_sum != expected_sum:
+        return False
+
+    return True
+
+# Example usage and assertion
+if __name__ == '__main__':
+    matrix1 = [[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]
+    matrix2 = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    matrix3 = [[16, 3, 2, 13], [5, 10, 11, 8], [9, 6, 7, 12], [4, 15, 14, 1]]
+
+    assert magic_square_test(matrix1) == True
+    assert magic_square_test(matrix2) == False
+    assert magic_square_test(matrix3) == True
+    print("All tests passed!")
+```

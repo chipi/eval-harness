@@ -1,0 +1,42 @@
+### Problem: Counting Pairs with Odd XOR Value
+
+The goal is to write a Python function that calculates the number of pairs in a given list whose XOR value is odd.
+
+### Solution
+
+```python
+def find_Odd_Pair(arr, n):
+    """
+    This function calculates the number of pairs in a given list whose XOR value is odd.
+
+    Parameters:
+    arr (list): The input list of integers.
+    n (int): The size of the input list.
+
+    Returns:
+    int: The number of pairs whose XOR value is odd.
+    """
+    # Count the number of odd and even numbers in the array
+    odd_count = sum(1 for num in arr if num % 2 != 0)
+    even_count = n - odd_count
+
+    # The XOR of two numbers is odd only if one number is odd and the other is even
+    # So, the total count of pairs with odd XOR is the product of odd and even counts
+    return odd_count * even_count
+
+# Example usage:
+arr = [5, 4, 7, 2, 1]
+n = len(arr)
+print(find_Odd_Pair(arr, n))  # Output: 6
+```
+
+### Explanation
+
+*   The function `find_Odd_Pair` takes a list `arr` and its size `n` as input.
+*   It counts the number of odd and even numbers in the array using a generator expression within the built-in `sum` function.
+*   The XOR of two numbers is odd only if one number is odd and the other is even. Therefore, the total count of pairs with odd XOR is the product of the counts of odd and even numbers.
+*   Finally, the function returns the count of pairs with odd XOR value.
+
+### Time Complexity
+
+The time complexity of this solution is O(n), where n is the size of the input list, because it makes a single pass through the list to count the odd and even numbers.

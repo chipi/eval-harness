@@ -1,0 +1,27 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def split_Arr(lst, n):
+    """
+    Split a list at the nth element and add the first part to the end.
+    
+    Args:
+        lst (list): The input list.
+        n (int): The index at which to split (0-based).
+    
+    Returns:
+        list: The rotated list.
+    """
+    if n == 0 or n >= len(lst):
+        return lst[:]
+    return lst[n:] + lst[:n]
+
+# Test the function with the given example
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+print("Test passed!")
+
+# Additional test cases
+print(split_Arr([1, 2, 3, 4, 5], 3))  # Expected: [4, 5, 1, 2, 3]
+print(split_Arr([1, 2, 3], 0))        # Expected: [1, 2, 3]
+print(split_Arr([1, 2, 3], 5))        # Expected: [1, 2, 3]
+```

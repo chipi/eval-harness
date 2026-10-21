@@ -1,0 +1,18 @@
+```python
+def unique_product(lst):
+    """
+    Calculate the product of the unique numbers in a given list.
+    """
+    unique_values = set(lst)
+    product = 1
+    for num in unique_values:
+        product *= num
+    return product
+
+
+# Test case
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+
+if __name__ == "__main__":
+    print(unique_product([10, 20, 30, 40, 20, 50, 60, 40]))
+```

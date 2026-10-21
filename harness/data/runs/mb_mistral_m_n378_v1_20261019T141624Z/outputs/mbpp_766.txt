@@ -1,0 +1,12 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pair_wise(lst):
+    """Return a list of all pairs of consecutive items in a given list."""
+    return [(lst[i], lst[i+1]) for i in range(len(lst)-1)]
+
+# Test case
+assert pair_wise([1,1,2,3,3,4,4,5]) == [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+```
+
+The function uses a list comprehension to iterate through the list indices from 0 to len(lst)-2, creating tuples of each element with its consecutive neighbor. The test case verifies that the function works as expected.

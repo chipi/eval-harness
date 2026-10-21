@@ -1,0 +1,54 @@
+```python
+"""
+Write a Python function to find the nth Bell number.
+
+Bell numbers count the number of ways to partition a set of n elements.
+
+Example:
+    bell_Number(2) == 2
+"""
+
+
+def bell_Number(n):
+    """
+    Return the nth Bell number.
+
+    Uses Bell's triangle:
+        Bell(0) = 1
+        The first element of each row is the last element of the previous row.
+        Each other element is the sum of the element to the left and the
+        element diagonally up-left.
+
+    Args:
+        n (int): Non-negative integer.
+
+    Returns:
+        int: The nth Bell number.
+    """
+    if not isinstance(n, int):
+        raise TypeError("n must be an integer")
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    bell = [[0 for _ in range(n + 1)] for _ in range(n + 1)]
+    bell[0][0] = 1
+
+    for i in range(1, n + 1):
+        bell[i][0] = bell[i - 1][i - 1]
+
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i - 1][j - 1] + bell[i][j - 1]
+
+    return bell[n][0]
+
+
+if __name__ == "__main__":
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(2) == 2
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    assert bell_Number(5) == 52
+
+    print("All tests passed.")
+```

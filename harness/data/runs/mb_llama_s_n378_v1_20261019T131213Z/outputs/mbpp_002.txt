@@ -1,0 +1,52 @@
+```python
+def similar_elements(list1, list2):
+    """
+    This function finds the shared elements from the given two lists.
+
+    Args:
+        list1 (list): The first list.
+        list2 (list): The second list.
+
+    Returns:
+        set: A set of shared elements from the two lists.
+    """
+    # Convert the lists to sets for efficient lookups
+    set1 = set(list1)
+    set2 = set(list2)
+
+    # Use set intersection to find the shared elements
+    shared_elements = set1 & set2
+
+    return shared_elements
+
+
+# Example usage:
+if __name__ == "__main__":
+    list1 = (3, 4, 5, 6)
+    list2 = (5, 7, 4, 10)
+    print(similar_elements(list1, list2))  # Output: {4, 5}
+```
+
+You can also solve this problem in a more concise way:
+
+```python
+def similar_elements(list1, list2):
+    """
+    This function finds the shared elements from the given two lists.
+
+    Args:
+        list1 (list): The first list.
+        list2 (list): The second list.
+
+    Returns:
+        set: A set of shared elements from the two lists.
+    """
+    return set(list1) & set(list2)
+
+
+# Example usage:
+if __name__ == "__main__":
+    list1 = (3, 4, 5, 6)
+    list2 = (5, 7, 4, 10)
+    print(similar_elements(list1, list2))  # Output: {4, 5}
+```

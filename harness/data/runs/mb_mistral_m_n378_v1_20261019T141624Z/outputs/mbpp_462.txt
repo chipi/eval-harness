@@ -1,0 +1,36 @@
+Here's a self-contained Python script that generates all possible combinations of the elements in a given list, including the empty list:
+
+```python
+from itertools import combinations
+
+def combinations_list(lst):
+    all_combinations = []
+    for r in range(len(lst) + 1):
+        for combo in combinations(lst, r):
+            all_combinations.append(list(combo))
+    return all_combinations
+
+# Test the function
+assert combinations_list(['orange', 'red', 'green', 'blue']) == [
+    [],
+    ['orange'],
+    ['red'],
+    ['red', 'orange'],
+    ['green'],
+    ['green', 'orange'],
+    ['green', 'red'],
+    ['green', 'red', 'orange'],
+    ['blue'],
+    ['blue', 'orange'],
+    ['blue', 'red'],
+    ['blue', 'red', 'orange'],
+    ['blue', 'green'],
+    ['blue', 'green', 'orange'],
+    ['blue', 'green', 'red'],
+    ['blue', 'green', 'red', 'orange']
+]
+
+print("Test passed!")
+```
+
+This script uses the `combinations` function from the `itertools` module to generate all possible combinations of the input list for all possible lengths (from 0 to the length of the list). Each combination is converted to a list and added to the result. The empty list is included as the combination of length 0. The test assertion verifies that the function produces the expected output.

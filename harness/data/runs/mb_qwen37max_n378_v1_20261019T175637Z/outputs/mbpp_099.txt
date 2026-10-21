@@ -1,0 +1,16 @@
+```python
+def decimal_to_binary(n):
+    """Convert a decimal number to its binary equivalent as a string with no leading zeros."""
+    if n == 0:
+        return '0'
+    if n < 0:
+        raise ValueError("Negative numbers are not supported")
+    return bin(n)[2:]
+
+
+# Test
+assert decimal_to_binary(8) == '1000'
+assert decimal_to_binary(0) == '0'
+assert decimal_to_binary(1) == '1'
+assert decimal_to_binary(255) == '11111111'
+```

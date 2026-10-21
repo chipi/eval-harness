@@ -1,0 +1,20 @@
+```python
+def unique_Element(nums):
+    """
+    Return True if the list contains only one distinct element, otherwise False.
+
+    Examples:
+    >>> unique_Element([1, 1, 1])
+    True
+    >>> unique_Element([1, 2, 1])
+    False
+    >>> unique_Element([])
+    True  # vacuously true: no distinct elements other than one
+    """
+    return len(set(nums)) <= 1
+
+
+if __name__ == "__main__":
+    assert unique_Element([1, 1, 1]) == True
+    print("All tests passed.")
+```

@@ -1,0 +1,16 @@
+```python
+def closest_num(n):
+    """
+    This function finds the closest smaller number than the given number n.
+    
+    Args:
+        n (int): The input number.
+    
+    Returns:
+        int: The closest smaller number than n.
+    """
+    return n - 1
+
+# Test the function
+print(closest_num(11))  # Output: 10
+```

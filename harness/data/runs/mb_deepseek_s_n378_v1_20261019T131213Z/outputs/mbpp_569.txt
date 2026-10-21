@@ -1,0 +1,19 @@
+```python
+def sort_sublists(list_of_lists):
+    """
+    Sorts each sublist of strings in the given list of lists.
+    
+    Args:
+        list_of_lists (list of list of str): A list containing sublists of strings.
+    
+    Returns:
+        list of list of str: A new list where each sublist is sorted alphabetically.
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+
+# Test the function with the provided assertion
+assert sort_sublists([['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']]) == [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+
+# Additional test cases (optional)
+print(sort_sublists([['banana', 'apple'], ['cherry', 'date', 'blueberry']]))
+```

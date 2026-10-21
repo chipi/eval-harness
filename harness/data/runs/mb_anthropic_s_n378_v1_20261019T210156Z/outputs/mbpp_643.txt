@@ -1,0 +1,28 @@
+```python
+def text_match_wordz_middle(text):
+    """
+    Check if a string contains 'z', except at the start and end of the word.
+    Returns True if 'z' appears only in the middle of words (not at start or end).
+    """
+    import re
+    # Pattern explanation:
+    # \b - word boundary
+    # (?!z) - negative lookahead: not starting with 'z'
+    # \w*z\w* - word characters, then 'z', then word characters
+    # (?!z\b) - negative lookahead: not ending with 'z' at word boundary
+    # Actually, simpler approach: find 'z' that has word chars on both sides
+    pattern = r'\w+z\w+'
+    matches = re.findall(pattern, text)
+    return len(matches) > 0
+
+
+# Test cases
+assert text_match_wordz_middle("pythonzabc.") == True
+assert text_match_wordz_middle("z") == False
+assert text_match_wordz_middle("az") == False
+assert text_match_wordz_middle("za") == False
+assert text_match_wordz_middle("aza") == True
+assert text_match_wordz_middle("hello world") == False
+
+print("All tests passed!")
+```

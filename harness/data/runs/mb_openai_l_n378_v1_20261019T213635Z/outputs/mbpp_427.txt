@@ -1,0 +1,8 @@
+```python
+def change_date_format(date: str) -> str:
+    year, month, day = date.split("-")
+    return f"{day}-{month}-{year}"
+
+
+assert change_date_format("2026-01-02") == "02-01-2026"
+```

@@ -1,0 +1,100 @@
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    Find the number of possible sequences of length n where:
+    - Each element is a positive integer
+    - Each element >= 2 * previous element
+    - Each element <= m
+    
+    Args:
+        m: Upper bound for sequence elements
+        n: Length of sequence
+    
+    Returns:
+        Number of valid sequences
+    """
+    def count_sequences(length, min_value):
+        """
+        Recursively count valid sequences.
+        
+        Args:
+            length: Remaining length of sequence to build
+            min_value: Minimum value the next element must be
+        
+        Returns:
+            Count of valid sequences
+        """
+        # Base case: we've built a complete sequence
+        if length == 0:
+            return 1
+        
+        # If minimum value exceeds m, no valid sequences possible
+        if min_value > m:
+            return 0
+        
+        total = 0
+        # Try each valid value for the current position
+        for current_value in range(min_value, m + 1):
+            # Next element must be at least 2 * current_value
+            total += count_sequences(length - 1, 2 * current_value)
+        
+        return total
+    
+    # Start with sequences of length n, first element must be >= 1
+    return count_sequences(n, 1)
+
+
+# Test
+if __name__ == "__main__":
+    result = get_total_number_of_sequences(10, 4)
+    print(f"get_total_number_of_sequences(10, 4) = {result}")
+    assert result == 4, f"Expected 4, got {result}"
+    print("Test passed!")
+    
+    # Let's verify by listing the sequences
+    def list_sequences(m, n):
+        """Helper function to list all valid sequences"""
+        sequences = []
+        
+        def build_sequence(current_seq, min_value):
+            if len(current_seq) == n:
+                sequences.append(current_seq[:])
+                return
+            
+            if min_value > m:
+                return
+            
+            for value in range(min_value, m + 1):
+                current_seq.append(value)
+                build_sequence(current_seq, 2 * value)
+                current_seq.pop()
+        
+        build_sequence([], 1)
+        return sequences
+    
+    sequences = list_sequences(10, 4)
+    print(f"\nValid sequences for m=10, n=4:")
+    for seq in sequences:
+        print(seq)
+```
+
+The solution uses a recursive approach to count valid sequences:
+
+1. **Base cases**: 
+   - If we've built a sequence of the required length, return 1 (found one valid sequence)
+   - If the minimum required value exceeds m, return 0 (no valid sequences possible)
+
+2. **Recursive case**: For each position, try all valid values from `min_value` to `m`, and recursively count sequences where the next element must be at least twice the current value.
+
+For `m=10, n=4`, the valid sequences are:
+- `[1, 2, 4, 8]`
+- `[1, 2, 5, 10]`
+- `[1, 3, 6, 12]` - wait, 12 > 10, so invalid
+- `[2, 4, 8, 16]` - 16 > 10, invalid
+- `[1, 3, 7, 14]` - 14 > 10, invalid
+- `[2, 5, 10, 20]` - 20 > 10, invalid
+- `[3, 6, 12, ...]` - 12 > 10, invalid
+- `[1, 2, 4, 9]`
+- `[1, 2, 4, 10]`
+
+Actually, the valid sequences are: `[1, 2, 4, 8]`, `[1, 2, 4, 9]`, `[1, 2, 4, 10]`, `[1, 2, 5, 10]` = 4 sequences ✓

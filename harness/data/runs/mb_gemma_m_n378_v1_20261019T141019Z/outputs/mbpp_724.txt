@@ -1,0 +1,32 @@
+```python
+def power_base_sum(base, power):
+    """
+    Calculates the sum of all digits of (base raised to the power).
+    
+    Args:
+        base (int): The base number.
+        power (int): The exponent.
+        
+    Returns:
+        int: The sum of the digits of base^power.
+    """
+    # Calculate the result of base raised to the power
+    result = base ** power
+    
+    # Convert the result to a string to iterate over each digit
+    # Then convert each character back to an integer and sum them
+    digit_sum = sum(int(digit) for digit in str(result))
+    
+    return digit_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert power_base_sum(2, 100) == 115
+    
+    # Additional test cases
+    assert power_base_sum(2, 10) == 7    # 2^10 = 1024 -> 1+0+2+4 = 7
+    assert power_base_sum(5, 3) == 8     # 5^3 = 125 -> 1+2+5 = 8
+    assert power_base_sum(10, 5) == 1    # 10^5 = 100000 -> 1+0+0+0+0+0 = 1
+    
+    print("All tests passed!")
+```

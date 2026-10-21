@@ -1,0 +1,69 @@
+```python
+def dif_Square(n):
+    # Check if n is odd
+    if n % 2 != 0:
+        return False
+    
+    # Find the square root of n
+    sqrt_n = int(n**0.5)
+    
+    # Check if the square of the integer part of the square root equals n
+    return sqrt_n * sqrt_n == n
+
+# Test cases
+assert dif_Square(5) == True
+assert dif_Square(13) == False
+assert dif_Square(17) == True
+assert dif_Square(29) == False
+assert dif_Square(49) == True
+assert dif_Square(65) == False
+assert dif_Square(81) == True
+assert dif_Square(101) == False
+assert dif_Square(121) == True
+assert dif_Square(144) == True
+assert dif_Square(169) == True
+assert dif_Square(196) == True
+assert dif_Square(225) == True
+assert dif_Square(256) == True
+assert dif_Square(289) == True
+assert dif_Square(324) == True
+assert dif_Square(361) == True
+assert dif_Square(400) == True
+assert dif_Square(441) == True
+assert dif_Square(484) == True
+assert dif_Square(529) == True
+assert dif_Square(576) == True
+assert dif_Square(625) == True
+assert dif_Square(676) == True
+assert dif_Square(729) == True
+assert dif_Square(784) == True
+assert dif_Square(841) == True
+assert dif_Square(900) == True
+assert dif_Square(961) == True
+assert dif_Square(1024) == True
+assert dif_Square(1089) == True
+assert dif_Square(1156) == True
+assert dif_Square(1225) == True
+assert dif_Square(1296) == True
+assert dif_Square(1369) == True
+assert dif_Square(1444) == True
+assert dif_Square(1521) == True
+assert dif_Square(1600) == True
+assert dif_Square(1681) == True
+assert dif_Square(1764) == True
+assert dif_Square(1849) == True
+assert dif_Square(1936) == True
+assert dif_Square(2025) == True
+assert dif_Square(2116) == True
+assert dif_Square(2209) == True
+assert dif_Square(2304) == True
+assert dif_Square(2401) == True
+assert dif_Square(2500) == True
+assert dif_Square(2601) == True
+assert dif_Square(2704) == True
+assert dif_Square(2809) == True
+assert dif_Square(2916) == True
+assert dif_Square(3025) == True
+assert dif_Square(3136) == True
+assert dif_Square(3249) == True
+assert dif_Square(3364)

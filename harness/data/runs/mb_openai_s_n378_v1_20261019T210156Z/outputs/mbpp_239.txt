@@ -1,0 +1,55 @@
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    Count sequences of length n where:
+      - each element is a positive integer
+      - for every adjacent pair a[i-1], a[i], we have:
+            a[i] >= 2 * a[i-1]
+            a[i] <= m
+
+    We count sequences by dynamic programming.
+
+    Let dp[x] be the number of valid sequences of current length ending with value x.
+    For length 1, every x in [1, m] is valid, so dp[x] = 1.
+
+    To build the next length, a new value y can follow any previous value x such that:
+        x <= y // 2
+    So:
+        next_dp[y] = sum(dp[x] for x in [1, y//2])
+
+    We use prefix sums to compute these transitions efficiently.
+    """
+    if n <= 0 or m <= 0:
+        return 0
+
+    # Base case: sequences of length 1
+    dp = [0] * (m + 1)
+    for x in range(1, m + 1):
+        dp[x] = 1
+
+    # Build sequences of length 2..n
+    for _ in range(2, n + 1):
+        prefix = [0] * (m + 1)
+        running = 0
+        for x in range(1, m + 1):
+            running += dp[x]
+            prefix[x] = running
+
+        next_dp = [0] * (m + 1)
+        for y in range(1, m + 1):
+            half = y // 2
+            if half >= 1:
+                next_dp[y] = prefix[half]
+
+        dp = next_dp
+
+    return sum(dp[1:])
+
+
+
+# Example check
+assert get_total_number_of_sequences(10, 4) == 4
+
+if __name__ == "__main__":
+    print(get_total_number_of_sequences(10, 4))
+```

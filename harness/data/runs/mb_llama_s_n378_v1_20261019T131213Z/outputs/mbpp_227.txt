@@ -1,0 +1,26 @@
+```python
+def min_of_three(a, b, c):
+    """
+    This function finds the minimum of three numbers.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+        c (int): The third number.
+
+    Returns:
+        int: The minimum of the three numbers.
+
+    Example:
+        >>> min_of_three(10, 20, 0)
+        0
+    """
+    return min(a, b, c)
+
+# Test the function
+if __name__ == "__main__":
+    assert min_of_three(10, 20, 0) == 0
+    print("All tests passed.")
+```
+
+You can run this script to test the `min_of_three` function. The `min` function in Python returns the smallest item in an iterable or the smallest of two or more arguments. In this case, we use it to find the minimum of three numbers. The `assert` statement is used to test the function. If the function works correctly, the script will print "All tests passed."

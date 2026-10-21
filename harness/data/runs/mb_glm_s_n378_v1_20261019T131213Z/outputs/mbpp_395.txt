@@ -1,0 +1,48 @@
+```python
+from collections import OrderedDict
+
+def first_non_repeating_character(s: str) -> str | None:
+    """
+    Finds the first non-repeating character in a given string.
+
+    This function iterates through the string to count the occurrences of each
+    character. It then iterates through the string again to find the first
+    character that has a count of exactly one.
+
+    Args:
+        s: The input string to search.
+
+    Returns:
+        The first non-repeating character as a string, or None if all
+        characters are repeated or the string is empty.
+    """
+    # A dictionary to store the count of each character.
+    # Using OrderedDict is not strictly necessary for this logic but can be
+    # useful if you wanted to later iterate over unique characters in insertion order.
+    char_counts = {}
+
+    # First pass: Count the occurrences of each character.
+    for char in s:
+        char_counts[char] = char_counts.get(char, 0) + 1
+
+    # Second pass: Find the first character with a count of 1.
+    for char in s:
+        if char_counts[char] == 1:
+            return char
+
+    # If the loop completes, no non-repeating character was found.
+    return None
+
+# Example usage and assertions:
+assert first_non_repeating_character("abcabc") == None
+assert first_non_repeating_character("aabbcc") == None
+assert first_non_repeating_character("stress") == 't'
+assert first_non_repeating_character("sTreSS") == 'T' # Case-sensitive
+assert first_non_repeating_character("hello world") == 'h'
+assert first_non_repeating_character("aabbccd") == 'd'
+assert first_non_repeating_character("") == None
+assert first_non_repeating_character("a") == 'a'
+assert first_non_repeating_character("aa") == None
+
+print("All assertions passed!")
+```

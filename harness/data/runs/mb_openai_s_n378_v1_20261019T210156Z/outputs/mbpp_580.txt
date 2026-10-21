@@ -1,0 +1,31 @@
+```python
+def extract_even(data):
+    """
+    Remove odd integers from a nested tuple structure, preserving tuple nesting.
+
+    Examples:
+        extract_even((4, 5, (7, 6, (2, 4)), 6, 8))
+        -> (4, (6, (2, 4)), 6, 8)
+    """
+    result = []
+
+    for item in data:
+        if isinstance(item, tuple):
+            nested = extract_even(item)
+            # Keep non-empty tuples only
+            if nested:
+                result.append(nested)
+        elif isinstance(item, int):
+            if item % 2 == 0:
+                result.append(item)
+        else:
+            # If needed, preserve non-int, non-tuple items as-is
+            result.append(item)
+
+    return tuple(result)
+
+
+if __name__ == "__main__":
+    assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+    print("All tests passed.")
+```

@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def cube_Sum(n):
+    """
+    Find the cube sum of first n even natural numbers.
+    
+    Args:
+        n: Number of even natural numbers to consider
+        
+    Returns:
+        Sum of cubes of first n even natural numbers
+    """
+    # The first n even natural numbers are: 2, 4, 6, ..., 2n
+    # We need to find: 2³ + 4³ + 6³ + ... + (2n)³
+    # = 8(1³ + 2³ + 3³ + ... + n³)
+    # = 8 * (n(n+1)/2)²
+    # = 8 * n²(n+1)²/4
+    # = 2 * n² * (n+1)²
+    
+    return 2 * n * n * (n + 1) * (n + 1)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given assertion
+    assert cube_Sum(2) == 72, f"Expected 72, but got {cube_Sum(2)}"
+    
+    # Additional test cases
+    print(f"cube_Sum(1) = {cube_Sum(1)}")  # Should be 8 (2³)
+    print(f"cube_Sum(2) = {cube_Sum(2)}")  # Should be 72 (2³ + 4³)
+    print(f"cube_Sum(3) = {cube_Sum(3)}")  # Should be 288 (2³ + 4³ + 6³)
+    print(f"cube_Sum(4) = {cube_Sum(4)}")  # Should be 800 (2³ + 4³ + 6³ + 8³)
+    
+    print("All tests passed!")
+```
+
+The function uses a mathematical formula to efficiently calculate the sum of cubes of the first n even natural numbers. The derivation is:
+
+- First n even numbers: 2, 4, 6, ..., 2n
+- Sum of their cubes: 2³ + 4³ + 6³ + ... + (2n)³
+- Factor out 8: 8(1³ + 2³ + 3³ + ... + n³)
+- Using the formula for sum of cubes: 1³ + 2³ + ... + n³ = (n(n+1)/2)²
+- Final result: 2 × n² × (n+1)²

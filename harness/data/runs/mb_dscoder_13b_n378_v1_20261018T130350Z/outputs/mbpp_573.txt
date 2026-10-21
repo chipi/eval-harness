@@ -1,0 +1,15 @@
+```python
+def unique_product(lst):
+    # Create a set from the list to remove duplicates
+    unique_nums = set(lst)
+    # Initialize the product to 1
+    product = 1
+    # Multiply each unique number in the set
+    for num in unique_nums:
+        product *= num
+    # Return the product
+    return product
+
+# Test the function with the provided test case
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+```

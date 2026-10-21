@@ -1,0 +1,47 @@
+Looking at this problem, the function takes two arguments — a real part `a` and an imaginary part `b` — and returns the phase (argument) of the resulting complex number.
+
+```python
+"""
+Write a function to get the angle of a complex number.
+assert math.isclose(angle_complex(0,1j), 1.5707963267948966, rel_tol=0.001)
+"""
+
+import cmath
+import math
+
+
+def angle_complex(a, b):
+    """
+    Return the angle (argument/phase) of the complex number formed by a + b.
+
+    Parameters
+    ----------
+    a : int | float | complex
+        Real component of the complex number.
+    b : int | float | complex
+        Imaginary component of the complex number (e.g. 1j).
+
+    Returns
+    -------
+    float
+        The phase of the complex number, in radians, in the range (-pi, pi].
+    """
+    return cmath.phase(a + b)
+
+
+if __name__ == "__main__":
+    assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+    assert math.isclose(angle_complex(2, 1j), 0.4636476090008061, rel_tol=0.001)
+    assert math.isclose(angle_complex(0, 2j), 1.5707963267948966, rel_tol=0.001)
+    assert math.isclose(angle_complex(1, 0j), 0.0, rel_tol=0.001)
+    assert math.isclose(angle_complex(-1, 0j), math.pi, rel_tol=0.001)
+
+    print("All tests passed!")
+    print(angle_complex(0, 1j))
+```
+
+**How it works:**
+
+- `a + b` combines the real part and the imaginary part into a single complex number (e.g. `0 + 1j == 1j`).
+- `cmath.phase(z)` returns `atan2(z.imag, z.real)`, which is the angle the complex number makes with the positive real axis.
+- For `1j`, the angle is π/2 ≈ `1.5707963267948966`, matching the assertion.

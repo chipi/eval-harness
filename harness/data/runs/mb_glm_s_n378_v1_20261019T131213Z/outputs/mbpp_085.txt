@@ -1,0 +1,57 @@
+```python
+import math
+
+def surfacearea_sphere(radius: float) -> float:
+    """
+    Calculates the surface area of a sphere.
+
+    The formula for the surface area of a sphere is A = 4 * π * r^2,
+    where 'A' is the surface area and 'r' is the radius.
+
+    Args:
+        radius: The radius of the sphere. Must be a non-negative number.
+
+    Returns:
+        The surface area of the sphere.
+
+    Raises:
+        ValueError: If the radius is negative.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative.")
+    
+    # Calculate the surface area using the formula 4 * π * r^2
+    area = 4 * math.pi * (radius ** 2)
+    return area
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    radius = 10
+    expected_area = 1256.6370614359173
+    calculated_area = surfacearea_sphere(radius)
+
+    # Use math.isclose for floating-point comparison with a relative tolerance
+    assert math.isclose(calculated_area, expected_area, rel_tol=0.001)
+
+    print(f"Surface area of a sphere with radius {radius}: {calculated_area}")
+    print("Assertion passed: The calculated area is close to the expected value.")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    # Test with radius 0
+    assert surfacearea_sphere(0) == 0
+    print("Surface area of a sphere with radius 0: 0 (Assertion passed)")
+
+    # Test with a different radius
+    r = 2.5
+    area_r = surfacearea_sphere(r)
+    print(f"Surface area of a sphere with radius {r}: {area_r}")
+    
+    # Test with a negative radius (should raise an error)
+    try:
+        surfacearea_sphere(-5)
+    except ValueError as e:
+        print(f"Correctly raised an error for negative radius: {e}")
+
+```

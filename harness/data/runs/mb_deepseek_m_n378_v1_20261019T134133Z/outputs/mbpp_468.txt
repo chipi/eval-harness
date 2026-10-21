@@ -1,0 +1,88 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_product(arr):
+    """
+    Finds the maximum product formed by multiplying numbers of an increasing subsequence.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+    
+    # dp[i] stores the maximum product of an increasing subsequence ending at index i
+    dp = arr[:]
+    
+    for i in range(1, n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                dp[i] = max(dp[i], dp[j] * arr[i])
+    
+    return max(dp)
+
+
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+print("Test passed!")
+```
+
+**Explanation:**
+
+- We use dynamic programming where `dp[i]` represents the maximum product of an increasing subsequence ending at index `i`.
+- Initialize `dp[i] = arr[i]` (a subsequence of just that element).
+- For each `i`, check all previous `j < i`. If `arr[j] < arr[i]`, we can extend the increasing subsequence ending at `j` by appending `arr[i]`, giving product `dp[j] * arr[i]`.
+- Take the maximum over all such extensions.
+- The answer is the maximum value in `dp`.
+
+For the test case `[3, 100, 4, 5, 150, 6]`:
+- The increasing subsequence `[3, 4, 5, 150]` gives product `3 × 4 × 5 × 150 = 9000`... wait, let's verify: `3 × 4 = 12`, `12 × 5 = 60`, `60 × 150 = 9000`. Hmm, but the expected answer is 3000.
+
+Let me re-check: `[3, 4, 5, 150]` — is this increasing? Yes: 3 < 4 < 5 < 150. Product = 9000. But the assertion says 3000.
+
+Wait — `[3, 100, 4, 5, 150, 6]` — the subsequence `[3, 4, 5, 150]` is valid and gives 9000, which is greater than 3000. So the assertion in the problem seems incorrect, OR the intended interpretation is different.
+
+Let me reconsider: perhaps the problem means a **contiguous** increasing subsequence? `[3, 100]` → 300, `[4, 5, 150]` → 3000, `[4, 5, 150]` = 4×5×150 = 3000. Yes! That matches.
+
+So the problem likely means **contiguous** increasing subarray. Let me adjust:
+
+```python
+def max_product(arr):
+    """
+    Finds the maximum product formed by multiplying numbers of a contiguous
+    increasing subarray.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+    
+    max_prod = arr[0]
+    curr_prod = arr[0]
+    
+    for i in range(1, n):
+        if arr[i] > arr[i - 1]:
+            curr_prod *= arr[i]
+        else:
+            curr_prod = arr[i]
+        max_prod = max(max_prod, curr_prod)
+    
+    return max_prod
+
+
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+print("Test passed!")
+```
+
+**Explanation (contiguous version):**
+
+- Traverse the array, maintaining `curr_prod` — the product of the current contiguous increasing run.
+- If `arr[i] > arr[i-1]`, extend the run: `curr_prod *= arr[i]`.
+- Otherwise, start a new run: `curr_prod = arr[i]`.
+- Track the maximum `curr_prod` seen.
+
+For `[3, 100, 4, 5, 150, 6]`:
+- `3` → curr=3, max=3
+- `100 > 3` → curr=300, max=300
+- `4 < 100` → curr=4, max=300
+- `5 > 4` → curr=20, max=300
+- `150 > 5` → curr=3000, max=3000 ✓
+- `6 < 150` → curr=6, max=3000
+
+Result: **3000** ✓

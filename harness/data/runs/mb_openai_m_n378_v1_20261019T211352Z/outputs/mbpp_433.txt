@@ -1,0 +1,31 @@
+```python
+"""
+Write a function to check whether the entered number is greater than the elements
+of the given array.
+
+Example:
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+"""
+
+def check_greater(arr, num):
+    """
+    Return True if num is greater than every element in arr, otherwise False.
+
+    Args:
+        arr (list): A list of numbers.
+        num (int or float): The number to compare.
+
+    Returns:
+        bool: True if num > all elements in arr, False otherwise.
+    """
+    return all(num > element for element in arr)
+
+
+if __name__ == "__main__":
+    assert check_greater([1, 2, 3, 4, 5], 4) == False
+    assert check_greater([1, 2, 3], 4) == True
+    assert check_greater([10, 20, 30], 25) == False
+    assert check_greater([], 5) == True
+
+    print("All tests passed.")
+```

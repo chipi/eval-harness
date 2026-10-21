@@ -1,0 +1,15 @@
+```python
+def armstrong_number(n):
+    digits = str(n)
+    power = len(digits)
+    total = sum(int(d) ** power for d in digits)
+    return total == n
+
+
+assert armstrong_number(153) == True
+
+if __name__ == "__main__":
+    print(armstrong_number(153))
+    print(armstrong_number(100))
+    print(armstrong_number(9474))
+```

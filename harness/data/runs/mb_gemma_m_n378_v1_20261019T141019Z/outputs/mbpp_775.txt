@@ -1,0 +1,29 @@
+```python
+def odd_position(lst):
+    """
+    Checks whether every odd index in the given list contains an odd number.
+    
+    Args:
+        lst (list): A list of integers.
+        
+    Returns:
+        bool: True if all elements at odd indices are odd, False otherwise.
+    """
+    # Iterate through the list starting from index 1, stepping by 2
+    for i in range(1, len(lst), 2):
+        # Check if the number at the odd index is even
+        if lst[i] % 2 == 0:
+            return False
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) == True
+    assert odd_position([2, 2, 4, 3, 6, 7, 6, 3]) == False
+    assert odd_position([1, 3, 5, 7]) == True
+    assert odd_position([1, 2, 5, 7]) == False
+    assert odd_position([10, 11]) == True
+    assert odd_position([10]) == True  # No odd indices exist, vacuously true
+    
+    print("All tests passed!")
+```

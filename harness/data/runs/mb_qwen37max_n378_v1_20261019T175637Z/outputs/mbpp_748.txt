@@ -1,0 +1,26 @@
+```python
+def capital_words_spaces(text):
+    """
+    Put spaces between words starting with capital letters in a given string.
+    
+    For example, "HelloWorld" becomes "Hello World", but "Python" stays "Python"
+    since there's only one capitalized word.
+    """
+    if not text:
+        return text
+    
+    result = []
+    for i, char in enumerate(text):
+        if i > 0 and char.isupper():
+            result.append(' ')
+        result.append(char)
+    
+    return ''.join(result)
+
+
+# Test
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("HelloWorld") == 'Hello World'
+assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+print("All tests passed!")
+```

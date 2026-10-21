@@ -1,0 +1,31 @@
+```python
+def remove_length(s, k):
+    """
+    Removes all words of length k from the given string s.
+    
+    Args:
+        s (str): The input string.
+        k (int): The length of words to be removed.
+        
+    Returns:
+        str: A string containing only the words that do not have length k.
+    """
+    # Split the string into a list of words based on whitespace
+    words = s.split()
+    
+    # Filter the list to keep only words whose length is not equal to k
+    filtered_words = [word for word in words if len(word) != k]
+    
+    # Join the remaining words back into a single string separated by spaces
+    return " ".join(filtered_words)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Note: In the prompt's assert, 'is' (length 2) and 'most' (length 4) are kept, 
+    # while 'The' (3) and 'tet' (3) are removed.
+    result = remove_length('The person is most value tet', 3)
+    print(f"Result: '{result}'")
+    
+    assert result == 'person is most value'
+    print("Assertion passed!")
+```

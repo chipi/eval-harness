@@ -1,0 +1,20 @@
+```python
+def dif_Square(n):
+    """
+    Checks whether the given number can be represented as the difference of two squares or not.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number can be represented as the difference of two squares, False otherwise.
+    """
+    # A number can be represented as the difference of two squares if and only if it is odd or a multiple of 4
+    return n % 2 != 0 or n % 4 == 0
+
+# Test the function
+assert dif_Square(5)
+assert not dif_Square(6)
+assert dif_Square(4)
+assert dif_Square(9)
+```

@@ -1,0 +1,17 @@
+```python
+def mul_even_odd(lst):
+    """
+    Write a function to find the product of first even and odd number of a given list.
+    assert mul_even_odd([1,3,5,7,4,1,6,8])==4
+    """
+    first_even = None
+    first_odd = None
+    for num in lst:
+        if num % 2 == 0 and first_even is None:
+            first_even = num
+        elif num % 2 != 0 and first_odd is None:
+            first_odd = num
+        if first_even is not None and first_odd is not None:
+            return first_even * first_odd
+    return None
+```

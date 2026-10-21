@@ -1,0 +1,74 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Find the count of all binary sequences of length 2n such that 
+    sum of first n bits is same as sum of last n bits.
+    
+    For a sequence of length 2n to have equal sums in both halves,
+    each half must have the same number of 1s.
+    
+    If each half has k ones (where 0 <= k <= n), then:
+    - Number of ways to choose k positions out of n for first half: C(n, k)
+    - Number of ways to choose k positions out of n for second half: C(n, k)
+    - Total for this k: C(n, k) * C(n, k) = C(n, k)^2
+    
+    Total count = sum of C(n, k)^2 for k = 0 to n
+    
+    This equals C(2n, n) by Vandermonde's identity.
+    """
+    # Calculate C(2n, n) using the formula: C(2n, n) = (2n)! / (n! * n!)
+    result = math.comb(2 * n, n)
+    return float(result)
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test with n=1
+    result = count_binary_seq(1)
+    print(f"count_binary_seq(1) = {result}")
+    assert math.isclose(result, 2.0, rel_tol=0.001), f"Expected ~2.0, got {result}"
+    print("✓ Test passed for n=1")
+    
+    # Additional test cases
+    # For n=1: sequences are 00, 01, 10, 11
+    # Valid: 00 (0=0), 11 (1=1) -> count = 2
+    
+    # For n=2: length 4 sequences where first 2 bits sum = last 2 bits sum
+    # Valid sequences: 0000, 0011, 0101, 0110, 1001, 1010, 1100, 1111 -> count = 6
+    result = count_binary_seq(2)
+    print(f"count_binary_seq(2) = {result}")
+    assert math.isclose(result, 6.0, rel_tol=0.001), f"Expected ~6.0, got {result}"
+    print("✓ Test passed for n=2")
+    
+    # For n=3: C(6, 3) = 20
+    result = count_binary_seq(3)
+    print(f"count_binary_seq(3) = {result}")
+    assert math.isclose(result, 20.0, rel_tol=0.001), f"Expected ~20.0, got {result}"
+    print("✓ Test passed for n=3")
+    
+    print("\n✓ All tests passed!")
+```
+
+**Explanation:**
+
+The problem asks for binary sequences of length 2n where the sum of the first n bits equals the sum of the last n bits.
+
+**Key insight:** If both halves must have the same sum, they must have the same number of 1s. Let's say each half has exactly k ones (where 0 ≤ k ≤ n).
+
+- Ways to arrange k ones in the first n positions: C(n, k)
+- Ways to arrange k ones in the last n positions: C(n, k)
+- Total arrangements with k ones in each half: C(n, k)²
+
+Summing over all possible values of k:
+```
+Total = Σ(k=0 to n) C(n, k)²
+```
+
+By **Vandermonde's identity**, this sum equals C(2n, n).
+
+**Verification:**
+- n=1: C(2,1) = 2 ✓ (sequences: 00, 11)
+- n=2: C(4,2) = 6 ✓ (sequences: 0000, 0011, 0101, 0110, 1001, 1010, 1100, 1111)
+- n=3: C(6,3) = 20 ✓

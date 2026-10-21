@@ -1,0 +1,44 @@
+Here's a self-contained Python script that finds the nth decagonal number:
+
+```python
+def is_num_decagonal(n):
+    """
+    Calculate the nth decagonal number.
+    
+    The formula for the nth decagonal number is:
+    D(n) = n * (4n - 3)
+    
+    Args:
+        n (int): The position of the decagonal number to find (1-indexed)
+    
+    Returns:
+        int: The nth decagonal number
+    """
+    return n * (4 * n - 3)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert is_num_decagonal(3) == 27
+    print("Test passed!")
+    
+    # Additional tests
+    print(f"1st decagonal number: {is_num_decagonal(1)}")  # 1
+    print(f"2nd decagonal number: {is_num_decagonal(2)}")  # 10
+    print(f"3rd decagonal number: {is_num_decagonal(3)}")  # 27
+    print(f"4th decagonal number: {is_num_decagonal(4)}")  # 52
+    print(f"5th decagonal number: {is_num_decagonal(5)}")  # 85
+```
+
+**Explanation:**
+
+A decagonal number is a figurate number that represents a decagon (10-sided polygon). The nth decagonal number can be calculated using the formula:
+
+**D(n) = n × (4n - 3)**
+
+This formula works because:
+- The first decagonal number is 1 (a single dot)
+- Each subsequent layer adds 8 more dots than the previous layer
+- The general formula simplifies to n(4n - 3)
+
+For n=3: 3 × (4×3 - 3) = 3 × (12 - 3) = 3 × 9 = 27 ✓

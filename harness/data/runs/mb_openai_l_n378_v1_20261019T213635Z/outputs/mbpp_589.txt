@@ -1,0 +1,18 @@
+```python
+from math import isqrt
+
+
+def perfect_squares(start, end):
+    """Return all perfect squares between start and end, inclusive."""
+    if start > end or end < 0:
+        return []
+
+    first = isqrt(max(start, 0))
+    if first * first < start:
+        first += 1
+
+    return [n * n for n in range(first, isqrt(end) + 1)]
+
+
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+```

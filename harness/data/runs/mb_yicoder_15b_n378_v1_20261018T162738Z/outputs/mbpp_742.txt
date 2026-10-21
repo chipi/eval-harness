@@ -1,0 +1,14 @@
+```python
+import math
+
+def area_tetrahedron(side_length):
+    """
+    Function to calculate the area of a tetrahedron.
+    """
+    return (math.sqrt(3) * (side_length ** 2))
+
+# Test cases
+assert area_tetrahedron(3)==15.588457268119894
+assert area_tetrahedron(4)==50.26544376903019
+assert area_tetrahedron(5)==94.23935203923028
+```

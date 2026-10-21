@@ -1,0 +1,17 @@
+```python
+def count_char_position(s):
+    alphabet = 'abcdefghijklmnopqrstuvwxyz'
+    count = 0
+    for i in range(len(s)):
+        if s[i].lower() == alphabet[i]:
+            count += 1
+    return count
+
+# Test cases
+assert count_char_position("xbcefg") == 2
+assert count_char_position("abcdefghijklmnopqrstuvwxyz") == 26
+assert count_char_position("") == 0
+assert count_char_position("a") == 1
+assert count_char_position("abc") == 2
+assert count_char_position("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz") == 50
+```

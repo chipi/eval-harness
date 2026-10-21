@@ -1,0 +1,32 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def wind_chill(velocity, temperature):
+    """
+    Calculate the wind chill index rounded to the next integer
+    given the wind velocity in km/h and temperature in Celsius.
+    
+    Args:
+        velocity: Wind velocity in km/h
+        temperature: Temperature in Celsius
+    
+    Returns:
+        Wind chill index rounded up to the next integer
+    """
+    # Wind chill formula (for Celsius and km/h)
+    wind_chill_index = (
+        13.12
+        + 0.6215 * temperature
+        - 11.37 * (velocity ** 0.16)
+        + 0.3965 * temperature * (velocity ** 0.16)
+    )
+    
+    # Round to the next integer (ceiling)
+    return math.ceil(wind_chill_index)
+
+# Test the function
+assert wind_chill(120, 35) == 40
+print("Test passed!")
+```

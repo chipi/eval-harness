@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion:
+
+```python
+"""
+Function to check whether an element exists within a tuple.
+"""
+
+def check_tuplex(t, element):
+    """
+    Check if an element exists in a tuple.
+
+    Parameters:
+    t (tuple): The tuple to search in.
+    element: The element to search for.
+
+    Returns:
+    bool: True if the element is found, False otherwise.
+    """
+    return element in t
+
+# Test the function with the provided assertion
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 'r') == True
+
+# Optional: Print a success message if the assertion passes
+print("Assertion passed! The element exists in the tuple.")
+```
+
+This script defines the `check_tuplex` function which checks if an element exists in a given tuple using the `in` operator. The assertion verifies that the function works as expected. If the assertion passes, it will print a success message. If the assertion fails, it will raise an `AssertionError`.

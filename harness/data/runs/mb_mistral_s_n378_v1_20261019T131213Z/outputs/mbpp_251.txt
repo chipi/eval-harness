@@ -1,0 +1,16 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def insert_element(lst, element):
+    result = []
+    for item in lst:
+        result.append(element)
+        result.append(item)
+    return result
+
+# Test the function
+assert insert_element(['Red', 'Green', 'Black'], 'c') == ['c', 'Red', 'c', 'Green', 'c', 'Black']
+print("Test passed!")
+```
+
+This script defines a function `insert_element` that takes a list and an element, then inserts the element before each element in the list. The function works by iterating through the original list and building a new list where the element is inserted before each original element. The test case verifies that the function works as expected.

@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def lateralsurface_cone(r, h):
+    """
+    Calculate the lateral surface area of a cone.
+    
+    Parameters:
+    r (float): radius of the cone's base
+    h (float): height of the cone
+    
+    Returns:
+    float: lateral surface area of the cone
+    """
+    # Slant height using Pythagorean theorem
+    slant_height = math.sqrt(r**2 + h**2)
+    # Lateral surface area = π * r * l
+    return math.pi * r * slant_height
+
+# Test the function
+assert lateralsurface_cone(5, 12) == 204.20352248333654
+print("Test passed!")
+print(f"Lateral surface area of cone with r=5, h=12: {lateralsurface_cone(5, 12)}")
+```
+
+**Explanation:**
+
+The lateral surface area of a cone is calculated using the formula:
+
+$$LSA = \pi \cdot r \cdot l$$
+
+where:
+- `r` is the radius of the base
+- `l` is the slant height, computed as $l = \sqrt{r^2 + h^2}$ (using the Pythagorean theorem, since the radius, height, and slant height form a right triangle)
+
+For `r = 5` and `h = 12`:
+- Slant height: $l = \sqrt{25 + 144} = \sqrt{169} = 13$
+- LSA: $\pi \cdot 5 \cdot 13 = 65\pi \approx 204.20352248333654$ ✓

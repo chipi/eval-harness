@@ -1,0 +1,28 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function which takes two tuples of the same length and performs the
+element-wise modulo.
+
+Example:
+    tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+"""
+
+def tuple_modulo(tuple1, tuple2):
+    """
+    Return a tuple containing the element-wise modulo of tuple1 by tuple2.
+
+    Args:
+        tuple1 (tuple): The dividend values.
+        tuple2 (tuple): The divisor values.
+
+    Returns:
+        tuple: Element-wise modulo results.
+    """
+    return tuple(a % b for a, b in zip(tuple1, tuple2))
+
+
+if __name__ == "__main__":
+    assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+    print("All tests passed.")
+```

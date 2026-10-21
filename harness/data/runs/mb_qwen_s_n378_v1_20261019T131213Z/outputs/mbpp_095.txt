@@ -1,0 +1,15 @@
+```python
+def Find_Min_Length(list_of_lists):
+    """
+    Find the length of the smallest list in a list of lists.
+    
+    Args:
+        list_of_lists: A list containing sublists.
+        
+    Returns:
+        The minimum length among all sublists.
+    """
+    if not list_of_lists:
+        return 0
+    return min(len(sublist) for sublist in list_of_lists)
+```

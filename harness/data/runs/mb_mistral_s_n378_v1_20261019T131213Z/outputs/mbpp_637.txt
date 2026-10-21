@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to check whether the given amount has no profit and no loss
+assert noprofit_noloss(1500, 1200) == False
+"""
+
+def noprofit_noloss(cost_price, selling_price):
+    """
+    Check if there is no profit and no loss in a transaction.
+
+    Args:
+        cost_price (float): The cost price of the item
+        selling_price (float): The selling price of the item
+
+    Returns:
+        bool: True if there is no profit and no loss, False otherwise
+    """
+    return cost_price == selling_price
+
+# Test cases
+assert noprofit_noloss(1500, 1200) == False
+assert noprofit_noloss(1000, 1000) == True
+assert noprofit_noloss(500, 500) == True
+assert noprofit_noloss(2000, 2000) == True
+assert noprofit_noloss(1500, 1500) == True
+assert noprofit_noloss(1200, 1500) == False
+assert noprofit_noloss(1000, 1200) == False
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `noprofit_noloss` that takes cost price and selling price as arguments
+2. Returns True if the cost price equals the selling price (no profit, no loss)
+3. Returns False otherwise
+4. Includes the required test case from the problem statement
+5. Adds additional test cases to verify the function works correctly
+6. Prints a success message if all test cases pass
+
+The function will return False for the given test case (1500, 1200) since 1500 ≠ 1200.

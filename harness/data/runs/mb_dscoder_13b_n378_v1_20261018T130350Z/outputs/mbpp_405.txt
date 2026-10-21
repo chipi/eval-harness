@@ -1,0 +1,9 @@
+```python
+def check_tuplex(tup, element):
+    return element in tup
+
+# Testing the function
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'r')==True
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'e')==True
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'a')==False
+```

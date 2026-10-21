@@ -1,0 +1,28 @@
+Here's a self-contained Python script that defines the `multiply_int` function and includes the assertion test:
+
+```python
+def multiply_int(a, b):
+    """
+    Multiply two integers and return the result.
+    
+    Args:
+        a (int): First integer.
+        b (int): Second integer.
+    
+    Returns:
+        int: The product of a and b.
+    """
+    return a * b
+
+# Test the function
+assert multiply_int(10, 20) == 200
+print("Test passed: multiply_int(10, 20) == 200")
+```
+
+This script:
+1. Defines the `multiply_int` function that takes two integers and returns their product
+2. Includes a docstring explaining the function's purpose and parameters
+3. Tests the function with the provided assertion
+4. Prints a success message if the test passes
+
+The script is self-contained and can be run directly without any external dependencies.

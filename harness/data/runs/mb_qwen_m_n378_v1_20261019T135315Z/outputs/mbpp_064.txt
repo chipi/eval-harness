@@ -1,0 +1,19 @@
+```python
+def subject_marks(marks: list[tuple[str, int]]) -> list[tuple[str, int]]:
+    """
+    Sort a list of tuples using the second value of each tuple.
+    
+    Args:
+        marks: A list of tuples where each tuple contains a subject name and a mark.
+        
+    Returns:
+        A new list of tuples sorted by the second element (mark) in ascending order.
+    """
+    return sorted(marks, key=lambda x: x[1])
+
+
+if __name__ == "__main__":
+    result = subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)])
+    assert result == [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+    print("All tests passed!")
+```

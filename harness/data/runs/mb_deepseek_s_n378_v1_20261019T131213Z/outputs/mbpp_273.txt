@@ -1,0 +1,29 @@
+```python
+def substract_elements(tuple1: tuple, tuple2: tuple) -> tuple:
+    """
+    Subtracts elements of the second tuple from the first tuple element-wise.
+    
+    Args:
+        tuple1: First tuple of numbers
+        tuple2: Second tuple of numbers
+    
+    Returns:
+        A tuple where each element is the difference of corresponding elements
+        from tuple1 and tuple2.
+    
+    Raises:
+        ValueError: If tuples have different lengths
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Both tuples must have the same length")
+    
+    return tuple(a - b for a, b in zip(tuple1, tuple2))
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = substract_elements((10, 4, 5), (2, 5, 18))
+    print(f"Result: {result}")
+    assert result == (8, -1, -13), f"Expected (8, -1, -13) but got {result}"
+    print("Assertion passed!")
+```

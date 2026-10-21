@@ -1,0 +1,26 @@
+```python
+def remove_length(s, k):
+    """
+    This function removes all the words with k length in the given string.
+
+    Args:
+        s (str): The input string.
+        k (int): The length of words to be removed.
+
+    Returns:
+        str: The string after removing all the words with k length.
+    """
+    # Split the string into words
+    words = s.split()
+    
+    # Filter out the words with k length
+    filtered_words = [word for word in words if len(word) != k]
+    
+    # Join the filtered words back into a string
+    result = ' '.join(filtered_words)
+    
+    return result
+
+# Test the function
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+```

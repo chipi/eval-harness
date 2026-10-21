@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to sort a list of tuples using the second value of each tuple.
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)])==[('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+"""
+
+def subject_marks(subject_marks_list):
+    """
+    Sorts a list of tuples based on the second element of each tuple.
+    
+    Args:
+        subject_marks_list (list): A list of tuples where each tuple contains
+                                   a subject name and a mark.
+    
+    Returns:
+        list: A new list of tuples sorted in ascending order by the second value.
+    """
+    return sorted(subject_marks_list, key=lambda x: x[1])
+
+
+# Test the function
+if __name__ == "__main__":
+    result = subject_marks([
+        ('English', 88),
+        ('Science', 90),
+        ('Maths', 97),
+        ('Social sciences', 82)
+    ])
+    expected = [
+        ('Social sciences', 82),
+        ('English', 88),
+        ('Science', 90),
+        ('Maths', 97)
+    ]
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print("Result:", result)
+```
+
+**Explanation:**
+
+1. **`sorted()` function**: Python's built-in `sorted()` returns a new sorted list without modifying the original.
+2. **`key=lambda x: x[1]`**: The `key` parameter specifies a function that extracts a comparison key from each element. Here, `x[1]` extracts the second value (the mark) from each tuple, so sorting is done based on marks.
+3. **Ascending order**: By default, `sorted()` sorts in ascending order, which matches the expected output.
+
+**Output:**
+```
+Test passed!
+Result: [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+```

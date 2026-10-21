@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem of finding the maximum product subarray in a given array:
+
+```python
+def max_subarray_product(nums):
+    if not nums:
+        return 0
+
+    max_product = current_max = current_min = nums[0]
+
+    for num in nums[1:]:
+        candidates = (num, current_max * num, current_min * num)
+        current_max = max(candidates)
+        current_min = min(candidates)
+        max_product = max(max_product, current_max)
+
+    return max_product
+
+# Test case
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+print("Test passed!")
+```
+
+### Explanation:
+1. **Initialization**: We start by checking if the input array is empty. If it is, we return 0. Otherwise, we initialize `max_product`, `current_max`, and `current_min` with the first element of the array.
+
+2. **Iteration**: For each subsequent number in the array, we consider three possible candidates for the current maximum product:
+   - The number itself (in case it's a positive number and the previous products were negative)
+   - The product of the current number with the previous `current_max`
+   - The product of the current number with the previous `current_min` (this is important because multiplying two negative numbers can yield a positive product)
+
+3. **Update**: We update `current_max` and `current_min` with the maximum and minimum of the three candidates, respectively. We also update `max_product` if the new `current_max` is greater than the previous `max_product`.
+
+4. **Result**: After processing all elements, `max_product` will hold the maximum product of any contiguous subarray.
+
+The test case provided in the problem statement is included to verify the correctness of the function. The function returns `112` for the input `[1, -2, -3, 0, 7, -8, -2]`, which is the product of the subarray `[-8, -2, 7]`.

@@ -1,0 +1,13 @@
+```python
+def sort_sublists(list_of_lists):
+    """
+    Sort each sublist of strings in a given list of lists.
+    
+    Args:
+        list_of_lists: A list of lists containing strings
+        
+    Returns:
+        A new list where each sublist is sorted alphabetically
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+```

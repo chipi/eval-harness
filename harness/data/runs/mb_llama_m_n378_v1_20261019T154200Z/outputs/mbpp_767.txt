@@ -1,0 +1,40 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Counts the number of pairs in the list whose sum is equal to the target sum.
+
+    Args:
+        numbers (list): A list of numbers.
+        target_sum (int): The target sum.
+
+    Returns:
+        int: The number of pairs whose sum is equal to the target sum.
+    """
+    count = 0
+    num_dict = {}
+    
+    # Create a dictionary to store the frequency of each number
+    for num in numbers:
+        if num in num_dict:
+            num_dict[num] += 1
+        else:
+            num_dict[num] = 1
+    
+    # Iterate over the dictionary to find pairs
+    for num in num_dict:
+        complement = target_sum - num
+        if complement in num_dict:
+            # If the complement is the same as the current number, 
+            # we need to calculate the number of combinations
+            if complement == num:
+                count += num_dict[num] * (num_dict[num] - 1) // 2
+            # If the complement is different from the current number, 
+            # we can simply multiply the frequencies
+            else:
+                count += num_dict[num] * num_dict[complement]
+    
+    return count
+
+# Test the function
+assert get_pairs_count([1,1,1,1], 2) == 6
+```

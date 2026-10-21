@@ -1,0 +1,23 @@
+```python
+def sumofFactors(n):
+    """
+    Return the sum of all even factors of n.
+
+    Example:
+        18 -> even factors are 2, 6, 18
+        sum = 26
+    """
+    if n == 0:
+        return 0  # optional edge case handling
+
+    total = 0
+    for i in range(1, abs(n) + 1):
+        if n % i == 0 and i % 2 == 0:
+            total += i
+    return total
+
+
+if __name__ == "__main__":
+    assert sumofFactors(18) == 26
+    print("All tests passed.")
+```

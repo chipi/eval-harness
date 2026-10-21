@@ -1,0 +1,63 @@
+```python
+def Diff(list1, list2):
+    """
+    This function returns the difference between two lists.
+    
+    Parameters:
+    list1 (list): The first list.
+    list2 (list): The second list.
+    
+    Returns:
+    list: A list containing elements that are in list1 but not in list2.
+    """
+    return [element for element in list1 if element not in list2]
+
+# Test the function
+assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+print("Test passed")
+```
+
+However, the above code will not run efficiently for large lists because the `in` operator in Python lists has a time complexity of O(n). 
+
+A more efficient solution would be to use Python's built-in set data structure, which has an average time complexity of O(1) for the `in` operator.
+
+```python
+def Diff(list1, list2):
+    """
+    This function returns the difference between two lists.
+    
+    Parameters:
+    list1 (list): The first list.
+    list2 (list): The second list.
+    
+    Returns:
+    list: A list containing elements that are in list1 but not in list2.
+    """
+    set2 = set(list2)
+    return [element for element in list1 if element not in set2]
+
+# Test the function
+assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+print("Test passed")
+```
+
+Alternatively, you can use set's `difference` method:
+
+```python
+def Diff(list1, list2):
+    """
+    This function returns the difference between two lists.
+    
+    Parameters:
+    list1 (list): The first list.
+    list2 (list): The second list.
+    
+    Returns:
+    list: A list containing elements that are in list1 but not in list2.
+    """
+    return list(set(list1) - set(list2))
+
+# Test the function
+assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+print("Test passed")
+```

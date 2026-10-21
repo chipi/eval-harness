@@ -1,0 +1,46 @@
+Looking at this problem, I need to multiply all numbers in a list (or tuple) and then divide the product by the length of the collection.
+
+Let me verify with the example: `8 × 2 × 3 × (-1) × 7 = -336`, and `-336 / 5 = -67.2` ✓
+
+```python
+"""
+Write a function to multiply all the numbers in a list and divide with the length of the list.
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+"""
+
+import math
+
+
+def multiply_num(numbers):
+    """
+    Multiply all the numbers in the given list/tuple and divide the
+    resulting product by the number of elements.
+
+    :param numbers: a list or tuple of numbers
+    :return: product of all numbers divided by the count of numbers
+    """
+    product = 1
+    for n in numbers:
+        product *= n
+    return product / len(numbers)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+
+    # A few extra sanity checks
+    assert math.isclose(multiply_num((-10, -20, -30)), -2000.0, rel_tol=0.001)
+    assert math.isclose(multiply_num((19, 15, 18)), 1710.0, rel_tol=0.001)
+    assert math.isclose(multiply_num([1, 2, 3, 4]), 6.0, rel_tol=0.001)
+
+    print("All tests passed!")
+    print("multiply_num((8, 2, 3, -1, 7)) =", multiply_num((8, 2, 3, -1, 7)))
+```
+
+**How it works:**
+1. Initialize `product` to `1` (the multiplicative identity).
+2. Loop through each element, multiplying it into `product`.
+3. Divide the final `product` by `len(numbers)` and return the float result.
+
+*Note:* You could also use `math.prod(numbers) / len(numbers)` (Python 3.8+) or `functools.reduce(lambda x, y: x * y, numbers) / len(numbers)` for a more concise solution.

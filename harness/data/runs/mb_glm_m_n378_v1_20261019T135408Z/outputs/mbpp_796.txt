@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of finding the sum of all items in a given dictionary:
+
+```python
+def return_sum(dictionary):
+    """
+    Returns the sum of all values in the given dictionary.
+    
+    Args:
+        dictionary (dict): A dictionary with numeric values.
+        
+    Returns:
+        int or float: The sum of all values in the dictionary.
+    """
+    return sum(dictionary.values())
+
+# Test cases
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+assert return_sum({'x': 1, 'y': 2, 'z': 3}) == 6
+assert return_sum({'a': -1, 'b': 1, 'c': 0}) == 0
+assert return_sum({}) == 0
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `return_sum` takes a dictionary as input.
+2. It uses the `sum()` function to calculate the sum of all values in the dictionary. The `dictionary.values()` method returns a view object that displays a list of all the values in the dictionary.
+3. The function returns the computed sum.
+4. The script includes several test cases to verify the correctness of the function, including the one provided in the problem statement. If all assertions pass, it prints a success message.

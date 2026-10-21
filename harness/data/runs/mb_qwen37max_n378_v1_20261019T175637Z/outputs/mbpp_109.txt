@@ -1,0 +1,45 @@
+```python
+def odd_Equivalent(binary_string, rotations):
+    """
+    Find the number of rotations (out of the given number of rotations) 
+    that result in a binary string representing an odd number.
+    
+    A binary number is odd if and only if its last bit is '1'.
+    When we rotate left by k positions, the character at index k 
+    (mod length) becomes the last character.
+    """
+    n = len(binary_string)
+    count = 0
+    for i in range(rotations):
+        # After rotating left by i positions, the last character
+        # is the character originally at index i % n
+        # Actually, let's think about this more carefully:
+        # Rotation left by 1: "011001" -> "110010"
+        # The last char after rotating left by k is binary_string[k % n]... 
+        # Wait, let me verify:
+        # Original: 0 1 1 0 0 1 (indices 0-5)
+        # Rotate left 1: 1 1 0 0 1 0 -> last char is '0' which is original[1]? No, original[1]='1'
+        # Actually rotate left by 1 moves first char to end: "011001" -> "110010"
+        # Last char is '0', which was originally at index 0. So after rotating left by k,
+        # the last character is binary_string[(k) % n]... no wait.
+        # Rotate left by 1: new[i] = old[(i+1) % n], so new[n-1] = old[0]. Yes!
+        # So after rotating left by k, last char = binary_string[k % n]
+        
+        # Hmm but let me recheck with the example:
+        # "011001", 6 rotations
+        # k=0: last char = s[0] = '0' -> even
+        # k=1: last char = s[1] = '1' -> odd
+        # k=2: last char = s[2] = '1' -> odd  
+        # k=3: last char = s[3] = '0' -> even
+        # k=4: last char = s[4] = '0' -> even
+        # k=5: last char = s[5] = '1' -> odd
+        # Count = 3 ✓ matches expected output
+        
+        if binary_string[i % n] == '1':
+            count += 1
+    return count
+
+
+# Test
+assert odd_Equivalent("011001", 6) == 3
+```

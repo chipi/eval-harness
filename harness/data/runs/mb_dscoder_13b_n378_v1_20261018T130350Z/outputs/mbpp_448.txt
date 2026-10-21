@@ -1,0 +1,13 @@
+```python
+def cal_sum(n):
+    """
+    Write a function to calculate the sum of perrin numbers.
+    """
+    if n == 0:
+        return 0
+    else:
+        return n + cal_sum(n-1)
+
+# Test cases
+assert cal_sum(9) == 49
+```

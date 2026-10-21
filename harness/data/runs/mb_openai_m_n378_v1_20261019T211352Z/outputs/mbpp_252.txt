@@ -1,0 +1,23 @@
+```python
+import cmath
+
+def convert(z):
+    """
+    Convert a real or complex number to polar coordinates.
+
+    Returns:
+        A tuple (r, theta), where:
+        - r is the magnitude
+        - theta is the angle in radians
+    """
+    r, theta = cmath.polar(z)
+    return (float(r), float(theta))
+
+
+if __name__ == "__main__":
+    assert convert(1) == (1.0, 0.0)
+    assert convert(1 + 1j) == (2 ** 0.5, 0.7853981633974483)
+    assert convert(-1) == (1.0, 3.141592653589793)
+
+    print("All tests passed.")
+```

@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem of finding the sum of even-indexed binomial coefficients for a given positive integer `n`:
+
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Calculate the sum of even-indexed binomial coefficients for a given positive integer n.
+
+    The binomial coefficients are the coefficients in the expansion of (1 + 1)^n = 2^n.
+    The even-indexed coefficients are those where the index is even (0, 2, 4, ...).
+
+    Args:
+        n (int): A positive integer.
+
+    Returns:
+        int: The sum of even-indexed binomial coefficients.
+
+    Examples:
+        >>> even_binomial_Coeff_Sum(4)
+        8
+    """
+    if n < 0:
+        raise ValueError("n must be a positive integer")
+    return 2 ** (n - 1) if n > 0 else 0
+
+# Test the function
+assert even_binomial_Coeff_Sum(4) == 8
+print("Test passed!")
+```
+
+### Explanation:
+1. **Mathematical Insight**: The sum of all binomial coefficients for a given `n` is `2^n`. The sum of even-indexed binomial coefficients is `2^(n-1)`, and the sum of odd-indexed binomial coefficients is also `2^(n-1)`. This is because the binomial coefficients are symmetric and the sum of even and odd terms each make up half of the total sum.
+
+2. **Function Implementation**: The function `even_binomial_Coeff_Sum` leverages this insight to return `2^(n-1)` for any positive integer `n`. This is efficient and avoids the need to compute each binomial coefficient individually.
+
+3. **Edge Case Handling**: The function includes a check to ensure `n` is a positive integer, raising a `ValueError` otherwise.
+
+4. **Test Case**: The provided test case `assert even_binomial_Coeff_Sum(4) == 8` verifies that the function works as expected. For `n = 4`, the even-indexed binomial coefficients are `C(4,0) = 1`, `C(4,2) = 6`, and `C(4,4) = 1`, summing to `1 + 6 + 1 = 8`, which matches `2^(4-1) = 8`.

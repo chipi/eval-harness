@@ -1,0 +1,55 @@
+```python
+def pancake_sort(arr: list) -> list:
+    """
+    Sort a list using the pancake sort algorithm.
+    
+    Pancake sorting is a sorting algorithm in which the only allowed operation 
+    is to reverse the elements of some prefix of the sequence.
+    
+    Args:
+        arr: A list of comparable elements to be sorted.
+        
+    Returns:
+        The sorted list in ascending order.
+    """
+    if not arr or len(arr) <= 1:
+        return arr[:]
+    
+    # Work on a copy to avoid modifying the original
+    result = arr[:]
+    n = len(result)
+    
+    # Start from the end of the array and work backwards
+    for curr_size in range(n, 1, -1):
+        # Find the index of the maximum element in result[0..curr_size-1]
+        max_idx = 0
+        for i in range(1, curr_size):
+            if result[i] > result[max_idx]:
+                max_idx = i
+        
+        # If the maximum element is not already at the end
+        if max_idx != curr_size - 1:
+            # Flip the maximum element to the front (if not already there)
+            if max_idx != 0:
+                result[:max_idx + 1] = result[:max_idx + 1][::-1]
+            
+            # Flip the maximum element to its correct position at the end
+            result[:curr_size] = result[:curr_size][::-1]
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+    
+    # Additional test cases
+    assert pancake_sort([]) == []
+    assert pancake_sort([1]) == [1]
+    assert pancake_sort([3, 2, 1]) == [1, 2, 3]
+    assert pancake_sort([1, 2, 3]) == [1, 2, 3]
+    assert pancake_sort([5, 5, 5]) == [5, 5, 5]
+    assert pancake_sort([10, -1, 3, 0, 7]) == [-1, 0, 3, 7, 10]
+    
+    print("All tests passed!")
+```

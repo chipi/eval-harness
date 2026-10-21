@@ -1,0 +1,42 @@
+```python
+"""
+Write a function to find minimum of three numbers.
+assert min_of_three(10,20,0)==0
+"""
+
+
+def min_of_three(a, b, c):
+    """
+    Return the smallest of the three given numbers.
+
+    Parameters
+    ----------
+    a, b, c : int or float
+        Numbers to compare.
+
+    Returns
+    -------
+    int or float
+        The minimum of the three numbers.
+    """
+    smallest = a
+    if b < smallest:
+        smallest = b
+    if c < smallest:
+        smallest = c
+    return smallest
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert min_of_three(10, 20, 0) == 0
+
+    # A few extra sanity checks
+    assert min_of_three(19, 15, 18) == 15
+    assert min_of_three(-10, -20, -30) == -30
+    assert min_of_three(5, 5, 5) == 5
+    assert min_of_three(2.5, 1.75, 3.0) == 1.75
+
+    print("All tests passed!")
+    print("min_of_three(10, 20, 0) =", min_of_three(10, 20, 0))
+```

@@ -1,0 +1,26 @@
+```python
+def find_remainder(arr, n):
+    """
+    Finds the product of the array multiplication modulo n.
+    
+    This function iterates through the array, multiplying the elements together
+    and taking the modulo n at each step to prevent integer overflow and 
+    improve performance for very large numbers.
+    
+    Args:
+        arr (list): A list of integers to be multiplied.
+        n (int): The modulo value.
+        
+    Returns:
+        int: The remainder of the product of the array elements divided by n.
+    """
+    product = 1
+    for num in arr:
+        product = (product * num) % n
+    return product
+
+if __name__ == "__main__":
+    # Test case provided in the problem description
+    assert find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+    print("Test passed successfully!")
+```

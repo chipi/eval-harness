@@ -1,0 +1,17 @@
+```python
+def reverse_string_list(string_list):
+    """
+    Reverse each string in a given list of string values.
+    
+    Args:
+        string_list: A list of strings to be reversed individually.
+        
+    Returns:
+        A new list with each string reversed.
+    """
+    return [s[::-1] for s in string_list]
+
+
+# Test the function
+assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black']) == ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+```

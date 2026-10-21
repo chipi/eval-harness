@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem of calculating the surface area of a cube:
+
+```python
+def surfacearea_cube(size):
+    """
+    Calculate the surface area of a cube with the given side length.
+
+    Args:
+        size (int or float): The length of one side of the cube.
+
+    Returns:
+        int or float: The surface area of the cube.
+
+    Example:
+        >>> surfacearea_cube(5)
+        150
+    """
+    return 6 * size ** 2
+
+# Test the function
+assert surfacearea_cube(5) == 150
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `surfacearea_cube` that takes a size parameter
+2. Calculates the surface area using the formula 6 × (side length)²
+3. Includes a docstring with documentation and an example
+4. Contains an assertion to verify the function works correctly
+5. Prints a success message if the test passes
+
+The formula works because a cube has 6 identical square faces, and the area of one face is the side length squared.

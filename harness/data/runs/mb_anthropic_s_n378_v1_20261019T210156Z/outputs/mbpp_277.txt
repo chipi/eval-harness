@@ -1,0 +1,22 @@
+```python
+def dict_filter(dictionary, n):
+    """
+    Filters a dictionary to only include entries with values >= n.
+    
+    Args:
+        dictionary: A dictionary with any keys and numeric values
+        n: An integer threshold value
+        
+    Returns:
+        A new dictionary containing only entries with values >= n
+    """
+    return {key: value for key, value in dictionary.items() if value >= n}
+
+
+# Test case
+assert dict_filter({'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}, 170) == {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Pierre Cox': 190}
+
+print("All tests passed!")
+```
+
+The solution uses a dictionary comprehension to filter the input dictionary. It iterates through each key-value pair and only includes those where the value is greater than or equal to `n`. In the test case, it filters out 'Kierra Gentry' with value 165 since 165 < 170, while keeping the other three entries that meet the threshold.

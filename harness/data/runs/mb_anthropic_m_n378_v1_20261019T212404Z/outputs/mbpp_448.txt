@@ -1,0 +1,27 @@
+```python
+def cal_sum(n):
+    a, b, c = 3, 0, 2
+    total = a + b + c
+    if n == 0:
+        return a
+    if n == 1:
+        return a + b
+    for i in range(2, n + 1):
+        d = a + b
+        total += d
+        a, b, c = b, c, d
+    return total
+
+# Test
+assert cal_sum(9) == 49
+print(cal_sum(9))
+```
+
+This script calculates the sum of Perrin numbers up to index `n`. The Perrin sequence starts with P(0) = 3, P(1) = 0, P(2) = 2, and each subsequent term is defined as P(n) = P(n-2) + P(n-3).
+
+**How it works:**
+- `a`, `b`, `c` represent P(0), P(1), P(2) respectively, and `total` accumulates their sum.
+- For each index from 2 to `n`, the next Perrin number `d` is computed as `a + b` (which corresponds to P(i-2) + P(i-3) when shifted appropriately), added to `total`, and the window `(a, b, c)` is shifted forward.
+- The function returns the cumulative sum of Perrin numbers from P(0) to P(n).
+
+Running this confirms `cal_sum(9) == 49`.

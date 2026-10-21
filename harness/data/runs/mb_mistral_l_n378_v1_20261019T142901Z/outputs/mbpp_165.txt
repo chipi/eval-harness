@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+"""
+Function to count the number of characters in a string that occur at the same position
+as their position in the English alphabet (case insensitive).
+
+The English alphabet positions are:
+a/A = 1, b/B = 2, ..., z/Z = 26
+"""
+
+def count_char_position(s):
+    count = 0
+    for index, char in enumerate(s.lower()):
+        # Calculate the 1-based position in the alphabet
+        alphabet_pos = ord(char) - ord('a') + 1
+        # Check if the character's position in the string (1-based) matches its alphabet position
+        if alphabet_pos == index + 1:
+            count += 1
+    return count
+
+# Test case
+assert count_char_position("xbcefg") == 2
+```
+
+Explanation:
+1. The function converts the input string to lowercase to handle case insensitivity.
+2. For each character in the string, it calculates its position in the English alphabet (a=1, b=2, ..., z=26).
+3. It checks if the character's position in the string (1-based index) matches its alphabet position.
+4. If they match, it increments the count.
+5. The test case `assert count_char_position("xbcefg") == 2` verifies that:
+   - 'b' is at position 2 in the string (1-based) and is the 2nd letter in the alphabet
+   - 'e' is at position 5 in the string and is the 5th letter in the alphabet
+   - The other characters don't match, so the total count is 2.

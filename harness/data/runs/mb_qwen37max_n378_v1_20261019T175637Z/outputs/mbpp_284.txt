@@ -1,0 +1,11 @@
+```python
+def check_element(lst, element):
+    """Check whether all items in the list are equal to the given element."""
+    return all(item == element for item in lst)
+
+
+# Test
+assert check_element(["green", "orange", "black", "white"], 'blue') == False
+assert check_element(["blue", "blue", "blue"], 'blue') == True
+assert check_element([], 'blue') == True  # vacuously true
+```

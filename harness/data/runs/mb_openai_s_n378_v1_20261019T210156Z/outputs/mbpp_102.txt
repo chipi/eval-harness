@@ -1,0 +1,15 @@
+```python
+def snake_to_camel(s: str) -> str:
+    """
+    Convert a snake_case string to CamelCase.
+    
+    Example:
+        'python_program' -> 'PythonProgram'
+    """
+    return ''.join(word.capitalize() for word in s.split('_'))
+
+
+if __name__ == "__main__":
+    assert snake_to_camel('python_program') == 'PythonProgram'
+    print("All tests passed.")
+```

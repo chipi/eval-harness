@@ -1,0 +1,40 @@
+```python
+"""
+Write a function to find the size in bytes of the given tuple.
+assert tuple_size(("A", 1, "B", 2, "C", 3) ) == sys.getsizeof(("A", 1, "B", 2, "C", 3))
+"""
+
+import sys
+
+
+def tuple_size(tuple_list):
+    """
+    Return the size in bytes of the given tuple.
+
+    Parameters
+    ----------
+    tuple_list : tuple
+        The tuple whose memory footprint is requested.
+
+    Returns
+    -------
+    int
+        The size in bytes as reported by sys.getsizeof.
+    """
+    return sys.getsizeof(tuple_list)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert tuple_size(("A", 1, "B", 2, "C", 3)) == sys.getsizeof(("A", 1, "B", 2, "C", 3))
+    assert tuple_size((1, "Raju", 2, "Nikhil", 3, "Deepanshu")) == sys.getsizeof(
+        (1, "Raju", 2, "Nikhil", 3, "Deepanshu")
+    )
+    assert tuple_size(((1, "Lion"), (2, "Tiger"), (3, "Fox"), (4, "Wolf"))) == sys.getsizeof(
+        ((1, "Lion"), (2, "Tiger"), (3, "Fox"), (4, "Wolf"))
+    )
+    assert tuple_size(()) == sys.getsizeof(())
+
+    print("All tests passed!")
+    print("Size of ('A', 1, 'B', 2, 'C', 3):", tuple_size(("A", 1, "B", 2, "C", 3)), "bytes")
+```

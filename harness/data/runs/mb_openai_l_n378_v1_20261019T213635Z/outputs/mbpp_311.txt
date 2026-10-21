@@ -1,0 +1,14 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """Set the leftmost zero bit within the width of a non-negative integer."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    for position in range(n.bit_length() - 1, -1, -1):
+        if not (n & (1 << position)):
+            return n | (1 << position)
+    return n  # All bits within n's width are already set.
+
+
+assert set_left_most_unset_bit(10) == 14  # 1010 -> 1110
+```

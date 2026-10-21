@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to check if a string represents an integer or not.
+assert check_integer("python")==False
+"""
+
+def check_integer(s):
+    """
+    Check if a string represents an integer.
+
+    Args:
+        s (str): The string to check.
+
+    Returns:
+        bool: True if the string represents an integer, False otherwise.
+    """
+    if not s:
+        return False
+
+    # Check for optional leading '+' or '-'
+    if s[0] in ('+', '-'):
+        s = s[1:]
+
+    if not s:
+        return False
+
+    # Check if all remaining characters are digits
+    return s.isdigit()
+
+# Test cases
+assert check_integer("python") == False
+assert check_integer("123") == True
+assert check_integer("-456") == True
+assert check_integer("+789") == True
+assert check_integer("") == False
+assert check_integer("12.34") == False
+assert check_integer(" 123") == False  # Note: leading space makes it invalid
+assert check_integer("123 ") == False  # Note: trailing space makes it invalid
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `check_integer` that checks if a string represents an integer
+2. Handles optional leading '+' or '-' signs
+3. Verifies that all remaining characters are digits
+4. Includes test cases that cover various scenarios (including the required assertion)
+5. Prints a success message if all tests pass
+
+The function returns False for strings that:
+- Are empty
+- Contain non-digit characters (except for an optional leading sign)
+- Have leading or trailing whitespace
+- Contain decimal points or other non-integer characters

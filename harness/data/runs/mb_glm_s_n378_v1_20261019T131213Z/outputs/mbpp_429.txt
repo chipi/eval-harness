@@ -1,0 +1,45 @@
+```python
+def and_tuples(tuple1, tuple2):
+    """
+    Extracts the elementwise AND of two tuples.
+
+    This function takes two tuples of integers and returns a new tuple where each element
+    is the result of a bitwise AND operation between the corresponding elements of the
+    input tuples.
+
+    Args:
+        tuple1: The first tuple of integers.
+        tuple2: The second tuple of integers.
+
+    Returns:
+        A new tuple containing the elementwise AND results.
+
+    Example:
+        >>> and_tuples((10, 4, 6, 9), (5, 2, 3, 3))
+        (0, 0, 2, 1)
+    """
+    # Use a generator expression with zip to pair elements from both tuples.
+    # For each pair (a, b), compute the bitwise AND (a & b).
+    # The generator expression is memory-efficient as it produces results one by one.
+    # Convert the generator to a tuple to match the expected return type.
+    return tuple(a & b for a, b in zip(tuple1, tuple2))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Define the input tuples
+    input_tuple1 = (10, 4, 6, 9)
+    input_tuple2 = (5, 2, 3, 3)
+
+    # Calculate the result using the function
+    result = and_tuples(input_tuple1, input_tuple2)
+
+    # Print the result for verification
+    print(f"Input Tuples: {input_tuple1}, {input_tuple2}")
+    print(f"Elementwise AND Result: {result}")
+
+    # Assert that the result matches the expected output
+    # This will raise an AssertionError if the result is not (0, 0, 2, 1)
+    assert result == (0, 0, 2, 1)
+
+    print("\nAssertion passed! The function works correctly.")
+```

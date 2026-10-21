@@ -1,0 +1,28 @@
+```python
+def max_aggregate(lst):
+    """
+    Calculate the maximum aggregate from a list of tuples.
+    
+    Args:
+        lst: A list of tuples where each tuple contains a name and a value.
+        
+    Returns:
+        A tuple containing the name with the highest aggregate sum and that sum.
+    """
+    aggregates = {}
+    for name, value in lst:
+        if name in aggregates:
+            aggregates[name] += value
+        else:
+            aggregates[name] = value
+    
+    # Find the name with the maximum aggregate
+    max_name = None
+    max_value = float('-inf')
+    for name, value in aggregates.items():
+        if value > max_value:
+            max_value = value
+            max_name = name
+    
+    return (max_name, max_value)
+```

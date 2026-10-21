@@ -1,0 +1,31 @@
+```python
+def even_bit_set_number(n):
+    """
+    Sets all even bits of a given number.
+    
+    Bits are typically indexed starting from 0 (Least Significant Bit).
+    Even bits correspond to positions 0, 2, 4, etc.
+    The mask for even bits is 0x55555555 (binary: 0101...0101).
+    
+    Args:
+        n (int): The input number.
+        
+    Returns:
+        int: The number with even bits set.
+    """
+    # Mask to set even bits (0, 2, 4...) for a 32-bit integer
+    # Binary representation: 01010101010101010101010101010101
+    mask = 0x55555555
+    
+    # Perform bitwise OR to set the bits
+    return n | mask
+
+# Test the function with the provided assertion
+assert even_bit_set_number(10) == 10
+
+# Additional tests to demonstrate functionality
+# 5 (101) | 5 (101) = 5
+assert even_bit_set_number(5) == 5
+# 2 (010) | 5 (101) = 7 (111)
+assert even_bit_set_number(2) == 7
+```

@@ -1,0 +1,27 @@
+```python
+def count_occurance(s: str) -> int:
+    """
+    Count the number of occurrences of the string 'std' in a given string.
+    
+    Args:
+        s: The input string to search in.
+        
+    Returns:
+        The number of non-overlapping occurrences of 'std' in the string.
+    """
+    return s.count('std')
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert count_occurance("letstdlenstdporstd") == 3
+    
+    # Additional test cases
+    assert count_occurance("") == 0
+    assert count_occurance("std") == 1
+    assert count_occurance("nostdhere") == 1
+    assert count_occurance("ststdstd") == 2
+    assert count_occurance("abc") == 0
+    
+    print("All tests passed!")
+```

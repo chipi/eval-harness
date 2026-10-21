@@ -1,0 +1,61 @@
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list of elements using the pancake sort algorithm and returns the sorted list.
+    
+    The algorithm works by repeatedly flipping the sublist containing the largest 
+    unsorted element to move it to its correct position.
+    
+    Args:
+        arr (list): A list of comparable elements (e.g., integers).
+        
+    Returns:
+        list: The sorted list.
+        
+    Example:
+        >>> pancake_sort([15, 79, 25, 38, 69])
+        [15, 25, 38, 69, 79]
+    """
+    # Create a copy to avoid modifying the original list in place
+    # (though pancake sort is typically an in-place algorithm)
+    a = arr[:]
+    n = len(a)
+    
+    # Helper function to perform the flip
+    def flip(sub_arr, k):
+        # Reverse the first k elements of the sub_arr
+        start = 0
+        end = k - 1
+        while start < end:
+            sub_arr[start], sub_arr[end] = sub_arr[end], sub_arr[start]
+            start += 1
+            end -= 1
+
+    # Iterate from the total length of the array down to 1
+    for curr_size in range(n, 0, -1):
+        # Find the index of the maximum element in the current unsorted sublist
+        # a[0:curr_size]
+        max_idx = 0
+        for i in range(curr_size):
+            if a[i] > a[max_idx]:
+                max_idx = i
+        
+        # If the maximum element is not already at the end of the current sublist,
+        # move it there using at most two flips.
+        if max_idx != curr_size - 1:
+            # Flip 1: Move the max element to the front (index 0)
+            # We only flip if it's not already at the front.
+            if max_idx > 0:
+                flip(a, max_idx + 1)
+            
+            # Flip 2: Move the max element from the front to its final position
+            # at the end of the current sublist (index curr_size - 1)
+            flip(a, curr_size)
+            
+    return a
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+    print("Assertion passed. The list is sorted correctly.")
+```

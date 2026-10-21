@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def min_of_three(a, b, c):
+    """
+    Find the minimum of three numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+        c: Third number
+    
+    Returns:
+        The smallest of the three numbers
+    """
+    if a <= b and a <= c:
+        return a
+    elif b <= a and b <= c:
+        return b
+    else:
+        return c
+
+# Test the function
+assert min_of_three(10, 20, 0) == 0
+print("Test passed! min_of_three(10, 20, 0) =", min_of_three(10, 20, 0))
+```
+
+Alternatively, here's a more concise version using Python's built-in `min()` function:
+
+```python
+def min_of_three(a, b, c):
+    """
+    Find the minimum of three numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+        c: Third number
+    
+    Returns:
+        The smallest of the three numbers
+    """
+    return min(a, b, c)
+
+# Test the function
+assert min_of_three(10, 20, 0) == 0
+print("Test passed! min_of_three(10, 20, 0) =", min_of_three(10, 20, 0))
+```
+
+Both implementations will pass the assertion test and correctly return `0` as the minimum of `10`, `20`, and `0`.

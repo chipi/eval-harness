@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion:
+
+```python
+def check(n: int) -> bool:
+    """
+    Check if a given number is one less than twice its reverse.
+
+    Args:
+        n: The number to check.
+
+    Returns:
+        bool: True if n is one less than twice its reverse, False otherwise.
+    """
+    reversed_n = int(str(n)[::-1])
+    return n == 2 * reversed_n - 1
+
+# Test case
+assert check(70) == False
+```
+
+### Explanation:
+1. The function `check` takes an integer `n` as input.
+2. It reverses the digits of `n` by converting it to a string, slicing it in reverse (`[::-1]`), and converting it back to an integer.
+3. It checks if `n` is equal to `2 * reversed_n - 1` (i.e., one less than twice its reverse).
+4. The assertion verifies that `check(70)` returns `False`, as required.
+
+You can test the function with other numbers as well, for example:
+```python
+print(check(35))  # True, because 2 * 53 - 1 = 106 - 1 = 105 != 35 (Wait, no, this is incorrect. Let me correct the example.)
+```
+Actually, let's find a correct example:
+- For `n = 35`, reversed is `53`. `2 * 53 - 1 = 105`, which is not equal to `35`, so `check(35)` returns `False`.
+- For `n = 73`, reversed is `37`. `2 * 37 - 1 = 73`, so `check(73)` returns `True`.
+
+Thus, the function works as expected.

@@ -1,0 +1,26 @@
+```python
+def Find_Max(lst):
+    """
+    This function finds the element of a list having maximum length.
+
+    Args:
+        lst (list): A list containing lists of elements.
+
+    Returns:
+        list: The sublist with the maximum length.
+
+    Raises:
+        ValueError: If the input list is empty.
+    """
+    if not lst:
+        raise ValueError("Input list is empty")
+
+    # Use the max function with key argument set to len to find the sublist with maximum length
+    return max(lst, key=len)
+
+
+# Test the function
+assert Find_Max([['A'],['A','B'],['A','B','C']]) == ['A','B','C']
+```
+
+You can run this script to test the `Find_Max` function. The function uses the built-in `max` function with the `key` argument set to `len` to find the sublist with the maximum length. If the input list is empty, it raises a `ValueError`. The test case at the end ensures that the function works as expected.

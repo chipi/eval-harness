@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division of two tuples.
+    
+    Args:
+        tuple1: The numerator tuple.
+        tuple2: The denominator tuple.
+    
+    Returns:
+        A tuple containing the element-wise division results.
+    """
+    return tuple(a // b for a, b in zip(tuple1, tuple2))
+
+
+# Test the function
+assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+print("Test passed!")
+```
+
+**Explanation:**
+
+- The function `division_elements` takes two tuples as arguments.
+- It uses `zip()` to pair up corresponding elements from both tuples.
+- A generator expression performs integer division (`//`) on each pair, which matches the expected output `(2, 2, 2, 3)` (since `10/5=2`, `4/2=2`, `6/3=2`, `9/3=3`).
+- The result is converted back to a tuple and returned.
+- The `assert` statement verifies the function works as expected.
+
+If you'd prefer true floating-point division, you can replace `//` with `/`, but the expected output in the problem uses integer results, so `//` is the correct choice here.

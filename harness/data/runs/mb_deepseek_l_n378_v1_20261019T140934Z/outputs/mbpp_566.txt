@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_digits(n):
+    """
+    Calculate the sum of digits of a non-negative integer.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The sum of all digits in the integer
+    """
+    # Convert to string to iterate through digits
+    digit_sum = 0
+    for digit in str(n):
+        digit_sum += int(digit)
+    return digit_sum
+
+# Test the function
+if __name__ == "__main__":
+    assert sum_digits(345) == 12
+    assert sum_digits(0) == 0
+    assert sum_digits(12345) == 15
+    assert sum_digits(999) == 27
+    print("All tests passed!")
+```
+
+This solution:
+1. Converts the integer to a string to easily iterate through each digit
+2. Converts each character back to an integer and adds it to the running sum
+3. Returns the total sum of all digits
+4. Includes the required assertion test and additional test cases to verify correctness

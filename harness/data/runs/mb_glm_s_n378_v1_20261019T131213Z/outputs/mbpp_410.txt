@@ -1,0 +1,49 @@
+```python
+def min_val(lst):
+    """
+    Finds the minimum value in a given heterogeneous list.
+
+    This function iterates through the list, filtering out non-numeric elements,
+    and then finds the minimum value among the remaining numbers.
+
+    Args:
+        lst: A list that can contain a mix of data types.
+
+    Returns:
+        The minimum numeric value in the list. Returns None if the list
+        is empty or contains no numeric values.
+    """
+    # Use a generator expression to filter for integers and floats
+    # This is memory-efficient as it doesn't create an intermediate list.
+    numeric_values = (item for item in lst if isinstance(item, (int, float)))
+    
+    # The min() function will raise a ValueError if the iterable is empty.
+    # We can catch this to handle cases with no numbers gracefully.
+    try:
+        return min(numeric_values)
+    except ValueError:
+        # This occurs if the list is empty or contains no numbers.
+        return None
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    test_list = ['Python', 3, 2, 4, 5, 'version']
+    result = min_val(test_list)
+    print(f"The list is: {test_list}")
+    print(f"The minimum value is: {result}")
+    assert result == 2, f"Assertion failed: Expected 2, but got {result}"
+    print("Assertion passed!")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    # Test with only strings
+    print(f"min_val(['a', 'b', 'c']) -> {min_val(['a', 'b', 'c'])}")
+    # Test with only floats
+    print(f"min_val([1.5, 2.5, 0.5]) -> {min_val([1.5, 2.5, 0.5])}")
+    # Test with mixed types including a negative number
+    print(f"min_val(['x', -10, 5, 0, 'y']) -> {min_val(['x', -10, 5, 0, 'y'])}")
+    # Test with an empty list
+    print(f"min_val([]) -> {min_val([])}")
+    # Test with a list containing only non-numeric types
+    print(f"min_val(['hello', True, None]) -> {min_val(['hello', True, None])}")
+```

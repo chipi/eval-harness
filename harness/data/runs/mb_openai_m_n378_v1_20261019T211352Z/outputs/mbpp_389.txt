@@ -1,0 +1,44 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to find the n'th Lucas number.
+
+Lucas numbers are defined as:
+L(0) = 2
+L(1) = 1
+L(n) = L(n-1) + L(n-2) for n >= 2
+
+Example:
+assert find_lucas(9) == 76
+"""
+
+def find_lucas(n):
+    """
+    Return the n-th Lucas number.
+
+    Args:
+        n (int): The index of the Lucas number to find.
+
+    Returns:
+        int: The n-th Lucas number.
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    if n == 0:
+        return 2
+    if n == 1:
+        return 1
+
+    prev, curr = 2, 1
+
+    for _ in range(2, n + 1):
+        prev, curr = curr, prev + curr
+
+    return curr
+
+
+if __name__ == "__main__":
+    assert find_lucas(9) == 76
+    print("All tests passed.")
+```

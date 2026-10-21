@@ -1,0 +1,25 @@
+```python
+def rectangle_area(length, width):
+    """
+    Calculate the area of a rectangle.
+
+    Args:
+        length (int): The length of the rectangle.
+        width (int): The width of the rectangle.
+
+    Returns:
+        int: The area of the rectangle.
+    """
+    return length * width
+
+# Test the function
+assert rectangle_area(10, 20) == 200
+print("Test passed: rectangle_area(10, 20) == 200")
+
+# Example usage
+if __name__ == "__main__":
+    length = 5
+    width = 10
+    area = rectangle_area(length, width)
+    print(f"The area of the rectangle with length {length} and width {width} is {area}.")
+```

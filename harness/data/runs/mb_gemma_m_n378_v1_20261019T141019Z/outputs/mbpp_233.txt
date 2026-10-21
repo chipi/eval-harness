@@ -1,0 +1,28 @@
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculates the lateral surface area of a cylinder.
+    Formula: 2 * pi * radius * height
+    
+    Args:
+        radius (float): The radius of the cylinder base.
+        height (float): The height of the cylinder.
+        
+    Returns:
+        float: The lateral surface area.
+    """
+    return 2 * math.pi * radius * height
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = lateralsuface_cylinder(10, 5)
+    expected = 314.15000000000003
+    
+    assert math.isclose(result, expected, rel_tol=0.001)
+    
+    print(f"Radius: 10, Height: 5")
+    print(f"Calculated Lateral Surface Area: {result}")
+    print("Assertion passed successfully!")
+```

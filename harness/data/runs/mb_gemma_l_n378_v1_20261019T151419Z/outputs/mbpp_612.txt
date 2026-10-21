@@ -1,0 +1,21 @@
+```python
+def merge(data):
+    """
+    Takes a list of lists (each with two elements) and returns a list of two lists:
+    the first containing all first elements and the second containing all second elements.
+    """
+    # Use zip to transpose the list of lists, then convert the resulting tuples back to lists
+    return [list(item) for item in zip(*data)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = [['x', 'y'], ['a', 'b'], ['m', 'n']]
+    expected_output = [['x', 'a', 'm'], ['y', 'b', 'n']]
+    
+    result = merge(input_data)
+    print(f"Input: {input_data}")
+    print(f"Result: {result}")
+    
+    assert result == expected_output
+    print("Assertion passed!")
+```

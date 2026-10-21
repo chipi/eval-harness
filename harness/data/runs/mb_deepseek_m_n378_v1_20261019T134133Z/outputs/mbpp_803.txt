@@ -1,0 +1,69 @@
+Here's a self-contained Python script that checks whether a given number is a perfect square:
+
+```python
+"""
+Write a function to check whether the given number is a perfect square or not.
+https://www.geeksforgeeks.org/check-if-given-number-is-perfect-square-in-cpp/
+assert not is_perfect_square(10)
+"""
+
+
+def is_perfect_square(n):
+    """
+    Check whether the given number is a perfect square.
+
+    A perfect square is an integer that is the square of another integer.
+    For example, 1, 4, 9, 16, 25 are perfect squares.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if n is a perfect square, False otherwise.
+    """
+    # Negative numbers cannot be perfect squares
+    if n < 0:
+        return False
+
+    # 0 and 1 are perfect squares
+    if n == 0 or n == 1:
+        return True
+
+    # Use binary search to find the integer square root
+    low, high = 1, n // 2
+    while low <= high:
+        mid = (low + high) // 2
+        square = mid * mid
+        if square == n:
+            return True
+        elif square < n:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return False
+
+
+# Test cases
+if __name__ == "__main__":
+    assert not is_perfect_square(10)
+    assert is_perfect_square(0)
+    assert is_perfect_square(1)
+    assert is_perfect_square(4)
+    assert is_perfect_square(9)
+    assert is_perfect_square(16)
+    assert is_perfect_square(25)
+    assert is_perfect_square(100)
+    assert not is_perfect_square(2)
+    assert not is_perfect_square(3)
+    assert not is_perfect_square(15)
+    assert not is_perfect_square(-4)
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Negative check**: Negative numbers can never be perfect squares, so we return `False` immediately.
+2. **Trivial cases**: `0` and `1` are perfect squares (`0² = 0`, `1² = 1`).
+3. **Binary search**: We search for an integer `mid` in the range `[1, n//2]` such that `mid * mid == n`. This gives us **O(log n)** time complexity, which is much faster than a linear scan for large numbers.
+4. **Return value**: If we find such an integer, we return `True`; otherwise, after the search space is exhausted, we return `False`.

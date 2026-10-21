@@ -1,0 +1,36 @@
+```python
+def remove_length(string, k):
+    """
+    Removes all words from the given string that have a length equal to k.
+    
+    Args:
+        string (str): The input sentence.
+        k (int): The length of words to be removed.
+        
+    Returns:
+        str: The modified string with words of length k removed.
+    """
+    # Split the string into a list of words based on whitespace
+    words = string.split()
+    
+    # Use a list comprehension to keep only words whose length is not equal to k
+    filtered_words = [word for word in words if len(word)!= k]
+    
+    # Join the remaining words back into a single string separated by spaces
+    return " ".join(filtered_words)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = remove_length('The person is most value tet', 3)
+    print(f"Result: '{result}'")
+    
+    # Assertion to verify correctness
+    assert result == 'person is most value'
+    
+    # Additional test cases
+    assert remove_length('apple banana cherry', 5) == 'banana cherry'
+    assert remove_length('hello world', 5) == 'world'
+    assert remove_length('a b c d', 1) == ''
+    
+    print("All tests passed!")
+```

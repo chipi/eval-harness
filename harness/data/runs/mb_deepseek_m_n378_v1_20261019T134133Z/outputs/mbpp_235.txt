@@ -1,0 +1,172 @@
+Here's a self-contained Python script that solves the problem of setting all even bits of a given number:
+
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits (0-indexed from LSB) of a given number.
+    
+    Even bit positions: 0, 2, 4, 6, 8, ...
+    We create a mask with 1s at all even positions and OR it with n.
+    
+    For a 32-bit integer, the mask is 0x55555555 (binary: 0101...0101)
+    """
+    # Mask with 1s at even bit positions (0, 2, 4, ...)
+    mask = 0x55555555
+    return n | mask
+
+
+# Test cases
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    print("Test 1 passed: even_bit_set_number(10) == 10")
+    
+    # Additional tests
+    print(f"even_bit_set_number(0) = {even_bit_set_number(0)}")   # 0b01010101... = 1431655765
+    print(f"even_bit_set_number(1) = {even_bit_set_number(1)}")   # 1 | mask
+    print(f"even_bit_set_number(2) = {even_bit_set_number(2)}")   # 2 | mask
+    print(f"even_bit_set_number(10) = {even_bit_set_number(10)}") # 10 = 0b1010, already has even bits set
+    
+    # Verify 10 in binary: 1010 -> bits 1 and 3 are set (odd positions)
+    # Even positions (0, 2) are 0, so after setting: 1010 | 0101 = 1111 = 15? 
+    # Wait - let's check: 10 = 0b1010, mask = 0x55555555
+    # 10 | 0x55555555 = 0x5555555F which is not 10!
+    # The assertion says it should equal 10, so let's reconsider.
+```
+
+Wait, let me reconsider the problem. The assertion `even_bit_set_number(10) == 10` suggests that 10 already has all its even bits set, OR the function should only set even bits that are within the number's bit range.
+
+Let me analyze: 10 in binary is `1010`. Bits are indexed from LSB (position 0):
+- Position 0: 0 (even) - not set
+- Position 1: 1 (odd) - set
+- Position 2: 0 (even) - not set
+- Position 3: 1 (odd) - set
+
+If we set all even bits, position 0 and 2 should become 1, giving `1111` = 15, not 10.
+
+So the assertion `even_bit_set_number(10) == 10` implies a different interpretation. Perhaps the function should only set even bits up to the highest set bit of the number, and 10 already has... no, that still gives 15.
+
+Let me reconsider: maybe "even bits" means bits at even positions counting from 1 (1-indexed), i.e., positions 1, 3, 5... which are odd in 0-indexed. For 10 = `1010`, positions 1 and 3 (1-indexed even) are already set, so result is 10. That works!
+
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits (1-indexed from LSB) of a given number.
+    
+    1-indexed even positions: 2, 4, 6, ... 
+    In 0-indexed terms, these are positions 1, 3, 5, ...
+    
+    For a 32-bit integer, the mask is 0xAAAAAAAA (binary: 1010...1010)
+    """
+    # Mask with 1s at 1-indexed even positions (0-indexed odd positions)
+    mask = 0xAAAAAAAA
+    return n | mask
+
+
+# Test cases
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    print("Test passed: even_bit_set_number(10) == 10")
+    
+    # Additional verification
+    # 10 = 0b1010, mask = 0xAAAAAAAA
+    # 10 | 0xAAAAAAAA = 0xAAAAAAAA (since 10's set bits are already in mask)
+    print(f"even_bit_set_number(10) = {even_bit_set_number(10)}")
+    print(f"even_bit_set_number(0) = {even_bit_set_number(0)}")
+    print(f"even_bit_set_number(1) = {even_bit_set_number(1)}")
+    print(f"even_bit_set_number(5) = {even_bit_set_number(5)}")  # 5 = 0b101
+```
+
+Hmm, but `even_bit_set_number(0)` would give `0xAAAAAAAA` which is a huge number. That seems odd for "setting even bits" of 0.
+
+Let me reconsider once more. Perhaps the intended behavior is to set even bits only up to the bit length of the number:
+
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits (0-indexed from LSB) of a given number,
+    but only up to the highest set bit of n.
+    
+    For n=10 (0b1010), highest bit is at position 3.
+    Even positions within range: 0, 2
+    Setting those: 1010 | 0101 = 1111 = 15. Still not 10.
+    """
+```
+
+That still doesn't work. Let me try 1-indexed even positions with range limited:
+
+For n=10 (0b1010), highest bit at position 3 (0-indexed) = position 4 (1-indexed).
+1-indexed even positions within range: 2, 4
+0-indexed: 1, 3
+Both already set in 10. So result = 10. ✓
+
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits (1-indexed from LSB) of a given number,
+    up to the highest set bit of n.
+    """
+    if n == 0:
+        return 0
+    
+    # Find the highest set bit position (0-indexed)
+    highest_bit = n.bit_length() - 1
+    
+    # Build mask for 1-indexed even positions (0-indexed odd positions)
+    # up to highest_bit
+    mask = 0
+    for i in range(1, highest_bit + 1, 2):  # 0-indexed odd positions
+        mask |= (1 << i)
+    
+    return n | mask
+
+
+# Test cases
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    print("Test passed: even_bit_set_number(10) == 10")
+    
+    # Additional tests
+    print(f"even_bit_set_number(0) = {even_bit_set_number(0)}")   # 0
+    print(f"even_bit_set_number(1) = {even_bit_set_number(1)}")   # 1 (no even 1-indexed bits in range)
+    print(f"even_bit_set_number(2) = {even_bit_set_number(2)}")   # 2 | 2 = 2
+    print(f"even_bit_set_number(4) = {even_bit_set_number(4)}")   # 4 | 2 = 6
+    print(f"even_bit_set_number(5) = {even_bit_set_number(5)}")   # 5 | 2 = 7
+    print(f"even_bit_set_number(10) = {even_bit_set_number(10)}") # 10
+```
+
+This works for the given assertion. Let me finalize:
+
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits (1-indexed from LSB) of a given number,
+    up to the highest set bit of n.
+    
+    Even positions in 1-indexed terms (2, 4, 6, ...) correspond to
+    odd positions in 0-indexed terms (1, 3, 5, ...).
+    """
+    if n == 0:
+        return 0
+    
+    highest_bit = n.bit_length() - 1
+    
+    # Build mask for 0-indexed odd positions up to highest_bit
+    mask = 0
+    for i in range(1, highest_bit + 1, 2):
+        mask |= (1 << i)
+    
+    return n | mask
+
+
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    print("All tests passed!")
+```
+
+Actually, let me reconsider one more time. The simplest interpretation that satisfies the assertion might be that "even bits" refers to bits at even positions (0-indexed), and the function should only set them if they're within the number's bit length:
+
+For n=10 (0b1010), bit_length=4, so positions 0,1,2,3.
+Even positions: 0, 2
+Setting them: 1010 | 0101 = 1111 = 15 ≠ 10. Still doesn't work.
+
+So the 1-indexed interpretation is the only one that works. Let me go with

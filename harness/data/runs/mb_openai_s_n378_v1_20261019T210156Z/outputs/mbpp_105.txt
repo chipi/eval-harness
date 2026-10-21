@@ -1,0 +1,9 @@
+```python
+def count(lst):
+    return sum(1 for x in lst if x is True)
+
+
+if __name__ == "__main__":
+    assert count([True, False, True]) == 2
+    print("All tests passed.")
+```

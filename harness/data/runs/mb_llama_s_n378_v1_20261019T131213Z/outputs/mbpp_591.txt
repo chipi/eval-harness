@@ -1,0 +1,24 @@
+```python
+def swap_List(input_list):
+    """
+    This function swaps the first and last elements in a list.
+
+    Args:
+        input_list (list): The input list.
+
+    Returns:
+        list: The list with the first and last elements swapped.
+    """
+    if len(input_list) > 1:
+        # Swap the first and last elements
+        input_list[0], input_list[-1] = input_list[-1], input_list[0]
+    return input_list
+
+# Test the function
+assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+assert swap_List([1]) == [1]
+assert swap_List([]) == []
+print("All test cases pass")
+```
+
+This script defines a function `swap_List` that takes a list as input and returns the list with the first and last elements swapped. If the list has one or zero elements, it is returned unchanged. The script also includes test cases to verify the function's behavior.

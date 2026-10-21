@@ -1,0 +1,58 @@
+Looking at this problem, I need to find the second smallest number in a list. The key insight from the test case is that `[1, 2, -8, -2, 0, -2]` returns `-2`, meaning we work with **unique values** (since `-8` is smallest, and `-2` is the next distinct value).
+
+```python
+"""
+Write a function to find the second smallest number in a list.
+assert second_smallest([1, 2, -8, -2, 0, -2])==-2
+"""
+
+
+def second_smallest(numbers):
+    """
+    Return the second smallest distinct number in `numbers`.
+
+    Duplicates are ignored, so [1, 1, 2] -> 2.
+    Returns None if there are fewer than two distinct values.
+    """
+    if numbers is None:
+        return None
+
+    unique_values = set(numbers)
+    if len(unique_values) < 2:
+        return None
+
+    smallest = second = float('inf')
+    for value in unique_values:
+        if value < smallest:
+            second = smallest
+            smallest = value
+        elif value < second:
+            second = value
+
+    return second
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+
+    # Additional test cases
+    assert second_smallest([1, 2, 3, 4, 5]) == 2
+    assert second_smallest([5, 4, 3, 2, 1]) == 2
+    assert second_smallest([2, 2, 2, 3]) == 3
+    assert second_smallest([1, 1, 1]) is None
+    assert second_smallest([7]) is None
+    assert second_smallest([]) is None
+    assert second_smallest([-5, -5, -10]) == -5
+    assert second_smallest([1.5, 0.5, 2.5]) == 1.5
+
+    print("All tests passed!")
+    print(second_smallest([1, 2, -8, -2, 0, -2]))  # -2
+```
+
+**How it works:**
+
+1. Convert the list to a `set` to remove duplicates — this matches the expected behavior where repeated `-2` values count only once.
+2. If fewer than two distinct values exist, there is no second smallest, so return `None`.
+3. Make a single pass tracking the two smallest values (`O(n)` time), which is more efficient than sorting (`O(n log n)`).
+4. Return the second smallest.

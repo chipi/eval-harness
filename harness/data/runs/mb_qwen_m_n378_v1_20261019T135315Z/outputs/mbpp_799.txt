@@ -1,0 +1,29 @@
+```python
+def left_rotate(n: int, d: int) -> int:
+    """
+    Rotate the bits of a 32-bit integer n to the left by d positions.
+    
+    Args:
+        n: The number to rotate (assumed to be 32-bit).
+        d: The number of positions to rotate left.
+    
+    Returns:
+        The result of rotating the bits of n left by d positions.
+    """
+    # Ensure we're working with 32-bit unsigned integer
+    n = n & 0xFFFFFFFF
+    # Normalize d to be within 0-31 range
+    d = d % 32
+    # Perform left rotation: shift left by d, and wrap around the bits that overflow
+    rotated = ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+    return rotated
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert left_rotate(16, 2) == 64
+    
+    # Additional test cases
+    # 16 in binary is 0000...00010000, left rotate by 2 gives 0000...01000000 which is 64
+    print("All tests passed!")
+```

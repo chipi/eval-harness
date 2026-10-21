@@ -1,0 +1,30 @@
+```python
+import math
+
+def convert(z):
+    """
+    Converts a complex number to polar coordinates (r, theta).
+
+    Args:
+        z: A complex number (e.g., 1, 1+2j, -3j).
+
+    Returns:
+        A tuple (r, theta) where r is the magnitude and theta is the phase angle in radians.
+    """
+    # The built-in abs() function calculates the magnitude (r)
+    r = abs(z)
+    
+    # The built-in cmath.phase() function calculates the phase angle (theta) in radians
+    theta = math.atan2(z.imag, z.real)
+    
+    return (r, theta)
+
+# Example usage and assertions from the problem description
+assert convert(1) == (1.0, 0.0)
+assert convert(1+1j) == (math.sqrt(2), math.pi/4)
+assert convert(-1) == (1.0, math.pi)
+assert convert(-1j) == (1.0, -math.pi/2)
+assert convert(0) == (0.0, 0.0)
+
+print("All assertions passed!")
+```

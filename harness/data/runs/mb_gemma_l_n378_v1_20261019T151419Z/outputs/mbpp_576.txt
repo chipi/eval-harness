@@ -1,0 +1,34 @@
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Checks if sub_list is a contiguous sublist of main_list.
+    """
+    # An empty list is always a sublist of any list
+    if not sub_list:
+        return True
+    
+    # If the sub_list is longer than the main_list, it cannot be a sublist
+    if len(sub_list) > len(main_list):
+        return False
+
+    # Iterate through the main_list to find a match for the start of sub_list
+    for i in range(len(main_list) - len(sub_list) + 1):
+        # Check if the slice of main_list starting at i matches sub_list
+        if main_list[i : i + len(sub_list)] == sub_list:
+            return True
+            
+    return False
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+    
+    # Additional test cases
+    assert is_Sub_Array([1, 2, 3, 4], [2, 3]) == True
+    assert is_Sub_Array([1, 2, 3, 4], [1, 2, 3, 4]) == True
+    assert is_Sub_Array([1, 2, 3], [4]) == False
+    assert is_Sub_Array([1, 2, 3], []) == True
+    
+    print("All tests passed!")
+```

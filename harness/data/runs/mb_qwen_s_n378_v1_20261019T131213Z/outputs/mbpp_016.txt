@@ -1,0 +1,14 @@
+```python
+import re
+
+def text_lowercase_underscore(text):
+    """
+    Returns True if the input string contains sequences of lowercase letters joined with an underscore, False otherwise.
+    
+    The pattern looks for one or more lowercase letters, followed by an underscore, followed by one or more lowercase letters.
+    This can appear anywhere in the string.
+    """
+    # Pattern: at least one lowercase letter, underscore, at least one lowercase letter
+    pattern = r'[a-z]+_[a-z]+'
+    return bool(re.search(pattern, text))
+```

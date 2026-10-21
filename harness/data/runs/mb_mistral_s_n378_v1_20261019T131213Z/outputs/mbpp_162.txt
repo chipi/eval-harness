@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_series(n):
+    """
+    Calculate the sum (n - 2*i) from i=0 to n // 2.
+
+    Args:
+        n (int): The upper limit for the series.
+
+    Returns:
+        int: The sum of the series.
+    """
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+    return total
+
+# Test the function
+assert sum_series(6) == 12
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `sum_series` that calculates the sum of the series (n - 2*i) from i=0 to n//2
+2. Includes a loop that breaks when the term becomes non-positive
+3. Contains an assertion to verify the function works correctly with the given example
+4. Prints a confirmation message if the test passes
+
+The function works by:
+- Initializing a total sum to 0
+- Iterating through possible values of i (from 0 to n//2)
+- Calculating each term (n - 2*i)
+- Adding the term to the total if it's positive
+- Breaking the loop if the term becomes non-positive
+- Returning the final total

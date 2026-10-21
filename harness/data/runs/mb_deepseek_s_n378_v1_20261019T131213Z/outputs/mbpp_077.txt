@@ -1,0 +1,38 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def is_Diff(n):
+    """
+    Returns True if the number is divisible by 11, False otherwise.
+    Uses the alternating sum of digits rule.
+    """
+    # Convert to string to handle digits easily
+    num_str = str(n)
+    
+    # Compute alternating sum of digits (from rightmost digit as positive)
+    diff = 0
+    sign = 1  # Start with + for the rightmost digit
+    
+    # Process digits from right to left
+    for digit in reversed(num_str):
+        diff += sign * int(digit)
+        sign *= -1  # Alternate sign
+    
+    # A number is divisible by 11 if the alternating sum is divisible by 11
+    return diff % 11 == 0
+
+
+# Test cases
+if __name__ == "__main__":
+    # Given assertion
+    assert is_Diff(12345) == False
+    
+    # Additional tests
+    assert is_Diff(11) == True
+    assert is_Diff(121) == True
+    assert is_Diff(0) == True
+    assert is_Diff(10) == False
+    assert is_Diff(2728) == True
+    
+    print("All tests passed!")
+```

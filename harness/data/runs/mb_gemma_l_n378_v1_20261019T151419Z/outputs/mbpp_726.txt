@@ -1,0 +1,18 @@
+```python
+def multiply_elements(t):
+    """
+    Takes a tuple of numbers (t_1, ..., t_{N+1}) and returns a tuple of length N 
+    where the i-th element is the product of t_i and t_{i+1}.
+    """
+    # Use a generator expression to multiply adjacent elements and convert to tuple
+    return tuple(t[i] * t[i+1] for i in range(len(t) - 1))
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    input_tuple = (1, 5, 7, 8, 10)
+    expected_output = (5, 35, 56, 80)
+    result = multiply_elements(input_tuple)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print(f"Success! multiply_elements({input_tuple}) == {result}")
+```

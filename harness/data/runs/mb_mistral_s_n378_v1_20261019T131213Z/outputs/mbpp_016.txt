@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_lowercase_underscore(text):
+    """
+    Returns True if the input string contains sequences of lowercase letters joined with underscores,
+    False otherwise.
+
+    Args:
+        text (str): The input string to check
+
+    Returns:
+        bool: True if the string matches the pattern, False otherwise
+    """
+    # The pattern matches one or more lowercase letters, followed by optional underscores and more lowercase letters
+    pattern = r'^[a-z]+(_[a-z]+)*$'
+    return bool(re.fullmatch(pattern, text))
+
+# Test cases
+assert text_lowercase_underscore("aab_cbbbc") == True
+assert text_lowercase_underscore("abc") == True
+assert text_lowercase_underscore("a_b_c") == True
+assert text_lowercase_underscore("A_b_c") == False
+assert text_lowercase_underscore("a_b_c1") == False
+assert text_lowercase_underscore("a_b_") == False
+assert text_lowercase_underscore("") == False
+```
+
+This script:
+1. Uses a regular expression to check if the entire string matches the pattern of lowercase letters separated by underscores
+2. The pattern `^[a-z]+(_[a-z]+)*$` breaks down as:
+   - `^` - start of string
+   - `[a-z]+` - one or more lowercase letters
+   - `(_[a-z]+)*` - zero or more occurrences of an underscore followed by one or more lowercase letters
+   - `$` - end of string
+3. Includes test cases that verify the function works as expected
+4. Returns True only if the entire string matches the pattern, False otherwise
+
+The function will return True for strings like "aab_cbbbc", "abc", "a_b_c" and False for strings with uppercase letters, numbers, or other invalid characters.

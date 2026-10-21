@@ -1,0 +1,21 @@
+```python
+import math
+
+def volume_cylinder(radius: float, height: float) -> float:
+    """
+    Calculate the volume of a cylinder given its radius and height.
+    
+    Args:
+        radius: The radius of the cylinder's base.
+        height: The height of the cylinder.
+    
+    Returns:
+        The volume of the cylinder.
+    """
+    return math.pi * radius ** 2 * height
+
+
+if __name__ == "__main__":
+    assert math.isclose(volume_cylinder(10, 5), 1570.7500000000002, rel_tol=0.001)
+    print("All tests passed.")
+```

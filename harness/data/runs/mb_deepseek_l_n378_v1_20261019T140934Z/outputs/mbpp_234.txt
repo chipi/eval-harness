@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def volume_cube(side_length):
+    """
+    Calculate the volume of a cube given its side length.
+    
+    Args:
+        side_length (float or int): The length of one side of the cube
+    
+    Returns:
+        float or int: The volume of the cube (side_length^3)
+    """
+    return side_length ** 3
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert volume_cube(3) == 27, "Test failed: volume_cube(3) should equal 27"
+    
+    # Additional test cases
+    assert volume_cube(1) == 1, "Test failed: volume_cube(1) should equal 1"
+    assert volume_cube(0) == 0, "Test failed: volume_cube(0) should equal 0"
+    assert volume_cube(2.5) == 15.625, "Test failed: volume_cube(2.5) should equal 15.625"
+    
+    print("All tests passed!")
+```
+
+The function `volume_cube` takes a side length as input and returns the cube's volume by raising the side length to the power of 3 (side_length³). The script includes the required assertion test and some additional test cases to verify the function works correctly.

@@ -1,0 +1,9 @@
+```python
+def diff_even_odd(numbers):
+    first_even = next(n for n in numbers if n % 2 == 0)
+    first_odd = next(n for n in numbers if n % 2 != 0)
+    return first_even - first_odd
+
+
+assert diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 3
+```

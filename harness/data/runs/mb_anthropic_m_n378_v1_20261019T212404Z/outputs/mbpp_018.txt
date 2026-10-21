@@ -1,0 +1,7 @@
+```python
+def remove_dirty_chars(string, second_string):
+    return ''.join(ch for ch in string if ch not in second_string)
+
+# Test
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+```

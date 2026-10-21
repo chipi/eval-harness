@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_length(s: str, k: int) -> str:
+    """
+    Remove all words with length equal to k from the given string.
+    
+    Args:
+        s: The input string.
+        k: The length of words to remove.
+    
+    Returns:
+        A string with all words of length k removed.
+    """
+    words = s.split()
+    filtered = [word for word in words if len(word) != k]
+    return ' '.join(filtered)
+
+
+# Test the function
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+print("Test passed!")
+```
+
+**Explanation:**
+
+1. **`s.split()`** — Splits the input string into a list of words based on whitespace.
+2. **List comprehension** — Iterates through each word and keeps only those whose length is **not** equal to `k`.
+3. **`' '.join(filtered)`** — Joins the remaining words back into a single string separated by spaces.
+
+For the test case:
+- Input: `'The person is most value tet'`, `k = 3`
+- Words: `['The', 'person', 'is', 'most', 'value', 'tet']`
+- Words with length 3 removed: `'The'` and `'tet'`
+- Result: `'person is most value'` ✅

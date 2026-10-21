@@ -1,0 +1,46 @@
+```python
+from typing import List, Dict, Tuple
+from collections import defaultdict
+
+def unique_sublists(lists: List[List]) -> Dict[Tuple, int]:
+    """
+    This function takes a list of lists as input, converts each sublist to a tuple, 
+    and returns a dictionary where the keys are the tuples and the values are their respective counts.
+
+    Args:
+        lists (List[List]): A list of lists.
+
+    Returns:
+        Dict[Tuple, int]: A dictionary where keys are tuples and values are their counts.
+    """
+
+    # Initialize a dictionary to store the count of each sublist
+    count_dict = defaultdict(int)
+
+    # Iterate over each sublist in the input list
+    for sublist in lists:
+        # Convert the sublist to a tuple (since lists are not hashable and cannot be used as dictionary keys)
+        sublist_tuple = tuple(sublist)
+        
+        # Increment the count of the sublist in the dictionary
+        count_dict[sublist_tuple] += 1
+
+    # Convert the defaultdict back to a regular dictionary
+    count_dict = dict(count_dict)
+
+    return count_dict
+
+
+# Example usage:
+def main():
+    lists = [[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]]
+    print(unique_sublists(lists))
+
+if __name__ == "__main__":
+    main()
+```
+
+When you run this script, it will print:
+```python
+{(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+```

@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def get_pairs_count(arr, target_sum):
+    """
+    Count the number of pairs in the list whose sum equals the target sum.
+    
+    Args:
+        arr: List of numbers
+        target_sum: The target sum to find pairs for
+    
+    Returns:
+        Number of pairs whose sum equals target_sum
+    """
+    from collections import Counter
+    
+    # Count frequency of each number
+    freq = Counter(arr)
+    count = 0
+    
+    # Count pairs
+    for num in freq:
+        complement = target_sum - num
+        
+        if complement in freq:
+            if num == complement:
+                # If number equals its complement, use combination formula
+                # nC2 = n * (n-1) / 2
+                count += freq[num] * (freq[num] - 1) // 2
+            elif num < complement:
+                # Count pairs between different numbers
+                count += freq[num] * freq[complement]
+    
+    return count
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+    
+    # Additional test cases
+    assert get_pairs_count([1, 5, 7, -1, 5], 6) == 3  # (1,5), (1,5), (7,-1)
+    assert get_pairs_count([1, 2, 3, 4, 5], 6) == 2   # (1,5), (2,4)
+    assert get_pairs_count([2, 2, 2, 2], 4) == 6      # All pairs sum to 4
+    assert get_pairs_count([1, 2, 3], 10) == 0        # No pairs sum to 10
+    assert get_pairs_count([], 5) == 0                # Empty list
+    
+    print("All test cases passed!")
+```
+
+The solution uses a frequency counter to efficiently count pairs. For each number, it finds its complement (target_sum - num) and counts the pairs. When a number equals its complement (e.g., 1+1=2), it uses the combination formula nC2 to count all possible pairs of that number. For different numbers, it multiplies their frequencies to get the total pairs, ensuring each pair is counted only once by checking `num < complement`.

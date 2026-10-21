@@ -1,0 +1,28 @@
+```python
+def all_Characters_Same(s):
+    """
+    Return True if all characters in the string are the same, otherwise False.
+
+    Empty strings and single-character strings are considered to have all
+    characters the same.
+    """
+    if len(s) <= 1:
+        return True
+
+    first_char = s[0]
+    for char in s:
+        if char != first_char:
+            return False
+    return True
+
+
+# Example tests
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("aaaa") == True
+assert all_Characters_Same("a") == True
+assert all_Characters_Same("") == True
+assert all_Characters_Same("bbbbb") == True
+assert all_Characters_Same("aaab") == False
+
+print("All tests passed.")
+```

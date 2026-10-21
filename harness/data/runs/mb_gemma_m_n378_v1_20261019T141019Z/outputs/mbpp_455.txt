@@ -1,0 +1,28 @@
+```python
+def check_monthnumb_number(month_number):
+    """
+    Checks whether the given month number contains 31 days.
+    
+    Args:
+        month_number (int): An integer representing the month (1-12).
+        
+    Returns:
+        bool: True if the month has 31 days, False otherwise.
+    """
+    # Months with 31 days are: 1 (Jan), 3 (Mar), 5 (May), 7 (Jul), 8 (Aug), 10 (Oct), 12 (Dec)
+    months_with_31_days = {1, 3, 5, 7, 8, 10, 12}
+    
+    return month_number in months_with_31_days
+
+if __name__ == "__main__":
+    # Test cases
+    try:
+        assert check_monthnumb_number(5) == True
+        assert check_monthnumb_number(1) == True
+        assert check_monthnumb_number(4) == False
+        assert check_monthnumb_number(2) == False
+        assert check_monthnumb_number(12) == True
+        print("All tests passed!")
+    except AssertionError as e:
+        print("A test case failed!")
+```

@@ -1,0 +1,32 @@
+```python
+from typing import List, Optional
+
+def max_occurrences(lst: List[int]) -> Optional[int]:
+    """
+    Returns the item with the maximum frequency in the given list.
+    If there is a tie, returns the first element that achieves the maximum frequency.
+    If the list is empty, returns None.
+    """
+    if not lst:
+        return None
+    
+    frequency = {}
+    max_count = 0
+    most_frequent = lst[0]  # default to first element
+    
+    for item in lst:
+        # Update frequency count
+        frequency[item] = frequency.get(item, 0) + 1
+        current_count = frequency[item]
+        
+        # Update most frequent if current count exceeds max, or if equal but appears earlier
+        if current_count > max_count:
+            max_count = current_count
+            most_frequent = item
+    
+    return most_frequent
+
+# Test the function with the provided assertion
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+print("Test passed!")
+```

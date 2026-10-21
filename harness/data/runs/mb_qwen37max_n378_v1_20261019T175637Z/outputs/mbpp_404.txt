@@ -1,0 +1,10 @@
+```python
+def minimum(a, b):
+    """Return the minimum of two numbers."""
+    if a < b:
+        return a
+    return b
+
+
+assert minimum(1, 2) == 1
+```

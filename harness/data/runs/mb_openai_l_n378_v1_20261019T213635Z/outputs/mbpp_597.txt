@@ -1,0 +1,30 @@
+```python
+def find_kth(a, b, k):
+    """Return the kth smallest element (1-indexed) in two sorted arrays."""
+    if not 1 <= k <= len(a) + len(b):
+        raise ValueError("k is out of range")
+
+    i = j = 0
+    while True:
+        if i == len(a):
+            return b[j + k - 1]
+        if j == len(b):
+            return a[i + k - 1]
+        if k == 1:
+            return min(a[i], b[j])
+
+        half = k // 2
+        next_i = min(i + half, len(a)) - 1
+        next_j = min(j + half, len(b)) - 1
+
+        if a[next_i] <= b[next_j]:
+            removed = next_i - i + 1
+            i = next_i + 1
+        else:
+            removed = next_j - j + 1
+            j = next_j + 1
+        k -= removed
+
+
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```

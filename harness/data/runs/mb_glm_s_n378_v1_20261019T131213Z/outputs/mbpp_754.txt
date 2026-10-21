@@ -1,0 +1,67 @@
+```python
+def extract_index_list(l1, l2, l3):
+    """
+    Finds elements that are common to three lists at the same index.
+
+    An element is considered common if it appears in all three lists l1, l2, and l3
+    at the exact same index. The function iterates through the indices of the
+    shortest list to avoid IndexError and checks for equality of elements at
+    each corresponding index.
+
+    Args:
+        l1 (list): The first list.
+        l2 (list): The second list.
+        l3 (list): The third list.
+
+    Returns:
+        list: A new list containing the elements that are common to all three
+              input lists at the same index. The order of elements in the
+              returned list corresponds to their order of appearance.
+    """
+    # Determine the minimum length to prevent IndexError when accessing lists
+    # of different sizes.
+    min_length = min(len(l1), len(l2), len(l3))
+    
+    # Use a list comprehension to build the result list.
+    # It iterates through the range of the minimum list length.
+    # For each index 'i', it checks if the elements l1[i], l2[i], and l3[i]
+    # are all equal. If they are, that element is added to the new list.
+    return [l1[i] for i in range(min_length) if l1[i] == l2[i] == l3[i]]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    list1 = [1, 1, 3, 4, 5, 6, 7]
+    list2 = [0, 1, 2, 3, 4, 5, 7]
+    list3 = [0, 1, 2, 3, 4, 5, 7]
+    
+    common_elements = extract_index_list(list1, list2, list3)
+    
+    # The assertion will pass if the function works correctly.
+    assert common_elements == [1, 7]
+    
+    print(f"List 1: {list1}")
+    print(f"List 2: {list2}")
+    print(f"List 3: {list3}")
+    print(f"Common elements at the same index: {common_elements}")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    
+    # Test with lists of different lengths
+    a = [10, 20, 30, 40, 50]
+    b = [10, 0, 30, 0, 50]
+    c = [10, 0, 0, 40, 50]
+    print(f"Test 1: {extract_index_list(a, b, c)}") # Expected: [10, 50]
+    
+    # Test with no common elements
+    d = [1, 2, 3]
+    e = [4, 5, 6]
+    f = [7, 8, 9]
+    print(f"Test 2: {extract_index_list(d, e, f)}") # Expected: []
+    
+    # Test with empty lists
+    g = []
+    h = [1, 2]
+    i = [1, 2, 3]
+    print(f"Test 3: {extract_index_list(g, h, i)}") # Expected: []
+```

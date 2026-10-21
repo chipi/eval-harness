@@ -1,0 +1,26 @@
+```python
+def perfect_squares(a, b):
+    """
+    Find all perfect squares between two given numbers a and b (inclusive).
+    
+    Args:
+        a: The lower bound of the range.
+        b: The upper bound of the range.
+    
+    Returns:
+        A list of perfect squares within the range [a, b].
+    """
+    result = []
+    # Start from the smallest integer whose square is >= a
+    start = int(a ** 0.5)
+    if start * start < a:
+        start += 1
+    
+    # Iterate through integers and check if their square is <= b
+    i = start
+    while i * i <= b:
+        result.append(i * i)
+        i += 1
+    
+    return result
+```

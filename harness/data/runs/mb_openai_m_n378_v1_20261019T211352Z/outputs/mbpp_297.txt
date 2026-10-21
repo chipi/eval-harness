@@ -1,0 +1,31 @@
+```python
+#!/usr/bin/env python3
+"""
+Flatten a given nested list structure.
+"""
+
+def flatten_list(nested):
+    """
+    Return a flat list containing all elements from the nested list structure.
+
+    Example:
+        flatten_list([0, 10, [20, 30], 40]) -> [0, 10, 20, 30, 40]
+    """
+    result = []
+
+    for item in nested:
+        if isinstance(item, list):
+            result.extend(flatten_list(item))
+        else:
+            result.append(item)
+
+    return result
+
+
+if __name__ == "__main__":
+    assert flatten_list(
+        [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    ) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+
+    print("All tests passed.")
+```

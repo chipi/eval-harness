@@ -1,0 +1,43 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the tuple intersection of elements in two tuple lists irrespective of order.
+
+Two tuples are considered equal if they contain the same elements, regardless of
+their order. For example, (5, 4) matches (4, 5).
+
+Example:
+tuple_intersection(
+    [(3, 4), (5, 6), (9, 10), (4, 5)],
+    [(5, 4), (3, 4), (6, 5), (9, 11)]
+) == {(4, 5), (3, 4), (5, 6)}
+"""
+
+
+def tuple_intersection(list1, list2):
+    """
+    Return a set of tuples from list1 that also appear in list2,
+    ignoring the order of elements inside each tuple.
+
+    The output preserves the tuple form from list1.
+    """
+    normalized_list2 = {tuple(sorted(t)) for t in list2}
+
+    return {
+        t for t in list1
+        if tuple(sorted(t)) in normalized_list2
+    }
+
+
+if __name__ == "__main__":
+    result = tuple_intersection(
+        [(3, 4), (5, 6), (9, 10), (4, 5)],
+        [(5, 4), (3, 4), (6, 5), (9, 11)]
+    )
+
+    expected = {(4, 5), (3, 4), (5, 6)}
+
+    assert result == expected
+    print("Test passed.")
+    print(result)
+```

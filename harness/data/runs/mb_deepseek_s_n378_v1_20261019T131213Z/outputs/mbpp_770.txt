@@ -1,0 +1,20 @@
+```python
+def odd_num_sum(n):
+    """
+    Returns the sum of the fourth power of the first n odd natural numbers.
+    
+    For example:
+    odd_num_sum(2) -> 1^4 + 3^4 = 1 + 81 = 82
+    """
+    total = 0
+    # The k-th odd natural number is (2k - 1)
+    for k in range(1, n + 1):
+        odd = 2 * k - 1
+        total += odd ** 4
+    return total
+
+# Test the assertion
+if __name__ == "__main__":
+    assert odd_num_sum(2) == 82
+    print("Test passed.")
+```

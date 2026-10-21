@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem by converting a tuple string to an integer tuple:
+
+```python
+def tuple_str_int(tuple_str):
+    """
+    Convert a string representation of a tuple to an actual tuple of integers.
+
+    Args:
+        tuple_str (str): String representation of a tuple, e.g., "(7, 8, 9)"
+
+    Returns:
+        tuple: Tuple of integers, e.g., (7, 8, 9)
+    """
+    # Remove the parentheses and split the string by commas
+    elements = tuple_str.strip("()").split(",")
+    # Convert each element to an integer and create a tuple
+    return tuple(int(num.strip()) for num in elements)
+
+# Test the function
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+```
+
+This script:
+1. Defines the `tuple_str_int` function that takes a string representation of a tuple
+2. Strips the parentheses from the string
+3. Splits the string by commas to get individual elements
+4. Converts each element to an integer (after stripping whitespace)
+5. Returns the result as a tuple
+6. Includes the assertion test to verify the function works correctly
+
+The function handles the example case `(7, 8, 9)` and will work with any similar tuple string format.

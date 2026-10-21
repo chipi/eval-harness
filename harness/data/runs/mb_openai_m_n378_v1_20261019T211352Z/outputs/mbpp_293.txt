@@ -1,0 +1,24 @@
+```python
+"""
+Find the third side of a right-angled triangle.
+
+Given the lengths of the two perpendicular sides, the third side is the
+hypotenuse, calculated using the Pythagorean theorem:
+
+    c = sqrt(a^2 + b^2)
+"""
+
+import math
+
+
+def otherside_rightangle(a, b):
+    """Return the hypotenuse of a right-angled triangle."""
+    return math.sqrt(a * a + b * b)
+
+
+# Example test
+assert otherside_rightangle(7, 8) == 10.63014581273465
+
+if __name__ == "__main__":
+    print(otherside_rightangle(7, 8))
+```

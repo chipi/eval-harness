@@ -1,0 +1,17 @@
+```python
+def tuple_intersection(list1, list2):
+    # Convert the tuples to sets for efficient intersection operation
+    set1 = set(map(tuple, list1))
+    set2 = set(map(tuple, list2))
+    
+    # Find the intersection of the two sets
+    intersection = set1 & set2
+    
+    # Convert the intersection back to a list of tuples
+    result = list(map(list, intersection))
+    
+    return result
+
+# Test the function
+print(tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)] , [(5, 4), (3, 4), (6, 5), (9, 11)]))
+```

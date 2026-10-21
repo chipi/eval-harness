@@ -1,0 +1,23 @@
+Here’s a self-contained Python script with the requested function and assertion:
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    In case of duplicate keys, the value from the last dictionary is used.
+    """
+    merged = dict1.copy()
+    merged.update(dict2)
+    merged.update(dict3)
+    return merged
+
+if __name__ == "__main__":
+    result = merge_dictionaries_three(
+        {"R": "Red", "B": "Black", "P": "Pink"},
+        {"G": "Green", "W": "White"},
+        {"O": "Orange", "W": "White", "B": "Black"}
+    )
+    expected = {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```

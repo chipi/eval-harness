@@ -1,0 +1,23 @@
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Searches a string for a regex pattern and returns the matching 
+    substring, the start index, and the end index.
+    """
+    match = re.search(pattern, text)
+    if match:
+        # match.group() returns the substring
+        # match.start() returns the starting index
+        # match.end() returns the ending index
+        return (match.group(), match.start(), match.end())
+    else:
+        return None
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = find_literals('The quick brown fox jumps over the lazy dog.', 'fox')
+    assert result == ('fox', 16, 19)
+    print(f"Test passed! Result: {result}")
+```

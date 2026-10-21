@@ -1,0 +1,82 @@
+```python
+"""
+Write a function to find the sum of the largest contiguous sublist in the given list.
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+"""
+
+def max_sub_array_sum(arr, n):
+    """
+    Finds the sum of the largest contiguous sublist (subarray) using Kadane's algorithm.
+
+    This function iterates through the list, keeping track of the maximum sum of the
+    subarray ending at the current position. If this sum becomes negative, it resets
+    to zero, as a negative sum would only decrease the sum of any subsequent subarray.
+
+    Args:
+        arr (list): A list of integers.
+        n (int): The number of elements in the list.
+
+    Returns:
+        int: The sum of the contiguous sublist with the largest sum.
+    """
+    # Handle edge cases: empty list or list with all negative numbers.
+    if n == 0:
+        return 0
+
+    # Initialize variables to track the maximum sum found so far and the sum of the
+    # current subarray.
+    max_sum = arr[0]
+    current_sum = 0
+
+    for num in arr:
+        # Add the current number to the sum of the current subarray.
+        current_sum += num
+
+        # If the current subarray sum is greater than the overall max, update max_sum.
+        if current_sum > max_sum:
+            max_sum = current_sum
+
+        # If the current subarray sum becomes negative, reset it to 0.
+        # This is because a negative sum will not contribute positively to any
+        # future subarray.
+        if current_sum < 0:
+            current_sum = 0
+            
+    return max_sum
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [-2, -3, 4, -1, -2, 1, 5, -3]
+    list_length = 8
+    expected_sum = 7
+    
+    result = max_sub_array_sum(input_list, list_length)
+    
+    print(f"Input list: {input_list}")
+    print(f"Length of list: {list_length}")
+    print(f"Expected sum: {expected_sum}")
+    print(f"Calculated sum: {result}")
+    
+    assert result == expected_sum
+    print("\nAssertion passed: The calculated sum matches the expected sum.")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    test_cases = [
+        ([1, 2, 3, 4, 5], 5, 15),  # All positive numbers
+        ([-1, -2, -3, -4], 4, -1), # All negative numbers
+        ([5, -2, 3, -1, 2], 5, 7), # Mixed numbers
+        ([], 0, 0),                # Empty list
+        ([-10, 2, 3, -20, 5, 10], 6, 15) # Another mixed case
+    ]
+
+    for i, (arr, n, expected) in enumerate(test_cases):
+        result = max_sub_array_sum(arr, n)
+        print(f"\nTest Case {i+1}:")
+        print(f"  Input: {arr}, Length: {n}")
+        print(f"  Expected: {expected}, Got: {result}")
+        assert result == expected
+        print(f"  -> Passed")
+
+    print("\nAll test cases passed successfully.")
+```

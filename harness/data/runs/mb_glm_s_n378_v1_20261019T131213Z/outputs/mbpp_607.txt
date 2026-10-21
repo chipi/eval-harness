@@ -1,0 +1,40 @@
+```python
+import re
+
+def find_literals(text: str, pattern: str) -> tuple:
+    """
+    Searches a string for a regex pattern and returns the matching substring,
+    its start index, and its end index.
+
+    Args:
+        text: The string to search within.
+        pattern: The regex pattern to search for.
+
+    Returns:
+        A tuple containing the matching substring, start index, and end index.
+        Returns (None, -1, -1) if no match is found.
+    """
+    # The re.search() function finds the first location in the string where the
+    # regular expression pattern produces a match.
+    match = re.search(pattern, text)
+
+    if match:
+        # match.group(0) returns the entire matched substring.
+        # match.start() returns the starting index of the match.
+        # match.end() returns the ending index of the match (exclusive).
+        return (match.group(0), match.start(), match.end())
+    else:
+        # Return a default value if no match is found.
+        return (None, -1, -1)
+
+# Example usage and assertion from the problem description
+assert find_literals('The quick brown fox jumps over the lazy dog.', 'fox') == ('fox', 16, 19)
+
+# Additional test cases
+assert find_literals('Hello World, 12345', r'\d+') == ('12345', 12, 17)
+assert find_literals('Hello World, 12345', r'\w+') == ('Hello', 0, 5)
+assert find_literals('No match here', 'xyz') == (None, -1, -1)
+assert find_literals('The price is $19.99.', r'\$\d+\.\d+') == ('$19.99', 12, 18)
+
+print("All assertions passed!")
+```

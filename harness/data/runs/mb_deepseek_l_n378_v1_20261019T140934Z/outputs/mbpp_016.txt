@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_lowercase_underscore(text):
+    """
+    Returns True if the input string contains sequences of lowercase letters 
+    joined with an underscore, False otherwise.
+    """
+    # Pattern matches one or more lowercase letters, followed by underscore,
+    # followed by one or more lowercase letters
+    pattern = r'[a-z]+_[a-z]+'
+    return bool(re.search(pattern, text))
+
+# Test the function
+if __name__ == "__main__":
+    assert text_lowercase_underscore("aab_cbbbc") == True
+    assert text_lowercase_underscore("aab_cbbbc_xyz") == True
+    assert text_lowercase_underscore("abc") == False
+    assert text_lowercase_underscore("ABC_DEF") == False
+    assert text_lowercase_underscore("a_b") == True
+    assert text_lowercase_underscore("123_abc") == False
+    assert text_lowercase_underscore("abc_123") == False
+    print("All tests passed!")
+```
+
+The function uses a regular expression pattern `[a-z]+_[a-z]+` that matches:
+- One or more lowercase letters (`[a-z]+`)
+- Followed by an underscore (`_`)
+- Followed by one or more lowercase letters (`[a-z]+`)
+
+The `re.search()` function looks for this pattern anywhere in the string, and returns `True` if found, `False` otherwise.

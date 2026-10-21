@@ -1,0 +1,15 @@
+```python
+def dif_Square(n):
+    # Check if n is a perfect square
+    if int(n**0.5)**2 == n:
+        return True
+    else:
+        return False
+
+# Test cases to verify the correctness of the function
+assert dif_Square(5) == True
+assert dif_Square(16) == True
+assert dif_Square(25) == True
+assert dif_Square(26) == False
+```
+

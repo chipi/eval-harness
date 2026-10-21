@@ -1,0 +1,63 @@
+Looking at this problem, I need to find the sum of products of consecutive binomial coefficients.
+
+For a given n, the binomial coefficients are C(n,0), C(n,1), C(n,2), ..., C(n,n).
+
+The sum of products of consecutive binomial coefficients would be:
+C(n,0)*C(n,1) + C(n,1)*C(n,2) + C(n,2)*C(n,3) + ... + C(n,n-1)*C(n,n)
+
+Let me verify with n=3:
+- C(3,0) = 1, C(3,1) = 3, C(3,2) = 3, C(3,3) = 1
+- Products: 1*3 + 3*3 + 3*1 = 3 + 9 + 3 = 15 ✓
+
+Here's the solution:
+
+```python
+import math
+
+def sum_Of_product(n):
+    """
+    Find the sum of the product of consecutive binomial coefficients.
+    
+    For a given n, computes:
+    C(n,0)*C(n,1) + C(n,1)*C(n,2) + ... + C(n,n-1)*C(n,n)
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The sum of products of consecutive binomial coefficients
+    """
+    if n < 1:
+        return 0
+    
+    # Calculate binomial coefficients C(n, k) for k = 0 to n
+    binom = [math.comb(n, k) for k in range(n + 1)]
+    
+    # Sum the products of consecutive binomial coefficients
+    total = 0
+    for i in range(n):
+        total += binom[i] * binom[i + 1]
+    
+    return total
+
+
+# Test the function
+assert sum_Of_product(3) == 15
+print(f"sum_Of_product(3) = {sum_Of_product(3)}")
+print(f"sum_Of_product(4) = {sum_Of_product(4)}")
+print(f"sum_Of_product(5) = {sum_Of_product(5)}")
+```
+
+**Explanation:**
+
+1. **`math.comb(n, k)`** computes the binomial coefficient C(n, k) = n! / (k! * (n-k)!).
+
+2. We generate all binomial coefficients for the given n: `[C(n,0), C(n,1), ..., C(n,n)]`.
+
+3. We iterate through consecutive pairs and sum their products.
+
+**Verification for n=3:**
+- Binomial coefficients: [1, 3, 3, 1]
+- Products: 1×3 + 3×3 + 3×1 = 3 + 9 + 3 = **15** ✓
+
+**Alternative closed-form:** This sum actually equals `C(2n, n-1)` (a known combinatorial identity). For n=3: C(6,2) = 15 ✓. But the direct computation above is clearer and self-contained.

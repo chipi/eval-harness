@@ -1,0 +1,24 @@
+```python
+def toggle_middle_bits(n):
+    # Convert the number to binary and remove the '0b' prefix
+    binary = bin(n)[2:]
+    
+    # If the number has less than 3 bits, return the original number
+    if len(binary) < 3:
+        return n
+    
+    # Toggle the bits in the middle
+    middle_bits = binary[1:-1]
+    toggled_middle_bits = ''.join('1' if bit == '0' else '0' for bit in middle_bits)
+    
+    # Combine the first and last bits, and the toggled middle bits
+    toggled_n = int(binary[0] + toggled_middle_bits + binary[-1], 2)
+    
+    return toggled_n
+
+# Test cases
+assert toggle_middle_bits(9) == 15
+assert toggle_middle_bits(15) == 9
+assert toggle_middle_bits(240) == 15
+assert toggle_middle_bits(1023) == 7
+```

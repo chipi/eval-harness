@@ -1,0 +1,36 @@
+```python
+def shell_sort(arr):
+    """
+    Sort the given array using shell sort algorithm.
+    
+    Args:
+        arr: List of comparable elements
+        
+    Returns:
+        Sorted list in ascending order
+    """
+    n = len(arr)
+    # Start with a big gap, then reduce the gap
+    gap = n // 2
+    
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size
+        for i in range(gap, n):
+            temp = arr[i]
+            # Shift earlier gap-sorted elements up until the correct location for arr[i] is found
+            j = i
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            # Put temp (the original arr[i]) in its correct location
+            arr[j] = temp
+        gap //= 2
+    
+    return arr
+
+
+# Test case
+if __name__ == "__main__":
+    assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    print("Test passed!")
+```

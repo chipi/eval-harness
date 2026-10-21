@@ -1,0 +1,30 @@
+```python
+def move_zero([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+"""
+
+def move_zero(nums):
+    """
+    Moves all zeroes to the end of the list while maintaining 
+    the relative order of non-zero elements.
+    """
+    # Create a list of all non-zero elements
+    non_zeroes = [x for x in nums if x != 0]
+    
+    # Calculate how many zeroes were in the original list
+    zero_count = len(nums) - len(non_zeroes)
+    
+    # Return the non-zeroes followed by the required number of zeroes
+    return non_zeroes + [0] * zero_count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [1, 0, 2, 0, 3, 4]
+    expected_output = [1, 2, 3, 4, 0, 0]
+    result = move_zero(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Assertion passed!")
+```

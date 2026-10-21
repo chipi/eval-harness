@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_lists(lst, tpl):
+    """
+    Appends the given list to the given tuple and returns a new tuple.
+    
+    Args:
+        lst: A list to be appended.
+        tpl: A tuple to which the list will be appended.
+    
+    Returns:
+        A new tuple with the elements of the original tuple followed by the elements of the list.
+    """
+    return tpl + tuple(lst)
+
+# Test cases
+def test_add_lists():
+    assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+    assert add_lists([], (1, 2)) == (1, 2)
+    assert add_lists([3, 4], ()) == (3, 4)
+    assert add_lists([1], (2,)) == (2, 1)
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_add_lists()
+```
+
+### Explanation:
+1. The function `add_lists` takes a list `lst` and a tuple `tpl` as input.
+2. It converts the list `lst` into a tuple using `tuple(lst)`.
+3. It then concatenates the original tuple `tpl` with the converted list tuple using the `+` operator, which combines two tuples.
+4. The result is a new tuple with the elements of the original tuple followed by the elements of the list.
+5. The test cases verify the function works correctly for various scenarios, including empty lists and tuples.

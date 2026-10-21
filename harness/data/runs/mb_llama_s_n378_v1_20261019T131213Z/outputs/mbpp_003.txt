@@ -1,0 +1,46 @@
+### Non-Prime Number Identification Function
+#### Function Description
+
+The following Python function, `is_not_prime`, checks if a given number is not prime.
+
+#### Code
+
+```python
+def is_not_prime(n):
+    """
+    Checks if a number is not prime.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is not prime, False otherwise.
+    """
+    if n <= 1:
+        return True
+    if n == 2:
+        return False
+    if n % 2 == 0:
+        return True
+    max_divisor = int(n**0.5) + 1
+    for d in range(3, max_divisor, 2):
+        if n % d == 0:
+            return True
+    return False
+
+# Example usage:
+if __name__ == "__main__":
+    assert not is_not_prime(2)
+    assert is_not_prime(4)
+    assert is_not_prime(6)
+    assert not is_not_prime(7)
+    assert is_not_prime(9)
+```
+
+#### Explanation
+
+*   The function `is_not_prime` takes an integer `n` as input and returns `True` if it's not prime, and `False` otherwise.
+*   It first handles edge cases: numbers less than or equal to 1 are not prime, and 2 is prime.
+*   Then, it checks if `n` is even. If it is, and `n` is not 2, it's not prime.
+*   For odd numbers, it checks divisibility up to the square root of `n`, as any factor larger than that would have a corresponding factor smaller than the square root.
+*   The example usage demonstrates how to use the function with assertions.

@@ -1,0 +1,10 @@
+```python
+def extract_string(lst, size):
+    return [i for i in lst if len(i) == size]
+
+# Test cases
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'] ,8)==['practice', 'solution']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'] ,5)==['Python', 'list']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'] ,7)==['exercises', 'solution']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'] ,3)==['Python', 'list', 'exercises']
+```

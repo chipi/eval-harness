@@ -1,0 +1,37 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Calculate the count of all binary sequences of length 2n 
+    such that sum of first n bits is same as sum of last n bits.
+
+    Args:
+    n (int): The length of the first and last part of the binary sequence.
+
+    Returns:
+    float: The count of all binary sequences that meet the condition.
+    """
+    # Calculate the total number of binary sequences of length 2n
+    total_sequences = 2 ** (2 * n)
+    
+    # Initialize the count of valid sequences
+    valid_sequences = 0
+    
+    # Iterate over all possible sums of the first n bits
+    for i in range(n + 1):
+        # Calculate the number of ways to get the sum i in the first n bits
+        first_n_ways = math.comb(n, i)
+        
+        # Calculate the number of ways to get the sum i in the last n bits
+        last_n_ways = math.comb(n, i)
+        
+        # Update the count of valid sequences
+        valid_sequences += first_n_ways * last_n_ways
+    
+    # Return the count of valid sequences
+    return valid_sequences
+
+# Test the function
+print(count_binary_seq(1))
+```

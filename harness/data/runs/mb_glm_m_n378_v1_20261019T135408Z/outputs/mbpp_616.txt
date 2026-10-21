@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem with the `tuple_modulo` function and includes the provided assertion:
+
+```python
+def tuple_modulo(tuple1, tuple2):
+    """
+    Perform element-wise modulo between two tuples of the same length.
+    
+    Args:
+        tuple1 (tuple): First tuple of integers.
+        tuple2 (tuple): Second tuple of integers (same length as tuple1).
+    
+    Returns:
+        tuple: A new tuple where each element is the result of tuple1[i] % tuple2[i].
+    
+    Raises:
+        ValueError: If the tuples are not of the same length.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must be of the same length")
+    
+    return tuple(a % b for a, b in zip(tuple1, tuple2))
+
+# Test the function with the provided assertion
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+
+# Additional test cases
+print(tuple_modulo((10, 20, 30), (3, 7, 5)))  # Output: (1, 6, 0)
+print(tuple_modulo((1, 2, 3), (1, 1, 1)))     # Output: (0, 0, 0)
+```
+
+### Explanation:
+1. **Function Definition**: The `tuple_modulo` function takes two tuples as input.
+2. **Length Check**: It first checks if the tuples are of the same length. If not, it raises a `ValueError`.
+3. **Element-wise Modulo**: Using a generator expression with `zip`, it computes the modulo of corresponding elements from the two tuples and converts the result into a tuple.
+4. **Assertion**: The provided assertion is included to verify the correctness of the function.
+5. **Additional Tests**: Some extra test cases are included to demonstrate the function's behavior.
+
+The script is self-contained and can be run directly to test the function.

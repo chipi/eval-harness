@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem of moving all zeroes to the end of a list while maintaining the relative order of the non-zero elements:
+
+```python
+def move_zero(nums):
+    # Initialize a pointer for the position to place the next non-zero element
+    pos = 0
+
+    # Iterate through the list
+    for num in nums:
+        if num != 0:
+            nums[pos] = num
+            pos += 1
+
+    # Fill the remaining positions with zeros
+    while pos < len(nums):
+        nums[pos] = 0
+        pos += 1
+
+    return nums
+
+# Test the function
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+print("Test passed!")
+```
+
+### Explanation:
+1. **Initialization**: We use a pointer `pos` to keep track of where the next non-zero element should be placed.
+2. **First Pass**: We iterate through the list. For each non-zero element, we place it at the current `pos` and increment `pos`.
+3. **Second Pass**: After all non-zero elements are placed, we fill the remaining positions (from `pos` to the end of the list) with zeros.
+4. **Return**: The modified list is returned with all zeros moved to the end.
+
+This approach efficiently moves all zeros to the end in a single pass (O(n) time complexity) and uses O(1) additional space.

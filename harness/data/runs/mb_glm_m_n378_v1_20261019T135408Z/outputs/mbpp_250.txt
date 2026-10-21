@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem with the required function and includes the assertion test:
+
+```python
+def count_X(tup, element):
+    """
+    Counts the occurrences of a given element in a tuple.
+    
+    Args:
+        tup: The input tuple.
+        element: The element to count in the tuple.
+    
+    Returns:
+        The number of times the element appears in the tuple.
+    """
+    count = 0
+    for item in tup:
+        if item == element:
+            count += 1
+    return count
+
+# Test the function with the provided assertion
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+
+# Additional test cases to verify the function works correctly
+assert count_X((1, 2, 3, 2, 4, 2), 2) == 3
+assert count_X(('a', 'b', 'a', 'c'), 'a') == 2
+assert count_X((), 5) == 0
+assert count_X((5, 5, 5), 5) == 3
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines the `count_X` function that iterates through the tuple and counts occurrences of the given element
+2. Includes the original assertion test from the problem statement
+3. Adds several additional test cases to verify the function works in various scenarios
+4. Prints a success message if all tests pass
+
+The function handles:
+- Empty tuples
+- Different data types (numbers, strings)
+- Elements that don't exist in the tuple (returns 0)
+- Multiple occurrences of the same element

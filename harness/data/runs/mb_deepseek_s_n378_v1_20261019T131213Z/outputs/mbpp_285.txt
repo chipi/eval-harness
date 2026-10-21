@@ -1,0 +1,25 @@
+```python
+import re
+
+def text_match_two_three(text: str) -> bool:
+    """
+    Returns True if the string contains 'a' followed by exactly two or three 'b' characters.
+    Otherwise returns False.
+    """
+    # Pattern: 'a' followed by exactly 2 or 3 'b's
+    pattern = r'ab{2,3}'
+    return bool(re.search(pattern, text))
+
+# Test the assertion from the problem statement
+assert text_match_two_three("ac") == False
+
+# Additional tests (optional, for verification)
+assert text_match_two_three("abb") == True
+assert text_match_two_three("abbb") == True
+assert text_match_two_three("abbbb") == False  # four b's should not match
+assert text_match_two_three("xabby") == True
+assert text_match_two_three("ab") == False     # only one b
+assert text_match_two_three("") == False
+
+print("All tests passed.")
+```

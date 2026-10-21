@@ -1,0 +1,23 @@
+```python
+def is_Diff(n: int) -> bool:
+    """
+    Checks whether a number is divisible by 11 using the divisibility rule for 11.
+    
+    The rule for 11 states that a number is divisible by 11 if the difference between 
+    the sum of its digits in the odd positions and the sum of its digits in the even 
+    positions is a multiple of 11 (including 0).
+    
+    Args:
+    n (int): The number to check for divisibility by 11.
+    
+    Returns:
+    bool: True if the number is divisible by 11, False otherwise.
+    """
+    s = str(abs(n))
+    diff = sum(int(digit) for i, digit in enumerate(s) if i % 2 == 0) - \
+           sum(int(digit) for i, digit in enumerate(s) if i % 2 != 0)
+    return diff % 11 == 0
+
+# Test the function with the provided assertion
+assert is_Diff(12345) == False
+```

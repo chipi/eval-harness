@@ -1,0 +1,7 @@
+```python
+def neg_nos(numbers):
+    return [number for number in numbers if number < 0]
+
+
+assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+```

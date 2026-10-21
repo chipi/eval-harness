@@ -1,0 +1,54 @@
+```python
+def second_smallest(numbers):
+    """
+    Finds the second smallest number in a list.
+
+    This function handles duplicates correctly. For example, in the list
+    [1, 2, -8, -2, 0, -2], the smallest number is -8 and the second
+    smallest is -2.
+
+    Args:
+        numbers: A list of numbers (integers or floats).
+
+    Returns:
+        The second smallest number in the list.
+
+    Raises:
+        ValueError: If the list contains fewer than two unique numbers,
+                    making it impossible to define a second smallest.
+    """
+    if not isinstance(numbers, list) or len(numbers) < 2:
+        raise ValueError("Input must be a list with at least two elements.")
+
+    # Use a set to find unique numbers, then convert back to a list
+    unique_numbers = list(set(numbers))
+
+    # Check if there are at least two unique numbers
+    if len(unique_numbers) < 2:
+        raise ValueError("List must contain at least two unique numbers to find a second smallest.")
+
+    # Sort the unique numbers and return the second element (index 1)
+    unique_numbers.sort()
+    return unique_numbers[1]
+
+# Example usage and assertions from the problem description
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+
+# Additional test cases
+assert second_smallest([5, 1, 9, 0, 4, 8, 1]) == 1
+assert second_smallest([-10, -5, -20, -15]) == -15
+assert second_smallest([10, 10, 10]) == "List must contain at least two unique numbers to find a second smallest."
+
+# Example of error handling
+try:
+    second_smallest([5])
+except ValueError as e:
+    print(f"Caught expected error: {e}")
+
+try:
+    second_smallest([7, 7, 7, 7])
+except ValueError as e:
+    print(f"Caught expected error: {e}")
+
+print("All tests passed successfully!")
+```

@@ -1,0 +1,8 @@
+```python
+def max_product_tuple(tuples_list):
+    return max(abs(a * b) for a, b in tuples_list)
+
+# Test the function
+tuples_list = [(2, 7), (2, 6), (1, 8), (4, 9)]
+print(max_product_tuple(tuples_list))  # Output: 36
+```

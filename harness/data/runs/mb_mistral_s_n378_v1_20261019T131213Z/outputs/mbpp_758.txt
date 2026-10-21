@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+from collections import defaultdict
+
+def unique_sublists(lst):
+    """
+    Counts the occurrences of each sublist in a list and returns a dictionary
+    where keys are tuples representing the sublists and values are their counts.
+
+    Args:
+        lst: A list of lists to be processed.
+
+    Returns:
+        A dictionary with tuple keys and integer values representing counts.
+    """
+    count_dict = defaultdict(int)
+    for sublist in lst:
+        # Convert the sublist to a tuple to make it hashable
+        tuple_key = tuple(sublist)
+        count_dict[tuple_key] += 1
+    return dict(count_dict)
+
+# Test the function
+if __name__ == "__main__":
+    test_list = [[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]]
+    result = unique_sublists(test_list)
+    print(result)
+    assert result == {(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+```
+
+This script:
+1. Uses `defaultdict` to efficiently count occurrences
+2. Converts each sublist to a tuple (which is hashable) to use as a dictionary key
+3. Returns a regular dictionary with the counts
+4. Includes a test case that matches the provided assertion
+
+The output will be:
+```
+{(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+```

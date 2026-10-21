@@ -1,0 +1,38 @@
+```python
+def text_match_two_three(text):
+    if len(text) < 3:
+        return False
+    elif text[0] == 'a' and text[1] == 'b' and (text[2] == 'b' or text[2] == 'b' and text[3] == 'b'):
+        return True
+    else:
+        return False
+
+# Test cases
+assert text_match_two_three("ac")==False
+assert text_match_two_three("abbb")==True
+assert text_match_two_three("aabbb")==True
+assert text_match_two_three("ab")==False
+assert text_match_two_three("aa")==False
+assert text_match_two_three("abbbb")==False
+assert text_match_two_three("aabb")==False
+assert text_match_two_three("abab")==False
+assert text_match_two_three("ababab")==False
+assert text_match_two_three("abababab")==False
+assert text_match_two_three("ababababab")==False
+assert text_match_two_three("abababababab")==False
+assert text_match_two_three("ababababababab")==False
+assert text_match_two_three("abababababababab")==False
+assert text_match_two_three("ababababababababab")==False
+assert text_match_two_three("abababababababababab")==False
+assert text_match_two_three("ababababababababababab")==False
+assert text_match_two_three("abababababababababababab")==False
+assert text_match_two_three("ababababababababababababab")==False
+assert text_match_two_three("abababababababababababababab")==False
+assert text_match_two_three("ababababababababababababababab")==False
+assert text_match_two_three("abababababababababababababababab")==False
+assert text_match_two_three("ababababababababababababababababab")==False
+assert text_match_two_three("abababababababababababababababababab")==False
+assert text_match_two_three("ababababababababababababababababababab")==False
+assert text_match_two_three("abababababababababababababababababababab")==False
+assert text_match_two_three("ababababababababababababababababababababab")==False
+assert text_match_two_three("ababababababababababababababababab

@@ -1,0 +1,22 @@
+```python
+def last_Digit_Factorial(n):
+    """
+    Return the last digit of n! (factorial of n).
+    """
+    # For n >= 5, n! always ends in 0 because it contains factor 10.
+    if n >= 5:
+        return 0
+
+    fact = 1
+    for i in range(2, n + 1):
+        fact *= i
+    return fact % 10
+
+
+# Example test
+assert last_Digit_Factorial(4) == 4
+
+# Optional additional examples
+# print(last_Digit_Factorial(5))  # 0
+# print(last_Digit_Factorial(10)) # 0
+```

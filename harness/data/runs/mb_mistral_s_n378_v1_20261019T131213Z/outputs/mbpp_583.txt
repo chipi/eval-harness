@@ -1,0 +1,73 @@
+Here's a self-contained Python script that calculates the nth Catalan number using a recursive approach with memoization for efficiency:
+
+```python
+def catalan_number(n, memo=None):
+    """
+    Calculate the nth Catalan number using recursion with memoization.
+
+    Args:
+        n (int): The index of the Catalan number to compute.
+        memo (dict, optional): Dictionary to store computed values for memoization.
+
+    Returns:
+        int: The nth Catalan number.
+    """
+    if memo is None:
+        memo = {0: 1, 1: 1}  # Base cases
+
+    if n not in memo:
+        # Catalan number formula: C(n) = sum from i=0 to n-1 of C(i)*C(n-1-i)
+        total = 0
+        for i in range(n):
+            total += catalan_number(i, memo) * catalan_number(n - 1 - i, memo)
+        memo[n] = total
+
+    return memo[n]
+
+# Test the function
+assert catalan_number(10) == 16796
+print("Test passed! catalan_number(10) =", catalan_number(10))
+```
+
+### Explanation:
+1. **Base Cases**: The 0th and 1st Catalan numbers are both 1.
+2. **Recursive Formula**: The nth Catalan number can be computed using the formula:
+   \[
+   C(n) = \sum_{i=0}^{n-1} C(i) \times C(n-1-i)
+   \]
+3. **Memoization**: The `memo` dictionary stores previously computed Catalan numbers to avoid redundant calculations, significantly improving performance for larger values of `n`.
+
+### Alternative (Iterative Approach):
+For better performance with large `n`, you can use an iterative approach with dynamic programming:
+
+```python
+def catalan_number(n):
+    """
+    Calculate the nth Catalan number using dynamic programming.
+
+    Args:
+        n (int): The index of the Catalan number to compute.
+
+    Returns:
+        int: The nth Catalan number.
+    """
+    if n <= 1:
+        return 1
+
+    catalan = [0] * (n + 1)
+    catalan[0] = 1
+    catalan[1] = 1
+
+    for i in range(2, n + 1):
+        catalan[i] = 0
+        for j in range(i):
+            catalan[i] += catalan[j] * catalan[i - 1 - j]
+
+    return catalan[n]
+
+# Test the function
+assert catalan_number(10) == 16796
+print("Test passed! catalan_number(10) =", catalan_number(10))
+```
+
+Both implementations will correctly compute the 10th Catalan number as 16796. The iterative approach is generally more efficient for large `n`.

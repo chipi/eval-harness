@@ -1,0 +1,61 @@
+```python
+def catalan_number(n: int) -> int:
+    """
+    Calculate the nth Catalan number.
+
+    The Catalan numbers form a sequence of natural numbers that occur in various
+    counting problems, often involving recursive structures.
+
+    The nth Catalan number can be expressed directly in terms of binomial coefficients:
+        C(n) = (1/(n+1)) * (2n choose n)
+
+    Alternatively, it can be computed using the recurrence relation:
+        C(0) = 1
+        C(n+1) = sum_{i=0}^{n} C(i)*C(n-i) for n >= 0
+
+    This implementation uses the direct formula with binomial coefficients for efficiency.
+
+    Args:
+        n: A non-negative integer representing the index of the Catalan number.
+
+    Returns:
+        The nth Catalan number.
+
+    Raises:
+        ValueError: If n is a negative integer.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+
+    # The 0th Catalan number is 1.
+    if n == 0:
+        return 1
+
+    # Calculate the binomial coefficient (2n choose n)
+    # C(2n, n) = (2n)! / (n! * n!)
+    # We can compute this efficiently without calculating large factorials directly
+    # by simplifying the calculation to a product.
+    # C(2n, n) = product_{k=1 to n} (n + k) / k
+    binomial_coeff = 1
+    for k in range(1, n + 1):
+        binomial_coeff = binomial_coeff * (2 * n - k + 1) // k
+
+    # The nth Catalan number is (1/(n+1)) * C(2n, n)
+    # Since binomial_coeff is an integer, (n+1) must divide it.
+    return binomial_coeff // (n + 1)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Verify the example from the problem statement
+    assert catalan_number(10) == 16796
+
+    # A few more test cases for verification
+    assert catalan_number(0) == 1
+    assert catalan_number(1) == 1
+    assert catalan_number(2) == 2
+    assert catalan_number(3) == 5
+    assert catalan_number(4) == 14
+    assert catalan_number(5) == 42
+
+    print("All tests passed successfully!")
+```

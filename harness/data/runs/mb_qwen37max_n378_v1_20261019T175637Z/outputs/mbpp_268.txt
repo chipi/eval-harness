@@ -1,0 +1,16 @@
+```python
+def find_star_num(n):
+    """
+    Find the n'th star number.
+    
+    A star number is a centered figurate number that represents a centered hexagram (six-pointed star).
+    The formula for the n'th star number is: 6 * n * (n - 1) + 1
+    
+    Note: This uses 1-based indexing where n=1 gives 1, n=2 gives 13, n=3 gives 37, etc.
+    """
+    return 6 * n * (n - 1) + 1
+
+
+# Test
+assert find_star_num(3) == 37
+```

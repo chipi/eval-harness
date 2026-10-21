@@ -1,0 +1,14 @@
+```python
+from bisect import bisect_left
+
+
+def left_insertion(values, target):
+    """Return the leftmost index where target can be inserted in sorted values."""
+    return bisect_left(values, target)
+
+
+if __name__ == "__main__":
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 2, 4], 2) == 1
+    assert left_insertion([], 3) == 0
+```

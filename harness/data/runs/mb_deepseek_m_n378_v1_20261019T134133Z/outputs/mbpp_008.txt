@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find squares of individual elements in a list.
+assert square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])==[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+"""
+
+def square_nums(nums):
+    """
+    Return a new list containing the squares of each element in the input list.
+    
+    Args:
+        nums (list): A list of numbers.
+    
+    Returns:
+        list: A list of squared numbers.
+    """
+    return [n ** 2 for n in nums]
+
+
+# Test the function
+assert square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+print("All tests passed!")
+```
+
+**How it works:**
+- The `square_nums` function uses a list comprehension to iterate over each element `n` in the input list and computes `n ** 2`.
+- It returns a new list with the squared values, leaving the original list unchanged.
+- The `assert` statement verifies the function produces the expected output for the given test case.

@@ -1,0 +1,63 @@
+```python
+def is_samepatterns(arr1, arr2):
+    """
+    Check whether two arrays follow the same pattern.
+    
+    A pattern is considered the same if the mapping between elements
+    is consistent and bijective (one-to-one).
+    
+    Args:
+        arr1: First array
+        arr2: Second array
+    
+    Returns:
+        True if both arrays follow the same pattern, False otherwise
+    """
+    # Arrays must have the same length
+    if len(arr1) != len(arr2):
+        return False
+    
+    # Create mappings from arr1 to arr2 and arr2 to arr1
+    map1_to_2 = {}
+    map2_to_1 = {}
+    
+    for elem1, elem2 in zip(arr1, arr2):
+        # Check if elem1 already has a mapping
+        if elem1 in map1_to_2:
+            # If it does, it must map to the same elem2
+            if map1_to_2[elem1] != elem2:
+                return False
+        else:
+            map1_to_2[elem1] = elem2
+        
+        # Check if elem2 already has a mapping
+        if elem2 in map2_to_1:
+            # If it does, it must map to the same elem1
+            if map2_to_1[elem2] != elem1:
+                return False
+        else:
+            map2_to_1[elem2] = elem1
+    
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    assert is_samepatterns(["red", "green", "red"], ["a", "b", "a"]) == True
+    assert is_samepatterns(["red", "green", "red"], ["a", "b", "c"]) == False
+    assert is_samepatterns(["red", "green"], ["a", "a"]) == False
+    assert is_samepatterns([], []) == True
+    print("All tests passed!")
+```
+
+The function works by:
+
+1. **Checking length**: Both arrays must have the same length
+2. **Creating bidirectional mappings**: 
+   - `map1_to_2`: Maps elements from arr1 to arr2
+   - `map2_to_1`: Maps elements from arr2 to arr1
+3. **Validating consistency**: For each pair of elements, we ensure:
+   - If an element from arr1 was already seen, it must map to the same element in arr2
+   - If an element from arr2 was already seen, it must map to the same element in arr1
+4. **Ensuring bijection**: The bidirectional mapping ensures a one-to-one correspondence (no two different elements in arr1 map to the same element in arr2, and vice versa)

@@ -1,0 +1,44 @@
+```python
+def maximum(a, b):
+    """
+    This function compares two numbers and returns the maximum.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+
+    Returns:
+        int: The maximum of the two numbers.
+    """
+    if a >= b:
+        return a
+    else:
+        return b
+
+# Example usage:
+if __name__ == "__main__":
+    assert maximum(5, 10) == 10
+    print("Maximum function works correctly.")
+```
+
+However, a more Pythonic way to solve this problem would be to use the built-in `max` function:
+
+```python
+def maximum(a, b):
+    """
+    This function compares two numbers and returns the maximum.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+
+    Returns:
+        int: The maximum of the two numbers.
+    """
+    return max(a, b)
+
+# Example usage:
+if __name__ == "__main__":
+    assert maximum(5, 10) == 10
+    print("Maximum function works correctly.")
+```

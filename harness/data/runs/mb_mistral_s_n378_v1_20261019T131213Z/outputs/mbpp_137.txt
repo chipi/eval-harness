@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def zero_count(arr):
+    """Calculate the ratio of zeroes to non-zeroes in an array of integers."""
+    zeroes = sum(1 for x in arr if x == 0)
+    non_zeroes = len(arr) - zeroes
+    if non_zeroes == 0:
+        return 0.0  # Avoid division by zero if all elements are zero
+    return zeroes / non_zeroes
+
+# Test case
+assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+```
+
+This script:
+1. Defines a function `zero_count` that takes an array of integers
+2. Counts the number of zeroes in the array
+3. Calculates the number of non-zero elements
+4. Returns the ratio of zeroes to non-zeroes
+5. Includes a test case that matches the provided assertion
+
+The function handles edge cases like:
+- All elements being zero (returns 0.0 to avoid division by zero)
+- Empty arrays (though the test case doesn't cover this)

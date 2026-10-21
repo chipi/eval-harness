@@ -1,0 +1,35 @@
+```python
+def snake_to_caml(snake_str: str) -> str:
+    """
+    Converts a snake_case string to CamelCase.
+
+    Args:
+        snake_str: The string in snake_case format.
+
+    Returns:
+        The converted string in CamelCase format.
+        
+    Example:
+        >>> snake_to_camel('python_program')
+        'PythonProgram'
+    """
+    # Split the string into words using the underscore as a delimiter
+    words = snake_str.split('_')
+    
+    # Capitalize the first letter of each word
+    # The first word is capitalized, and subsequent words are capitalized as well.
+    camel_words = [word.capitalize() for word in words]
+    
+    # Join the words back together without any separator
+    return "".join(camel_words)
+
+# Example usage and assertion
+assert snake_to_caml('python_program') == 'PythonProgram'
+assert snake_to_caml('this_is_a_test') == 'ThisIsATest'
+assert snake_to_caml('single') == 'Single'
+assert snake_to_caml('leading_underscore') == 'LeadingUnderscore'
+assert snake_to_caml('trailing_underscore_') == 'TrailingUnderscore'
+assert snake_to_caml('__double_leading__') == 'DoubleLeading'
+
+print("All assertions passed!")
+```

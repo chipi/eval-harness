@@ -1,0 +1,51 @@
+```python
+"""
+Write a function to check whether the given month number contains 30 days or not. Months are given as number from 1 to 12.
+assert check_monthnumber_number(6)==True
+"""
+
+def check_monthnumber_number(month_number: int) -> bool:
+    """
+    Checks if a given month number has 30 days.
+
+    Args:
+        month_number: An integer representing the month (1-12).
+
+    Returns:
+        True if the month has 30 days, False otherwise.
+        Returns False for invalid month numbers.
+    """
+    # Months with 30 days are April (4), June (6), September (9), and November (11).
+    # We can store these in a set for efficient lookup.
+    months_with_30_days = {4, 6, 9, 11}
+    
+    # Check if the input is a valid month number first.
+    if not 1 <= month_number <= 12:
+        return False
+        
+    # Check if the month number is in our set of 30-day months.
+    return month_number in months_with_30_days
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test cases
+    assert check_monthnumber_number(6) == True  # June
+    assert check_monthnumber_number(4) == True  # April
+    assert check_monthnumber_number(9) == True  # September
+    assert check_monthnumber_number(11) == True # November
+    
+    assert check_monthnumber_number(1) == False # January
+    assert check_monthnumber_number(2) == False # February
+    assert check_monthnumber_number(3) == False # March
+    assert check_monthnumber_number(5) == False # May
+    assert check_monthnumber_number(7) == False # July
+    assert check_monthnumber_number(8) == False # August
+    assert check_monthnumber_number(10) == False# October
+    assert check_monthnumber_number(12) == False# December
+    
+    # Test edge cases
+    assert check_monthnumber_number(0) == False # Invalid month
+    assert check_monthnumber_number(13) == False # Invalid month
+    
+    print("All assertions passed!")
+```

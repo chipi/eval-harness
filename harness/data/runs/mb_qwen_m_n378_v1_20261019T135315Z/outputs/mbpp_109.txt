@@ -1,0 +1,54 @@
+```python
+def odd_Equivalent(s: str, k: int) -> int:
+    """
+    Find the number of numbers with an odd value when rotating a binary string the given number of times.
+    
+    When we rotate a binary string, we get different binary representations. We need to count how many
+    of these rotations (up to k rotations) result in an odd number.
+    
+    A binary number is odd if and only if its last bit (least significant bit) is 1.
+    
+    For a string s of length n, rotating it i times means taking the last i characters and moving them
+    to the front. After rotation, the last character of the rotated string determines if the number is odd.
+    
+    Let's think about what happens when we rotate:
+    - Original string s = s[0]s[1]...s[n-1]
+    - After 1 rotation: s[n-1]s[0]s[1]...s[n-2], last char is s[n-2]
+    - After 2 rotations: s[n-2]s[n-1]s[0]...s[n-3], last char is s[n-3]
+    - After i rotations: last char is s[(n - i) % n]
+    
+    So for rotation i (1 <= i <= k), the last character is s[(n - i) % n].
+    The number is odd if s[(n - i) % n] == '1'.
+    
+    We need to count how many i in {1, 2, ..., k} satisfy s[(n - i) % n] == '1'.
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+    
+    count = 0
+    for i in range(1, k + 1):
+        # After i rotations, the last character of the rotated string is s[(n - i) % n]
+        idx = (n - i) % n
+        if s[idx] == '1':
+            count += 1
+    
+    return count
+
+
+if __name__ == "__main__":
+    # Test case from the problem
+    assert odd_Equivalent("011001", 6) == 3
+    
+    # Let's verify manually:
+    # s = "011001", n = 6
+    # Rotation 1: last char is s[(6-1)%6] = s[5] = '1' -> odd
+    # Rotation 2: last char is s[(6-2)%6] = s[4] = '0' -> even
+    # Rotation 3: last char is s[(6-3)%6] = s[3] = '0' -> even
+    # Rotation 4: last char is s[(6-4)%6] = s[2] = '1' -> odd
+    # Rotation 5: last char is s[(6-5)%6] = s[1] = '1' -> odd
+    # Rotation 6: last char is s[(6-6)%6] = s[0] = '0' -> even
+    # Count = 3 ✓
+    
+    print("All tests passed!")
+```

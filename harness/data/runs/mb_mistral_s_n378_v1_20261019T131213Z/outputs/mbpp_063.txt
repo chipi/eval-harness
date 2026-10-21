@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_difference(pairs):
+    """
+    Find the maximum difference between available pairs in the given tuple list.
+
+    Args:
+        pairs: A list of tuples where each tuple contains two integers.
+
+    Returns:
+        The maximum difference between any two numbers in the pairs.
+
+    Example:
+        >>> max_difference([(3, 5), (1, 7), (10, 3), (1, 2)])
+        7
+    """
+    if not pairs:
+        return 0
+
+    max_num = float('-inf')
+    min_num = float('inf')
+
+    for a, b in pairs:
+        max_num = max(max_num, a, b)
+        min_num = min(min_num, a, b)
+
+    return max_num - min_num
+
+# Test the function
+assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `max_difference` that takes a list of tuples
+2. Finds the maximum and minimum numbers across all pairs
+3. Returns the difference between them
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The solution efficiently finds the maximum difference by tracking just the maximum and minimum values in a single pass through the data.

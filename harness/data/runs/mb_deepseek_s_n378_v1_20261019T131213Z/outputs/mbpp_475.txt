@@ -1,0 +1,24 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def sort_counter(dictionary):
+    """
+    Sorts a dictionary by its values in descending order.
+    
+    Args:
+        dictionary (dict): A dictionary with comparable values.
+    
+    Returns:
+        list: A list of tuples sorted by value in descending order.
+    """
+    return sorted(dictionary.items(), key=lambda item: item[1], reverse=True)
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = sort_counter({'Math': 81, 'Physics': 83, 'Chemistry': 87})
+    expected = [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+    
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```

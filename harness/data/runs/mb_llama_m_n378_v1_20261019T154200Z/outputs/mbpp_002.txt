@@ -1,0 +1,25 @@
+```python
+def similar_elements(list1, list2):
+    """
+    This function finds the shared elements from two given lists.
+
+    Args:
+        list1 (tuple): The first list of elements.
+        list2 (tuple): The second list of elements.
+
+    Returns:
+        tuple: A tuple of shared elements.
+    """
+    # Convert the input tuples to sets for efficient lookup
+    set1 = set(list1)
+    set2 = set(list2)
+
+    # Use set intersection to find the shared elements
+    shared = set1.intersection(set2)
+
+    # Convert the set back to a tuple and return it
+    return tuple(shared)
+
+# Example usage:
+print(similar_elements((3, 4, 5, 6), (5, 7, 4, 10)))  # Output: (4, 5)
+```

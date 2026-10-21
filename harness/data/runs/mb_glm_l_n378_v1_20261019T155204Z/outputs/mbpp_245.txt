@@ -1,0 +1,52 @@
+```python
+def max_sum_bitonic_subsequence(arr):
+    """
+    Calculates the maximum sum of a bitonic subsequence for the given array.
+    A bitonic subsequence is one that first increases and then decreases.
+    
+    Args:
+    arr (list): A list of numbers.
+    
+    Returns:
+    int: The maximum sum of a bitonic subsequence.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+        
+    # Initialize LIS (Longest Increasing Subsequence) sums with the elements themselves.
+    # lis_sum[i] stores the maximum sum of an increasing subsequence ending at index i.
+    lis_sum = [0] * n
+    for i in range(n):
+        lis_sum[i] = arr[i]
+        for j in range(i):
+            if arr[j] < arr[i]:
+                lis_sum[i] = max(lis_sum[i], lis_sum[j] + arr[i])
+    
+    # Initialize LDS (Longest Decreasing Subsequence) sums with the elements themselves.
+    # lds_sum[i] stores the maximum sum of a decreasing subsequence starting at index i.
+    lds_sum = [0] * n
+    for i in range(n - 1, -1, -1):
+        lds_sum[i] = arr[i]
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                lds_sum[i] = max(lds_sum[i], lds_sum[j] + arr[i])
+    
+    # Find the maximum bitonic sum.
+    # The peak at index i is included in both LIS and LDS sums, so we subtract arr[i] once.
+    max_val = 0
+    for i in range(n):
+        peak_sum = lis_sum[i] + lds_sum[i] - arr[i]
+        if peak_sum > max_val:
+            max_val = peak_sum
+            
+    return max_val
+
+if __name__ == "__main__":
+    # Test case provided in the problem description
+    arr = [1, 15, 51, 45, 33, 100, 12, 18, 9]
+    result = max_sum_bitonic_subsequence(arr)
+    print(f"Maximum Sum Bitonic Subsequence: {result}")
+    assert result == 194, f"Expected 194, but got {result}"
+    print("Assertion passed.")
+```

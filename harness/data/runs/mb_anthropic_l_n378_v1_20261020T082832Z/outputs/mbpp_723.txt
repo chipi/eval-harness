@@ -1,0 +1,53 @@
+Looking at this problem, I need to compare two lists element-by-element at each index and count how many positions have matching values.
+
+Let me verify with the example:
+```
+Index:  0  1  2  3  4  5  6  7
+List1:  1  2  3  4  5  6  7  8
+List2:  2  2  3  1  2  6  7  9
+Match:  ✗  ✓  ✓  ✗  ✗  ✓  ✓  ✗
+```
+That gives 4 matches (indices 1, 2, 5, 6) ✓
+
+```python
+"""
+The input is defined as two lists of the same length. Write a function to count indices where the lists have the same values.
+assert count_same_pair([1, 2, 3, 4, 5, 6, 7, 8],[2, 2, 3, 1, 2, 6, 7, 9])==4
+"""
+
+
+def count_same_pair(nums1, nums2):
+    """
+    Count the number of indices at which two equal-length lists hold the same value.
+
+    Args:
+        nums1: First list of values.
+        nums2: Second list of values (same length as nums1).
+
+    Returns:
+        int: Number of positions i where nums1[i] == nums2[i].
+    """
+    return sum(1 for a, b in zip(nums1, nums2) if a == b)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert count_same_pair([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 3, 1, 2, 6, 7, 9]) == 4
+
+    # Additional test cases
+    assert count_same_pair([0, 1, 2, -1, -5], [0, 2, 2, -1, -5]) == 4
+    assert count_same_pair([1, 2, 3], [4, 5, 6]) == 0
+    assert count_same_pair([1, 2, 3], [1, 2, 3]) == 3
+    assert count_same_pair([], []) == 0
+    assert count_same_pair(['a', 'b', 'c'], ['a', 'x', 'c']) == 2
+
+    print("All tests passed!")
+    print(count_same_pair([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 3, 1, 2, 6, 7, 9]))
+```
+
+**How it works:**
+- `zip(nums1, nums2)` pairs up elements at the same index from both lists.
+- The generator expression yields `1` for every pair where the two values are equal.
+- `sum(...)` adds those up, giving the total count of matching indices.
+
+This runs in O(n) time and O(1) extra space.

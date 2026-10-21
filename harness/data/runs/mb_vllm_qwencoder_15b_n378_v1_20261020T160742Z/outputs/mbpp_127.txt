@@ -1,0 +1,11 @@
+```python
+def multiply_int(a, b):
+    return a * b
+
+# Test cases
+assert multiply_int(10, 20) == 200
+assert multiply_int(5, 7) == 35
+assert multiply_int(-4, -6) == 24
+assert multiply_int(0, 10) == 0
+assert multiply_int(100, 0) == 0
+```

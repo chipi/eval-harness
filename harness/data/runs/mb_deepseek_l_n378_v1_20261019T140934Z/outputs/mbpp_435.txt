@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def last_Digit(n):
+    """
+    Find the last digit of a given number.
+    
+    Args:
+        n: An integer number
+    
+    Returns:
+        The last digit of the number
+    """
+    return abs(n) % 10
+
+# Test the function
+if __name__ == "__main__":
+    assert last_Digit(123) == 3
+    print("Test passed! The last digit of 123 is", last_Digit(123))
+```
+
+The function works by:
+1. Taking the absolute value of the number (to handle negative numbers correctly)
+2. Using the modulo operator (`%`) with 10 to get the last digit
+3. Returning that digit
+
+The modulo operation `n % 10` gives the remainder when dividing by 10, which is always the last digit of the number.

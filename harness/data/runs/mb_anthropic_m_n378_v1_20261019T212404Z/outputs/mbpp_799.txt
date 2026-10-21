@@ -1,0 +1,17 @@
+```python
+def left_rotate(n, d):
+    """
+    Rotate left bits by d bits for a 32-bit number.
+    """
+    d = d % 32
+    mask = 0xFFFFFFFF
+    n = n & mask
+    return ((n << d) | (n >> (32 - d))) & mask
+
+
+if __name__ == "__main__":
+    assert left_rotate(16, 2) == 64
+    print(left_rotate(16, 2))
+    print(left_rotate(1, 31))
+    print(left_rotate(1, 0))
+```

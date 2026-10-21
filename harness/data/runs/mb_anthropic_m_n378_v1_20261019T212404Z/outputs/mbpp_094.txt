@@ -1,0 +1,24 @@
+```python
+def index_minimum(tuples_list):
+    """
+    Returns the first value of the tuple with the smallest second value.
+    
+    Args:
+        tuples_list: A list of tuples where each tuple has at least two elements
+    
+    Returns:
+        The first element of the tuple that has the minimum second element
+    """
+    return min(tuples_list, key=lambda x: x[1])[0]
+
+
+if __name__ == "__main__":
+    assert index_minimum([('Rash', 143), ('Manjeet', 200), ('Varsha', 100)]) == 'Varsha'
+    
+    # Additional test cases
+    assert index_minimum([('A', 5), ('B', 3), ('C', 8)]) == 'B'
+    assert index_minimum([('X', 1)]) == 'X'
+    assert index_minimum([('P', 10), ('Q', 10), ('R', 5)]) == 'R'
+    
+    print("All test cases passed!")
+```

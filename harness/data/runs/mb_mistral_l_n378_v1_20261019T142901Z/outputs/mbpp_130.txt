@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem by finding the item with the maximum frequency in a given list:
+
+```python
+"""
+Function to find the item with maximum frequency in a given list.
+"""
+
+def max_occurrences(lst):
+    frequency = {}
+    for item in lst:
+        if item in frequency:
+            frequency[item] += 1
+        else:
+            frequency[item] = 1
+
+    max_item = None
+    max_count = 0
+    for item, count in frequency.items():
+        if count > max_count:
+            max_count = count
+            max_item = item
+    return max_item
+
+# Test case
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+```
+
+This script:
+1. Defines a function `max_occurrences` that takes a list as input
+2. Creates a frequency dictionary to count occurrences of each item
+3. Iterates through the dictionary to find the item with the highest count
+4. Returns that item
+5. Includes the provided test case as an assertion
+
+The function will return `2` for the given test case, as 2 appears 5 times in the list (more than any other number).

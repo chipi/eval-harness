@@ -1,0 +1,13 @@
+```python
+def min_of_three(a, b, c):
+    """Find the minimum of three numbers."""
+    if a <= b and a <= c:
+        return a
+    elif b <= a and b <= c:
+        return b
+    else:
+        return c
+
+
+assert min_of_three(10, 20, 0) == 0
+```

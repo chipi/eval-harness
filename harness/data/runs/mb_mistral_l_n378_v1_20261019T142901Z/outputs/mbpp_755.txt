@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem of finding the second smallest number in a list:
+
+```python
+def second_smallest(numbers):
+    """
+    Find the second smallest number in a list.
+
+    Args:
+        numbers: List of numbers (can contain duplicates)
+
+    Returns:
+        The second smallest number in the list
+
+    Raises:
+        ValueError: If the list has fewer than 2 unique numbers
+    """
+    if len(numbers) < 2:
+        raise ValueError("List must contain at least 2 numbers")
+
+    # Remove duplicates and sort
+    unique_numbers = sorted(set(numbers))
+
+    if len(unique_numbers) < 2:
+        raise ValueError("List must contain at least 2 unique numbers")
+
+    return unique_numbers[1]
+
+# Test case
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+
+# Additional test cases
+assert second_smallest([5, 1, 4, 2, 3]) == 2
+assert second_smallest([-5, -1, -4, -2, -3]) == -4
+assert second_smallest([10, 10, 9]) == 10
+try:
+    second_smallest([5])
+    assert False, "Should have raised ValueError"
+except ValueError:
+    pass
+try:
+    second_smallest([7, 7, 7])
+    assert False, "Should have raised ValueError"
+except ValueError:
+    pass
+```
+
+This solution:
+1. First checks if the list has at least 2 elements
+2. Converts the list to a set to remove duplicates, then sorts it
+3. Checks if there are at least 2 unique numbers
+4. Returns the second element in the sorted unique list
+5. Includes the required test case plus additional test cases to verify edge cases
+
+The function handles duplicates properly and raises appropriate errors when the input doesn't meet requirements.

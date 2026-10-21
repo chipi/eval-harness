@@ -1,0 +1,24 @@
+```python
+import math
+
+def find_Index(n):
+    if n == 1:
+        return 1
+    # Using the formula derived from the approximation of triangular numbers
+    # The smallest index k for which the triangular number T_k has at least n digits
+    # is approximately k ≈ 10^((n-1)/2) * sqrt(2)
+    # We use math.log10 to compute the logarithm base 10
+    k = math.ceil((10 ** ((n - 1) / 2)) * math.sqrt(2))
+    # Verify if the triangular number at k has exactly n digits
+    while True:
+        triangular = k * (k + 1) // 2
+        if len(str(triangular)) == n:
+            return k
+        elif len(str(triangular)) < n:
+            k += 1
+        else:
+            k -= 1
+
+# Test case
+assert find_Index(2) == 4
+```

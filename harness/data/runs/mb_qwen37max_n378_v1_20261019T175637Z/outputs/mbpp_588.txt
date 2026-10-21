@@ -1,0 +1,9 @@
+```python
+def big_diff(nums):
+    """Find the difference between the largest and smallest value in a given list."""
+    return max(nums) - min(nums)
+
+
+# Test
+assert big_diff([1, 2, 3, 4]) == 3
+```

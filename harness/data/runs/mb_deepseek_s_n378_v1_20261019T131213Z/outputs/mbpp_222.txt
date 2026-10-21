@@ -1,0 +1,21 @@
+Here’s a self-contained Python script that solves your problem:  
+
+```python
+def check_type(tup):
+    """
+    Returns True if all elements in the tuple have the same data type, otherwise False.
+    """
+    if not tup:  # empty tuple case
+        return True
+    first_type = type(tup[0])
+    return all(type(item) == first_type for item in tup)
+
+# Test cases
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+assert check_type((5, 6, "7", 3, 5, 6)) == False
+assert check_type((1.2, 3.4, 5.6)) == True
+assert check_type(()) == True
+assert check_type((1, 2.0)) == False
+
+print("All tests passed.")
+```

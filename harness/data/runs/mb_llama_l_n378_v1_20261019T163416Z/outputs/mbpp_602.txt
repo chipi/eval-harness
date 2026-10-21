@@ -1,0 +1,26 @@
+```python
+def first_repeated_char(s):
+    """
+    This function finds the first repeated character in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The first repeated character. If no character is repeated, returns None.
+    """
+    seen = set()
+    for char in s:
+        if char in seen:
+            return char
+        seen.add(char)
+    return None
+
+def main():
+    # Test the function
+    print(first_repeated_char("abcabc"))  # Expected output: "a"
+    print(first_repeated_char("abcdefg"))  # Expected output: None
+
+if __name__ == "__main__":
+    main()
+```

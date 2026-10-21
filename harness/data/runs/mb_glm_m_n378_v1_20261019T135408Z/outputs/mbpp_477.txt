@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_lower(s):
+    """
+    Convert the given string to lower case.
+    
+    Args:
+        s (str): The input string to be converted.
+        
+    Returns:
+        str: The lower case version of the input string.
+    """
+    return s.lower()
+
+# Test cases
+assert is_lower("InValid") == "invalid"
+assert is_lower("Hello") == "hello"
+assert is_lower("WORLD") == "world"
+assert is_lower("Python") == "python"
+assert is_lower("") == ""
+
+print("All test cases passed!")
+```
+
+This script defines a function `is_lower` that takes a string `s` and returns its lower case version using Python's built-in `str.lower()` method. The script includes test cases to verify the function works correctly, including the one from the problem statement. When run, it will print "All test cases passed!" if all assertions hold true.

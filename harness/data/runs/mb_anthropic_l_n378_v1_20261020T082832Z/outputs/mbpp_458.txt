@@ -1,0 +1,37 @@
+```python
+"""
+Write a function to find the area of a rectangle.
+assert rectangle_area(10,20)==200
+"""
+
+
+def rectangle_area(l, b):
+    """
+    Return the area of a rectangle given its length and breadth.
+
+    Parameters
+    ----------
+    l : int or float
+        Length of the rectangle.
+    b : int or float
+        Breadth (width) of the rectangle.
+
+    Returns
+    -------
+    int or float
+        The area, computed as length * breadth.
+    """
+    return l * b
+
+
+if __name__ == "__main__":
+    # Basic tests
+    assert rectangle_area(10, 20) == 200
+    assert rectangle_area(10, 5) == 50
+    assert rectangle_area(4, 2) == 8
+    assert rectangle_area(0, 7) == 0
+    assert rectangle_area(2.5, 4) == 10.0
+
+    print("All tests passed!")
+    print("Area of rectangle (10 x 20):", rectangle_area(10, 20))
+```

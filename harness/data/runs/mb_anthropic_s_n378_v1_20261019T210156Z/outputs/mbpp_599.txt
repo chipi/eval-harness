@@ -1,0 +1,38 @@
+```python
+def sum_average(n):
+    """
+    Find sum and average of first n natural numbers.
+    
+    Args:
+        n: The count of first natural numbers
+        
+    Returns:
+        A tuple containing (sum, average) of first n natural numbers
+    """
+    total_sum = n * (n + 1) // 2
+    average = total_sum / n
+    return (total_sum, average)
+
+
+# Test cases
+assert sum_average(10) == (55, 5.5)
+assert sum_average(5) == (15, 3.0)
+assert sum_average(1) == (1, 1.0)
+assert sum_average(100) == (5050, 50.5)
+
+print("All tests passed!")
+print(f"sum_average(10) = {sum_average(10)}")
+print(f"sum_average(5) = {sum_average(5)}")
+print(f"sum_average(100) = {sum_average(100)}")
+```
+
+**Explanation:**
+
+The function uses the mathematical formula for the sum of first n natural numbers:
+- **Sum** = n × (n + 1) / 2
+- **Average** = Sum / n
+
+For n=10:
+- Sum = 10 × 11 / 2 = 55
+- Average = 55 / 10 = 5.5
+- Result: (55, 5.5) ✓

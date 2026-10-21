@@ -1,0 +1,32 @@
+```python
+def closest_num(n):
+    """
+    Finds the closest smaller number than n.
+
+    Args:
+        n: An integer.
+
+    Returns:
+        The largest integer that is smaller than n.
+        If n is the smallest possible integer, it returns n (though in practice,
+        for standard integers, this would be n-1, but the problem doesn't specify
+        behavior for edge cases like n = -sys.maxsize-1, so we assume a simple case).
+
+    Example:
+        >>> closest_num(11)
+        10
+    """
+    # The closest smaller number to n is simply n - 1.
+    return n - 1
+
+# Example usage and assertion from the problem description
+assert closest_num(11) == 10
+
+# Additional test cases
+assert closest_num(0) == -1
+assert closest_num(-5) == -6
+assert closest_num(1) == 0
+assert closest_num(100) == 99
+
+print("All assertions passed!")
+```

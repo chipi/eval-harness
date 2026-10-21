@@ -1,0 +1,35 @@
+```python
+def new_tuple(lst, string):
+    """
+    Create a new tuple from the given string and list.
+    
+    Args:
+        lst: A list of strings
+        string: A string value
+    
+    Returns:
+        A tuple containing all elements from the list followed by the string
+    
+    Example:
+        >>> new_tuple(["WEB", "is"], "best")
+        ('WEB', 'is', 'best')
+    """
+    return tuple(lst) + (string,)
+
+
+# Test cases
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+print("✓ Test passed: new_tuple(['WEB', 'is'], 'best') == ('WEB', 'is', 'best')")
+
+# Additional test cases
+assert new_tuple(["Hello"], "World") == ('Hello', 'World')
+print("✓ Test passed: new_tuple(['Hello'], 'World') == ('Hello', 'World')")
+
+assert new_tuple([], "single") == ('single',)
+print("✓ Test passed: new_tuple([], 'single') == ('single',)")
+
+assert new_tuple(["a", "b", "c"], "d") == ('a', 'b', 'c', 'd')
+print("✓ Test passed: new_tuple(['a', 'b', 'c'], 'd') == ('a', 'b', 'c', 'd')")
+
+print("\nAll tests passed!")
+```

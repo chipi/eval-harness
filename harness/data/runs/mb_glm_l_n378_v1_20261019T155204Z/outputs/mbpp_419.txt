@@ -1,0 +1,18 @@
+```python
+def round_and_sum(lst):
+    """
+    Rounds every number in the given list to the nearest integer, 
+    calculates the total sum of these rounded numbers, and returns 
+    the sum multiplied by the length of the list.
+    """
+    if not lst:
+        return 0
+    
+    rounded_sum = sum(round(num) for num in lst)
+    return rounded_sum * len(lst)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+    print("Test passed successfully.")
+```

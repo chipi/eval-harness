@@ -1,0 +1,19 @@
+```python
+def odd_length_sum(arr):
+    """
+    Given an array of integers arr, find the sum of all the odd length subarrays of arr.
+
+    For example:
+    odd_length_sum([1,2,4]) == 14
+    odd_length_sum([1,4,2,5,3]) == 58
+    odd_length_sum([10,11,12]) == 66
+    """
+    n = len(arr)
+    total_sum = 0
+    for i in range(n):
+        for j in range(i, n):
+            sub_array = arr[i:j+1]
+            if len(sub_array) % 2 != 0:
+                total_sum += sum(sub_array)
+    return total_sum
+```

@@ -1,0 +1,12 @@
+```python
+def sumofFactors(n):
+    """Return the sum of the even positive factors of n."""
+    if n == 0:
+        raise ValueError("0 has infinitely many factors")
+
+    n = abs(n)
+    return sum(i for i in range(2, n + 1, 2) if n % i == 0)
+
+
+assert sumofFactors(18) == 26
+```

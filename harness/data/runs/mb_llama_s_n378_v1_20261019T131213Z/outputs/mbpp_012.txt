@@ -1,0 +1,21 @@
+```python
+def sort_matrix(matrix):
+    """
+    Sorts a given matrix in ascending order according to the sum of its rows.
+
+    Args:
+        matrix (list): A 2D list of integers.
+
+    Returns:
+        list: The input matrix sorted by the sum of its rows.
+    """
+    # Use the built-in sorted function with a custom key
+    # The key is a lambda function that calculates the sum of each row
+    return sorted(matrix, key=lambda row: sum(row))
+
+# Example usage:
+matrix = [[1, 2, 3], [2, 4, 5], [1, 1, 1]]
+print(sort_matrix(matrix))  # Output: [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+```
+
+This script defines a function `sort_matrix` that takes a 2D list `matrix` as input and returns the sorted matrix. The `sorted` function is used with a custom key that calculates the sum of each row using a lambda function. The example usage demonstrates how to use the `sort_matrix` function with a sample matrix.

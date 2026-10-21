@@ -1,0 +1,18 @@
+```python
+def add_string(lst, format_string):
+    """
+    Apply a given format string to all of the elements in a list.
+
+    :param lst: List of elements to be formatted.
+    :param format_string: String containing placeholders for formatting.
+    :return: A new list with the format strings applied.
+    """
+    return [format_string.format(item) for item in lst]
+
+# Test cases
+assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+assert add_string(['hello', 'world'], 'hi{0}') == ['hihello', 'helloworld']
+assert add_string(['python', 'programming'], 'py{0}') == ['pypython', 'pyprogramming']
+assert add_string([], 'abc') == []
+```
+

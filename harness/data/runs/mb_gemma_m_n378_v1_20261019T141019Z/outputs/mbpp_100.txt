@@ -1,0 +1,67 @@
+To solve this problem, we need to find the smallest integer strictly greater than the input $n$ that reads the same forwards and backwards.
+
+The most efficient way to do this (rather than incrementing by 1 and checking) is to manipulate the digits of the number directly. We can treat the first half of the number as a prefix and mirror it to create a candidate palindrome. If that candidate is not greater than the original number, we increment the prefix and mirror it again.
+
+Here is the self-contained Python script:
+
+```python
+def next_smallest_palindrome(n: int) -> int:
+    """
+    Finds the next smallest palindrome strictly greater than the given integer n.
+    """
+    s = str(n)
+    length = len(s)
+    
+    # Case 1: All 9s (e.g., 99 -> 101, 999 -> 1001)
+    if s == '9' * length:
+        return n + 2
+
+    # Helper to create a palindrome by mirroring the first half
+    def create_palindrome(left_half: str, is_odd: bool) -> int:
+        if is_odd:
+            return int(left_half + left_half[:-1][::-1])
+        else:
+            return int(left_half + left_half[::-1])
+
+    # Split the number into the left half
+    # For 1234, left is 12. For 123, left is 12.
+    mid = (length + 1) // 2
+    left_half_str = s[:mid]
+    is_odd = (length % 2 != 0)
+
+    # Candidate 1: Mirror the current left half
+    candidate1 = create_palindrome(left_half_str, is_odd)
+
+    # If candidate1 is already greater than n, it's our answer
+    if candidate1 > n:
+        return candidate1
+    else:
+        # Candidate 2: Increment the left half and mirror it
+        # This handles cases like 123 -> 131 or 1234 -> 1331
+        new_left_half = str(int(left_half_str) + 1)
+        
+        # If incrementing the left half increases the digit count (e.g., 9 -> 10)
+        # This is actually handled by the 'all 9s' check, but for safety:
+        if len(new_left_half) > len(left_half_str):
+            # This case occurs if we had something like 99, but we handled that.
+            # For a general approach, we'd re-calculate based on new length.
+            return create_palindrome(new_left_half[:-1], (length + 1) % 2 != 0) # Simplified
+        
+        return create_palindrome(new_left_half, is_odd)
+
+if __name__ == "__main__":
+    # Test cases
+    assert next_smallest_palindrome(9) == 11
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(121) == 131
+    assert next_smallest_palindrome(1234) == 1331
+    assert next_smallest_palindrome(1) == 2
+    assert next_smallest_palindrome(12321) == 12421
+    assert next_smallest_palindrome(8) == 9
+    
+    print("All tests passed!")
+    
+    # Example usage
+    num = 12345
+    print(f"The next smallest palindrome after {num} is {next_smallest_palindrome(num)}")
+```

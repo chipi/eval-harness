@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pack_consecutive_duplicates(lst):
+    """
+    Pack consecutive duplicates of list elements into sublists.
+    
+    Args:
+        lst: Input list with potentially consecutive duplicate elements
+    
+    Returns:
+        List of sublists where each sublist contains consecutive duplicates
+    """
+    if not lst:
+        return []
+    
+    result = []
+    current_group = [lst[0]]
+    
+    for i in range(1, len(lst)):
+        if lst[i] == lst[i-1]:
+            # Same as previous element, add to current group
+            current_group.append(lst[i])
+        else:
+            # Different element, finalize current group and start new one
+            result.append(current_group)
+            current_group = [lst[i]]
+    
+    # Don't forget to add the last group
+    result.append(current_group)
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    test_input = [0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]
+    expected_output = [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+    
+    result = pack_consecutive_duplicates(test_input)
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Test passed: {result == expected_output}")
+    
+    # Assert as required
+    assert pack_consecutive_duplicates(test_input) == expected_output
+    print("Assertion passed!")
+```
+
+This script defines a `pack_consecutive_duplicates` function that:
+
+1. **Handles edge cases**: Returns an empty list if the input is empty
+2. **Iterates through the list**: Starting from the second element, comparing each element with the previous one
+3. **Groups consecutive duplicates**: If the current element equals the previous one, it's added to the current group; otherwise, the current group is finalized and a new group starts
+4. **Finalizes the last group**: After the loop, the last group is added to the result
+
+The function correctly transforms `[0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]` into `[[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]`, packing consecutive duplicates into sublists while keeping non-consecutive duplicates (like the two separate groups of 4s) in different sublists.

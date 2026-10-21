@@ -1,0 +1,18 @@
+```python
+def max_sum_list(lists):
+    """
+    Returns the list in a list of lists whose sum of elements is the highest.
+
+    Args:
+        lists (list): A list of lists containing integers.
+
+    Returns:
+        list: The list with the highest sum of elements.
+    """
+    return max(lists, key=sum)
+
+# Example usage:
+print(max_sum_list([[1,2,3], [4,5,6], [10,11,12], [7,8,9]]))  # Output: [10, 11, 12]
+```
+
+This script defines a function `max_sum_list` that uses the built-in `max` function with a `key` argument set to `sum` to find the list with the highest sum of elements. The `max` function returns the first list with the maximum sum if there are multiple lists with the same maximum sum. The example usage demonstrates how to use this function.

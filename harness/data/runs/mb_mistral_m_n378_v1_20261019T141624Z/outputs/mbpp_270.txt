@@ -1,0 +1,20 @@
+```python
+def sum_even_and_even_index(lst):
+    """
+    Calculate the sum of even numbers at even indices in a list.
+
+    Args:
+        lst: List of integers
+
+    Returns:
+        int: Sum of even numbers at even indices (0-based)
+    """
+    total = 0
+    for i in range(0, len(lst), 2):  # Step by 2 to get even indices (0, 2, 4, ...)
+        if lst[i] % 2 == 0:  # Check if the number is even
+            total += lst[i]
+    return total
+
+# Test the function
+assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+```

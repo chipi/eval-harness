@@ -1,0 +1,22 @@
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Search `text` for the first regex match of `pattern`.
+
+    Returns:
+        (matched_substring, start_index, end_index)
+
+    If no match is found, returns (None, -1, -1).
+    """
+    match = re.search(pattern, text)
+    if not match:
+        return None, -1, -1
+    return match.group(0), match.start(), match.end()
+
+
+if __name__ == "__main__":
+    assert find_literals('The quick brown fox jumps over the lazy dog.', 'fox') == ('fox', 16, 19)
+    print("All tests passed.")
+```

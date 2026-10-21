@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that solves the problem as requested:
+
+```python
+def square_Sum(n: int) -> int:
+    """
+    Returns the sum of the squares of the first n odd natural numbers.
+    
+    Example:
+    >>> square_Sum(2)
+    10
+    """
+    total = 0
+    odd_number = 1
+    for _ in range(n):
+        total += odd_number ** 2
+        odd_number += 2
+    return total
+
+# Test the function
+if __name__ == "__main__":
+    assert square_Sum(2) == 10
+    print("Test passed!")
+```

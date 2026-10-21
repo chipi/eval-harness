@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_num_decagonal(n):
+    """
+    Find the nth decagonal number.
+    
+    A decagonal number is a figurate number that represents a decagon.
+    The formula for the nth decagonal number is: n * (4n - 3)
+    
+    Args:
+        n: The position in the sequence (positive integer)
+    
+    Returns:
+        The nth decagonal number
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    return n * (4 * n - 3)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert is_num_decagonal(3) == 27, f"Expected 27, but got {is_num_decagonal(3)}"
+    
+    # Additional test cases
+    assert is_num_decagonal(1) == 1, f"Expected 1, but got {is_num_decagonal(1)}"
+    assert is_num_decagonal(2) == 10, f"Expected 10, but got {is_num_decagonal(2)}"
+    assert is_num_decagonal(4) == 52, f"Expected 52, but got {is_num_decagonal(4)}"
+    assert is_num_decagonal(5) == 85, f"Expected 85, but got {is_num_decagonal(5)}"
+    
+    print("All tests passed!")
+    print(f"The 3rd decagonal number is: {is_num_decagonal(3)}")
+```
+
+The decagonal number sequence follows the formula: **n × (4n - 3)**
+
+For n = 3:
+- 3 × (4 × 3 - 3) = 3 × (12 - 3) = 3 × 9 = 27 ✓
+
+The first few decagonal numbers are: 1, 10, 27, 52, 85, 126, 175, ...

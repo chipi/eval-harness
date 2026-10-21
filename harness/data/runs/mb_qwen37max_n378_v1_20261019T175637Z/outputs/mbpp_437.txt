@@ -1,0 +1,9 @@
+```python
+def remove_odd(s):
+    """Remove characters at odd indices from a string."""
+    return s[1::2]
+
+
+# Test
+assert remove_odd("python") == "yhn"
+```

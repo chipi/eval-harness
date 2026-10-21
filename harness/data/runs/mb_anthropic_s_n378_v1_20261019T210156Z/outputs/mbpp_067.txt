@@ -1,0 +1,68 @@
+```python
+def bell_number(n):
+    """
+    Find the number of ways to partition a set of n elements.
+    This is the Bell number B(n).
+    
+    The Bell number B(n) counts the number of partitions of a set with n elements.
+    
+    Args:
+        n: Non-negative integer representing the size of the set
+        
+    Returns:
+        The Bell number B(n)
+        
+    Examples:
+        bell_number(0) = 1  (one way to partition empty set)
+        bell_number(1) = 1  (one way to partition {1})
+        bell_number(2) = 2  (two ways: {{1,2}} and {{1},{2}})
+        bell_number(3) = 5
+    """
+    if n == 0:
+        return 1
+    
+    # Use Bell triangle (similar to Pascal's triangle)
+    # Each row starts with the last element of previous row
+    # Each element is sum of element to its left and element above-left
+    
+    bell = [[0 for i in range(n + 1)] for j in range(n + 1)]
+    bell[0][0] = 1
+    
+    for i in range(1, n + 1):
+        # First element of each row is same as last element of previous row
+        bell[i][0] = bell[i - 1][i - 1]
+        
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i][j - 1] + bell[i - 1][j - 1]
+    
+    return bell[n][0]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert bell_number(0) == 1, "B(0) should be 1"
+    assert bell_number(1) == 1, "B(1) should be 1"
+    assert bell_number(2) == 2, "B(2) should be 2"
+    assert bell_number(3) == 5, "B(3) should be 5"
+    assert bell_number(4) == 15, "B(4) should be 15"
+    assert bell_number(5) == 52, "B(5) should be 52"
+    
+    print("All tests passed!")
+    print(f"bell_number(2) = {bell_number(2)}")
+```
+
+The solution uses the **Bell triangle** method to compute Bell numbers efficiently:
+
+1. **Bell Triangle Construction**: Similar to Pascal's triangle, we build a triangle where:
+   - The first element of each row equals the last element of the previous row
+   - Each subsequent element is the sum of the element to its left and the element diagonally above-left
+
+2. **Time Complexity**: O(n²)
+3. **Space Complexity**: O(n²)
+
+For example, with n=2:
+- Row 0: [1]
+- Row 1: [1, 2]
+- Row 2: [2, 3, 5]
+
+The Bell number B(2) is the first element of row 2, which is **2** (representing the two ways to partition {1,2}: {{1,2}} and {{1},{2}}).

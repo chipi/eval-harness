@@ -1,0 +1,23 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all the numbers in a list and divide with the length of the list.
+    
+    :param numbers: List of numbers
+    :return: The result of multiplying all numbers and dividing by their length
+    """
+    if not numbers:
+        return 0
+    
+    total = 1
+    for num in numbers:
+        total *= num
+    
+    return total / len(numbers)
+
+# Test cases
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+```
+

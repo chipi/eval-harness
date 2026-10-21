@@ -1,0 +1,26 @@
+```python
+def square_nums(nums: list) -> list:
+    """
+    Returns a list containing the squares of each element in the input list.
+    
+    Args:
+        nums: A list of numbers.
+        
+    Returns:
+        A list of squared values.
+    """
+    return [x ** 2 for x in nums]
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+    
+    # Additional test cases
+    assert square_nums([]) == []
+    assert square_nums([0]) == [0]
+    assert square_nums([-1, -2, -3]) == [1, 4, 9]
+    assert square_nums([1.5, 2.5]) == [2.25, 6.25]
+    
+    print("All tests passed!")
+```

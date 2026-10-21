@@ -1,0 +1,27 @@
+```python
+def frequency(items, target):
+    """
+    Counts the number of occurrences of a target number in a given list.
+
+    Args:
+        items (list): A list of numbers.
+        target (int or float): The number to count.
+
+    Returns:
+        int: The number of times the target appears in the list.
+    """
+    return items.count(target)
+
+# Test cases based on the provided assertion
+assert frequency([1, 2, 3], 4) == 0
+assert frequency([1, 2, 2, 3], 2) == 2
+assert frequency([1, 1, 1, 1], 1) == 4
+assert frequency([], 5) == 0
+
+if __name__ == "__main__":
+    # Example usage
+    my_list = [1, 2, 3, 4, 5, 2, 2]
+    target_number = 2
+    count = frequency(my_list, target_number)
+    print(f"The number {target_number} appears {count} times in the list.")
+```

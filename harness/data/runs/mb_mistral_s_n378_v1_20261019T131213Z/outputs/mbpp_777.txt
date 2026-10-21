@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem of finding the sum of non-repeated elements in a given list:
+
+```python
+def find_sum(lst):
+    """
+    Calculate the sum of non-repeated elements in a list.
+
+    Args:
+        lst (list): The input list of elements.
+
+    Returns:
+        int: The sum of elements that appear only once in the list.
+    """
+    # Count occurrences of each element
+    count_dict = {}
+    for num in lst:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+
+    # Sum elements that appear exactly once
+    total = 0
+    for num, count in count_dict.items():
+        if count == 1:
+            total += num
+
+    return total
+
+# Test the function
+assert find_sum([1, 2, 3, 1, 1, 4, 5, 6]) == 21
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `find_sum` that takes a list as input
+2. Creates a dictionary to count occurrences of each element
+3. Sums only those elements that appear exactly once
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works by first counting how many times each element appears in the list, then summing only those elements that appear exactly once. In the example `[1,2,3,1,1,4,5,6]`, the non-repeated elements are 2, 3, 4, 5, and 6, which sum to 21.

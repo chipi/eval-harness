@@ -1,0 +1,44 @@
+```python
+def sum_Of_product(n: int) -> int:
+    """
+    Find the sum of the product of consecutive binomial coefficients.
+    
+    For a given n, compute sum of C(n, k) * C(n, k+1) for k from 0 to n-1.
+    
+    The binomial coefficient C(n, k) = n! / (k! * (n-k)!)
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The sum of products of consecutive binomial coefficients
+    """
+    def binomial_coeff(n: int, k: int) -> int:
+        """Compute C(n, k)"""
+        if k < 0 or k > n:
+            return 0
+        if k == 0 or k == n:
+            return 1
+        # Use iterative approach to avoid large factorials
+        k = min(k, n - k)
+        result = 1
+        for i in range(k):
+            result = result * (n - i) // (i + 1)
+        return result
+    
+    total = 0
+    for k in range(n):
+        total += binomial_coeff(n, k) * binomial_coeff(n, k + 1)
+    
+    return total
+
+
+if __name__ == "__main__":
+    # Test case
+    assert sum_Of_product(3) == 15, f"Expected 15, got {sum_Of_product(3)}"
+    
+    # Let's verify manually for n=3:
+    # C(3,0)*C(3,1) + C(3,1)*C(3,2) + C(3,2)*C(3,3)
+    # = 1*3 + 3*3 + 3*1 = 3 + 9 + 3 = 15
+    print("All tests passed!")
+```

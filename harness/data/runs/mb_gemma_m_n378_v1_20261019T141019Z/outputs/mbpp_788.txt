@@ -1,0 +1,25 @@
+```python
+def new_tuple(string_list, string):
+    """
+    Creates a new tuple by combining the elements of a list and a single string.
+    
+    Args:
+        string_list (list): A list of strings.
+        string (str): A single string to append.
+        
+    Returns:
+        tuple: A tuple containing all elements from the list followed by the string.
+    """
+    # Convert the list to a tuple and add the string as a single-element tuple, then concatenate
+    return tuple(string_list) + (string,)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+    
+    # Additional test cases
+    assert new_tuple([], "hello") == ("hello",)
+    assert new_tuple(["a", "b"], "c") == ("a", "b", "c")
+    
+    print("All tests passed!")
+```

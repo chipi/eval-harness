@@ -1,0 +1,17 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def neg_nos(numbers):
+    """Return a list of negative numbers from the input list."""
+    return [num for num in numbers if num < 0]
+
+# Test the function
+assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+```
+
+This solution:
+1. Defines a function `neg_nos` that takes a list of numbers as input
+2. Uses a list comprehension to filter and return only the negative numbers
+3. Includes the assertion test to verify the function works correctly
+
+The function will return all negative numbers from the input list while preserving their original order.

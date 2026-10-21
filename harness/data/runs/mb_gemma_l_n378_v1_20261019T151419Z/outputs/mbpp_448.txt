@@ -1,0 +1,32 @@
+```python
+def cal_sum(n):
+    """
+    Calculates the sum of the first n Perrin numbers.
+    The Perrin sequence is defined as:
+    P(0) = 3
+    P(1) = 0
+    P(2) = 2
+    P(n) = P(n-2) + P(n-3) for n > 2
+    """
+    if n <= 0:
+        return 0
+    
+    # Initial values for P(0), P(1), P(2)
+    perrin = [3, 0, 2]
+    
+    # Generate the sequence up to n-1
+    for i in range(3, n):
+        # P(n) = P(n-2) + P(n-3)
+        next_val = perrin[i-2] + perrin[i-3]
+        perrin.append(next_val)
+    
+    # Return the sum of the first n elements
+    return sum(perrin[:n])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = cal_sum(9)
+    print(f"Sum of first 9 Perrin numbers: {result}")
+    assert result == 49, f"Expected 49, but got {result}"
+    print("Assertion passed!")
+```

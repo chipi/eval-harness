@@ -1,0 +1,25 @@
+```python
+def find_first_occurrence(arr, target):
+    """
+    Find the index of the first occurrence of a given number in a sorted array.
+    Uses binary search for O(log n) efficiency.
+    """
+    left, right = 0, len(arr) - 1
+    result = -1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            result = mid
+            right = mid - 1  # Continue searching left half for earlier occurrence
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return result
+
+
+# Test
+assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+```

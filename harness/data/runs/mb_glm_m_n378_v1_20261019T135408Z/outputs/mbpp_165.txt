@@ -1,0 +1,36 @@
+```python
+def count_char_position(s: str) -> int:
+    """
+    Counts the number of characters in a string that occur at the same position 
+    in the string as in the English alphabet (case insensitive).
+    
+    The English alphabet is 1-indexed for this problem, meaning:
+    'a' or 'A' is at position 1, 'b' or 'B' is at position 2, ..., 'z' or 'Z' is at position 26.
+    
+    Args:
+        s (str): The input string.
+        
+    Returns:
+        int: The count of characters that match their 1-indexed alphabet position.
+    """
+    count = 0
+    for i, char in enumerate(s):
+        # Check if the character is an alphabet letter
+        if char.isalpha():
+            # Calculate the 1-indexed position of the character in the alphabet
+            alphabet_pos = ord(char.lower()) - ord('a') + 1
+            
+            # Calculate the 1-indexed position of the character in the string
+            string_pos = i + 1
+            
+            # If they match, increment the count
+            if alphabet_pos == string_pos:
+                count += 1
+                
+    return count
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_char_position("xbcefg") == 2
+    print("Assertion passed successfully!")
+```

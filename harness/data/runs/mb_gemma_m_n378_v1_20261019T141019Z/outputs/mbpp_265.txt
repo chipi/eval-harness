@@ -1,0 +1,32 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists, where each sublist contains elements 
+    at every nth position starting from a specific offset.
+    
+    Args:
+        lst (list): The input list to be split.
+        n (int): The step/interval for splitting.
+        
+    Returns:
+        list of lists: A list containing n sublists.
+    """
+    # We create n sublists. Each sublist i starts at index i 
+    # and takes every n-th element.
+    return [lst[i::n] for i in range(n)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']
+    n_val = 3
+    expected_output = [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+    
+    result = list_split(input_list, n_val)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed successfully!")
+    print(f"Input: {input_list}")
+    print(f"Result: {result}")
+```

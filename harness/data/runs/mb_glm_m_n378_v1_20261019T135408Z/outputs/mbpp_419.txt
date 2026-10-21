@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def round_and_sum(numbers):
+    """
+    Rounds every number in the given list, calculates the sum of the rounded numbers,
+    and returns the product of this sum and the length of the list.
+    
+    Args:
+        numbers (list): A list of floating-point numbers.
+    
+    Returns:
+        int: The result of (sum of rounded numbers) * (length of the list).
+    """
+    rounded_numbers = [round(num) for num in numbers]
+    total_sum = sum(rounded_numbers)
+    result = total_sum * len(numbers)
+    return result
+
+# Test the function with the provided assert statement
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+
+# Additional test cases to verify the function
+print(round_and_sum([1.1, 2.2, 3.3]))  # Expected: (1 + 2 + 3) * 3 = 18
+print(round_and_sum([-1.5, -2.5, -3.5]))  # Expected: (-2 + -2 + -4) * 3 = -24
+print(round_and_sum([0.0, 0.0, 0.0]))  # Expected: (0 + 0 + 0) * 3 = 0
+```
+
+### Explanation:
+1. **Rounding the Numbers**: The function first rounds each number in the input list using Python's built-in `round()` function. For example, `22.4` becomes `22`, `-16.22` becomes `-16`, etc.
+2. **Summing the Rounded Numbers**: The rounded numbers are then summed up. For the given list, the sum is `22 + 4 + (-16) + (-9) + 11 + (-12) + 14 + (-5) + 18 = 27`.
+3. **Multiplying by List Length**: The sum is multiplied by the length of the list (which is 9 in the given example). So, `27 * 9 = 243`.
+4. **Testing**: The function is tested with the provided assert statement and additional test cases to ensure correctness.
+
+The script is self-contained and includes the function definition, the assert test, and additional test cases for verification.

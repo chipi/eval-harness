@@ -1,0 +1,17 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def is_num_decagonal(n):
+    """
+    Function to find the nth decagonal number.
+    Formula for the nth decagonal number: D(n) = 4*n^2 - 3*n
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 4 * n * n - 3 * n
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert is_num_decagonal(3) == 27
+    print("Assertion passed successfully.")
+```

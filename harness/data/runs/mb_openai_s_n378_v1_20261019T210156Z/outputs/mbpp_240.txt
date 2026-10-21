@@ -1,0 +1,18 @@
+```python
+def replace_list(first_list, second_list):
+    """
+    Replace the last element of first_list with all elements of second_list.
+
+    Examples:
+        replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8])
+        -> [1, 3, 5, 7, 9, 2, 4, 6, 8]
+    """
+    if not first_list:
+        return second_list[:]
+    return first_list[:-1] + second_list
+
+
+if __name__ == "__main__":
+    assert replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 2, 4, 6, 8]
+    print("All tests passed.")
+```

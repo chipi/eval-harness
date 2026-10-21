@@ -1,0 +1,13 @@
+```python
+def insert_element(lst, element):
+    result = []
+    for i in lst:
+        result.extend([element, i])
+    return result
+
+def main():
+    print(insert_element(['Red', 'Green', 'Black'], 'c'))  # Output: ['c', 'Red', 'c', 'Green', 'c', 'Black']
+
+if __name__ == "__main__":
+    main()
+```

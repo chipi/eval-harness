@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem, including the assertion as requested:
+
+```python
+"""
+Function to check if a substring exists in any string within a given list.
+"""
+
+def find_substring(string_list, substring):
+    """
+    Check if the substring is present in any string of the list.
+
+    Args:
+        string_list: List of strings to search through.
+        substring: Substring to look for in the strings.
+
+    Returns:
+        bool: True if substring is found in any string, False otherwise.
+    """
+    for string in string_list:
+        if substring in string:
+            return True
+    return False
+
+# Test case
+assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+```
+
+This script:
+1. Defines the `find_substring` function that takes a list of strings and a substring
+2. Iterates through each string in the list and checks if the substring is present
+3. Returns True if found in any string, False otherwise
+4. Includes the assertion test case from the problem statement

@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find the item with maximum frequency in a given list.
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])==2
+"""
+
+from collections import Counter
+
+
+def max_occurrences(lst):
+    """
+    Return the item with the maximum frequency in the given list.
+    If there is a tie, return the item that appears first in the list.
+    """
+    if not lst:
+        return None
+
+    counts = Counter(lst)
+    max_count = max(counts.values())
+
+    # Preserve order of first appearance to break ties consistently
+    for item in lst:
+        if counts[item] == max_count:
+            return item
+
+
+# Test the function
+assert max_occurrences([2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]) == 2
+
+print("All tests passed!")
+
+# Extra demonstration
+if __name__ == "__main__":
+    sample = [2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]
+    print(f"List: {sample}")
+    print(f"Most frequent item: {max_occurrences(sample)}")
+```
+
+**How it works:**
+
+1. **`Counter(lst)`** builds a dictionary mapping each unique element to its occurrence count.
+2. **`max(counts.values())`** finds the highest frequency.
+3. Iterating over the original list (not the counter) ensures we return the *first* element achieving that maximum — a deterministic tie-breaking rule.
+4. The assertion from the problem statement passes because `2` appears 5 times in the list, more than any other value.
+
+**Output:**
+```
+All tests passed!
+List: [2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]
+Most frequent item: 2
+```

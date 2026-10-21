@@ -1,0 +1,33 @@
+To solve this problem, we need to understand that any positive integer can be represented as a sum of powers of 2 (this is the basis of the binary number system). However, the prompt specifies **non-zero powers of 2**. 
+
+A "non-zero power of 2" means $2^n$ where $n \ge 1$. This means the powers available are $2^1=2, 2^2=4, 2^3=8, \dots$ and so on. Crucially, $2^0=1$ is excluded.
+
+If a number can be represented as a sum of powers of 2 starting from $2^1$, it simply means the number must be **even** and **greater than 0**. If a number is odd, it requires $2^0$ (1) to be represented, which is forbidden by the "non-zero" constraint.
+
+Here is the self-contained script:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Checks whether the given number can be represented as a sum of 
+    non-zero powers of 2 (2^1, 2^2, 2^3, ...).
+    
+    A number can be represented as a sum of powers of 2 if it is positive.
+    If the powers must be non-zero (n >= 1), the number must be even, 
+    because any odd number requires 2^0 (which is 1) in its binary representation.
+    """
+    # A number is a sum of non-zero powers of 2 if it is positive and even.
+    # 0 cannot be represented as a sum of non-zero powers.
+    # Odd numbers require 2^0 = 1.
+    return n > 0 and n % 2 == 0
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_Sum_Of_Powers_Of_Two(10) == True   # 8 + 2 (2^3 + 2^1)
+    assert is_Sum_Of_Powers_Of_Two(8) == True    # 8 (2^3)
+    assert is_Sum_Of_Powers_Of_Two(7) == False   # Requires 2^0 (1)
+    assert is_Sum_Of_Powers_Of_Two(1) == False   # Requires 2^0 (1)
+    assert is_Sum_Of_Powers_Of_Two(0) == False   # Not a sum of positive powers
+    
+    print("All tests passed!")
+```

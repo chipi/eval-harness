@@ -1,0 +1,11 @@
+```python
+def return_sum(dictionary):
+    return sum(dictionary.values())
+
+def main():
+    dictionary = {'a': 100, 'b':200, 'c':300}
+    print(return_sum(dictionary))  # Output: 600
+
+if __name__ == "__main__":
+    main()
+```

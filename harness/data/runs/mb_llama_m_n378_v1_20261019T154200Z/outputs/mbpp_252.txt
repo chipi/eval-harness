@@ -1,0 +1,28 @@
+```python
+import cmath
+
+def convert(complex_number):
+    """
+    Convert a complex number to polar coordinates.
+
+    Args:
+        complex_number (complex): The complex number to convert.
+
+    Returns:
+        tuple: A tuple containing the magnitude and phase of the complex number.
+    """
+    # Use the cmath.polar function to convert the complex number to polar coordinates
+    magnitude, phase = cmath.polar(complex_number)
+    return magnitude, phase
+
+# Test the function
+assert convert(1) == (1.0, 0.0)
+assert convert(1 + 1j) == (cmath.sqrt(2), cmath.pi / 4)
+assert convert(-1) == (1.0, cmath.pi)
+
+# Example usage:
+if __name__ == "__main__":
+    complex_num = 3 + 4j
+    magnitude, phase = convert(complex_num)
+    print(f"The polar coordinates of {complex_num} are: magnitude = {magnitude}, phase = {phase}")
+```

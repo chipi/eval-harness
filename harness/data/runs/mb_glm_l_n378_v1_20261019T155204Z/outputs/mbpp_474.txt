@@ -1,0 +1,21 @@
+```python
+def replace_char(input_string, old_char, new_char):
+    """
+    Replaces all occurrences of a character in a string with a new character.
+
+    Args:
+        input_string (str): The original string.
+        old_char (str): The character to be replaced.
+        new_char (str): The character to replace with.
+
+    Returns:
+        str: The new string with characters replaced.
+    """
+    # Use the built-in string replace method
+    return input_string.replace(old_char, new_char)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert replace_char("polygon", 'y', 'l') == "pollgon"
+    print("Test passed successfully!")
+```

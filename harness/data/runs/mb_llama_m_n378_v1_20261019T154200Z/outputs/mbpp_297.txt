@@ -1,0 +1,27 @@
+```python
+def flatten_list(nested_list):
+    """
+    This function takes a nested list as input and returns a new list with all elements flattened.
+
+    :param nested_list: A list that may contain nested lists
+    :return: A new list with all elements flattened
+    """
+    flat_list = []
+    for element in nested_list:
+        if isinstance(element, list):
+            # If the element is a list, recursively call the function to flatten it
+            flat_list.extend(flatten_list(element))
+        else:
+            # If the element is not a list, append it to the flat list
+            flat_list.append(element)
+    return flat_list
+
+# Test the function
+assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+
+# Example usage
+if __name__ == "__main__":
+    nested_list = [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    print("Original list:", nested_list)
+    print("Flattened list:", flatten_list(nested_list))
+```

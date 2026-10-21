@@ -1,0 +1,24 @@
+```python
+def extract_even(nested_tuple):
+    """
+    This function removes uneven elements in a nested mixed tuple.
+
+    Args:
+        nested_tuple (tuple): A tuple that can contain integers and other tuples.
+
+    Returns:
+        tuple: A new tuple with uneven elements removed.
+    """
+    result = []
+    for element in nested_tuple:
+        if isinstance(element, tuple):
+            # If the element is a tuple, recursively call the function
+            result.append(extract_even(element))
+        elif isinstance(element, int) and element % 2 == 0:
+            # If the element is an even integer, add it to the result
+            result.append(element)
+    return tuple(result)
+
+# Test the function
+print(extract_even((4, 5, (7, 6, (2, 4)), 6, 8)))  # Expected output: (4, (6, (2, 4)), 6, 8)
+```

@@ -1,0 +1,31 @@
+```python
+def dif_Square(n: int) -> bool:
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be written as a^2 - b^2 if and only if n is odd or n is a multiple of 4.
+    Equivalently, n cannot be represented as the difference of two squares if and only if n % 4 == 2.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if the number can be represented as the difference of two squares, False otherwise.
+    """
+    if n < 0:
+        # For negative numbers, we can just check the positive equivalent 
+        # since a^2 - b^2 = -(b^2 - a^2)
+        n = -n
+        
+    return n % 4 != 2
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert dif_Square(5) == True
+    # Additional test cases
+    assert dif_Square(10) == False  # 10 % 4 == 2
+    assert dif_Square(4) == True   # 4 = 2^2 - 0^2
+    assert dif_Square(7) == True   # 7 = 4^2 - 3^2
+    assert dif_Square(2) == False  # 2 % 4 == 2
+    print("All tests passed.")
+```

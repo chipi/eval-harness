@@ -1,0 +1,25 @@
+```python
+import math
+
+def volume_sphere(radius: float) -> float:
+    """
+    Calculate the volume of a sphere given its radius.
+    
+    Args:
+        radius: The radius of the sphere.
+        
+    Returns:
+        The volume of the sphere.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative")
+    return (4/3) * math.pi * (radius ** 3)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = volume_sphere(10)
+    expected = 4188.790204786391
+    assert math.isclose(result, expected, rel_tol=0.001), f"Expected {expected}, got {result}"
+    print(f"Volume of sphere with radius 10: {result}")
+    print("Test passed!")
+```

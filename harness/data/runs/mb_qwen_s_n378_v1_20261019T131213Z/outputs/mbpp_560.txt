@@ -1,0 +1,17 @@
+```python
+def union_elements(t1, t2):
+    """
+    Find the union of elements from two tuples and return them in sorted order.
+    
+    Args:
+        t1 (tuple): First tuple
+        t2 (tuple): Second tuple
+    
+    Returns:
+        tuple: Sorted union of elements from both tuples
+    """
+    # Combine both tuples into a set to get unique elements
+    combined = set(t1) | set(t2)
+    # Sort the elements and convert back to tuple
+    return tuple(sorted(combined))
+```

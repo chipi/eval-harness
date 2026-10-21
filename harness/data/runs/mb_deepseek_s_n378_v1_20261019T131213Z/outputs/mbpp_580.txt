@@ -1,0 +1,31 @@
+```python
+def extract_even(t):
+    """
+    Recursively removes all odd integers from a nested mixed tuple,
+    preserving the structure of nested tuples.
+    """
+    result = []
+    for item in t:
+        if isinstance(item, tuple):
+            # Recursively process nested tuples
+            processed = extract_even(item)
+            # Only include non-empty tuples
+            if processed:
+                result.append(processed)
+        elif isinstance(item, int) and item % 2 == 0:
+            # Keep only even integers
+            result.append(item)
+        # Non-integer items (strings, etc.) are ignored per the problem spec
+    return tuple(result)
+
+
+# Test the function with the provided assertion
+assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+print("Test passed!")
+
+# Additional test cases
+print(extract_even((1, 2, 3)))  # Expected: (2,)
+print(extract_even((2, 4, 6)))  # Expected: (2, 4, 6)
+print(extract_even((1, (3, 5))))  # Expected: ()
+print(extract_even((8, (2, (4, 6)))))  # Expected: (8, (2, (4, 6)))
+```

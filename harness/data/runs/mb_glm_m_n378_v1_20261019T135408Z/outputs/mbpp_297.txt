@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem of flattening a nested list structure:
+
+```python
+def flatten_list(nested_list):
+    """
+    Flattens a given nested list structure into a single list.
+    
+    Args:
+        nested_list: A list that may contain other lists as elements.
+        
+    Returns:
+        A flat list containing all the elements from the nested structure in order.
+    """
+    flat_list = []
+    for element in nested_list:
+        if isinstance(element, list):
+            flat_list.extend(flatten_list(element))
+        else:
+            flat_list.append(element)
+    return flat_list
+
+# Test the function with the provided example
+assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+
+# Additional test cases
+assert flatten_list([]) == []
+assert flatten_list([1, [2, [3, 4], 5], 6]) == [1, 2, 3, 4, 5, 6]
+assert flatten_list([[[1]], 2, [[3, 4]]]) == [1, 2, 3, 4]
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `flatten_list` takes a nested list as input.
+2. It initializes an empty list `flat_list` to store the flattened elements.
+3. It iterates over each element in the input list:
+   - If the element is a list, it recursively calls `flatten_list` on that element and extends `flat_list` with the result.
+   - If the element is not a list, it appends the element directly to `flat_list`.
+4. The function returns the `flat_list` after processing all elements.
+5. The script includes test cases to verify the correctness of the function, including the provided example and some additional edge cases.
+
+This approach uses recursion to handle arbitrarily nested lists and ensures all elements are flattened into a single list in the original order.

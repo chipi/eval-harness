@@ -1,0 +1,43 @@
+```python
+def index_multiplication(tuple1, tuple2):
+    """
+    This function performs index-wise multiplication of tuple elements in the given two tuples.
+
+    Args:
+        tuple1 (tuple): The first tuple.
+        tuple2 (tuple): The second tuple.
+
+    Returns:
+        tuple: A new tuple with index-wise multiplication of input tuples.
+
+    Raises:
+        ValueError: If the input tuples are not of the same length.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Input tuples must be of the same length")
+
+    result = []
+    for t1, t2 in zip(tuple1, tuple2):
+        if len(t1) != len(t2):
+            raise ValueError("Tuples inside the input tuples must be of the same length")
+        result.append(tuple(x * y for x, y in zip(t1, t2)))
+
+    return tuple(result)
+
+
+# Example usage:
+tuple1 = ((1, 3), (4, 5), (2, 9), (1, 10))
+tuple2 = ((6, 7), (3, 9), (1, 1), (7, 3))
+print(index_multiplication(tuple1, tuple2))  # Output: ((6, 21), (12, 45), (2, 9), (7, 30))
+```
+
+In this code:
+
+*   We define a function `index_multiplication` that takes two tuples as input.
+*   It checks if the input tuples are of the same length and raises a `ValueError` if they are not.
+*   It then uses the `zip` function to iterate over the tuples in parallel.
+*   For each pair of tuples, it checks if they are of the same length and raises a `ValueError` if they are not.
+*   It uses a generator expression with `zip` to multiply corresponding elements and creates a new tuple for each pair.
+*   Finally, it returns a tuple of these result tuples.
+
+The example usage demonstrates how to use the `index_multiplication` function with the provided test case.

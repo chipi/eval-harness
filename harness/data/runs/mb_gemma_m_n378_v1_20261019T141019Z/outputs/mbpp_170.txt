@@ -1,0 +1,32 @@
+```python
+def sum_range_list(lst, start_index, end_index):
+    """
+    Calculates the sum of numbers in a list from start_index to end_index (inclusive).
+    
+    Args:
+        lst (list): The list of numbers.
+        start_index (int): The starting index of the range.
+        end_index (int): The ending index of the range (inclusive).
+        
+    Returns:
+        int/float: The sum of the elements in the specified range.
+    """
+    # We use end_index + 1 because Python slicing is exclusive of the stop index
+    return sum(lst[start_index : end_index + 1])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Indices 8 to 10 in [2,1,5,6,8,3,4,9,10,11,8,12] are:
+    # index 8: 10
+    # index 9: 11
+    # index 10: 8
+    # Sum: 10 + 11 + 8 = 29
+    assert sum_range_list([2,1,5,6,8,3,4,9,10,11,8,12], 8, 10) == 29
+    
+    # Additional test cases
+    assert sum_range_list([1, 2, 3, 4, 5], 0, 2) == 6   # 1+2+3
+    assert sum_range_list([10, 20, 30], 1, 1) == 20    # Single element
+    assert sum_range_list([5, 5, 5, 5], 0, 3) == 20    # Full list
+    
+    print("All tests passed!")
+```

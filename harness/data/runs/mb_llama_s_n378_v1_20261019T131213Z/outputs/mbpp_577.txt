@@ -1,0 +1,96 @@
+```python
+def last_Digit_Factorial(n: int) -> int:
+    """
+    This function calculates the last digit of the factorial of a given number.
+
+    Args:
+    n (int): The input number.
+
+    Returns:
+    int: The last digit of the factorial of n.
+    """
+    # Base cases
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    elif n == 0 or n == 1:
+        return 1
+    
+    # Calculate factorial and return the last digit
+    factorial = 1
+    for i in range(2, n + 1):
+        factorial *= i
+        # We only need the last digit, so we can take the modulus 10
+        factorial %= 10
+    
+    return factorial
+
+# Test the function
+assert last_Digit_Factorial(4) == 4
+print(last_Digit_Factorial(4))  # Output: 4
+```
+
+However, for larger inputs, this function may not be efficient because it calculates the entire factorial. 
+
+A more efficient solution would be to use the property that for n >= 5, the last digit of n! is always 0.
+
+```python
+def last_Digit_Factorial(n: int) -> int:
+    """
+    This function calculates the last digit of the factorial of a given number.
+
+    Args:
+    n (int): The input number.
+
+    Returns:
+    int: The last digit of the factorial of n.
+    """
+    # Base cases
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    elif n == 0 or n == 1:
+        return 1
+    elif n >= 5:
+        return 0
+    
+    # Calculate factorial and return the last digit
+    factorial = 1
+    for i in range(2, n + 1):
+        factorial *= i
+    
+    return factorial % 10
+
+# Test the function
+assert last_Digit_Factorial(4) == 4
+print(last_Digit_Factorial(4))  # Output: 4
+```
+
+Or even more efficient:
+
+```python
+def last_Digit_Factorial(n: int) -> int:
+    """
+    This function calculates the last digit of the factorial of a given number.
+
+    Args:
+    n (int): The input number.
+
+    Returns:
+    int: The last digit of the factorial of n.
+    """
+    # Base cases
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    elif n == 0 or n == 1:
+        return 1
+    elif n >= 5:
+        return 0
+    
+    # Last digits of factorials for n < 5
+    last_digits = {2: 2, 3: 6, 4: 4}
+    
+    return last_digits[n]
+
+# Test the function
+assert last_Digit_Factorial(4) == 4
+print(last_Digit_Factorial(4))  # Output: 4
+```

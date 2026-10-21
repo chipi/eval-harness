@@ -1,0 +1,102 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the n-th polite number.
+
+A polite number is a positive integer that can be written as the sum of
+two or more consecutive positive integers.
+
+A known characterization:
+    A positive integer is polite iff it is NOT a power of 2.
+
+So the sequence of polite numbers is:
+    3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, ...
+
+This script implements is_polite(n) as requested by the prompt, where
+is_polite(k) returns the k-th polite number using 1-based indexing.
+
+Example:
+    is_polite(7) == 11
+"""
+
+
+def _is_power_of_two(x: int) -> bool:
+    """Return True if x is a power of two."""
+    return x > 0 and (x & (x - 1)) == 0
+
+
+def is_polite(n: int) -> int:
+    """
+    Return the n-th polite number, using 1-based indexing.
+
+    Since polite numbers are exactly the positive integers excluding powers
+    of two, we need to find the n-th positive integer that is not a power of 2.
+
+    Args:
+        n: 1-based index of the polite number to find.
+
+    Returns:
+        The n-th polite number.
+
+    Raises:
+        ValueError: If n is not positive.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    count = 0
+    current = 0
+
+    while count < n:
+        current += 1
+        if not _is_power_of_two(current):
+            count += 1
+
+    return current
+
+
+# Optional faster version using binary search.
+def nth_polite_number(n: int) -> int:
+    """
+    Return the n-th polite number using binary search.
+
+    Count of polite numbers <= x is:
+        x - number_of_powers_of_two_<=x
+
+    The number of powers of two <= x is:
+        bit_length(x)
+    because powers are 1, 2, 4, ..., 2^(bit_length(x)-1).
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    low, high = 1, 2 * n + 2
+
+    while low < high:
+        mid = (low + high) // 2
+        polite_count = mid - mid.bit_length()
+
+        if polite_count >= n:
+            high = mid
+        else:
+            low = mid + 1
+
+    return low
+
+
+if __name__ == "__main__":
+    assert is_polite(1) == 3
+    assert is_polite(2) == 5
+    assert is_polite(3) == 6
+    assert is_polite(4) == 7
+    assert is_polite(5) == 9
+    assert is_polite(6) == 10
+    assert is_polite(7) == 11
+
+    assert nth_polite_number(7) == 11
+
+    for i in range(1, 50):
+        assert is_polite(i) == nth_polite_number(i)
+
+    print("All tests passed.")
+```

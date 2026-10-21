@@ -1,0 +1,19 @@
+```python
+def extract_even(test_tuple):
+    """
+    Remove uneven elements in the nested mixed tuple.
+    """
+    result = []
+    for item in test_tuple:
+        if isinstance(item, tuple):
+            result.append(extract_even(item))
+        else:
+            if item % 2 == 0:
+                result.append(item)
+    return tuple(result)
+
+
+if __name__ == "__main__":
+    assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+    print("All test cases passed!")
+```

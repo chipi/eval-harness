@@ -1,0 +1,19 @@
+```python
+def sort_matrix(matrix):
+    """
+    Sort a matrix (list of lists) in ascending order by the sum of each row.
+
+    Args:
+        matrix: A list of lists containing numeric values.
+
+    Returns:
+        A new matrix sorted by row sum in ascending order.
+    """
+    return sorted(matrix, key=sum)
+
+
+if __name__ == "__main__":
+    # Example test
+    assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]]) == [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+    print("All tests passed.")
+```

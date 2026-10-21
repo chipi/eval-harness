@@ -1,0 +1,14 @@
+```python
+def find(a, b):
+    """
+    Find the quotient of two numbers rounded down to the nearest integer.
+    
+    Args:
+        a: The dividend
+        b: The divisor
+    
+    Returns:
+        The floor division result of a divided by b
+    """
+    return a // b
+```

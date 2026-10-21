@@ -1,0 +1,63 @@
+```python
+def recursive_list_sum(lst):
+    """
+    Recursively flattens a list and sums all of its elements.
+
+    This function iterates through each item in the input list. If an item
+    is a list, the function calls itself recursively to flatten and sum that
+    sublist. If an item is a number, it's added to the total sum.
+
+    Args:
+        lst: A list that may contain numbers and other lists.
+
+    Returns:
+        The sum of all numeric elements in the flattened list.
+    """
+    total_sum = 0
+    for item in lst:
+        if isinstance(item, list):
+            # If the item is a list, recursively call the function
+            total_sum += recursive_list_sum(item)
+        else:
+            # If the item is a number, add it to the sum
+            total_sum += item
+    return total_sum
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    test_list = [1, 2, [3, 4], [5, 6]]
+    expected_sum = 21
+    
+    # Calculate the sum using our function
+    result = recursive_list_sum(test_list)
+    
+    # Print the result for verification
+    print(f"The list is: {test_list}")
+    print(f"The calculated sum is: {result}")
+    print(f"The expected sum is: {expected_sum}")
+    
+    # Assert that the result matches the expected value
+    assert result == expected_sum
+    
+    print("\nAssertion passed! The function works correctly.")
+    
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    test_case_1 = [1, [2, [3, [4]]]] # Deeply nested
+    assert recursive_list_sum(test_case_1) == 10
+    print(f"Test Case 1: {test_case_1} -> Sum: {recursive_list_sum(test_case_1)} (Passed)")
+    
+    test_case_2 = [10, 20, 30] # Flat list
+    assert recursive_list_sum(test_case_2) == 60
+    print(f"Test Case 2: {test_case_2} -> Sum: {recursive_list_sum(test_case_2)} (Passed)")
+    
+    test_case_3 = [] # Empty list
+    assert recursive_list_sum(test_case_3) == 0
+    print(f"Test Case 3: {test_case_3} -> Sum: {recursive_list_sum(test_case_3)} (Passed)")
+    
+    test_case_4 = [[], [1, 2], []] # List with empty sublists
+    assert recursive_list_sum(test_case_4) == 3
+    print(f"Test Case 4: {test_case_4} -> Sum: {recursive_list_sum(test_case_4)} (Passed)")
+    
+    print("\nAll test cases passed successfully!")
+```

@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem of finding the element that appears only once in a sorted array:
+
+```python
+def search(nums):
+    """
+    Finds the element that appears only once in a sorted array.
+    Uses binary search for O(log n) time complexity.
+
+    Args:
+        nums: List of integers where every element appears twice except for one.
+
+    Returns:
+        The single element that appears only once.
+    """
+    left, right = 0, len(nums) - 1
+
+    while left < right:
+        mid = (left + right) // 2
+
+        # Ensure mid is even to compare with next element
+        if mid % 2 == 1:
+            mid -= 1
+
+        # If current element matches next, the single element is on the right
+        if nums[mid] == nums[mid + 1]:
+            left = mid + 2
+        else:
+            right = mid
+
+    return nums[left]
+
+# Test case
+assert search([1, 1, 2, 2, 3]) == 3
+```
+
+This solution uses binary search to achieve O(log n) time complexity, which is more efficient than a linear scan. The key insight is that in a sorted array where every other element appears twice, the single element will always be at an even index before it appears and at an odd index after it appears. The algorithm checks pairs of elements to determine which side of the array contains the single element.

@@ -1,0 +1,24 @@
+```python
+def is_samepatterns(words, patterns):
+    """Return True if words and patterns have the same repetition pattern."""
+    if len(words) != len(patterns):
+        return False
+
+    word_to_pattern = {}
+    pattern_to_word = {}
+
+    for word, pattern in zip(words, patterns):
+        if word in word_to_pattern and word_to_pattern[word] != pattern:
+            return False
+        if pattern in pattern_to_word and pattern_to_word[pattern] != word:
+            return False
+
+        word_to_pattern[word] = pattern
+        pattern_to_word[pattern] = word
+
+    return True
+
+
+assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) is True
+assert is_samepatterns(["red", "green", "red"], ["a", "b", "b"]) is False
+```

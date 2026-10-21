@@ -1,0 +1,24 @@
+```python
+"""
+Write a function to find the ASCII value of a character.
+
+Example:
+assert ascii_value('A') == 65
+"""
+
+def ascii_value(char):
+    """
+    Return the ASCII value of a single character.
+    """
+    if not isinstance(char, str) or len(char) != 1:
+        raise ValueError("Input must be a single character string.")
+    return ord(char)
+
+
+if __name__ == "__main__":
+    assert ascii_value('A') == 65
+    assert ascii_value('a') == 97
+    assert ascii_value('0') == 48
+
+    print("All tests passed.")
+```

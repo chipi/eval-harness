@@ -1,0 +1,13 @@
+```python
+def kth_element(arr, k):
+    return arr[k-1]
+
+# Test cases
+assert kth_element([12,3,5,7,19], 2) == 3
+assert kth_element([1,2,3,4,5,6,7,8,9,10], 5) == 5
+assert kth_element([1,2,3,4,5,6,7,8,9,10], 10) == 10
+assert kth_element([1,2,3,4,5,6,7,8,9,10], 1) == 1
+assert kth_element([1,2,3,4,5,6,7,8,9,10], 0) == 1
+assert kth_element([1,2,3,4,5,6,7,8,9,10], -1) == 10
+assert kth_element([1,2,3,4,5,6,7,8,9,10], -10) == 1
+```

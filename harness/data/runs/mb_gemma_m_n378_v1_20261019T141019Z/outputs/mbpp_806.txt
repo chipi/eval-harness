@@ -1,0 +1,37 @@
+```python
+def max_run_uppercase(s: str) -> int:
+    """
+    Finds the length of the longest continuous sequence of uppercase characters in a string.
+    
+    Args:
+        s (str): The input string to analyze.
+        
+    Returns:
+        int: The length of the maximum run of uppercase characters.
+    """
+    max_run = 0
+    current_run = 0
+    
+    for char in s:
+        if char.isupper():
+            current_run += 1
+            if current_run > max_run:
+                max_run = current_run
+        else:
+            current_run = 0
+            
+    return max_run
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+    
+    # Additional test cases
+    assert max_run_uppercase('abc') == 0
+    assert max_run_uppercase('ABC') == 3
+    assert max_run_uppercase('A1B2C3D4') == 1
+    assert max_run_uppercase('') == 0
+    assert max_run_uppercase('AAABBBCC') == 3
+    
+    print("All tests passed!")
+```

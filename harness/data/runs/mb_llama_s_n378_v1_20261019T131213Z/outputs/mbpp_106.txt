@@ -1,0 +1,45 @@
+```python
+def add_lists(lst, tup):
+    """
+    This function appends the given list to the given tuple.
+
+    Args:
+        lst (list): The list to be appended.
+        tup (tuple): The tuple to which the list is to be appended.
+
+    Returns:
+        tuple: A new tuple with the elements of the original tuple and the list.
+    """
+    # Convert the tuple to a list because tuples are immutable in Python
+    lst_tup = list(tup)
+    
+    # Extend the list with the elements of the given list
+    lst_tup.extend(lst)
+    
+    # Convert the list back to a tuple and return it
+    return tuple(lst_tup)
+
+# Test the function
+print(add_lists([5, 6, 7], (9, 10)))  # Output: (9, 10, 5, 6, 7)
+```
+
+Alternatively, you can solve this problem in a more concise way:
+
+```python
+def add_lists(lst, tup):
+    """
+    This function appends the given list to the given tuple.
+
+    Args:
+        lst (list): The list to be appended.
+        tup (tuple): The tuple to which the list is to be appended.
+
+    Returns:
+        tuple: A new tuple with the elements of the original tuple and the list.
+    """
+    # Combine the tuple and the list into a single tuple
+    return tup + tuple(lst)
+
+# Test the function
+print(add_lists([5, 6, 7], (9, 10)))  # Output: (9, 10, 5, 6, 7)
+```

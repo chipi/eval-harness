@@ -1,0 +1,41 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Sets the left-most unset bit (0-bit) of a given positive integer `n`.
+    
+    If all bits are already set (i.e., `n` is of the form 2^k - 1), the original number is returned.
+    
+    Args:
+        n (int): A positive integer.
+        
+    Returns:
+        int: The integer obtained after setting the left-most unset bit of `n`.
+    """
+    if n < 1:
+        raise ValueError("Input must be a positive integer")
+        
+    # If n has all bits set (e.g., 1, 3, 7, 15), there is no unset bit to set.
+    if (n & (n + 1)) == 0:
+        return n
+        
+    # Find the position of the left-most unset bit.
+    # We can do this by taking the bitwise NOT of n, finding its most significant set bit,
+    # and then shifting it back to correspond to the position in n.
+    unset_bit_pos = 1
+    temp = ~n
+    while temp > 0:
+        temp >>= 1
+        unset_bit_pos <<= 1
+        
+    # Set the left-most unset bit by using bitwise OR
+    return n | unset_bit_pos
+
+# Test the function
+if __name__ == "__main__":
+    assert set_left_most_unset_bit(10) == 14
+    assert set_left_most_unset_bit(7) == 7
+    assert set_left_most_unset_bit(1) == 1
+    assert set_left_most_unset_bit(11) == 15
+    assert set_left_most_unset_bit(18) == 22
+    print("All tests passed.")
+```

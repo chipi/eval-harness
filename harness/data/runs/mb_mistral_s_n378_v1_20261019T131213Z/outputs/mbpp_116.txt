@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_to_int(t):
+    """Convert a tuple of positive integers into a single integer."""
+    return int(''.join(map(str, t)))
+
+# Test the function
+assert tuple_to_int((1, 2, 3)) == 123
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `tuple_to_int` that takes a tuple of positive integers
+2. Converts each integer in the tuple to a string using `map(str, t)`
+3. Joins these strings together with `''.join()`
+4. Converts the resulting string back to an integer with `int()`
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function handles the example case correctly: `tuple_to_int((1, 2, 3))` returns `123`.

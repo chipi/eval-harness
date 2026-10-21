@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def highest_Power_of_2(n):
+    """
+    Find the highest power of 2 that is less than or equal to n.
+    
+    Args:
+        n (int): A positive integer.
+    
+    Returns:
+        int: The highest power of 2 <= n.
+    """
+    if n < 1:
+        return 0
+    
+    # Start with 1 (2^0) and keep multiplying by 2
+    # until we exceed n
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    return power
+
+
+# Test cases
+assert highest_Power_of_2(10) == 8
+assert highest_Power_of_2(1) == 1
+assert highest_Power_of_2(2) == 2
+assert highest_Power_of_2(3) == 2
+assert highest_Power_of_2(16) == 16
+assert highest_Power_of_2(17) == 16
+assert highest_Power_of_2(100) == 64
+assert highest_Power_of_2(1024) == 1024
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Edge case handling**: If `n < 1`, return `0` (no valid power of 2 exists).
+2. **Iterative approach**: Start with `power = 1` (which is 2⁰). While doubling `power` would still keep it ≤ `n`, double it. When doubling would exceed `n`, stop and return the current `power`.
+3. **Example trace for n=10**:
+   - `power = 1` → `1*2 = 2 ≤ 10` → `power = 2`
+   - `power = 2` → `2*2 = 4 ≤ 10` → `power = 4`
+   - `power = 4` → `4*2 = 8 ≤ 10` → `power = 8`
+   - `power = 8` → `8*2 = 16 > 10` → stop
+   - Return `8` ✓
+
+**Alternative one-liner** using bit manipulation:
+```python
+def highest_Power_of_2(n):
+    return 1 << (n.bit_length() - 1) if n >= 1 else 0
+```
+This works because `n.bit_length()` gives the number of bits needed to represent `n`, and shifting `1` left by `bit_length - 1` gives the highest power of 2 ≤ `n`.

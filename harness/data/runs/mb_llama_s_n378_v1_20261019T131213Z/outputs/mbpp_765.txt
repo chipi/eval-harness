@@ -1,0 +1,35 @@
+```python
+def is_polite(n):
+    """
+    Find the nth polite number.
+
+    A polite number is a positive integer that can be expressed as the sum of 
+    two or more consecutive positive integers.
+
+    :param n: The position of the polite number to find.
+    :return: The nth polite number.
+    """
+    def sum_of_consecutive(start, length):
+        """
+        Calculate the sum of consecutive integers from start to start + length - 1.
+        """
+        return (2 * start + length - 1) * length // 2
+
+    length = 2
+    while True:
+        start = (n - (length * (length - 1)) // 2) / length
+        if start > 0 and start.is_integer():
+            return int(start + length - 1)
+        length += 1
+
+
+# Test the function
+print(is_polite(7))  # Output: 11
+```
+
+In this code:
+
+*   The `is_polite` function takes an integer `n` as input and returns the nth polite number.
+*   The `sum_of_consecutive` function calculates the sum of consecutive integers from `start` to `start + length - 1`.
+*   The `is_polite` function iterates over possible lengths of consecutive integer sequences until it finds one that produces the nth polite number.
+*   The test case `print(is_polite(7))` demonstrates the usage of the `is_polite` function.

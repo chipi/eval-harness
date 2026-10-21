@@ -1,0 +1,11 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_charac(s):
+    """Count the total number of characters in a string."""
+    return len(s)
+
+# Test the function
+assert count_charac("python programming") == 18
+print("Test passed!")
+```

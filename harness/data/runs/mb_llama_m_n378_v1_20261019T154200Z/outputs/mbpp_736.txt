@@ -1,0 +1,20 @@
+```python
+def left_insertion(nums, target):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+
+    Args:
+        nums (list): A sorted list of integers.
+        target (int): The target value to be inserted.
+
+    Returns:
+        int: The left insertion point for the target value.
+    """
+    for i, num in enumerate(nums):
+        if num >= target:
+            return i
+    return len(nums)
+
+# Test the function
+assert left_insertion([1,2,4,5],6) == 4
+```

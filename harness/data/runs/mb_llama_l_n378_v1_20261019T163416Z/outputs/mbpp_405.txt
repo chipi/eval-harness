@@ -1,0 +1,12 @@
+```python
+def check_tuplex(tuplex, element):
+    return element in tuplex
+
+def main():
+    tuplex = ("w", 3, "r", "e", "s", "o", "u", "r", "c", "e")
+    element = 'r'
+    print(check_tuplex(tuplex, element))  # Expected output: True
+
+if __name__ == "__main__":
+    main()
+```

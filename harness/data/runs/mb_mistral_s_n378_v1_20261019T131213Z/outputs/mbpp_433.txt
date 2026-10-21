@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to check whether the entered number is greater than the elements of the given array.
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+"""
+
+def check_greater(arr, num):
+    """
+    Check if the given number is greater than all elements in the array.
+
+    Args:
+        arr (list): List of numbers to compare against
+        num (int/float): Number to check
+
+    Returns:
+        bool: True if num is greater than all elements in arr, False otherwise
+    """
+    return all(num > x for x in arr)
+
+# Test cases
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+assert check_greater([1, 2, 3, 4, 5], 6) == True
+assert check_greater([-1, -2, -3], 0) == True
+assert check_greater([10, 20, 30], 5) == False
+assert check_greater([], 5) == True  # Edge case: empty array
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines the `check_greater` function that uses Python's `all()` function with a generator expression to check if the number is greater than all elements in the array
+2. Includes the required test case from the problem statement
+3. Adds additional test cases to verify edge cases and different scenarios
+4. Prints a success message if all test cases pass
+
+The function returns `True` only if the number is greater than every element in the array, and `False` otherwise (including when the array is empty, which is considered a true condition as there are no elements to be greater than).

@@ -1,0 +1,42 @@
+```python
+def cube_Sum(n):
+    """
+    Find the cube sum of first n even natural numbers.
+    
+    The first n even natural numbers are: 2, 4, 6, 8, ..., 2n
+    We need to find: 2^3 + 4^3 + 6^3 + ... + (2n)^3
+    
+    Args:
+        n: Number of even natural numbers to consider
+        
+    Returns:
+        The sum of cubes of first n even natural numbers
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_num = 2 * i
+        total += even_num ** 3
+    return total
+
+
+# Test cases
+assert cube_Sum(2) == 72
+print(f"cube_Sum(2) = {cube_Sum(2)}")  # 2^3 + 4^3 = 8 + 64 = 72
+
+assert cube_Sum(1) == 8
+print(f"cube_Sum(1) = {cube_Sum(1)}")  # 2^3 = 8
+
+assert cube_Sum(3) == 216
+print(f"cube_Sum(3) = {cube_Sum(3)}")  # 2^3 + 4^3 + 6^3 = 8 + 64 + 216 = 288
+
+print("All assertions passed!")
+```
+
+**Explanation:**
+
+The function `cube_Sum(n)` calculates the sum of cubes of the first n even natural numbers:
+- For n=2: 2³ + 4³ = 8 + 64 = 72 ✓
+- For n=1: 2³ = 8
+- For n=3: 2³ + 4³ + 6³ = 8 + 64 + 216 = 288
+
+The algorithm iterates from 1 to n, calculates each even number as `2*i`, cubes it, and adds it to the running total.

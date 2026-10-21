@@ -1,0 +1,20 @@
+```python
+def dog_age(human_years):
+  """
+  Calculates a dog's age in dog years.
+
+  Args:
+    human_years: The age of the dog in human years.
+
+  Returns:
+    The age of the dog in dog years.
+  """
+  if human_years <= 0:
+    return 0
+  elif human_years <= 2:
+    return human_years * 10.5
+  else:
+    return 21 + (human_years - 2) * 4
+
+assert dog_age(12)==61
+```

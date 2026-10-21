@@ -1,0 +1,16 @@
+```python
+def find_substring(lst, sub):
+    for word in lst:
+        if sub in word:
+            return True
+    return False
+
+# Test cases
+assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "brown") == False
+assert find_substring(["red", "black", "white", "green", "orange"], "red") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "orange") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "gr") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "grn") == False
+```

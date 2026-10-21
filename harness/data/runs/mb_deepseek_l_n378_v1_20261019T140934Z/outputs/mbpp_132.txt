@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tup_string(tup):
+    """
+    Convert a tuple to a string by joining all elements.
+    
+    Args:
+        tup: A tuple containing elements to be joined into a string
+        
+    Returns:
+        A string formed by concatenating all elements of the tuple
+    """
+    return ''.join(tup)
+
+# Test the function
+if __name__ == "__main__":
+    assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+    print("Test passed!")
+```
+
+The function `tup_string` takes a tuple as input and uses the `join()` method to concatenate all elements into a single string. The `join()` method is called on an empty string `''`, which means it will join the tuple elements without any separator between them.

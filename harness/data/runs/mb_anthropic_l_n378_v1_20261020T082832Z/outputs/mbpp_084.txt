@@ -1,0 +1,56 @@
+Looking at this problem, I need to implement the Newman-Conway sequence, defined by:
+- P(1) = 1
+- P(2) = 1
+- P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+
+```python
+"""
+Write a function to find the nth number in the newman conway sequence.
+assert sequence(10) == 6
+"""
+
+
+def sequence(n):
+    """
+    Return the nth number in the Newman-Conway sequence.
+
+    The sequence is defined by:
+        P(1) = 1
+        P(2) = 1
+        P(n) = P(P(n - 1)) + P(n - P(n - 1))  for n > 2
+
+    First terms: 1, 1, 2, 2, 3, 4, 4, 4, 5, 6, 7, 7, 8, 8, 8, 8, ...
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    if n == 1 or n == 2:
+        return 1
+
+    # f[i] holds P(i); index 0 is unused.
+    f = [0] * (n + 1)
+    f[1] = 1
+    f[2] = 1
+    for i in range(3, n + 1):
+        f[i] = f[f[i - 1]] + f[i - f[i - 1]]
+    return f[n]
+
+
+if __name__ == "__main__":
+    assert sequence(10) == 6
+    assert sequence(2) == 1
+    assert sequence(3) == 2
+
+    print([sequence(i) for i in range(1, 21)])
+    print("sequence(10) =", sequence(10))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+The function uses dynamic programming (bottom-up) to avoid the exponential blowup of the naive recursive approach. It builds an array `f` where `f[i] = P(i)`, filling values from index 3 up to `n`. Each new value only depends on previously computed entries, so the whole computation runs in **O(n)** time and **O(n)** space.
+
+For `n = 10`:
+```
+P(1)=1, P(2)=1, P(3)=2, P(4)=2, P(5)=3, P(6)=4, P(7)=4, P(8)=4, P(9)=5, P(10)=6
+```
+which confirms `sequence(10) == 6`.

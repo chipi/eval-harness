@@ -1,0 +1,26 @@
+```python
+def find(a, b):
+    """
+    Find quotient of two numbers (rounded down to the nearest integer).
+    
+    Args:
+        a: Dividend
+        b: Divisor
+    
+    Returns:
+        The quotient rounded down to the nearest integer
+    """
+    return a // b
+
+
+# Test cases
+assert find(10, 3) == 3
+assert find(20, 5) == 4
+assert find(7, 2) == 3
+assert find(15, 4) == 3
+assert find(100, 10) == 10
+
+print("All tests passed!")
+```
+
+The solution uses Python's floor division operator `//` which automatically rounds down the quotient to the nearest integer. This is the most straightforward and efficient way to solve this problem.

@@ -1,0 +1,11 @@
+```python
+def add_lists(lst, tup):
+    # Convert the tuple to a list to allow appending
+    lst = list(tup) + lst
+    return tuple(lst)
+
+# Test cases to verify the correctness of the solution
+assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+assert add_lists([], (1, 2, 3)) == (1, 2, 3)
+assert add_lists(['a', 'b'], ('c', 'd')) == ('c', 'd', 'a', 'b')
+```

@@ -1,0 +1,10 @@
+```python
+def is_sublist(items, sublist):
+    """Return True if sublist appears contiguously in items."""
+    n = len(sublist)
+    return any(items[i:i + n] == sublist for i in range(len(items) - n + 1))
+
+
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) is False
+assert is_sublist([2, 4, 3, 5, 7], [3, 5]) is True
+```

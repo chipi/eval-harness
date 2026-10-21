@@ -1,0 +1,30 @@
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in n is less than or equal
+    to the digit itself.
+
+    Examples:
+        validate(1234) -> True
+        validate(1123) -> False   # digit 1 appears twice, but 2 > 1
+    """
+    # Handle negative numbers by ignoring the sign
+    s = str(abs(n))
+
+    # Count occurrences of each digit
+    freq = {}
+    for ch in s:
+        freq[ch] = freq.get(ch, 0) + 1
+
+    # Verify frequency condition for each digit
+    for ch, count in freq.items():
+        digit = int(ch)
+        if count > digit:
+            return False
+
+    return True
+
+
+# Example assertion
+assert validate(1234) == True
+```

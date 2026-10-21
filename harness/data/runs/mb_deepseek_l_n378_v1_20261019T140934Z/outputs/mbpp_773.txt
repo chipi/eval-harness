@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def occurance_substring(text, substring):
+    """
+    Find the occurrence and position of the substrings within a string.
+    Return None if there is no match.
+    
+    Args:
+        text: The main string to search in
+        substring: The substring to find
+    
+    Returns:
+        A tuple (substring, start_index, end_index) or None if no match
+    """
+    if not substring:
+        return None
+    
+    index = text.find(substring)
+    
+    if index == -1:
+        return None
+    
+    return (substring, index, index + len(substring))
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = occurance_substring('python programming, python language', 'python')
+    assert result == ('python', 0, 6), f"Expected ('python', 0, 6), but got {result}"
+    
+    # Additional test cases
+    assert occurance_substring('hello world', 'world') == ('world', 6, 11)
+    assert occurance_substring('hello world', 'xyz') is None
+    assert occurance_substring('test', '') is None
+    assert occurance_substring('aaaa', 'aa') == ('aa', 0, 2)
+    
+    print("All tests passed!")
+```
+
+The function `occurance_substring` finds the first occurrence of a substring within a string and returns a tuple containing the substring, its starting index, and its ending index. If the substring is not found or is empty, it returns `None`. The function uses Python's built-in `find()` method to locate the substring efficiently.

@@ -1,0 +1,24 @@
+```python
+def search(arr):
+    """
+    Find the element that appears only once in a sorted array where all other
+    elements appear exactly twice.
+
+    Example:
+        search([1, 1, 2, 2, 3]) -> 3
+    """
+    result = 0
+    for num in arr:
+        result ^= num
+    return result
+
+
+# Tests
+assert search([1, 1, 2, 2, 3]) == 3
+assert search([1, 2, 2, 3, 3]) == 1
+assert search([1, 1, 2, 3, 3]) == 2
+assert search([4]) == 4
+assert search([0, 0, 7, 8, 8]) == 7
+
+print("All tests passed.")
+```

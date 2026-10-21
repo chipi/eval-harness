@@ -1,0 +1,24 @@
+```python
+def sum_of_digits(numbers):
+    """
+    Compute the sum of digits of each number in a given list.
+    
+    Args:
+        numbers: A list of integers
+        
+    Returns:
+        The total sum of all digits across all numbers in the list
+    """
+    total = 0
+    for num in numbers:
+        # Handle negative numbers by taking absolute value
+        num = abs(num)
+        while num > 0:
+            total += num % 10
+            num //= 10
+    return total
+
+
+# Test case
+assert sum_of_digits([10, 2, 56]) == 14
+```

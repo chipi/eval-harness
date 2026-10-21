@@ -1,0 +1,25 @@
+```python
+def max_length(list_of_lists):
+    """
+    Find the list of maximum length in a list of lists.
+    
+    Args:
+        list_of_lists: A list containing sublists.
+        
+    Returns:
+        A tuple (length, sublist) where sublist is the first list with the maximum length.
+    """
+    if not list_of_lists:
+        return (0, [])
+    
+    max_len = 0
+    max_list = []
+    
+    for lst in list_of_lists:
+        current_len = len(lst)
+        if current_len > max_len:
+            max_len = current_len
+            max_list = lst
+    
+    return (max_len, max_list)
+```

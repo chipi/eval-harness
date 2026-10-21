@@ -1,0 +1,32 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def amicable_numbers_sum(limit):
+    """
+    Sum all amicable numbers from 1 to a specified number.
+    """
+    def sum_of_proper_divisors(n):
+        """Return the sum of proper divisors of n."""
+        if n < 2:
+            return 0
+        total = 1
+        for i in range(2, int(n**0.5) + 1):
+            if n % i == 0:
+                total += i
+                if i != n // i:
+                    total += n // i
+        return total
+
+    amicable_sum = 0
+    for a in range(2, limit + 1):
+        b = sum_of_proper_divisors(a)
+        if b != a and b <= limit and sum_of_proper_divisors(b) == a:
+            amicable_sum += a
+
+    return amicable_sum
+
+
+# Test the function
+assert amicable_numbers_sum(999) == 504
+print("Test passed!")
+```

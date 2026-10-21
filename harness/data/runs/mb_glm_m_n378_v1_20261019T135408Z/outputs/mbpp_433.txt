@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem. The function `check_greater` takes an array and a number, then returns `True` if the number is greater than all elements in the array, and `False` otherwise. The script includes the provided assertion to verify the correctness of the function.
+
+```python
+def check_greater(arr, num):
+    """
+    Check whether the given number is greater than all elements of the array.
+    
+    Args:
+        arr (list): List of numbers to compare against.
+        num (int/float): The number to check.
+        
+    Returns:
+        bool: True if num is greater than all elements in arr, False otherwise.
+    """
+    for element in arr:
+        if num <= element:
+            return False
+    return True
+
+# Test cases
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+assert check_greater([1, 2, 3, 4, 5], 6) == True
+assert check_greater([10, 20, 30], 25) == False
+assert check_greater([], 5) == True  # Edge case: empty array, num is greater than all (none)
+assert check_greater([-1, -2, -3], -4) == False
+assert check_greater([-1, -2, -3], 0) == True
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function Logic**: The function iterates through each element in the array. If it finds any element that is greater than or equal to the given number, it immediately returns `False`. If the loop completes without finding such an element, it returns `True`.
+2. **Edge Case Handling**: The function correctly handles an empty array by returning `True` (since there are no elements to compare against).
+3. **Test Cases**: The script includes multiple test cases, including the one provided in the problem statement, to ensure the function works as expected. The assertions will raise an error if any test case fails. If all pass, it prints a success message.

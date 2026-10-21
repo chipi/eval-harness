@@ -1,0 +1,28 @@
+```python
+def remove_odd(string):
+    """
+    Removes characters at odd indices from the input string.
+    
+    In Python, string indexing starts at 0. Therefore:
+    - Index 0 is even (1st character)
+    - Index 1 is odd (2nd character)
+    - Index 2 is even (3rd character)
+    - etc.
+    
+    This function retains characters at even indices (0, 2, 4...) and 
+    removes characters at odd indices (1, 3, 5...).
+    
+    Args:
+        string (str): The input string.
+        
+    Returns:
+        str: The string with odd-indexed characters removed.
+    """
+    # Using string slicing with step 2 to keep even indexed characters (0, 2, 4...)
+    return string[::2]
+
+# Test the function based on the provided assertion
+if __name__ == "__main__":
+    assert remove_odd("python") == "yhn", "Test case failed!"
+    print("Test case passed: remove_odd('python') == 'yhn'")
+```

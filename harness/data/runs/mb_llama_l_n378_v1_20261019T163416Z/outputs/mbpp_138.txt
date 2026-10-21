@@ -1,0 +1,27 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Checks whether the given number can be represented as sum of non-zero powers of 2 or not.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number can be represented as sum of non-zero powers of 2, False otherwise.
+    """
+    # Convert the number to binary and remove the '0b' prefix
+    binary = bin(n)[2:]
+    
+    # A number can be represented as sum of non-zero powers of 2 if it has no consecutive 1's in its binary representation
+    # This is because each '1' in the binary representation corresponds to a power of 2
+    # So, we check for consecutive 1's
+    for i in range(len(binary) - 1):
+        if binary[i] == '1' and binary[i + 1] == '1':
+            return False
+    
+    return True
+
+# Test the function
+assert is_Sum_Of_Powers_Of_Two(10) == True
+print("All tests passed.")
+```

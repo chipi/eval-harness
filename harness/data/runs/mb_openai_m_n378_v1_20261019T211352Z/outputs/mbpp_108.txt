@@ -1,0 +1,38 @@
+```python
+"""
+Write a function to merge three lists into a single sorted list.
+
+Example:
+merge_sorted_list(
+    [25, 24, 15, 4, 5, 29, 110],
+    [19, 20, 11, 56, 25, 233, 154],
+    [24, 26, 54, 48]
+)
+returns:
+[4, 5, 11, 15, 19, 20, 24, 24, 25, 25, 26, 29, 48, 54, 56, 110, 154, 233]
+"""
+
+def merge_sorted_list(list1, list2, list3):
+    """
+    Merge three lists into one sorted list.
+
+    Args:
+        list1: First list of comparable elements.
+        list2: Second list of comparable elements.
+        list3: Third list of comparable elements.
+
+    Returns:
+        A new list containing all elements from the three input lists in sorted order.
+    """
+    return sorted(list1 + list2 + list3)
+
+
+if __name__ == "__main__":
+    assert merge_sorted_list(
+        [25, 24, 15, 4, 5, 29, 110],
+        [19, 20, 11, 56, 25, 233, 154],
+        [24, 26, 54, 48]
+    ) == [4, 5, 11, 15, 19, 20, 24, 24, 25, 25, 26, 29, 48, 54, 56, 110, 154, 233]
+
+    print("All tests passed.")
+```

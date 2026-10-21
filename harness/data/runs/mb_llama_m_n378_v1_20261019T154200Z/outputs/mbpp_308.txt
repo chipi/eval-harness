@@ -1,0 +1,27 @@
+```python
+import heapq
+
+def large_product(list1, list2, n):
+    """
+    Find the specified number of largest products from two given lists, 
+    selecting one factor from each list.
+
+    Args:
+        list1 (list): The first list of numbers.
+        list2 (list): The second list of numbers.
+        n (int): The number of largest products to find.
+
+    Returns:
+        list: A list of the n largest products.
+    """
+    # Use a list comprehension to generate all possible products
+    products = [x * y for x in list1 for y in list2]
+    
+    # Use the heapq.nlargest function to find the n largest products
+    largest_products = heapq.nlargest(n, products)
+    
+    return largest_products
+
+# Test the function
+print(large_product([1, 2, 3, 4, 5, 6],[3, 6, 8, 9, 10, 6],3))  # Output: [60, 54, 50]
+```

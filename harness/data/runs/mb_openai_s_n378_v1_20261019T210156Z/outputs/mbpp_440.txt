@@ -1,0 +1,27 @@
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    Find the first adverb in a sentence and return a tuple:
+    (start_index, end_index, adverb)
+
+    This implementation uses a simple heuristic:
+    - An adverb is assumed to be a word ending in "ly"
+    - Punctuation attached to the word is ignored for matching
+    - The returned positions refer to the word's position in the original string
+      excluding trailing punctuation from the end index
+    """
+    # Match words that may have surrounding punctuation
+    for match in re.finditer(r"\b\w+\b", sentence):
+        word = match.group()
+        if word.lower().endswith("ly"):
+            return (match.start(), match.end() - 1, word)
+    
+    return None
+
+
+if __name__ == "__main__":
+    assert find_adverb_position("clearly!! we can see the sky") == (0, 7, 'clearly')
+    print("All tests passed.")
+```

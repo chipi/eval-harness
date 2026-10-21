@@ -1,0 +1,21 @@
+```python
+def power_base_sum(base, power):
+    # Convert the base to a string to easily iterate over its digits
+    base_str = str(base)
+    
+    # Initialize the sum
+    sum_digits = 0
+    
+    # Iterate over the digits of the base
+    for digit in base_str:
+        # Add the digit raised to the power to the sum
+        sum_digits += int(digit) ** power
+    
+    return sum_digits
+
+# Test cases
+assert power_base_sum(2,100)==115
+assert power_base_sum(3,4)==81
+assert power_base_sum(10,2)==102
+assert power_base_sum(5,3)==255
+```

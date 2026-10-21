@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem by finding the occurrence and position of a substring within a string. The function returns a tuple with the substring, its starting position, and its ending position (exclusive), or `None` if no match is found.
+
+```python
+def occurance_substring(main_string, substring):
+    """
+    Find the occurrence and position of the substring within the main string.
+    
+    Args:
+        main_string (str): The string to search within.
+        substring (str): The substring to search for.
+    
+    Returns:
+        tuple: A tuple containing (substring, start_position, end_position) if found, else None.
+    """
+    start_pos = main_string.find(substring)
+    if start_pos == -1:
+        return None
+    end_pos = start_pos + len(substring)
+    return (substring, start_pos, end_pos)
+
+# Test cases
+assert occurance_substring('python programming, python language', 'python') == ('python', 0, 6)
+assert occurance_substring('hello world', 'world') == ('world', 6, 11)
+assert occurance_substring('abcde', 'xyz') is None
+assert occurance_substring('test test', 'test') == ('test', 0, 4)  # Only first occurrence is returned
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `occurance_substring` takes two arguments: `main_string` (the string to search in) and `substring` (the string to search for).
+2. It uses the `find` method of the string to locate the first occurrence of the `substring` in `main_string`. The `find` method returns the starting index of the substring or `-1` if not found.
+3. If the substring is found (`start_pos != -1`), it calculates the ending position as `start_pos + len(substring)` and returns a tuple `(substring, start_pos, end_pos)`.
+4. If the substring is not found, it returns `None`.
+5. The test cases verify the function's correctness for various scenarios, including a successful match, a match at a different position, no match, and a repeated substring (only the first occurrence is returned).

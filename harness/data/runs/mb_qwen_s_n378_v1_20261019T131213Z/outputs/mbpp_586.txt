@@ -1,0 +1,24 @@
+```python
+def split_Arr(arr, n):
+    """
+    Split a list at the nth element and add the first part to the end.
+    
+    Args:
+        arr: The input list
+        n: The index at which to split (0-based)
+        
+    Returns:
+        A new list where elements from index 0 to n-1 are moved to the end
+        
+    Example:
+        >>> split_Arr([12,10,5,6,52,36], 2)
+        [5, 6, 52, 36, 12, 10]
+    """
+    if not arr or n <= 0:
+        return arr[:]
+    if n >= len(arr):
+        return arr[:]
+    # Split at position n: first part is arr[0:n], second part is arr[n:]
+    # Move first part to the end
+    return arr[n:] + arr[:n]
+```

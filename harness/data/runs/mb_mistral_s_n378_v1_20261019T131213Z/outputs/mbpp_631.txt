@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_spaces(s):
+    result = []
+    for char in s:
+        if char == ' ':
+            result.append('_')
+        elif char == '_':
+            result.append(' ')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+# Test the function
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+assert replace_spaces('Hello_World') == 'Hello World'
+assert replace_spaces('No_Spaces_Here') == 'No Spaces Here'
+assert replace_spaces('Spaces_And_Underscores') == ' Spaces And Underscores'
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `replace_spaces` that takes a string as input
+2. Iterates through each character in the string
+3. Replaces spaces with underscores and underscores with spaces
+4. Leaves all other characters unchanged
+5. Joins the characters back into a string and returns it
+6. Includes test cases to verify the function works correctly
+
+The function handles both directions of replacement (spaces to underscores and underscores to spaces) in a single pass through the string.

@@ -1,0 +1,22 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    # Initialize the binomial coefficients list
+    binomial_coeff = [0 for _ in range(n+1)]
+    binomial_coeff[0] = 1
+    
+    # Fill the binomial coefficients list in bottom-up manner
+    for i in range(1, n+1):
+        binomial_coeff[i] = i * binomial_coeff[i-1]
+        
+    # Initialize sum
+    sum = 0
+    
+    # Traverse the binomial coefficients list
+    for i in range(0, n, 2):
+        sum += binomial_coeff[i]
+    
+    return sum
+
+# Test the function
+assert even_binomial_Coeff_Sum(4) == 8
+```

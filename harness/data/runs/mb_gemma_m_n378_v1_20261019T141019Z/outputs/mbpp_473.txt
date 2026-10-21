@@ -1,0 +1,47 @@
+To solve this problem, we need to find the intersection of two lists of tuples. The key requirement is that the order of elements within each individual tuple does not matter (e.g., `(3, 4)` is considered the same as `(4, 3)`).
+
+The most efficient way to handle this is to normalize each tuple by sorting its elements before performing the intersection.
+
+Here is the complete script:
+
+```python
+def tuple_intersection(list1, list2):
+    """
+    Finds the intersection of two lists of tuples, 
+    treating tuples as sets (order-independent).
+    """
+    # Helper function to normalize a tuple: sort it and convert to a tuple
+    # This ensures (3, 4) and (4, 3) both become (3, 4)
+    def normalize(t):
+        return tuple(sorted(t))
+
+    # Create sets of normalized tuples for efficient intersection
+    set1 = {normalize(t) for t in list1}
+    set2 = {normalize(t) for t in list2}
+
+    # Find the intersection of the two sets
+    intersection = set1.intersection(set2)
+    
+    return intersection
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Note: The prompt's assertion expected {(4, 5), (3, 4), (5, 6)}
+    # Let's trace:
+    # list1: (3,4), (5,6), (9,10), (4,5) -> normalized: {(3,4), (5,6), (9,10), (4,5)}
+    # list2: (5,4), (3,4), (6,5), (9,11) -> normalized: {(4,5), (3,4), (5,6), (9,11)}
+    # Intersection: {(3,4), (4,5), (5,6)}
+    
+    test_list1 = [(3, 4), (5, 6), (9, 10), (4, 5)]
+    test_list2 = [(5, 4), (3, 4), (6, 5), (9, 11)]
+    expected = {(3, 4), (4, 5), (5, 6)}
+    
+    result = tuple_intersection(test_list1, test_list2)
+    
+    print(f"List 1: {test_list1}")
+    print(f"List 2: {test_list2}")
+    print(f"Result: {result}")
+    
+    assert result == expected
+    print("Assertion passed!")
+```

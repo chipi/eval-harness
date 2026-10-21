@@ -1,0 +1,35 @@
+```python
+def odd_position(numbers):
+    """
+    Checks whether every element at an odd index in the list is an odd number.
+
+    Args:
+        numbers: A list of integers.
+
+    Returns:
+        True if every element at an odd index is odd, False otherwise.
+    """
+    # Iterate through the list, starting from index 1 (the first odd index)
+    # and stepping by 2 to check every other index (1, 3, 5, ...).
+    for i in range(1, len(numbers), 2):
+        # If the number at the current odd index is even, the condition fails.
+        if numbers[i] % 2 == 0:
+            return False
+            
+    # If the loop completes without finding any even numbers at odd indices,
+    # the condition is met.
+    return True
+
+# Example usage and assertion from the problem description
+assert odd_position([2,1,4,3,6,7,6,3]) == True
+
+# Additional test cases to verify the function's correctness
+assert odd_position([1, 2, 3, 4, 5]) == False # Fails at index 3 (number 4)
+assert odd_position([10, 11, 12, 13]) == True # Passes
+assert odd_position([5]) == True # No odd indices, so condition is vacuously true
+assert odd_position([]) == True # No odd indices, so condition is vacuously true
+assert odd_position([1, 1, 1, 1, 1, 1]) == True # All odd numbers at odd indices
+assert odd_position([1, 2, 3, 4, 5, 6]) == False # Fails at index 3 (number 4) and 5 (number 6)
+
+print("All assertions passed.")
+```

@@ -1,0 +1,27 @@
+```python
+def move_zeroes(nums):
+    """
+    Move all zeroes to the end of the given list.
+    
+    :param nums: List of integers
+    :return: Modified list with zeroes moved to the end
+    """
+    # Initialize pointers for the start and end of the list
+    left = 0
+    right = len(nums) - 1
+    
+    # Traverse the list
+    while left <= right:
+        # If the current element is not zero, move it to the front
+        if nums[left] != 0:
+            nums[left], nums[right] = nums[right], nums[left]
+            left += 1
+        # Move the right pointer to the left if the current element is zero
+        right -= 1
+    
+    return nums
+
+# Test the function with the provided test case
+assert move_zeroes([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+```
+

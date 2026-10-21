@@ -1,0 +1,29 @@
+```python
+def extract_string(string_list, size):
+    """
+    Extracts strings from a given list that have a length equal to the specified size.
+
+    Args:
+        string_list (list of str): The list of strings to filter.
+        size (int): The required length of the strings.
+
+    Returns:
+        list of str: A list containing only the strings of the specified size.
+    """
+    return [s for s in string_list if len(s) == size]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+    target_size = 8
+    expected_output = ['practice', 'solution']
+    
+    result = extract_string(test_list, target_size)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Assertion passed successfully!")
+    print(f"Input: {test_list}, Size: {target_size}")
+    print(f"Output: {result}")
+```

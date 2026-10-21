@@ -1,0 +1,46 @@
+```python
+import math
+
+
+def count_binary_seq(n: int) -> float:
+    """
+    Find the count of all binary sequences of length 2n such that 
+    the sum of the first n bits is the same as the sum of the last n bits.
+    
+    For a binary sequence of length 2n, we split it into two halves of length n.
+    The sum of bits in each half can range from 0 to n.
+    For the sums to be equal, if the first half has k ones, the second half must also have k ones.
+    
+    The number of ways to have k ones in the first half is C(n, k).
+    The number of ways to have k ones in the second half is C(n, k).
+    So for each k, the count is C(n, k) * C(n, k) = C(n, k)^2.
+    
+    Total count = sum over k=0 to n of C(n, k)^2 = C(2n, n)
+    
+    This is a well-known combinatorial identity: sum_{k=0}^{n} C(n,k)^2 = C(2n, n)
+    """
+    # Calculate C(2n, n) = (2n)! / (n! * n!)
+    def factorial(x):
+        result = 1
+        for i in range(2, x + 1):
+            result *= i
+        return result
+    
+    count = factorial(2 * n) // (factorial(n) * factorial(n))
+    return float(count)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    # For n=1: sequences of length 2. First half sum = last half sum.
+    # Possible sequences: 00 (sum 0, sum 0), 11 (sum 1, sum 1). Count = 2. ✓
+    
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+    # For n=2: C(4,2) = 6. ✓
+    
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+    # For n=3: C(6,3) = 20. ✓
+    
+    print("All tests passed!")
+```

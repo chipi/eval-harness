@@ -1,0 +1,58 @@
+Here's a self-contained Python script that includes a function to check if a number is a decagonal number and a function to find the nth decagonal number, along with the required assertion:
+
+```python
+def is_num_decagonal(n):
+    """
+    Check if a number is a decagonal number.
+
+    A decagonal number is a figurate number that extends the concept of triangular
+    and square numbers to the decagon (a 10-sided polygon). The nth decagonal number
+    is given by the formula: n*(8n - 7)/2.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is a decagonal number, False otherwise.
+    """
+    if n < 1:
+        return False
+    # Solve the quadratic equation 8n^2 - 7n - 2n = 0
+    discriminant = 49 + 32 * n
+    if discriminant < 0:
+        return False
+    root = (7 + (discriminant ** 0.5)) / 16
+    return root.is_integer()
+
+def nth_decagonal_number(n):
+    """
+    Calculate the nth decagonal number.
+
+    The nth decagonal number is given by the formula: n*(8n - 7)/2.
+
+    Args:
+        n (int): The index of the decagonal number to find.
+
+    Returns:
+        int: The nth decagonal number.
+    """
+    return n * (8 * n - 7) // 2
+
+# Test the function
+assert is_num_decagonal(27) == True
+assert nth_decagonal_number(3) == 27
+print("All assertions passed!")
+```
+
+### Explanation:
+1. **`is_num_decagonal(n)`**:
+   - This function checks if a given number `n` is a decagonal number by solving the quadratic equation derived from the decagonal number formula.
+   - The formula for the nth decagonal number is `n*(8n - 7)/2`. Rearranging this to solve for `n` gives the quadratic equation `8n^2 - 7n - 2x = 0` (where `x` is the number to check). The discriminant of this equation is used to determine if `n` is an integer.
+
+2. **`nth_decagonal_number(n)`**:
+   - This function directly computes the nth decagonal number using the formula `n*(8n - 7)/2`.
+
+3. **Assertions**:
+   - The script includes assertions to verify that the functions work correctly. The first assertion checks if 27 is a decagonal number (which it is, as it is the 3rd decagonal number), and the second assertion checks that the 3rd decagonal number is indeed 27.
+
+The script is self-contained and can be run directly to verify the correctness of the functions.

@@ -1,0 +1,40 @@
+```python
+def dif_Square(n):
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be expressed as a^2 - b^2 = (a-b)(a+b) if and only if:
+    - n is not congruent to 2 mod 4
+    
+    This is because:
+    - If n is odd, we can write n = ((n+1)/2)^2 - ((n-1)/2)^2
+    - If n is divisible by 4, we can write n = (n/4 + 1)^2 - (n/4 - 1)^2
+    - If n ≡ 2 (mod 4), it cannot be expressed as a difference of two squares
+    
+    Args:
+        n: The number to check
+        
+    Returns:
+        True if n can be represented as the difference of two squares, False otherwise
+    """
+    # Handle negative numbers: since (-n) = b^2 - a^2 if n = a^2 - b^2, 
+    # the property holds for |n| as well. But typically we consider non-negative integers.
+    # For this problem, let's assume n >= 0 based on the example.
+    if n < 0:
+        n = abs(n)
+    
+    # A number can be expressed as difference of two squares iff it is not congruent to 2 mod 4
+    return n % 4 != 2
+
+
+# Test cases
+assert dif_Square(5) == True
+assert dif_Square(3) == True   # 3 = 2^2 - 1^2
+assert dif_Square(4) == True   # 4 = 2^2 - 0^2
+assert dif_Square(6) == False  # 6 ≡ 2 (mod 4)
+assert dif_Square(7) == True   # 7 = 4^2 - 3^2
+assert dif_Square(8) == True   # 8 = 3^2 - 1^2
+assert dif_Square(10) == False # 10 ≡ 2 (mod 4)
+assert dif_Square(1) == True   # 1 = 1^2 - 0^2
+assert dif_Square(0) == True   # 0 = 0^2 - 0^2
+```

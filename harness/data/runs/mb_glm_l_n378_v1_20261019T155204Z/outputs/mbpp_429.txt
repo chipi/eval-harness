@@ -1,0 +1,27 @@
+Based on the provided assertion, the function is expected to perform an element-wise logical AND operation on two tuples. In Python, the logical AND operation on integers behaves like the bitwise AND, returning `1` if both elements are truthy (non-zero) and `0` otherwise. 
+
+Here is the self-contained Python script that solves the problem:
+
+```python
+def and_tuples(tup1, tup2):
+    """
+    Extracts the elementwise logical AND from the given two tuples.
+    
+    This function takes two tuples of integers and applies a logical AND 
+    operation to each pair of corresponding elements. If both elements 
+    are non-zero (truthy), the result is 1; otherwise, it is 0.
+    
+    Args:
+        tup1 (tuple): The first tuple of integers.
+        tup2 (tuple): The second tuple of integers.
+        
+    Returns:
+        tuple: A tuple containing the elementwise logical AND results.
+    """
+    return tuple(1 if a and b else 0 for a, b in zip(tup1, tup2))
+
+# Assert to verify the correctness of the function
+if __name__ == "__main__":
+    assert and_tuples((10, 4, 6, 9), (5, 2, 3, 3)) == (0, 0, 2, 1)
+    print("Assertion passed successfully.")
+```

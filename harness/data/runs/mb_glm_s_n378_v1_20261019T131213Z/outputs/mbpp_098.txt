@@ -1,0 +1,55 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiplies all numbers in a list and divides the product by the length of the list.
+
+    Args:
+        numbers: A list or tuple of numbers.
+
+    Returns:
+        The product of the numbers divided by the length of the list.
+    """
+    if not numbers:
+        # Handle the edge case of an empty list to avoid division by zero.
+        return 0.0
+
+    product = 1
+    for num in numbers:
+        product *= num
+        
+    # Convert length to float to ensure floating-point division.
+    return product / float(len(numbers))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The input is a tuple, which the function handles correctly.
+    result = multiply_num((8, 2, 3, -1, 7))
+    
+    # The expected result is (8 * 2 * 3 * -1 * 7) / 5 = -336 / 5 = -67.2
+    expected_result = -67.2
+    
+    # math.isclose is used for comparing floating-point numbers due to potential
+    # precision issues. rel_tol specifies the relative tolerance.
+    assert math.isclose(result, expected_result, rel_tol=0.001)
+    
+    print(f"Calculation for (8, 2, 3, -1, 7): {result}")
+    print("Assertion passed: The result is close to -67.2.")
+    
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    test1 = multiply_num([1, 2, 3, 4])
+    print(f"multiply_num([1, 2, 3, 4]) = {test1} (Expected: 6.0)")
+    assert math.isclose(test1, 6.0)
+
+    test2 = multiply_num([-2, 5, 10])
+    print(f"multiply_num([-2, 5, 10]) = {test2} (Expected: -33.333...)")
+    assert math.isclose(test2, -100.0/3.0)
+
+    test3 = multiply_num([])
+    print(f"multiply_num([]) = {test3} (Expected: 0.0)")
+    assert test3 == 0.0
+    
+    print("\nAll tests passed successfully.")
+```

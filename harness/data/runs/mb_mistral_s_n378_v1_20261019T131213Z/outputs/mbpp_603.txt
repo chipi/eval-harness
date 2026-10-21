@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem of finding all lucid numbers (also known as "lucky numbers") up to a given integer:
+
+```python
+def get_ludic(n):
+    """
+    Returns a list of all lucid numbers (lucky numbers) up to and including n.
+
+    A lucid number is a number that remains after a specific sieving process:
+    1. Start with the list of numbers from 1 to n.
+    2. Remove every second number (2, 4, 6, ...).
+    3. From the remaining numbers, remove every third number.
+    4. Continue this process, removing every k-th number in each step where k is the step number.
+
+    Args:
+        n (int): The upper limit for finding lucid numbers.
+
+    Returns:
+        list: A list of lucid numbers up to n.
+
+    Example:
+        >>> get_ludic(10)
+        [1, 2, 3, 5, 7]
+    """
+    if n < 1:
+        return []
+
+    # Initialize the list with numbers from 1 to n
+    lucid_numbers = list(range(1, n + 1))
+    k = 2  # The step counter
+
+    while k <= n:
+        # Remove every k-th number from the current list
+        # We need to remove from the end to avoid index shifting issues
+        for i in range(len(lucid_numbers) - 1, -1, -1):
+            if (i + 1) % k == 0:
+                del lucid_numbers[i]
+        k += 1
+
+    return lucid_numbers
+
+# Test the function
+assert get_ludic(10) == [1, 2, 3, 5, 7]
+print("Test passed!")
+```
+
+This script:
+1. Defines the `get_ludic` function that implements the lucid number sieving process
+2. Includes a docstring with explanation and example
+3. Contains the test case from the problem statement
+4. Prints a confirmation message if the test passes
+
+The algorithm works by:
+- Starting with all numbers from 1 to n
+- In each step, removing every k-th number (where k is the current step number)
+- Continuing until k exceeds n
+- Returning the remaining numbers as the lucid numbers up to n

@@ -1,0 +1,46 @@
+Looking at this problem, I need to write a function that moves all zeroes to the end of a list while preserving the relative order of the non-zero elements.
+
+```python
+"""
+Write a python function to move all zeroes to the end of the given list.
+assert move_zero([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+"""
+
+
+def move_zero(num_list):
+    """
+    Move all zeroes in `num_list` to the end, keeping the relative order
+    of the remaining (non-zero) elements unchanged.
+
+    Args:
+        num_list (list): list of numbers (may contain zeroes).
+
+    Returns:
+        list: new list with all zeroes shifted to the end.
+    """
+    non_zeros = [x for x in num_list if x != 0]
+    zero_count = len(num_list) - len(non_zeros)
+    return non_zeros + [0] * zero_count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+
+    # Additional test cases
+    assert move_zero([2, 3, 2, 0, 0, 4, 0, 5, 0]) == [2, 3, 2, 4, 5, 0, 0, 0, 0]
+    assert move_zero([0, 1, 0, 1, 1]) == [1, 1, 1, 0, 0]
+    assert move_zero([0, 0, 0]) == [0, 0, 0]
+    assert move_zero([1, 2, 3]) == [1, 2, 3]
+    assert move_zero([]) == []
+
+    print("All tests passed!")
+    print(move_zero([1, 0, 2, 0, 3, 4]))
+```
+
+**How it works:**
+1. Build a list of all non-zero elements using a list comprehension (this preserves their original order).
+2. Compute how many zeroes were removed by comparing lengths.
+3. Append that many zeroes to the end of the non-zero list.
+
+This runs in O(n) time and O(n) extra space.

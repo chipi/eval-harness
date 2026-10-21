@@ -1,0 +1,18 @@
+```python
+def count_char_position(s):
+    s = s.lower()
+    count = 0
+    for i in range(len(s)):
+        if s[i].isalpha():
+            if s[i] == 'a' or s[i] == 'e' or s[i] == 'i' or s[i] == 'o' or s[i] == 'u':
+                count += 1
+            elif s[i] == 'b' or s[i] == 'c' or s[i] == 'd' or s[i] == 'f' or s[i] == 'g':
+                count += 1
+            elif s[i] == 'h' or s[i] == 'j' or s[i] == 'k' or s[i] == 'l' or s[i] == 'm':
+                count += 1
+            elif s[i] == 'n' or s[i] == 'p' or s[i] == 'q' or s[i] == 'r' or s[i] == 's' or s[i] == 't' or s[i] == 'v' or s[i] == 'w' or s[i] == 'x' or s[i] == 'y' or s[i] == 'z':
+                count += 1
+    return count
+
+print(count_char_position("xbcefg"))  # Output: 2
+```

@@ -1,0 +1,17 @@
+```python
+def find(a, b):
+    """
+    Find the quotient of two numbers rounded down to the nearest integer.
+
+    Args:
+        a (int): Dividend
+        b (int): Divisor
+
+    Returns:
+        int: Quotient rounded down to the nearest integer
+    """
+    return a // b
+
+# Test case
+assert find(10, 3) == 3
+```

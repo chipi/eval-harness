@@ -1,0 +1,17 @@
+```python
+def text_match_wordz(text):
+    """
+    Write a function that matches a word containing 'z'.
+    """
+    words = text.split()
+    for word in words:
+        if 'z' in word:
+            return True
+    return False
+
+# Test cases
+print(text_match_wordz("pythonz."))  # Expected output: True
+print(text_match_wordz("hello world"))  # Expected output: False
+print(text_match_wordz("python"))  # Expected output: False
+print(text_match_wordz("pythonz"))  # Expected output: True
+```

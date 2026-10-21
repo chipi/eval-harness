@@ -1,0 +1,10 @@
+```python
+def sum_digits(n):
+    """Return the sum of the digits of a non-negative integer."""
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("n must be a non-negative integer")
+    return sum(int(digit) for digit in str(n))
+
+
+assert sum_digits(345) == 12
+```

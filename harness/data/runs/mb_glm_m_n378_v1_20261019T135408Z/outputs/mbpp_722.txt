@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def filter_data(students_dict, min_height, min_weight):
+    """
+    Filters students who have both height and weight above the given minimums.
+    
+    Args:
+        students_dict (dict): A dictionary with student names as keys and tuples of (height, weight) as values.
+        min_height (float): The minimum height threshold.
+        min_weight (float): The minimum weight threshold.
+    
+    Returns:
+        dict: A dictionary containing only the students who meet both criteria.
+    """
+    filtered_students = {}
+    for name, (height, weight) in students_dict.items():
+        if height >= min_height and weight >= min_weight:
+            filtered_students[name] = (height, weight)
+    return filtered_students
+
+# Test the function with the provided example
+assert filter_data({'Cierra Vega': (6.2, 70), 'Alden Cantrell': (5.9, 65), 'Kierra Gentry': (6.0, 68), 'Pierre Cox': (5.8, 66)}, 6.0, 70) == {'Cierra Vega': (6.2, 70)}
+
+# Additional test cases
+assert filter_data({'Alice': (5.5, 60), 'Bob': (6.0, 70), 'Charlie': (6.1, 71)}, 6.0, 70) == {'Bob': (6.0, 70), 'Charlie': (6.1, 71)}
+assert filter_data({'Alice': (5.5, 60), 'Bob': (6.0, 70)}, 6.1, 71) == {}
+assert filter_data({}, 6.0, 70) == {}
+
+print("All test cases passed!")
+```
+
+This script defines the `filter_data` function that iterates through the input dictionary and checks each student's height and weight against the provided minimums. If both criteria are met, the student is added to the filtered dictionary. The script includes the original test case from the problem statement along with additional test cases to verify the function's correctness. The `assert` statements will raise an error if any test fails, otherwise it will print "All test cases passed!" when all tests succeed.

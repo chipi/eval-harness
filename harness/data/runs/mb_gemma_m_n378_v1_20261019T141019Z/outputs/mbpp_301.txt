@@ -1,0 +1,28 @@
+```python
+def dict_depth(d):
+    """
+    Finds the depth of a dictionary. 
+    The depth is defined as the maximum number of nested levels.
+    An empty dictionary or a non-dictionary value has a depth of 1 (the current level).
+    """
+    # If the input is not a dictionary, we have reached a leaf node.
+    # However, the problem structure implies we count the levels of nesting.
+    if not isinstance(d, dict) or not d:
+        return 1
+    
+    # Recursively find the depth of each value in the dictionary
+    # and take the maximum, then add 1 for the current level.
+    return 1 + max(dict_depth(v) for v in d.values())
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+    
+    # Additional test cases
+    assert dict_depth({}) == 1
+    assert dict_depth({'a': 1}) == 1
+    assert dict_depth({'a': {'b': 1}}) == 2
+    assert dict_depth({'a': {'b': {'c': 1}}, 'd': 2}) == 3
+    
+    print("All tests passed!")
+```

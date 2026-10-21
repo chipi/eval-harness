@@ -1,0 +1,19 @@
+```python
+def count_first_elements(tup):
+    count = 0
+    for i in tup:
+        if isinstance(i, tuple):
+            count += len(i)
+        else:
+            count += 1
+    return count
+
+# Test cases
+assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+assert count_first_elements((1, 5, 7, (4, 6))) == 2
+assert count_first_elements((1, 5, 7, 10)) == 2
+assert count_first_elements((1, 5, 7)) == 0
+assert count_first_elements((1, 5)) == 0
+assert count_first_elements((1)) == 0
+assert count_first_elements(()) == 0
+```

@@ -1,0 +1,8 @@
+```python
+def move_zero(numbers):
+    nonzero = [number for number in numbers if number != 0]
+    return nonzero + [0] * (len(numbers) - len(nonzero))
+
+
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+```

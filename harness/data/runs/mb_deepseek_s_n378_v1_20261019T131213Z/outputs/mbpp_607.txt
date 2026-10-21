@@ -1,0 +1,28 @@
+```python
+import re
+
+def find_literals(text: str, pattern: str) -> tuple:
+    """
+    Search a string for a regex pattern and return the matching substring,
+    start index, and end index.
+
+    Args:
+        text: The string to search within.
+        pattern: The regex pattern to search for.
+
+    Returns:
+        A tuple (matching_substring, start_index, end_index).
+        If no match is found, returns None.
+    """
+    match = re.search(pattern, text)
+    if match:
+        return (match.group(), match.start(), match.end())
+    return None
+
+# Example usage and test
+if __name__ == "__main__":
+    result = find_literals('The quick brown fox jumps over the lazy dog.', 'fox')
+    print(result)  # Should output: ('fox', 16, 19)
+    assert result == ('fox', 16, 19), f"Expected ('fox', 16, 19), got {result}"
+    print("Test passed.")
+```

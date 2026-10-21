@@ -1,0 +1,78 @@
+```python
+def Find_Max(lst):
+    """
+    Finds the element of a list having the maximum length.
+
+    This function iterates through a list of elements (which can be of any type,
+    but are typically lists or strings) and returns the first element that has
+    the greatest length.
+
+    Args:
+        lst: A list of elements. Each element should have a len() attribute.
+
+    Returns:
+        The element from the input list with the maximum length.
+        If the input list is empty, it returns None.
+
+    Example:
+        >>> Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']])
+        ['A', 'B', 'C']
+        >>> Find_Max(['apple', 'banana', 'kiwi'])
+        'banana'
+        >>> Find_Max([])
+        None
+    """
+    # Handle the edge case of an empty list to avoid errors.
+    if not lst:
+        return None
+
+    # Initialize max_element with the first item in the list.
+    # This ensures we have a valid starting point for comparison.
+    max_element = lst[0]
+
+    # Iterate through the list starting from the second element.
+    for element in lst[1:]:
+        # Compare the length of the current element with the length of the
+        # current max_element. If the current element is longer, it becomes
+        # the new max_element.
+        if len(element) > len(max_element):
+            max_element = element
+            
+    return max_element
+
+# Example usage and assertion to verify the function's correctness.
+if __name__ == "__main__":
+    # Test case from the problem description
+    input_list = [['A'], ['A', 'B'], ['A', 'B', 'C']]
+    expected_output = ['A', 'B', 'C']
+    
+    result = Find_Max(input_list)
+    
+    print(f"Input list: {input_list}")
+    print(f"Expected output: {expected_output}")
+    print(f"Function result: {result}")
+    
+    # The assert statement will raise an error if the result is not as expected.
+    assert result == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+    
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    test_list_2 = ['apple', 'banana', 'kiwi']
+    assert Find_Max(test_list_2) == 'banana'
+    print(f"Test 2 Passed: Find_Max({test_list_2}) -> 'banana'")
+
+    test_list_3 = [[1, 2], [3, 4, 5, 6], [7, 8, 9]]
+    assert Find_Max(test_list_3) == [3, 4, 5, 6]
+    print(f"Test 3 Passed: Find_Max({test_list_3}) -> [3, 4, 5, 6]")
+    
+    test_list_4 = []
+    assert Find_Max(test_list_4) is None
+    print(f"Test 4 Passed: Find_Max({test_list_4}) -> None")
+    
+    test_list_5 = [['short'], ['a', 'bit', 'longer'], ['short']]
+    # This test ensures the *first* longest element is returned if there are ties.
+    assert Find_Max(test_list_5) == ['a', 'bit', 'longer']
+    print(f"Test 5 Passed: Find_Max({test_list_5}) -> ['a', 'bit', 'longer'] (first longest element)")
+```

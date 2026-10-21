@@ -1,0 +1,50 @@
+Looking at this problem, I need to write a function that checks whether a given number is even.
+
+```python
+"""
+Write a python function to check whether the given number is even or not.
+assert is_Even(1) == False
+"""
+
+
+def is_Even(n):
+    """
+    Check whether the given number is even or not.
+
+    Args:
+        n: An integer to check.
+
+    Returns:
+        True if n is even, False otherwise.
+    """
+    return n % 2 == 0
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_Even(1) == False
+    assert is_Even(2) == True
+    assert is_Even(3) == False
+    assert is_Even(0) == True
+    assert is_Even(-1) == False
+    assert is_Even(-2) == True
+    assert is_Even(100) == True
+    assert is_Even(101) == False
+
+    print("All test cases passed!")
+```
+
+**How it works:**
+
+- The modulo operator `%` returns the remainder of a division.
+- When a number is divided by 2, the remainder is either `0` (even) or `1`/`-1` (odd).
+- So `n % 2 == 0` evaluates to `True` for even numbers and `False` for odd numbers.
+
+**Alternative approach using bitwise AND:**
+
+```python
+def is_Even(n):
+    return not (n & 1)
+```
+
+This checks the least significant bit — if it's `0`, the number is even.

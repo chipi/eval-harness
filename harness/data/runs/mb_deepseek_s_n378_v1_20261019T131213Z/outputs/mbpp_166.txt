@@ -1,0 +1,21 @@
+```python
+def find_even_pair(nums):
+    """
+    Counts the number of pairs (i, j) with i < j such that nums[i] XOR nums[j] is even.
+    
+    XOR of two numbers is even if and only if both numbers have the same parity
+    (both even or both odd). So we just need to count pairs within even numbers
+    and within odd numbers.
+    """
+    even_count = sum(1 for x in nums if x % 2 == 0)
+    odd_count = len(nums) - even_count
+    
+    # Number of pairs among even numbers: C(even_count, 2)
+    # Number of pairs among odd numbers: C(odd_count, 2)
+    pairs = (even_count * (even_count - 1)) // 2 + (odd_count * (odd_count - 1)) // 2
+    return pairs
+
+# Test the assertion
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+print("Test passed.")
+```

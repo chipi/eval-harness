@@ -1,0 +1,61 @@
+```python
+def text_match_two_three(text):
+    # Check if the string starts with 'a' and then has 2 or 3 'b's
+    return text.startswith('a') and (text[1] == 'b' and (text[2] == 'b' or text[2] == 'bb'))
+
+# Test cases to verify the correctness of the function
+assert text_match_two_three("ac") == False
+assert text_match_two_three("aab") == True
+assert text_match_two_three("abb") == True
+assert text_match_two_three("abbb") == True
+assert text_match_two_three("abc") == False
+assert text_match_two_three("abcd") == False
+assert text_match_two_three("aabb") == True
+assert text_match_two_three("aabbcc") == True
+assert text_match_two_three("aabbccc") == True
+assert text_match_two_three("aabbcd") == False
+assert text_match_two_three("aabbce") == False
+assert text_match_two_three("aabbcf") == False
+assert text_match_two_three("aabbcg") == False
+assert text_match_two_three("aabbch") == False
+assert text_match_two_three("aabbci") == False
+assert text_match_two_three("aabbcj") == False
+assert text_match_two_three("aabbck") == False
+assert text_match_two_three("aabbcl") == False
+assert text_match_two_three("aabbcm") == False
+assert text_match_two_three("aabbcn") == False
+assert text_match_two_three("aabbco") == False
+assert text_match_two_three("aabbcp") == False
+assert text_match_two_three("aabbcq") == False
+assert text_match_two_three("aabbcr") == False
+assert text_match_two_three("aabbcs") == False
+assert text_match_two_three("aabbct") == False
+assert text_match_two_three("aabbcu") == False
+assert text_match_two_three("aabbcv") == False
+assert text_match_two_three("aabbcw") == False
+assert text_match_two_three("aabbcx") == False
+assert text_match_two_three("aabbcy") == False
+assert text_match_two_three("aabbcz") == False
+assert text_match_two_three("aabbda") == False
+assert text_match_two_three("aabbdb") == False
+assert text_match_two_three("aabbdc") == False
+assert text_match_two_three("aabbdd") == False
+assert text_match_two_three("aabbde") == False
+assert text_match_two_three("aabbdf") == False
+assert text_match_two_three("aabbdg") == False
+assert text_match_two_three("aabbdh") == False
+assert text_match_two_three("aabbdi") == False
+assert text_match_two_three("aabbdj") == False
+assert text_match_two_three("aabbdk") == False
+assert text_match_two_three("aabbdl") == False
+assert text_match_two_three("aabbdm") == False
+assert text_match_two_three("aabbdn") == False
+assert text_match_two_three("aabbdo") == False
+assert text_match_two_three("aabbdp") == False
+assert text_match_two_three("aabbdq") == False
+assert text_match_two_three("aabbdr") == False
+assert text_match_two_three("aabbds") == False
+assert text_match_two_three("aabbdt") == False
+assert text_match_two_three("aabbdu") == False
+assert text_match_two_three("aabbdv") == False
+assert

@@ -1,0 +1,16 @@
+```python
+def merge_sorted_list(list1, list2, list3):
+    """
+    Merge three lists into a single sorted list.
+    
+    Args:
+        list1: First list of numbers
+        list2: Second list of numbers
+        list3: Third list of numbers
+    
+    Returns:
+        A single sorted list containing all elements from the three input lists
+    """
+    merged = list1 + list2 + list3
+    return sorted(merged)
+```

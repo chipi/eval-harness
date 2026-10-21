@@ -1,0 +1,37 @@
+```python
+def check_integer(s):
+    """
+    Check if a string represents an integer.
+    Returns True if the string is a valid integer representation, False otherwise.
+    """
+    if not isinstance(s, str) or len(s) == 0:
+        return False
+    
+    s = s.strip()
+    if len(s) == 0:
+        return False
+    
+    # Handle optional sign
+    if s[0] in ('+', '-'):
+        s = s[1:]
+    
+    if len(s) == 0:
+        return False
+    
+    return s.isdigit()
+
+
+if __name__ == "__main__":
+    assert check_integer("python") == False
+    assert check_integer("123") == True
+    assert check_integer("-123") == True
+    assert check_integer("+123") == True
+    assert check_integer("12.3") == False
+    assert check_integer("") == False
+    assert check_integer("  123  ") == True
+    assert check_integer("-") == False
+    assert check_integer("+") == False
+    assert check_integer("0") == True
+    
+    print("All test cases passed!")
+```

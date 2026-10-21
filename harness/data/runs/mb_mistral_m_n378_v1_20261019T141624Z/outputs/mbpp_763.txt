@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem of finding the minimum difference between any two elements in a given array:
+
+```python
+def find_min_diff(arr, n):
+    """
+    Find the minimum difference between any two elements in a given array.
+
+    Args:
+        arr: The input array (list or tuple)
+        n: The size of the array
+
+    Returns:
+        The minimum difference between any two elements
+    """
+    if n < 2:
+        return 0
+
+    # Sort the array
+    arr = sorted(arr)
+
+    # Initialize the minimum difference
+    min_diff = float('inf')
+
+    # Compare adjacent elements in the sorted array
+    for i in range(n - 1):
+        current_diff = abs(arr[i] - arr[i + 1])
+        if current_diff < min_diff:
+            min_diff = current_diff
+
+    return min_diff
+
+# Test case
+assert find_min_diff((1, 5, 3, 19, 18, 25), 6) == 1
+```
+
+The approach works by:
+1. First sorting the array (O(n log n) time)
+2. Then comparing adjacent elements in the sorted array to find the minimum difference (O(n) time)
+3. The overall time complexity is O(n log n) due to the sorting step
+
+The minimum difference will always be between two adjacent elements in the sorted array, which is why this approach works. The test case provided in the problem statement passes successfully.

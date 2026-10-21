@@ -1,0 +1,44 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def find_solution(a, b, n):
+    """
+    Returns integers x and y that satisfy ax + by = n as a tuple, or returns None if no solution exists.
+    """
+    # Handle trivial case
+    if n == 0:
+        return (0, 0)
+    
+    # Extended Euclidean Algorithm to find gcd and coefficients
+    def extended_gcd(a, b):
+        if b == 0:
+            return a, 1, 0
+        gcd, x1, y1 = extended_gcd(b, a % b)
+        x = y1
+        y = x1 - (a // b) * y1
+        return gcd, x, y
+    
+    gcd, x0, y0 = extended_gcd(abs(a), abs(b))
+    
+    # Check if solution exists
+    if n % gcd != 0:
+        return None
+    
+    # Scale the particular solution
+    x0 *= n // gcd
+    y0 *= n // gcd
+    
+    # Adjust signs if original coefficients were negative
+    if a < 0:
+        x0 = -x0
+    if b < 0:
+        y0 = -y0
+    
+    return (x0, y0)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+    print("Test passed!")
+```

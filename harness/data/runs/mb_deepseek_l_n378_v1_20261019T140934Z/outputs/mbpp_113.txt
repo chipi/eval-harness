@@ -1,0 +1,50 @@
+```python
+def check_integer(s):
+    """
+    Check if a string represents an integer or not.
+    
+    Args:
+        s: Input string to check
+        
+    Returns:
+        bool: True if string represents an integer, False otherwise
+    """
+    # Remove leading and trailing whitespace
+    s = s.strip()
+    
+    # Empty string is not an integer
+    if not s:
+        return False
+    
+    # Check if the string starts with a sign
+    start = 0
+    if s[0] in ('+', '-'):
+        start = 1
+        # If string only contains a sign, it's not an integer
+        if len(s) == 1:
+            return False
+    
+    # Check if all remaining characters are digits
+    return s[start:].isdigit()
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert check_integer("python") == False
+    
+    # Additional test cases
+    assert check_integer("123") == True
+    assert check_integer("-456") == True
+    assert check_integer("+789") == True
+    assert check_integer("0") == True
+    assert check_integer("12.34") == False
+    assert check_integer("") == False
+    assert check_integer("  42  ") == True
+    assert check_integer("+") == False
+    assert check_integer("-") == False
+    assert check_integer("abc123") == False
+    assert check_integer("123abc") == False
+    
+    print("All tests passed!")
+```

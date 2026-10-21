@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function that checks if a strings contains 'z', except at the start and end of the word.
+assert text_match_wordz_middle("pythonzabc.")==True
+"""
+
+def text_match_wordz_middle(text):
+    """
+    Check if a string contains 'z' anywhere except at the start or end of the word.
+
+    Args:
+        text (str): The input string to check
+
+    Returns:
+        bool: True if 'z' is found in the middle of the word, False otherwise
+    """
+    # Check if 'z' exists in the string and is not at the first or last position
+    if 'z' in text:
+        # Find all indices of 'z' in the string
+        z_indices = [i for i, char in enumerate(text) if char == 'z']
+        # Check if any 'z' is not at the first or last position
+        for index in z_indices:
+            if index != 0 and index != len(text) - 1:
+                return True
+    return False
+
+# Test cases
+assert text_match_wordz_middle("pythonzabc.") == True
+assert text_match_wordz_middle("zpythonabc") == False
+assert text_match_wordz_middle("pythonabcz") == False
+assert text_match_wordz_middle("pythonabc") == False
+assert text_match_wordz_middle("z") == False
+assert text_match_wordz_middle("zabc") == False
+assert text_match_wordz_middle("abc") == False
+assert text_match_wordz_middle("abcza") == False
+assert text_match_wordz_middle("abczab") == True
+assert text_match_wordz_middle("") == False
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `text_match_wordz_middle` that checks for 'z' in the middle of a string
+2. Includes the required test case from the problem statement
+3. Adds additional test cases to verify edge cases
+4. Returns True only if 'z' appears somewhere in the string that's not the first or last character
+5. Prints a success message if all test cases pass
+
+The function works by:
+- First checking if 'z' exists in the string at all
+- Then finding all positions where 'z' appears
+- Finally checking if any of those positions are neither the first nor last character in the string

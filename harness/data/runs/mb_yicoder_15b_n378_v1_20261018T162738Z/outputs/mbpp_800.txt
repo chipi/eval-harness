@@ -1,0 +1,10 @@
+```python
+def remove_all_spaces(input_string):
+    return input_string.replace(" ", "")
+
+# Test cases
+assert remove_all_spaces('python  program')==('pythonprogram')
+assert remove_all_spaces('hello world')==('helloworld')
+assert remove_all_spaces('   multiple   spaces   ')==('multiplespaces')
+assert remove_all_spaces('no spaces')==('nospaces')
+```

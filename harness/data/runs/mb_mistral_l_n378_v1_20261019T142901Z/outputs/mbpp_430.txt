@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem of finding the directrix of a parabola given its coefficients in the standard form \( y = ax^2 + bx + c \). The directrix of a parabola \( y = ax^2 + bx + c \) can be found using the formula derived from completing the square and the standard properties of parabolas.
+
+```python
+"""
+Function to find the directrix of a parabola given by y = ax^2 + bx + c.
+The directrix of a parabola y = ax^2 + bx + c is given by:
+y = k - (1 / (4a)), where (h, k) is the vertex of the parabola.
+The vertex (h, k) can be found using h = -b/(2a) and k = c - b^2/(4a).
+Thus, the directrix is y = c - b^2/(4a) - 1/(4a).
+"""
+
+def parabola_directrix(a, b, c):
+    """
+    Calculate the directrix of the parabola y = ax^2 + bx + c.
+
+    Parameters:
+    a (float): Coefficient of x^2.
+    b (float): Coefficient of x.
+    c (float): Constant term.
+
+    Returns:
+    float: The y-coordinate of the directrix.
+    """
+    if a == 0:
+        raise ValueError("Coefficient 'a' cannot be zero for a parabola.")
+    directrix = c - (b ** 2) / (4 * a) - 1 / (4 * a)
+    return directrix
+
+# Test the function
+assert parabola_directrix(5, 3, 2) == -198
+```
+
+### Explanation:
+1. The standard form of a parabola is \( y = ax^2 + bx + c \).
+2. The vertex form is \( y = a(x - h)^2 + k \), where \( (h, k) \) is the vertex.
+3. The vertex \( h \) is given by \( h = -b/(2a) \), and \( k \) is \( c - b^2/(4a) \).
+4. The directrix of a parabola \( y = a(x - h)^2 + k \) is \( y = k - 1/(4a) \).
+5. Substituting \( k \) from step 3, the directrix becomes \( y = c - b^2/(4a) - 1/(4a) \).
+6. The function `parabola_directrix` implements this formula and returns the y-coordinate of the directrix.
+
+The assertion `assert parabola_directrix(5, 3, 2) == -198` verifies that the function works correctly for the given input.

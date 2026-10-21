@@ -1,0 +1,22 @@
+```python
+"""
+Write a function to find the minimum value in a given heterogeneous list.
+
+The list may contain values of different types, such as strings and numbers.
+This function returns the minimum numeric value found in the list.
+"""
+
+def min_val(items):
+    numeric_values = [x for x in items if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    
+    if not numeric_values:
+        raise ValueError("The list does not contain any numeric values.")
+    
+    return min(numeric_values)
+
+
+# Example test
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+
+print("All tests passed.")
+```

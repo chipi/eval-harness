@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def long_words(n, sentence):
+    """
+    Find words that are longer than n characters from a given sentence.
+    
+    Args:
+        n (int): The minimum length a word must exceed to be included.
+        sentence (str): The input string containing words separated by spaces.
+    
+    Returns:
+        list: A list of words longer than n characters.
+    """
+    # Split the sentence into words
+    words = sentence.split()
+    # Filter words longer than n characters
+    result = [word for word in words if len(word) > n]
+    return result
+
+# Test the function
+assert long_words(3, "python is a programming language") == ['python', 'programming', 'language']
+
+# Additional test cases
+assert long_words(2, "a bc def ghij") == ['def', 'ghij']
+assert long_words(5, "short longword") == ['longword']
+assert long_words(0, "all words") == ['all', 'words']
+assert long_words(10, "no words here") == []
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines the `long_words` function that takes an integer `n` and a string `sentence`
+2. Splits the sentence into individual words
+3. Filters the words to only include those longer than `n` characters
+4. Returns the filtered list
+5. Includes the original assertion test case from the problem
+6. Adds additional test cases to verify the function works correctly
+7. Prints a success message if all tests pass
+
+The function handles edge cases like:
+- Empty input string
+- No words longer than n
+- All words longer than n
+- n being 0 (which should return all words)

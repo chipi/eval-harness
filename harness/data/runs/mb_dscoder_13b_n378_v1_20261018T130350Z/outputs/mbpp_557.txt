@@ -1,0 +1,11 @@
+```python
+def toggle_string(s):
+    return s.swapcase()
+
+# Test cases
+assert toggle_string("Python") == "pYTHON"
+assert toggle_string("Hello World") == "hELLO wORLD"
+assert toggle_string("1234567890") == "1234567890"
+assert toggle_string("ABCDEFGHIJKLMNOPQRSTUVWXYZ") == "abcdefghijklmnopqrstuvwxyz"
+assert toggle_string("abcdefghijklmnopqrstuvwxyz") == "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+```

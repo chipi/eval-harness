@@ -1,0 +1,23 @@
+```python
+def count_charac(s):
+    """
+    Counts the total number of characters in a string.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        The total number of characters in the string.
+    """
+    return len(s)
+
+# Example usage and assertion
+assert count_charac("python programming") == 18
+
+# Additional test cases
+assert count_charac("") == 0
+assert count_charac("hello world") == 11
+assert count_charac("123 !@#") == 7
+
+print("All assertions passed!")
+```

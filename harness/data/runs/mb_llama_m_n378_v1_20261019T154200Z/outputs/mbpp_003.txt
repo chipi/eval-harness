@@ -1,0 +1,28 @@
+```python
+def is_not_prime(n):
+    """
+    Checks if a number is not prime.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is not prime, False otherwise.
+    """
+    if n <= 1:
+        return True
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return True
+    return False
+
+# Test the function
+assert not is_not_prime(2)
+assert is_not_prime(4)
+assert is_not_prime(6)
+assert not is_not_prime(7)
+assert is_not_prime(8)
+assert is_not_prime(9)
+
+print("All tests passed.")
+```

@@ -1,0 +1,47 @@
+```python
+def square_Sum(n):
+    """
+    This function calculates the sum of squares of first n even natural numbers.
+
+    Args:
+        n (int): The number of even natural numbers.
+
+    Returns:
+        int: The sum of squares of first n even natural numbers.
+    """
+    # Initialize sum to 0
+    total_sum = 0
+    
+    # Loop through the first n even natural numbers
+    for i in range(1, n + 1):
+        # Calculate the ith even natural number
+        even_num = 2 * i
+        
+        # Add the square of the even number to the total sum
+        total_sum += even_num ** 2
+    
+    # Return the total sum
+    return total_sum
+
+# Test the function
+assert square_Sum(2) == 20
+print("All tests passed.")
+
+# Alternatively, you can use a more mathematical approach to solve this problem
+def square_Sum_math(n):
+    """
+    This function calculates the sum of squares of first n even natural numbers using a mathematical formula.
+
+    Args:
+        n (int): The number of even natural numbers.
+
+    Returns:
+        int: The sum of squares of first n even natural numbers.
+    """
+    # The sum of squares of first n even natural numbers is given by 2*n*(n+1)*(2*n+1)
+    return 2 * n * (n + 1) * (2 * n + 1) // 3
+
+# Test the function
+assert square_Sum_math(2) == 20
+print("All mathematical tests passed.")
+```

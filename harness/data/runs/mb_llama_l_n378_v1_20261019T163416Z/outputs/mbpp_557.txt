@@ -1,0 +1,10 @@
+```python
+def toggle_string(s):
+    return s.swapcase()
+
+def main():
+    print(toggle_string("Python"))  # Expected output: "pYTHON"
+
+if __name__ == "__main__":
+    main()
+```

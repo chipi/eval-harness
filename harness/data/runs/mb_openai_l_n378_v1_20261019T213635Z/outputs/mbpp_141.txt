@@ -1,0 +1,20 @@
+```python
+def pancake_sort(values):
+    """Return a sorted copy of values using prefix reversals."""
+    result = list(values)
+
+    for size in range(len(result), 1, -1):
+        max_index = max(range(size), key=result.__getitem__)
+        if max_index == size - 1:
+            continue
+
+        if max_index != 0:
+            result[:max_index + 1] = reversed(result[:max_index + 1])
+
+        result[:size] = reversed(result[:size])
+
+    return result
+
+
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+```

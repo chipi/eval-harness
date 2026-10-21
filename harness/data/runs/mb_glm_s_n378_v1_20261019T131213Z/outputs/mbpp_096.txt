@@ -1,0 +1,65 @@
+```python
+import math
+
+def divisor(n):
+    """
+    Calculates the number of divisors of a given integer n.
+
+    This function uses an efficient method by iterating up to the square root of n.
+    For each divisor i found, we increment the count by 2 (for i and n/i).
+    Special cases for perfect squares are handled to avoid double-counting the square root.
+
+    Args:
+        n (int): The integer for which to find the number of divisors.
+
+    Returns:
+        int: The total number of divisors of n.
+    
+    Examples:
+        >>> divisor(15)
+        4
+        >>> divisor(9)
+        3
+        >>> divisor(1)
+        1
+        >>> divisor(7)
+        2
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("Input must be a positive integer.")
+
+    # Handle the special case for n = 1
+    if n == 1:
+        return 1
+
+    count = 0
+    # Iterate from 1 up to the square root of n
+    for i in range(1, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            # If i is a divisor, n/i is also a divisor.
+            # We increment the count by 2.
+            count += 2
+            
+    # If n is a perfect square, the square root was counted twice.
+    # For example, for n=9, the loop finds i=3, and counts 3 and 9/3=3.
+    # We need to subtract one to correct the count.
+    if math.sqrt(n).is_integer():
+        count -= 1
+        
+    return count
+
+# Example usage and assertions
+if __name__ == "__main__":
+    # Test cases
+    assert divisor(15) == 4, f"Failed: divisor(15) should be 4, but got {divisor(15)}"
+    assert divisor(9) == 3, f"Failed: divisor(9) should be 3, but got {divisor(9)}"
+    assert divisor(1) == 1, f"Failed: divisor(1) should be 1, but got {divisor(1)}"
+    assert divisor(7) == 2, f"Failed: divisor(7) should be 2, but got {divisor(7)}"
+    assert divisor(100) == 9, f"Failed: divisor(100) should be 9, but got {divisor(100)}"
+    assert divisor(28) == 6, f"Failed: divisor(28) should be 6, but got {divisor(28)}"
+
+    print("All assertions passed successfully!")
+    print(f"Divisors of 15: {divisor(15)}")
+    print(f"Divisors of 100: {divisor(100)}")
+    print(f"Divisors of 1: {divisor(1)}")
+```

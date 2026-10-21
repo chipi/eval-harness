@@ -1,0 +1,67 @@
+```python
+def newman_prime(n: int) -> int:
+    """
+    Find the nth Newman-Shanks-Williams (NSW) prime number.
+    
+    The NSW numbers are defined by the recurrence:
+    S(0) = 1, S(1) = 1, S(n) = 2*S(n-1) + S(n-2)
+    
+    The NSW primes are the NSW numbers that are prime. The sequence of NSW primes
+    corresponds to specific indices where S(n) is prime.
+    
+    The known NSW primes occur at indices: 1, 3, 5, 7, 19, 29, 47, 59, 163, ...
+    And the corresponding NSW prime values are: 1, 7, 41, 239, ...
+    
+    Note: S(1)=1 is not prime, so we need to be careful. Let me reconsider.
+    
+    Actually, the NSW sequence is: S(0)=1, S(1)=1, S(2)=3, S(3)=7, S(4)=17, S(5)=41, S(6)=99, S(7)=239, ...
+    
+    The NSW primes (values that are prime): 3, 7, 17, 41, 239, ...
+    
+    Wait, let me check: S(2)=3 (prime), S(3)=7 (prime), S(4)=17 (prime), S(5)=41 (prime), S(6)=99=9*11 (not prime), S(7)=239 (prime).
+    
+    So the nth NSW prime (1-indexed based on the assertion newman_prime(3)==7):
+    - 1st NSW prime: 3
+    - 2nd NSW prime: 7  
+    - 3rd NSW prime: 17? But assertion says newman_prime(3) == 7
+    
+    Hmm, let me re-read. The assertion says newman_prime(3) == 7. So maybe it's 0-indexed or uses a different convention.
+    
+    If 0-indexed: newman_prime(0)=3, newman_prime(1)=7, newman_prime(2)=17... that doesn't work either since newman_prime(3) would be 239 or 41.
+    
+    Let me reconsider: perhaps the indexing refers to the index in the NSW sequence itself, not the count of primes. S(3) = 7. So newman_prime(n) returns S(n) when S(n) is prime, or perhaps it just returns S(n) for certain n values that produce primes.
+    
+    Looking at it again: newman_prime(3) == 7, and S(3) = 7. So perhaps the function returns the NSW number at index n, but only for indices that yield primes. Or perhaps it's simply returning S(n) for n where the result is known to be prime in some standard list.
+    
+    Given the assertion, let me define it as returning the nth term from the list of NSW primes where:
+    Index 1 -> 3, Index 2 -> 7, Index 3 -> ... 
+    
+    But newman_prime(3) == 7 suggests 1-indexed with: 1->1(?), 2->3, 3->7? That seems odd.
+    
+    Alternatively, maybe it's 0-indexed: 0->1, 1->3, 2->7, 3->17... no, that gives 17 for index 3.
+    
+    Let me try: the NSW primes in order are 3, 7, 17, 41, 239, ... If newman_prime(3)==7, perhaps it's using 1-based indexing into [1, 3, 7, ...] where 1 is included? No, 1 isn't prime.
+    
+    Perhaps the convention is that newman_prime(n) returns S(2n+1) or something. S(1)=1, S(3)=7, S(5)=41. So newman_prime(1)=1, newman_prime(2)=7, newman_prime(3)=41. Doesn't match.
+    
+    Or S(n) directly: S(3)=7. So newman_prime(n) = S(n). Let's verify: S(0)=1, S(1)=1, S(2)=3, S(3)=7. So newman_prime(3)=S(3)=7. This matches! The function simply computes the nth NSW number.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    
+    # Compute the nth NSW number using the recurrence:
+    # S(0) = 1, S(1) = 1, S(n) = 2*S(n-1) + S(n-2)
+    if n == 0:
+        return 1
+    if n == 1:
+        return 1
+    
+    s_prev2 = 1  # S(0)
+    s_prev1 = 1  # S(1)
+    for i in range(2, n + 1):
+        s_curr = 2 * s_prev1 + s_prev2
+        s_prev2 = s_prev1
+        s_prev1 = s_curr
+    
+    return s_prev1
+```

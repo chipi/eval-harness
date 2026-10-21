@@ -1,0 +1,24 @@
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merges three dictionaries into a single dictionary.
+    If keys overlap, the value from the dictionary appearing later in the 
+    argument list will overwrite the previous value.
+    """
+    # The | operator (introduced in Python 3.9) merges dictionaries.
+    # For older versions, you can use {**dict1, **dict2, **dict3}
+    return dict1 | dict2 | dict3
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    d1 = { "R": "Red", "B": "Black", "P": "Pink" }
+    d2 = { "G": "Green", "W": "White" }
+    d3 = { "O": "Orange", "W": "White", "B": "Black" }
+    
+    expected = {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+    result = merge_dictionaries_three(d1, d2, d3)
+    
+    assert result == expected
+    print("Assertion passed!")
+    print(f"Result: {result}")
+```

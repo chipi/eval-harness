@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of checking whether any value in one sequence exists in another sequence:
+
+```python
+def overlapping(seq1, seq2):
+    """
+    Check whether any value in seq1 exists in seq2.
+    
+    Args:
+        seq1: First sequence (list, tuple, etc.)
+        seq2: Second sequence (list, tuple, etc.)
+    
+    Returns:
+        bool: True if there's at least one common element, False otherwise
+    """
+    # Convert one sequence to a set for O(1) lookups
+    set_seq2 = set(seq2)
+    
+    # Check if any element in seq1 exists in set_seq2
+    for item in seq1:
+        if item in set_seq2:
+            return True
+    return False
+
+# Test cases
+assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+assert overlapping([1,2,3,4,5],[5,6,7,8]) == True
+assert overlapping([], [1,2,3]) == False
+assert overlapping([1,2,3], []) == False
+assert overlapping([1,2,3], [3,4,5]) == True
+assert overlapping(['a', 'b'], ['c', 'd']) == False
+assert overlapping(['a', 'b'], ['b', 'c']) == True
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `overlapping` takes two sequences as input.
+2. It converts the second sequence to a set for efficient O(1) membership testing.
+3. It then iterates through the first sequence and checks if any element exists in the set of the second sequence.
+4. If a common element is found, it returns `True` immediately. If no common elements are found after checking all elements, it returns `False`.
+5. The test cases verify the function works correctly for various scenarios including empty sequences and different data types.
+
+This solution is efficient with a time complexity of O(n + m) where n and m are the lengths of the two sequences, due to the set conversion and single pass through the first sequence.

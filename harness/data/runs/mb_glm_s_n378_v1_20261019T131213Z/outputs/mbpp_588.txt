@@ -1,0 +1,35 @@
+```python
+def big_diff(nums):
+  """
+  Finds the difference between the largest and smallest value in a given list.
+
+  Args:
+    nums: A list of numbers.
+
+  Returns:
+    The difference between the largest and smallest number in the list.
+    Returns 0 if the list is empty or has only one element.
+  """
+  # Handle edge cases: empty list or list with a single element.
+  # In both cases, the difference is 0.
+  if not nums or len(nums) < 2:
+    return 0
+
+  # Find the maximum and minimum values in the list using built-in functions.
+  # This is efficient and concise.
+  max_val = max(nums)
+  min_val = min(nums)
+
+  # Calculate and return the difference.
+  return max_val - min_val
+
+# Example usage and assertions to verify the function's correctness.
+assert big_diff([1, 2, 3, 4]) == 3
+assert big_diff([10]) == 0
+assert big_diff([]) == 0
+assert big_diff([3, 6, 9, 1]) == 8
+assert big_diff([-5, 0, 5, 10]) == 15
+assert big_diff([100, 100, 100]) == 0
+
+print("All assertions passed!")
+```

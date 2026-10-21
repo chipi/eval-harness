@@ -1,0 +1,30 @@
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Count the number of pairs whose XOR value is odd.
+    
+    The XOR of two numbers is odd if and only if one number is even and the other is odd.
+    This is because:
+    - Even ^ Even = Even (last bit 0 ^ 0 = 0)
+    - Odd ^ Odd = Even (last bit 1 ^ 1 = 0)
+    - Even ^ Odd = Odd (last bit 0 ^ 1 = 1)
+    - Odd ^ Even = Odd (last bit 1 ^ 0 = 1)
+    
+    So we just need to count the number of even elements and odd elements,
+    and multiply them together.
+    """
+    even_count = 0
+    odd_count = 0
+    
+    for i in range(n):
+        if arr[i] % 2 == 0:
+            even_count += 1
+        else:
+            odd_count += 1
+    
+    return even_count * odd_count
+
+
+# Test case
+assert find_Odd_Pair([5,4,7,2,1], 5) == 6
+```

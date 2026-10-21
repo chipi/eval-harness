@@ -1,0 +1,25 @@
+```python
+def opposite_Signs(a: int, b: int) -> bool:
+    """
+    This function checks whether two given integers have opposite signs.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+
+    Returns:
+        bool: True if the integers have opposite signs, False otherwise.
+    """
+    # Check if the product of a and b is less than 0
+    # This works because the product of two numbers with opposite signs is always negative
+    return (a * b) < 0
+
+
+# Test the function
+if __name__ == "__main__":
+    assert opposite_Signs(1, -2)
+    assert not opposite_Signs(1, 2)
+    assert not opposite_Signs(-1, -2)
+```
+
+You can run this script to test the `opposite_Signs` function with different inputs. The function takes two integers as arguments and returns `True` if they have opposite signs and `False` otherwise. The test cases at the end ensure that the function behaves as expected.

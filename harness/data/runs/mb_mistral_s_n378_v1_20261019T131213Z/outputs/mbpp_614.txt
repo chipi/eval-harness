@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def cumulative_sum(tuple_list):
+    total = 0
+    for t in tuple_list:
+        total += sum(t)
+    return total
+
+# Test the function
+assert cumulative_sum([(1, 3), (5, 6, 7), (2, 6)]) == 30
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `cumulative_sum` that takes a list of tuples as input
+2. Initializes a `total` variable to 0
+3. Iterates through each tuple in the list
+4. For each tuple, adds the sum of its elements to the total
+5. Returns the final total
+6. Includes the test case from the problem statement to verify the function works correctly
+
+The function will work with any list of tuples containing numbers, not just the specific test case provided.

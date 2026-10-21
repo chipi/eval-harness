@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of reversing words in a string separated by spaces:
+
+```python
+def reverse_words(s: str) -> str:
+    """
+    Reverses the order of words in a string separated by spaces.
+
+    Args:
+        s: Input string with words separated by spaces.
+
+    Returns:
+        String with words in reversed order.
+    """
+    words = s.split()
+    reversed_words = words[::-1]
+    return ' '.join(reversed_words)
+
+# Test the function
+assert reverse_words("python program") == "program python"
+```
+
+This script:
+1. Defines a function `reverse_words` that takes a string input
+2. Splits the string into words using `split()`
+3. Reverses the order of the words using slice notation `[::-1]`
+4. Joins the reversed words back into a string with spaces
+5. Includes the assertion test as specified in the problem
+
+The function handles the basic case shown in the example and will work with any string containing words separated by spaces.

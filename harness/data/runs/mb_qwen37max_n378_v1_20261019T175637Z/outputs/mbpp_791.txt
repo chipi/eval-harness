@@ -1,0 +1,9 @@
+```python
+def remove_nested(tup):
+    """Remove nested tuples from the given tuple."""
+    return tuple(item for item in tup if not isinstance(item, tuple))
+
+
+# Test
+assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+```

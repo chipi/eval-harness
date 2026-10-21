@@ -1,0 +1,24 @@
+```python
+def return_sum(d):
+    """
+    Calculates the sum of all values in the given dictionary.
+    
+    Args:
+        d (dict): A dictionary where values are numeric.
+        
+    Returns:
+        int/float: The sum of all values in the dictionary.
+    """
+    return sum(d.values())
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+    
+    # Additional test cases
+    assert return_sum({'x': 1, 'y': 2, 'z': 3}) == 6
+    assert return_sum({}) == 0
+    assert return_sum({'apple': 1.5, 'banana': 2.5}) == 4.0
+    
+    print("All tests passed!")
+```

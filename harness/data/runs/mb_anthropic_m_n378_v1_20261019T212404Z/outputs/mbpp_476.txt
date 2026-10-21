@@ -1,0 +1,15 @@
+```python
+def big_sum(arr):
+    """
+    Find the sum of the largest and smallest value in a given array.
+    """
+    return max(arr) + min(arr)
+
+
+# Test cases
+assert big_sum([1, 2, 3]) == 4
+assert big_sum([-1, 2, 3, 4]) == 3
+assert big_sum([1, 2, 3, 4, 5, 6]) == 7
+
+print("All test cases passed!")
+```

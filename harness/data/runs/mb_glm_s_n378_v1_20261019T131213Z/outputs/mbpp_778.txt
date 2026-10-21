@@ -1,0 +1,44 @@
+```python
+def pack_consecutive_duplicates(input_list):
+    """
+    Packs consecutive duplicates of a list's elements into sublists.
+
+    Args:
+        input_list: A list of elements.
+
+    Returns:
+        A new list where consecutive duplicates are packed into sublists.
+        If the input list is empty, an empty list is returned.
+    """
+    if not input_list:
+        return []
+
+    # Initialize the result list with the first sublist containing the first element.
+    result = [[input_list[0]]]
+    
+    # Iterate over the rest of the elements in the input list.
+    for item in input_list[1:]:
+        # Get the last sublist in the result list.
+        last_sublist = result[-1]
+        
+        # If the current item is the same as the last item in the last sublist,
+        # append it to that sublist.
+        if item == last_sublist[-1]:
+            last_sublist.append(item)
+        # Otherwise, it's a new element, so create a new sublist for it.
+        else:
+            result.append([item])
+            
+    return result
+
+# Example usage and assertion from the problem description
+assert pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+
+# Additional test cases
+assert pack_consecutive_duplicates([]) == []
+assert pack_consecutive_duplicates([1, 1, 1, 1]) == [[1, 1, 1, 1]]
+assert pack_consecutive_duplicates([1, 2, 3, 4]) == [[1], [2], [3], [4]]
+assert pack_consecutive_duplicates(['a', 'a', 'b', 'c', 'c', 'c', 'a']) == [['a', 'a'], ['b'], ['c', 'c', 'c'], ['a']]
+
+print("All assertions passed.")
+```

@@ -1,0 +1,29 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def triangle_area(radius):
+    """
+    Returns the area of the largest triangle that can be inscribed
+    in a semicircle with the given radius.
+    If the radius is not a positive number, returns None.
+    """
+    if radius is None or not isinstance(radius, (int, float)) or radius <= 0:
+        return None
+    
+    # The largest triangle inscribed in a semicircle is a right-angled
+    # isosceles triangle with the diameter as base and height equal to radius.
+    # Area = (1/2) * base * height = (1/2) * (2 * radius) * radius = radius^2
+    return radius ** 2
+
+# Test the function
+assert triangle_area(-1) == None
+assert triangle_area(0) == None
+assert triangle_area(5) == 25
+assert triangle_area(2.5) == 6.25
+assert triangle_area("a") == None
+assert triangle_area(None) == None
+
+print("All tests passed!")
+```

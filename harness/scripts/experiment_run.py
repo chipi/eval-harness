@@ -318,6 +318,7 @@ def one_pass(
     call_system: Any,
     score: Any,
     extra_transient: tuple = (),
+    concurrency: int = 1,
 ) -> Dict[str, Any]:
     """One pass over the dataset. ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now."""
@@ -353,6 +354,32 @@ def one_pass(
     if live_dir is not None:
         live_dir.mkdir(parents=True, exist_ok=True)
 
+    # CONCURRENCY ONLY OVERLAPS THE CALLS. With --concurrency N > 1 the calls for every
+    # item not being resumed are made N at a time first, each output written to disk the
+    # moment it returns (so a crash still leaves resumable outputs); the loop below then
+    # scores in dataset order exactly as before. A server that batches requests -- vLLM --
+    # turns N sequential weight reads into one; one at a time it idles. Only adapters that
+    # declare a provider safe for this (CONCURRENT_PROVIDERS) get it: main() refuses the
+    # rest, so a paid API's cost cap, checked per call below, is never raced.
+    prefetched: Dict[str, Any] = {}
+    if concurrency > 1:
+        from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415
+
+        def _fetch(item: Dict[str, Any]) -> tuple:
+            text = (mat / (item.get("source_path") or item["item_id"])).read_text(
+                encoding="utf-8", errors="replace")
+            res = call_with_retries(call_system, (text, params), extra_transient=extra_transient,
+                                    label=f"item {item['item_id'][:8]}")
+            if live_dir is not None:
+                write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
+            return item["item_id"], res
+
+        todo = [it for it in ds["items"]
+                if not (resume_dir and (resume_dir / f"{it['item_id']}.txt").is_file())]
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            for item_id, res in pool.map(_fetch, todo):
+                prefetched[item_id] = res
+
     for item in ds["items"]:
         # Resume: an item already produced is not PAID for twice -- but it is still
         # SCORED, which is the whole point of the pass.
@@ -377,6 +404,10 @@ def one_pass(
         if resumed:
             res = _Resumed(done.read_text(encoding="utf-8"),
                            (prior_rows or {}).get(item["item_id"]))
+        elif item["item_id"] in prefetched:
+            res = prefetched[item["item_id"]]
+            if res.cost_usd:
+                spent += res.cost_usd
         else:
             # EVERY adapter gets retries, whether or not its author wrote any. This used
             # to be the adapter's business, and one adapter simply had none -- so a
@@ -389,7 +420,7 @@ def one_pass(
             if res.cost_usd:
                 spent += res.cost_usd
         outputs[item["item_id"]] = res.output
-        if live_dir is not None and not resumed:
+        if live_dir is not None and not resumed and item["item_id"] not in prefetched:
             # Atomic: `--resume` treats the presence of this file as proof the item is
             # done, so a half-written one is replayed as the model's answer and scored.
             write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
@@ -551,6 +582,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, type=Path)
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
+    ap.add_argument("--concurrency", type=int, default=1,
+                    help="calls in flight at once, for a server that batches (vLLM); only "
+                         "for adapters that list the arm's provider in CONCURRENT_PROVIDERS")
     ap.add_argument("--run-id", help="default: <config_id>_<timestamp>")
     ap.add_argument(
         "--dry-run",
@@ -577,6 +611,13 @@ def main() -> int:
         cfg.get("adapter"), Path(args.config)
     )
     metric_kinds = _adapter_metric_kinds(adapter_id, adapter_path)
+    if args.concurrency > 1:
+        module = sys.modules.get(f"eval_adapter_{adapter_path.stem}") if adapter_path else None
+        allowed = getattr(module, "CONCURRENT_PROVIDERS", ()) if module else ()
+        provider = (cfg.get("params") or {}).get("provider")
+        if provider not in allowed:
+            die(f"--concurrency {args.concurrency}: provider {provider!r} is not in this "
+                f"adapter's CONCURRENT_PROVIDERS {sorted(allowed)}; run it one call at a time")
     for required in ("config_id", "dataset_id"):
         if required not in cfg:
             die(f"{args.config} is missing required key: {required}")
@@ -763,6 +804,7 @@ def main() -> int:
             live_dir=run_dir / "outputs",
             call_system=call_system, score=score,
             extra_transient=_adapter_transient(adapter_path),
+            concurrency=args.concurrency,
         )
         run_dir.mkdir(parents=True, exist_ok=True)
         write_text_atomic(
@@ -790,6 +832,7 @@ def main() -> int:
             # tell a deterministic repeat (same params, same scores — expected) from two
             # different configs landing on byte-identical output (worth a look).
             "params": dict(cfg.get("params") or {}),
+            "concurrency": args.concurrency,
             # WHICH scorer produced these numbers. A scorer is half of what a number means,
             # so a run that does not name it cannot be compared to one that used another.
             "adapter": adapter_id,

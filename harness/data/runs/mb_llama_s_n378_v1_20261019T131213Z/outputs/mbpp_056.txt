@@ -1,0 +1,49 @@
+```python
+def check(n):
+    """
+    Checks if a given number is one less than twice its reverse.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is one less than twice its reverse, False otherwise.
+    """
+    # Convert the number to a string to easily reverse it
+    str_n = str(n)
+    
+    # Reverse the string
+    reversed_n = str_n[::-1]
+    
+    # Convert the reversed string back to an integer
+    int_reversed_n = int(reversed_n)
+    
+    # Check if the number is one less than twice its reverse
+    return n == 2 * int_reversed_n - 1
+
+# Test the function
+print(check(70))  # Should print: False
+```
+
+However, here is a more optimized and pythonic way to solve the problem:
+
+```python
+def check(n):
+    """
+    Checks if a given number is one less than twice its reverse.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is one less than twice its reverse, False otherwise.
+    """
+    # Convert the number to a string to easily reverse it
+    str_n = str(n)
+    
+    # Check if the number is one less than twice its reverse
+    return n == 2 * int(str_n[::-1]) - 1
+
+# Test the function
+print(check(70))  # Should print: False
+```

@@ -1,0 +1,16 @@
+```python
+def first_repeated_char(text: str) -> str | None:
+    """Return the first character encountered twice, or None if none repeats."""
+    seen = set()
+    for char in text:
+        if char in seen:
+            return char
+        seen.add(char)
+    return None
+
+
+if __name__ == "__main__":
+    assert first_repeated_char("abcabc") == "a"
+    assert first_repeated_char("abcbad") == "b"
+    assert first_repeated_char("abc") is None
+```

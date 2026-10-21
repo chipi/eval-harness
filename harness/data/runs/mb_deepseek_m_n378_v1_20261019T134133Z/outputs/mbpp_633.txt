@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pair_xor_Sum(arr, n):
+    """
+    Find the sum of XOR of all pairs of numbers in the given list.
+    
+    Args:
+        arr: List of integers
+        n: Length of the list
+    
+    Returns:
+        Sum of XOR of all pairs
+    """
+    total_sum = 0
+    
+    # For each bit position (assuming 32-bit integers)
+    for bit in range(32):
+        # Count how many numbers have this bit set
+        count_set = 0
+        for num in arr:
+            if num & (1 << bit):
+                count_set += 1
+        
+        # Count of numbers with this bit unset
+        count_unset = n - count_set
+        
+        # Number of pairs where XOR of this bit is 1
+        # = count_set * count_unset
+        pairs_with_bit_set = count_set * count_unset
+        
+        # Add contribution of this bit to total sum
+        total_sum += pairs_with_bit_set * (1 << bit)
+    
+    return total_sum
+
+
+# Test the function
+assert pair_xor_Sum([5, 9, 7, 6], 4) == 47
+print("Test passed!")
+print(f"Result: {pair_xor_Sum([5, 9, 7, 6], 4)}")
+```
+
+**Explanation:**
+
+The key insight is that we can compute the sum of XORs bit by bit rather than computing each pair's XOR individually (which would be O(n²)).
+
+For each bit position:
+1. Count how many numbers have that bit set (`count_set`) and unset (`count_unset`)
+2. A pair contributes `1` at this bit position in the XOR result only if the two numbers differ at this bit
+3. The number of such pairs is `count_set * count_unset`
+4. Multiply by the bit's value (`2^bit`) and add to the total
+
+**Verification for `[5, 9, 7, 6]`:**
+- Pairs: (5,9)=12, (5,7)=2, (5,6)=3, (9,7)=14, (9,6)=15, (7,6)=1
+- Sum: 12+2+3+14+15+1 = **47** ✓
+
+This approach runs in O(32n) = O(n) time, which is much more efficient than the naive O(n²) approach.

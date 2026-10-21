@@ -1,0 +1,27 @@
+```python
+def find_kth(arr1, arr2, k):
+    if not arr1:
+        return arr2[k]
+    if not arr2:
+        return arr1[k]
+    if k == 1:
+        return min(arr1[0], arr2[0])
+
+    i, j = min(k // 2, len(arr1)), min(k // 2, len(arr2))
+
+    if arr1[i - 1] > arr2[j - 1]:
+        return find_kth(arr1, arr2[j:], k - j)
+    else:
+        return find_kth(arr1[i:], arr2, k - i)
+
+
+# Test cases
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 5) == 5
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 1) == 1
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 6) == 6
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 7) == 7
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 8) == 8
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 9) == 9
+assert find_kth([1, 2, 3, 4, 5], [6, 7, 8, 9, 10], 10) == 10
+```

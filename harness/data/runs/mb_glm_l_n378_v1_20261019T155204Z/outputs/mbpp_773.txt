@@ -1,0 +1,18 @@
+```python
+def occurance_substring(text, pattern):
+    """
+    Find the occurrence and position of the substrings within a string.
+    Returns a tuple containing (substring, start_index, end_index) for the first match.
+    Returns None if there is no match.
+    """
+    start = text.find(pattern)
+    if start != -1:
+        end = start + len(pattern)
+        return (pattern, start, end)
+    return None
+
+# Test with the provided assertion
+if __name__ == "__main__":
+    assert occurance_substring('python programming, python language', 'python') == ('python', 0, 6)
+    print("Test passed successfully!")
+```

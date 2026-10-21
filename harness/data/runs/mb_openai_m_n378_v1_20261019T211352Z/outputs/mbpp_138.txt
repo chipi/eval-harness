@@ -1,0 +1,40 @@
+```python
+"""
+Check whether a given number can be represented as a sum of non-zero powers of 2.
+
+Interpretation:
+- "Non-zero powers of 2" means powers like 2^1, 2^2, 2^3, ...
+- So 1 = 2^0 is not allowed.
+- Each power may be used at most once, as in the standard binary representation.
+
+Examples:
+10 = 8 + 2, so it returns True.
+7 = 4 + 2 + 1, but 1 is not allowed, so it returns False.
+"""
+
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Return True if n can be represented as a sum of powers of 2
+    excluding 2^0 = 1, otherwise return False.
+    """
+    if n <= 1:
+        return False
+
+    # A number is representable using powers 2^1, 2^2, ...
+    # iff its binary representation does not require the 1's bit.
+    return n % 2 == 0
+
+
+# Basic tests
+assert is_Sum_Of_Powers_Of_Two(10) == True
+assert is_Sum_Of_Powers_Of_Two(2) == True
+assert is_Sum_Of_Powers_Of_Two(4) == True
+assert is_Sum_Of_Powers_Of_Two(6) == True
+assert is_Sum_Of_Powers_Of_Two(7) == False
+assert is_Sum_Of_Powers_Of_Two(1) == False
+assert is_Sum_Of_Powers_Of_Two(0) == False
+
+if __name__ == "__main__":
+    n = 10
+    print(is_Sum_Of_Powers_Of_Two(n))
+```

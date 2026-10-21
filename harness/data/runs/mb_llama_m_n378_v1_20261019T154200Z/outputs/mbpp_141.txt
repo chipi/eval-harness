@@ -1,0 +1,19 @@
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list of elements in ascending order.
+
+    This function uses the built-in sorted function in Python, which implements the Timsort algorithm.
+    Timsort has a worst-case time complexity of O(n log n) and is suitable for large lists.
+
+    Args:
+        arr (list): The list of elements to be sorted.
+
+    Returns:
+        list: The sorted list of elements.
+    """
+    return sorted(arr)
+
+# Example usage:
+print(pancake_sort([15, 79, 25, 38, 69]))  # Output: [15, 25, 38, 69, 79]
+```

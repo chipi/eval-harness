@@ -1,0 +1,41 @@
+### Armstrong Number Checker
+#### Problem Statement
+An Armstrong number is a number that is equal to the sum of its own digits each raised to the power of the number of digits.
+
+#### Solution
+
+```python
+def armstrong_number(n):
+    """
+    Checks whether the given number is an Armstrong number or not.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is an Armstrong number, False otherwise.
+    """
+    # Convert the number to a string to easily get the number of digits
+    num_str = str(n)
+    num_digits = len(num_str)
+
+    # Calculate the sum of each digit raised to the power of the number of digits
+    sum_of_digits = sum(int(digit) ** num_digits for digit in num_str)
+
+    # Check if the sum is equal to the original number
+    return n == sum_of_digits
+
+# Example usage:
+print(armstrong_number(153))  # Output: True
+print(armstrong_number(370))  # Output: True
+print(armstrong_number(123))  # Output: False
+```
+
+#### Explanation
+
+1. The function `armstrong_number(n)` takes an integer `n` as input.
+2. It converts the number to a string to easily get the number of digits.
+3. It calculates the sum of each digit raised to the power of the number of digits using a generator expression.
+4. It checks if the sum is equal to the original number and returns `True` if it is, `False` otherwise.
+
+You can run this script and test the function with different inputs to verify its correctness.

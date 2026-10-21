@@ -1,0 +1,16 @@
+```python
+def cube_nums(nums):
+    """
+    Returns a list containing the cubes of each element in the input list.
+    """
+    return [x**3 for x in nums]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    expected_output = [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+    
+    # Assertion to verify the function works correctly
+    assert cube_nums(input_list) == expected_output
+    print("Test passed!")
+```

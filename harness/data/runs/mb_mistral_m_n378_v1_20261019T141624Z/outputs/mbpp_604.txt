@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def reverse_words(s):
+    """Reverse the order of words in a given string separated by spaces."""
+    words = s.split()
+    reversed_words = words[::-1]
+    return ' '.join(reversed_words)
+
+# Test the function
+assert reverse_words("python program") == "program python"
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `reverse_words` that takes a string `s` as input
+2. Splits the string into words using `split()` (which by default splits on whitespace)
+3. Reverses the list of words using slice notation `[::-1]`
+4. Joins the reversed words back together with spaces
+5. Includes the required assertion test
+6. Prints a confirmation message if the test passes
+
+The function will work with any string containing space-separated words, not just the test case provided.

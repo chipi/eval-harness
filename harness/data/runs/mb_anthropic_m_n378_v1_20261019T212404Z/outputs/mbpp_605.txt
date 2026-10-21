@@ -1,0 +1,27 @@
+```python
+def prime_num(n):
+    """
+    Check if the given integer is a prime number.
+    Returns True if n is prime, False otherwise.
+    """
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(n ** 0.5) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+
+if __name__ == "__main__":
+    assert prime_num(13) == True
+    assert prime_num(1) == False
+    assert prime_num(2) == True
+    assert prime_num(4) == False
+    assert prime_num(17) == True
+    assert prime_num(-7) == False
+    print("All test cases passed!")
+```

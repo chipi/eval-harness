@@ -1,0 +1,17 @@
+```python
+def max_sum_increasing_subseq(arr, n, k, i):
+    # Initialize maximum sum
+    max_sum = 0
+
+    # Iterate through the array
+    for j in range(i, n):
+        # If the kth element is greater than the current element
+        if k > j:
+            # Add the current element to the maximum sum
+            max_sum += arr[j]
+
+    return max_sum
+
+# Test the function
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+```

@@ -1,0 +1,17 @@
+```python
+def closest_num(n):
+    """
+    Finds the closest smaller number than n.
+    Assuming the problem refers to the immediate integer predecessor.
+    """
+    return n - 1
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = closest_num(11)
+    print(f"closest_num(11) == {result}")
+    
+    # Assertion to verify the result
+    assert closest_num(11) == 10
+    print("Assertion passed!")
+```

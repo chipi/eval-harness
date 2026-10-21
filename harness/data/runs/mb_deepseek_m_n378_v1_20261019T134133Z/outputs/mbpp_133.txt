@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_negativenum(numbers):
+    """
+    Calculate the sum of the negative numbers in a given list.
+    
+    Args:
+        numbers: A list of numbers (int or float)
+    
+    Returns:
+        The sum of all negative numbers in the list
+    """
+    return sum(num for num in numbers if num < 0)
+
+
+# Test the function
+assert sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]) == -32
+
+# Additional test cases
+print(sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]))  # -32
+print(sum_negativenum([1, 2, 3, 4, 5]))                        # 0
+print(sum_negativenum([-1, -2, -3, -4, -5]))                   # -15
+print(sum_negativenum([]))                                     # 0
+print(sum_negativenum([-1.5, 2.5, -3.5]))                      # -5.0
+```
+
+**How it works:**
+
+1. The function `sum_negativenum` takes a list of numbers as input.
+2. It uses a generator expression `(num for num in numbers if num < 0)` to filter out only the negative numbers.
+3. The built-in `sum()` function adds up all the filtered negative numbers.
+4. If there are no negative numbers, `sum()` returns `0` by default.
+
+**Verification with the given example:**
+- Negative numbers: `-6, -9, -12, -5`
+- Sum: `-6 + (-9) + (-12) + (-5) = -32` ✓

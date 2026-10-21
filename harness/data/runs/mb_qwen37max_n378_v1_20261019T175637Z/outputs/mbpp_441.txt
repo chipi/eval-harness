@@ -1,0 +1,16 @@
+```python
+def surfacearea_cube(size):
+    """
+    Find the surface area of a cube of a given size.
+    
+    A cube has 6 faces, each with area size^2.
+    Surface area = 6 * size^2
+    
+    >>> assert surfacearea_cube(5) == 150
+    """
+    return 6 * size ** 2
+
+
+# Verify the assertion
+assert surfacearea_cube(5) == 150
+```

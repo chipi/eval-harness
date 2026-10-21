@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def cube_nums(numbers):
+    """
+    Returns a list containing the cubes of each element in the input list.
+
+    Args:
+        numbers: List of numbers to be cubed
+
+    Returns:
+        List of cubed numbers
+    """
+    return [num ** 3 for num in numbers]
+
+# Test the function
+assert cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+
+# Example usage
+if __name__ == "__main__":
+    print(cube_nums([1, 2, 3]))  # Output: [1, 8, 27]
+```
+
+This solution:
+1. Defines a function `cube_nums` that takes a list of numbers as input
+2. Uses a list comprehension to create a new list with each element cubed
+3. Includes the required assertion test
+4. Has an example usage block that demonstrates the function with a smaller list

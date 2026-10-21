@@ -1,0 +1,24 @@
+```python
+def toggle_middle_bits(n):
+    """
+    Toggle all bits of n except the first (MSB) and last (LSB) bits.
+    
+    For example, 9 in binary is 1001. Toggling middle bits gives 1111 = 15.
+    """
+    if n <= 1:
+        return n
+    
+    # Find the position of the most significant bit
+    num_bits = n.bit_length()
+    
+    # Create a mask with all bits set except the MSB and LSB
+    # e.g., for 4-bit number: mask = 0110
+    mask = ((1 << num_bits) - 1) ^ (1 << (num_bits - 1)) ^ 1
+    
+    # XOR with the mask to toggle only the middle bits
+    return n ^ mask
+
+
+# Test
+assert toggle_middle_bits(9) == 15
+```

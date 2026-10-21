@@ -1,0 +1,20 @@
+```python
+def extract_rear(input_tuple):
+    """
+    This function takes a tuple of strings as input and returns a list of rear index elements.
+
+    Args:
+        input_tuple (tuple): A tuple of strings.
+
+    Returns:
+        list: A list of rear index elements of each string in the input tuple.
+    """
+    return [string[-1] for string in input_tuple]
+
+# Test the function
+assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+```
+
+In this script, we define a function `extract_rear` that takes a tuple of strings as input. We use a list comprehension to iterate over each string in the tuple and extract the last character using `string[-1]`. The result is a list of rear index elements of each string in the input tuple.
+
+The unit test `assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']` ensures that the function works as expected. If the function is working correctly, this assertion will pass silently. Otherwise, it will raise an AssertionError.

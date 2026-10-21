@@ -1,0 +1,26 @@
+```python
+def odd_length_sum(arr):
+    """
+    Find the sum of all odd length subarrays.
+    
+    For each element arr[i], calculate how many odd-length subarrays include it,
+    then multiply by arr[i] and sum up.
+    
+    An element at index i is included in subarrays that start at some index l (0 <= l <= i)
+    and end at some index r (i <= r < n). The total number of such subarrays is (i+1) * (n-i).
+    Half of them (rounded appropriately) have odd length.
+    
+    Number of odd-length subarrays containing arr[i] = ((i+1) * (n-i) + 1) // 2
+    """
+    n = len(arr)
+    total = 0
+    for i in range(n):
+        # Number of subarrays containing arr[i] with odd length
+        count = ((i + 1) * (n - i) + 1) // 2
+        total += count * arr[i]
+    return total
+
+
+# Test
+assert odd_length_sum([1, 2, 4]) == 14
+```

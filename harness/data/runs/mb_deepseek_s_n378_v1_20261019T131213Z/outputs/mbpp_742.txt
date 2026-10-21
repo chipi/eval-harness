@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def area_tetrahedron(side):
+    """
+    Calculate the surface area of a regular tetrahedron.
+    
+    A regular tetrahedron has 4 equilateral triangular faces.
+    Area of one equilateral triangle = (sqrt(3) / 4) * side^2
+    Total surface area = 4 * (sqrt(3) / 4) * side^2 = sqrt(3) * side^2
+    
+    Args:
+        side (float): Length of the edge of the tetrahedron
+        
+    Returns:
+        float: Total surface area of the tetrahedron
+    """
+    return math.sqrt(3) * side ** 2
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = area_tetrahedron(3)
+    print(f"Area of tetrahedron with side 3: {result}")
+    assert abs(result - 15.588457268119894) < 1e-10, f"Expected 15.588457268119894, got {result}"
+    print("Test passed!")
+```

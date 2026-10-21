@@ -1,0 +1,8 @@
+```python
+def lateralsurface_cube(side_length):
+    """Return the lateral surface area of a cube."""
+    return 4 * side_length ** 2
+
+
+assert lateralsurface_cube(5) == 100
+```

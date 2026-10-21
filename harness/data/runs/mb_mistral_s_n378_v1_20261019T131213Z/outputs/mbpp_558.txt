@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem of finding the sum of the per-digit difference between two integers:
+
+```python
+def digit_distance_nums(a, b):
+    """
+    Calculate the sum of the absolute differences between corresponding digits of two integers.
+
+    Args:
+        a (int): First integer
+        b (int): Second integer
+
+    Returns:
+        int: Sum of absolute differences between corresponding digits
+
+    Examples:
+        >>> digit_distance_nums(1, 2)
+        1
+        >>> digit_distance_nums(123, 456)
+        9
+        >>> digit_distance_nums(10, 200)
+        1
+    """
+    # Convert both numbers to strings to handle digit-by-digit comparison
+    str_a = str(a)
+    str_b = str(b)
+
+    # Pad the shorter number with leading zeros to make them same length
+    max_len = max(len(str_a), len(str_b))
+    str_a = str_a.zfill(max_len)
+    str_b = str_b.zfill(max_len)
+
+    total = 0
+    for digit_a, digit_b in zip(str_a, str_b):
+        total += abs(int(digit_a) - int(digit_b))
+
+    return total
+
+# Test cases
+assert digit_distance_nums(1, 2) == 1
+assert digit_distance_nums(123, 456) == 9
+assert digit_distance_nums(10, 200) == 1
+assert digit_distance_nums(0, 0) == 0
+assert digit_distance_nums(12345, 67890) == 36
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `digit_distance_nums` that takes two integers
+2. Converts them to strings to handle digit-by-digit comparison
+3. Pads the shorter number with leading zeros to ensure equal length
+4. Calculates the absolute difference between each corresponding digit pair
+5. Sums all these differences and returns the total
+6. Includes test cases to verify the function works correctly
+
+The function handles cases where the numbers have different lengths by padding with zeros, and it works with numbers containing zeros.

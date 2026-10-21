@@ -1,0 +1,34 @@
+```python
+"""
+Set the left-most unset bit within the binary width of a positive integer.
+
+Example:
+10 in binary is 1010.
+Within its current bit width, the left-most unset bit is the second bit: 1010 -> 1110.
+So the result is 14.
+"""
+
+def set_left_most_unset_bit(n: int) -> int:
+    if n < 0:
+        raise ValueError("Only non-negative integers are supported")
+
+    # Special case: 0 has binary representation "0"
+    if n == 0:
+        return 1
+
+    bits = list(bin(n)[2:])
+
+    for i, bit in enumerate(bits):
+        if bit == "0":
+            bits[i] = "1"
+            return int("".join(bits), 2)
+
+    # If all bits are already set, return the number unchanged.
+    return n
+
+
+assert set_left_most_unset_bit(10) == 14
+
+if __name__ == "__main__":
+    print(set_left_most_unset_bit(10))
+```

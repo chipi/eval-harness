@@ -1,0 +1,21 @@
+```python
+def count_charac(s):
+    """
+    Count the total number of characters in a string.
+    
+    Args:
+        s: A string
+        
+    Returns:
+        The total number of characters in the string
+    """
+    return len(s)
+
+
+# Test
+assert count_charac("python programming") == 18
+print("Test passed!")
+print(f"count_charac('python programming') = {count_charac('python programming')}")
+```
+
+The solution uses Python's built-in `len()` function to count the total number of characters in a string, including spaces. For the string "python programming", there are 18 characters total (9 letters in "python" + 1 space + 11 letters in "programming" = 18).

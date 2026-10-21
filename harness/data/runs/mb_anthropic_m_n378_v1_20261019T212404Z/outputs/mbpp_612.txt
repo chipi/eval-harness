@@ -1,0 +1,9 @@
+```python
+def merge(lst):
+    first = [sub[0] for sub in lst]
+    second = [sub[1] for sub in lst]
+    return [first, second]
+
+
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+```

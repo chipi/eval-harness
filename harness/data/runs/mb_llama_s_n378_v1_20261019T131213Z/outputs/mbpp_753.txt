@@ -1,0 +1,33 @@
+```python
+def min_k(tuples, k):
+    """
+    This function finds the minimum k records from a tuple list.
+
+    Args:
+        tuples (list): A list of tuples.
+        k (int): The number of minimum records to find.
+
+    Returns:
+        list: A list of the minimum k records.
+
+    Raises:
+        ValueError: If k is larger than the number of tuples.
+    """
+    # Check if k is larger than the number of tuples
+    if k > len(tuples):
+        raise ValueError("k cannot be larger than the number of tuples")
+
+    # Sort the tuples based on the second element
+    sorted_tuples = sorted(tuples, key=lambda x: x[1])
+
+    # Return the first k tuples
+    return sorted_tuples[:k]
+
+
+# Test cases
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 1) == [('Akash', 2)]
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 4) == [('Akash', 2), ('Akshat', 4), ('Nikhil', 8), ('Manjeet', 10)]
+```
+
+You can run this script to test the `min_k` function with different inputs. The function first checks if `k` is larger than the number of tuples and raises a `ValueError` if it is. Then, it sorts the tuples based on the second element and returns the first `k` tuples. The test cases demonstrate how to use the function with different inputs.

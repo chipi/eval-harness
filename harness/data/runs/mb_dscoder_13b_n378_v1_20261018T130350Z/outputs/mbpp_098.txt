@@ -1,0 +1,15 @@
+```python
+import math
+
+def multiply_num(num_list):
+    product = 1
+    for num in num_list:
+        product *= num
+    return product / len(num_list)
+
+# Test cases
+print(math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001))
+print(math.isclose(multiply_num((1, 1, 1, 1, 1)), 1.0, rel_tol=0.001))
+print(math.isclose(multiply_num((2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)), 2.0, rel_tol=0.001))
+print(math.isclose(multiply_num((100, 200, 300, 400, 500)), 12500.0, rel_tol=0.001))
+```

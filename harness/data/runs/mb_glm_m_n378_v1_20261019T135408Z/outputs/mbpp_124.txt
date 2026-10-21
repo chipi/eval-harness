@@ -1,0 +1,33 @@
+```python
+import math
+import cmath
+
+def angle_complex(real, imag):
+    """
+    Get the angle (phase) of a complex number given its real and imaginary parts.
+    
+    The angle is calculated using math.atan2 which correctly handles all four 
+    quadrants and the edge cases for purely real or purely imaginary numbers.
+    
+    Args:
+        real (float): The real part of the complex number.
+        imag (float): The imaginary part of the complex number.
+        
+    Returns:
+        float: The angle of the complex number in radians.
+    """
+    return math.atan2(imag, real)
+
+if __name__ == "__main__":
+    # Provided test case
+    assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+    
+    # Additional test cases
+    assert math.isclose(angle_complex(1, 0), 0.0, rel_tol=0.001)               # 1 + 0j -> 0 radians
+    assert math.isclose(angle_complex(0, 1), math.pi / 2, rel_tol=0.001)       # 0 + 1j -> pi/2 radians
+    assert math.isclose(angle_complex(-1, 0), math.pi, rel_tol=0.001)          # -1 + 0j -> pi radians
+    assert math.isclose(angle_complex(0, -1), -math.pi / 2, rel_tol=0.001)     # 0 - 1j -> -pi/2 radians
+    assert math.isclose(angle_complex(1, 1), math.pi / 4, rel_tol=0.001)       # 1 + 1j -> pi/4 radians
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,67 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to check if a string represents an integer or not.
+assert check_integer("python")==False
+"""
+
+
+def check_integer(s):
+    """
+    Check if a string represents an integer.
+
+    An integer string may optionally start with a '+' or '-' sign,
+    followed by one or more digits. No other characters are allowed.
+
+    Args:
+        s: The input string to check.
+
+    Returns:
+        True if the string represents an integer, False otherwise.
+    """
+    if not isinstance(s, str) or len(s) == 0:
+        return False
+
+    # Remove leading sign if present
+    start = 1 if s[0] in ('+', '-') else 0
+
+    # Must have at least one digit after the optional sign
+    if start == len(s):
+        return False
+
+    # All remaining characters must be digits
+    for char in s[start:]:
+        if not char.isdigit():
+            return False
+
+    return True
+
+
+if __name__ == "__main__":
+    # Basic tests
+    assert check_integer("python") == False
+    assert check_integer("123") == True
+    assert check_integer("-123") == True
+    assert check_integer("+123") == True
+    assert check_integer("12.3") == False
+    assert check_integer("12a3") == False
+    assert check_integer("") == False
+    assert check_integer("+") == False
+    assert check_integer("-") == False
+    assert check_integer("0") == True
+    assert check_integer("--5") == False
+    assert check_integer("123 ") == False
+
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function first checks that the input is a non-empty string.
+- It then skips an optional leading `'+'` or `'-'` sign.
+- If the sign is the only character, it returns `False`.
+- It verifies that every remaining character is a digit using `str.isdigit()`.
+- If all checks pass, it returns `True`; otherwise `False`.
+
+The `str.isdigit()` method is used because it correctly handles Unicode digits as well, but if you want to restrict to ASCII digits only, you could replace it with `char in "0123456789"`.

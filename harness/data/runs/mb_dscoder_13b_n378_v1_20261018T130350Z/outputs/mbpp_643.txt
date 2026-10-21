@@ -1,0 +1,17 @@
+```python
+def text_match_wordz_middle(text):
+    # Check if 'z' is at the start or end of the word
+    if text[0] == 'z' or text[-1] == 'z':
+        return False
+    # Check if 'z' is in the middle of the word
+    for i in range(1, len(text) - 1):
+        if text[i] == 'z':
+            return True
+    return False
+
+# Test cases
+print(text_match_wordz_middle("pythonzabc."))  # Expected output: True
+print(text_match_wordz_middle("pythonzabcd."))  # Expected output: False
+print(text_match_wordz_middle("zpythonzabc."))  # Expected output: True
+print(text_match_wordz_middle("zpythonzabcd."))  # Expected output: False
+```

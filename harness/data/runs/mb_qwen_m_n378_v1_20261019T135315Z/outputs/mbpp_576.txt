@@ -1,0 +1,41 @@
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Check whether sub_list is a contiguous sublist of main_list.
+    
+    Args:
+        main_list: The main list to search in.
+        sub_list: The list to check if it's a contiguous sublist of main_list.
+    
+    Returns:
+        True if sub_list is a contiguous sublist of main_list, False otherwise.
+    """
+    # Edge case: empty sub_list is considered a sublist of any list
+    if not sub_list:
+        return True
+    
+    # If sub_list is longer than main_list, it can't be a sublist
+    if len(sub_list) > len(main_list):
+        return False
+    
+    # Check all possible starting positions in main_list
+    for i in range(len(main_list) - len(sub_list) + 1):
+        # Check if the slice matches sub_list
+        if main_list[i:i + len(sub_list)] == sub_list:
+            return True
+    
+    return False
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+    assert is_Sub_Array([1, 2, 3, 4, 5], [2, 3, 4]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [1, 2]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [4, 5]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [6]) == False
+    assert is_Sub_Array([], []) == True
+    assert is_Sub_Array([1, 2, 3], []) == True
+    assert is_Sub_Array([1, 2, 3], [1, 2, 3]) == True
+    print("All tests passed!")
+```

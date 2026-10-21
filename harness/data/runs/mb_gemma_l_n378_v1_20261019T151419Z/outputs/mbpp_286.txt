@@ -1,0 +1,66 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Finds the largest sum of a contiguous array in a modified array 
+    formed by repeating the given array 'arr' of size 'n', 'k' times.
+    """
+    if not arr:
+        return 0
+
+    # Standard Kadane's algorithm to find max subarray sum in a single array
+    def kadane(array):
+        max_so_far = float('-inf')
+        current_max = 0
+        for x in array:
+            current_max += x
+            if max_so_far < current_max:
+                max_so_far = current_max
+            if current_max < 0:
+                current_max = 0
+        return max_so_far
+
+    # 1. Find the max subarray sum within a single instance of the array
+    single_max = kadane(arr)
+    
+    # If all elements are negative, the best we can do is the largest single element
+    # regardless of how many times we repeat the array.
+    total_sum = sum(arr)
+    if total_sum <= 0:
+        return single_max
+
+    # 2. To find the max sum across repetitions, we need to consider 
+    # the "wrap-around" case. The max subarray in a repeated array 
+    # can span across the boundary of the original array.
+    # This is equivalent to finding the max subarray sum of (arr + arr).
+    # The max sum in the repeated array will be:
+    # max_subarray(arr * 2) + (k - 2) * total_sum
+    # However, if k=1, it's just kadane(arr).
+    
+    if k == 1:
+        return single_max
+    
+    # Find max subarray sum of the array concatenated with itself
+    # This captures the best prefix + best suffix combination.
+    double_max = kadane(arr * 2)
+    
+    # The result is the max sum found in two copies plus the sum of the 
+    # remaining (k-2) full copies of the array.
+    return double_max + (k - 2) * total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # arr = [10, 20, -30, -1], n = 4, k = 3
+    # Repeated array: [10, 20, -30, -1, 10, 20, -30, -1, 10, 20, -30, -1]
+    # Max subarray is [10, 20] which is 30.
+    result = max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3)
+    print(f"Result: {result}")
+    assert result == 30
+    
+    # Additional test case: positive total sum
+    # [1, 2], k=3 -> [1, 2, 1, 2, 1, 2] -> sum is 9
+    assert max_sub_array_sum_repeated([1, 2], 2, 3) == 9
+    
+    # Additional test case: all negative
+    # [-1, -2], k=3 -> [-1, -2, -1, -2, -1, -2] -> sum is -1
+    assert max_sub_array_sum_repeated([-1, -2], 2, 3) == -1
+```

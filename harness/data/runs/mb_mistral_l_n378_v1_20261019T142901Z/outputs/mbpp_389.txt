@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of finding the n'th Lucas number:
+
+```python
+"""
+Function to find the n'th Lucas number.
+Lucas numbers follow the recurrence relation:
+L(n) = L(n-1) + L(n-2)
+with initial conditions L(0) = 2 and L(1) = 1.
+
+The function uses an iterative approach for efficiency.
+"""
+
+def find_lucas(n):
+    if n == 0:
+        return 2
+    elif n == 1:
+        return 1
+
+    a, b = 2, 1  # L(0) and L(1)
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
+
+# Test case
+assert find_lucas(9) == 76
+```
+
+This script:
+1. Defines the `find_lucas` function that calculates the n'th Lucas number
+2. Handles the base cases (n=0 and n=1) explicitly
+3. Uses an iterative approach to compute higher Lucas numbers efficiently
+4. Includes the required test case with the assertion
+
+The iterative approach is more efficient than a recursive solution for this problem, especially for larger values of n, as it runs in O(n) time with O(1) space complexity.

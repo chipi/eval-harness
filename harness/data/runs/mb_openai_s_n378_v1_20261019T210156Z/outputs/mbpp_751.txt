@@ -1,0 +1,38 @@
+```python
+def check_min_heap(arr):
+    """
+    Check whether the given array represents a min-heap.
+
+    A min-heap must satisfy:
+    arr[parent] <= arr[left_child] and arr[parent] <= arr[right_child]
+    for every valid parent node.
+
+    Args:
+        arr (list): Array representation of a binary tree.
+
+    Returns:
+        bool: True if arr is a min-heap, otherwise False.
+    """
+    n = len(arr)
+
+    # Only need to check parent nodes: indices 0 to (n - 2) // 2
+    for i in range((n - 2) // 2 + 1):
+        left = 2 * i + 1
+        right = 2 * i + 2
+
+        if left < n and arr[i] > arr[left]:
+            return False
+        if right < n and arr[i] > arr[right]:
+            return False
+
+    return True
+
+
+if __name__ == "__main__":
+    assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+    assert check_min_heap([10, 20, 30, 40, 50]) == True
+    assert check_min_heap([10, 15, 14, 25, 30]) == True
+    assert check_min_heap([10, 5, 30]) == False
+    assert check_min_heap([]) == True  # Empty array is trivially a min-heap
+    print("All tests passed.")
+```

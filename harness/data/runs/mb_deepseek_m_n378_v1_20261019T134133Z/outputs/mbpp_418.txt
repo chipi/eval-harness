@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def Find_Max(lst):
+    """
+    Find the element of a list having maximum length.
+    
+    Args:
+        lst: A list of elements (typically lists or strings)
+    
+    Returns:
+        The element with the maximum length
+    """
+    if not lst:
+        return None
+    
+    max_element = lst[0]
+    max_length = len(lst[0])
+    
+    for element in lst[1:]:
+        if len(element) > max_length:
+            max_length = len(element)
+            max_element = element
+    
+    return max_element
+
+
+# Test the function
+assert Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']]) == ['A', 'B', 'C']
+print("Test passed!")
+print(Find_Max([['A'], ['A', 'B'], ['A', 'B', 'C']]))
+```
+
+**Explanation:**
+
+1. **Function definition**: `Find_Max(lst)` takes a list as input.
+
+2. **Edge case handling**: If the input list is empty, it returns `None`.
+
+3. **Initialization**: We start by assuming the first element has the maximum length, storing both the element and its length.
+
+4. **Iteration**: We loop through the remaining elements, comparing each element's length to the current maximum. If we find a longer element, we update both `max_element` and `max_length`.
+
+5. **Return**: The element with the maximum length is returned.
+
+**Alternative one-liner using `max()` with a key function:**
+
+```python
+def Find_Max(lst):
+    return max(lst, key=len) if lst else None
+```
+
+Both approaches work, but the explicit loop version is more readable for beginners, while the `max()` version is more Pythonic.

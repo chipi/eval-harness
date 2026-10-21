@@ -1,0 +1,15 @@
+```python
+def expensive_items(items, n):
+    """Return the n items with the highest prices, in descending price order."""
+    return sorted(items, key=lambda item: item["price"], reverse=True)[:n]
+
+
+if __name__ == "__main__":
+    items = [
+        {"name": "Item-1", "price": 101.1},
+        {"name": "Item-2", "price": 555.22},
+    ]
+    assert expensive_items(items, 1) == [
+        {"name": "Item-2", "price": 555.22}
+    ]
+```

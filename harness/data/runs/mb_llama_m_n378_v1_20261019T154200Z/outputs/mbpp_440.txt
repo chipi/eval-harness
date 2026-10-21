@@ -1,0 +1,45 @@
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    This function finds the first adverb and its position in a given sentence.
+    
+    Parameters:
+    sentence (str): The input sentence.
+    
+    Returns:
+    tuple: A tuple containing the start position, end position, and the adverb itself.
+    """
+    
+    # Split the sentence into words
+    words = sentence.split()
+    
+    # Initialize the adverb and its position
+    adverb = None
+    start_pos = None
+    end_pos = None
+    
+    # Iterate over each word in the sentence
+    for i, word in enumerate(words):
+        # Remove punctuation from the word
+        clean_word = re.sub(r'[^\w\s]', '', word)
+        
+        # Check if the word ends with 'ly', which is a common suffix for adverbs
+        if clean_word.endswith('ly'):
+            # If it's an adverb, store its position and the word itself
+            adverb = clean_word
+            start_pos = sentence.find(word)
+            end_pos = start_pos + len(word)
+            break
+    
+    # If no adverb is found, return None
+    if adverb is None:
+        return None
+    
+    # Return the start position, end position, and the adverb
+    return (start_pos, end_pos, adverb)
+
+# Test the function
+print(find_adverb_position("clearly!! we can see the sky"))  # Output: (0, 7, 'clearly')
+```

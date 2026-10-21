@@ -1,0 +1,42 @@
+```python
+def decimal_to_binary(n):
+    """
+    Convert a decimal number to its binary equivalent as a string.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        A string representing the binary equivalent of n with no leading zeros
+    """
+    if n == 0:
+        return '0'
+    
+    binary = ''
+    while n > 0:
+        binary = str(n % 2) + binary
+        n = n // 2
+    
+    return binary
+
+
+# Test cases
+assert decimal_to_binary(8) == '1000'
+assert decimal_to_binary(0) == '0'
+assert decimal_to_binary(1) == '1'
+assert decimal_to_binary(15) == '1111'
+assert decimal_to_binary(255) == '11111111'
+
+print("All tests passed!")
+print(f"decimal_to_binary(8) = {decimal_to_binary(8)}")
+print(f"decimal_to_binary(0) = {decimal_to_binary(0)}")
+print(f"decimal_to_binary(15) = {decimal_to_binary(15)}")
+print(f"decimal_to_binary(255) = {decimal_to_binary(255)}")
+```
+
+The script provides a `decimal_to_binary()` function that:
+1. Handles the edge case where n=0 by returning '0'
+2. Repeatedly divides the number by 2 and prepends the remainder (0 or 1) to build the binary string
+3. Returns the binary representation without leading zeros
+
+The algorithm works by extracting each bit from right to left using modulo 2 operations and integer division.

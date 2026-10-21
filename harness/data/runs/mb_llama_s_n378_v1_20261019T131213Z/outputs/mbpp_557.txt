@@ -1,0 +1,35 @@
+```python
+def toggle_string(s):
+    """
+    This function toggles the case of all characters in a string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with the case of all characters toggled.
+    """
+    return s.swapcase()
+
+# Test the function
+assert toggle_string("Python") == "pYTHON"
+```
+
+You can also use a more verbose approach with a list comprehension and the `upper()` and `lower()` methods:
+
+```python
+def toggle_string(s):
+    """
+    This function toggles the case of all characters in a string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with the case of all characters toggled.
+    """
+    return ''.join([c.lower() if c.isupper() else c.upper() for c in s])
+
+# Test the function
+assert toggle_string("Python") == "pYTHON"
+```

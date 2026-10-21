@@ -1,0 +1,43 @@
+```python
+def validate(n: int) -> bool:
+    """
+    This function checks whether the frequency of each digit in the given integer is less than or equal to the digit itself.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        bool: True if the frequency of each digit is less than or equal to the digit, False otherwise.
+    """
+    # Convert the integer into a string to easily access each digit
+    str_n = str(n)
+    
+    # Create a dictionary to store the frequency of each digit
+    freq_dict = {}
+    
+    # Iterate over each character (digit) in the string
+    for digit in str_n:
+        # If the digit is already in the dictionary, increment its count
+        if digit in freq_dict:
+            freq_dict[digit] += 1
+        # If the digit is not in the dictionary, add it with a count of 1
+        else:
+            freq_dict[digit] = 1
+    
+    # Iterate over each digit and its frequency in the dictionary
+    for digit, freq in freq_dict.items():
+        # If the frequency is greater than the digit, return False
+        if freq > int(digit):
+            return False
+    
+    # If no digit's frequency is greater than the digit, return True
+    return True
+
+def main():
+    # Test the function
+    assert validate(1234)
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

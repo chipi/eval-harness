@@ -1,0 +1,53 @@
+Looking at this problem, I need a function that checks whether a string contains an `'a'` followed by exactly three `'b'` characters.
+
+```python
+"""
+Write a function that matches a string that has an a followed by three 'b'.
+assert not text_match_three("ac")
+"""
+
+import re
+
+
+def text_match_three(text):
+    """
+    Return True if `text` contains an 'a' followed by three 'b's, else False.
+
+    Examples:
+        >>> text_match_three("ac")
+        False
+        >>> text_match_three("abbb")
+        True
+        >>> text_match_three("aabbbbc")
+        True
+    """
+    pattern = r'ab{3}'
+    return bool(re.search(pattern, text))
+
+
+if __name__ == "__main__":
+    # Provided assertion
+    assert not text_match_three("ac")
+
+    # Additional checks
+    assert text_match_three("abbb")
+    assert text_match_three("aabbbbc")
+    assert not text_match_three("abb")
+    assert not text_match_three("")
+    assert text_match_three("xyzabbbxyz")
+
+    # Demo output
+    tests = ["ac", "abbb", "abb", "aabbbbc", "xyzabbbxyz", ""]
+    for t in tests:
+        print(f"text_match_three({t!r}) -> {text_match_three(t)}")
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The regex `r'ab{3}'` means: the literal character `a`, followed by the character `b` repeated exactly 3 times.
+- `re.search` scans the whole string looking for that pattern anywhere (not just at the beginning).
+- `bool(...)` converts the match object (or `None`) into `True`/`False`.
+
+For `"ac"`, there is no `a` followed by `bbb`, so the function returns `False`, satisfying the assertion.

@@ -1,0 +1,52 @@
+Here's a self-contained Python script that converts complex numbers to polar coordinates:
+
+```python
+import cmath
+import math
+
+def convert(z):
+    """
+    Convert a complex number to polar coordinates (r, theta).
+    
+    Args:
+        z: A complex number or a real number (int/float).
+    
+    Returns:
+        A tuple (r, theta) where r is the magnitude and theta is the phase angle in radians.
+    """
+    if not isinstance(z, complex):
+        z = complex(z)
+    
+    r, theta = cmath.polar(z)
+    return (r, theta)
+
+
+# Assertions to verify the function
+assert convert(1) == (1.0, 0.0)
+assert convert(1j) == (1.0, math.pi / 2)
+assert convert(-1) == (1.0, math.pi)
+assert convert(1 + 1j) == (math.sqrt(2), math.pi / 4)
+
+print("All assertions passed!")
+
+# Example usage
+print(convert(1))
+print(convert(1j))
+print(convert(3 + 4j))
+```
+
+**Explanation:**
+
+- The function `convert(z)` takes a complex number (or a real number, which it converts to a complex number).
+- It uses `cmath.polar()`, which returns a tuple `(r, theta)`:
+  - **r** is the magnitude (absolute value): `√(a² + b²)` for `z = a + bj`.
+  - **theta** is the phase angle in radians: `atan2(b, a)`.
+- The assertion `convert(1) == (1.0, 0.0)` checks that the real number `1` maps to a magnitude of `1.0` and an angle of `0.0` radians.
+
+**Expected Output:**
+```
+All assertions passed!
+(1.0, 0.0)
+(1.0, 1.5707963267948966)
+(5.0, 0.9272952180016122)
+```

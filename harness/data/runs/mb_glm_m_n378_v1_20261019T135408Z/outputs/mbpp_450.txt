@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_string(strings, size):
+    """
+    Extract strings of specified size from a given list of strings.
+    
+    Args:
+        strings (list): List of string values.
+        size (int): Desired size of strings to extract.
+        
+    Returns:
+        list: List of strings with the specified size.
+    """
+    return [s for s in strings if len(s) == size]
+
+# Test cases
+def test_extract_string():
+    assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+    assert extract_string(['apple', 'banana', 'cherry', 'date'], 5) == ['apple']
+    assert extract_string(['a', 'bb', 'ccc', 'dddd'], 3) == ['ccc']
+    assert extract_string([], 5) == []
+    assert extract_string(['test'], 4) == ['test']
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_extract_string()
+```
+
+This script defines the `extract_string` function that takes a list of strings and a size, then returns a new list containing only the strings that have the specified length. The function uses a list comprehension for concise and efficient filtering.
+
+The script also includes a test function `test_extract_string()` that verifies the function works correctly with various test cases, including the one provided in the problem statement. When run, it will print "All test cases passed!" if all assertions hold true.

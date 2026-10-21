@@ -1,0 +1,33 @@
+```python
+def split_Arr(lst, n):
+    """
+    Split a list at the nth element and add the first part to the end.
+    
+    Args:
+        lst: The input list
+        n: The index at which to split
+    
+    Returns:
+        A new list with the first n elements moved to the end
+    """
+    return lst[n:] + lst[:n]
+
+
+# Test cases
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+assert split_Arr([1, 2, 3, 4, 5], 1) == [2, 3, 4, 5, 1]
+assert split_Arr([1, 2, 3, 4, 5], 3) == [4, 5, 1, 2, 3]
+assert split_Arr([1, 2, 3], 0) == [1, 2, 3]
+
+print("All tests passed!")
+```
+
+The solution uses Python list slicing to:
+1. Take elements from index `n` to the end: `lst[n:]`
+2. Take elements from the start to index `n`: `lst[:n]`
+3. Concatenate them with the first part moved to the end: `lst[n:] + lst[:n]`
+
+For the example `split_Arr([12,10,5,6,52,36], 2)`:
+- `lst[2:]` = `[5, 6, 52, 36]`
+- `lst[:2]` = `[12, 10]`
+- Result: `[5, 6, 52, 36, 12, 10]` ✓

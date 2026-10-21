@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of counting binary sequences of length 2n where the sum of the first n bits equals the sum of the last n bits:
+
+```python
+import math
+from itertools import combinations
+
+def count_binary_seq(n):
+    """
+    Counts the number of binary sequences of length 2n where the sum of the first n bits
+    equals the sum of the last n bits.
+
+    Args:
+        n (int): The number of bits in each half of the sequence.
+
+    Returns:
+        float: The count of valid sequences.
+    """
+    total = 0
+    for k in range(n + 1):
+        # Number of ways to have k 1's in first n bits
+        first_half = math.comb(n, k)
+        # Number of ways to have k 1's in last n bits
+        last_half = math.comb(n, k)
+        total += first_half * last_half
+    return total
+
+# Test case
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```
+
+### Explanation:
+1. **Problem Analysis**: For a sequence of length 2n, we need to count all possible binary sequences where the sum of the first n bits equals the sum of the last n bits. This is equivalent to counting the number of ways the first n bits can have a certain number of 1's (k) and the last n bits also have exactly k 1's.
+
+2. **Combinatorial Approach**: For each possible value of k (from 0 to n), we calculate:
+   - The number of ways to choose k 1's in the first n bits: `math.comb(n, k)`
+   - The number of ways to choose k 1's in the last n bits: `math.comb(n, k)`
+   - The product of these two values gives the number of valid sequences for that k.
+
+3. **Summing Up**: We sum the products for all possible k values to get the total count of valid sequences.
+
+4. **Test Case**: The test case checks that for n=1, the function returns 2.0 (the valid sequences are "00" and "11").
+
+This approach efficiently leverages combinatorial mathematics to solve the problem without explicitly generating all possible sequences.

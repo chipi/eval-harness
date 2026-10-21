@@ -1,0 +1,25 @@
+```python
+def median_trapezium(a, b, c):
+    """
+    Calculate the median length of a trapezium given the lengths of its three sides.
+    The median (or midline) of a trapezium is the segment that connects the midpoints
+    of the non-parallel sides. Its length is the average of the lengths of the two parallel sides.
+
+    However, the problem seems to imply that the function should return the median of the three given sides.
+    Given the assertion: median_trapezium(15, 25, 35) == 20, which is the median of [15, 25, 35],
+    the function likely sorts the three sides and returns the middle value.
+
+    Args:
+        a (int/float): Length of the first side.
+        b (int/float): Length of the second side.
+        c (int/float): Length of the third side.
+
+    Returns:
+        int/float: The median of the three side lengths.
+    """
+    sides = sorted([a, b, c])
+    return sides[1]
+
+# Test the function with the provided assertion
+assert median_trapezium(15, 25, 35) == 20
+```

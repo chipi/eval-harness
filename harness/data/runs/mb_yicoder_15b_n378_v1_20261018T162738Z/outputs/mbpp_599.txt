@@ -1,0 +1,19 @@
+```python
+def sum_average(n):
+    sum_numbers = sum(range(n+1))
+    average = sum_numbers / n
+    return sum_numbers, average
+
+# Test cases
+assert sum_average(10)==(55, 5.5)
+assert sum_average(1)==(1, 1.0)
+assert sum_average(2)==(3, 1.5)
+assert sum_average(3)==(6, 2.0)
+assert sum_average(4)==(10, 2.5)
+assert sum_average(5)==(15, 3.0)
+assert sum_average(6)==(21, 3.5)
+assert sum_average(7)==(28, 4.0)
+assert sum_average(8)==(36, 4.5)
+assert sum_average(9)==(45, 5.0)
+assert sum_average(10)==(55, 5.5)
+```

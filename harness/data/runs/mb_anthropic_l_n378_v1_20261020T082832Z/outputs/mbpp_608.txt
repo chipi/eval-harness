@@ -1,0 +1,77 @@
+Looking at this problem, I need to compute the nth Bell number, which counts the number of ways to partition a set of n elements. The standard approach uses the Bell triangle.
+
+**Understanding the indexing:** The test says `bell_Number(2) == 2`. Bell numbers are B₀=1, B₁=1, B₂=2, B₃=5, B₄=15, ... so `bell_Number(n)` returns Bₙ directly.
+
+**The Bell triangle method:**
+- Start the first row with B₀ = 1
+- Each new row starts with the last element of the previous row
+- Each subsequent element is the sum of the element to its left and the element diagonally above-left
+- The first element of row n is Bₙ
+
+```python
+"""
+Write a python function to find nth bell number.
+assert bell_Number(2) == 2
+"""
+
+
+def bell_Number(n):
+    """
+    Return the nth Bell number (B_0 = 1, B_1 = 1, B_2 = 2, B_3 = 5, ...).
+
+    Uses the Bell triangle: the first element of each row is the last
+    element of the previous row, and every other element is the sum of
+    the element to its left and the element diagonally above-left.
+    The first entry of row n equals B_n.
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    # bell[i][j] holds the Bell triangle; only two rows are needed at a time,
+    # but keeping the full triangle is clearer and still cheap for small n.
+    bell = [[0] * (n + 1) for _ in range(n + 1)]
+    bell[0][0] = 1
+
+    for i in range(1, n + 1):
+        # First element of row i is the last element of row i-1
+        bell[i][0] = bell[i - 1][i - 1]
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i - 1][j - 1] + bell[i][j - 1]
+
+    return bell[n][0]
+
+
+if __name__ == "__main__":
+    # Required assertion
+    assert bell_Number(2) == 2
+
+    # A few more sanity checks
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    assert bell_Number(5) == 52
+    assert bell_Number(10) == 115975
+
+    print("All tests passed!")
+    for i in range(11):
+        print(f"B_{i} = {bell_Number(i)}")
+```
+
+**Output:**
+```
+All tests passed!
+B_0 = 1
+B_1 = 1
+B_2 = 2
+B_3 = 5
+B_4 = 15
+B_5 = 52
+B_6 = 203
+B_7 = 877
+B_8 = 4140
+B_9 = 21147
+B_10 = 115975
+```
+
+The algorithm runs in O(n²) time and O(n²) space (reducible to O(n) by keeping only the previous row). Python's arbitrary-precision integers mean it works correctly even for large n where Bell numbers grow enormous.

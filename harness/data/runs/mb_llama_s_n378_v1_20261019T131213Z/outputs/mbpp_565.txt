@@ -1,0 +1,37 @@
+```python
+def split(s):
+    """
+    This function splits a given string into a list of characters.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        list: A list of characters.
+    """
+    return list(s)
+
+# Test the function
+assert split('python') == ['p','y','t','h','o','n']
+print(split('python'))  # Output: ['p', 'y', 't', 'h', 'o', 'n']
+```
+
+You can also use a list comprehension to achieve this:
+
+```python
+def split(s):
+    """
+    This function splits a given string into a list of characters.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        list: A list of characters.
+    """
+    return [char for char in s]
+
+# Test the function
+assert split('python') == ['p','y','t','h','o','n']
+print(split('python'))  # Output: ['p', 'y', 't', 'h', 'o', 'n']
+```

@@ -1,0 +1,11 @@
+```python
+def max_length(lists):
+    """Return the length and value of the longest inner list."""
+    longest = max(lists, key=len)
+    return len(longest), longest
+
+
+assert max_length([[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]]) == (
+    3, [13, 15, 17]
+)
+```

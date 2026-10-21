@@ -1,0 +1,16 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def odd_position(nums):
+    """
+    Check whether every odd index contains odd numbers in a given list.
+    """
+    for i in range(1, len(nums), 2):
+        if nums[i] % 2 == 0:
+            return False
+    return True
+
+# Test the function
+assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) == True
+print("Test passed!")
+```

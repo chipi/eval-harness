@@ -1,0 +1,19 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def split(string):
+    """
+    Splits a string into a list of its characters.
+    
+    Args:
+        string (str): The input string.
+    
+    Returns:
+        list: A list of individual characters.
+    """
+    return list(string)
+
+# Test the function
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+print("Test passed!")
+```

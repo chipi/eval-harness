@@ -1,0 +1,12 @@
+```python
+def left_rotate(number: int, d: int) -> int:
+    """Rotate a number's bits left by d positions in a 32-bit word."""
+    mask = 0xFFFFFFFF
+    number &= mask
+    d %= 32
+    return ((number << d) | (number >> ((32 - d) % 32))) & mask
+
+
+assert left_rotate(16, 2) == 64
+assert left_rotate(0x80000000, 1) == 1
+```

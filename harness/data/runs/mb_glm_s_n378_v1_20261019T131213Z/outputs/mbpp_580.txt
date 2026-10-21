@@ -1,0 +1,68 @@
+```python
+def extract_even(nested_tuple):
+    """
+    Recursively removes uneven elements from a nested mixed tuple.
+
+    Args:
+        nested_tuple: A tuple that can contain integers, other tuples, or mixed types.
+
+    Returns:
+        A new tuple with only the even elements, preserving the nested structure.
+    """
+    # Base case: if the element is an integer, check if it's even.
+    if isinstance(nested_tuple, int):
+        return nested_tuple if nested_tuple % 2 == 0 else None
+    # Recursive case: if the element is a tuple, process its elements.
+    elif isinstance(nested_tuple, tuple):
+        # Use a list comprehension to process each element and filter out Nones.
+        # The `if x is not None` condition effectively removes odd numbers.
+        return tuple(
+            extract_even(item) for item in nested_tuple if extract_even(item) is not None
+        )
+    # Handle other types (if any) by returning them as is, or None to remove them.
+    # The problem implies a tuple of integers and tuples, so this is a safeguard.
+    else:
+        return None
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_tuple = (4, 5, (7, 6, (2, 4)), 6, 8)
+    expected_output = (4, (6, (2, 4)), 6, 8)
+    
+    result = extract_even(input_tuple)
+    
+    print(f"Input:    {input_tuple}")
+    print(f"Output:   {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output
+    print("\nAssertion passed!")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    
+    # Test case 1: All odd numbers
+    test1 = (1, 3, (5, 7))
+    print(f"Test 1: {extract_even(test1)} (Expected: ())")
+    
+    # Test case 2: Empty tuple
+    test2 = ()
+    print(f"Test 2: {extract_even(test2)} (Expected: ())")
+    
+    # Test case 3: Deeply nested
+    test3 = (10, (11, (12, (13, 14))))
+    print(f"Test 3: {extract_even(test3)} (Expected: (10, (12, (14,)))")
+    assert extract_even(test3) == (10, (12, (14,)))
+    
+    # Test case 4: No nesting
+    test4 = (2, 4, 6, 8)
+    print(f"Test 4: {extract_even(test4)} (Expected: (2, 4, 6, 8))")
+    assert extract_even(test4) == (2, 4, 6, 8)
+    
+    # Test case 5: Mixed with non-integers (will be removed)
+    test5 = (2, "a", (4, None, 6))
+    print(f"Test 5: {extract_even(test5)} (Expected: (2, (4, 6))")
+    assert extract_even(test5) == (2, (4, 6))
+    
+    print("\nAll additional assertions passed!")
+```

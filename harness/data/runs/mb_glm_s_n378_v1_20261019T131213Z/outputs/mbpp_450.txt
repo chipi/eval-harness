@@ -1,0 +1,44 @@
+```python
+def extract_string(strings: list[str], size: int) -> list[str]:
+    """
+    Extracts strings of a specified size from a given list of strings.
+
+    Args:
+        strings: A list of string values.
+        size: The target length of the strings to be extracted.
+
+    Returns:
+        A new list containing only the strings from the input list
+        that have the specified length. The order of elements is preserved.
+    """
+    # Use a list comprehension to filter the list.
+    # It iterates through each string in the input list and includes it
+    # in the new list only if its length matches the specified 'size'.
+    return [s for s in strings if len(s) == size]
+
+# Example usage and assertion to verify the function's correctness.
+# This block will only run when the script is executed directly.
+if __name__ == "__main__":
+    # Define the input list and the target size
+    input_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+    target_size = 8
+
+    # Call the function to get the result
+    result = extract_string(input_list, target_size)
+
+    # Assert that the result matches the expected output
+    expected_output = ['practice', 'solution']
+    assert result == expected_output, f"Test failed: Expected {expected_output}, but got {result}"
+
+    # If the assert statement passes, this message will be printed
+    print("Test passed successfully!")
+    print(f"Input list: {input_list}")
+    print(f"Extracted strings of size {target_size}: {result}")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    assert extract_string([], 5) == []
+    assert extract_string(['a', 'bb', 'ccc', 'dddd'], 1) == ['a']
+    assert extract_string(['short', 'medium', 'verylongstring'], 5) == ['short']
+    print("All additional tests passed!")
+```

@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem of finding the sum of common divisors of two given numbers:
+
+```python
+def sum_common_divisors(a, b):
+    """
+    Calculate the sum of common divisors of two given numbers.
+
+    Args:
+        a (int): First number
+        b (int): Second number
+
+    Returns:
+        int: Sum of common divisors of a and b
+    """
+    # Find the greatest common divisor (GCD) of a and b
+    def gcd(x, y):
+        while y:
+            x, y = y, x % y
+        return x
+
+    # Get the GCD of a and b
+    gcd_value = gcd(a, b)
+
+    # Find all divisors of the GCD
+    divisors = set()
+    for i in range(1, int(gcd_value**0.5) + 1):
+        if gcd_value % i == 0:
+            divisors.add(i)
+            divisors.add(gcd_value // i)
+
+    # Sum all the divisors
+    return sum(divisors)
+
+# Test case
+assert sum_common_divisors(10, 15) == 6
+```
+
+This script:
+1. Defines a helper function to compute the GCD using the Euclidean algorithm
+2. Finds all divisors of the GCD (which are exactly the common divisors of the original numbers)
+3. Returns the sum of these divisors
+4. Includes the test case from the problem statement
+
+The common divisors of 10 and 15 are 1 and 5, and their sum is 6, which matches the assertion.

@@ -1,0 +1,45 @@
+Looking at this problem, I need to rotate the bits of a 32-bit number to the left by `d` positions. Bits shifted off the left end wrap around to the right end.
+
+**Approach:**
+- Shift the number left by `d` bits: `n << d` — this gives the bits that stay (but may overflow past 32 bits)
+- Shift the number right by `32 - d` bits: `n >> (32 - d)` — this captures the bits that wrapped around
+- Combine with bitwise OR, then mask with `0xFFFFFFFF` to keep only 32 bits
+
+**Verification with the test case:**
+- `left_rotate(16, 2)`: `16 = 0b10000`, shifting left by 2 gives `0b1000000 = 64`. Nothing wraps around since the number is small. ✓
+
+```python
+"""
+Write a function to that rotate left bits by d bits a given number. We assume that the number is 32 bit.
+assert left_rotate(16,2) == 64
+"""
+
+INT_BITS = 32
+
+
+def left_rotate(n, d):
+    """
+    Rotate the bits of a 32-bit number `n` to the left by `d` positions.
+
+    Bits that are shifted out on the left re-enter on the right.
+    """
+    d = d % INT_BITS                      # rotations repeat every 32 bits
+    if d == 0:
+        return n & 0xFFFFFFFF
+    return ((n << d) | (n >> (INT_BITS - d))) & 0xFFFFFFFF
+
+
+if __name__ == "__main__":
+    # Provided test
+    assert left_rotate(16, 2) == 64
+
+    # A few extra checks
+    assert left_rotate(10, 2) == 40
+    assert left_rotate(99, 3) == 792
+    assert left_rotate(1, 31) == 2147483648          # 1 -> highest bit
+    assert left_rotate(0x80000000, 1) == 1           # wraps around
+    assert left_rotate(0xFFFFFFFF, 5) == 0xFFFFFFFF  # all ones stays all ones
+
+    print("All tests passed!")
+    print("left_rotate(16, 2) =", left_rotate(16, 2))
+```

@@ -1,0 +1,53 @@
+```python
+import math
+
+def sum_Of_product(n):
+    """
+    Calculates the sum of the product of consecutive binomial coefficients.
+
+    The function computes the sum for k from 0 to n of the product of
+    binomial coefficients C(n, k) and C(n, k+1).
+
+    Args:
+        n (int): A non-negative integer.
+
+    Returns:
+        int: The sum of the product of consecutive binomial coefficients.
+
+    Example:
+        >>> sum_Of_product(3)
+        15
+        >>> sum_Of_product(4)
+        56
+    """
+    # The sum can be simplified using a combinatorial identity:
+    # Sum_{k=0 to n} C(n, k) * C(n, k+1) = C(2n, n-1)
+    # This identity is derived from the Vandermonde convolution and the
+    # symmetry of binomial coefficients (C(n, k) = C(n, n-k)).
+    # The sum is equivalent to C(2n, n-1) = (2n)! / ((n-1)! * (n+1)!).
+    
+    # Handle the edge case where n=0.
+    # The sum is C(0,0)*C(0,1) = 1*0 = 0.
+    # The formula C(2*0, 0-1) = C(0, -1) is not defined, so we handle it.
+    if n == 0:
+        return 0
+
+    # Calculate the result using the simplified formula C(2n, n-1).
+    # math.comb is used for efficient and direct calculation of binomial coefficients.
+    return math.comb(2 * n, n - 1)
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert sum_Of_product(3) == 15, f"Test failed for n=3. Expected 15, got {sum_Of_product(3)}"
+
+    # Additional test cases
+    assert sum_Of_product(0) == 0, f"Test failed for n=0. Expected 0, got {sum_Of_product(0)}"
+    assert sum_Of_product(1) == 1, f"Test failed for n=1. Expected 1, got {sum_Of_product(1)}"
+    assert sum_Of_product(2) == 6, f"Test failed for n=2. Expected 6, got {sum_Of_product(2)}"
+    assert sum_Of_product(4) == 56, f"Test failed for n=4. Expected 56, got {sum_Of_product(4)}"
+    assert sum_Of_product(5) == 210, f"Test failed for n=5. Expected 210, got {sum_Of_product(5)}"
+
+    print("All tests passed successfully!")
+    print(f"sum_Of_product(3) = {sum_Of_product(3)}")
+```

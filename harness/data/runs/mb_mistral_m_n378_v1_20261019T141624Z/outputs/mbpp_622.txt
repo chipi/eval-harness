@@ -1,0 +1,50 @@
+```python
+def get_median(list1, list2, n):
+    """
+    Find the median of two sorted lists of the same size.
+
+    Args:
+        list1: First sorted list
+        list2: Second sorted list
+        n: Size of each list (both lists have the same size)
+
+    Returns:
+        The median of the combined sorted list
+    """
+    # Merge the two sorted lists
+    merged = []
+    i = j = 0
+
+    # Merge process similar to merge sort
+    while i < n and j < n:
+        if list1[i] < list2[j]:
+            merged.append(list1[i])
+            i += 1
+        else:
+            merged.append(list2[j])
+            j += 1
+
+    # Add remaining elements from list1
+    while i < n:
+        merged.append(list1[i])
+        i += 1
+
+    # Add remaining elements from list2
+    while j < n:
+        merged.append(list2[j])
+        j += 1
+
+    # Calculate median of the merged list
+    total_length = len(merged)
+    if total_length % 2 == 1:
+        # Odd number of elements
+        return float(merged[total_length // 2])
+    else:
+        # Even number of elements
+        mid1 = merged[total_length // 2 - 1]
+        mid2 = merged[total_length // 2]
+        return (mid1 + mid2) / 2.0
+
+# Test the function
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+```

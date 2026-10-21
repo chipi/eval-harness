@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_to_dict(input_tuple):
+    """
+    Converts a tuple to a dictionary where adjacent elements are used as key-value pairs.
+
+    Args:
+        input_tuple: A tuple with an even number of elements.
+
+    Returns:
+        A dictionary where each key is an element at an even index and the corresponding value
+        is the element at the next (odd) index.
+
+    Example:
+        >>> tuple_to_dict((1, 5, 7, 10, 13, 5))
+        {1: 5, 7: 10, 13: 5}
+    """
+    if len(input_tuple) % 2 != 0:
+        raise ValueError("Input tuple must have an even number of elements")
+
+    return {input_tuple[i]: input_tuple[i+1] for i in range(0, len(input_tuple), 2)}
+
+# Test the function
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `tuple_to_dict` that takes a tuple as input
+2. Checks if the tuple has an even number of elements (raises an error if not)
+3. Uses a dictionary comprehension to create key-value pairs from adjacent elements
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will work for any tuple with an even number of elements, creating a dictionary where each key is an element at an even index and the corresponding value is the next element.

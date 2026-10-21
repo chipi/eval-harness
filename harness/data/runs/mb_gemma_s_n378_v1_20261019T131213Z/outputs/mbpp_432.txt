@@ -1,0 +1,17 @@
+```python
+def median_trapezium(a, b, c):
+  """
+  Finds the median length of a trapezium.
+
+  Args:
+    a: Length of one parallel side.
+    b: Length of the other parallel side.
+    c: Length of the non-parallel side.
+
+  Returns:
+    The median length of the trapezium.
+  """
+  return (a + b) / 2
+
+#assert median_trapezium(15,25,35)==20
+```

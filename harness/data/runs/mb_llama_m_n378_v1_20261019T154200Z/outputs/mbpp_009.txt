@@ -1,0 +1,23 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    This function finds the minimum number of rotations (greater than 0) required to get the same string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The minimum number of rotations required.
+    """
+    for i in range(1, len(s)):
+        # Rotate the string by i positions
+        rotated_s = s[i:] + s[:i]
+        # Check if the rotated string is the same as the original string
+        if rotated_s == s:
+            return i
+    # If no rotation results in the same string, return the length of the string
+    return len(s)
+
+# Test the function
+assert find_Rotations("aaaa") == 1
+```

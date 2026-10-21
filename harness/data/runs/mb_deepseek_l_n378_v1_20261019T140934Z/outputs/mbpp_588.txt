@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def big_diff(lst):
+    """
+    Find the difference between the largest and smallest value in a given list.
+    
+    Args:
+        lst: A list of numbers
+    
+    Returns:
+        The difference between the maximum and minimum values in the list
+    """
+    if not lst:
+        return 0
+    
+    return max(lst) - min(lst)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert big_diff([1, 2, 3, 4]) == 3
+    
+    # Additional test cases
+    assert big_diff([10, 20, 30, 40, 50]) == 40
+    assert big_diff([5, 5, 5, 5]) == 0
+    assert big_diff([-5, -10, 0, 5, 10]) == 20
+    assert big_diff([100]) == 0
+    assert big_diff([]) == 0
+    
+    print("All tests passed!")
+```
+
+The function `big_diff` takes a list as input and returns the difference between the maximum and minimum values. It handles edge cases like empty lists (returns 0) and single-element lists (returns 0 since max and min are the same). The script includes the required test case and additional test cases to verify the function works correctly.

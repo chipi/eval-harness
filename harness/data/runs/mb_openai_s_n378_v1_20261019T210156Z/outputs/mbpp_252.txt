@@ -1,0 +1,22 @@
+```python
+import math
+
+def convert(z):
+    """
+    Convert a number (real or complex) to polar coordinates.
+
+    Returns:
+        (r, theta) where:
+          - r is the magnitude
+          - theta is the angle in radians
+    """
+    z = complex(z)
+    r = abs(z)
+    theta = math.atan2(z.imag, z.real)
+    return (float(r), float(theta))
+
+
+if __name__ == "__main__":
+    assert convert(1) == (1.0, 0.0)
+    print("OK")
+```

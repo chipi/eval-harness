@@ -1,0 +1,31 @@
+```python
+def remove_lowercase(s: str) -> str:
+    """
+    Remove all lowercase characters from a given string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with all lowercase characters removed
+        
+    Examples:
+        >>> remove_lowercase("PYTHon")
+        'PYTH'
+    """
+    return ''.join(char for char in s if not char.islower())
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert remove_lowercase("PYTHon") == 'PYTH', f"Expected 'PYTH', got '{remove_lowercase('PYTHon')}'"
+    
+    # Additional test cases
+    assert remove_lowercase("Hello World") == 'H W', f"Expected 'H W', got '{remove_lowercase('Hello World')}'"
+    assert remove_lowercase("ABC") == 'ABC', f"Expected 'ABC', got '{remove_lowercase('ABC')}'"
+    assert remove_lowercase("abc") == '', f"Expected '', got '{remove_lowercase('abc')}'"
+    assert remove_lowercase("") == '', f"Expected '', got '{remove_lowercase('')}'"
+    assert remove_lowercase("aBcDeFg") == 'BDF', f"Expected 'BDF', got '{remove_lowercase('aBcDeFg')}'"
+    
+    print("All tests passed!")
+```

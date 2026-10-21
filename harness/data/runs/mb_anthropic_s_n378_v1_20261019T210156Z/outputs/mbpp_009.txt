@@ -1,0 +1,60 @@
+```python
+def find_Rotations(s):
+    """
+    Find the minimum number of rotations (greater than 0) required to get the same string.
+    
+    A rotation means moving the first character to the end.
+    For example, "abcd" -> "bcda" -> "cdab" -> "dabc" -> "abcd"
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Minimum number of rotations needed to get back to the original string
+    """
+    if not s:
+        return 0
+    
+    original = s
+    rotated = s
+    rotations = 0
+    
+    while True:
+        # Rotate by moving first character to the end
+        rotated = rotated[1:] + rotated[0]
+        rotations += 1
+        
+        # Check if we're back to the original string
+        if rotated == original:
+            return rotations
+
+
+# Test cases
+if __name__ == "__main__":
+    assert find_Rotations("aaaa") == 1
+    print("Test 1 passed: find_Rotations('aaaa') == 1")
+    
+    assert find_Rotations("abcd") == 4
+    print("Test 2 passed: find_Rotations('abcd') == 4")
+    
+    assert find_Rotations("ab") == 2
+    print("Test 3 passed: find_Rotations('ab') == 2")
+    
+    assert find_Rotations("a") == 1
+    print("Test 4 passed: find_Rotations('a') == 1")
+    
+    assert find_Rotations("abab") == 2
+    print("Test 5 passed: find_Rotations('abab') == 2")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function works by repeatedly rotating the string (moving the first character to the end) until it matches the original string again. The number of rotations needed is returned.
+
+- For `"aaaa"`: Since all characters are the same, rotating once gives `"aaaa"` again, so the answer is 1.
+- For `"abcd"`: We need 4 rotations: `"abcd"` → `"bcda"` → `"cdab"` → `"dabc"` → `"abcd"`
+- For `"abab"`: We need 2 rotations: `"abab"` → `"baba"` → `"abab"`
+
+The time complexity is O(n²) in the worst case (where n is the length of the string), since we perform up to n rotations and each rotation takes O(n) time.

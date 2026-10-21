@@ -1,0 +1,62 @@
+```python
+def left_rotate(num, d):
+    """
+    Rotate left bits by d bits for a 32-bit number.
+    
+    Args:
+        num: The number to rotate (treated as 32-bit)
+        d: Number of positions to rotate left
+    
+    Returns:
+        The number after rotating left by d bits
+    
+    Example:
+        left_rotate(16, 2) == 64
+    """
+    # Normalize d to be within 0-31 range
+    d = d % 32
+    
+    # Create a 32-bit mask
+    mask = 0xFFFFFFFF
+    
+    # Rotate left: shift left by d, OR with bits that wrapped around
+    # Bits that overflow on the left are captured and placed on the right
+    rotated = ((num << d) | (num >> (32 - d))) & mask
+    
+    return rotated
+
+
+# Test cases
+if __name__ == "__main__":
+    assert left_rotate(16, 2) == 64
+    print("✓ left_rotate(16, 2) == 64")
+    
+    # Additional test cases
+    assert left_rotate(1, 1) == 2
+    print("✓ left_rotate(1, 1) == 2")
+    
+    assert left_rotate(5, 1) == 10
+    print("✓ left_rotate(5, 1) == 10")
+    
+    # Test with wraparound
+    assert left_rotate(2147483648, 1) == 1  # 2^31 rotated left by 1
+    print("✓ left_rotate(2147483648, 1) == 1")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+1. **Bit Rotation Logic**: To rotate left by `d` bits:
+   - Shift the number left by `d` positions: `num << d`
+   - Shift the number right by `(32 - d)` positions to capture overflow bits: `num >> (32 - d)`
+   - OR these two values together to combine them
+   - Apply a 32-bit mask (`0xFFFFFFFF`) to ensure the result fits in 32 bits
+
+2. **Example with `left_rotate(16, 2)`**:
+   - 16 in binary (32-bit): `00000000000000000000000000010000`
+   - Shift left by 2: `00000000000000000000000001000000` (64)
+   - Shift right by 30: `00000000000000000000000000000000`
+   - OR result: `64` ✓
+
+3. **Normalization**: `d % 32` ensures we handle cases where `d > 32`

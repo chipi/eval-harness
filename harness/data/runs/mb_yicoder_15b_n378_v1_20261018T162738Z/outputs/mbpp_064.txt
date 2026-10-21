@@ -1,0 +1,9 @@
+```python
+def subject_marks(lst):
+    return sorted(lst, key=lambda x: x[1])
+
+# Test cases
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)])==[('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+assert subject_marks([('Physics', 92), ('Chemistry', 95), ('Biology', 88), ('Maths', 90)])==[('Biology', 88), ('Physics', 92), ('Chemistry', 95), ('Maths', 90)]
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82), ('History', 85)])==[('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97), ('History', 85)]
+```

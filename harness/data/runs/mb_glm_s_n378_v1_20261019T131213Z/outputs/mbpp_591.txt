@@ -1,0 +1,50 @@
+```python
+def swap_List(input_list):
+    """
+    Interchanges the first and last elements in a list.
+
+    Args:
+        input_list: The list whose first and last elements are to be swapped.
+
+    Returns:
+        A new list with the first and last elements swapped.
+        Returns the original list if it has fewer than 2 elements.
+    """
+    # A list must have at least two elements to swap the first and last.
+    if len(input_list) < 2:
+        return input_list
+    
+    # Create a copy of the list to avoid modifying the original list in-place.
+    # This is a good practice for functions that transform data.
+    swapped_list = input_list.copy()
+    
+    # Swap the first element (index 0) with the last element (index -1).
+    # Python's tuple unpacking provides a concise way to do this.
+    swapped_list[0], swapped_list[-1] = swapped_list[-1], swapped_list[0]
+    
+    return swapped_list
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    my_list = [12, 35, 9, 56, 24]
+    expected_result = [24, 35, 9, 56, 12]
+    
+    # Call the function and store the result
+    result = swap_List(my_list)
+    
+    # Print the results for clarity
+    print(f"Original list: {my_list}")
+    print(f"Swapped list:  {result}")
+    print(f"Expected list: {expected_result}")
+    
+    # Assert that the result matches the expected output
+    assert result == expected_result
+    
+    # Additional test cases
+    assert swap_List([1, 2]) == [2, 1]
+    assert swap_List([5]) == [5]  # Single element list
+    assert swap_List([]) == []    # Empty list
+    
+    print("\nAll assertions passed successfully!")
+```

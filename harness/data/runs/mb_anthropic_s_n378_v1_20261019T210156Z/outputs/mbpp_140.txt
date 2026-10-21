@@ -1,0 +1,47 @@
+```python
+def extract_singly(list_of_tuples):
+    """
+    Flatten a list of tuples into a single set of numbers.
+    
+    Args:
+        list_of_tuples: A list containing tuples of numbers
+        
+    Returns:
+        A list of all numbers from all tuples
+    """
+    result = []
+    for tuple_item in list_of_tuples:
+        for num in tuple_item:
+            result.append(num)
+    return result
+
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+print("Test passed!")
+print(f"Result: {set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)]))}")
+```
+
+**Alternative solution using list comprehension:**
+
+```python
+def extract_singly(list_of_tuples):
+    """
+    Flatten a list of tuples into a single set of numbers.
+    
+    Args:
+        list_of_tuples: A list containing tuples of numbers
+        
+    Returns:
+        A list of all numbers from all tuples
+    """
+    return [num for tuple_item in list_of_tuples for num in tuple_item]
+
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+print("Test passed!")
+print(f"Result: {set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)]))}")
+```
+
+Both solutions flatten the list of tuples into a single list of numbers. The first uses nested loops, while the second uses a more concise list comprehension approach. Both pass the assertion test.

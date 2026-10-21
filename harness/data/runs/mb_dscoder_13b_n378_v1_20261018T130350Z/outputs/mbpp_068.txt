@@ -1,0 +1,11 @@
+```python
+def is_Monotonic(A):
+    return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(A[i] >= A[i + 1] for i in range(len(A) - 1))
+
+# Test cases
+print(is_Monotonic([6, 5, 4, 4]))  # True
+print(is_Monotonic([1, 2, 3, 4]))  # True
+print(is_Monotonic([4, 4, 3, 2]))  # False
+print(is_Monotonic([1, 1, 1, 1]))  # True
+print(is_Monotonic([1, 2, 3, 1]))  # False
+```

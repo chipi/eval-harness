@@ -1,0 +1,58 @@
+```python
+def get_ludic(n):
+    """
+    Return all ludic numbers <= n.
+
+    Ludic numbers are generated starting with the positive integers:
+    1, 2, 3, 4, 5, 6, ...
+    - The first number, 1, is ludic.
+    - Remove every 2nd remaining number.
+    - The next remaining number is 3, so remove every 3rd remaining number.
+    - Continue with the next remaining number each time.
+
+    This function returns the ludic numbers up to n, inclusive.
+    """
+    if n < 1:
+        return []
+
+    # Candidate numbers from 1..n
+    candidates = list(range(1, n + 1))
+    ludics = []
+
+    # The first number is always ludic
+    ludics.append(1)
+
+    # We operate on indices in the remaining list.
+    # After taking 1, we remove every 2nd remaining number, then every 3rd, etc.
+    step_idx = 1  # corresponds to the ludic number 2 as the first step
+
+    while step_idx < len(candidates):
+        step = candidates[step_idx]
+        ludics.append(step)
+
+        # Remove every 'step'-th remaining number, counting from 1 in the current list.
+        # Since the current step number itself remains, we remove positions step-1, 2*step-1, ...
+        new_candidates = []
+        count = 0
+        for x in candidates:
+            count += 1
+            if count % step != 0:
+                new_candidates.append(x)
+        candidates = new_candidates
+
+        # Find the next candidate after the current ludic number's position.
+        # Since candidates changed, the current step may no longer be at the same index.
+        # We simply move to the next remaining number after the current one.
+        try:
+            step_idx = candidates.index(step) + 1
+        except ValueError:
+            break
+
+    return [x for x in ludics if x <= n]
+
+
+# Example check
+if __name__ == "__main__":
+    assert get_ludic(10) == [1, 2, 3, 5, 7]
+    print(get_ludic(10))
+```

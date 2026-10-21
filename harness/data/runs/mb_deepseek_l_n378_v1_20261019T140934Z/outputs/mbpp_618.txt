@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def div_list(list1, list2):
+    """
+    Divide two lists element-wise.
+    
+    Args:
+        list1: First list of numbers (dividends)
+        list2: Second list of numbers (divisors)
+    
+    Returns:
+        A list containing the element-wise division results as floats
+    """
+    return [a / b for a, b in zip(list1, list2)]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = div_list([4, 5, 6], [1, 2, 3])
+    print(f"Result: {result}")
+    assert result == [4.0, 2.5, 2.0], f"Test failed! Expected [4.0, 2.5, 2.0], got {result}"
+    print("Test passed!")
+```
+
+This solution uses a list comprehension with `zip()` to iterate through both lists simultaneously and perform element-wise division. The result is automatically converted to floats since division in Python 3 returns float values.

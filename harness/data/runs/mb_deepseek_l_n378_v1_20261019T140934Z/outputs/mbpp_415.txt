@@ -1,0 +1,44 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def max_Product(arr):
+    """
+    Find a pair with the highest product from a given array of integers.
+    
+    Args:
+        arr: List of integers
+    
+    Returns:
+        Tuple containing the pair of integers with the highest product
+    """
+    if len(arr) < 2:
+        return None
+    
+    # Sort the array
+    arr_sorted = sorted(arr)
+    
+    # The maximum product could be from:
+    # 1. The two largest numbers
+    # 2. The two smallest numbers (if they're both negative)
+    product1 = arr_sorted[-1] * arr_sorted[-2]
+    product2 = arr_sorted[0] * arr_sorted[1]
+    
+    if product1 >= product2:
+        return (arr_sorted[-2], arr_sorted[-1])
+    else:
+        return (arr_sorted[0], arr_sorted[1])
+
+
+# Test the function
+if __name__ == "__main__":
+    result = max_Product([1, 2, 3, 4, 7, 0, 8, 4])
+    print(f"Pair with highest product: {result}")
+    assert result == (7, 8), f"Expected (7, 8) but got {result}"
+    print("Test passed!")
+```
+
+This solution:
+- Sorts the array to easily access the largest and smallest values
+- Compares the product of the two largest numbers with the product of the two smallest numbers (to handle cases with negative numbers)
+- Returns the pair that gives the maximum product
+- Includes the test case from the problem statement

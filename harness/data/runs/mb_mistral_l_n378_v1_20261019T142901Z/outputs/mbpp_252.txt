@@ -1,0 +1,49 @@
+Here's a self-contained Python script that converts complex numbers to polar coordinates, including the requested assertion:
+
+```python
+import cmath
+import math
+
+def convert(z):
+    """
+    Convert a complex number to polar coordinates (magnitude, phase in radians).
+
+    Args:
+        z: A complex number or a real number (which will be treated as a complex number with 0j)
+
+    Returns:
+        A tuple (magnitude, phase) where:
+        - magnitude is the absolute value of the complex number
+        - phase is the angle in radians (between -π and π)
+    """
+    # Convert real numbers to complex numbers
+    if not isinstance(z, complex):
+        z = complex(z)
+
+    # Calculate polar coordinates
+    magnitude = abs(z)
+    phase = cmath.phase(z)
+
+    return (magnitude, phase)
+
+# Test case
+assert convert(1) == (1.0, 0.0), "Test case failed"
+
+# Additional test cases
+assert math.isclose(convert(1+1j)[0], math.sqrt(2)), "Magnitude test failed"
+assert math.isclose(convert(1+1j)[1], math.pi/4), "Phase test failed"
+assert convert(0) == (0.0, 0.0), "Zero test failed"
+assert math.isclose(convert(-1)[1], math.pi), "Negative real test failed"
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a `convert()` function that takes either a complex number or a real number
+2. Handles real numbers by converting them to complex numbers
+3. Uses Python's built-in `cmath` module to calculate the polar coordinates
+4. Includes the requested assertion test case
+5. Adds several additional test cases to verify the function works correctly
+6. Uses `math.isclose()` for floating-point comparisons to avoid precision issues
+
+The function returns a tuple where the first element is the magnitude (absolute value) and the second element is the phase angle in radians.

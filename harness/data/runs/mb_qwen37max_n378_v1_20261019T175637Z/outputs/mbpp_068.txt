@@ -1,0 +1,23 @@
+```python
+def is_Monotonic(arr):
+    """
+    Check whether the given array is monotonic (non-increasing or non-decreasing).
+    
+    Args:
+        arr: List of numbers
+        
+    Returns:
+        True if the array is monotonic, False otherwise
+    """
+    if len(arr) <= 2:
+        return True
+    
+    is_non_decreasing = all(arr[i] <= arr[i+1] for i in range(len(arr)-1))
+    is_non_increasing = all(arr[i] >= arr[i+1] for i in range(len(arr)-1))
+    
+    return is_non_decreasing or is_non_increasing
+
+
+# Test
+assert is_Monotonic([6, 5, 4, 4]) == True
+```

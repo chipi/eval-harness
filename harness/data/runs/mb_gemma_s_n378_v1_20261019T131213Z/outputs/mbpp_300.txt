@@ -1,0 +1,40 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Finds the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.
+
+    Args:
+        n (int): The first half length of the binary sequence.
+
+    Returns:
+        float: The count of binary sequences satisfying the condition.
+    """
+    if n < 0:
+        return 0.0
+    
+    # Calculate the number of ways to choose k elements from n, which is n choose k
+    def combinations(n, k):
+        if k < 0 or k > n:
+            return 0
+        if k == 0 or k == n:
+            return 1
+        if k > n // 2:
+            k = n - k
+        result = 1
+        for i in range(k):
+            result = result * (n - i) // (i + 1)
+        return result
+
+    count = 0
+    for k in range(n + 1):
+        count += combinations(n, k) * combinations(n, k)
+    return float(count)
+
+if __name__ == '__main__':
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+    print("All test cases passed!")
+```

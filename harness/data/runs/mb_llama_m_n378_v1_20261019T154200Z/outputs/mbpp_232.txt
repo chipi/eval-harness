@@ -1,0 +1,24 @@
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+
+    Args:
+        lst (list): The input list.
+        n (int): The number of largest items to return.
+
+    Returns:
+        list: A list containing the n largest items from the input list.
+    """
+    # Remove duplicates by converting the list to a set
+    unique_lst = set(lst)
+    
+    # Sort the set in descending order
+    sorted_lst = sorted(unique_lst, reverse=True)
+    
+    # Return the n largest items
+    return sorted_lst[:n]
+
+# Test the function
+print(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2))
+```

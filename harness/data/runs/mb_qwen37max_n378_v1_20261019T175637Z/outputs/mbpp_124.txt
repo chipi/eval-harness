@@ -1,0 +1,10 @@
+```python
+import math
+import cmath
+
+
+def angle_complex(real, imag):
+    """Get the angle (phase) of a complex number given its real and imaginary parts."""
+    z = complex(real, imag)
+    return cmath.phase(z)
+```

@@ -1,0 +1,26 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def odd_values_string(s: str) -> str:
+    """
+    Removes characters at odd indices from the given string.
+    
+    Example:
+        >>> odd_values_string('abcdef')
+        'ace'
+    """
+    return s[::2]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case
+    test_string = 'abcdef'
+    result = odd_values_string(test_string)
+    print(f"Input: {test_string}")
+    print(f"Output: {result}")
+    
+    # Assertion to match the problem statement
+    assert odd_values_string('abcdef') == 'ace'
+    print("Test passed!")
+```

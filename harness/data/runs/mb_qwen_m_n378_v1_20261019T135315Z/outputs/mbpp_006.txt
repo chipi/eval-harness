@@ -1,0 +1,36 @@
+```python
+def differ_At_One_Bit_Pos(a: int, b: int) -> bool:
+    """
+    Check whether two numbers differ at exactly one bit position.
+    
+    This is done by XORing the two numbers. If they differ at exactly one bit,
+    the result will be a power of 2 (i.e., have exactly one bit set).
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        True if a and b differ at exactly one bit position, False otherwise.
+    """
+    xor_result = a ^ b
+    # A number is a power of 2 if it's non-zero and has only one bit set.
+    # This can be checked by: n & (n - 1) == 0
+    return xor_result != 0 and (xor_result & (xor_result - 1)) == 0
+
+
+if __name__ == "__main__":
+    assert differ_At_One_Bit_Pos(13, 9) == True
+    # 13 = 1101, 9 = 1001, they differ at the second bit from right (position 2), so True
+    
+    # Additional tests
+    assert differ_At_One_Bit_Pos(13, 13) == False  # Same number, no bits differ
+    assert differ_At_One_Bit_Pos(13, 15) == True   # 13=1101, 15=1111, differ at one bit
+    assert differ_At_One_Bit_Pos(13, 12) == True   # 13=1101, 12=1100, differ at one bit
+    assert differ_At_One_Bit_Pos(13, 8) == False   # 13=1101, 8=1000, differ at multiple bits
+    assert differ_At_One_Bit_Pos(0, 1) == True     # 0=0, 1=1, differ at one bit
+    assert differ_At_One_Bit_Pos(0, 2) == True     # 0=0, 2=10, differ at one bit
+    assert differ_At_One_Bit_Pos(0, 3) == False    # 0=0, 3=11, differ at two bits
+    
+    print("All tests passed!")
+```

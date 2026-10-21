@@ -1,0 +1,9 @@
+```python
+def new_tuple(lst, string):
+    return (lst[0], lst[1], string)
+
+# Test cases
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+assert new_tuple(["best", "of", "times"], "was") == ('best', 'of', 'times', 'was')
+assert new_tuple(["was", "it", "up"], "to", "battle") == ('was', 'it', 'up', 'to', 'battle')
+```

@@ -1,0 +1,49 @@
+Looking at this problem, I need to write a function that checks whether a given string appears as a substring within any of the strings in a list.
+
+```python
+"""
+Write a function to check if a string is present as a substring in a given list of string values.
+assert find_substring(["red", "black", "white", "green", "orange"],"ack")==True
+"""
+
+
+def find_substring(str1, sub_str):
+    """
+    Check if `sub_str` occurs as a substring in any element of the list `str1`.
+
+    Args:
+        str1 (list): A list of strings to search through.
+        sub_str (str): The substring to look for.
+
+    Returns:
+        bool: True if `sub_str` is found inside at least one string of the
+              list, otherwise False.
+    """
+    return any(sub_str in s for s in str1)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+
+    # Additional test cases
+    assert find_substring(["red", "black", "white", "green", "orange"], "abc") == False
+    assert find_substring(["red", "black", "white", "green", "orange"], "ange") == True
+    assert find_substring(["red", "black", "white", "green", "orange"], "red") == True
+    assert find_substring([], "red") == False
+    assert find_substring(["red", "black"], "") == True  # empty string is in every string
+
+    print("All tests passed!")
+
+    # Demonstration
+    colors = ["red", "black", "white", "green", "orange"]
+    for needle in ["ack", "ite", "blue", "gre"]:
+        print(f"Is '{needle}' a substring of any item in {colors}? "
+              f"{find_substring(colors, needle)}")
+```
+
+**How it works:**
+
+1. `sub_str in s` uses Python's `in` operator for strings, which returns `True` when `sub_str` is a contiguous substring of `s`.
+2. `any(...)` with a generator expression iterates over the list and short-circuits — returning `True` as soon as a match is found, or `False` if no element contains the substring.
+3. For the example, `"ack"` is contained in `"black"`, so the function returns `True`.

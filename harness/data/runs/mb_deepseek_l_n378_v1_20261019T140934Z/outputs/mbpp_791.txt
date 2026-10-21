@@ -1,0 +1,13 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def remove_nested(tpl):
+    """
+    Remove nested tuples from the given tuple.
+    """
+    return tuple(item for item in tpl if not isinstance(item, tuple))
+
+# Test the function
+assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+print("Test passed!")
+```

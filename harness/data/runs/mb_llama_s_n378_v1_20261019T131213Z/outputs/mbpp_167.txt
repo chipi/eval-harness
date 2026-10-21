@@ -1,0 +1,36 @@
+```python
+def next_power_of_2(n: int) -> int:
+    """
+    This function finds the smallest power of 2 greater than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The smallest power of 2 greater than or equal to n.
+    """
+    if n <= 0:
+        return 1
+    
+    # Calculate the smallest power of 2 greater than or equal to n
+    # We use the bitwise left shift operator to find the next power of 2
+    # The formula works by shifting the bits of the number to the left until we find a power of 2 that is greater than or equal to n
+    return 1 << (n - 1).bit_length()
+
+
+# Test the function
+if __name__ == "__main__":
+    assert next_power_of_2(0) == 1
+    assert next_power_of_2(1) == 1
+    assert next_power_of_2(2) == 2
+    assert next_power_of_2(3) == 4
+    assert next_power_of_2(4) == 4
+    assert next_power_of_2(5) == 8
+```
+
+In this code:
+
+*   We define a function `next_power_of_2` that takes an integer `n` as input and returns the smallest power of 2 greater than or equal to `n`.
+*   If `n` is less than or equal to 0, the function returns 1, as specified in the problem.
+*   We use the `bit_length` method to find the number of bits necessary to represent `n` in binary. This allows us to calculate the smallest power of 2 greater than or equal to `n` using bitwise operations.
+*   The test cases demonstrate the function's correctness for various inputs.

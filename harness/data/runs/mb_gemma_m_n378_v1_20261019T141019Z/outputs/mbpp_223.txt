@@ -1,0 +1,56 @@
+```python
+def is_majority(arr, n, element):
+    """
+    Determines if the given element is the majority element in a sorted array.
+    A majority element occurs more than n/2 times.
+    
+    Args:
+        arr (list): The sorted input array.
+        n (int): The length of the array.
+        element: The element to check.
+        
+    Returns:
+        bool: True if element is the majority element, False otherwise.
+    """
+    # A majority element must appear more than n // 2 times.
+    # In a sorted array, if an element is the majority, it must occupy 
+    # the middle index (n // 2).
+    
+    # First, check if the element is actually at the middle index.
+    # If it's not at the middle, it cannot be the majority element.
+    if n == 0 or arr[n // 2] != element:
+        return False
+
+    # To be a majority element, the first occurrence and the last occurrence
+    # must be within a distance of less than n/2.
+    
+    # Find the first occurrence of the element using binary search
+    import bisect
+    first_idx = bisect.bisect_left(arr, element)
+    
+    # Check if the element exists at the first index found
+    if first_idx >= n or arr[first_idx] != element:
+        return False
+    
+    # Check if the element exists at the index (first_idx + n // 2)
+    # If it does, it means the element spans more than n/2 positions.
+    # Example: n=7, n//2 = 3. If element is at index 2, it must be at index 2+3=5.
+    # Indices: 2, 3, 4, 5 (that is 4 occurrences, which is > 7/2)
+    check_idx = first_idx + (n // 2)
+    
+    if check_idx < n and arr[check_idx] == element:
+        return True
+    
+    return False
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    assert is_majority([1, 1, 2, 2, 2], 5, 2) == True
+    assert is_majority([1, 1, 2, 2], 4, 2) == False  # 2 occurs 2 times, not > 4/2
+    assert is_majority([1, 2, 3, 4, 5], 5, 3) == False
+    assert is_majority([1, 1, 1, 2], 4, 1) == True
+    assert is_majority([], 0, 1) == False
+    
+    print("All tests passed!")
+```

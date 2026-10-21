@@ -1,0 +1,24 @@
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Return True if a and b differ at exactly one bit position, else False.
+
+    Example:
+        13 = 1101
+         9 = 1001
+    They differ in exactly one bit, so the result is True.
+    """
+    x = a ^ b  # bits set where a and b differ
+    return x != 0 and (x & (x - 1)) == 0
+
+
+# Given assertion
+assert differ_At_One_Bit_Pos(13, 9) == True
+
+# Optional extra checks
+assert differ_At_One_Bit_Pos(13, 13) == False
+assert differ_At_One_Bit_Pos(8, 9) == True
+assert differ_At_One_Bit_Pos(10, 12) == False
+
+print("All tests passed.")
+```

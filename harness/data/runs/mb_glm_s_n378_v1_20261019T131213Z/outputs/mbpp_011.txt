@@ -1,0 +1,48 @@
+```python
+def remove_Occ(s: str, char: str) -> str:
+    """
+    Removes the first and last occurrence of a given character from a string.
+
+    Args:
+        s: The input string.
+        char: The character to remove.
+
+    Returns:
+        A new string with the first and last occurrence of the character removed.
+        If the character is not found or occurs only once, the original string
+        or a string with the single occurrence removed is returned, respectively.
+    """
+    # Find the index of the first occurrence of the character.
+    first_index = s.find(char)
+
+    # If the character is not in the string, return the original string.
+    if first_index == -1:
+        return s
+
+    # Find the index of the last occurrence of the character, starting the
+    # search from the position right after the first occurrence to avoid
+    # finding the same instance again.
+    last_index = s.rfind(char, first_index + 1)
+
+    # If the character only appears once (last_index is -1), remove that single occurrence.
+    if last_index == -1:
+        return s[:first_index] + s[first_index + 1:]
+
+    # If the character appears at least twice, remove both the first and last occurrence.
+    # The slice s[:first_index] gets the part before the first 'char'.
+    # The slice s[first_index + 1:last_index] gets the part between the first and last 'char'.
+    # The slice s[last_index + 1:] gets the part after the last 'char'.
+    return s[:first_index] + s[first_index + 1:last_index] + s[last_index + 1:]
+
+# Example usage and assertions to verify the function
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("abracadabra", "a") == "bracadbr"
+assert remove_Occ("apple", "p") == "ale"
+assert remove_Occ("world", "o") == "wrld" # Only one 'o'
+assert remove_Occ("python", "z") == "python" # No 'z'
+assert remove_Occ("a", "a") == "" # Single character string
+assert remove_Occ("", "a") == "" # Empty string
+assert remove_Occ("aaaa", "a") == "aa" # Multiple occurrences
+
+print("All assertions passed!")
+```

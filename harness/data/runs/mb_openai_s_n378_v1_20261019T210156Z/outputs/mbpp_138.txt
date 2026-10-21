@@ -1,0 +1,23 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Return True if n can be represented as a sum of one or more distinct
+    non-zero powers of 2, otherwise False.
+
+    In practice, every positive integer can be represented this way
+    (its binary representation), so the function returns True for n > 0
+    and False for n <= 0.
+
+    Examples:
+        10 = 8 + 2  -> True
+        7  = 4 + 2 + 1 -> True
+        0  -> False
+        -3 -> False
+    """
+    return n > 0
+
+
+if __name__ == "__main__":
+    assert is_Sum_Of_Powers_Of_Two(10) is True
+    print("All tests passed.")
+```

@@ -1,0 +1,7 @@
+```python
+def extract_quotation(s):
+    return s.split('"')[1::2]
+
+# Testing the function
+assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+```

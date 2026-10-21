@@ -1,0 +1,58 @@
+### Reversing Vowels in a String
+
+The following Python function takes a string as input and returns the string with only the vowels reversed.
+
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverses only the vowels in a given string.
+
+    Args:
+    s (str): The input string.
+
+    Returns:
+    str: The string with vowels reversed.
+    """
+    # Define the vowels
+    vowels = 'aeiouAEIOU'
+
+    # Convert the string to a list for in-place modification
+    s = list(s)
+
+    # Initialize two pointers
+    left, right = 0, len(s) - 1
+
+    # Traverse the string from both ends
+    while left < right:
+        # Move the left pointer to a vowel
+        if s[left] not in vowels:
+            left += 1
+        # Move the right pointer to a vowel
+        elif s[right] not in vowels:
+            right -= 1
+        # Swap the vowels
+        else:
+            s[left], s[right] = s[right], s[left]
+            left, right = left + 1, right - 1
+
+    # Join the list back into a string
+    return ''.join(s)
+
+
+# Example usage
+if __name__ == "__main__":
+    assert reverse_vowels("Python") == "Python"
+    assert reverse_vowels("hello") == "holle"
+    print("All tests passed.")
+```
+
+In this code:
+
+*   We define a function `reverse_vowels` that takes a string `s` as input.
+*   We initialize two pointers, `left` and `right`, to the start and end of the string, respectively.
+*   We traverse the string from both ends, moving the pointers towards the center.
+*   When we encounter a non-vowel character, we move the corresponding pointer towards the center.
+*   When we encounter a pair of vowels, we swap them and move both pointers.
+*   Finally, we join the modified list of characters back into a string and return it.
+
+The time complexity of this solution is O(n), where n is the length of the string, since we make a single pass through the string. The space complexity is also O(n) due to the conversion of the string to a list.

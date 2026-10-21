@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+"""
+Function to split a string into individual characters.
+"""
+
+def split(s: str) -> list[str]:
+    """Split a string into a list of its characters.
+
+    Args:
+        s: Input string to be split.
+
+    Returns:
+        List of characters from the input string.
+    """
+    return list(s)
+
+# Test the function
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+
+# Example usage
+if __name__ == "__main__":
+    print(split("python"))  # Output: ['p', 'y', 't', 'h', 'o', 'n']
+```
+
+This script:
+1. Defines a `split` function that takes a string and returns a list of its characters
+2. Includes the required assertion test
+3. Has an example usage block that runs when the script is executed directly
+4. Uses Python's built-in `list()` function which naturally splits a string into its characters

@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem of finding the minimum k records from a tuple list, including the provided test case:
+
+```python
+"""
+Function to find the minimum k records from a list of tuples.
+Each tuple contains a name and a value, and we want the k tuples with the smallest values.
+"""
+
+def min_k(tuples_list, k):
+    """
+    Returns the k tuples with the smallest values from the given list of tuples.
+
+    Args:
+        tuples_list: List of tuples where each tuple is (name, value)
+        k: Number of minimum records to return
+
+    Returns:
+        List of k tuples with the smallest values, sorted in ascending order
+    """
+    if k <= 0:
+        return []
+    if k >= len(tuples_list):
+        return sorted(tuples_list, key=lambda x: x[1])
+
+    # Sort the list based on the second element of each tuple
+    sorted_list = sorted(tuples_list, key=lambda x: x[1])
+    # Return the first k elements
+    return sorted_list[:k]
+
+# Test case from the problem statement
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+
+# Additional test cases
+assert min_k([('A', 5), ('B', 3), ('C', 1), ('D', 4)], 3) == [('C', 1), ('B', 3), ('D', 4)]
+assert min_k([('X', 10), ('Y', 20), ('Z', 5)], 1) == [('Z', 5)]
+assert min_k([('P', 7), ('Q', 3), ('R', 9)], 5) == [('Q', 3), ('P', 7), ('R', 9)]
+assert min_k([('M', 1), ('N', 2)], 0) == []
+assert min_k([], 2) == []
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines the `min_k` function that takes a list of tuples and an integer k
+2. Handles edge cases where k is 0 or larger than the list length
+3. Sorts the list based on the second element of each tuple (the value)
+4. Returns the first k elements of the sorted list
+5. Includes the provided test case and additional test cases to verify correctness
+6. Prints a success message if all tests pass
+
+The solution follows the approach suggested in the GeeksforGeeks article but is implemented in a more Pythonic way with proper edge case handling.

@@ -1,0 +1,38 @@
+```python
+def round_and_sum(numbers):
+    """
+    Round every number in a list and print the total sum multiplied by the length of the list.
+    
+    Args:
+        numbers: A list of numbers to process
+        
+    Returns:
+        The sum of rounded numbers multiplied by the length of the list
+    """
+    rounded_numbers = [round(num) for num in numbers]
+    total_sum = sum(rounded_numbers)
+    result = total_sum * len(numbers)
+    return result
+
+
+# Test with the provided assertion
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+
+print("Test passed!")
+print(f"Result: {round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50])}")
+```
+
+**Explanation:**
+
+1. The function `round_and_sum()` takes a list of numbers as input
+2. It rounds each number using Python's built-in `round()` function
+3. It calculates the sum of all rounded numbers
+4. It multiplies the sum by the length of the list
+5. Returns the final result
+
+**Verification with the example:**
+- Input: `[22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]`
+- Rounded: `[22, 4, -16, -9, 11, -12, 14, -5, 18]`
+- Sum: `22 + 4 - 16 - 9 + 11 - 12 + 14 - 5 + 18 = 27`
+- Length: `9`
+- Result: `27 × 9 = 243` ✓

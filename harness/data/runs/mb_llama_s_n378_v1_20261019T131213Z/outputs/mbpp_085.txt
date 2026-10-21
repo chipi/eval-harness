@@ -1,0 +1,38 @@
+### Surface Area of a Sphere Calculation
+
+The surface area of a sphere can be calculated using the formula `4 * π * r^2`, where `r` is the radius of the sphere.
+
+#### Python Script
+
+```python
+import math
+
+def surfacearea_sphere(radius: float) -> float:
+    """
+    Calculate the surface area of a sphere.
+
+    Args:
+    radius (float): The radius of the sphere.
+
+    Returns:
+    float: The surface area of the sphere.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative")
+
+    surface_area = 4 * math.pi * (radius ** 2)
+    return surface_area
+
+# Example usage
+if __name__ == "__main__":
+    radius = 10
+    surface_area = surfacearea_sphere(radius)
+    print(f"The surface area of a sphere with radius {radius} is {surface_area:.2f}")
+```
+
+#### Explanation
+
+*   The `surfacearea_sphere` function takes the radius of the sphere as input and returns the surface area.
+*   It first checks if the radius is negative, raising a `ValueError` if so.
+*   The surface area is then calculated using the formula `4 * π * r^2`, where `r` is the radius.
+*   In the example usage, we calculate and print the surface area of a sphere with a radius of 10.

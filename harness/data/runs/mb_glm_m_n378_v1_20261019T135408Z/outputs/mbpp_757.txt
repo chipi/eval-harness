@@ -1,0 +1,26 @@
+```python
+def count_reverse_pairs(test_list):
+    """
+    Counts the pairs of reverse strings in the given string list.
+    
+    A pair (i, j) is counted if i < j and test_list[i] is the reverse of test_list[j].
+    
+    Args:
+        test_list (list): A list of strings.
+        
+    Returns:
+        int: The number of reverse string pairs.
+    """
+    count = 0
+    n = len(test_list)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if test_list[i] == test_list[j][::-1]:
+                count += 1
+    return count
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+    print("All tests passed!")
+```

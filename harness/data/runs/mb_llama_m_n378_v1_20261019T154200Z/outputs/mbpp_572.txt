@@ -1,0 +1,23 @@
+```python
+def two_unique_nums(nums):
+    """
+    This function takes a list of numbers as input and returns a list of numbers that appear only once in the input list.
+
+    Args:
+        nums (list): A list of numbers.
+
+    Returns:
+        list: A list of numbers that appear only once in the input list.
+    """
+    count_dict = {}
+    for num in nums:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+
+    return [num for num, count in count_dict.items() if count == 1]
+
+# Example usage:
+print(two_unique_nums([1,2,3,2,3,4,5]))  # Output: [1, 4, 5]
+```

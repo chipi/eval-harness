@@ -1,0 +1,26 @@
+```python
+def next_power_of_2(n):
+    """
+    Find the smallest power of 2 greater than or equal to n.
+    """
+    if n <= 1:
+        return 1
+    power = 1
+    while power < n:
+        power *= 2
+    return power
+
+
+# Test cases
+if __name__ == "__main__":
+    assert next_power_of_2(0) == 1
+    assert next_power_of_2(1) == 1
+    assert next_power_of_2(2) == 2
+    assert next_power_of_2(3) == 4
+    assert next_power_of_2(4) == 4
+    assert next_power_of_2(5) == 8
+    assert next_power_of_2(16) == 16
+    assert next_power_of_2(17) == 32
+
+    print("All test cases passed!")
+```

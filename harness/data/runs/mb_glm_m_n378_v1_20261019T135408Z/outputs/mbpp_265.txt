@@ -1,0 +1,20 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists, where the i-th sublist contains 
+    every nth element starting from index i.
+    
+    Args:
+        lst (list): The input list to be split.
+        n (int): The step size and the number of resulting sublists.
+        
+    Returns:
+        list: A list of n sublists.
+    """
+    return [lst[i::n] for i in range(n)]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+    print("Test passed successfully!")
+```

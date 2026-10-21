@@ -1,0 +1,12 @@
+```python
+def is_Sub_Array(lst, sublist):
+    """Return True if sublist appears as a contiguous part of lst."""
+    if not sublist:
+        return True
+    n = len(sublist)
+    return any(lst[i:i + n] == sublist for i in range(len(lst) - n + 1))
+
+
+assert is_Sub_Array([1, 4, 3, 5], [1, 2]) is False
+assert is_Sub_Array([1, 4, 3, 5], [4, 3]) is True
+```

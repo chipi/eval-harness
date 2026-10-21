@@ -1,0 +1,24 @@
+```python
+def first_Digit(n):
+    """
+    Return the first digit of an integer number.
+
+    Examples:
+        first_Digit(123) -> 1
+        first_Digit(-987) -> 9
+        first_Digit(0) -> 0
+    """
+    n = abs(n)
+    while n >= 10:
+        n //= 10
+    return n
+
+
+if __name__ == "__main__":
+    assert first_Digit(123) == 1
+    assert first_Digit(7) == 7
+    assert first_Digit(98765) == 9
+    assert first_Digit(-456) == 4
+    assert first_Digit(0) == 0
+    print("All tests passed.")
+```

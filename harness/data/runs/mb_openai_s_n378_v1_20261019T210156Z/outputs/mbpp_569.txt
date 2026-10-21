@@ -1,0 +1,27 @@
+```python
+def sort_sublists(list_of_lists):
+    """
+    Return a new list where each sublist is sorted alphabetically.
+    
+    Parameters:
+        list_of_lists (list[list[str]]): A list containing sublists of strings.
+    
+    Returns:
+        list[list[str]]: A new list with each sublist sorted.
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+
+
+# Example usage / test
+if __name__ == "__main__":
+    assert sort_sublists([
+        ['green', 'orange'],
+        ['black', 'white'],
+        ['white', 'black', 'orange']
+    ]) == [
+        ['green', 'orange'],
+        ['black', 'white'],
+        ['black', 'orange', 'white']
+    ]
+    print("All tests passed.")
+```

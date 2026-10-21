@@ -1,0 +1,27 @@
+Here’s a self-contained Python script that solves the problem as described:  
+
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    Returns all possible sums of two different tuples from the given list.
+    Each result is a tuple where the first element is the sum of the first elements,
+    and the second element is the sum of the second elements.
+    """
+    result = []
+    for (a1, a2), (b1, b2) in combinations(tuple_list, 2):
+        result.append((a1 + b1, a2 + b2))
+    return result
+
+# Example test
+if __name__ == "__main__":
+    test_input = [(2, 4), (6, 7), (5, 1), (6, 10)]
+    expected_output = [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    
+    result = find_combinations(test_input)
+    print("Result:", result)
+    print("Expected:", expected_output)
+    assert result == expected_output, "Test failed!"
+    print("Test passed.")
+```

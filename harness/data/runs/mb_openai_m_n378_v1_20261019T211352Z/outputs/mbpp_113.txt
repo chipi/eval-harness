@@ -1,0 +1,38 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to check if a string represents an integer or not.
+assert check_integer("python") == False
+"""
+
+def check_integer(s):
+    """
+    Return True if s represents an integer, otherwise False.
+
+    Accepts optional leading '+' or '-' signs.
+    Examples: "123", "-42", "+7" are valid integers.
+    """
+    if not isinstance(s, str):
+        return False
+
+    if not s:
+        return False
+
+    if s[0] in ("+", "-"):
+        return len(s) > 1 and s[1:].isdigit()
+
+    return s.isdigit()
+
+
+if __name__ == "__main__":
+    assert check_integer("python") == False
+    assert check_integer("123") == True
+    assert check_integer("-123") == True
+    assert check_integer("+123") == True
+    assert check_integer("") == False
+    assert check_integer("-") == False
+    assert check_integer("12.3") == False
+    assert check_integer("12a") == False
+
+    print("All tests passed.")
+```

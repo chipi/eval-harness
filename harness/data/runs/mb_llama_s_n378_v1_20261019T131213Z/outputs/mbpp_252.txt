@@ -1,0 +1,53 @@
+```python
+import cmath
+import math
+
+def convert(complex_number):
+    """
+    This function converts a complex number to polar coordinates.
+
+    Args:
+        complex_number (complex): A complex number.
+
+    Returns:
+        tuple: A tuple containing the radius and angle of the complex number in polar coordinates.
+    """
+    # Use the cmath.polar function to convert the complex number to polar coordinates
+    polar_coordinates = cmath.polar(complex_number)
+    
+    # Return the polar coordinates as a tuple
+    return polar_coordinates
+
+# Test the function
+if __name__ == "__main__":
+    assert convert(1) == (1.0, 0.0)
+```
+
+You can also use `math.hypot` and `math.atan2` to achieve this without using `cmath.polar`:
+
+```python
+import math
+
+def convert(complex_number):
+    """
+    This function converts a complex number to polar coordinates.
+
+    Args:
+        complex_number (complex): A complex number.
+
+    Returns:
+        tuple: A tuple containing the radius and angle of the complex number in polar coordinates.
+    """
+    # Calculate the radius using math.hypot
+    radius = math.hypot(complex_number.real, complex_number.imag)
+    
+    # Calculate the angle using math.atan2
+    angle = math.atan2(complex_number.imag, complex_number.real)
+    
+    # Return the polar coordinates as a tuple
+    return (radius, angle)
+
+# Test the function
+if __name__ == "__main__":
+    assert convert(1) == (1.0, 0.0)
+```

@@ -1,0 +1,103 @@
+```python
+def count_Substrings(s: str) -> int:
+    """
+    Counts the number of substrings in a given string where the sum of the digits
+    in the substring is equal to the length of the substring.
+
+    Args:
+        s: The input string, consisting only of digits.
+
+    Returns:
+        The total count of such substrings.
+
+    Example:
+        >>> count_Substrings('112112')
+        6
+    """
+    count = 0
+    n = len(s)
+    
+    # Iterate over all possible starting indices of substrings
+    for i in range(n):
+        # Iterate over all possible ending indices for the current start
+        for j in range(i, n):
+            # Extract the current substring
+            substring = s[i:j+1]
+            length = len(substring)
+            
+            # Calculate the sum of its digits
+            digit_sum = sum(int(d) for d in substring)
+            
+            # Check if the sum equals the length
+            if digit_sum == length:
+                count += 1
+                
+    return count
+
+# Example usage and assertion
+if __name__ == "__main__":
+    # The problem's example
+    input_string = '112112'
+    result = count_Substrings(input_string)
+    print(f"The number of valid substrings in '{input_string}' is: {result}")
+    
+    # Assertion to verify the result
+    assert result == 6, f"Assertion failed: Expected 6, but got {result}"
+    print("Assertion passed successfully!")
+
+    # Additional test cases
+    test_cases = {
+        '0': 1,  # "0" -> sum=0, len=1 -> 0 != 1. Wait, let's re-read the problem.
+                  # "sum of digits equal to their length".
+                  # For '0': sum=0, len=1. 0 != 1. So count should be 0.
+                  # Let's re-evaluate the example '112112'.
+                  # '1': sum=1, len=1 -> match. (6 of these)
+                  # '11': sum=2, len=2 -> match. (2 of these)
+                  # '2': sum=2, len=1 -> no match.
+                  # '112': sum=4, len=3 -> no match.
+                  # '12': sum=3, len=2 -> no match.
+                  # '21': sum=3, len=2 -> no match.
+                  # '1': sum=1, len=1 -> match.
+                  # '11': sum=2, len=2 -> match.
+                  # '2': sum=2, len=1 -> no match.
+                  # Total: 6 single '1's + 2 '11's = 8. The example says 6.
+                  # Let's re-read the problem statement again.
+                  # "count the number of substrings with the sum of digits equal to their length".
+                  # Let's trace '112112' again.
+                  # Substrings of length 1:
+                  # '1' (sum=1), '1' (sum=1), '2' (sum=2), '1' (sum=1), '1' (sum=1), '2' (sum=2)
+                  # Matches: '1', '1', '1', '1'. (4 matches)
+                  # Substrings of length 2:
+                  # '11' (sum=2), '12' (sum=3), '21' (sum=3), '11' (sum=2), '12' (sum=2)
+                  # Matches: '11', '11'. (2 matches)
+                  # Substrings of length 3:
+                  # '112' (sum=4), '121' (sum=4), '211' (sum=4), '112' (sum=4)
+                  # Matches: 0
+                  # Substrings of length 4:
+                  # '1121' (sum=5), '1211' (sum=5), '2112' (sum=6)
+                  # Matches: 0
+                  # Substrings of length 5:
+                  # '11211' (sum=6), '12112' (sum=7)
+                  # Matches: 0
+                  # Substrings of length 6:
+                  # '112112' (sum=8)
+                  # Matches: 0
+                  # Total matches: 4 + 2 = 6.
+                  # The initial logic was correct. The example is correct.
+                  # The function `count_Substrings` implements this logic.
+                  # The test case '0' should return 0.
+        '0': 0,
+        '1': 1,
+        '00': 0,
+        '11': 2, # '1', '1', '11'
+        '111': 6, # '1','1','1','11','11','111'
+        '123': 1 # '1'
+    }
+
+    for s_val, expected in test_cases.items():
+        res = count_Substrings(s_val)
+        print(f"Testing '{s_val}': Expected {expected}, Got {res}")
+        assert res == expected, f"Assertion failed for '{s_val}': Expected {expected}, but got {res}"
+    
+    print("All additional test cases passed!")
+```

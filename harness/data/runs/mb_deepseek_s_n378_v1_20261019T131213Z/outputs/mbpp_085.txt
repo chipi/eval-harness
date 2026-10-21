@@ -1,0 +1,27 @@
+```python
+import math
+
+def surfacearea_sphere(radius: float) -> float:
+    """
+    Calculate the surface area of a sphere given its radius.
+    
+    Formula: 4 * π * r^2
+    
+    Args:
+        radius: The radius of the sphere (must be non-negative)
+        
+    Returns:
+        The surface area of the sphere
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative")
+    return 4 * math.pi * radius ** 2
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = surfacearea_sphere(10)
+    expected = 1256.6370614359173
+    assert math.isclose(result, expected, rel_tol=0.001), f"Expected {expected}, got {result}"
+    print(f"Surface area of sphere with radius 10: {result}")
+    print("Test passed!")
+```

@@ -1,0 +1,20 @@
+```python
+def interleave_lists(list1, list2, list3):
+    # Initialize an empty list to store the interleaved result
+    interleaved_list = []
+    
+    # Iterate over the indices of the three lists
+    for i in range(len(list1)):
+        # Append the element from list1 at index i to the interleaved list
+        interleaved_list.append(list1[i])
+        # Append the element from list2 at index i to the interleaved list
+        interleaved_list.append(list2[i])
+        # Append the element from list3 at index i to the interleaved list
+        interleaved_list.append(list3[i])
+    
+    return interleaved_list
+
+# Test the function with the provided test case
+assert interleave_lists([1,2,3,4,5,6,7],[10,20,30,40,50,60,70],[100,200,300,400,500,600,700]) == [1, 10, 100, 2, 20, 200, 3, 30, 300, 4, 40, 400, 5, 50, 500, 6, 60, 600, 7, 70, 700]
+```
+

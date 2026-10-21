@@ -1,0 +1,28 @@
+```python
+"""
+Write a function to sum the length of the names of a given list of names
+after removing the names that start with a lowercase letter.
+
+Example:
+sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+"""
+
+
+def sample_nam(names):
+    """
+    Return the total length of names that do not start with a lowercase letter.
+
+    Args:
+        names (list[str]): A list of names.
+
+    Returns:
+        int: Sum of lengths of names whose first character is not lowercase.
+    """
+    return sum(len(name) for name in names if name and not name[0].islower())
+
+
+# Test case
+assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+
+print("All tests passed.")
+```

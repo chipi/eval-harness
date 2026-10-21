@@ -1,0 +1,34 @@
+```python
+def find_even_pair(lst):
+    """
+    Counts the number of pairs of integers in a list that xor to an even number.
+    
+    Two numbers XOR to an even number if and only if they have the same parity 
+    (both even or both odd). This is because:
+    - even ^ even = even
+    - odd ^ odd = even
+    - even ^ odd = odd
+    
+    So we count pairs within even numbers and pairs within odd numbers.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        The number of pairs whose XOR is even
+    """
+    # Count even and odd numbers
+    even_count = sum(1 for x in lst if x % 2 == 0)
+    odd_count = sum(1 for x in lst if x % 2 != 0)
+    
+    # Number of pairs from even numbers: C(even_count, 2)
+    # Number of pairs from odd numbers: C(odd_count, 2)
+    pairs_from_even = even_count * (even_count - 1) // 2
+    pairs_from_odd = odd_count * (odd_count - 1) // 2
+    
+    return pairs_from_even + pairs_from_odd
+
+
+# Test
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+```

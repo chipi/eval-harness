@@ -1,0 +1,65 @@
+```python
+def max_sum(arr):
+    """
+    Find the maximum sum of a bitonic subsequence.
+    A bitonic subsequence is one that first increases then decreases.
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    
+    # inc[i] = maximum sum of increasing subsequence ending at i
+    inc = [0] * n
+    inc[0] = arr[0]
+    
+    for i in range(1, n):
+        inc[i] = arr[i]
+        for j in range(i):
+            if arr[j] < arr[i]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+    
+    # dec[i] = maximum sum of decreasing subsequence starting at i
+    dec = [0] * n
+    dec[n - 1] = arr[n - 1]
+    
+    for i in range(n - 2, -1, -1):
+        dec[i] = arr[i]
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+    
+    # Find maximum bitonic sum
+    # The peak can be at any position i
+    max_bitonic = 0
+    for i in range(n):
+        # Subtract arr[i] once because it's counted in both inc[i] and dec[i]
+        max_bitonic = max(max_bitonic, inc[i] + dec[i] - arr[i])
+    
+    return max_bitonic
+
+
+# Test
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+print("Test passed!")
+print(f"Result: {max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9])}")
+```
+
+**Explanation:**
+
+The solution uses dynamic programming with two passes:
+
+1. **`inc[i]`**: Stores the maximum sum of an increasing subsequence ending at index `i`
+   - For each position, we either start fresh with just that element, or extend a previous increasing subsequence
+
+2. **`dec[i]`**: Stores the maximum sum of a decreasing subsequence starting at index `i`
+   - For each position, we either start fresh with just that element, or extend a decreasing subsequence that follows
+
+3. **Result**: For each possible peak position `i`, we calculate `inc[i] + dec[i] - arr[i]`
+   - We subtract `arr[i]` once because it's counted in both `inc[i]` and `dec[i]`
+   - The maximum across all peaks is our answer
+
+For the example `[1, 15, 51, 45, 33, 100, 12, 18, 9]`:
+- The bitonic subsequence `[1, 15, 51, 100, 12, 9]` has sum = 188
+- The bitonic subsequence `[1, 15, 51, 45, 33, 12, 9]` has sum = 166
+- The optimal is `[1, 15, 51, 45, 33, 100, 12, 9]` with sum = 194

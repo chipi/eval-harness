@@ -1,0 +1,22 @@
+```python
+def square_Sum(n):
+    """
+    Returns the sum of the squares of the first n odd natural numbers.
+    """
+    total = 0
+    for i in range(n):
+        odd_number = 2 * i + 1
+        total += odd_number ** 2
+    return total
+
+
+# Test cases
+if __name__ == "__main__":
+    assert square_Sum(2) == 10
+    print("All test cases passed!")
+    
+    # Additional demonstration
+    print(f"square_Sum(1) = {square_Sum(1)}")  # 1^2 = 1
+    print(f"square_Sum(2) = {square_Sum(2)}")  # 1^2 + 3^2 = 1 + 9 = 10
+    print(f"square_Sum(3) = {square_Sum(3)}")  # 1^2 + 3^2 + 5^2 = 1 + 9 + 25 = 35
+```

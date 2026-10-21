@@ -1,0 +1,9 @@
+```python
+def count_Occurrence(items, targets):
+    """Count occurrences of target elements in a tuple."""
+    target_set = set(targets)
+    return sum(item in target_set for item in items)
+
+
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b']) == 3
+```

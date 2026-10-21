@@ -1,0 +1,47 @@
+```python
+def max_run_uppercase(s: str) -> int:
+    """
+    This function finds the maximum run of uppercase characters in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The maximum run of uppercase characters.
+    """
+    max_run = 0  # Initialize the maximum run
+    current_run = 0  # Initialize the current run
+
+    for char in s:  # Iterate over each character in the string
+        if char.isupper():  # Check if the character is uppercase
+            current_run += 1  # Increment the current run
+            max_run = max(max_run, current_run)  # Update the maximum run
+        else:
+            current_run = 0  # Reset the current run
+
+    return max_run
+
+# Test the function
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+```
+
+You can also use a more Pythonic approach using `itertools.groupby`:
+
+```python
+from itertools import groupby
+
+def max_run_uppercase(s: str) -> int:
+    """
+    This function finds the maximum run of uppercase characters in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The maximum run of uppercase characters.
+    """
+    return max(len(list(g)) for k, g in groupby(s) if k.isupper())
+
+# Test the function
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+```

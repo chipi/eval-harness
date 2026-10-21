@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def Split(numbers):
+    """Return a list of even numbers from the input list."""
+    return [num for num in numbers if num % 2 == 0]
+
+# Test case
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `Split` that takes a list of numbers as input
+2. Uses a list comprehension to filter and return only the even numbers (where `num % 2 == 0`)
+3. Includes the required test case with an assertion
+4. Prints a confirmation message if the test passes
+
+The function will work with any list of integers, returning only the even numbers in the order they appear in the input list.

@@ -1,0 +1,19 @@
+```python
+def find_Max_Num(digits):
+    """
+    Return the largest number that can be formed by arranging the given digits.
+    
+    Example:
+        find_Max_Num([1, 2, 3]) -> 321
+    """
+    # Sort digits in descending order and join them into a string
+    result = ''.join(map(str, sorted(digits, reverse=True)))
+    
+    # Convert back to integer
+    return int(result) if result else 0
+
+
+if __name__ == "__main__":
+    assert find_Max_Num([1, 2, 3]) == 321
+    print("All tests passed.")
+```

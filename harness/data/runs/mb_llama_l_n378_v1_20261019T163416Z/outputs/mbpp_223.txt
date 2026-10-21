@@ -1,0 +1,62 @@
+```python
+def is_majority(arr, n, x):
+    """
+    Checks if an element is the majority element in a sorted array.
+
+    Args:
+    arr (list): A sorted list of elements.
+    n (int): The length of the array.
+    x: The element to check.
+
+    Returns:
+    bool: True if the element is the majority element, False otherwise.
+    """
+    # Find the first occurrence of the element using binary search
+    first_occurrence = find_first_occurrence(arr, 0, n - 1, x)
+    
+    # If the element is not found, it's not the majority element
+    if first_occurrence == -1:
+        return False
+    
+    # Check if the element occurs more than n/2 times
+    if first_occurrence + n // 2 < n and arr[first_occurrence + n // 2] == x:
+        return True
+    
+    return False
+
+
+def find_first_occurrence(arr, low, high, x):
+    """
+    Finds the first occurrence of an element in a sorted array using binary search.
+
+    Args:
+    arr (list): A sorted list of elements.
+    low (int): The lower bound of the search range.
+    high (int): The upper bound of the search range.
+    x: The element to find.
+
+    Returns:
+    int: The index of the first occurrence of the element, or -1 if not found.
+    """
+    if high >= low:
+        mid = (low + high) // 2
+        
+        # If the element is found at the mid index, check if it's the first occurrence
+        if (mid == 0 or x > arr[mid - 1]) and arr[mid] == x:
+            return mid
+        # If the element at the mid index is less than x, search in the right half
+        elif arr[mid] < x:
+            return find_first_occurrence(arr, mid + 1, high, x)
+        # If the element at the mid index is greater than or equal to x, search in the left half
+        else:
+            return find_first_occurrence(arr, low, mid - 1, x)
+    
+    return -1
+
+
+# Test the function
+arr = [1, 2, 3, 3, 3, 3, 10]
+n = len(arr)
+x = 3
+print(is_majority(arr, n, x))  # Output: True
+```

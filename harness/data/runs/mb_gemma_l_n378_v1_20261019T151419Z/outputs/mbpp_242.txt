@@ -1,0 +1,17 @@
+```python
+def count_charac(s):
+    """
+    Returns the total number of characters in a string, 
+    including spaces and punctuation.
+    """
+    return len(s)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = count_charac("python programming")
+    print(f"Length of 'python programming': {result}")
+    
+    # Assertion to verify correctness
+    assert count_charac("python programming") == 18
+    print("Assertion passed!")
+```

@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to convert a string to a list of strings split on the space character.
+assert string_to_list("python programming")==['python','programming']
+"""
+
+def string_to_list(input_string):
+    """Convert a string to a list of strings split on spaces."""
+    return input_string.split()
+
+# Test the function
+if __name__ == "__main__":
+    test_string = "python programming"
+    result = string_to_list(test_string)
+    assert result == ['python', 'programming'], f"Test failed: expected ['python', 'programming'], got {result}"
+    print(f"Test passed: {result}")
+```
+
+This script:
+1. Defines the `string_to_list` function that splits a string on whitespace
+2. Includes a test case that verifies the function works as expected
+3. Uses an assertion to check the result
+4. Prints a success message if the test passes
+
+The function uses Python's built-in `str.split()` method which by default splits on any whitespace.

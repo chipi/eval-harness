@@ -1,0 +1,22 @@
+```python
+def extract_string(input_list, length):
+    """
+    Extracts strings from a list that have a length greater than or equal to 
+    the specified size.
+    """
+    return [s for s in input_list if len(s) >= length]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+    test_size = 8
+    result = extract_string(test_list, test_size)
+    
+    print(f"Input List: {test_list}")
+    print(f"Target Size: {test_size}")
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == ['practice', 'solution'], "The function did not return the expected output."
+    print("Assertion passed successfully!")
+```

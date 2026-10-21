@@ -1,0 +1,23 @@
+```python
+def start_withp(word_list):
+    """
+    This function takes a list of strings as input, where each string contains multiple words separated by spaces.
+    It returns a tuple of two words that start with the letter 'p'.
+
+    Args:
+        word_list (list): A list of strings, where each string contains multiple words separated by spaces.
+
+    Returns:
+        tuple: A tuple of two words that start with the letter 'p'.
+    """
+    p_words = []
+    for string in word_list:
+        words = string.split()
+        for word in words:
+            if word.lower().startswith('p'):
+                p_words.append(word)
+    return tuple(p_words[:2])
+
+# Example usage:
+print(start_withp(["Python PHP", "Java JavaScript", "c c++"]))  # Output: ('Python', 'PHP')
+```

@@ -1,0 +1,14 @@
+```python
+def text_starta_endb(s):
+    if s.startswith('a') and s.endswith('b'):
+        return True
+    else:
+        return False
+
+# Test cases
+assert text_starta_endb("aabbbb")
+assert text_starta_endb("abbb")
+assert not text_starta_endb("ab")
+assert not text_starta_endb("aaabbb")
+assert not text_starta_endb("abbbb")
+```

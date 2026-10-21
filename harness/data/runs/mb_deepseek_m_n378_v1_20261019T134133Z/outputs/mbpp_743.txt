@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def rotate_right(lst, n):
+    """
+    Rotate a list to the right by n items.
+    
+    Args:
+        lst: The list to rotate
+        n: Number of positions to rotate right
+    
+    Returns:
+        A new list rotated to the right by n positions
+    """
+    if not lst:
+        return lst
+    
+    n = n % len(lst)  # Handle cases where n > len(lst)
+    return lst[-n:] + lst[:-n] if n else lst[:]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3)
+    expected = [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+    print(f"Result:   {result}")
+    print(f"Expected: {expected}")
+    assert result == expected, "Test failed!"
+    print("Test passed!")
+```
+
+**How it works:**
+
+1. **Edge case handling**: If the list is empty, return it as-is.
+2. **Modulo operation**: `n = n % len(lst)` ensures that if `n` is larger than the list length, we only rotate by the effective amount (e.g., rotating a 10-element list by 13 is the same as rotating by 3).
+3. **Slicing**: 
+   - `lst[-n:]` gets the last `n` elements (which will move to the front).
+   - `lst[:-n]` gets the remaining elements (which will move to the back).
+   - Concatenating them gives the rotated list.
+4. **Zero rotation**: If `n` is 0 after the modulo, we return a copy of the original list (since `lst[-0:]` would return the whole list, and `lst[:-0]` would return an empty list — this would be incorrect).
+
+**Example trace** for `[1,2,3,4,5,6,7,8,9,10]` with `n=3`:
+- `lst[-3:]` → `[8, 9, 10]`
+- `lst[:-3]` → `[1, 2, 3, 4, 5, 6, 7]`
+- Result: `[8, 9, 10, 1, 2, 3, 4, 5, 6, 7]` ✓

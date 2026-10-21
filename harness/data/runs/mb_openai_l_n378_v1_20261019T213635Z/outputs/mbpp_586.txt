@@ -1,0 +1,8 @@
+```python
+def split_Arr(items, n):
+    """Move the first n elements of a list to the end."""
+    return items[n:] + items[:n]
+
+
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+```

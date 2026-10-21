@@ -1,0 +1,63 @@
+```python
+def insert_element(lst, element):
+    """
+    Inserts a given element before each element in a list.
+
+    Args:
+        lst (list): The input list.
+        element: The element to be inserted.
+
+    Returns:
+        list: A new list with the element inserted before each element from the input list.
+    """
+    result = []
+    for elem in lst:
+        result.append(element)
+        result.append(elem)
+    return result
+
+# Example usage:
+print(insert_element(['Red', 'Green', 'Black'], 'c'))  # Output: ['c', 'Red', 'c', 'Green', 'c', 'Black']
+```
+
+Alternatively, you can use a list comprehension to achieve the same result in a more concise way:
+
+```python
+def insert_element(lst, element):
+    """
+    Inserts a given element before each element in a list.
+
+    Args:
+        lst (list): The input list.
+        element: The element to be inserted.
+
+    Returns:
+        list: A new list with the element inserted before each element from the input list.
+    """
+    return [x for pair in zip([element]*len(lst), lst) for x in pair]
+
+# Example usage:
+print(insert_element(['Red', 'Green', 'Black'], 'c'))  # Output: ['c', 'Red', 'c', 'Green', 'c', 'Black']
+```
+
+Or, using a more efficient approach with a single loop and `itertools.chain` and `itertools.repeat`:
+
+```python
+import itertools
+
+def insert_element(lst, element):
+    """
+    Inserts a given element before each element in a list.
+
+    Args:
+        lst (list): The input list.
+        element: The element to be inserted.
+
+    Returns:
+        list: A new list with the element inserted before each element from the input list.
+    """
+    return list(itertools.chain.from_iterable(itertools.zip_longest([element]*len(lst), lst)))
+
+# Example usage:
+print(insert_element(['Red', 'Green', 'Black'], 'c'))  # Output: ['c', 'Red', 'c', 'Green', 'c', 'Black']
+```

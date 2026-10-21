@@ -1,0 +1,26 @@
+```python
+def noprofit_noloss(cost_price, selling_price):
+    """
+    Check whether the given transaction has no profit and no loss.
+    
+    Parameters:
+    cost_price (float/int): The cost price of the item.
+    selling_price (float/int): The selling price of the item.
+    
+    Returns:
+    bool: True if cost_price equals selling_price (no profit, no loss), else False.
+    """
+    return cost_price == selling_price
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert noprofit_noloss(1500, 1200) == False
+    print("Test passed: noprofit_noloss(1500, 1200) returns False as expected.")
+    
+    # Additional tests
+    assert noprofit_noloss(100, 100) == True
+    assert noprofit_noloss(0, 0) == True
+    assert noprofit_noloss(500, 500.0) == True
+    assert noprofit_noloss(200, 150) == False
+    print("All tests passed.")
+```

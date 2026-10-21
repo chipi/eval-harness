@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem of interleaving three lists of the same length into a single flat list:
+
+```python
+def interleave_lists(list1, list2, list3):
+    """
+    Interleaves three lists of the same length into a single flat list.
+
+    Args:
+        list1: First list to interleave
+        list2: Second list to interleave
+        list3: Third list to interleave
+
+    Returns:
+        A new list with elements interleaved from the three input lists
+
+    Raises:
+        ValueError: If the input lists are not of the same length
+    """
+    if len(list1) != len(list2) or len(list2) != len(list3):
+        raise ValueError("All input lists must be of the same length")
+
+    return [item for group in zip(list1, list2, list3) for item in group]
+
+# Test the function
+assert interleave_lists(
+    [1, 2, 3, 4, 5, 6, 7],
+    [10, 20, 30, 40, 50, 60, 70],
+    [100, 200, 300, 400, 500, 600, 700]
+) == [1, 10, 100, 2, 20, 200, 3, 30, 300, 4, 40, 400, 5, 50, 500, 6, 60, 600, 7, 70, 700]
+
+# Example usage
+if __name__ == "__main__":
+    print(interleave_lists(
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+    ))  # Output: [1, 4, 7, 2, 5, 8, 3, 6, 9]
+```
+
+This solution:
+1. First checks that all input lists have the same length
+2. Uses `zip()` to group corresponding elements from each list
+3. Uses a list comprehension to flatten the groups into a single list
+4. Includes the required assertion test
+5. Has an example usage block that demonstrates the function with a smaller input
+
+The function will raise a `ValueError` if the input lists are not of the same length.

@@ -1,0 +1,26 @@
+```python
+def common_in_nested_lists(nested_lists):
+    """
+    Find the common elements in given nested lists.
+    
+    Args:
+        nested_lists: A list of lists containing elements
+        
+    Returns:
+        A list of elements that are common to all sublists
+    """
+    if not nested_lists:
+        return []
+    
+    # Convert first list to a set, then intersect with each subsequent list
+    common = set(nested_lists[0])
+    for lst in nested_lists[1:]:
+        common &= set(lst)
+    
+    return list(common)
+
+
+# Test
+assert set(common_in_nested_lists([[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]])) == set([18, 12])
+print("All tests passed!")
+```

@@ -1,0 +1,32 @@
+```python
+def is_Sub_Array(A, B):
+    """
+    Checks whether list B is a sublist of list A.
+
+    Args:
+        A (list): The main list.
+        B (list): The list to be checked.
+
+    Returns:
+        bool: True if B is a sublist of A, False otherwise.
+    """
+    # Get the lengths of both lists
+    len_A = len(A)
+    len_B = len(B)
+
+    # If B is longer than A, it cannot be a sublist
+    if len_B > len_A:
+        return False
+
+    # Iterate over the main list with a sliding window of size len_B
+    for i in range(len_A - len_B + 1):
+        # Check if the current window is equal to B
+        if A[i:i+len_B] == B:
+            return True
+
+    # If no match is found, return False
+    return False
+
+# Test the function
+assert not is_Sub_Array([1,4,3,5],[1,2])
+```

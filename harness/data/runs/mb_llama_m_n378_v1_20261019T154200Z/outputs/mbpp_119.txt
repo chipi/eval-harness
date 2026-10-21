@@ -1,0 +1,28 @@
+```python
+def search(nums):
+    """
+    This function finds the element that appears only once in a sorted array.
+    
+    Args:
+        nums (list): A sorted list of integers.
+    
+    Returns:
+        int: The element that appears only once in the array.
+    """
+    count_dict = {}
+    
+    # Create a dictionary to store the count of each number
+    for num in nums:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+    
+    # Find the number with a count of 1
+    for key, value in count_dict.items():
+        if value == 1:
+            return key
+
+# Test the function
+assert search([1,1,2,2,3]) == 3
+```

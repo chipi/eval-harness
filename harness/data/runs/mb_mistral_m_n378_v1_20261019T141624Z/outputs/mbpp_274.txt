@@ -1,0 +1,25 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Calculate the sum of even index binomial coefficients for a given positive integer n.
+
+    Args:
+        n (int): A positive integer
+
+    Returns:
+        int: Sum of binomial coefficients at even indices (0, 2, 4, ...)
+
+    Example:
+        >>> even_binomial_Coeff_Sum(4)
+        8
+    """
+    # The sum of even index binomial coefficients for (1+1)^n is 2^(n-1)
+    # This is because sum of all binomial coefficients is 2^n,
+    # and the sum of even and odd indexed coefficients are equal, each being 2^(n-1)
+    return 2 ** (n - 1)
+
+# Test the function
+assert even_binomial_Coeff_Sum(4) == 8
+```
+
+The solution uses the mathematical property that for any positive integer n, the sum of binomial coefficients at even indices (C(n,0) + C(n,2) + C(n,4) + ...) equals 2^(n-1). This is derived from the binomial theorem and the fact that the sum of all binomial coefficients is 2^n, with the even and odd indexed coefficients being equal in sum.

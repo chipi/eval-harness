@@ -1,0 +1,19 @@
+```python
+def concatenate_tuple(tup, delimiter='-'):
+    """
+    Concatenates each element of a tuple into a single string, separated by a delimiter.
+    
+    Args:
+        tup (tuple): The tuple containing elements to be concatenated.
+        delimiter (str): The string used to separate each element. Defaults to '-'.
+        
+    Returns:
+        str: The resulting concatenated string.
+    """
+    return delimiter.join(str(item) for item in tup)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+    print("Test passed successfully!")
+```

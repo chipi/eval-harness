@@ -1,0 +1,12 @@
+```python
+import re
+
+def text_starta_endb(text):
+    pattern = re.compile(r'^a.*b$')
+    return bool(pattern.match(text))
+
+# Test the function
+print(text_starta_endb("aabbbb"))  # Should return True
+print(text_starta_endb("ab"))  # Should return True
+print(text_starta_endb("bba"))  # Should return False
+```

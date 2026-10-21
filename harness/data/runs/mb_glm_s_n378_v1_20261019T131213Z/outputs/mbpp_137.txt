@@ -1,0 +1,78 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    Calculates the ratio of zeroes to non-zeroes in an array of integers.
+
+    The ratio is defined as (number of zeroes) / (number of non-zeroes).
+
+    Args:
+        arr: A list of integers.
+
+    Returns:
+        The ratio of zeroes to non-zeroes as a float.
+        Returns 0.0 if the input list is empty or contains no non-zero elements.
+    """
+    if not arr:
+        return 0.0
+
+    zero_elements = 0
+    non_zero_elements = 0
+
+    for num in arr:
+        if num == 0:
+            zero_elements += 1
+        else:
+            non_zero_elements += 1
+            
+    # Avoid division by zero if there are no non-zero elements
+    if non_zero_elements == 0:
+        return 0.0
+        
+    return zero_elements / non_zero_elements
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The test array from the problem
+    test_array = [0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]
+    
+    # Expected ratio: 2 zeroes / 11 non-zeroes = 0.181818...
+    expected_ratio = 2 / 11
+    
+    # Calculate the ratio using the function
+    calculated_ratio = zero_count(test_array)
+    
+    # Print the results for clarity
+    print(f"Test Array: {test_array}")
+    print(f"Number of zeroes: {test_array.count(0)}")
+    print(f"Number of non-zeroes: {len(test_array) - test_array.count(0)}")
+    print(f"Calculated Ratio: {calculated_ratio}")
+    print(f"Expected Ratio:   {expected_ratio}")
+    
+    # Assert that the calculated ratio is close to the expected ratio
+    # with a relative tolerance of 0.001 (0.1%)
+    assert math.isclose(calculated_ratio, expected_ratio, rel_tol=0.001)
+    print("\nAssertion passed: The calculated ratio is close to the expected value.")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    
+    # Test case 1: Empty list
+    assert zero_count([]) == 0.0
+    print("Test case 1 (Empty list): PASSED")
+    
+    # Test case 2: List with only zeroes
+    assert zero_count([0, 0, 0]) == 0.0
+    print("Test case 2 (Only zeroes): PASSED")
+    
+    # Test case 3: List with no zeroes
+    assert zero_count([1, 2, 3]) == 0.0
+    print("Test case 3 (No zeroes): PASSED")
+    
+    # Test case 4: List with mixed positive and negative numbers
+    assert math.isclose(zero_count([-1, 0, 5, 0, -10, 0]), 3/2, rel_tol=0.001)
+    print("Test case 4 (Mixed numbers): PASSED")
+    
+    print("\nAll test cases passed successfully.")
+```

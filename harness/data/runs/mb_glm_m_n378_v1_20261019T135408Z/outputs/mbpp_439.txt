@@ -1,0 +1,19 @@
+```python
+def multiple_to_single(int_list):
+    """
+    Joins a list of multiple integers into a single integer.
+    
+    Args:
+    int_list (list of int): A list of integers to be joined.
+    
+    Returns:
+    int: A single integer formed by joining the digits of the input integers.
+    """
+    # Convert each integer to a string, join them, and convert back to an integer
+    return int("".join(str(i) for i in int_list))
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert multiple_to_single([11, 33, 50]) == 113350
+    print("Test passed successfully!")
+```

@@ -1,0 +1,31 @@
+```python
+"""
+Write a function to flatten the list of lists into a single set of numbers.
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+"""
+
+def extract_singly(list_of_tuples):
+    """
+    Flatten a list of tuples into a single set of unique numbers.
+    
+    Args:
+        list_of_tuples: A list containing tuples of numbers
+        
+    Returns:
+        A set containing all unique numbers from all tuples
+    """
+    result = set()
+    for tuple_item in list_of_tuples:
+        for num in tuple_item:
+            result.add(num)
+    return result
+
+# Test the function
+if __name__ == "__main__":
+    test_input = [(3, 4, 5), (4, 5, 7), (1, 4)]
+    result = extract_singly(test_input)
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    assert result == {3, 4, 5, 7, 1}, f"Test failed: {result}"
+    print("Test passed!")
+```

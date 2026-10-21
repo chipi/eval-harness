@@ -1,0 +1,35 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Finds the minimum number of rotations (greater than 0) required to get the same string.
+    
+    A rotation consists of taking the first character of the string and moving it to the end.
+    This function determines the smallest positive number of such rotations needed for the 
+    string to look identical to its original state.
+    
+    :param s: The input string
+    :return: The minimum number of positive rotations required to get the original string
+    """
+    n = len(s)
+    # Concatenate the string with itself
+    doubled_s = s + s
+    
+    # Find the first occurrence of the original string starting from index 1
+    # (index 0 is the original string itself, so we want the next occurrence)
+    for i in range(1, n + 1):
+        if doubled_s[i:i + n] == s:
+            return i
+            
+    # Fallback (should theoretically never be reached for n > 0 because i=n will always match)
+    return n
+
+# Asserting the given test case
+if __name__ == "__main__":
+    assert find_Rotations("aaaa") == 1
+    assert find_Rotations("abab") == 2
+    assert find_Rotations("abcabc") == 3
+    assert find_Rotations("abcde") == 5
+    print("All assertions passed!")
+```

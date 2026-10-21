@@ -1,0 +1,27 @@
+```python
+def perfect_squares(start, end):
+    """
+    Find perfect squares between two given numbers.
+
+    Args:
+    start (int): The starting number of the range.
+    end (int): The ending number of the range.
+
+    Returns:
+    list: A list of perfect squares between start and end.
+    """
+    # Initialize an empty list to store perfect squares
+    perfect_squares = []
+    
+    # Iterate through the range from start to end
+    for num in range(start, end + 1):
+        # Check if the square of the current number is a perfect square
+        if int(num**0.5)**2 == num:
+            perfect_squares.append(num)
+    
+    return perfect_squares
+
+# Test the function with the provided test case
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+```
+

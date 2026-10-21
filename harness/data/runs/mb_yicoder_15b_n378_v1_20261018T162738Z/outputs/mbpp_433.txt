@@ -1,0 +1,10 @@
+```python
+def check_greater(arr, num):
+    return all(i > num for i in arr)
+
+# Test cases
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+assert check_greater([1, 2, 3, 4, 5], 6) == True
+assert check_greater([1, 2, 3, 4, 5], 1) == True
+assert check_greater([1, 2, 3, 4, 5], 2) == False
+```

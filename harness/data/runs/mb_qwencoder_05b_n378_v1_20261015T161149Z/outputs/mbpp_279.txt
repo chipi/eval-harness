@@ -1,0 +1,59 @@
+```python
+def is_num_decagonal(n):
+    """
+    Write a function to find the nth decagonal number.
+    
+    Args:
+    n (int): The position of the decagonal number to find.
+    
+    Returns:
+    int: The nth decagonal number.
+    """
+    return n * (3 * n - 1) // 2
+
+# Test cases
+assert is_num_decagonal(3) == 27
+assert is_num_decagonal(4) == 84
+assert is_num_decagonal(5) == 144
+assert is_num_decagonal(6) == 220
+assert is_num_decagonal(7) == 296
+assert is_num_decagonal(8) == 360
+assert is_num_decagonal(9) == 432
+assert is_num_decagonal(10) == 504
+assert is_num_decagonal(11) == 576
+assert is_num_decagonal(12) == 648
+assert is_num_decagonal(13) == 720
+assert is_num_decagonal(14) == 800
+assert is_num_decagonal(15) == 880
+assert is_num_decagonal(16) == 960
+assert is_num_decagonal(17) == 1040
+assert is_num_decagonal(18) == 1120
+assert is_num_decagonal(19) == 1200
+assert is_num_decagonal(20) == 1280
+assert is_num_decagonal(21) == 1360
+assert is_num_decagonal(22) == 1440
+assert is_num_decagonal(23) == 1520
+assert is_num_decagonal(24) == 1600
+assert is_num_decagonal(25) == 1680
+assert is_num_decagonal(26) == 1760
+assert is_num_decagonal(27) == 1840
+assert is_num_decagonal(28) == 1920
+assert is_num_decagonal(29) == 2000
+assert is_num_decagonal(30) == 2080
+assert is_num_decagonal(31) == 2160
+assert is_num_decagonal(32) == 2240
+assert is_num_decagonal(33) == 2320
+assert is_num_decagonal(34) == 2400
+assert is_num_decagonal(35) == 2480
+assert is_num_decagonal(36) == 2560
+assert is_num_decagonal(37) == 2640
+assert is_num_decagonal(38) == 2720
+assert is_num_decagonal(39) == 2800
+assert is_num_decagonal(40) == 2880
+assert is_num_decagonal(41) == 2960
+assert is_num_decagonal(42) == 3040
+assert is_num_decagonal(43) == 3120
+assert is_num_decagonal(44) == 3200
+assert is_num_decagonal(45) == 3280
+assert is_num_decagonal(46) == 3360
+assert is_num_decagonal(47) == 3

@@ -1,0 +1,19 @@
+```python
+def next_power_of_2(n):
+    """
+    Write a python function to find the smallest power of 2 greater than or equal to n.
+    
+    assert next_power_of_2(0) == 1
+    """
+    if n <= 0:
+        return 1
+    else:
+        return 2 ** (n - 1).bit_length()
+
+# Test cases
+assert next_power_of_2(0) == 1
+assert next_power_of_2(1) == 2
+assert next_power_of_2(5) == 8
+assert next_power_of_2(16) == 32
+assert next_power_of_2(17) == 32
+```

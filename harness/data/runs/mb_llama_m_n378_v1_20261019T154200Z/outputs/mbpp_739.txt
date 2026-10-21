@@ -1,0 +1,32 @@
+```python
+def find_Index(n):
+    """
+    This function finds the index of the smallest triangular number with n digits.
+
+    Args:
+        n (int): The number of digits.
+
+    Returns:
+        int: The index of the smallest triangular number with n digits.
+    """
+    # Initialize the index and the triangular number
+    i = 1
+    triangular_num = 0
+
+    # Loop until we find a triangular number with n digits
+    while True:
+        # Calculate the next triangular number
+        triangular_num = i * (i + 1) // 2
+
+        # Check if the triangular number has n digits
+        if len(str(triangular_num)) == n:
+            return i
+
+        # Increment the index
+        i += 1
+
+
+# Test the function
+assert find_Index(2) == 4
+print("All tests passed.")
+```

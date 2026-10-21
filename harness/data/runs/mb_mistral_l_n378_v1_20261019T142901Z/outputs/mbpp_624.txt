@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+"""
+Function to convert a given string to uppercase.
+"""
+
+def is_upper(s: str) -> str:
+    """
+    Converts the input string to uppercase.
+
+    Args:
+        s: Input string to be converted
+
+    Returns:
+        The uppercase version of the input string
+    """
+    return s.upper()
+
+# Test the function
+assert is_upper("person") == "PERSON"
+
+# Example usage
+if __name__ == "__main__":
+    test_string = "hello world"
+    print(f"Original: {test_string}")
+    print(f"Uppercase: {is_upper(test_string)}")
+```
+
+This script:
+1. Defines the `is_upper()` function that converts a string to uppercase using Python's built-in `upper()` method
+2. Includes the required assertion test
+3. Adds a simple example usage when run directly
+4. Includes type hints and docstring for better documentation

@@ -1,0 +1,9 @@
+```python
+def sum_of_digits(nums):
+    return sum(int(d) for n in nums for d in str(abs(n)))
+
+assert sum_of_digits([10,2,56])==14
+
+if __name__ == "__main__":
+    print(sum_of_digits([10,2,56]))
+```

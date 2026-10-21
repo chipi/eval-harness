@@ -1,0 +1,54 @@
+```python
+"""
+Pancake sort implementation.
+
+The function sorts a list of comparable elements in ascending order and returns
+a new sorted list, leaving the input list unchanged.
+"""
+
+def pancake_sort(elements):
+    """
+    Sort a list using the pancake sort algorithm.
+
+    Args:
+        elements: A list of comparable elements.
+
+    Returns:
+        A new list containing the elements in ascending order.
+    """
+    arr = list(elements)
+
+    def flip(end):
+        """Reverse arr[0:end+1] in place."""
+        arr[:end + 1] = reversed(arr[:end + 1])
+
+    n = len(arr)
+
+    # Move the largest remaining element to its final position each pass.
+    for size in range(n, 1, -1):
+        # Find index of the maximum element in arr[0:size]
+        max_index = max(range(size), key=lambda i: arr[i])
+
+        # If it is already in place, no need to move it.
+        if max_index == size - 1:
+            continue
+
+        # Bring the maximum element to the front if needed.
+        if max_index != 0:
+            flip(max_index)
+
+        # Move it from the front to its final position.
+        flip(size - 1)
+
+    return arr
+
+
+if __name__ == "__main__":
+    assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+    assert pancake_sort([]) == []
+    assert pancake_sort([1]) == [1]
+    assert pancake_sort([3, 2, 1]) == [1, 2, 3]
+    assert pancake_sort([2, 3, 2, 1]) == [1, 2, 2, 3]
+
+    print("All tests passed.")
+```

@@ -1,0 +1,43 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the first adverb ending in 'ly' in a given sentence and return its position.
+
+The function returns a tuple:
+    (start_index, end_index, adverb)
+
+Where:
+- start_index is the starting character index of the adverb
+- end_index is the ending character index of the adverb
+- adverb is the matched word
+
+If no adverb is found, the function returns None.
+"""
+
+import re
+
+
+def find_adverb_position(sentence):
+    """
+    Find the first adverb ending in 'ly' and return its start index,
+    end index, and the adverb itself.
+
+    Punctuation immediately after the adverb is not included.
+
+    Example:
+    >>> find_adverb_position("clearly!! we can see the sky")
+    (0, 7, 'clearly')
+    """
+    match = re.search(r"\b\w+ly\b", sentence, re.IGNORECASE)
+
+    if match:
+        return (match.start(), match.end(), match.group())
+
+    return None
+
+
+if __name__ == "__main__":
+    assert find_adverb_position("clearly!! we can see the sky") == (0, 7, "clearly")
+
+    print("All tests passed.")
+```

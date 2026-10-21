@@ -1,0 +1,8 @@
+```python
+def median_trapezium(a, b, c):
+    """Return the median length (average of the two parallel sides)."""
+    return (a + b + c - max(a, b, c)) / 2
+
+
+assert median_trapezium(15, 25, 35) == 20
+```

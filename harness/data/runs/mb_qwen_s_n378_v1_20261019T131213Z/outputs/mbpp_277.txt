@@ -1,0 +1,14 @@
+```python
+def dict_filter(d, n):
+    """
+    Filters the dictionary to only include entries with values greater than or equal to n.
+    
+    Args:
+        d (dict): The input dictionary.
+        n (int): The threshold value.
+        
+    Returns:
+        dict: A filtered dictionary containing only entries with values >= n.
+    """
+    return {key: value for key, value in d.items() if value >= n}
+```

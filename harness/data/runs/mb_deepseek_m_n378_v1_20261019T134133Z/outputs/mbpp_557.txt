@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def toggle_string(s: str) -> str:
+    """
+    Toggle the case of all characters in a string.
+    
+    Args:
+        s: The input string whose case will be toggled.
+    
+    Returns:
+        A new string with all characters' cases toggled.
+    """
+    return s.swapcase()
+
+
+# Test the function
+assert toggle_string("Python") == "pYTHON"
+assert toggle_string("Hello World!") == "hELLO wORLD!"
+assert toggle_string("123abcXYZ") == "123ABCxyz"
+assert toggle_string("") == ""
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `toggle_string` uses Python's built-in `str.swapcase()` method, which converts all uppercase characters to lowercase and vice versa.
+- Non-alphabetic characters (digits, punctuation, spaces) remain unchanged.
+- The `assert` statements verify the expected behavior, including the example from the problem (`"Python"` → `"pYTHON"`).
+
+**Alternative implementation** (without using `swapcase`, for educational purposes):
+
+```python
+def toggle_string(s: str) -> str:
+    result = []
+    for ch in s:
+        if ch.isupper():
+            result.append(ch.lower())
+        elif ch.islower():
+            result.append(ch.upper())
+        else:
+            result.append(ch)
+    return "".join(result)
+
+
+assert toggle_string("Python") == "pYTHON"
+print("All tests passed!")
+```

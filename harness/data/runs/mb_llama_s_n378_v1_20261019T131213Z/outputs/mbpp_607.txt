@@ -1,0 +1,31 @@
+```python
+import re
+
+def find_literals(string, pattern):
+    """
+    Searches a string for a regex pattern and returns the matching substring along with its start and end indices.
+
+    Args:
+        string (str): The input string to search in.
+        pattern (str): The regex pattern to search for.
+
+    Returns:
+        tuple: A tuple containing the matching substring, its start index, and its end index.
+    """
+    match = re.search(pattern, string)
+    if match:
+        return match.group(), match.start(), match.end()
+    else:
+        return None
+
+# Example usage:
+print(find_literals('The quick brown fox jumps over the lazy dog.', 'fox'))
+```
+
+In this script, we use the `re.search` function from Python's built-in `re` module, which scans through the string looking for a match to the pattern, and returns a match object if it finds one, `None` otherwise.
+
+The `match.group()` function returns the entire matched string, `match.start()` returns the starting position of the match, and `match.end()` returns the ending position of the match.
+
+The function `find_literals` returns a tuple containing the matched string, its start index, and its end index. If no match is found, it returns `None`. 
+
+You can run this script and it will print: `('fox', 16, 19)` which is the expected output.

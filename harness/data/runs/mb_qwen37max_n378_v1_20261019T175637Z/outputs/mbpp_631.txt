@@ -1,0 +1,18 @@
+```python
+def replace_spaces(text):
+    """Replace whitespaces with underscores and underscores with whitespaces."""
+    result = []
+    for ch in text:
+        if ch == ' ':
+            result.append('_')
+        elif ch == '_':
+            result.append(' ')
+        else:
+            result.append(ch)
+    return ''.join(result)
+
+
+# Test
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+print("All tests passed!")
+```

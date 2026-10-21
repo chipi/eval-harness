@@ -1,0 +1,21 @@
+```python
+def check_monthnumb_number(month):
+    # Check if the month number is between 1 and 12 (inclusive)
+    if month >= 1 and month <= 12:
+        # Check if the month has 31 days
+        if month in [1, 3, 5, 7, 8, 10, 12]:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+# Test cases
+assert check_monthnumb_number(5) == True
+assert check_monthnumb_number(4) == False
+assert check_monthnumb_number(12) == True
+assert check_monthnumb_number(13) == False
+assert check_monthnumb_number(0) == False
+assert check_monthnumb_number(-1) == False
+```
+

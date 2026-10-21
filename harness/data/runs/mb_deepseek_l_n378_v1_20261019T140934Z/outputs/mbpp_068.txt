@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_Monotonic(arr):
+    """
+    Check whether the given array is monotonic or not.
+    An array is monotonic if it is either monotone increasing or monotone decreasing.
+    
+    Args:
+        arr: List of numbers to check
+        
+    Returns:
+        bool: True if the array is monotonic, False otherwise
+    """
+    if len(arr) <= 2:
+        return True
+    
+    increasing = decreasing = True
+    
+    for i in range(1, len(arr)):
+        if arr[i] > arr[i - 1]:
+            decreasing = False
+        if arr[i] < arr[i - 1]:
+            increasing = False
+    
+    return increasing or decreasing
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert is_Monotonic([6, 5, 4, 4]) == True
+    
+    # Additional test cases
+    assert is_Monotonic([1, 2, 3, 4]) == True  # Increasing
+    assert is_Monotonic([4, 3, 2, 1]) == True  # Decreasing
+    assert is_Monotonic([1, 1, 1, 1]) == True  # Constant
+    assert is_Monotonic([1, 3, 2, 4]) == False  # Not monotonic
+    assert is_Monotonic([1]) == True  # Single element
+    assert is_Monotonic([]) == True  # Empty array
+    
+    print("All tests passed!")
+```
+
+The function works by tracking two boolean flags: `increasing` and `decreasing`. As we iterate through the array, if we find any pair where the current element is greater than the previous one, the array cannot be strictly decreasing. Similarly, if we find any pair where the current element is less than the previous one, the array cannot be strictly increasing. The array is monotonic if either flag remains `True` at the end.

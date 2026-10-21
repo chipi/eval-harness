@@ -1,0 +1,40 @@
+```python
+def check_type(tup):
+    """
+    Checks if all elements in a tuple have the same data type.
+
+    Args:
+        tup: The input tuple.
+
+    Returns:
+        True if all elements have the same data type, False otherwise.
+    """
+    # An empty tuple or a tuple with one element trivially has elements of the same type.
+    if len(tup) <= 1:
+        return True
+    
+    # Get the data type of the first element.
+    first_type = type(tup[0])
+    
+    # Iterate through the rest of the elements in the tuple.
+    for item in tup[1:]:
+        # If any element's type is different from the first, return False.
+        if type(item) is not first_type:
+            return False
+            
+    # If the loop completes, all elements were of the same type.
+    return True
+
+# Example usage and assertions:
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+assert check_type(('a', 'b', 'c')) == True
+assert check_type((True, False, True)) == True
+assert check_type((1, 'a', 3)) == False
+assert check_type((1.5, 2.5, 3.5)) == True
+assert check_type((1, 2.0, 3)) == False
+assert check_type(()) == True
+assert check_type((42,)) == True
+assert check_type((None, None, None)) == True
+
+print("All assertions passed!")
+```

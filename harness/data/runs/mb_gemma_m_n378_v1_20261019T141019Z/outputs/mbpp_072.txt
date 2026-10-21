@@ -1,0 +1,49 @@
+To determine if a number $n$ can be represented as the difference of two squares ($n = x^2 - y^2$), we can use the mathematical property that $n = (x - y)(x + y)$. 
+
+Let $a = x - y$ and $b = x + y$. Then $n = ab$. 
+Solving for $x$ and $y$:
+$x = (a + b) / 2$
+$y = (b - a) / 2$
+
+For $x$ and $y$ to be integers, $(a + b)$ and $(b - a)$ must be even. This happens if $a$ and $b$ have the same parity (both even or both odd).
+1. If $n$ is **odd**, we can always find such $a$ and $b$ (e.g., $a=1, b=n$).
+2. If $n$ is **even**, $n$ must be divisible by $4$ to allow $a$ and $b$ to both be even. If $n$ is even but not divisible by $4$ (i.e., $n \equiv 2 \pmod 4$), it cannot be represented as a difference of squares.
+
+Here is the self-contained script:
+
+```python
+def dif_Square(n: int) -> bool:
+    """
+    Checks whether the given number can be represented as the 
+    difference of two squares (n = x^2 - y^2) for integers x and y.
+    
+    Logic:
+    A number can be represented as a difference of two squares if:
+    1. It is odd (n % 2 != 0)
+    2. It is a multiple of 4 (n % 4 == 0)
+    Otherwise, it is of the form 4k + 2, which cannot be represented.
+    """
+    # Handle negative numbers by checking their absolute value 
+    # (since x^2 - y^2 can result in negative numbers if y > x)
+    # However, the standard mathematical problem usually implies n >= 0.
+    # If n is negative, we check if -n can be represented.
+    n = abs(n)
+    
+    if n % 2 != 0:
+        return True
+    if n % 4 == 0:
+        return True
+    return False
+
+if __name__ == "__main__":
+    # Test cases
+    assert dif_Square(5) == True    # 3^2 - 2^2 = 9 - 4 = 5
+    assert dif_Square(1) == True    # 1^2 - 0^2 = 1
+    assert dif_Square(4) == True    # 2^2 - 0^2 = 4
+    assert dif_Square(2) == False   # Cannot be represented
+    assert dif_Square(6) == False   # Cannot be represented
+    assert dif_Square(8) == True    # 3^2 - 1^2 = 9 - 1 = 8
+    assert dif_Square(0) == True    # 0^2 - 0^2 = 0
+    
+    print("All assertions passed!")
+```

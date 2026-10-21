@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem of interchanging the first and last elements in a list:
+
+```python
+def swap_List(lst):
+    """Interchange the first and last elements in a list.
+
+    Args:
+        lst: List of elements
+
+    Returns:
+        List with first and last elements swapped
+    """
+    if len(lst) > 1:
+        lst[0], lst[-1] = lst[-1], lst[0]
+    return lst
+
+# Test case
+assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `swap_List` that takes a list as input
+2. Checks if the list has more than one element (to avoid swapping in single-element lists)
+3. Uses tuple unpacking to swap the first and last elements
+4. Returns the modified list
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function handles edge cases like empty lists or single-element lists by returning them unchanged.

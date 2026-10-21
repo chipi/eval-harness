@@ -1,0 +1,91 @@
+```python
+def remove_uppercase(s):
+    """
+    This function removes all uppercase substrings from a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all uppercase substrings removed.
+    """
+    result = ''
+    current_substring = ''
+
+    for char in s:
+        if char.isupper():
+            current_substring += char
+        else:
+            if current_substring:
+                current_substring = ''
+            result += char
+
+    return result
+
+# Test the function
+print(remove_uppercase('cAstyoUrFavoRitETVshoWs'))  # Expected output: 'cstyoravoitshos'
+```
+
+However, the above approach won't work correctly if there are multiple consecutive substrings of uppercase and lowercase characters.
+
+Here is a revised version of the function:
+
+```python
+def remove_uppercase(s):
+    """
+    This function removes all uppercase substrings from a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all uppercase substrings removed.
+    """
+    result = ''
+    in_uppercase_substring = False
+
+    for char in s:
+        if char.isupper():
+            in_uppercase_substring = True
+        else:
+            result += char
+            in_uppercase_substring = False
+
+    return result
+
+# Test the function
+print(remove_uppercase('cAstyoUrFavoRitETVshoWs'))  # Expected output: 'cstyoravoitshos'
+```
+
+However, the function above still won't work as expected because it will add a character to the result as soon as it encounters a lowercase character.
+
+Here is a revised version of the function:
+
+```python
+def remove_uppercase(s):
+    """
+    This function removes all uppercase substrings from a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all uppercase substrings removed.
+    """
+    result = ''
+    i = 0
+    while i < len(s):
+        if s[i].isupper():
+            j = i
+            while j < len(s) and s[j].isupper():
+                j += 1
+            i = j
+        else:
+            result += s[i]
+            i += 1
+
+    return result
+
+# Test the function
+print(remove_uppercase('cAstyoUrFavoRitETVshoWs'))  # Expected output: 'cstyoravoitshos'
+```

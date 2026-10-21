@@ -1,0 +1,19 @@
+```python
+def find_substring(values, target):
+    """
+    Check if target appears as a substring in any string in values.
+
+    Args:
+        values (list of str): List of strings to search.
+        target (str): Substring to look for.
+
+    Returns:
+        bool: True if target is found in any string, otherwise False.
+    """
+    return any(target in s for s in values)
+
+
+if __name__ == "__main__":
+    assert find_substring(["red", "black", "white", "green", "orange"], "ack") is True
+    print("All tests passed.")
+```

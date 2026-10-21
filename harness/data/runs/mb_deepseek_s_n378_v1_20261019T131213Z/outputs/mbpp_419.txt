@@ -1,0 +1,30 @@
+```python
+def round_and_sum(numbers):
+    """
+    Rounds each number in the list, then returns the total sum multiplied by the length of the list.
+    
+    Args:
+        numbers (list): List of numbers (int or float)
+    
+    Returns:
+        int: (sum of rounded numbers) * (length of list)
+    """
+    # Round each number to the nearest integer
+    rounded_numbers = [round(num) for num in numbers]
+    
+    # Calculate the sum of rounded numbers
+    total_sum = sum(rounded_numbers)
+    
+    # Multiply sum by the length of the original list
+    result = total_sum * len(numbers)
+    
+    # Print the result (as required by the problem statement)
+    print(result)
+    
+    return result
+
+# Test with the given assertion
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+
+# The function is defined and the assertion passes.
+```

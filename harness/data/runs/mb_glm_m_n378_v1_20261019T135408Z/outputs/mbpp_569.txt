@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of sorting each sublist of strings in a given list of lists:
+
+```python
+def sort_sublists(list_of_lists):
+    """
+    Sort each sublist of strings in the given list of lists.
+    
+    Args:
+        list_of_lists (list): A list where each element is a list of strings.
+    
+    Returns:
+        list: A new list where each sublist is sorted in ascending order.
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+
+# Test the function
+assert sort_sublists([['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']]) == [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+
+# Additional test cases
+assert sort_sublists([]) == []
+assert sort_sublists([['z', 'a', 'm']]) == [['a', 'm', 'z']]
+assert sort_sublists([['apple', 'banana'], ['cat', 'dog', 'elephant']]) == [['apple', 'banana'], ['cat', 'dog', 'elephant']]
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `sort_sublists` takes a list of lists as input.
+2. It uses a list comprehension to iterate over each sublist in the input list.
+3. For each sublist, it applies the `sorted` function, which returns a new list with the elements sorted in ascending order.
+4. The result is a new list of lists where each sublist is sorted.
+5. The function is tested with the provided assertion and additional test cases to ensure correctness.
+
+The script is self-contained and can be run directly to verify the solution.

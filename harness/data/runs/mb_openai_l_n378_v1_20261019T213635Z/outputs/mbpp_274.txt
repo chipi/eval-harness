@@ -1,0 +1,13 @@
+```python
+from math import comb
+
+
+def even_binomial_Coeff_Sum(n: int) -> int:
+    """Return the sum of C(n, k) for even k."""
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("n must be a positive integer")
+    return sum(comb(n, k) for k in range(0, n + 1, 2))
+
+
+assert even_binomial_Coeff_Sum(4) == 8
+```

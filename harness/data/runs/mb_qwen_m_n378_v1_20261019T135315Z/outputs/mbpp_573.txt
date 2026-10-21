@@ -1,0 +1,29 @@
+```python
+def unique_product(lst: list) -> int:
+    """
+    Calculate the product of the unique numbers in a given list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The product of all unique numbers in the list
+        
+    Example:
+        >>> unique_product([10, 20, 30, 40, 20, 50, 60, 40])
+        720000000
+    """
+    unique_numbers = set(lst)
+    product = 1
+    for num in unique_numbers:
+        product *= num
+    return product
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = unique_product([10, 20, 30, 40, 20, 50, 60, 40])
+    print(f"unique_product([10, 20, 30, 40, 20, 50, 60, 40]) = {result}")
+    assert result == 720000000, f"Expected 720000000, got {result}"
+    print("Assertion passed!")
+```

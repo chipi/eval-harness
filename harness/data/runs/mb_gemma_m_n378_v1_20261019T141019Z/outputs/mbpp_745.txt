@@ -1,0 +1,37 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    Finds numbers within a given range [startnum, endnum] where every 
+    number is divisible by every digit it contains.
+    
+    Note: Digits that are 0 are typically ignored or treated as 
+    non-divisible to avoid ZeroDivisionError. In this implementation, 
+    we skip 0 to avoid errors, as a number cannot be divided by zero.
+    """
+    
+    # We use a list comprehension with a helper function/lambda logic
+    # to filter the range.
+    
+    result = list(filter(
+        lambda n: all(
+            int(digit) != 0 and n % int(digit) == 0 
+            for digit in str(n)
+        ),
+        range(startnum, endnum + 1)
+    ))
+    
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_range = (1, 22)
+    expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+    actual = divisible_by_digits(*test_range)
+    
+    print(f"Range: {test_range}")
+    print(f"Expected: {expected}")
+    print(f"Actual:   {actual}")
+    
+    assert actual == expected, f"Test failed! Expected {expected}, but got {actual}"
+    print("Assertion passed successfully!")
+```

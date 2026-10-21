@@ -1,0 +1,57 @@
+Looking at this problem, I need to write a function that checks whether a given amount has **no profit and no loss** — meaning the actual amount equals the sale amount.
+
+```python
+"""
+Write a function to check whether the given amount has no profit and no loss
+assert noprofit_noloss(1500,1200)==False
+"""
+
+
+def noprofit_noloss(actual_cost, sale_amount):
+    """
+    Check whether the given transaction results in no profit and no loss.
+
+    A transaction has no profit and no loss when the actual cost is exactly
+    equal to the sale amount.
+
+    Parameters
+    ----------
+    actual_cost : int | float
+        The cost price of the item.
+    sale_amount : int | float
+        The selling price of the item.
+
+    Returns
+    -------
+    bool
+        True  -> there is neither profit nor loss (cost == sale)
+        False -> there is either a profit or a loss (cost != sale)
+    """
+    if sale_amount == actual_cost:
+        return True
+    return False
+
+
+# ----------------------------- tests -----------------------------
+if __name__ == "__main__":
+    assert noprofit_noloss(1500, 1200) == False
+    assert noprofit_noloss(100, 100) == True
+    assert noprofit_noloss(2000, 5000) == False
+    assert noprofit_noloss(0, 0) == True
+    assert noprofit_noloss(1200.50, 1200.50) == True
+
+    print("All test cases passed!")
+
+    # Small demo
+    for cost, sale in [(1500, 1200), (1500, 1500), (1500, 1800)]:
+        status = "No profit, no loss" if noprofit_noloss(cost, sale) else (
+            "Profit" if sale > cost else "Loss"
+        )
+        print(f"cost={cost}, sale={sale} -> {noprofit_noloss(cost, sale)} ({status})")
+```
+
+**How it works:**
+- If `sale_amount == actual_cost`, the seller broke even → return `True`.
+- Otherwise there's a profit (`sale > cost`) or a loss (`sale < cost`) → return `False`.
+
+For the assertion `noprofit_noloss(1500, 1200)`: since `1200 != 1500`, there is a loss of 300, so it correctly returns `False`.

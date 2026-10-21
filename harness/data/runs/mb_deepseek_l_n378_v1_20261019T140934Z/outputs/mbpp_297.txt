@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def flatten_list(nested_list):
+    """
+    Flatten a given nested list structure into a single-level list.
+    
+    Args:
+        nested_list: A list that may contain nested lists as elements
+        
+    Returns:
+        A flattened list with all elements at a single level
+    """
+    flattened = []
+    
+    for item in nested_list:
+        if isinstance(item, list):
+            # Recursively flatten nested lists and extend the result
+            flattened.extend(flatten_list(item))
+        else:
+            # Add non-list elements directly
+            flattened.append(item)
+    
+    return flattened
+
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    test_input = [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    expected_output = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    
+    result = flatten_list(test_input)
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Test passed: {result == expected_output}")
+    
+    # Assertion as specified in the problem
+    assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    print("Assertion passed!")
+```
+
+This solution uses a recursive approach to handle nested lists of arbitrary depth. The function checks each element - if it's a list, it recursively flattens it and extends the result; otherwise, it appends the element directly to the flattened list.

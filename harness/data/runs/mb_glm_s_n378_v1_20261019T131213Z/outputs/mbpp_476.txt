@@ -1,0 +1,31 @@
+```python
+def big_sum(arr):
+    """
+    Finds the sum of the largest and smallest value in a given array.
+
+    Args:
+        arr: A list of numbers.
+
+    Returns:
+        The sum of the largest and smallest number in the list.
+        Returns 0 if the list is empty.
+    """
+    # Handle the edge case of an empty list
+    if not arr:
+        return 0
+    
+    # Find the minimum and maximum values in the list
+    min_val = min(arr)
+    max_val = max(arr)
+    
+    # Return their sum
+    return min_val + max_val
+
+# Example usage and assertions to verify the function
+assert big_sum([1, 2, 3]) == 4
+assert big_sum([-10, 0, 10, 5]) == -10 + 10
+assert big_sum([5]) == 10  # The only number is both the min and max
+assert big_sum([]) == 0    # Edge case: empty list
+
+print("All assertions passed!")
+```

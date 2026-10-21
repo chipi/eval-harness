@@ -1,0 +1,33 @@
+```python
+def sum_series(n):
+    """
+    Calculates the sum of the series (n - 2*i) for i = 0 to n // 2.
+    The series continues as long as (n - 2*i) > 0.
+    
+    Example for n=6:
+    i=0: 6 - 2(0) = 6
+    i=1: 6 - 2(1) = 4
+    i=2: 6 - 2(2) = 2
+    Sum = 6 + 4 + 2 = 12
+    """
+    total_sum = 0
+    # We iterate from i = 0 up to n // 2 (inclusive)
+    # The condition (n - 2*i) > 0 ensures we only add positive terms
+    for i in range((n // 2) + 1):
+        term = n - 2 * i
+        if term > 0:
+            total_sum += term
+        else:
+            # Since terms are strictly decreasing, we can break early
+            break
+    return total_sum
+
+if __name__ == "__main__":
+    # Test cases
+    assert sum_series(6) == 12, f"Expected 12, got {sum_series(6)}"
+    assert sum_series(1) == 1, f"Expected 1, got {sum_series(1)}"
+    assert sum_series(10) == 30, f"Expected 30, got {sum_series(10)}" # 10+8+6+4+2
+    assert sum_series(0) == 0, f"Expected 0, got {sum_series(0)}"
+    
+    print("All assertions passed!")
+```

@@ -1,0 +1,18 @@
+```python
+def get_median(list1, list2, size):
+    merged = sorted(list1 + list2)
+    mid = size - 1
+    if size % 2 == 0:
+        return (merged[mid] + merged[mid + 1]) / 2
+    else:
+        return merged[mid + 1]
+
+def main():
+    list1 = [1, 12, 15, 26, 38]
+    list2 = [2, 13, 17, 30, 45]
+    size = 5
+    print(get_median(list1, list2, size))  # Output: 16.0
+
+if __name__ == "__main__":
+    main()
+```

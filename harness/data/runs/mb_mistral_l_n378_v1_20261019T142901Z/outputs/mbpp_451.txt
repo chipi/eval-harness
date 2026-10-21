@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def remove_whitespaces(input_string):
+    """
+    Removes all whitespace characters from the given string.
+
+    Args:
+        input_string (str): The string from which to remove whitespaces.
+
+    Returns:
+        str: The input string with all whitespaces removed.
+    """
+    return ''.join(input_string.split())
+
+# Test the function
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+```
+
+This solution:
+1. Uses the `split()` method without arguments to split on any whitespace (including multiple spaces, tabs, newlines)
+2. Then joins the resulting list with an empty string to concatenate all parts without any whitespace
+3. Includes the required assertion test to verify the function works correctly
+
+The function will work with any whitespace characters (spaces, tabs, newlines) in the input string.

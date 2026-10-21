@@ -1,0 +1,38 @@
+### Dictionary Depth Function
+#### Problem Statement
+Write a function to find the depth of a dictionary.
+
+#### Solution
+
+```python
+def dict_depth(d, depth=1):
+    """
+    Calculate the depth of a dictionary.
+
+    Args:
+        d (dict): The dictionary to calculate the depth of.
+        depth (int, optional): The current depth. Defaults to 1.
+
+    Returns:
+        int: The maximum depth of the dictionary.
+    """
+    if not isinstance(d, dict):
+        return 0
+    if not d:
+        return depth
+    return max(dict_depth(v, depth + 1) if isinstance(v, dict) else depth for v in d.values())
+
+# Example usage:
+if __name__ == "__main__":
+    d = {'a':1, 'b': {'c': {'d': {}}}}
+    print(dict_depth(d))  # Output: 4
+```
+
+#### Explanation
+
+*   The function `dict_depth` takes two parameters: `d` (the dictionary to calculate the depth of) and `depth` (the current depth, defaulting to 1).
+*   If `d` is not a dictionary, the function returns 0.
+*   If `d` is an empty dictionary, the function returns the current `depth`.
+*   Otherwise, the function recursively calculates the depth of each value in `d`. If a value is a dictionary, its depth is calculated with `depth + 1`. The maximum depth is returned.
+
+This solution handles nested dictionaries of arbitrary depth and structure.

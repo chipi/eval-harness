@@ -1,0 +1,83 @@
+```python
+def sum_of_common_divisors(a, b):
+    """
+    Find the sum of common divisors of two given numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+    
+    Returns:
+        Sum of all positive integers that divide both a and b
+    """
+    # Find the greatest common divisor first
+    def gcd(x, y):
+        while y:
+            x, y = y, x % y
+        return abs(x)
+    
+    g = gcd(a, b)
+    
+    if g == 0:
+        return 0
+    
+    # Find all divisors of the GCD (which are exactly the common divisors of a and b)
+    total_sum = 0
+    i = 1
+    while i * i <= g:
+        if g % i == 0:
+            total_sum += i
+            if i != g // i:
+                total_sum += g // i
+        i += 1
+    
+    return total_sum
+
+# The problem statement uses `sum(10,15)` but `sum` is a built-in function in Python.
+# We assume the intended function name is something like `sum_of_common_divisors`.
+# However, to match the assert statement literally, we might need to redefine or alias.
+# But since redefining `sum` would break other functionality, let's provide the correct logic.
+# If the test expects a function named `sum`, it's problematic. Let's assume the function name 
+# in the assert is a placeholder for our function. 
+
+# For compatibility with the exact assert statement provided (though bad practice), 
+# one could do:
+# sum = sum_of_common_divisors
+# But this shadows the built-in. I'll provide the proper function.
+
+# To strictly satisfy the format where the user might copy-paste and run asserts:
+# Let's create an alias if needed, but better to just define the function properly.
+# The prompt says "Write a python function", so I'll name it appropriately.
+
+# Re-reading: The assert is `assert sum(10,15) == 6`. This implies the function should be named `sum`.
+# This is dangerous as it overrides the built-in. However, to pass the specific test case shown,
+# I will define a function named `sum` that does this, but note that this is not recommended.
+# Alternatively, maybe the problem meant a different name. Given the strict instruction, 
+# I will provide the solution assuming the function name matches the usage in the assert.
+
+def sum(a, b):
+    """
+    Find the sum of common divisors of two given numbers.
+    Note: This shadows the built-in sum() function. Use with caution.
+    """
+    def gcd(x, y):
+        while y:
+            x, y = y, x % y
+        return abs(x)
+    
+    g = gcd(a, b)
+    
+    if g == 0:
+        return 0
+    
+    total_sum = 0
+    i = 1
+    while i * i <= g:
+        if g % i == 0:
+            total_sum += i
+            if i != g // i:
+                total_sum += g // i
+        i += 1
+    
+    return total_sum
+```

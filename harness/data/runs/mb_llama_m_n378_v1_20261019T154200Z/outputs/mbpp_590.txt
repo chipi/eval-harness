@@ -1,0 +1,27 @@
+```python
+import math
+import cmath
+
+def polar_rect(r, theta):
+    """
+    Convert polar coordinates to rectangular coordinates.
+
+    Parameters:
+    r (float): The radius in polar coordinates.
+    theta (float): The angle in polar coordinates in radians.
+
+    Returns:
+    tuple: A tuple containing the rectangular coordinates as a tuple and the complex number representation.
+    """
+    # Calculate the rectangular coordinates
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+    
+    # Calculate the complex number representation
+    complex_num = r * cmath.exp(1j * theta)
+    
+    return ((x, y), complex_num)
+
+# Test the function
+print(polar_rect(3, 4))
+```

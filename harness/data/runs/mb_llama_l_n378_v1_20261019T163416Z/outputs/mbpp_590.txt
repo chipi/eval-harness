@@ -1,0 +1,19 @@
+```python
+import math
+import cmath
+
+def polar_rect(r, theta):
+    rectangular = r * cmath.exp(1j * theta)
+    magnitude = abs(rectangular)
+    phase = cmath.phase(rectangular)
+    return (magnitude, phase), rectangular
+
+def main():
+    r = 5
+    theta = math.pi / 2
+    result = polar_rect(r, theta)
+    print(result)
+
+if __name__ == "__main__":
+    main()
+```

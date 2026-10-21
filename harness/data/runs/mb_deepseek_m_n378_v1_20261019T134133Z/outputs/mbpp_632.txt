@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def move_zero(lst):
+    """
+    Moves all zeroes to the end of the given list while maintaining
+    the relative order of non-zero elements.
+    """
+    non_zeroes = [x for x in lst if x != 0]
+    zeroes = [x for x in lst if x == 0]
+    return non_zeroes + zeroes
+
+
+# Test the function
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+print("Test passed!")
+```
+
+**How it works:**
+1. `non_zeroes` collects all elements that are not equal to `0`, preserving their original order.
+2. `zeroes` collects all elements equal to `0`.
+3. Concatenating `non_zeroes + zeroes` places all zeroes at the end.
+
+**Alternative in-place approach** (if you want to modify the list without creating new lists):
+
+```python
+def move_zero(lst):
+    insert_pos = 0
+    for i in range(len(lst)):
+        if lst[i] != 0:
+            lst[insert_pos], lst[i] = lst[i], lst[insert_pos]
+            insert_pos += 1
+    return lst
+```
+
+Both versions satisfy the assertion:
+```python
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+```

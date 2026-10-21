@@ -1,0 +1,51 @@
+```python
+def last(arr, x):
+    """
+    Finds the last position of an element in a sorted array.
+    
+    Args:
+        arr (list): A sorted list of integers.
+        x (int): The element to find.
+        
+    Returns:
+        int: The last index of the element, or -1 if the element is not found.
+    """
+    # Initialize result to -1 (not found)
+    result = -1
+    
+    # Perform Binary Search
+    low = 0
+    high = len(arr) - 1
+    
+    while low <= high:
+        mid = (low + high) // 2
+        
+        if arr[mid] == x:
+            result = mid       # Store the index
+            low = mid + 1      # Look on the right side for the last occurrence
+        elif arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid - 1
+            
+    return result
+
+# Test cases based on the provided assertion and additional edge cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert last([1, 2, 3], 1) == 0
+    
+    # Test case: multiple occurrences
+    assert last([1, 2, 2, 2, 3], 2) == 3
+    
+    # Test case: element not found
+    assert last([1, 2, 3], 4) == -1
+    
+    # Test case: element at the end
+    assert last([1, 2, 3], 3) == 2
+    
+    # Test case: empty array
+    assert last([], 1) == -1
+    
+    print("All test cases passed!")
+```

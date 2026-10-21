@@ -1,0 +1,67 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Finds the minimum number of rotations (greater than 0) required to get the same string.
+
+    A rotation is performed by moving the first character of the string to the end.
+    For example, rotating "abcde" once results in "bcdea".
+
+    The function works by checking for the smallest repeating unit (or period) of the string.
+    The minimum number of rotations required to get the same string is equal to the length
+    of this repeating unit. If the entire string is the smallest repeating unit (i.e., the
+    string is not made of a smaller, repeated pattern), then the number of rotations is
+    the length of the string itself.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        The minimum number of rotations required to get the same string. This will always
+        be greater than 0.
+
+    Examples:
+        >>> find_Rotations("aaaa")
+        1
+        >>> find_Rotations("ababab")
+        2
+        >>> find_Rotations("abcde")
+        5
+        >>> find_Rotations("abab")
+        2
+        >>> find_Rotations("a")
+        1
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+
+    # The minimum number of rotations is the length of the string's smallest repeating unit.
+    # We iterate through possible lengths of this unit, from 1 to n.
+    for i in range(1, n + 1):
+        # If the string length is not a multiple of the current unit length 'i',
+        # 'i' cannot be the length of a repeating unit that makes up the whole string.
+        if n % i == 0:
+            # Check if the string is composed of repetitions of its first 'i' characters.
+            # The slice s[:i] gives the candidate unit.
+            # The multiplication s[:i] * (n // i) creates a string by repeating this unit.
+            # If this constructed string matches the original string 's', then 'i' is the
+            # length of the smallest repeating unit.
+            if s == s[:i] * (n // i):
+                # The number of rotations needed is equal to the length of this unit.
+                return i
+
+    # This line is theoretically unreachable for a non-empty string, as the loop
+    # will always find a solution when i = n (s == s[:n] * 1).
+    return n
+
+# Example usage and assertions from the problem description
+assert find_Rotations("aaaa") == 1
+assert find_Rotations("ababab") == 2
+assert find_Rotations("abcde") == 5
+assert find_Rotations("abab") == 2
+assert find_Rotations("a") == 1
+assert find_Rotations("aaaabaaaab") == 5
+assert find_Rotations("mississippi") == 11
+
+print("All assertions passed.")
+```

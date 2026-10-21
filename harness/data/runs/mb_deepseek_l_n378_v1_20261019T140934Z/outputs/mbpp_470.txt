@@ -1,0 +1,38 @@
+Here’s a self-contained Python script with the requested function:
+
+```python
+def add_pairwise(t):
+    """
+    Find the pairwise addition of the neighboring elements of the given tuple.
+    
+    Args:
+        t: A tuple of numbers
+        
+    Returns:
+        A tuple containing the sums of neighboring elements
+    """
+    if len(t) < 2:
+        return ()
+    
+    # Use list comprehension with zip to pair up neighboring elements
+    result = tuple(a + b for a, b in zip(t[:-1], t[1:]))
+    return result
+
+# Test the function
+if __name__ == "__main__":
+    assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+    print("Test passed!")
+```
+
+The function works by:
+1. Using `zip(t[:-1], t[1:])` to pair up each element with its neighbor
+2. Summing each pair using a generator expression
+3. Converting the result back to a tuple
+
+For the example `(1, 5, 7, 8, 10)`:
+- 1+5 = 6
+- 5+7 = 12
+- 7+8 = 15
+- 8+10 = 18
+
+Output: `(6, 12, 15, 18)`

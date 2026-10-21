@@ -1,0 +1,22 @@
+```python
+def odd_position(nums: list) -> bool:
+    """
+    Check whether every odd index contains an odd number in the given list.
+    
+    Args:
+        nums: A list of integers
+        
+    Returns:
+        True if every element at an odd index is an odd number, False otherwise
+    """
+    for i in range(1, len(nums), 2):
+        if nums[i] % 2 == 0:
+            return False
+    return True
+
+
+# Test case
+if __name__ == "__main__":
+    assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) == True
+    print("All tests passed!")
+```

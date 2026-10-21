@@ -1,0 +1,10 @@
+```python
+def multiply_int(a, b):
+    """
+    Write a function to multiply two integers.
+    """
+    return a * b
+
+# Testing the function
+assert multiply_int(10,20)==200
+```

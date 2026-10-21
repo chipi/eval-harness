@@ -1,0 +1,59 @@
+```python
+def check_min_heap(arr):
+    """
+    Checks if the given array represents a min heap.
+
+    A min heap is a complete binary tree where the value of each node is 
+    less than or equal to the values of its children. For an array to 
+    represent a min heap, the following condition must be true for every 
+    node at index i (except the leaves):
+        arr[i] <= arr[2*i + 1]  (left child)
+        arr[i] <= arr[2*i + 2]  (right child)
+
+    Args:
+        arr: A list of numbers representing the heap.
+
+    Returns:
+        True if the array represents a min heap, False otherwise.
+    """
+    n = len(arr)
+
+    # If the array is empty or has only one element, it is trivially a heap.
+    if n <= 1:
+        return True
+
+    # Iterate through all non-leaf nodes.
+    # The last non-leaf node is the parent of the last element.
+    # The parent of an element at index i is at (i-1)//2.
+    # So, the last non-leaf node is at index (n-1-1)//2 = (n-2)//2.
+    for i in range((n // 2)):
+        left_child_index = 2 * i + 1
+        right_child_index = 2 * i + 2
+
+        # Check the left child
+        # If the left child exists and is greater than the parent, it's not a min heap.
+        if left_child_index < n and arr[i] > arr[left_child_index]:
+            return False
+
+        # Check the right child
+        # If the right child exists and is greater than the parent, it's not a min heap.
+        if right_child_index < n and arr[i] > arr[right_child_index]:
+            return False
+
+    # If all checks pass, the array represents a min heap.
+    return True
+
+# Example usage and assertions from the problem description
+assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+assert check_min_heap([1, 2, 3, 4, 5, 7]) == False # 3 > 2 (right child)
+assert check_min_heap([1, 2, 3, 4, 5, 6, 7]) == True
+assert check_min_heap([1, 2, 3, 4, 5, 6, 8]) == False # 3 > 2 (right child)
+assert check_min_heap([10, 8, 9, 5, 6, 7]) == True
+assert check_min_heap([10, 8, 9, 5, 6, 15]) == False # 8 > 6 (right child)
+assert check_min_heap([]) == True
+assert check_min_heap([5]) == True
+assert check_min_heap([5, 10]) == True
+assert check_min_heap([10, 5]) == False
+
+print("All assertions passed.")
+```

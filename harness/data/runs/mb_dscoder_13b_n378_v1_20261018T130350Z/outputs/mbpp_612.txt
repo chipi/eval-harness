@@ -1,0 +1,7 @@
+```python
+def merge(lst):
+    return [[lst[i][0], lst[i][1]] for i in range(len(lst))]
+
+# Testing the function
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+```

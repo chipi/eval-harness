@@ -1,0 +1,22 @@
+```python
+def max_Product(arr):
+    # Initialize variables to store the maximum product found so far and the two numbers that produce it
+    max_product = float('-inf')
+    num1 = num2 = None
+    
+    # Iterate through each number in the array
+    for i in range(len(arr)):
+        # If the current number is greater than the current max_product, update max_product and set num1 and num2
+        if arr[i] > max_product:
+            max_product = arr[i]
+            num1, num2 = arr[i], arr[i-1]
+        
+        # If the current number is less than the current max_product but greater than num2, update num2
+        elif arr[i] < max_product and arr[i] > num2:
+            num2 = arr[i]
+    
+    return (num1, num2)
+
+# Test the function with the provided test case
+assert max_Product([1,2,3,4,7,0,8,4]) == (7,8)
+```

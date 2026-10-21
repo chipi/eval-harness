@@ -1,0 +1,32 @@
+```python
+def cal_sum(n):
+    """
+    Calculate the sum of Perrin numbers up to the nth Perrin number.
+
+    Args:
+        n: The number of Perrin numbers to sum.
+
+    Returns:
+        The sum of the Perrin numbers.
+    """
+    if n <= 0:
+        return 0
+    if n == 1:
+        return 3
+    if n == 2:
+        return 3
+    if n == 3:
+        return 5
+    
+    perrin = [3, 0, 2]
+    sum_perrin = 5
+    
+    for i in range(3, n):
+        next_perrin = perrin[i-2] + perrin[i-3]
+        perrin.append(next_perrin)
+        sum_perrin += next_perrin
+        
+    return sum_perrin
+
+assert cal_sum(9) == 49
+```

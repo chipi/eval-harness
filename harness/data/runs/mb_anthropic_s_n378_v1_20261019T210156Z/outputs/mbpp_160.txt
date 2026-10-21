@@ -1,0 +1,86 @@
+```python
+def find_solution(a, b, n):
+    """
+    Find integers x and y that satisfy ax + by = n.
+    
+    Uses the Extended Euclidean Algorithm to find a solution if one exists.
+    A solution exists if and only if gcd(a, b) divides n.
+    
+    Args:
+        a: coefficient of x
+        b: coefficient of y
+        n: target value
+    
+    Returns:
+        A tuple (x, y) satisfying ax + by = n, or None if no solution exists
+    """
+    
+    def extended_gcd(a, b):
+        """
+        Extended Euclidean Algorithm.
+        Returns (gcd, x, y) such that a*x + b*y = gcd
+        """
+        if b == 0:
+            return (a, 1, 0)
+        else:
+            gcd, x1, y1 = extended_gcd(b, a % b)
+            x = y1
+            y = x1 - (a // b) * y1
+            return (gcd, x, y)
+    
+    # Find gcd and coefficients such that a*x0 + b*y0 = gcd
+    gcd, x0, y0 = extended_gcd(abs(a), abs(b))
+    
+    # Check if solution exists
+    if n % gcd != 0:
+        return None
+    
+    # Scale the solution
+    x = x0 * (n // gcd)
+    y = y0 * (n // gcd)
+    
+    # Adjust for signs of a and b
+    if a < 0:
+        x = -x
+    if b < 0:
+        y = -y
+    
+    return (x, y)
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = find_solution(2, 3, 7)
+    print(f"find_solution(2, 3, 7) = {result}")
+    assert result == (2, 1), f"Expected (2, 1), got {result}"
+    
+    # Verify: 2*2 + 3*1 = 4 + 3 = 7 ✓
+    x, y = result
+    assert 2*x + 3*y == 7
+    print(f"Verification: 2*{x} + 3*{y} = {2*x + 3*y} ✓")
+    
+    # Additional test cases
+    print("\nAdditional tests:")
+    
+    # No solution case (gcd(2,4)=2 doesn't divide 5)
+    result = find_solution(2, 4, 5)
+    print(f"find_solution(2, 4, 5) = {result}")
+    assert result is None
+    
+    # Simple case
+    result = find_solution(1, 1, 5)
+    print(f"find_solution(1, 1, 5) = {result}")
+    x, y = result
+    assert x + y == 5
+    print(f"Verification: {x} + {y} = {x + y} ✓")
+    
+    # Negative coefficients
+    result = find_solution(-2, 3, 1)
+    print(f"find_solution(-2, 3, 1) = {result}")
+    x, y = result
+    assert -2*x + 3*y == 1
+    print(f"Verification: -2*{x} + 3*{y} = {-2*x + 3*y} ✓")
+    
+    print("\nAll tests passed!")
+```

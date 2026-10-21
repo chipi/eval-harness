@@ -1,0 +1,28 @@
+```python
+def is_samepatterns(patterns, patterns2):
+    """
+    Check whether it follows the sequence given in the patterns array.
+    
+    :param patterns: List of strings representing the patterns.
+    :param patterns2: List of strings representing the patterns to compare against.
+    :return: True if the patterns follow the sequence, False otherwise.
+    """
+    # Check if the lengths of the two lists are equal
+    if len(patterns) != len(patterns2):
+        return False
+    
+    # Iterate through the patterns and compare each one with the next one
+    for i in range(len(patterns)):
+        if patterns[i] != patterns2[i]:
+            return False
+    
+    return True
+
+# Test cases to verify the correctness of the function
+assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+assert is_samepatterns(["apple", "banana", "cherry"], ["a", "b", "c"]) == False
+assert is_samepatterns(["hello", "world", "python"], ["h", "e", "l", "l", "o", "w", "r", "d", "p", "y", "t", "h", "o", "n"]) == True
+assert is_samepatterns(["same", "same", "same"], ["same", "same", "same"]) == True
+assert is_samepatterns(["same", "same", "same"], ["same", "same", "same"]) == False
+```
+

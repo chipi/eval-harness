@@ -1,0 +1,44 @@
+```python
+def find_Parity(n):
+    """
+    Finds whether the parity of a given number is odd.
+    
+    Parity is determined by the number of set bits (1s) in the binary representation of the number.
+    - Odd parity means there is an odd number of 1s.
+    - Even parity means there is an even number of 1s.
+    
+    This function returns True if the number has odd parity, and False if it has even parity.
+    
+    Parameters:
+    n (int): The integer number to check.
+    
+    Returns:
+    bool: True if parity is odd, False otherwise.
+    """
+    # The bitwise XOR operator (^) naturally computes the parity.
+    # If the number of set bits is odd, the result will have the least significant bit set (1).
+    # If the number of set bits is even, the result will have the least significant bit unset (0).
+    # We use bitwise AND with 1 to isolate the least significant bit.
+    
+    # XOR all bits from 0 to n (conceptually). 
+    # A more robust bitwise method for variable width integers is to use Python's bit_count()
+    # which is available in Python 3.8+. However, manual reduction is robust for all versions.
+    
+    # Method: Manual bitwise parity check
+    parity = 0
+    num = n
+    while num > 0:
+        parity ^= (num & 1)
+        num >>= 1
+    return bool(parity)
+
+# Test the function with the provided assertion
+assert find_Parity(12) == False
+assert find_Parity(13) == True # Binary 1101 has 3 set bits (odd parity)
+assert find_Parity(4) == True  # Binary 100 has 1 set bit (odd parity)
+
+# Optional: Print statements to verify
+if __name__ == "__main__":
+    print(f"Parity of 12 (Binary {bin(12)}): {find_Parity(12)}") # Expected: False
+    print(f"Parity of 13 (Binary {bin(13)}): {find_Parity(13)}") # Expected: True
+```

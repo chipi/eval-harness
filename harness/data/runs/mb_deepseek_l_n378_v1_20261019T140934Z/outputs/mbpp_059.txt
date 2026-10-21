@@ -1,0 +1,18 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def is_octagonal(n):
+    """
+    Returns the nth octagonal number.
+    Formula: n * (3n - 2)
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    return n * (3 * n - 2)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert is_octagonal(5) == 65
+    print("Test passed!")
+```

@@ -1,0 +1,27 @@
+```python
+def max_sum_list(list_of_lists):
+    """
+    Returns the sublist from a list of lists that has the highest sum of elements.
+    If the input list is empty, returns None.
+    """
+    if not list_of_lists:
+        return None
+    
+    # The max function with a key argument allows us to find the element 
+    # based on the result of the sum() function applied to each sublist.
+    return max(list_of_lists, key=sum)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [[1, 2, 3], [4, 5, 6], [10, 11, 12], [7, 8, 9]]
+    expected_output = [10, 11, 12]
+    
+    result = max_sum_list(test_input)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    print("Assertion passed successfully!")
+```

@@ -1,0 +1,32 @@
+```python
+def find_lucas(n):
+    """
+    This function calculates the nth Lucas number.
+    
+    The Lucas sequence is similar to the Fibonacci sequence, but with a different starting point.
+    The sequence starts with 2 and 1, and each subsequent number is the sum of the previous two.
+    
+    Parameters:
+    n (int): The position of the Lucas number to be found.
+    
+    Returns:
+    int: The nth Lucas number.
+    """
+    # Base cases
+    if n == 0:
+        return 2
+    elif n == 1:
+        return 1
+    
+    # Initialize the first two Lucas numbers
+    a, b = 2, 1
+    
+    # Calculate the nth Lucas number
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    
+    return b
+
+# Test the function
+print(find_lucas(9))  # Output: 76
+```

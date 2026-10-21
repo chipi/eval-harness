@@ -1,0 +1,20 @@
+```python
+def check_distinct(tup):
+    """
+    Checks if a given tuple contains no duplicates.
+
+    Args:
+        tup (tuple): The input tuple to check.
+
+    Returns:
+        bool: True if the tuple contains no duplicates, False otherwise.
+    """
+    return len(tup) == len(set(tup))
+
+# Example usage:
+if __name__ == "__main__":
+    print(check_distinct((1, 4, 5, 6, 1, 4)))  # Expected output: False
+    print(check_distinct((1, 2, 3, 4, 5)))  # Expected output: True
+```
+
+In this script, we define a function `check_distinct` that takes a tuple `tup` as input and returns a boolean indicating whether the tuple contains no duplicates. The function uses the fact that a set in Python is an unordered collection of unique elements, so converting the tuple to a set automatically removes any duplicates. If the lengths of the original tuple and the set are equal, then the tuple contained no duplicates. Otherwise, it did. The example usage demonstrates how to use this function.

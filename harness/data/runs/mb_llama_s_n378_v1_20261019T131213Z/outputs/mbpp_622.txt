@@ -1,0 +1,161 @@
+### Merging Two Sorted Lists to Find the Median
+
+The following Python function merges two sorted lists of the same size and calculates the median.
+
+```python
+def get_median(list1, list2, n):
+    """
+    This function calculates the median of two sorted lists of the same size.
+
+    Args:
+        list1 (list): The first sorted list.
+        list2 (list): The second sorted list.
+        n (int): The size of both lists.
+
+    Returns:
+        float: The median of the merged list.
+    """
+
+    # Merge the two sorted lists into one
+    merged_list = []
+    i = j = 0
+
+    # Merge smaller elements first
+    while i < n and j < n:
+        if list1[i] < list2[j]:
+            merged_list.append(list1[i])
+            i += 1
+        else:
+            merged_list.append(list2[j])
+            j += 1
+
+    # If there are remaining elements in list1, append them to merged_list
+    while i < n:
+        merged_list.append(list1[i])
+        i += 1
+
+    # If there are remaining elements in list2, append them to merged_list
+    while j < n:
+        merged_list.append(list2[j])
+        j += 1
+
+    # Calculate the median
+    if n % 2 == 0:
+        # If the length of the merged list is even, the median is the average of the two middle numbers
+        median = (merged_list[n // 2 - 1] + merged_list[n // 2]) / 2
+    else:
+        # If the length of the merged list is odd, the median is the middle number
+        median = merged_list[n // 2]
+
+    return median
+
+
+# Example usage:
+list1 = [1, 12, 15, 26, 38]
+list2 = [2, 13, 17, 30, 45]
+n = 5
+print(get_median(list1, list2, n))  # Output: 16.0
+```
+
+However, the above approach has a time complexity of O(n) and requires extra space for the merged list. 
+
+A more efficient approach would be to use a single loop and keep track of the current index for both lists. We can also take advantage of the fact that the lists are already sorted.
+
+Here's an optimized version:
+
+```python
+def get_median(list1, list2, n):
+    """
+    This function calculates the median of two sorted lists of the same size.
+
+    Args:
+        list1 (list): The first sorted list.
+        list2 (list): The second sorted list.
+        n (int): The size of both lists.
+
+    Returns:
+        float: The median of the merged list.
+    """
+
+    i = j = 0
+    merged = []
+
+    # Merge smaller elements first
+    while len(merged) < n:
+        if i < n and (j == n or list1[i] < list2[j]):
+            merged.append(list1[i])
+            i += 1
+        else:
+            merged.append(list2[j])
+            j += 1
+
+    # Calculate the median
+    if n % 2 == 0:
+        # If the length of the merged list is even, the median is the average of the two middle numbers
+        median = (merged[n // 2 - 1] + merged[n // 2]) / 2
+    else:
+        # If the length of the merged list is odd, the median is the middle number
+        median = merged[n // 2]
+
+    return median
+
+
+# Example usage:
+list1 = [1, 12, 15, 26, 38]
+list2 = [2, 13, 17, 30, 45]
+n = 5
+print(get_median(list1, list2, n))  # Output: 16.0
+```
+
+However, we can solve this problem in O(log n) time complexity using binary search.
+
+```python
+def get_median(list1, list2, n):
+    """
+    This function calculates the median of two sorted lists of the same size.
+
+    Args:
+        list1 (list): The first sorted list.
+        list2 (list): The second sorted list.
+        n (int): The size of both lists.
+
+    Returns:
+        float: The median of the merged list.
+    """
+
+    # Make sure list1 is the smaller list
+    if len(list1) > len(list2):
+        list1, list2 = list2, list1
+
+    x, y = len(list1), len(list2)
+
+    low = 0
+    high = x
+
+    while low <= high:
+        partition_x = (low + high) // 2
+        partition_y = ((x + y + 1) // 2) - partition_x
+
+        max_left_x = float('-inf') if partition_x == 0 else list1[partition_x - 1]
+        min_right_x = float('inf') if partition_x == x else list1[partition_x]
+
+        max_left_y = float('-inf') if partition_y == 0 else list2[partition_y - 1]
+        min_right_y = float('inf') if partition_y == y else list2[partition_y]
+
+        if max_left_x <= min_right_y and max_left_y <= min_right_x:
+            if (x + y) % 2 == 0:
+                return (max(max_left_x, max_left_y) + min(min_right_x, min_right_y)) / 2
+            else:
+                return max(max_left_x, max_left_y)
+        elif max_left_x > min_right_y:
+            high = partition_x - 1
+        else:
+            low = partition_x + 1
+
+
+# Example usage:
+list1 = [1, 12, 15, 26, 38]
+list2 = [2, 13, 17, 30, 45]
+n = 5
+print(get_median(list1, list2, n))  # Output: 16.0
+```

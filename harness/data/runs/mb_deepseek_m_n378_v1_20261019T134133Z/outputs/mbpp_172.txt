@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_occurance(s: str) -> int:
+    """
+    Count the number of occurrences of the substring 'std' in the given string.
+    
+    Args:
+        s: The input string to search.
+    
+    Returns:
+        The number of times 'std' appears in the string.
+    """
+    return s.count("std")
+
+
+# Test the function
+assert count_occurance("letstdlenstdporstd") == 3
+print("Test passed!")
+```
+
+**Explanation:**
+
+- The function `count_occurance` takes a string `s` as input.
+- It uses Python's built-in `str.count()` method, which returns the number of non-overlapping occurrences of a substring.
+- For the test case `"letstdlenstdporstd"`, the substring `"std"` appears at positions 3, 9, and 15, giving a total of 3 occurrences.
+- The `assert` statement verifies the expected result, and the final `print` confirms the test passed.

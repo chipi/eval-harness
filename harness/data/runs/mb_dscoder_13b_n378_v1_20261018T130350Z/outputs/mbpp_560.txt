@@ -1,0 +1,17 @@
+```python
+def union_elements(t1, t2):
+    # Convert the tuples to sets
+    set1 = set(t1)
+    set2 = set(t2)
+
+    # Find the union of the sets
+    union_set = set1.union(set2)
+
+    # Convert the union set back to a tuple and sort it
+    union_tuple = tuple(sorted(list(union_set)))
+
+    return union_tuple
+
+# Test the function with the provided test case
+print(union_elements((3, 4, 5, 6),(5, 7, 4, 10)))  # Output: (3, 4, 5, 6, 7, 10)
+```

@@ -1,0 +1,11 @@
+```python
+def Find_Min_Length(lst):
+    return min(len(x) for x in lst)
+
+# Test case
+assert Find_Min_Length([[1], [1, 2]]) == 1
+
+if __name__ == "__main__":
+    print(Find_Min_Length([[1], [1, 2]]))
+    print(Find_Min_Length([[1, 2, 3], [4], [5, 6]]))
+```

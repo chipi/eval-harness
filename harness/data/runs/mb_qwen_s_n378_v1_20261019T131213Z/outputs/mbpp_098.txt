@@ -1,0 +1,22 @@
+```python
+import math
+
+def multiply_num(nums):
+    """
+    Multiply all the numbers in a list and divide by the length of the list.
+    
+    Args:
+        nums: A tuple or list of numbers
+        
+    Returns:
+        The product of all numbers divided by the count of numbers
+    """
+    if not nums:
+        return 0
+    
+    product = 1
+    for num in nums:
+        product *= num
+    
+    return product / len(nums)
+```

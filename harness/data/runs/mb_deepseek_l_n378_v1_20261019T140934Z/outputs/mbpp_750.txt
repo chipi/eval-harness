@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_tuple(lst, tup):
+    """
+    Add the given tuple to the given list.
+    
+    Args:
+        lst: A list to which the tuple elements will be added
+        tup: A tuple whose elements will be added to the list
+    
+    Returns:
+        A new list containing all elements from the original list 
+        followed by all elements from the tuple
+    """
+    return lst + list(tup)
+
+# Test the function
+assert add_tuple([5, 6, 7], (9, 10)) == [5, 6, 7, 9, 10]
+print("Test passed!")
+```

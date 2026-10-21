@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import cmath
+
+def convert(z):
+    """
+    Convert a complex number to polar coordinates.
+    
+    Args:
+        z: A complex number (can be int, float, or complex)
+    
+    Returns:
+        A tuple (r, theta) where r is the magnitude and theta is the angle in radians
+    """
+    # Convert to complex number if it's not already
+    if not isinstance(z, complex):
+        z = complex(z)
+    
+    # Get polar coordinates using cmath.polar()
+    r, theta = cmath.polar(z)
+    
+    return (r, theta)
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert convert(1) == (1.0, 0.0), f"Expected (1.0, 0.0), got {convert(1)}"
+    
+    # Additional test cases
+    assert convert(1j) == (1.0, 1.5707963267948966), f"Expected (1.0, 1.5707963267948966), got {convert(1j)}"
+    assert convert(1 + 1j) == (1.4142135623730951, 0.7853981633974483), f"Expected (1.4142135623730951, 0.7853981633974483), got {convert(1 + 1j)}"
+    
+    print("All tests passed!")
+```
+
+This solution uses Python's built-in `cmath` module, which provides the `polar()` function to convert complex numbers to polar coordinates. The function handles both real numbers (integers/floats) and complex numbers by converting them to complex type first if needed.

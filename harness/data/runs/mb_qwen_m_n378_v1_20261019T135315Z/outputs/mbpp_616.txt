@@ -1,0 +1,26 @@
+```python
+def tuple_modulo(t1: tuple, t2: tuple) -> tuple:
+    """
+    Takes two tuples of the same length and performs element-wise modulo.
+    
+    Args:
+        t1: First tuple of integers
+        t2: Second tuple of integers (same length as t1)
+    
+    Returns:
+        A tuple containing the element-wise modulo of t1 by t2
+    
+    Example:
+        >>> tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5))
+        (0, 4, 5, 1)
+    """
+    return tuple(a % b for a, b in zip(t1, t2))
+
+
+if __name__ == "__main__":
+    # Test the function with the provided example
+    result = tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5))
+    assert result == (0, 4, 5, 1), f"Expected (0, 4, 5, 1), got {result}"
+    print("Test passed!")
+    print(f"tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) = {result}")
+```

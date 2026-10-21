@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists where each sublist contains every nth element starting from its index.
+
+    Args:
+        lst: The input list to be split.
+        n: The number of sublists to create.
+
+    Returns:
+        A list of n sublists.
+    """
+    return [lst[i::n] for i in range(n)]
+
+# Test the function with the provided assertion
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [
+    ['a', 'd', 'g', 'j', 'm'],
+    ['b', 'e', 'h', 'k', 'n'],
+    ['c', 'f', 'i', 'l']
+]
+
+# Example usage
+if __name__ == "__main__":
+    print(list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3))
+```
+
+This script defines the `list_split` function which uses list slicing with a step of `n` to create the desired sublists. The test assertion verifies that the function works as expected, and the example usage demonstrates how to call the function.

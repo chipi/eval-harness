@@ -1,0 +1,11 @@
+```python
+def surfacearea_cube(size):
+    return 6 * size ** 2
+
+def main():
+    assert surfacearea_cube(5) == 150
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

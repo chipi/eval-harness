@@ -1,0 +1,29 @@
+```python
+def max_sum_list(list_of_lists):
+    """
+    Returns the list in a list of lists whose sum of elements is the highest.
+    
+    Args:
+        list_of_lists: A list containing multiple lists of numbers
+        
+    Returns:
+        The list with the highest sum of elements
+    """
+    return max(list_of_lists, key=sum)
+
+
+# Test cases
+assert max_sum_list([[1,2,3], [4,5,6], [10,11,12], [7,8,9]]) == [10, 11, 12]
+assert max_sum_list([[1], [2], [3]]) == [3]
+assert max_sum_list([[-1, -2], [-3, -4], [0, 1]]) == [0, 1]
+
+print("All tests passed!")
+```
+
+The solution uses Python's built-in `max()` function with a `key` parameter set to `sum`. This efficiently finds and returns the list with the maximum sum by:
+
+1. Iterating through each list in the input
+2. Computing the sum of each list
+3. Returning the list with the highest sum
+
+Time complexity: O(n*m) where n is the number of lists and m is the average length of each list.

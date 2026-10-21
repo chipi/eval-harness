@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem by finding the minimum value in a heterogeneous list, considering only the numeric elements:
+
+```python
+def min_val(heterogeneous_list):
+    # Filter out non-numeric elements and convert to integers if they're strings of numbers
+    numeric_elements = []
+    for item in heterogeneous_list:
+        if isinstance(item, (int, float)):
+            numeric_elements.append(item)
+        elif isinstance(item, str) and item.isdigit():
+            numeric_elements.append(int(item))
+
+    if not numeric_elements:
+        return None  # or raise an exception if no numeric elements found
+
+    return min(numeric_elements)
+
+# Test case
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+```
+
+This solution:
+1. Creates a list of only numeric elements from the input
+2. Handles both integers/floats and numeric strings (like '3')
+3. Returns the minimum of the numeric elements
+4. Includes the required test case
+
+The function will work with the given test case and similar heterogeneous lists containing numbers and non-numeric elements.

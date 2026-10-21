@@ -1,0 +1,22 @@
+```python
+def remove_nested(input_tuple):
+    """
+    Write a function to remove tuples from the given tuple.
+    assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+    """
+    result = []
+    for item in input_tuple:
+        if isinstance(item, tuple):
+            result.extend(item)
+        else:
+            result.append(item)
+    return tuple(result)
+
+# Example usage and assertion
+if __name__ == '__main__':
+    assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 4, 6, 10)
+    assert remove_nested((1, (2, 3), 4, (5, 6))) == (1, 2, 3, 4, 5, 6)
+    assert remove_nested((1, 2, 3)) == (1, 2, 3)
+    assert remove_nested(((1, 2), (3, 4))) == (1, 2, 3, 4)
+    print("All test cases passed!")
+```

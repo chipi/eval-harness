@@ -1,0 +1,12 @@
+```python
+def check_element(lst, element):
+    """
+    Return True if all items in lst are equal to element, otherwise False.
+    """
+    return all(item == element for item in lst)
+
+
+if __name__ == "__main__":
+    assert check_element(["green", "orange", "black", "white"], "blue") == False
+    print("All tests passed.")
+```

@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def odd_position(numbers):
+    """
+    Check whether every odd index contains odd numbers in a given list.
+
+    Args:
+        numbers: List of integers to check.
+
+    Returns:
+        bool: True if all odd indices contain odd numbers, False otherwise.
+    """
+    for index, num in enumerate(numbers):
+        if index % 2 != 0 and num % 2 == 0:
+            return False
+    return True
+
+# Test case
+assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) == True
+```
+
+This script defines a function `odd_position` that:
+1. Iterates through the list using `enumerate` to get both the index and value
+2. Checks if the index is odd (using `index % 2 != 0`)
+3. If the index is odd, checks if the number is even (using `num % 2 == 0`)
+4. Returns False immediately if any odd index contains an even number
+5. Returns True if all odd indices contain odd numbers
+
+The test case at the bottom verifies the function works as expected.

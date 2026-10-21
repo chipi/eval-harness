@@ -1,0 +1,39 @@
+```python
+#!/usr/bin/env python3
+"""
+Check whether a given string is a decimal number with a precision of 2.
+
+A valid value:
+- contains one or more digits before the decimal point
+- contains exactly one decimal point
+- contains exactly two digits after the decimal point
+
+Examples:
+    '123.11' -> True
+    '123.1'  -> False
+    '123'    -> False
+"""
+
+import re
+
+
+def is_decimal(s: str) -> bool:
+    """Return True if s is a decimal number with exactly 2 digits after the point."""
+    if not isinstance(s, str):
+        return False
+    return bool(re.fullmatch(r"\d+\.\d{2}", s))
+
+
+# Basic tests
+assert is_decimal("123.11") == True
+assert is_decimal("0.99") == True
+assert is_decimal("123.1") == False
+assert is_decimal("123.111") == False
+assert is_decimal("123") == False
+assert is_decimal(".11") == False
+assert is_decimal("123.") == False
+assert is_decimal("abc.11") == False
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

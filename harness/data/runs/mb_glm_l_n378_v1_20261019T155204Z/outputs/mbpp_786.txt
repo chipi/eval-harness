@@ -1,0 +1,44 @@
+```python
+def right_insertion(sorted_list, value):
+    """
+    Locate the right insertion point for a specified value in a sorted list.
+    
+    This function returns the index where the 'value' should be inserted to 
+    maintain the sorted order of the list. If the value already exists in the 
+    list, the insertion point is after any existing entries (to the right).
+    
+    Args:
+        sorted_list (list): A list of elements sorted in ascending order.
+        value: The value to be inserted.
+        
+    Returns:
+        int: The insertion index.
+        
+    Examples:
+        >>> right_insertion([1, 2, 4, 5], 6)
+        4
+        >>> right_insertion([1, 2, 4, 5], 3)
+        2
+        >>> right_insertion([1, 2, 2, 4], 2)
+        3
+    """
+    low = 0
+    high = len(sorted_list)
+
+    while low < high:
+        mid = (low + high) // 2
+        if sorted_list[mid] <= value:
+            low = mid + 1
+        else:
+            high = mid
+            
+    return low
+
+# Asserting the provided test case
+assert right_insertion([1, 2, 4, 5], 6) == 4
+
+# Additional test cases to verify functionality
+assert right_insertion([1, 2, 4, 5], 0) == 0  # Insert at the beginning
+assert right_insertion([1, 2, 4, 5], 3) == 2  # Insert in the middle
+assert right_insertion([1, 2, 2, 4], 2) == 3  # Insert to the right of duplicates
+```

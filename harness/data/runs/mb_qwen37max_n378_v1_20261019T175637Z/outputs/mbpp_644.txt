@@ -1,0 +1,20 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverse an array up to a given position k (1-indexed).
+    
+    Args:
+        arr: List of elements
+        k: Position up to which the array should be reversed (1-indexed)
+    
+    Returns:
+        New list with first k elements reversed
+    """
+    # k is 1-indexed, so we reverse arr[0:k]
+    return arr[:k][::-1] + arr[k:]
+
+
+# Test
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]
+print("All tests passed!")
+```

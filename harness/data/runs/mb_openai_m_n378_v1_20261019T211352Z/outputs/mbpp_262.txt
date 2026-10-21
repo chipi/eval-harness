@@ -1,0 +1,28 @@
+```python
+def split_two_parts(lst, L):
+    """
+    Split the given list into two parts.
+
+    The first part has length L, and the second part contains the remaining
+    elements. The two parts are returned as a tuple.
+
+    Examples:
+    >>> split_two_parts([1, 1, 2, 3, 4, 4, 5, 1], 3)
+    ([1, 1, 2], [3, 4, 4, 5, 1])
+    """
+    return (lst[:L], lst[L:])
+
+
+if __name__ == "__main__":
+    assert split_two_parts([1, 1, 2, 3, 4, 4, 5, 1], 3) == (
+        [1, 1, 2],
+        [3, 4, 4, 5, 1],
+    )
+
+    # Additional simple tests
+    assert split_two_parts([1, 2, 3], 0) == ([], [1, 2, 3])
+    assert split_two_parts([1, 2, 3], 3) == ([1, 2, 3], [])
+    assert split_two_parts([], 0) == ([], [])
+
+    print("All tests passed.")
+```

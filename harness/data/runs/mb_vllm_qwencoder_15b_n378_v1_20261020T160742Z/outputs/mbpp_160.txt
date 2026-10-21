@@ -1,0 +1,32 @@
+```python
+def find_solution(a, b, n):
+    # Check if there is a solution using the Extended Euclidean Algorithm
+    gcd, x, y = extended_gcd(a, b)
+    
+    # If gcd is not 1, no solution exists
+    if gcd != 1:
+        return None
+    
+    # Calculate the coefficients of x and y
+    x = x * (n // gcd)
+    y = y * (n // gcd)
+    
+    return (x, y)
+
+# Helper function to calculate the greatest common divisor and coefficients using the Extended Euclidean Algorithm
+def extended_gcd(a, b):
+    if b == 0:
+        return a, 1, 0
+    else:
+        gcd, x1, y1 = extended_gcd(b, a % b)
+        x = y1 - (a // b) * x1
+        y = x1
+        return gcd, x, y
+
+# Test cases
+assert find_solution(2, 3, 7) == (2, 1)
+assert find_solution(5, 4, 9) == (1, 2)
+assert find_solution(6, 8, 10) == (1, 1)
+assert find_solution(10, 15, 20) == (2, 1)
+assert find_solution(11, 13, 14) == None
+```

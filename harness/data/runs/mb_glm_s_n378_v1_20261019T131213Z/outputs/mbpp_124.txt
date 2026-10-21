@@ -1,0 +1,59 @@
+```python
+import math
+
+def angle_complex(z: complex) -> float:
+    """
+    Calculates the angle (in radians) of a complex number.
+
+    The angle is also known as the argument or phase of the complex number.
+    It is calculated using the arctangent of the imaginary part divided by the
+    real part, adjusted for the correct quadrant.
+
+    Args:
+        z: A complex number.
+
+    Returns:
+        The angle of the complex number in radians, in the range [-pi, pi].
+    """
+    # The built-in cmath.phase() function is the standard and most robust way
+    # to get the angle of a complex number in Python.
+    return cmath.phase(z)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # We need to import cmath for the phase function
+    import cmath
+
+    # The complex number 0 + 1j
+    complex_num = 1j
+    
+    # Calculate the angle
+    angle = angle_complex(complex_num)
+    
+    # The expected angle for 1j is pi/2 radians.
+    # math.pi / 2 is approximately 1.5707963267948966
+    expected_angle = math.pi / 2
+    
+    # Use math.isclose for floating-point comparison with a relative tolerance
+    assert math.isclose(angle, expected_angle, rel_tol=0.001)
+    
+    print(f"The angle of {complex_num} is {angle} radians.")
+    print(f"Assertion passed: angle is close to {expected_angle}.")
+
+    # Additional test cases
+    test_cases = [
+        (1 + 0j, 0.0),          # Positive real axis
+        (-1 + 0j, math.pi),     # Negative real axis
+        (0 - 1j, -math.pi / 2), # Negative imaginary axis
+        (1 + 1j, math.pi / 4),  # First quadrant
+        (-1 + 1j, 3 * math.pi / 4), # Second quadrant
+    ]
+    
+    print("\nRunning additional test cases...")
+    for z, expected in test_cases:
+        angle = angle_complex(z)
+        assert math.isclose(angle, expected, rel_tol=0.001)
+        print(f"  Angle of {z}: {angle:.4f} (expected {expected:.4f}) - PASSED")
+    
+    print("\nAll tests passed successfully.")
+```

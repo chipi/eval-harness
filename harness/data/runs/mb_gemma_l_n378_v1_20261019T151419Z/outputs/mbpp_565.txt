@@ -1,0 +1,12 @@
+```python
+def split(text):
+    """
+    Splits a string into a list of its individual characters.
+    """
+    return list(text)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+    print("Test passed!")
+```

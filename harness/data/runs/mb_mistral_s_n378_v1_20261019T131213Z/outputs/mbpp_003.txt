@@ -1,0 +1,27 @@
+Here's a self-contained Python script that includes a function to identify non-prime numbers and the provided assertion:
+
+```python
+def is_not_prime(n):
+    """Return True if n is a non-prime number, False otherwise."""
+    if n <= 1:
+        return True
+    if n == 2:
+        return False
+    if n % 2 == 0:
+        return True
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return True
+    return False
+
+# Test case
+assert is_not_prime(2) == False
+```
+
+This script:
+1. Defines a function `is_not_prime` that returns `True` for non-prime numbers and `False` for primes
+2. Handles edge cases (numbers ≤ 1, even numbers)
+3. Checks divisibility up to the square root of the number for efficiency
+4. Includes the provided assertion test case
+
+The function will return `False` for 2 (which is a prime number) as required by the assertion.

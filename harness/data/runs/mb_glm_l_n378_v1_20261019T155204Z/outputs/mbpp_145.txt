@@ -1,0 +1,21 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def max_Abs_Diff(arr):
+    """
+    Finds the maximum absolute difference between any two elements in a given array.
+    
+    Args:
+    arr (tuple or list): A sequence of numeric elements.
+    
+    Returns:
+    int: The maximum absolute difference.
+    """
+    if len(arr) < 2:
+        return 0
+    
+    return max(arr) - min(arr)
+
+# Assert statement to verify correctness
+assert max_Abs_Diff((2, 1, 5, 3)) == 4
+```

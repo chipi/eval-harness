@@ -1,0 +1,18 @@
+```python
+def pair_xor_Sum(arr, n):
+    """
+    Find the sum of XOR of all pairs of numbers in the given list.
+    
+    Args:
+        arr: List of integers
+        n: Length of the array (can be derived from len(arr))
+    
+    Returns:
+        Sum of XOR for all unique pairs (i < j)
+    """
+    total = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            total += arr[i] ^ arr[j]
+    return total
+```

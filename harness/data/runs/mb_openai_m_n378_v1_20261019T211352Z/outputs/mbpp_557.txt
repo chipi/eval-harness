@@ -1,0 +1,19 @@
+```python
+#!/usr/bin/env python3
+
+def toggle_string(s: str) -> str:
+    """
+    Toggle the case of all alphabetic characters in a string.
+
+    Uppercase letters become lowercase, lowercase letters become uppercase,
+    and non-alphabetic characters remain unchanged.
+    """
+    return s.swapcase()
+
+
+if __name__ == "__main__":
+    assert toggle_string("Python") == "pYTHON"
+    assert toggle_string("Hello, World!") == "hELLO, wORLD!"
+    assert toggle_string("123 abc XYZ") == "123 ABC xyz"
+    print("All tests passed.")
+```

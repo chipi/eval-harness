@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_length(s, k):
+    words = s.split()
+    filtered_words = [word for word in words if len(word) != k]
+    return ' '.join(filtered_words)
+
+# Test the function
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `remove_length` that takes a string `s` and an integer `k`
+2. Splits the string into words using `split()`
+3. Uses a list comprehension to filter out words with length equal to `k`
+4. Joins the remaining words back into a string with spaces
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function will remove all words of length `k` from the input string while preserving the order of the remaining words.

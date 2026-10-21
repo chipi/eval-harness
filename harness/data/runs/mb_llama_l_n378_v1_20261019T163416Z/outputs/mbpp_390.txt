@@ -1,0 +1,13 @@
+```python
+def add_string(lst, fmt_str):
+    return [fmt_str.format(i) for i in lst]
+
+def main():
+    numbers = [1, 2, 3, 4]
+    format_str = 'temp{0}'
+    result = add_string(numbers, format_str)
+    print(result)
+
+if __name__ == "__main__":
+    main()
+```

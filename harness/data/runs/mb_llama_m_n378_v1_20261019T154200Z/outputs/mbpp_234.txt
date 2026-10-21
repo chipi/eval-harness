@@ -1,0 +1,22 @@
+```python
+def volume_cube(side_length):
+    """
+    Calculate the volume of a cube given its side length.
+
+    Args:
+        side_length (int or float): The length of a side of the cube.
+
+    Returns:
+        int or float: The volume of the cube.
+    """
+    return side_length ** 3
+
+# Test the function
+assert volume_cube(3) == 27
+print("Test passed: volume_cube(3) == 27")
+
+# Example usage
+side_length = 5
+volume = volume_cube(side_length)
+print(f"The volume of a cube with side length {side_length} is {volume}.")
+```

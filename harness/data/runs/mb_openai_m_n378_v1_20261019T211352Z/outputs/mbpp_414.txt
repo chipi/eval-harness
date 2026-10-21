@@ -1,0 +1,26 @@
+```python
+"""
+Write a Python function to check whether any value in one sequence exists
+in another sequence.
+
+Example:
+assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+"""
+
+def overlapping(seq1, seq2):
+    """
+    Return True if seq1 and seq2 have at least one common value,
+    otherwise return False.
+    """
+    return any(item in seq2 for item in seq1)
+
+
+# Tests
+assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+assert overlapping([1, 2, 3, 4, 5], [5, 6, 7]) == True
+assert overlapping([], [1, 2, 3]) == False
+assert overlapping([1, 2, 3], []) == False
+assert overlapping(["a", "b"], ["c", "a"]) == True
+
+print("All tests passed.")
+```

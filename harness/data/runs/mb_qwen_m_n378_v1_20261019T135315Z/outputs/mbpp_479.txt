@@ -1,0 +1,35 @@
+```python
+def first_Digit(n: int) -> int:
+    """
+    Find the first digit of a given number.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The first digit of the number
+        
+    Examples:
+        >>> first_Digit(123)
+        1
+        >>> first_Digit(4567)
+        4
+        >>> first_Digit(-89)
+        8
+    """
+    # Handle negative numbers by taking absolute value
+    n = abs(n)
+    
+    # Convert to string and get the first character, then convert back to int
+    return int(str(n)[0])
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert first_Digit(123) == 1
+    assert first_Digit(4567) == 4
+    assert first_Digit(-89) == 8
+    assert first_Digit(0) == 0
+    assert first_Digit(9) == 9
+    print("All tests passed!")
+```

@@ -1,0 +1,38 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverse an array up to a given position k.
+    
+    Args:
+        arr: List of elements to reverse
+        k: Position up to which to reverse (1-indexed)
+    
+    Returns:
+        List with elements up to position k reversed
+    """
+    # Convert k to 0-indexed and reverse the first k elements
+    arr[:k] = arr[:k][::-1]
+    return arr
+
+
+# Test cases
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5], 3) == [3, 2, 1, 4, 5]
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5], 5) == [5, 4, 3, 2, 1]
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5], 1) == [1, 2, 3, 4, 5]
+
+print("All test cases passed!")
+```
+
+The function works by:
+1. Taking an array `arr` and a position `k` (1-indexed)
+2. Using Python's slice notation `arr[:k]` to get the first k elements
+3. Reversing those elements with `[::-1]`
+4. Assigning the reversed slice back to the original array
+5. Returning the modified array
+
+For the example `reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4)`:
+- Takes first 4 elements: `[1, 2, 3, 4]`
+- Reverses them: `[4, 3, 2, 1]`
+- Keeps remaining elements: `[5, 6]`
+- Result: `[4, 3, 2, 1, 5, 6]`

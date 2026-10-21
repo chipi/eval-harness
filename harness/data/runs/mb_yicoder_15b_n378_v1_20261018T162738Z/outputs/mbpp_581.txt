@@ -1,0 +1,9 @@
+```python
+def surface_Area(base, height):
+    return (base * height) / 2
+
+# Test cases
+assert surface_Area(3,4) == 33
+assert surface_Area(5,12) == 105
+assert surface_Area(7,16) == 140
+```

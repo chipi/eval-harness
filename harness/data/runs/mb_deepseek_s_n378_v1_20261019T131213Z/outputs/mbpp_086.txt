@@ -1,0 +1,34 @@
+```python
+def centered_hexagonal_number(n: int) -> int:
+    """
+    Returns the nth centered hexagonal number.
+    
+    The formula for the nth centered hexagonal number is:
+        H_n = 3*n*(n-1) + 1
+    
+    Parameters:
+    n (int): The position in the sequence (1-indexed)
+    
+    Returns:
+    int: The nth centered hexagonal number
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 3 * n * (n - 1) + 1
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = centered_hexagonal_number(10)
+    print(f"centered_hexagonal_number(10) = {result}")
+    assert result == 271, f"Expected 271 but got {result}"
+    
+    # Additional test cases for verification
+    # First few centered hexagonal numbers: 1, 7, 19, 37, 61, 91, 127, 169, 217, 271
+    expected_sequence = [1, 7, 19, 37, 61, 91, 127, 169, 217, 271]
+    for i, expected in enumerate(expected_sequence, start=1):
+        computed = centered_hexagonal_number(i)
+        assert computed == expected, f"n={i}: expected {expected}, got {computed}"
+    
+    print("All tests passed!")
+```

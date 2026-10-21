@@ -1,0 +1,24 @@
+```python
+def unique_Element(lst):
+    """
+    Check whether a list of numbers contains only one distinct element.
+    
+    Args:
+        lst: List of numbers
+        
+    Returns:
+        bool: True if all elements are the same, False otherwise
+    """
+    # Convert to set to get distinct elements
+    # If set has size 1, all elements are the same
+    return len(set(lst)) == 1
+
+# Test the function with the given assertion
+assert unique_Element([1,1,1]) == True
+print("Test passed: [1,1,1] returns", unique_Element([1,1,1]))
+
+# Additional test cases
+print("[1,2,3] returns", unique_Element([1,2,3]))  # Should be False
+print("[5] returns", unique_Element([5]))  # Should be True
+print("[] returns", unique_Element([]))  # Should be True (empty list has no distinct elements)
+```

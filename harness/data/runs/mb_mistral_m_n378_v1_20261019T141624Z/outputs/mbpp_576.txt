@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem of checking whether one list is a sublist of another:
+
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Check if sub_list is a contiguous sublist of main_list.
+
+    Args:
+        main_list: The main list to search within.
+        sub_list: The sublist to search for.
+
+    Returns:
+        bool: True if sub_list is a contiguous sublist of main_list, False otherwise.
+    """
+    len_main = len(main_list)
+    len_sub = len(sub_list)
+
+    # Edge cases
+    if len_sub == 0:
+        return True  # empty list is sublist of any list
+    if len_main < len_sub:
+        return False
+
+    # Check all possible starting positions
+    for i in range(len_main - len_sub + 1):
+        if main_list[i:i+len_sub] == sub_list:
+            return True
+    return False
+
+# Test case
+assert is_Sub_Array([1,4,3,5],[1,2]) == False
+```
+
+This solution:
+1. Handles edge cases (empty sublist or sublist longer than main list)
+2. Checks all possible contiguous subarrays of the main list that have the same length as the sublist
+3. Returns True if any match is found, False otherwise
+4. Includes the provided test case as an assertion
+
+The function works by sliding a window of the sublist's length across the main list and checking for equality at each position.

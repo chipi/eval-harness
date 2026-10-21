@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_sum(lst):
+    """
+    Find the sum of non-repeated elements in a given list.
+    
+    Args:
+        lst: A list of elements (assumed to be numbers)
+    
+    Returns:
+        The sum of elements that appear exactly once in the list.
+    """
+    # Count occurrences of each element
+    counts = {}
+    for item in lst:
+        counts[item] = counts.get(item, 0) + 1
+    
+    # Sum elements that appear exactly once
+    total = 0
+    for item, count in counts.items():
+        if count == 1:
+            total += item
+    
+    return total
+
+
+# Test the function
+if __name__ == "__main__":
+    assert find_sum([1, 2, 3, 1, 1, 4, 5, 6]) == 21
+    print("Test passed!")
+    print(f"find_sum([1,2,3,1,1,4,5,6]) = {find_sum([1, 2, 3, 1, 1, 4, 5, 6])}")
+```
+
+**Explanation:**
+
+1. **Count occurrences**: We iterate through the list and build a dictionary `counts` where each key is an element from the list and its value is the number of times it appears.
+
+2. **Sum non-repeated elements**: We iterate through the `counts` dictionary and add up only those elements whose count is exactly `1`.
+
+3. **Verification**: For the input `[1, 2, 3, 1, 1, 4, 5, 6]`:
+   - `1` appears 3 times → excluded
+   - `2` appears 1 time → included
+   - `3` appears 1 time → included
+   - `4` appears 1 time → included
+   - `5` appears 1 time → included
+   - `6` appears 1 time → included
+   - Sum = 2 + 3 + 4 + 5 + 6 = **21** ✓
+
+The time complexity is **O(n)** and space complexity is **O(n)**, where `n` is the length of the list.

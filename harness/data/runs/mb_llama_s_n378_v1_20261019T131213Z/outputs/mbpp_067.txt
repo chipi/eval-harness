@@ -1,0 +1,52 @@
+### Bell Numbers Calculation
+#### Problem Statement
+The problem requires finding the number of ways to partition a set of Bell numbers.
+
+#### Solution
+
+```python
+import math
+
+def bell_number(n):
+    """
+    Calculate the nth Bell number.
+
+    The Bell numbers are a sequence of numbers that arise in combinatorial mathematics,
+    and are known as the Bell numbers. They are named after Eric Temple Bell.
+
+    :param n: The index of the Bell number to calculate.
+    :return: The nth Bell number.
+    """
+    # Base cases
+    if n == 0:
+        return 1
+
+    # Initialize a list to store Bell numbers
+    bell_numbers = [0]*(n+1)
+    bell_numbers[0] = 1
+
+    # Calculate Bell numbers using dynamic programming
+    for i in range(1, n+1):
+        bell_numbers[i] = 0
+        for j in range(i):
+            bell_numbers[i] += math.comb(i-1, j) * bell_numbers[j]
+
+    return bell_numbers[n]
+
+# Test the function
+assert bell_number(2) == 2
+assert bell_number(3) == 5
+assert bell_number(4) == 15
+```
+
+#### Explanation
+
+*   The function `bell_number(n)` calculates the nth Bell number using dynamic programming.
+*   The base case is when `n` equals 0, in which case the function returns 1.
+*   For `n` greater than 0, the function initializes a list `bell_numbers` of size `n+1` to store the Bell numbers.
+*   It then calculates each Bell number `bell_numbers[i]` as the sum of `math.comb(i-1, j) * bell_numbers[j]` for `j` ranging from 0 to `i-1`.
+*   Finally, the function returns the nth Bell number.
+
+#### Usage
+
+You can call the `bell_number(n)` function with a positive integer `n` to get the nth Bell number. For example, `bell_number(2)` returns 2, `bell_number(3)` returns 5, and `bell_number(4)` returns 15.

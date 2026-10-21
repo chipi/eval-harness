@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the last digit of a given number:
+
+```python
+def last_digit(number):
+    """
+    Returns the last digit of a given number.
+
+    Args:
+        number (int): The input number.
+
+    Returns:
+        int: The last digit of the number.
+
+    Examples:
+        >>> last_digit(123)
+        3
+        >>> last_digit(4567)
+        7
+        >>> last_digit(0)
+        0
+    """
+    return abs(number) % 10
+
+# Test the function
+assert last_digit(123) == 3
+assert last_digit(4567) == 7
+assert last_digit(0) == 0
+assert last_digit(-1234) == 4
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `last_digit` that takes an integer as input
+2. Uses the modulus operator `% 10` to get the last digit (works for both positive and negative numbers)
+3. Includes docstring documentation with examples
+4. Contains test cases to verify the function works correctly
+5. Prints a confirmation message if all tests pass
+
+The function handles edge cases like:
+- Positive numbers (123 → 3)
+- Negative numbers (-1234 → 4)
+- Zero (0 → 0)

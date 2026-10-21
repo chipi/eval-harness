@@ -1,0 +1,8 @@
+```python
+def closest_num(n):
+    return n - 1
+
+# Test the function
+assert closest_num(11) == 10
+print("All tests passed.")
+```

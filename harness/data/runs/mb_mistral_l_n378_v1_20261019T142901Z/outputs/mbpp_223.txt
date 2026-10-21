@@ -1,0 +1,62 @@
+Here's a self-contained Python script that solves the problem by leveraging the fact that the array is sorted. The solution uses binary search to find the first and last occurrences of the element, then checks if the count exceeds `n/2`.
+
+```python
+def is_majority(arr, n, element):
+    """
+    Check if the given element is the majority element in the sorted array.
+    The majority element occurs more than n/2 times.
+
+    Args:
+        arr: Sorted list of elements.
+        n: Length of the array.
+        element: Element to check for majority.
+
+    Returns:
+        bool: True if the element is the majority, False otherwise.
+    """
+    def find_first_occurrence(arr, element):
+        left, right = 0, len(arr) - 1
+        first_occurrence = -1
+        while left <= right:
+            mid = left + (right - left) // 2
+            if arr[mid] == element:
+                first_occurrence = mid
+                right = mid - 1
+            elif arr[mid] < element:
+                left = mid + 1
+            else:
+                right = mid - 1
+        return first_occurrence
+
+    def find_last_occurrence(arr, element):
+        left, right = 0, len(arr) - 1
+        last_occurrence = -1
+        while left <= right:
+            mid = left + (right - left) // 2
+            if arr[mid] == element:
+                last_occurrence = mid
+                left = mid + 1
+            elif arr[mid] < element:
+                left = mid + 1
+            else:
+                right = mid - 1
+        return last_occurrence
+
+    first = find_first_occurrence(arr, element)
+    if first == -1:
+        return False
+    last = find_last_occurrence(arr, element)
+    count = last - first + 1
+    return count > n // 2
+
+# Test case
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+```
+
+### Explanation:
+1. **Binary Search for First Occurrence**: The `find_first_occurrence` function uses binary search to locate the first index where the element appears.
+2. **Binary Search for Last Occurrence**: The `find_last_occurrence` function uses binary search to locate the last index where the element appears.
+3. **Count Calculation**: The count of the element is calculated as `last_occurrence - first_occurrence + 1`.
+4. **Majority Check**: The function returns `True` if the count exceeds `n // 2`, otherwise `False`.
+
+This approach efficiently checks for the majority element in O(log n) time due to the binary searches.

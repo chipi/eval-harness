@@ -1,0 +1,67 @@
+```python
+#!/usr/bin/env python3
+"""
+Given an N x N matrix of costs, find the maximum average cost among all paths
+from the top-left cell to the bottom-right cell, moving only right or down.
+
+For an N x N matrix, every valid path visits exactly (2*N - 1) cells:
+- N - 1 moves right
+- N - 1 moves down
+- plus the starting cell
+
+Therefore, maximizing the average is equivalent to maximizing the total path sum.
+We use dynamic programming to find the maximum possible path sum, then divide by
+the fixed number of visited cells.
+
+Example:
+    maxAverageOfPath([[1, 2, 3],
+                      [6, 5, 4],
+                      [7, 3, 9]]) == 5.2
+"""
+
+
+def maxAverageOfPath(matrix):
+    """
+    Return the maximum average cost of a path from top-left to bottom-right,
+    moving only right or down.
+
+    Args:
+        matrix: A non-empty square list of lists containing numeric costs.
+
+    Returns:
+        A float representing the maximum average path cost.
+    """
+    if not matrix or not matrix[0]:
+        raise ValueError("matrix must be non-empty")
+
+    n = len(matrix)
+
+    if any(len(row) != n for row in matrix):
+        raise ValueError("matrix must be square")
+
+    # dp[j] stores the maximum path sum to reach the current row's cell at column j.
+    dp = [float("-inf")] * n
+    dp[0] = matrix[0][0]
+
+    # Fill first row.
+    for j in range(1, n):
+        dp[j] = dp[j - 1] + matrix[0][j]
+
+    # Fill remaining rows.
+    for i in range(1, n):
+        dp[0] += matrix[i][0]
+
+        for j in range(1, n):
+            dp[j] = max(dp[j], dp[j - 1]) + matrix[i][j]
+
+    max_sum = dp[-1]
+    path_length = 2 * n - 1
+
+    return max_sum / path_length
+
+
+if __name__ == "__main__":
+    assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+
+    print("All tests passed.")
+```

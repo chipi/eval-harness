@@ -1,0 +1,79 @@
+```python
+def get_total_number_of_sequences(m: int, n: int) -> int:
+    """
+    Find the number of possible sequences of length n, such that each element
+    is a positive integer and is greater than or equal to twice the previous
+    element but less than or equal to m.
+    
+    Args:
+        m: The maximum value any element in the sequence can take.
+        n: The length of the sequence.
+    
+    Returns:
+        The number of valid sequences.
+    """
+    if n == 0:
+        return 0
+    if n == 1:
+        return m
+    
+    # dp[i][j] = number of sequences of length i ending with value j
+    # We need sequences where each element >= 2 * previous element
+    # So if previous element was k, current element j must satisfy j >= 2*k
+    
+    # For efficiency, we can use a different approach:
+    # Let's think recursively. For a sequence of length n ending at value v,
+    # the previous element must be <= v/2.
+    
+    # dp[length][last_value] = count of sequences of given length ending with last_value
+    # Base case: dp[1][v] = 1 for all v from 1 to m
+    
+    # For length > 1: dp[l][v] = sum of dp[l-1][k] for all k where 2*k <= v, i.e., k <= v//2
+    
+    # Initialize dp for length 1
+    # dp[v] represents number of sequences of current length ending with value v
+    dp = [0] * (m + 1)
+    for v in range(1, m + 1):
+        dp[v] = 1
+    
+    # Build up for lengths 2 to n
+    for length in range(2, n + 1):
+        new_dp = [0] * (m + 1)
+        # prefix_sum[k] = sum of dp[1] + dp[2] + ... + dp[k]
+        prefix_sum = [0] * (m + 1)
+        for i in range(1, m + 1):
+            prefix_sum[i] = prefix_sum[i - 1] + dp[i]
+        
+        for v in range(1, m + 1):
+            # Previous element k must satisfy 2*k <= v, so k <= v // 2
+            max_k = v // 2
+            if max_k >= 1:
+                new_dp[v] = prefix_sum[max_k]
+            else:
+                new_dp[v] = 0
+        
+        dp = new_dp
+    
+    # Sum all sequences of length n
+    return sum(dp)
+
+
+if __name__ == "__main__":
+    # Test the example
+    result = get_total_number_of_sequences(10, 4)
+    print(f"get_total_number_of_sequences(10, 4) = {result}")
+    assert result == 4, f"Expected 4, got {result}"
+    
+    # Additional tests
+    # For n=1, any value from 1 to m is valid
+    assert get_total_number_of_sequences(5, 1) == 5
+    
+    # For n=2, m=3: sequences (a,b) where b >= 2*a and b <= 3
+    # a=1: b can be 2,3 -> 2 sequences
+    # a=2: b >= 4, but b <= 3, so 0 sequences
+    # a=3: b >= 6, but b <= 3, so 0 sequences
+    # Total: 2
+    assert get_total_number_of_sequences(3, 2) == 2
+    
+    print("All tests passed!")
+```

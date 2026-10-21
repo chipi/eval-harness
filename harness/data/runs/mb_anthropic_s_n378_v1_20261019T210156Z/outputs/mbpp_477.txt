@@ -1,0 +1,27 @@
+```python
+def is_lower(s):
+    """
+    Convert the given string to lower case.
+    
+    Args:
+        s: A string to convert to lower case
+        
+    Returns:
+        The string converted to lower case
+        
+    Example:
+        >>> is_lower("InValid")
+        'invalid'
+    """
+    return s.lower()
+
+
+# Test cases
+assert is_lower("InValid") == "invalid"
+assert is_lower("HELLO") == "hello"
+assert is_lower("Hello World") == "hello world"
+assert is_lower("123ABC") == "123abc"
+assert is_lower("already_lower") == "already_lower"
+
+print("All assertions passed!")
+```

@@ -1,0 +1,16 @@
+```python
+def volume_cube(side_length):
+    """
+    Return the volume of a cube given its side length.
+
+    Volume of a cube = side_length ** 3
+    """
+    return side_length ** 3
+
+
+# Example test
+assert volume_cube(3) == 27
+
+if __name__ == "__main__":
+    print(volume_cube(3))
+```

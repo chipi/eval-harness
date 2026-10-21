@@ -1,0 +1,57 @@
+### Maximum Sum Problem
+#### Problem Statement
+The goal is to find the maximum sum possible using the given equation:
+f(n) = max( (f(n/2) + f(n/3) + f(n/4) + f(n/5)), n).
+
+#### Solution
+
+```python
+def get_max_sum(n, memo={}):
+    """
+    This function calculates the maximum sum possible using the given equation.
+
+    Args:
+    n (int): The input number.
+    memo (dict): A dictionary to store the intermediate results for memoization.
+
+    Returns:
+    int: The maximum sum possible.
+    """
+    # Base case: If n is already in the memo dictionary, return the stored value.
+    if n in memo:
+        return memo[n]
+    
+    # Base case: If n is 0 or 1, return n.
+    if n <= 1:
+        return n
+    
+    # Recursive case: Calculate f(n/2), f(n/3), f(n/4), and f(n/5).
+    # Use integer division (//) to ensure the arguments are integers.
+    max_sum = max(
+        get_max_sum(n // 2, memo) + 
+        get_max_sum(n // 3, memo) + 
+        get_max_sum(n // 4, memo) + 
+        get_max_sum(n // 5, memo), 
+        n
+    )
+    
+    # Store the result in the memo dictionary.
+    memo[n] = max_sum
+    
+    return max_sum
+
+# Example usage:
+assert get_max_sum(60) == 106
+```
+
+#### Explanation
+
+*   The `get_max_sum` function uses memoization to store the intermediate results and avoid redundant calculations.
+*   The function takes two arguments: `n` (the input number) and `memo` (a dictionary to store the intermediate results).
+*   The base cases are when `n` is already in the `memo` dictionary or when `n` is 0 or 1.
+*   For `n` greater than 1, the function calculates `f(n/2)`, `f(n/3)`, `f(n/4)`, and `f(n/5)` recursively and stores the maximum sum in the `memo` dictionary.
+*   Finally, the function returns the maximum sum possible.
+
+#### Time Complexity
+
+The time complexity of this solution is O(n), where n is the input number. This is because each number is calculated at most once and stored in the `memo` dictionary.

@@ -1,0 +1,36 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to find the depth of a dictionary.
+
+The depth is counted as the maximum number of nested dictionaries along any path.
+An empty dictionary has depth 1.
+
+Example:
+{'a': 1, 'b': {'c': {'d': {}}}} has depth 4
+"""
+
+def dict_depth(d):
+    """
+    Return the depth of a dictionary.
+
+    Non-dictionary values do not add to the depth.
+    """
+    if not isinstance(d, dict):
+        return 0
+
+    if not d:
+        return 1
+
+    return 1 + max(dict_depth(value) for value in d.values())
+
+
+# Tests
+assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+assert dict_depth({}) == 1
+assert dict_depth({'a': 1}) == 1
+assert dict_depth({'a': {'b': 2}}) == 2
+assert dict_depth({'a': {'b': {'c': 3}}, 'd': 4}) == 3
+
+print("All tests passed.")
+```

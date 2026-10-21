@@ -1,0 +1,20 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a python function to count true booleans in the given list.
+assert count([True, False, True]) == 2
+"""
+
+def count(items):
+    """Return the number of True boolean values in the given list."""
+    return sum(1 for item in items if item is True)
+
+
+if __name__ == "__main__":
+    assert count([True, False, True]) == 2
+    assert count([False, False]) == 0
+    assert count([True, True, True]) == 3
+    assert count([]) == 0
+
+    print("All tests passed.")
+```

@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+"""
+Python function to find the sum of an array.
+"""
+
+def _sum(arr):
+    """Calculate the sum of all elements in the array."""
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+# Test the function
+assert _sum([1, 2, 3]) == 6
+```
+
+Alternatively, you could use Python's built-in `sum()` function for a more concise solution:
+
+```python
+"""
+Python function to find the sum of an array using built-in sum().
+"""
+
+def _sum(arr):
+    """Return the sum of all elements in the array."""
+    return sum(arr)
+
+# Test the function
+assert _sum([1, 2, 3]) == 6
+```
+
+Both versions will pass the assertion test. The first version demonstrates the manual calculation, while the second version shows the more Pythonic approach using the built-in function.

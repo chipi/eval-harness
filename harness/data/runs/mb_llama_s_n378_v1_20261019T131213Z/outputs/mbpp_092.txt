@@ -1,0 +1,53 @@
+### Undulating Number Checker
+#### Problem Statement
+Write a function to check whether the given number is undulating or not.
+
+#### Solution
+```python
+def is_undulating(n):
+    """
+    Checks if a given number is undulating.
+
+    An undulating number is a number where the digits alternate between increasing and decreasing.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is undulating, False otherwise.
+    """
+    # Convert the number to a string to easily access each digit
+    str_n = str(n)
+    
+    # Initialize a variable to store the previous comparison result
+    increasing = None
+    
+    # Iterate over the digits in the number
+    for i in range(len(str_n) - 1):
+        # Compare the current digit with the next one
+        if str_n[i] < str_n[i + 1]:
+            # If the current digit is less than the next one, the digits are increasing
+            comparison = True
+        elif str_n[i] > str_n[i + 1]:
+            # If the current digit is greater than the next one, the digits are decreasing
+            comparison = False
+        else:
+            # If the digits are equal, the number is not undulating
+            return False
+        
+        # If this is not the first comparison, check if the trend has changed
+        if increasing is not None and comparison == increasing:
+            # If the trend has not changed, the number is not undulating
+            return False
+        
+        # Update the increasing variable
+        increasing = comparison
+    
+    # If the function has not returned False by now, the number is undulating
+    return True
+
+# Example usage:
+print(is_undulating(1212121))  # True
+print(is_undulating(1234567))  # False
+```
+This script defines a function `is_undulating` that checks whether a given number is undulating or not. It converts the number to a string, then iterates over the digits, checking if they alternate between increasing and decreasing. If the function finds a pair of digits that do not follow this pattern, it immediately returns `False`. If it checks all the digits without finding any issues, it returns `True`.

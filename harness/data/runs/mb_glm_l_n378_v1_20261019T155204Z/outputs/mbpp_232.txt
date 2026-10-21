@@ -1,0 +1,27 @@
+```python
+def larg_nnum(input_list, n):
+    """
+    Takes in a list and an integer n and returns a list containing the n largest items from the list.
+    
+    Args:
+        input_list (list): A list of numbers.
+        n (int): The number of largest items to return.
+        
+    Returns:
+        list: A list containing the n largest items.
+    """
+    # Sort the list in ascending order
+    sorted_list = sorted(input_list)
+    
+    # Return the last n elements (the largest ones)
+    return sorted_list[-n:]
+
+# Test the function based on the provided assertion
+if __name__ == "__main__":
+    result = larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)
+    expected = [100, 90]
+    
+    # The problem statement uses set comparison to ignore order
+    assert set(result) == set(expected), f"Test failed: expected set containing {expected}, got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,22 @@
+```python
+def min_of_three(x, y, z):
+  """
+  Finds the minimum of three numbers.
+
+  Args:
+    x: The first number.
+    y: The second number.
+    z: The third number.
+
+  Returns:
+    The minimum of the three numbers.
+  """
+  return min(x, y, z)
+
+# Example usage and assertion
+assert min_of_three(10, 20, 0) == 0
+assert min_of_three(1, 2, 3) == 1
+assert min_of_three(3, 1, 2) == 1
+assert min_of_three(2, 3, 1) == 1
+assert min_of_three(-1, 0, 1) == -1
+```

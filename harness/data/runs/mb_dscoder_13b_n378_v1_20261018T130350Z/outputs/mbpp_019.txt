@@ -1,0 +1,11 @@
+```python
+def test_duplicate(arr):
+    if len(arr) == len(set(arr)):
+        return False
+    else:
+        return True
+
+# Test cases
+print(test_duplicate([1,2,3,4,5])) # False
+print(test_duplicate([1,2,2,4,5])) # True
+```

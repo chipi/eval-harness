@@ -1,0 +1,27 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the product of all elements in an array modulo n.
+
+Example:
+    find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+"""
+
+def find_remainder(arr, n):
+    """
+    Return the product of all numbers in arr modulo n.
+
+    To avoid very large intermediate products, take modulo n at each step.
+    """
+    result = 1
+
+    for num in arr:
+        result = (result * (num % n)) % n
+
+    return result
+
+
+if __name__ == "__main__":
+    assert find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+    print("All tests passed.")
+```

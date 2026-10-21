@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_first_elements(sublists):
+    """Return a list containing the first element of each sublist.
+
+    Args:
+        sublists: A list of lists (sublists)
+
+    Returns:
+        A list containing the first element of each sublist
+    """
+    return [sublist[0] for sublist in sublists]
+
+# Test the function
+assert extract_first_elements([[1, 2], [3, 4, 5], [6, 7, 8, 9]]) == [1, 3, 6]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `extract_first_elements` that takes a list of sublists as input
+2. Uses a list comprehension to extract the first element (index 0) from each sublist
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function will work with any list of sublists, as long as each sublist is non-empty. If you need to handle empty sublists, you would need to add additional logic.

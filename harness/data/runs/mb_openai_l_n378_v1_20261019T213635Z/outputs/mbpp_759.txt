@@ -1,0 +1,13 @@
+```python
+import re
+
+
+def is_decimal(value):
+    """Return True if value has exactly two digits after the decimal point."""
+    return isinstance(value, str) and re.fullmatch(r"[+-]?\d+\.\d{2}", value) is not None
+
+
+assert is_decimal("123.11") is True
+assert is_decimal("123.1") is False
+assert is_decimal("123.111") is False
+```

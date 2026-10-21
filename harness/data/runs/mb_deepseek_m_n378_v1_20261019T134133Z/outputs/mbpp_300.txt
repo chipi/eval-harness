@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Count all binary sequences of length 2n such that the sum of the first n bits
+    equals the sum of the last n bits.
+    
+    The approach: For each possible sum k (0 to n) of the first half, there are C(n, k)
+    ways to choose the first half. Similarly, there are C(n, k) ways for the second half.
+    So total = sum over k of C(n, k)^2 = C(2n, n) (Vandermonde's identity).
+    """
+    return float(math.comb(2 * n, n))
+
+# Test
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+print("Test passed!")
+print(f"count_binary_seq(1) = {count_binary_seq(1)}")
+print(f"count_binary_seq(2) = {count_binary_seq(2)}")
+print(f"count_binary_seq(3) = {count_binary_seq(3)}")
+```
+
+**Explanation:**
+
+The problem asks for the number of binary sequences of length `2n` where the sum of the first `n` bits equals the sum of the last `n` bits.
+
+- Let `k` be the common sum (0 ≤ k ≤ n).
+- The number of ways to pick the first `n` bits with sum `k` is `C(n, k)`.
+- The number of ways to pick the last `n` bits with sum `k` is also `C(n, k)`.
+- Total = Σₖ C(n, k)² = C(2n, n) by Vandermonde's identity.
+
+For `n = 1`: `C(2, 1) = 2` ✓ (sequences: `00` and `11`).

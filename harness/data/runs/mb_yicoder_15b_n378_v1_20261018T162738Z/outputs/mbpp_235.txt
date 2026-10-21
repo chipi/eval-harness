@@ -1,0 +1,10 @@
+```python
+def even_bit_set_number(n):
+    return n | (n >> 1)
+
+# Test cases
+assert even_bit_set_number(10) == 10
+assert even_bit_set_number(15) == 15
+assert even_bit_set_number(20) == 20
+assert even_bit_set_number(30) == 30
+```

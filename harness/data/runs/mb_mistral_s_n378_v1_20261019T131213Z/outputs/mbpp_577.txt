@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of finding the last digit of a factorial of a given number:
+
+```python
+def last_Digit_Factorial(n):
+    if n < 0:
+        return None  # Factorial is not defined for negative numbers
+    if n == 0 or n == 1:
+        return 1
+
+    last_digit = 1
+    for i in range(2, n + 1):
+        last_digit = (last_digit * (i % 10)) % 10
+    return last_digit
+
+# Test cases
+assert last_Digit_Factorial(4) == 4
+assert last_Digit_Factorial(5) == 0
+assert last_Digit_Factorial(10) == 0
+assert last_Digit_Factorial(1) == 1
+assert last_Digit_Factorial(0) == 1
+print("All test cases pass")
+```
+
+### Explanation:
+1. The function `last_Digit_Factorial` calculates the last digit of the factorial of a given number `n` without computing the entire factorial, which would be inefficient for large `n`.
+2. It iterates from 2 to `n`, multiplying the current last digit by the last digit of the current number (using modulo 10 to get the last digit), and then taking modulo 10 again to keep only the last digit.
+3. The test cases verify the correctness of the function, including the provided assertion `last_Digit_Factorial(4) == 4`.
+
+This approach efficiently computes the last digit of the factorial by only tracking the last digit at each step, avoiding the need to compute the full factorial.

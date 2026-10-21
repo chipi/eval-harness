@@ -1,0 +1,32 @@
+```python
+import re
+
+def text_match_three(text):
+    """
+    This function checks if a given string matches the pattern of 'a' followed by three 'b's.
+
+    Args:
+        text (str): The input string to be checked.
+
+    Returns:
+        bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r"^ab{3}$"
+    return bool(re.match(pattern, text))
+
+# Test cases
+print(text_match_three("abbb"))  # Expected output: True
+print(text_match_three("ac"))    # Expected output: False
+print(text_match_three("abbbb")) # Expected output: False
+print(text_match_three("abb"))   # Expected output: False
+print(text_match_three("aabbb"))  # Expected output: False
+```
+
+In this script, we use the `re` module which provides support for regular expressions in Python. The regular expression `^ab{3}$` is used to match the pattern. Here's a breakdown of how it works:
+
+- `^` asserts the start of the line.
+- `a` matches the character 'a'.
+- `b{3}` matches the character 'b' exactly 3 times.
+- `$` asserts the end of the line.
+
+The `re.match` function returns a match object if the string matches the pattern, otherwise it returns `None`. We convert this to a boolean value (`True` if the string matches, `False` otherwise) using the `bool` function.

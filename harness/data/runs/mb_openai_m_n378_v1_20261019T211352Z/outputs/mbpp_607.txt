@@ -1,0 +1,37 @@
+```python
+#!/usr/bin/env python3
+"""
+Search a string for a regex pattern and return:
+(matching_substring, start_index, end_index)
+
+If no match is found, return None.
+"""
+
+import re
+
+
+def find_literals(text, pattern):
+    """
+    Search `text` for the first occurrence of regex `pattern`.
+
+    Returns:
+        tuple: (matched_string, start_index, end_index)
+        None: if no match is found
+    """
+    match = re.search(pattern, text)
+    if match is None:
+        return None
+
+    return match.group(0), match.start(), match.end()
+
+
+# Example test
+assert find_literals(
+    "The quick brown fox jumps over the lazy dog.",
+    "fox"
+) == ("fox", 16, 19)
+
+if __name__ == "__main__":
+    result = find_literals("The quick brown fox jumps over the lazy dog.", "fox")
+    print(result)
+```

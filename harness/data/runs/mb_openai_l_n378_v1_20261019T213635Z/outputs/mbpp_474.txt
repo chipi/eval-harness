@@ -1,0 +1,7 @@
+```python
+def replace_char(text, old, new):
+    return text.replace(old, new)
+
+
+assert replace_char("polygon", "y", "l") == "pollgon"
+```

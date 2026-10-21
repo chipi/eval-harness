@@ -1,0 +1,18 @@
+```python
+def add_pairwise(input_tuple):
+    # Initialize an empty list to store the results
+    result = []
+    
+    # Iterate over the input tuple using enumerate to get both index and value
+    for i, value in enumerate(input_tuple):
+        # Check if there is a next element in the tuple
+        if i < len(input_tuple) - 1:
+            # Add the sum of the current element and the next one to the result list
+            result.append(value + input_tuple[i+1])
+    
+    # Return the resulting list
+    return result
+
+# Test the function with the provided test case
+assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+```

@@ -1,0 +1,18 @@
+```python
+import math
+
+def radian_degree(degrees):
+    """
+    Converts degrees to radians.
+
+    Args:
+        degrees (float): The angle in degrees.
+
+    Returns:
+        float: The angle in radians.
+    """
+    return degrees * math.pi / 180
+
+# Test the function
+print(radian_degree(90))  # Output: 1.5707963267948966
+```

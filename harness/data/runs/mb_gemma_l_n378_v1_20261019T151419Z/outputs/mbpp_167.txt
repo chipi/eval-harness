@@ -1,0 +1,28 @@
+```python
+def next_power_of_2(n):
+    """
+    Returns the smallest power of 2 greater than or equal to n.
+    """
+    if n <= 0:
+        return 1
+    
+    # Subtract 1 to handle cases where n is already a power of 2
+    # Then find the smallest power of 2 that is >= n
+    # Using (n-1).bit_length() gives the number of bits needed to represent n-1
+    # 1 << length shifts 1 to the left by that many positions, effectively 2^length
+    return 1 << (n - 1).bit_length()
+
+if __name__ == "__main__":
+    # Test cases
+    assert next_power_of_2(0) == 1
+    assert next_power_of_2(1) == 1
+    assert next_power_of_2(2) == 2
+    assert next_power_of_2(3) == 4
+    assert next_power_of_2(4) == 4
+    assert next_power_of_2(5) == 8
+    assert next_power_of_2(15) == 16
+    assert next_power_of_2(16) == 16
+    assert next_power_of_2(17) == 32
+    
+    print("All tests passed!")
+```

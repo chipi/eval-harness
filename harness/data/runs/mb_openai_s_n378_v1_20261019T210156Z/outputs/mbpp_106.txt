@@ -1,0 +1,21 @@
+```python
+def add_lists(lst, tup):
+    """
+    Append the elements of a list to a tuple and return a new tuple.
+
+    Parameters:
+        lst (list): The list to append.
+        tup (tuple): The tuple to append to.
+
+    Returns:
+        tuple: A new tuple containing the original tuple elements followed by the list elements.
+    """
+    return tup + tuple(lst)
+
+
+# Example assertion
+assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

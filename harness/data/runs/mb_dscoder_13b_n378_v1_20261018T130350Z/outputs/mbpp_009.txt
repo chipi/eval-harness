@@ -1,0 +1,19 @@
+```python
+def find_Rotations(s):
+    # Check if the string is empty
+    if not s:
+        return 0
+
+    # Create a set of all rotations of the string
+    rotations = set(s[i:] + s[:i] for i in range(len(s)))
+
+    # Return the number of unique rotations
+    return len(rotations)
+
+# Test cases
+assert find_Rotations("aaaa") == 1
+assert find_Rotations("aabaa") == 2
+assert find_Rotations("abcabc") == 3
+assert find_Rotations("aabaaabaaab") == 3
+assert find_Rotations("abcabcabcabc") == 4
+```

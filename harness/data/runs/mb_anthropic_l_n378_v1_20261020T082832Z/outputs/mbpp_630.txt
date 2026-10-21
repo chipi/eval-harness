@@ -1,0 +1,45 @@
+Looking at this problem, I need to generate all coordinates in the 3×3 grid surrounding (and including) the given coordinate.
+
+```python
+"""
+Write a function to extract all the adjacent coordinates of the given coordinate tuple.
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+"""
+
+
+def adjac(ele, sub=[]):
+    """Recursively build coordinate combinations from -1/0/+1 offsets."""
+    if not ele:
+        yield sub
+    else:
+        yield from [idx for j in range(ele[0] - 1, ele[0] + 2)
+                    for idx in adjac(ele[1:], sub + [j])]
+
+
+def get_coordinates(test_tup):
+    """Return all adjacent coordinates (including the given one) as a list of lists."""
+    return list(adjac(test_tup))
+
+
+if __name__ == "__main__":
+    assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5],
+                                       [3, 3], [3, 4], [3, 5],
+                                       [4, 3], [4, 4], [4, 5]]
+    assert get_coordinates((4, 5)) == [[3, 4], [3, 5], [3, 6],
+                                       [4, 4], [4, 5], [4, 6],
+                                       [5, 4], [5, 5], [5, 6]]
+    assert get_coordinates((5, 6)) == [[4, 5], [4, 6], [4, 7],
+                                       [5, 5], [5, 6], [5, 7],
+                                       [6, 5], [6, 6], [6, 7]]
+
+    print(get_coordinates((3, 4)))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. `adjac` is a recursive generator. For each element of the tuple, it iterates over the three values `ele[0]-1`, `ele[0]`, `ele[0]+1`, appending each to the accumulated `sub` list, then recurses on the remaining elements.
+2. When no elements remain (`not ele`), the accumulated `sub` list is a complete coordinate and gets yielded.
+3. `get_coordinates` simply collects the generator output into a list.
+
+The recursion naturally produces results in lexicographic order (row-major), matching the expected output, and it generalizes to tuples of any dimension (e.g., 3D coordinates would yield 27 neighbors).

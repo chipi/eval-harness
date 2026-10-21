@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem by counting the number of pairs of integers in a list that XOR to an even number:
+
+```python
+def find_even_pair(nums):
+    """
+    Counts the number of pairs of integers in a list that XOR to an even number.
+
+    Args:
+        nums: List of integers.
+
+    Returns:
+        int: Number of pairs that XOR to an even number.
+    """
+    count = 0
+    n = len(nums)
+
+    # Iterate through all possible pairs
+    for i in range(n):
+        for j in range(i + 1, n):
+            if (nums[i] ^ nums[j]) % 2 == 0:
+                count += 1
+    return count
+
+# Test the function
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+```
+
+### Explanation:
+1. **XOR Property**: The XOR of two numbers is even if and only if both numbers are even or both are odd. This is because:
+   - Even numbers have their least significant bit (LSB) as 0.
+   - Odd numbers have their LSB as 1.
+   - XOR of two even numbers (0 ^ 0 = 0) or two odd numbers (1 ^ 1 = 0) results in an even number (LSB is 0).
+
+2. **Approach**:
+   - The function iterates through all possible pairs in the list using nested loops.
+   - For each pair, it checks if the XOR of the two numbers is even (using `(nums[i] ^ nums[j]) % 2 == 0`).
+   - If the condition is met, it increments the count.
+
+3. **Efficiency**: The solution has a time complexity of O(n²) due to the nested loops, which is acceptable for small lists. For larger lists, a more optimized approach (e.g., counting even and odd numbers first) would be better, but this solution is straightforward and correct for the given problem.
+
+4. **Test Case**: The assertion verifies that the function returns `4` for the input `[5, 4, 7, 2, 1]`, which is correct. The valid pairs are:
+   - (5, 7) → 5 ^ 7 = 2 (even)
+   - (4, 2) → 4 ^ 2 = 6 (even)
+   - (5, 1) → 5 ^ 1 = 4 (even)
+   - (7, 1) → 7 ^ 1 = 6 (even).

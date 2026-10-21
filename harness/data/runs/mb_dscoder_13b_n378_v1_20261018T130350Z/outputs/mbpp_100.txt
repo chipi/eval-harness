@@ -1,0 +1,17 @@
+```python
+def next_smallest_palindrome(n):
+    def is_palindrome(n):
+        return str(n) == str(n)[::-1]
+
+    if is_palindrome(n):
+        n += 1
+        while not is_palindrome(n):
+            n += 1
+    return n
+
+# Test cases
+assert next_smallest_palindrome(99) == 101
+assert next_smallest_palindrome(100) == 101
+assert next_smallest_palindrome(999) == 1001
+assert next_smallest_palindrome(1000) == 1001
+```

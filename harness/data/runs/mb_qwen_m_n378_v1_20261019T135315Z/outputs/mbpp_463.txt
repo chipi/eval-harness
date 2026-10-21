@@ -1,0 +1,59 @@
+```python
+def max_subarray_product(nums: list[int]) -> int:
+    """
+    Find the maximum product of any contiguous subarray.
+    
+    Uses a dynamic programming approach tracking both max and min products
+    ending at each position, since a negative number can turn a minimum into
+    a maximum when multiplied.
+    
+    Args:
+        nums: A list of integers
+        
+    Returns:
+        The maximum product of any contiguous subarray
+    """
+    if not nums:
+        return 0
+    
+    # Initialize max_prod, min_prod, and result with the first element
+    max_prod = nums[0]
+    min_prod = nums[0]
+    result = nums[0]
+    
+    for i in range(1, len(nums)):
+        current = nums[i]
+        
+        # When multiplied by a negative number, max becomes min and vice versa
+        if current < 0:
+            max_prod, min_prod = min_prod, max_prod
+        
+        # Max product ending at current position is either:
+        # - current element itself (start new subarray)
+        # - current * previous max product
+        max_prod = max(current, max_prod * current)
+        
+        # Min product ending at current position is either:
+        # - current element itself
+        # - current * previous min product
+        min_prod = min(current, min_prod * current)
+        
+        # Update global result
+        result = max(result, max_prod)
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+    
+    # Additional test cases
+    assert max_subarray_product([2, 3, -2, 4]) == 6
+    assert max_subarray_product([-2, 0, -1]) == 0
+    assert max_subarray_product([1]) == 1
+    assert max_subarray_product([-1, -2, -3]) == 6
+    assert max_subarray_product([0, 2]) == 2
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,36 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list for every nth element, returning a list of the resulting lists.
+    
+    Args:
+        lst: The input list to split
+        n: The interval at which to split
+    
+    Returns:
+        A list of lists where each sublist contains every nth element starting from different positions
+    """
+    result = [[] for _ in range(n)]
+    
+    for i, element in enumerate(lst):
+        result[i % n].append(element)
+    
+    return result
+
+
+# Test case
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+print("Test passed!")
+```
+
+**Explanation:**
+
+The function works by:
+1. Creating `n` empty sublists in the result
+2. Iterating through the input list with index `i`
+3. Using modulo operator (`i % n`) to determine which sublist each element belongs to
+4. Elements at indices 0, 3, 6, 9, 12 (where `i % 3 == 0`) go to the first sublist
+5. Elements at indices 1, 4, 7, 10, 13 (where `i % 3 == 1`) go to the second sublist
+6. Elements at indices 2, 5, 8, 11 (where `i % 3 == 2`) go to the third sublist
+
+This effectively distributes elements in a round-robin fashion across `n` sublists.

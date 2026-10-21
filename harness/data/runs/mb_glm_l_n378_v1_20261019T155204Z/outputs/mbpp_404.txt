@@ -1,0 +1,22 @@
+```python
+def minimum(a, b):
+    """
+    Finds the minimum of two numbers.
+    
+    Args:
+        a (int or float): The first number.
+        b (int or float): The second number.
+        
+    Returns:
+        int or float: The smaller of the two numbers.
+    """
+    if a < b:
+        return a
+    else:
+        return b
+
+# Assert statement to verify the functionality
+assert minimum(1, 2) == 1
+assert minimum(5, 3) == 3
+assert minimum(-1, 1) == -1
+```

@@ -1,0 +1,31 @@
+```python
+def tetrahedral_number(n: int) -> int:
+    """
+    Returns the nth tetrahedral number.
+    
+    The nth tetrahedral number is given by the formula:
+    T_n = n * (n + 1) * (n + 2) / 6
+    
+    Parameters:
+    n (int): A non-negative integer index (n >= 0).
+    
+    Returns:
+    int: The nth tetrahedral number.
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    # Using integer arithmetic to avoid floating point issues
+    return n * (n + 1) * (n + 2) // 6
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert tetrahedral_number(5) == 35
+    print("Test passed: tetrahedral_number(5) =", tetrahedral_number(5))
+    
+    # Additional tests for verification
+    # T_0 = 0, T_1 = 1, T_2 = 4, T_3 = 10, T_4 = 20, T_5 = 35
+    expected = [0, 1, 4, 10, 20, 35]
+    for i, exp in enumerate(expected):
+        assert tetrahedral_number(i) == exp, f"Failed for n={i}"
+    print("All additional tests passed.")
+```

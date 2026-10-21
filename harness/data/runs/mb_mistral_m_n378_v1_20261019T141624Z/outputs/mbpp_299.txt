@@ -1,0 +1,30 @@
+```python
+def max_aggregate(tuples_list):
+    """
+    Calculate the maximum aggregate from a list of tuples where each tuple contains a name and a value.
+    The function aggregates the values for each name and returns the tuple with the highest aggregate.
+
+    Args:
+        tuples_list: List of tuples in the form (name, value)
+
+    Returns:
+        Tuple with the name and the highest aggregate value
+    """
+    aggregates = {}
+
+    # Aggregate values by name
+    for name, value in tuples_list:
+        if name in aggregates:
+            aggregates[name] += value
+        else:
+            aggregates[name] = value
+
+    # Find the name with the maximum aggregate
+    max_name = max(aggregates, key=aggregates.get)
+    max_value = aggregates[max_name]
+
+    return (max_name, max_value)
+
+# Test the function
+assert max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)])==('Juan Whelan', 212)
+```

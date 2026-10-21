@@ -1,0 +1,12 @@
+```python
+def armstrong_number(number):
+    if number < 0:
+        return False
+
+    digits = str(number)
+    power = len(digits)
+    return sum(int(digit) ** power for digit in digits) == number
+
+
+assert armstrong_number(153) is True
+```

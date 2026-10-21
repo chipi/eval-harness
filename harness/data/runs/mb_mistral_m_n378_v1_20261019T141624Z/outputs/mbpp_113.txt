@@ -1,0 +1,22 @@
+```python
+def check_integer(s: str) -> bool:
+    """
+    Check if a string represents an integer or not.
+
+    Args:
+        s: The input string to check.
+
+    Returns:
+        bool: True if the string represents an integer, False otherwise.
+    """
+    if not s:
+        return False
+    # Check for optional sign
+    if s[0] in '+-':
+        s = s[1:]
+    # Check if the remaining string is all digits
+    return s.isdigit()
+
+# Test case
+assert check_integer("python") == False
+```

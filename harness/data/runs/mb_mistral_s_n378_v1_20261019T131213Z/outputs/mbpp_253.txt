@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_integer(lst):
+    """
+    Returns the number of integer elements in a given list.
+
+    Args:
+        lst: A list of elements of various types.
+
+    Returns:
+        int: The count of integer elements in the list.
+    """
+    count = 0
+    for element in lst:
+        if isinstance(element, int) and not isinstance(element, bool):
+            count += 1
+    return count
+
+# Test case
+assert count_integer([1, 2, 'abc', 1.2]) == 2
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `count_integer` that takes a list as input
+2. Iterates through each element in the list
+3. Checks if the element is an integer (but not a boolean, since `isinstance(True, int)` returns `True` in Python)
+4. Counts and returns the number of integer elements
+5. Includes the provided test case and a success message
+
+The function will correctly return 2 for the given test case `[1, 2, 'abc', 1.2]` since 1 and 2 are integers, while 'abc' is a string and 1.2 is a float.

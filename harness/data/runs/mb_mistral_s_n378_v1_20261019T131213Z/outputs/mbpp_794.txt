@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem using regular expressions to match strings that start with 'a' and end with 'b':
+
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Check if a string starts with 'a' and ends with 'b'.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.fullmatch(pattern, text))
+
+# Test cases
+assert text_starta_endb("aabbbb") == True
+assert text_starta_endb("ab") == True
+assert text_starta_endb("a123b") == True
+assert text_starta_endb("a") == False
+assert text_starta_endb("b") == False
+assert text_starta_endb("abc") == False
+assert text_starta_endb("aabb") == True
+assert text_starta_endb("aabbc") == False
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `text_starta_endb` that uses a regular expression to check if a string starts with 'a' and ends with 'b'
+2. The pattern `^a.*b$` means:
+   - `^` - start of string
+   - `a` - literal 'a'
+   - `.*` - any characters (zero or more)
+   - `b` - literal 'b'
+   - `$` - end of string
+3. Includes several test cases to verify the function works correctly
+4. Uses `re.fullmatch` which ensures the entire string matches the pattern
+
+The function returns `True` for strings like "aabbbb", "ab", and "a123b" (all starting with 'a' and ending with 'b'), and `False` for strings that don't meet this pattern.

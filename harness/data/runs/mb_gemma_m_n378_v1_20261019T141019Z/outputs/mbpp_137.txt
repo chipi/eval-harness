@@ -1,0 +1,44 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    Calculates the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+        arr (list[int]): A list of integers.
+        
+    Returns:
+        float: The ratio of zeroes to non-zeroes. 
+               Returns 0.0 if there are no non-zero elements to avoid division by zero.
+    """
+    if not arr:
+        return 0.0
+    
+    zeroes = sum(1 for x in arr if x == 0)
+    non_zeroes = len(arr) - zeroes
+    
+    if non_zeroes == 0:
+        return 0.0
+        
+    return zeroes / non_zeroes
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]
+    result = zero_count(test_arr)
+    
+    # Expected value calculation: 
+    # zeroes: 2 (at index 0 and 6)
+    # non-zeroes: 11
+    # ratio: 2/11 = 0.181818...
+    
+    print(f"Array: {test_arr}")
+    print(f"Calculated Ratio: {result}")
+    
+    try:
+        assert math.isclose(result, 0.181818, rel_tol=0.001)
+        print("Assertion passed!")
+    except AssertionError:
+        print("Assertion failed!")
+```

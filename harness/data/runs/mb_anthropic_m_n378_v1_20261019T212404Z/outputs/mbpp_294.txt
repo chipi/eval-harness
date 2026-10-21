@@ -1,0 +1,6 @@
+```python
+def max_val(lst):
+    return max((x for x in lst if isinstance(x, (int, float))), default=None)
+
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+```

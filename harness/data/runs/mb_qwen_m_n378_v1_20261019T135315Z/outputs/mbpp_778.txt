@@ -1,0 +1,46 @@
+```python
+def pack_consecutive_duplicates(lst: list) -> list:
+    """
+    Pack consecutive duplicates of a given list elements into sublists.
+    
+    Args:
+        lst: A list of elements
+        
+    Returns:
+        A list of sublists where each sublist contains consecutive duplicate elements
+        
+    Example:
+        >>> pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4])
+        [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+    """
+    if not lst:
+        return []
+    
+    result = []
+    current_group = [lst[0]]
+    
+    for i in range(1, len(lst)):
+        if lst[i] == lst[i - 1]:
+            current_group.append(lst[i])
+        else:
+            result.append(current_group)
+            current_group = [lst[i]]
+    
+    # Don't forget to add the last group
+    result.append(current_group)
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test the function with the provided example
+    test_input = [0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]
+    expected_output = [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+    result = pack_consecutive_duplicates(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    assert result == expected_output, f"Test failed! Expected {expected_output}, got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,14 @@
+```python
+def extract_singly(list_of_tuples):
+    """Flatten a list of tuples/lists into a single set of numbers."""
+    result = set()
+    for item in list_of_tuples:
+        for element in item:
+            result.add(element)
+    return result
+
+
+# Test
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+print("All tests passed!")
+```

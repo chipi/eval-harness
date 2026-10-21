@@ -1,0 +1,11 @@
+```python
+def tup_string(tup):
+    return ''.join(tup)
+
+def main():
+    assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

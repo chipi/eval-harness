@@ -1,0 +1,67 @@
+```python
+def toggle_middle_bits(n: int) -> int:
+    """
+    Toggle all bits of the number except the first (least significant) and the last (most significant) bit.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The number with all middle bits toggled (first and last bits remain unchanged)
+        
+    Example:
+        9 in binary is 1001
+        First bit (LSB) = 1, Last bit (MSB) = 1
+        Middle bits are 00
+        Toggling middle bits: 00 -> 11
+        Result: 1111 = 15
+    """
+    if n <= 0:
+        return n
+    
+    # Find the position of the most significant bit (last bit)
+    # For n=9 (1001), msb position is 3 (0-indexed from right)
+    msb_pos = n.bit_length() - 1
+    
+    # If there are no middle bits (number has 2 or fewer bits), return as is
+    if msb_pos <= 1:
+        return n
+    
+    # Create a mask that has 1s in all middle positions (positions 1 to msb_pos-1)
+    # For example, if msb_pos=3, we want mask for bits 1 and 2: 0110 = 6
+    # Mask = (1 << msb_pos) - 1 gives us bits 0 to msb_pos-1 all set
+    # Then subtract 1 to clear bit 0: ((1 << msb_pos) - 1) - 1 = (1 << msb_pos) - 2
+    # But we also need to clear the msb_pos bit itself, so:
+    # All bits from 0 to msb_pos: (1 << (msb_pos + 1)) - 1
+    # We want bits 1 to msb_pos-1: 
+    # Create mask with bits 0 to msb_pos-1 set: (1 << msb_pos) - 1
+    # Then clear bit 0: ((1 << msb_pos) - 1) ^ 1 = (1 << msb_pos) - 2
+    mask = (1 << msb_pos) - 1  # Bits 0 to msb_pos-1 are set
+    mask = mask ^ 1  # Clear bit 0 (the first/LSB bit)
+    
+    # XOR with the mask to toggle the middle bits
+    return n ^ mask
+
+
+if __name__ == "__main__":
+    # Test case from the problem
+    assert toggle_middle_bits(9) == 15, f"Expected 15, got {toggle_middle_bits(9)}"
+    
+    # Additional test cases
+    # 1 in binary: 1, only one bit, no middle bits
+    assert toggle_middle_bits(1) == 1
+    
+    # 2 in binary: 10, two bits, no middle bits
+    assert toggle_middle_bits(2) == 2
+    
+    # 3 in binary: 11, two bits, no middle bits
+    assert toggle_middle_bits(3) == 3
+    
+    # 7 in binary: 111, middle bit is 1, toggling gives 101 = 5
+    assert toggle_middle_bits(7) == 5
+    
+    # 15 in binary: 1111, middle bits are 11, toggling gives 1001 = 9
+    assert toggle_middle_bits(15) == 9
+    
+    print("All tests passed!")
+```

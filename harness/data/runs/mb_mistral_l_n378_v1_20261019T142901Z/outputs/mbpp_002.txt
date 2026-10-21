@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem by finding the shared elements between two lists:
+
+```python
+def similar_elements(list1, list2):
+    """
+    Find the shared elements between two lists.
+
+    Args:
+        list1: First input list (or tuple)
+        list2: Second input list (or tuple)
+
+    Returns:
+        A tuple containing the shared elements between the two input lists
+    """
+    # Convert inputs to sets and find intersection
+    shared = set(list1) & set(list2)
+    # Convert back to tuple and return
+    return tuple(shared)
+
+# Test case
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+```
+
+This solution:
+1. Takes two input sequences (lists or tuples)
+2. Converts them to sets to efficiently find the intersection
+3. Returns the shared elements as a tuple
+4. Includes the provided test case to verify the function works correctly
+
+The function will work with any iterable inputs, not just tuples, and will return the shared elements in an arbitrary order (since sets are unordered). The test case verifies that the function returns the correct elements.

@@ -1,0 +1,40 @@
+```python
+def left_insertion(arr, x):
+    """
+    Locates the left insertion point for a specified value in sorted order.
+    This is equivalent to the bisect_left function in Python's bisect module.
+    
+    Args:
+        arr (list): A sorted list of elements.
+        x: The value to find the insertion point for.
+        
+    Returns:
+        int: The index where x should be inserted to maintain sorted order.
+    """
+    low = 0
+    high = len(arr)
+    
+    while low < high:
+        mid = (low + high) // 2
+        if arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid
+            
+    return low
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [1, 2, 4, 5]
+    test_val = 6
+    result = left_insertion(test_arr, test_val)
+    print(f"Insertion point for {test_val} in {test_arr}: {result}")
+    assert result == 4
+    
+    # Additional test cases
+    assert left_insertion([1, 2, 4, 5], 3) == 2  # Should be between 2 and 4
+    assert left_insertion([1, 2, 4, 5], 0) == 0  # Should be at the start
+    assert left_insertion([1, 2, 2, 2, 4], 2) == 1 # Should be at the first occurrence of 2
+    
+    print("All tests passed!")
+```

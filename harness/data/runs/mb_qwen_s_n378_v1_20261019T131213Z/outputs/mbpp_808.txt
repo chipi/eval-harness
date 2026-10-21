@@ -1,0 +1,14 @@
+```python
+def check_K(tuples, k):
+    """
+    Check if the given tuple contains the value k.
+    
+    Args:
+        tuples: A tuple of values to search in.
+        k: The value to search for.
+    
+    Returns:
+        True if k is found in the tuple, False otherwise.
+    """
+    return k in tuples
+```

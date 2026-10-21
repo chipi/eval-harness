@@ -1,0 +1,34 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Return the maximum sum of a strictly increasing subsequence drawn from
+    arr[0:i+1] that can be extended by the required element arr[k].
+
+    Elements between i and k are not eligible. The required element may
+    also form a subsequence on its own.
+    """
+    if n != len(arr):
+        raise ValueError("n must equal the length of arr")
+    if not 0 <= i < k < n:
+        raise ValueError("indices must satisfy 0 <= i < k < n")
+
+    # dp[j] is the best sum of an increasing subsequence ending at j.
+    dp = [0] * (i + 1)
+    for j in range(i + 1):
+        dp[j] = arr[j] + max(
+            (dp[p] for p in range(j) if arr[p] < arr[j]),
+            default=0,
+        )
+
+    best_prefix = max(
+        (dp[j] for j in range(i + 1) if arr[j] < arr[k]),
+        default=0,
+    )
+    return arr[k] + max(0, best_prefix)
+
+
+if __name__ == "__main__":
+    assert max_sum_increasing_subseq(
+        [1, 101, 2, 3, 100, 4, 5], 7, 4, 6
+    ) == 11
+```

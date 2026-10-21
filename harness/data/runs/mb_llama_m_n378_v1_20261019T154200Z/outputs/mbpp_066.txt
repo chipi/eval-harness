@@ -1,0 +1,17 @@
+```python
+def pos_count(numbers):
+    """
+    This function counts the number of positive numbers in a list.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        int: The number of positive numbers in the list.
+    """
+    return sum(1 for num in numbers if num > 0)
+
+# Example usage:
+assert pos_count([1,-2,3,-4]) == 2
+print(pos_count([1,-2,3,-4]))  # Output: 2
+```

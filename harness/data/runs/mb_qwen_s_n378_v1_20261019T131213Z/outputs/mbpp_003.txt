@@ -1,0 +1,22 @@
+```python
+def is_not_prime(n):
+    """
+    Identify non-prime numbers.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        True if n is not a prime number, False otherwise
+    """
+    if n <= 1:
+        return True
+    if n == 2:
+        return False
+    if n % 2 == 0:
+        return True
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return True
+    return False
+```

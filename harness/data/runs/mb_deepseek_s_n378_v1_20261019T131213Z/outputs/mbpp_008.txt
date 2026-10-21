@@ -1,0 +1,20 @@
+```python
+def square_nums(nums):
+    """
+    Returns a list containing the square of each number in the input list.
+    
+    Parameters:
+    nums (list of int/float): List of numbers to be squared.
+    
+    Returns:
+    list: List of squared numbers.
+    """
+    return [num ** 2 for num in nums]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    print(result)
+    assert result == [1, 4, 9, 16, 25, 36, 49, 64, 81, 100], "Test failed"
+    print("Test passed.")
+```

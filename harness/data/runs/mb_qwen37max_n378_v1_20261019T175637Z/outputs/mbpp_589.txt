@@ -1,0 +1,12 @@
+```python
+def perfect_squares(start, end):
+    """Find all perfect squares between start and end (inclusive)."""
+    result = []
+    n = 1
+    while n * n <= end:
+        square = n * n
+        if square >= start:
+            result.append(square)
+        n += 1
+    return result
+```

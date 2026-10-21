@@ -1,0 +1,30 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division between two tuples.
+
+    Args:
+        tuple1: First tuple of numbers
+        tuple2: Second tuple of numbers (same length as tuple1)
+
+    Returns:
+        A tuple containing the element-wise division results
+
+    Raises:
+        ValueError: If tuples have different lengths
+        ZeroDivisionError: If any element in tuple2 is zero
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must have the same length")
+
+    result = []
+    for a, b in zip(tuple1, tuple2):
+        if b == 0:
+            raise ZeroDivisionError("Cannot divide by zero")
+        result.append(a // b)  # Using integer division as per the example
+
+    return tuple(result)
+
+# Test case
+assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+```

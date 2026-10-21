@@ -1,0 +1,8 @@
+```python
+def odd_values_string(s):
+    """Remove characters at odd index values from a given string."""
+    return s[::2]
+
+# Test
+assert odd_values_string('abcdef') == 'ace'
+```

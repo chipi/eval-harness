@@ -1,0 +1,16 @@
+```python
+def count_charac(string):
+    """
+    Count the total number of characters in a string.
+    
+    Parameters:
+    string (str): The input string to be counted.
+    
+    Returns:
+    int: The total number of characters in the string.
+    """
+    return len(string)
+
+# Test the function with the provided assertion
+assert count_charac("python programming") == 18
+```

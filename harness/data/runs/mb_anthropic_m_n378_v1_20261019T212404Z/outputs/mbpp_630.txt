@@ -1,0 +1,10 @@
+```python
+def get_coordinates(test_tup):
+    x, y = test_tup
+    return [[x + dx, y + dy] for dx in [-1, 0, 1] for dy in [-1, 0, 1]]
+
+
+if __name__ == "__main__":
+    assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+    print("All tests passed.")
+```

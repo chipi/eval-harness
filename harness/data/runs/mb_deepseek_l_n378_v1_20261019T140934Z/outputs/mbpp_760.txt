@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def unique_Element(nums):
+    """
+    Check whether a list of numbers contains only one distinct element or not.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        bool: True if the list contains only one distinct element, False otherwise
+    """
+    if not nums:  # Handle empty list case
+        return True
+    
+    # Convert to set to get unique elements and check if there's only one
+    return len(set(nums)) == 1
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert unique_Element([1, 1, 1]) == True
+    
+    # Additional test cases
+    assert unique_Element([1, 2, 3]) == False
+    assert unique_Element([5]) == True
+    assert unique_Element([]) == True
+    assert unique_Element([1, 1, 1, 1, 1]) == True
+    assert unique_Element([1, 1, 2, 1]) == False
+    
+    print("All tests passed!")
+```
+
+The function works by converting the input list to a set, which automatically removes duplicate elements. If the set has a length of 1 (or 0 for an empty list), it means all elements in the original list were the same, so the function returns `True`. Otherwise, it returns `False`.

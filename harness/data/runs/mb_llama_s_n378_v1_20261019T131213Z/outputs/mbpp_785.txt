@@ -1,0 +1,47 @@
+```python
+import ast
+
+def tuple_str_int(s):
+    """
+    Convert tuple string to integer tuple.
+
+    Args:
+        s (str): A string representing a tuple.
+
+    Returns:
+        tuple: A tuple of integers.
+
+    Example:
+        >>> tuple_str_int("(7, 8, 9)")
+        (7, 8, 9)
+    """
+    # Remove the parentheses from the string
+    s = s.strip('()')
+    
+    # Split the string into a list of strings
+    str_list = s.split(', ')
+    
+    # Convert each string to an integer and return as a tuple
+    return tuple(int(num) for num in str_list)
+
+# Alternatively, you can use ast.literal_eval for a safer evaluation
+def tuple_str_int_ast(s):
+    """
+    Convert tuple string to integer tuple using ast.literal_eval.
+
+    Args:
+        s (str): A string representing a tuple.
+
+    Returns:
+        tuple: A tuple of integers.
+
+    Example:
+        >>> tuple_str_int_ast("(7, 8, 9)")
+        (7, 8, 9)
+    """
+    return tuple(ast.literal_eval(s))
+
+# Test the functions
+print(tuple_str_int("(7, 8, 9)"))  # Output: (7, 8, 9)
+print(tuple_str_int_ast("(7, 8, 9)"))  # Output: (7, 8, 9)
+```

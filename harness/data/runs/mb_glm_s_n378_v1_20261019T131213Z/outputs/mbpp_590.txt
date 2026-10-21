@@ -1,0 +1,46 @@
+```python
+import math
+
+def polar_rect(r, theta):
+    """
+    Convert polar coordinates (r, theta) to rectangular coordinates (x, y) and complex number.
+
+    Args:
+        r (float): The radial distance from the origin.
+        theta (float): The angle in radians.
+
+    Returns:
+        tuple: A tuple containing:
+            - A tuple of (x, y) rectangular coordinates.
+            - A complex number representation of the rectangular coordinates.
+    """
+    # Calculate x and y using trigonometric functions
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+
+    # Create a complex number from x and y
+    complex_num = complex(x, y)
+
+    return (x, y), complex_num
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The assertion from the problem statement
+    # Note: The expected complex number in the assertion has a very small imaginary part
+    # due to floating-point precision, which is normal.
+    result = polar_rect(3, 4)
+    expected_rect = (5.0, 0.9272952180016122)
+    expected_complex = (-2+2.4492935982947064e-16j)
+
+    # Check if the results match the expected values within a small tolerance
+    # to account for floating-point arithmetic inaccuracies.
+    assert math.isclose(result[0][0], expected_rect[0], rel_tol=1e-9)
+    assert math.isclose(result[0][1], expected_rect[1], rel_tol=1e-9)
+    assert math.isclose(result[1].real, expected_complex.real, rel_tol=1e-9)
+    assert math.isclose(result[1].imag, expected_complex.imag, rel_tol=1e-9)
+
+    print("Assertion passed successfully!")
+    print(f"Input: r=3, theta=4")
+    print(f"Output (rectangular): {result[0]}")
+    print(f"Output (complex): {result[1]}")
+```

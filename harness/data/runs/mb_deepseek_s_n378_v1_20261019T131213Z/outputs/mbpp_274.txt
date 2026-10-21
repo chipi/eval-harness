@@ -1,0 +1,16 @@
+```python
+def even_binomial_Coeff_Sum(n: int) -> int:
+    """
+    Returns the sum of binomial coefficients C(n, k) for even k.
+    This is equivalent to 2^(n-1) for n >= 1.
+    """
+    # For n >= 1, sum of even-index binomial coefficients = 2^(n-1)
+    if n < 1:
+        return 0
+    return 1 << (n - 1)  # bit shift for 2^(n-1)
+
+# Test the assertion
+if __name__ == "__main__":
+    assert even_binomial_Coeff_Sum(4) == 8
+    print("Test passed.")
+```

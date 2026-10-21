@@ -1,0 +1,18 @@
+# The yicoder_9b arm served by vLLM on the DGX (GB10) instead of transformers. Same model,
+# revision, precision, prompt and token budget as arm_yicoder_9b_n378.yaml; the prompt is
+# rendered locally with the model's tokenizer and sent to /v1/completions, greedy.
+# Its own config_id: vLLM's greedy decoding is not bit-identical to transformers'.
+config_id: mb_vllm_yicoder_9b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: vllm
+  model: 01-ai/Yi-Coder-9B-Chat
+  revision: 356a1f8d4e4a606d0b879e54191ca809918576b8
+  precision: bf16
+  max_new_tokens: 768
+  base_url: http://dgx-llm-1:9100/v1
+  api_key_env: EVAL_VLLM_API_KEY
+  family: yi-coder
+  price_tier: free
+  prompt_file: prompt.txt

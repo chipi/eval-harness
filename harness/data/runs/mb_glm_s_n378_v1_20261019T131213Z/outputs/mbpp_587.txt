@@ -1,0 +1,23 @@
+```python
+def list_tuple(input_list):
+  """
+  Converts a list to a tuple.
+
+  Args:
+    input_list: The list to be converted.
+
+  Returns:
+    A tuple containing the elements of the input list.
+  """
+  return tuple(input_list)
+
+# Example usage and assertion from the problem description
+assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+
+# Additional test cases
+assert list_tuple([]) == ()
+assert list_tuple(['a', 'b', 'c']) == ('a', 'b', 'c')
+assert list_tuple([1, 'hello', 3.14]) == (1, 'hello', 3.14)
+
+print("All assertions passed!")
+```

@@ -1,0 +1,46 @@
+```python
+def rotate_right(lst, n):
+    """
+    Rotate a given list by specified number of items to the right direction.
+    
+    Args:
+        lst: The list to rotate
+        n: Number of positions to rotate right
+        
+    Returns:
+        A new list rotated right by n positions
+    """
+    if not lst:
+        return lst
+    
+    # Normalize n to handle cases where n > len(lst)
+    n = n % len(lst)
+    
+    # Rotate right by n: take last n elements and put them at the beginning
+    return lst[-n:] + lst[:-n]
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+    print("✓ Test case passed: rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]")
+    
+    # Additional test cases
+    assert rotate_right([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]
+    print("✓ Test case passed: rotate_right([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]")
+    
+    assert rotate_right([1, 2, 3], 0) == [1, 2, 3]
+    print("✓ Test case passed: rotate_right([1, 2, 3], 0) == [1, 2, 3]")
+    
+    assert rotate_right([1, 2, 3], 3) == [1, 2, 3]
+    print("✓ Test case passed: rotate_right([1, 2, 3], 3) == [1, 2, 3]")
+    
+    assert rotate_right([1, 2, 3], 5) == [2, 3, 1]
+    print("✓ Test case passed: rotate_right([1, 2, 3], 5) == [2, 3, 1]")
+    
+    assert rotate_right([], 3) == []
+    print("✓ Test case passed: rotate_right([], 3) == []")
+    
+    print("\n✓ All tests passed!")
+```

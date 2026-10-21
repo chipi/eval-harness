@@ -1,0 +1,6 @@
+```python
+def extract_rear(t):
+    return [s[-1] for s in t]
+
+assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+```

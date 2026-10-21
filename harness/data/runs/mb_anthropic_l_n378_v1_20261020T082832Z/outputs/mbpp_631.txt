@@ -1,0 +1,54 @@
+Looking at this problem, I need to write a function that swaps whitespaces and underscores — spaces become underscores, and underscores become spaces.
+
+```python
+"""
+Write a function to replace whitespaces with an underscore and vice versa in a given string.
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+"""
+
+
+def replace_spaces(string):
+    """
+    Replace every whitespace character with an underscore and every
+    underscore with a space in the given string.
+
+    >>> replace_spaces('Jumanji The Jungle')
+    'Jumanji_The_Jungle'
+    >>> replace_spaces('The_Avengers')
+    'The Avengers'
+    >>> replace_spaces('Fast_and Furious')
+    'Fast and_Furious'
+    """
+    result = []
+    for char in string:
+        if char == ' ':
+            result.append('_')
+        elif char == '_':
+            result.append(' ')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
+if __name__ == '__main__':
+    # Test cases
+    assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+    assert replace_spaces('The_Avengers') == 'The Avengers'
+    assert replace_spaces('Fast_and Furious') == 'Fast and_Furious'
+    assert replace_spaces('') == ''
+    assert replace_spaces('no_change') == 'no change'
+
+    print(replace_spaces('Jumanji The Jungle'))
+    print(replace_spaces('The_Avengers'))
+    print(replace_spaces('Fast_and Furious'))
+    print('All tests passed!')
+```
+
+**Alternative one-liner using `str.translate`:**
+
+```python
+def replace_spaces(string):
+    return string.translate(str.maketrans(' _', '_ '))
+```
+
+Both approaches handle the swap in a single pass, avoiding the bug you'd get from chaining two `str.replace()` calls (which would convert all spaces to underscores and then immediately convert them all back).

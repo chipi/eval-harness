@@ -1,0 +1,34 @@
+```python
+def amicable_numbers_sum(n: int) -> int:
+    """
+    Return the sum of all amicable numbers from 1 to n (inclusive).
+
+    Two different numbers a and b are an amicable pair if:
+      sum_of_proper_divisors(a) == b
+      sum_of_proper_divisors(b) == a
+
+    Example:
+      amicable_numbers_sum(999) == 504
+    """
+    if n < 2:
+        return 0
+
+    # Compute sum of proper divisors for all numbers up to n
+    divisor_sums = [0] * (n + 1)
+    for d in range(1, n // 2 + 1):
+        for multiple in range(2 * d, n + 1, d):
+            divisor_sums[multiple] += d
+
+    amicable_total = 0
+    for a in range(2, n + 1):
+        b = divisor_sums[a]
+        if b != a and b <= n and b > 0 and divisor_sums[b] == a:
+            amicable_total += a
+
+    return amicable_total
+
+
+if __name__ == "__main__":
+    assert amicable_numbers_sum(999) == 504
+    print("Passed test: amicable_numbers_sum(999) == 504")
+```

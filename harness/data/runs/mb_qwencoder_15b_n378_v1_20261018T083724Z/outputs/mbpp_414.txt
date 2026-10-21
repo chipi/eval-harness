@@ -1,0 +1,11 @@
+```python
+def overlapping(seq1, seq2):
+    return any(item in seq2 for item in seq1)
+
+# Test cases
+assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+assert overlapping([10,20,30,40,50],[50,60,70,80,90]) == True
+assert overlapping(['apple','banana','cherry'],['date','elderberry','fig']) == False
+assert overlapping(['hello','world','python'],'programming') == True
+```
+

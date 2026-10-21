@@ -1,0 +1,9 @@
+```python
+def extract_values(s):
+    return s.split('"')[1::2]
+
+# Test cases
+assert extract_values('"Python", "PHP", "Java"')==['Python', 'PHP', 'Java']
+assert extract_values('"Hello", "World", "Python", "Java", "PHP"')==['World', 'Python', 'Java', 'PHP']
+assert extract_values('"1", "2", "3", "4", "5"')==['2', '3', '4', '5']
+```

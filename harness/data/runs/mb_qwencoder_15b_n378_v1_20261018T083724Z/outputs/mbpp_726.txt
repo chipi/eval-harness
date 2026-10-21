@@ -1,0 +1,17 @@
+```python
+def multiply_elements(tup):
+    # Initialize an empty list to store the result
+    result = []
+    
+    # Iterate over the tuple using range(len(tup) - 1) to avoid index out of range error
+    for i in range(len(tup) - 1):
+        # Multiply each pair of adjacent elements and append to the result list
+        result.append(tup[i] * tup[i + 1])
+    
+    # Convert the result list back to a tuple and return it
+    return tuple(result)
+
+# Test the function with the provided test case
+assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+```
+

@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_type(tup):
+    """
+    Check if all elements in a tuple have the same data type.
+    
+    Args:
+        tup: A tuple containing elements of any type.
+    
+    Returns:
+        True if all elements have the same data type, False otherwise.
+    """
+    if not tup:
+        return True  # An empty tuple trivially has all elements of the same type
+    
+    first_type = type(tup[0])
+    return all(type(element) == first_type for element in tup)
+
+
+# Test cases
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+assert check_type((5, 6, 7, 3, 5, "6")) == False
+assert check_type(("a", "b", "c")) == True
+assert check_type((1.0, 2.0, 3.0)) == True
+assert check_type((1, 2.0, 3)) == False
+assert check_type(()) == True
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **Empty tuple handling**: An empty tuple returns `True` since there are no elements with differing types.
+
+2. **Get the first element's type**: We use `type(tup[0])` to determine the reference type.
+
+3. **Check all elements**: The `all()` function with a generator expression checks whether every element's type matches the first element's type.
+
+4. **Test cases**: The script includes the provided assertion plus additional edge cases (mixed types, floats, strings, empty tuple) to verify correctness.
+
+When you run this script, it will print `All tests passed!` if everything works as expected.

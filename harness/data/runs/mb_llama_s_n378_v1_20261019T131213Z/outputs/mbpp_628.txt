@@ -1,0 +1,24 @@
+```python
+def replace_spaces(s):
+    """
+    Replaces all spaces in the given string with '%20'.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all spaces replaced with '%20'.
+    """
+    return s.replace(' ', '%20')
+
+# Example usage:
+if __name__ == "__main__":
+    assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+    print("All test cases pass")
+```
+
+You can save this script to a file (e.g., `replace_spaces.py`) and run it. The `assert` statement will check if the function behaves as expected. If the function works correctly, it will print "All test cases pass". 
+
+This function works by utilizing Python's built-in string method `replace()`, which replaces all occurrences of a substring with another substring. In this case, we replace all spaces (`' '`) with `'%20'`. 
+
+The time complexity of this function is O(n), where n is the length of the string, because `replace()` scans the string once. The space complexity is also O(n) because in the worst case, the new string can be larger than the original string (if the string consists entirely of spaces).

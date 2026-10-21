@@ -1,0 +1,43 @@
+```python
+"""
+Remove odd integers from a nested mixed tuple.
+
+The function keeps:
+- even integers
+- nested tuples after filtering their contents
+
+It removes:
+- odd integers
+- nested tuples that become empty after filtering
+"""
+
+
+def extract_even(data):
+    """
+    Recursively remove odd integers from a nested tuple.
+
+    Args:
+        data (tuple): A possibly nested tuple containing integers and tuples.
+
+    Returns:
+        tuple: A tuple containing only even integers and non-empty filtered tuples.
+    """
+    result = []
+
+    for item in data:
+        if isinstance(item, tuple):
+            filtered = extract_even(item)
+            if filtered:
+                result.append(filtered)
+        elif isinstance(item, int):
+            if item % 2 == 0:
+                result.append(item)
+
+    return tuple(result)
+
+
+# Example test
+assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+
+print("All tests passed.")
+```

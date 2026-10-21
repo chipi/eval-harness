@@ -1,0 +1,22 @@
+```python
+def sequential_search(arr, element):
+    """
+    Search for `element` in `arr` using a linear/sequential search.
+
+    Returns:
+        (found, index)
+        found: True if element is in the array, otherwise False
+        index: position of the first occurrence, or -1 if not found
+    """
+    for i, value in enumerate(arr):
+        if value == element:
+            return True, i
+    return False, -1
+
+
+if __name__ == "__main__":
+    # Example assertion from the prompt
+    assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+
+    print("All tests passed.")
+```

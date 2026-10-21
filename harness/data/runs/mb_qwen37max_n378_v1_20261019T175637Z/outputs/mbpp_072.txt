@@ -1,0 +1,15 @@
+```python
+def dif_Square(n):
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be expressed as a^2 - b^2 = (a-b)(a+b) if and only if
+    n is not congruent to 2 mod 4. In other words, n % 4 != 2.
+    
+    This is because:
+    - If n is odd, we can write n = ((n+1)/2)^2 - ((n-1)/2)^2
+    - If n is divisible by 4, we can write n = ((n/4)+1)^2 - ((n/4)-1)^2
+    - If n ≡ 2 (mod 4), it cannot be expressed as a difference of two squares
+    """
+    return n % 4 != 2
+```

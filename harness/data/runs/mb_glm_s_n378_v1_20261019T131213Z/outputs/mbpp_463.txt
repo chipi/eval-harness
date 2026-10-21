@@ -1,0 +1,99 @@
+```python
+"""
+Write a function to find the maximum product subarray of the given array.
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+"""
+
+def max_subarray_product(nums: list[int]) -> int:
+    """
+    Finds the maximum product of a contiguous subarray within a given array of integers.
+
+    This problem is solved using a dynamic programming approach that tracks both the
+    maximum and minimum products ending at each position. This is crucial because a
+    large negative number can become the maximum product if it's multiplied by
+    another negative number.
+
+    Args:
+        nums: A list of integers.
+
+    Returns:
+        The maximum product of any contiguous subarray.
+
+    Example:
+        >>> max_subarray_product([1, -2, -3, 0, 7, -8, -2])
+        112
+        >>> max_subarray_product([-2, 0, -1])
+        0
+        >>> max_subarray_product([2, 3, -2, 4])
+        6
+    """
+    if not nums:
+        return 0
+
+    # Initialize max_product, min_product, and the overall result with the first element.
+    # The first element is the only subarray at the start.
+    max_product_so_far = nums[0]
+    min_product_so_far = nums[0]
+    result = nums[0]
+
+    # Iterate through the array starting from the second element.
+    for i in range(1, len(nums)):
+        current_num = nums[i]
+
+        # If the current number is negative, swapping max and min products
+        # is beneficial. For example, if max is 10 and min is -2, and current is -5,
+        # then 10 * -5 = -50 and -2 * -5 = 10. The new max should be 10.
+        # This swap handles that case elegantly.
+        if current_num < 0:
+            max_product_so_far, min_product_so_far = min_product_so_far, max_product_so_far
+
+        # Update the max and min products ending at the current position.
+        # The new max is either the current number itself (starting a new subarray)
+        # or the product of the current number and the previous max (extending the subarray).
+        max_product_so_far = max(current_num, max_product_so_far * current_num)
+        min_product_so_far = min(current_num, min_product_so_far * current_num)
+
+        # Update the overall result if the current max product is greater.
+        result = max(result, max_product_so_far)
+
+    return result
+
+# Example usage and assertions
+if __name__ == "__main__":
+    # The example from the problem description
+    arr1 = [1, -2, -3, 0, 7, -8, -2]
+    print(f"Array: {arr1}")
+    print(f"Maximum product subarray: {max_subarray_product(arr1)}")
+    assert max_subarray_product(arr1) == 112
+    print("Assertion for arr1 passed.\n")
+
+    # Edge case: array with a single element
+    arr2 = [5]
+    print(f"Array: {arr2}")
+    print(f"Maximum product subarray: {max_subarray_product(arr2)}")
+    assert max_subarray_product(arr2) == 5
+    print("Assertion for arr2 passed.\n")
+
+    # Edge case: array with a zero
+    arr3 = [-2, 0, -1]
+    print(f"Array: {arr3}")
+    print(f"Maximum product subarray: {max_subarray_product(arr3)}")
+    assert max_subarray_product(arr3) == 0
+    print("Assertion for arr3 passed.\n")
+
+    # Another example from LeetCode
+    arr4 = [2, 3, -2, 4]
+    print(f"Array: {arr4}")
+    print(f"Maximum product subarray: {max_subarray_product(arr4)}")
+    assert max_subarray_product(arr4) == 6
+    print("Assertion for arr4 passed.\n")
+
+    # Example with all negative numbers
+    arr5 = [-2, -3, -1, -4]
+    print(f"Array: {arr5}")
+    print(f"Maximum product subarray: {max_subarray_product(arr5)}")
+    assert max_subarray_product(arr5) == 24
+    print("Assertion for arr5 passed.\n")
+
+    print("All assertions passed successfully.")
+```

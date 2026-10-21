@@ -1,0 +1,19 @@
+```python
+def two_unique_nums(lst):
+    """
+    Returns a list of numbers that appear exactly once in the input list.
+    """
+    # Count occurrences of each number
+    count = {}
+    for num in lst:
+        count[num] = count.get(num, 0) + 1
+    
+    # Collect numbers that appear exactly once
+    result = [num for num, cnt in count.items() if cnt == 1]
+    return result
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert two_unique_nums([1,2,3,2,3,4,5]) == [1, 4, 5]
+    print("Test passed!")
+```

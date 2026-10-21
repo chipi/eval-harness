@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def capital_words_spaces(s: str) -> str:
+    """
+    Insert spaces before each capital letter (except the first character)
+    to separate words that start with capital letters.
+    """
+    if not s:
+        return s
+
+    result = [s[0]]
+    for ch in s[1:]:
+        if ch.isupper():
+            result.append(' ')
+        result.append(ch)
+    return ''.join(result)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert capital_words_spaces("Python") == 'Python'
+    assert capital_words_spaces("PythonIsGreat") == 'Python Is Great'
+    assert capital_words_spaces("HelloWorld") == 'Hello World'
+    assert capital_words_spaces("A") == 'A'
+    assert capital_words_spaces("") == ''
+    print("All tests passed!")
+```
+
+This function iterates through the string and inserts a space before any uppercase letter (except the first character), effectively separating words that begin with capital letters.

@@ -1,0 +1,27 @@
+```python
+def word_len(word):
+    """
+    Checks whether the length of a given word is odd.
+
+    Args:
+        word (str): The word to check.
+
+    Returns:
+        bool: True if the length of the word is odd, False otherwise.
+    """
+    # The modulo operator (%) gives the remainder of a division.
+    # If the length of the word divided by 2 has a remainder of 1, it's odd.
+    # We return the boolean result of this check directly.
+    return len(word) % 2 != 0
+
+# Example usage and assertion from the problem description
+assert word_len("Hadoop") == False
+
+# Additional test cases to verify the function
+assert word_len("Python") == True  # Length 6 is even -> False
+assert word_len("Hi") == True      # Length 2 is even -> False
+assert word_len("A") == True       # Length 1 is odd -> True
+assert word_len("") == False       # Length 0 is even -> False
+
+print("All assertions passed!")
+```

@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_spaces(s: str) -> str:
+    """
+    Replace all spaces in the given string with '%20'.
+    
+    Args:
+        s: The input string.
+    
+    Returns:
+        A new string with all spaces replaced by '%20'.
+    """
+    return s.replace(" ", "%20")
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+    
+    # Additional test cases
+    assert replace_spaces("") == ""
+    assert replace_spaces("NoSpaces") == "NoSpaces"
+    assert replace_spaces(" ") == "%20"
+    assert replace_spaces("  double  spaces  ") == "%20%20double%20%20spaces%20%20"
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `replace_spaces` uses Python's built-in `str.replace()` method to substitute every occurrence of a space (`" "`) with the URL-encoded space (`"%20"`).
+- The `if __name__ == "__main__":` block runs the provided assertion plus a few extra edge-case tests (empty string, no spaces, single space, and multiple consecutive spaces).
+- If all assertions pass, it prints `"All tests passed!"`.
+
+**Alternative implementation** (without using `str.replace`, in case you want to demonstrate manual logic):
+
+```python
+def replace_spaces(s: str) -> str:
+    result = []
+    for ch in s:
+        if ch == " ":
+            result.append("%20")
+        else:
+            result.append(ch)
+    return "".join(result)
+```
+
+Both versions produce the same output. The first is more concise and idiomatic Python; the second shows the underlying algorithm explicitly.

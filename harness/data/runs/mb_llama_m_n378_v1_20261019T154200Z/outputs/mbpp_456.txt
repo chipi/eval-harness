@@ -1,0 +1,17 @@
+```python
+def reverse_string_list(string_list):
+    """
+    This function takes a list of strings as input and returns a new list 
+    where each string is reversed.
+
+    Args:
+        string_list (list): A list of string values.
+
+    Returns:
+        list: A list of strings where each string is reversed.
+    """
+    return [s[::-1] for s in string_list]
+
+# Example usage:
+print(reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black']))
+```

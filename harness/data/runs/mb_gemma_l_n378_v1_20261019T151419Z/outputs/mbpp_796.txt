@@ -1,0 +1,19 @@
+```python
+def return_sum(dictionary):
+    """
+    Calculates the sum of all values in the provided dictionary.
+    """
+    return sum(dictionary.values())
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_dict = {'a': 100, 'b': 200, 'c': 300}
+    result = return_sum(test_dict)
+    
+    print(f"Dictionary: {test_dict}")
+    print(f"Sum: {result}")
+    
+    # Assertion to verify correctness
+    assert result == 600, f"Expected 600, but got {result}"
+    print("Assertion passed!")
+```

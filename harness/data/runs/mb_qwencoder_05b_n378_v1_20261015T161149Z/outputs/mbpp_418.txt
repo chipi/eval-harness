@@ -1,0 +1,21 @@
+```python
+def Find_Max(lst):
+    # Initialize variables to store the maximum length and the corresponding element
+    max_length = 0
+    max_element = None
+    
+    # Iterate through each sublist in the list
+    for sublist in lst:
+        # Check if the current sublist has more elements than the current max_length
+        if len(sublist) > max_length:
+            # Update max_length and max_element
+            max_length = len(sublist)
+            max_element = sublist
+    
+    # Return the element with the maximum length
+    return max_element
+
+# Test the function with the provided test case
+assert Find_Max([['A'],['A','B'],['A','B','C']]) == ['A','B','C']
+```
+

@@ -1,0 +1,106 @@
+Here's a self-contained Python script that solves the problem of finding the sum of all odd-length subarrays:
+
+```python
+def odd_length_sum(arr):
+    """
+    Find the sum of all odd length subarrays.
+    
+    For each element at index i, we calculate how many odd-length subarrays
+    contain this element, then multiply by the element's value.
+    
+    The number of odd-length subarrays containing element at index i is:
+    left_count * right_count where:
+    - left_count = number of ways to choose starting position
+    - right_count = number of ways to choose ending position
+    - We need (end - start + 1) to be odd
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    for i in range(n):
+        # Number of subarrays starting at or before i and ending at or after i
+        # that have odd length
+        
+        # For element at index i:
+        # left choices: i+1 (indices 0 to i)
+        # right choices: n-i (indices i to n-1)
+        
+        left_choices = i + 1
+        right_choices = n - i
+        
+        # Total subarrays containing element i
+        total_subarrays = left_choices * right_choices
+        
+        # Number of odd-length subarrays containing element i
+        # If total_subarrays is even, half are odd-length
+        # If total_subarrays is odd, (total_subarrays + 1) / 2 are odd-length
+        odd_subarrays = (total_subarrays + 1) // 2
+        
+        total_sum += arr[i] * odd_subarrays
+    
+    return total_sum
+
+
+# Alternative approach using direct enumeration (less efficient but clearer)
+def odd_length_sum_bruteforce(arr):
+    """
+    Brute force approach: generate all subarrays and sum those with odd length.
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    for start in range(n):
+        for end in range(start, n):
+            length = end - start + 1
+            if length % 2 == 1:  # odd length
+                total_sum += sum(arr[start:end+1])
+    
+    return total_sum
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert odd_length_sum([1, 2, 4]) == 14
+    assert odd_length_sum_bruteforce([1, 2, 4]) == 14
+    
+    # Additional test cases
+    assert odd_length_sum([1, 2, 3, 4]) == 30
+    assert odd_length_sum_bruteforce([1, 2, 3, 4]) == 30
+    
+    assert odd_length_sum([1]) == 1
+    assert odd_length_sum_bruteforce([1]) == 1
+    
+    assert odd_length_sum([1, 2]) == 3
+    assert odd_length_sum_bruteforce([1, 2]) == 3
+    
+    print("All test cases passed!")
+    
+    # Demonstrate with the example
+    arr = [1, 2, 4]
+    print(f"Array: {arr}")
+    print(f"Sum of all odd-length subarrays: {odd_length_sum(arr)}")
+    
+    # Show the odd-length subarrays for clarity
+    print("\nOdd-length subarrays:")
+    n = len(arr)
+    for start in range(n):
+        for end in range(start, n):
+            length = end - start + 1
+            if length % 2 == 1:
+                subarray = arr[start:end+1]
+                print(f"  {subarray} (sum: {sum(subarray)})")
+```
+
+This script provides two solutions:
+
+1. **Efficient O(n) solution** (`odd_length_sum`): Uses a mathematical approach to calculate how many odd-length subarrays contain each element, then multiplies by the element's value.
+
+2. **Brute force O(n³) solution** (`odd_length_sum_bruteforce`): Generates all possible subarrays and sums those with odd length.
+
+**Key insight for the efficient solution:**
+- For an element at index `i`, there are `(i+1)` choices for the starting position and `(n-i)` choices for the ending position
+- The total number of subarrays containing this element is `(i+1) * (n-i)`
+- Among these, the number of odd-length subarrays is `((i+1) * (n-i) + 1) // 2`
+
+The script includes the required assertion test and additional test cases to verify correctness.

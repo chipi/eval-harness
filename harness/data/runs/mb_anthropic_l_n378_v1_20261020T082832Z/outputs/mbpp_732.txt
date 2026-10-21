@@ -1,0 +1,61 @@
+Looking at this problem, I need to replace every space, comma, and dot with a colon.
+
+Let me verify with the test case:
+- `'Python language, Programming language.'`
+- Space after "Python" → `:`
+- Comma after "language" → `:`, then space → `:` (giving `::`)
+- Space after comma... → matches expected `Python:language::Programming:language:`
+
+```python
+"""
+Write a function to replace all occurrences of spaces, commas, or dots with a colon.
+assert replace_specialchar('Python language, Programming language.')==('Python:language::Programming:language:')
+"""
+
+import re
+
+
+def replace_specialchar(text):
+    """
+    Replace all occurrences of spaces, commas, or dots in `text` with a colon.
+
+    Parameters
+    ----------
+    text : str
+        The input string.
+
+    Returns
+    -------
+    str
+        The string with every ' ', ',' and '.' replaced by ':'.
+    """
+    return re.sub(r"[ ,.]", ":", text)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert replace_specialchar('Python language, Programming language.') == \
+        'Python:language::Programming:language:'
+
+    # A few extra sanity checks
+    assert replace_specialchar('a b c,d.e') == 'a:b:c:d:e'
+    assert replace_specialchar('...') == ':::'
+    assert replace_specialchar('') == ''
+    assert replace_specialchar('no-special') == 'no-special'
+
+    print(replace_specialchar('Python language, Programming language.'))
+    print("All tests passed!")
+```
+
+**Output:**
+```
+Python:language::Programming:language:
+All tests passed!
+```
+
+**Alternative without `re`** (using `str.translate`):
+
+```python
+def replace_specialchar(text):
+    return text.translate(str.maketrans({' ': ':', ',': ':', '.': ':'}))
+```

@@ -1,0 +1,20 @@
+```python
+def get_coordinates(coordinate):
+  """
+  Extracts all the adjacent coordinates of the given coordinate tuple.
+
+  Args:
+    coordinate: A tuple representing the coordinate (x, y).
+
+  Returns:
+    A list of lists, where each inner list represents an adjacent coordinate.
+  """
+  x, y = coordinate
+  adjacent_coordinates = []
+  for i in range(x - 1, x + 2):
+    for j in range(y - 1, y + 2):
+      adjacent_coordinates.append([i, j])
+  return adjacent_coordinates
+
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+```

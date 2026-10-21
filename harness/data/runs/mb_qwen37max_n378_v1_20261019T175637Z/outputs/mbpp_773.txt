@@ -1,0 +1,15 @@
+```python
+def occurance_substring(string, substring):
+    """
+    Find the first occurrence and position of a substring within a string.
+    Returns a tuple (substring, start_index, end_index) or None if no match.
+    """
+    index = string.find(substring)
+    if index == -1:
+        return None
+    return (substring, index, index + len(substring))
+
+
+# Test
+assert occurance_substring('python programming, python language', 'python') == ('python', 0, 6)
+```

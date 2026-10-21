@@ -1,0 +1,84 @@
+```python
+"""
+Write a function to sum all amicable numbers from 1 to a specified number.
+assert amicable_numbers_sum(999)==504
+"""
+
+def amicable_numbers_sum(limit: int) -> int:
+    """
+    Calculates the sum of all amicable numbers up to a given limit.
+
+    Amicable numbers are two different numbers so related that the sum of
+    the proper divisors of each is equal to the other number. For example,
+    the proper divisors of 220 are 1, 2, 4, 5, 10, 11, 20, 22, 44, 55 and 110;
+    therefore d(220) = 284. The proper divisors of 284 are 1, 2, 4, 71 and 142;
+    so, d(284) = 220. Therefore, 220 and 284 form an amicable pair.
+
+    This function iterates through numbers from 1 to the limit, finds all
+    amicable pairs within that range, and sums them up, ensuring each number
+    in a pair is only counted once.
+
+    Args:
+        limit: The upper bound (inclusive) to search for amicable numbers.
+
+    Returns:
+        The sum of all unique amicable numbers found up to the limit.
+    """
+    if limit < 2:
+        return 0
+
+    def sum_proper_divisors(n: int) -> int:
+        """Calculates the sum of proper divisors of a number n."""
+        if n == 1:
+            return 0
+        # Start with 1, as 1 is a proper divisor for any n > 1
+        total = 1
+        # Iterate from 2 up to the square root of n
+        for i in range(2, int(n**0.5) + 1):
+            if n % i == 0:
+                # If divisors are the same (e.g., for 16, 4*4), add only one
+                if i * i == n:
+                    total += i
+                else:
+                    # Otherwise, add both divisors
+                    total += i + n // i
+        return total
+
+    amicable_numbers = set()
+    # Iterate through all numbers up to the limit
+    for a in range(1, limit + 1):
+        # Calculate the sum of proper divisors for 'a'
+        sum_a = sum_proper_divisors(a)
+        
+        # Check if 'a' and its divisor sum 'sum_a' form an amicable pair.
+        # Conditions:
+        # 1. 'a' and 'sum_a' must be different numbers.
+        # 2. The sum of divisors of 'sum_a' must be 'a'.
+        # 3. 'sum_a' must be within our specified limit.
+        if a != sum_a and sum_a <= limit:
+            if sum_proper_divisors(sum_a) == a:
+                # If all conditions are met, add both numbers to our set.
+                # Using a set ensures that each number is only added once,
+                # even if it's part of multiple pairs (though not possible for this problem).
+                amicable_numbers.add(a)
+                amicable_numbers.add(sum_a)
+
+    # Return the sum of all unique amicable numbers found
+    return sum(amicable_numbers)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The amicable pairs below 1000 are (220, 284).
+    # The sum of these numbers is 220 + 284 = 504.
+    assert amicable_numbers_sum(999) == 504
+    
+    # Additional test cases
+    assert amicable_numbers_sum(219) == 0  # No pairs below 220
+    assert amicable_numbers_sum(220) == 220 # Only the first number of the pair
+    assert amicable_numbers_sum(284) == 504 # The full pair is now included
+    assert amicable_numbers_sum(1000) == 504 # The pair is still the only one
+    
+    print("All assertions passed.")
+    print(f"The sum of amicable numbers up to 999 is: {amicable_numbers_sum(999)}")
+    print(f"The sum of amicable numbers up to 10000 is: {amicable_numbers_sum(10000)}") # 31626
+```

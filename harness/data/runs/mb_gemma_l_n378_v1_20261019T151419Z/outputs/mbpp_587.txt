@@ -1,0 +1,15 @@
+```python
+def list_tuple(input_list):
+    """
+    Converts a list to a tuple.
+    """
+    return tuple(input_list)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [5, 10, 7, 4, 15, 3]
+    expected_result = (5, 10, 7, 4, 15, 3)
+    
+    assert list_tuple(test_list) == expected_result
+    print("Test passed!")
+```

@@ -1,0 +1,8 @@
+```python
+def frequency(numbers, target):
+    """Return the number of times target occurs in numbers."""
+    return numbers.count(target)
+
+
+assert frequency([1, 2, 3], 4) == 0
+```

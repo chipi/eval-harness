@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def is_lower(s):
+    """Convert the given string to lowercase.
+
+    Args:
+        s (str): The input string to be converted to lowercase.
+
+    Returns:
+        str: The lowercase version of the input string.
+    """
+    return s.lower()
+
+# Test the function
+assert is_lower("InValid") == "invalid"
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `is_lower` that takes a string and returns its lowercase version using the built-in `str.lower()` method
+2. Includes a docstring explaining the function's purpose and parameters
+3. Contains an assertion to verify the function works as expected
+4. Prints a success message if the test passes
+
+The function will pass the given assertion and correctly convert "InValid" to "invalid".

@@ -1,0 +1,10 @@
+```python
+def string_to_tuple(s):
+    return tuple(s)
+
+def main():
+    print(string_to_tuple("python 3.0"))  # Expected output: ('p', 'y', 't', 'h', 'o', 'n', ' ', '3', '.', '0')
+
+if __name__ == "__main__":
+    main()
+```

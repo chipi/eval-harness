@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem of finding the median of two sorted lists of the same size:
+
+```python
+def get_median(list1, list2, n):
+    """
+    Find the median of two sorted lists of the same size.
+
+    Args:
+        list1: First sorted list of numbers
+        list2: Second sorted list of numbers
+        n: Size of each list
+
+    Returns:
+        The median of the combined sorted lists
+    """
+    # Initialize pointers for both lists
+    i = 0  # pointer for list1
+    j = 0  # pointer for list2
+
+    # Variables to store the last two elements
+    prev = None
+    curr = None
+
+    # Since the total number of elements is 2n, we need to find the nth and (n+1)th elements
+    for _ in range(n + 1):
+        prev = curr
+
+        # Compare elements from both lists and move the pointer of the smaller element
+        if i < n and (j >= n or list1[i] <= list2[j]):
+            curr = list1[i]
+            i += 1
+        else:
+            curr = list2[j]
+            j += 1
+
+    # For even number of elements, median is average of nth and (n+1)th elements
+    return (prev + curr) / 2
+
+# Test case
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+```
+
+This solution:
+1. Takes two sorted lists of the same size and their size as input
+2. Uses a two-pointer approach to merge the lists virtually (without actually creating a merged list)
+3. Tracks the last two elements needed to calculate the median
+4. Returns the average of the nth and (n+1)th elements (since the total number of elements is even)
+5. Includes the provided test case to verify correctness
+
+The algorithm runs in O(n) time with O(1) space complexity, which is optimal for this problem.

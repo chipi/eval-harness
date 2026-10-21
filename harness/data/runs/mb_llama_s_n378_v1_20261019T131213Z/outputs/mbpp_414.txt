@@ -1,0 +1,40 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Checks whether any value in sequence 1 exists in sequence 2.
+
+    Args:
+        seq1 (list): The first sequence.
+        seq2 (list): The second sequence.
+
+    Returns:
+        bool: True if any value in seq1 exists in seq2, False otherwise.
+    """
+    return len(set(seq1) & set(seq2)) > 0
+
+# Example usage:
+print(overlapping([1,2,3,4,5],[6,7,8,9]))  # Returns: False
+print(overlapping([1,2,3,4,5],[4,7,8,9]))  # Returns: True
+```
+
+However, if you want to optimize for performance when dealing with large sequences, you could convert the second sequence to a set for O(1) lookups:
+
+```python
+def overlapping(seq1, seq2):
+    """
+    Checks whether any value in sequence 1 exists in sequence 2.
+
+    Args:
+        seq1 (list): The first sequence.
+        seq2 (list): The second sequence.
+
+    Returns:
+        bool: True if any value in seq1 exists in seq2, False otherwise.
+    """
+    set2 = set(seq2)
+    return any(item in set2 for item in seq1)
+
+# Example usage:
+print(overlapping([1,2,3,4,5],[6,7,8,9]))  # Returns: False
+print(overlapping([1,2,3,4,5],[4,7,8,9]))  # Returns: True
+```

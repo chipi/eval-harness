@@ -1,0 +1,41 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function which, given a matrix represented as a list of lists,
+returns the maximum value of the n-th column.
+
+The column index `n` is zero-based.
+
+Example:
+    max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 2) == 19
+"""
+
+
+def max_of_nth(matrix, n):
+    """
+    Return the maximum value in the n-th column of a matrix.
+
+    Args:
+        matrix: A list of lists representing the matrix.
+        n: Zero-based column index.
+
+    Returns:
+        The maximum value in column n.
+
+    Raises:
+        ValueError: If the matrix is empty.
+        IndexError: If n is not a valid column index for any row.
+    """
+    if not matrix:
+        raise ValueError("matrix must not be empty")
+
+    return max(row[n] for row in matrix)
+
+
+if __name__ == "__main__":
+    assert max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 2) == 19
+    assert max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 0) == 8
+    assert max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 1) == 9
+
+    print("All tests passed.")
+```

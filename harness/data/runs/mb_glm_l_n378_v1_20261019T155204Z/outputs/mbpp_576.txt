@@ -1,0 +1,33 @@
+```python
+def is_Sub_Array(A, B):
+    """
+    Check whether list B is a sublist of list A.
+    A sublist means all elements of B appear consecutively and in the same order within A.
+    """
+    if not B:
+        return True
+    if not A:
+        return False
+        
+    len_A = len(A)
+    len_B = len(B)
+    
+    # Iterate through A to find a matching sequence for B
+    for i in range(len_A - len_B + 1):
+        # Check if the slice of A matches B
+        if A[i:i + len_B] == B:
+            return True
+            
+    return False
+
+# Test cases
+if __name__ == "__main__":
+    assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+    assert is_Sub_Array([1, 2, 3, 4, 5], [2, 3, 4]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [2, 4]) == False
+    assert is_Sub_Array([1, 2, 3, 4, 5], []) == True
+    assert is_Sub_Array([], [1]) == False
+    assert is_Sub_Array([1, 2, 3], [1, 2, 3]) == True
+    assert is_Sub_Array([1, 2, 3], [1, 2, 3, 4]) == False
+    print("All test cases passed.")
+```

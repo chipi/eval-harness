@@ -1,0 +1,88 @@
+```python
+"""
+Write a function to find the length of the longest palindromic subsequence in the given string.
+assert lps("TENS FOR TENS") == 5
+"""
+
+def lps(s: str) -> int:
+    """
+    Finds the length of the longest palindromic subsequence in a string.
+
+    This function uses dynamic programming to solve the problem efficiently.
+    The core idea is to build a 2D table `dp` where `dp[i][j]` represents the
+    length of the longest palindromic subsequence in the substring `s[i...j]`.
+
+    The logic for filling the table is as follows:
+    1. A substring of length 1 is always a palindrome of length 1.
+       So, `dp[i][i] = 1` for all `i`.
+    2. For a substring `s[i...j]`:
+       a. If the characters at the start (`s[i]`) and end (`s[j]`) are the same,
+          they can form a palindrome. The length is 2 plus the LPS of the
+          inner substring `s[i+1...j-1]`.
+          So, `dp[i][j] = 2 + dp[i+1][j-1]`.
+       b. If the characters are different, the LPS must be formed by either
+          skipping the first character or the last character. We take the
+          maximum of these two possibilities.
+          So, `dp[i][j] = max(dp[i+1][j], dp[i][j-1])`.
+
+    The table is filled diagonally, starting from substrings of length 1,
+    then length 2, and so on, up to the entire string.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        The length of the longest palindromic subsequence.
+    """
+    n = len(s)
+    # An empty string has an LPS of length 0.
+    if n == 0:
+        return 0
+
+    # Create a DP table of size n x n, initialized to 0.
+    # dp[i][j] will store the LPS length for s[i...j].
+    dp = [[0] * n for _ in range(n)]
+
+    # Every single character is a palindrome of length 1.
+    # This fills the diagonal of the table.
+    for i in range(n):
+        dp[i][i] = 1
+
+    # Fill the table for substrings of length 2 to n.
+    # `cl` is the current length of the substring being considered.
+    for cl in range(2, n + 1):
+        # `i` is the starting index of the substring.
+        for i in range(n - cl + 1):
+            # `j` is the ending index of the substring.
+            j = i + cl - 1
+
+            # Case 1: The first and last characters are the same.
+            if s[i] == s[j]:
+                # If the substring has only 2 characters, the LPS is 2.
+                # Otherwise, it's 2 + LPS of the inner substring.
+                if cl == 2:
+                    dp[i][j] = 2
+                else:
+                    dp[i][j] = dp[i + 1][j - 1] + 2
+            # Case 2: The first and last characters are different.
+            else:
+                # The LPS is the maximum of the LPS of the substring
+                # without the first character or without the last character.
+                dp[i][j] = max(dp[i + 1][j], dp[i][j - 1])
+
+    # The result for the entire string is in the top-right corner of the table.
+    return dp[0][n - 1]
+
+# Example usage and assertion
+if __name__ == "__main__":
+    # The longest palindromic subsequence in "TENS FOR TENS" is "TENET" or "SESFS", both of length 5.
+    assert lps("TENS FOR TENS") == 5
+    assert lps("bbbab") == 4  # "bbbb"
+    assert lps("cbbd") == 2   # "bb"
+    assert lps("a") == 1
+    assert lps("") == 0
+    assert lps("racecar") == 7 # "racecar"
+    assert lps("abcdef") == 1 # Any single character
+
+    print("All assertions passed.")
+```

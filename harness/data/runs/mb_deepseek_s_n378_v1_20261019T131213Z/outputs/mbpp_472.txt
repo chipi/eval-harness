@@ -1,0 +1,37 @@
+```python
+def check_Consecutive(lst):
+    """
+    Check whether the given list contains consecutive numbers.
+    
+    A list is considered to have consecutive numbers if its elements,
+    when sorted, form a sequence where each successive element differs by exactly 1.
+    
+    Args:
+        lst (list): A list of numbers (integers).
+    
+    Returns:
+        bool: True if the list contains consecutive numbers, False otherwise.
+    """
+    if not lst or len(lst) <= 1:
+        return True
+    
+    # Sort the list
+    sorted_lst = sorted(lst)
+    
+    # Check if differences between consecutive elements are exactly 1
+    for i in range(len(sorted_lst) - 1):
+        if sorted_lst[i+1] - sorted_lst[i] != 1:
+            return False
+    
+    return True
+
+# Test the function with the given assertion
+assert check_Consecutive([1, 2, 3, 4, 5]) == True
+
+# Additional tests (optional, not required by problem)
+assert check_Consecutive([5, 4, 3, 2, 1]) == True
+assert check_Consecutive([1, 3, 5]) == False
+assert check_Consecutive([1, 2, 4, 5]) == False
+assert check_Consecutive([10]) == True
+assert check_Consecutive([]) == True
+```

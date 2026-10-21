@@ -1,0 +1,46 @@
+Looking at this problem, I need to write a function that returns the ASCII value of a given character.
+
+```python
+"""
+Write a function to find the ascii value of a character.
+assert ascii_value('A')==65
+"""
+
+
+def ascii_value(k):
+    """
+    Return the ASCII (ordinal) value of a single character.
+
+    Parameters
+    ----------
+    k : str
+        A single character whose ASCII value is required.
+
+    Returns
+    -------
+    int
+        The ASCII/Unicode code point of the character.
+    """
+    return ord(k)
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert ascii_value('A') == 65
+
+    # A few extra sanity checks
+    assert ascii_value('R') == 82
+    assert ascii_value('S') == 83
+    assert ascii_value('a') == 97
+    assert ascii_value('0') == 48
+    assert ascii_value(' ') == 32
+
+    print("All tests passed!")
+    print("ascii_value('A') =", ascii_value('A'))
+```
+
+**Explanation:**
+
+- Python's built-in `ord()` function takes a string of length 1 and returns the integer representing the Unicode code point of that character.
+- For characters in the ASCII range (0–127), the Unicode code point is identical to the ASCII value, so `ord('A')` returns `65`.
+- The function simply wraps `ord()` so it matches the required name/signature in the assertion.

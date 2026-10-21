@@ -1,0 +1,27 @@
+```python
+def power(a: int, b: int) -> int:
+    """
+    Calculate a raised to the power b (a^b) using exponentiation by squaring.
+    
+    Args:
+        a: The base number
+        b: The exponent (non-negative integer)
+    
+    Returns:
+        The result of a^b as an integer
+    """
+    if b == 0:
+        return 1
+    elif b % 2 == 0:
+        half = power(a, b // 2)
+        return half * half
+    else:
+        return a * power(a, b - 1)
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = power(3, 4)
+    print(f"power(3, 4) = {result}")
+    assert result == 81, f"Expected 81 but got {result}"
+    print("Assertion passed!")
+```

@@ -1,0 +1,15 @@
+```python
+def sum_average(n):
+    total = n * (n + 1) // 2
+    average = total / n
+    return total, average
+
+def main():
+    n = 10
+    total, average = sum_average(n)
+    print(f"Sum of first {n} natural numbers: {total}")
+    print(f"Average of first {n} natural numbers: {average}")
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem by counting the number of rotations of a binary string that result in a number with an odd value:
+
+```python
+def odd_Equivalent(binary_str, rotations):
+    """
+    Counts the number of rotations of a binary string that result in a number with an odd value.
+
+    Args:
+        binary_str (str): The binary string to rotate.
+        rotations (int): The number of rotations to consider.
+
+    Returns:
+        int: The count of rotations that result in an odd number.
+    """
+    count = 0
+    n = len(binary_str)
+
+    for i in range(min(rotations, n)):  # Only need to check up to n rotations (after that it repeats)
+        rotated = binary_str[i:] + binary_str[:i]
+        # Check if the rotated string represents an odd number (last digit is '1')
+        if rotated[-1] == '1':
+            count += 1
+
+    return count
+
+# Test case
+assert odd_Equivalent("011001", 6) == 3
+```
+
+### Explanation:
+1. **Rotation Handling**: The function rotates the binary string by moving the first `i` characters to the end of the string for each rotation `i`.
+2. **Odd Check**: A binary number is odd if its last digit is `1`. The function checks this condition for each rotation.
+3. **Efficiency**: Since rotating a string of length `n` more than `n` times will start repeating the same rotations, the loop only runs up to `min(rotations, n)` to avoid redundant checks.
+4. **Test Case**: The provided test case `assert odd_Equivalent("011001", 6) == 3` passes, as there are 3 rotations of "011001" that result in an odd number:
+   - "110010" (rotation 1) → odd (ends with 0? No, wait: "110010" ends with 0 → even. Hmm, let me recheck.)
+   - Wait, let's manually verify the rotations of "011001":
+     - 0: "011001" → 25 (odd? 25 is odd, but the last digit is 1 → odd. So this counts.)
+     - 1: "110010" → 50 (even, last digit 0 → even. Doesn't count.)
+     - 2: "100101" → 37 (odd, last digit 1 → odd. Counts.)
+     - 3: "001011" → 11 (odd, last digit 1 → odd. Counts.)
+     - 4: "010110" → 22 (even, last digit 0 → even. Doesn't count.)
+     - 5: "101100" → 44 (even, last digit 0 → even. Doesn't count.)
+   - So the odd rotations are at positions 0, 2, and 3 → total 3. The function works correctly.
+
+The function returns `3` for the given test case, as expected.

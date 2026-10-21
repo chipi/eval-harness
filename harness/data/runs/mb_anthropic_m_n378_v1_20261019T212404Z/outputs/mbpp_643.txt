@@ -1,0 +1,21 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains 'z', except at the start and end of the word.
+    Returns True if 'z' is found somewhere in the middle of a word.
+    """
+    pattern = re.compile(r'\Bz\B')
+    return bool(pattern.search(text))
+
+# Test cases
+if __name__ == "__main__":
+    assert text_match_wordz_middle("pythonzabc.") == True
+    assert text_match_wordz_middle("zpython.") == False
+    assert text_match_wordz_middle("pythonz.") == False
+    assert text_match_wordz_middle("z") == False
+    assert text_match_wordz_middle("pyzthon") == True
+    
+    print("All test cases passed!")
+```

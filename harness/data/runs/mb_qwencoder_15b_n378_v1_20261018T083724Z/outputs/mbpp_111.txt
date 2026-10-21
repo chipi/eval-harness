@@ -1,0 +1,14 @@
+```python
+def common_in_nested_lists(nested_lists):
+    # Flatten the list of lists into a single list
+    flat_list = [item for sublist in nested_lists for item in sublist]
+    
+    # Use set intersection to find common elements
+    common_elements = set(flat_list)
+    
+    return common_elements
+
+# Test the function
+assert set(common_in_nested_lists([[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]])) == set([18, 12])
+```
+

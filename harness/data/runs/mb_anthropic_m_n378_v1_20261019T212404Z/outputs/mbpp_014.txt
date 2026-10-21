@@ -1,0 +1,11 @@
+```python
+def find_Volume(base, height, length):
+    return (0.5 * base * height) * length
+
+
+# Test
+assert find_Volume(10, 8, 6) == 240
+
+if __name__ == "__main__":
+    print(find_Volume(10, 8, 6))
+```

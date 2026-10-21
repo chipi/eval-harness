@@ -1,0 +1,8 @@
+```python
+def is_nonagonal(n):
+  """
+  Write a function to find the nth nonagonal number.
+  assert is_nonagonal(10) == 325
+  """
+  return n * (7 * n - 5) // 2
+```

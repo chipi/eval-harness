@@ -1,0 +1,9 @@
+```python
+def max_length(lst):
+    max_length_list = [max(sublist, key=len) for sublist in lst]
+    max_length_value = len(max(max_length_list, key=len))
+    return max_length_value, max_length_list
+
+# Testing the function
+assert max_length([[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]])==(3, [13, 15, 17])
+```

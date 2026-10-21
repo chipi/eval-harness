@@ -1,0 +1,18 @@
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+    
+    Args:
+        lst: A list of numbers.
+        n: An integer indicating how many largest items to return.
+        
+    Returns:
+        A list containing the n largest items from lst.
+    """
+    if n <= 0:
+        return []
+    # Sort the list in descending order and take the first n elements
+    sorted_lst = sorted(lst, reverse=True)
+    return sorted_lst[:n]
+```

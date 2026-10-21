@@ -1,0 +1,17 @@
+```python
+def check_smaller(tuple1, tuple2):
+    """
+    Check if each element of the second tuple is smaller than its corresponding element in the first tuple.
+    
+    Returns True if every element in tuple2 is strictly smaller than the corresponding element in tuple1,
+    False otherwise.
+    """
+    return all(t2 < t1 for t1, t2 in zip(tuple1, tuple2))
+
+
+# Test
+assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+assert check_smaller((5, 6, 7), (1, 2, 3)) == True
+assert check_smaller((3, 3, 3), (2, 2, 2)) == True
+assert check_smaller((3, 3, 3), (3, 2, 2)) == False
+```

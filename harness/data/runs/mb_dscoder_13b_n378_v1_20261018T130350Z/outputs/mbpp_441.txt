@@ -1,0 +1,10 @@
+```python
+def surfacearea_cube(side):
+    """
+    Function to find the surface area of a cube of a given size.
+    """
+    return 6 * side ** 2
+
+# Test cases
+assert surfacearea_cube(5) == 150
+```

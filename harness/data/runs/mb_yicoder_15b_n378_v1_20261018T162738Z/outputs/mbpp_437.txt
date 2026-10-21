@@ -1,0 +1,11 @@
+```python
+def remove_odd(s):
+    return s[::2]
+
+# Test cases
+assert remove_odd("python")=="yhn"
+assert remove_odd("java")=="ja"
+assert remove_odd("c++")=="c"
+assert remove_odd("ruby")=="rb"
+assert remove_odd("javascript")=="jvscr"
+```

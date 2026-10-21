@@ -1,0 +1,21 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Returns True if the given number can be represented as a sum of non-zero powers of 2.
+    This is equivalent to checking if the number is positive and not zero.
+    Every positive integer can be represented as a sum of distinct powers of 2 (binary representation),
+    and since we only exclude zero itself, any positive integer works.
+    """
+    return n > 0
+
+# Test the assertion
+if __name__ == "__main__":
+    assert is_Sum_Of_Powers_Of_Two(10) == True
+    # Additional tests
+    assert is_Sum_Of_Powers_Of_Two(1) == True
+    assert is_Sum_Of_Powers_Of_Two(2) == True
+    assert is_Sum_Of_Powers_Of_Two(3) == True
+    assert is_Sum_Of_Powers_Of_Two(0) == False
+    assert is_Sum_Of_Powers_Of_Two(-5) == False
+    print("All tests passed.")
+```

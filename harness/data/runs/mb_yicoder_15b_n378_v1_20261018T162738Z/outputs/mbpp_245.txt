@@ -1,0 +1,32 @@
+```python
+def max_sum(arr):
+    n = len(arr)
+    
+    # Initialize the dp array
+    dp_inc = [0]*n
+    dp_dec = [0]*n
+    
+    # Initialize the maximum sum
+    max_sum = 0
+    
+    # Compute the dp array for increasing subsequence
+    for i in range(n):
+        for j in range(i):
+            if arr[i] > arr[j] and dp_inc[i] < dp_inc[j]:
+                dp_inc[i] = dp_inc[j]
+        dp_inc[i] += arr[i]
+        max_sum = max(max_sum, dp_inc[i])
+    
+    # Compute the dp array for decreasing subsequence
+    for i in range(n-1, -1, -1):
+        for j in range(n-1, i, -1):
+            if arr[i] > arr[j] and dp_dec[i] < dp_dec[j]:
+                dp_dec[i] = dp_dec[j]
+        dp_dec[i] += arr[i]
+        max_sum = max(max_sum, dp_dec[i])
+    
+    return max_sum
+
+# Test the function
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+```

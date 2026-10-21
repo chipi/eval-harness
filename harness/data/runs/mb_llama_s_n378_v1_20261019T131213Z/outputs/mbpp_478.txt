@@ -1,0 +1,31 @@
+```python
+def remove_lowercase(s):
+    """
+    This function removes all lowercase substrings from a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all lowercase substrings removed.
+    """
+    result = ""
+    current_uppercase_substring = ""
+
+    for char in s:
+        if char.isupper():
+            # If the character is uppercase, add it to the current substring
+            current_uppercase_substring += char
+        else:
+            # If the character is lowercase, add the current substring to the result and reset it
+            result += current_uppercase_substring
+            current_uppercase_substring = ""
+
+    # Add the last uppercase substring to the result
+    result += current_uppercase_substring
+
+    return result
+
+# Test the function
+print(remove_lowercase("PYTHon"))  # Should print 'PYTH'
+```

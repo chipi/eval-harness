@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def get_odd_numbers(numbers):
+    """Return a list of only the odd integers from the input list."""
+    return [num for num in numbers if num % 2 != 0]
+
+# Test the function
+assert get_odd_numbers([1, 2, 3, 4, 5, 6]) == [1, 3, 5]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `get_odd_numbers` that takes a list of integers
+2. Uses a list comprehension to filter and return only the odd numbers (where `num % 2 != 0`)
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function will work with any list of integers, not just the example case.

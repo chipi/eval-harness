@@ -1,0 +1,13 @@
+```python
+def find_remainder(arr, n):
+    product = 1
+    for num in arr:
+        product = (product * num) % n
+    return product
+
+# Test cases
+assert find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+assert find_remainder([100, 10, 5, 25, 35, 14], 12) == 10
+assert find_remainder([100, 10, 5, 25, 35, 14], 13) == 0
+assert find_remainder([100, 10, 5, 25, 35, 14], 1) == 0
+```

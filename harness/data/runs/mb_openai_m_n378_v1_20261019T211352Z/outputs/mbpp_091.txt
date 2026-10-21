@@ -1,0 +1,24 @@
+```python
+"""
+Write a function to check if a string is present as a substring
+in any string value from a given list.
+
+Example:
+assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+"""
+
+def find_substring(strings, substring):
+    """
+    Return True if 'substring' is found inside any string in 'strings',
+    otherwise return False.
+    """
+    return any(substring in s for s in strings)
+
+
+# Example test cases
+assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "blue") == False
+assert find_substring(["hello", "world"], "wor") == True
+
+print("All tests passed.")
+```

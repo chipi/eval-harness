@@ -1,0 +1,8 @@
+```python
+def big_diff(values):
+    """Return the difference between the largest and smallest values."""
+    return max(values) - min(values)
+
+
+assert big_diff([1, 2, 3, 4]) == 3
+```

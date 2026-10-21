@@ -1,0 +1,31 @@
+```python
+import re
+
+
+def text_match_three(text: str) -> bool:
+    """
+    Matches a string that has an 'a' followed by exactly three 'b's.
+    
+    Args:
+        text: The input string to check.
+        
+    Returns:
+        True if the string contains an 'a' followed by exactly three 'b's, False otherwise.
+    """
+    pattern = r'ab{3}'
+    return bool(re.search(pattern, text))
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert not text_match_three("ac"), "Test failed: 'ac' should not match"
+    assert text_match_three("abbb"), "Test failed: 'abbb' should match"
+    assert text_match_three("xabbbx"), "Test failed: 'xabbbx' should match"
+    assert not text_match_three("abb"), "Test failed: 'abb' should not match (only two b's)"
+    assert not text_match_three("abbbb"), "Test failed: 'abbbb' - need to check if this should match or not"
+    assert not text_match_three("a"), "Test failed: 'a' should not match"
+    assert not text_match_three(""), "Test failed: empty string should not match"
+    assert text_match_three("abbbc"), "Test failed: 'abbbc' should match"
+    
+    print("All tests passed!")
+```

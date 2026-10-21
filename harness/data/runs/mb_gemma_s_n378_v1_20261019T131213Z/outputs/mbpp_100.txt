@@ -1,0 +1,23 @@
+```python
+def next_smallest_palindrome(n):
+    """
+    Finds the next smallest palindrome of a specified integer, returned as an integer.
+
+    Args:
+        n: An integer.
+
+    Returns:
+        The next smallest palindrome as an integer.
+    """
+    n = n + 1
+    while not str(n) == str(n)[::-1]:
+        n = n + 1
+    return n
+
+# Example usage and assertion
+assert next_smallest_palindrome(99) == 101
+assert next_smallest_palindrome(123) == 131
+assert next_smallest_palindrome(1221) == 1331
+assert next_smallest_palindrome(11) == 22
+assert next_smallest_palindrome(8) == 9
+```

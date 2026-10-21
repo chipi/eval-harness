@@ -1,0 +1,16 @@
+```python
+def check_distinct(test_tuple):
+    """
+    Check if given tuple contains no duplicates.
+    Returns True if all elements are distinct, False otherwise.
+    """
+    return len(set(test_tuple)) == len(test_tuple)
+
+
+# Test cases
+assert check_distinct((1, 4, 5, 6, 1, 4)) == False
+assert check_distinct((1, 4, 5, 6)) == True
+assert check_distinct((1, 1, 1, 1)) == False
+
+print("All test cases passed!")
+```

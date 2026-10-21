@@ -1,0 +1,10 @@
+```python
+def tetrahedral_number(n):
+    return n * (n + 1) * (n + 2) // 2
+
+# Test cases
+assert tetrahedral_number(5) == 35
+assert tetrahedral_number(6) == 70
+assert tetrahedral_number(7) == 126
+assert tetrahedral_number(8) == 220
+```

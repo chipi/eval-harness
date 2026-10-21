@@ -1,0 +1,40 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Checks whether the given number can be represented as the sum of 
+    non-zero powers of 2.
+    
+    A non-zero power of 2 is of the form 2^k where k > 0, meaning the 
+    powers are 2, 4, 8, 16, 32, etc. (1 is excluded since 2^0 = 1).
+    
+    A number can be represented as a sum of non-zero powers of 2 if and 
+    only if it is an even number greater than or equal to 2.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if the number can be represented as such a sum, False otherwise.
+    """
+    return n >= 2 and n % 2 == 0
+
+# --- Test Cases ---
+if __name__ == "__main__":
+    # Provided assertion
+    assert is_Sum_Of_Powers_Of_Two(10) == True
+    
+    # Additional test cases to verify correctness
+    assert is_Sum_Of_Powers_Of_Two(2) == True    # 2^1
+    assert is_Sum_Of_Powers_Of_Two(4) == True    # 2^2
+    assert is_Sum_Of_Powers_Of_Two(6) == True    # 2^1 + 2^2
+    assert is_Sum_Of_Powers_Of_Two(14) == True   # 2^1 + 2^2 + 2^3
+    
+    # False cases
+    assert is_Sum_Of_Powers_Of_Two(1) == False   # 2^0 (zero power, not allowed)
+    assert is_Sum_Of_Powers_Of_Two(3) == False   # 2^0 + 2^1 (requires zero power)
+    assert is_Sum_Of_Powers_Of_Two(5) == False   # 2^0 + 2^2 (requires zero power)
+    assert is_Sum_Of_Powers_Of_Two(0) == False   # Cannot be represented by positive powers
+    assert is_Sum_Of_Powers_Of_Two(-2) == False  # Negative numbers
+    
+    print("All test cases passed!")
+```

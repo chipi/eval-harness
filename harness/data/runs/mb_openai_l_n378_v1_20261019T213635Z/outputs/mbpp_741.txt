@@ -1,0 +1,10 @@
+```python
+def all_Characters_Same(text):
+    """Return True if every character in text is the same."""
+    return len(set(text)) <= 1
+
+
+assert all_Characters_Same("python") is False
+assert all_Characters_Same("aaaa") is True
+assert all_Characters_Same("") is True
+```

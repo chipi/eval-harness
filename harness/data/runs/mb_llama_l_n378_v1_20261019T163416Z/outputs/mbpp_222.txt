@@ -1,0 +1,11 @@
+```python
+def check_type(tup):
+    return len(set(type(i) for i in tup)) == 1
+
+def main():
+    print(check_type((5, 6, 7, 3, 5, 6)))  # True
+    print(check_type((5, 6, '7', 3, 5, 6)))  # False
+
+if __name__ == "__main__":
+    main()
+```

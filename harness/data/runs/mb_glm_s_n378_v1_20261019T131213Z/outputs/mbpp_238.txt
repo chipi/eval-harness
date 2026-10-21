@@ -1,0 +1,42 @@
+```python
+def number_of_substrings(s: str) -> int:
+    """
+    Counts the number of non-empty substrings of a given string.
+
+    A substring is a contiguous sequence of characters within a string.
+    For a string of length n, the number of non-empty substrings is given
+    by the formula n * (n + 1) / 2.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        The total count of non-empty substrings.
+    
+    Example:
+        >>> number_of_substrings("abc")
+        6
+        >>> number_of_substrings("aaa")
+        6
+        >>> number_of_substrings("")
+        0
+    """
+    n = len(s)
+    # The formula for the sum of the first n natural numbers is n * (n + 1) / 2.
+    # This directly gives the count of all possible non-empty substrings.
+    return n * (n + 1) // 2
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert number_of_substrings("abc") == 6
+
+    # Additional test cases
+    assert number_of_substrings("") == 0
+    assert number_of_substrings("a") == 1
+    assert number_of_substrings("ab") == 3
+    assert number_of_substrings("abcd") == 10
+    assert number_of_substrings("aaa") == 6 # Substrings are "a", "a", "a", "aa", "aa", "aaa"
+
+    print("All assertions passed successfully!")
+```

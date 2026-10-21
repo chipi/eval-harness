@@ -1,0 +1,42 @@
+```python
+"""
+Write a function to find the perimeter of a regular pentagon from the length of its sides.
+assert perimeter_pentagon(5) == 25
+"""
+
+def perimeter_pentagon(side_length: float) -> float:
+  """
+  Calculates the perimeter of a regular pentagon.
+
+  A regular pentagon has five sides of equal length. The perimeter is the
+  total distance around the shape, which is the sum of the lengths of all its sides.
+
+  Args:
+    side_length: The length of one side of the regular pentagon.
+
+  Returns:
+    The perimeter of the pentagon.
+  """
+  if side_length < 0:
+    raise ValueError("Side length cannot be negative.")
+  return 5 * side_length
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+  # Test case from the problem description
+  assert perimeter_pentagon(5) == 25
+
+  # Additional test cases
+  assert perimeter_pentagon(1) == 5
+  assert perimeter_pentagon(10.5) == 52.5
+  assert perimeter_pentagon(0) == 0
+
+  # Test for invalid input
+  try:
+    perimeter_pentagon(-5)
+    assert False, "Expected a ValueError for negative side length"
+  except ValueError:
+    pass # This is the expected behavior
+
+  print("All tests passed!")
+```

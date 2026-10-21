@@ -1,0 +1,29 @@
+```python
+def remove_kth_element(lst, k):
+    """
+    This function takes a list and an integer k as input, 
+    and returns a new list with the k'th element removed.
+
+    Args:
+        lst (list): The input list.
+        k (int): The index of the element to be removed (1-indexed).
+
+    Returns:
+        list: A new list with the k'th element removed.
+    """
+    # Check if k is within the valid range
+    if k < 1 or k > len(lst):
+        raise IndexError("k is out of range")
+    
+    # Use list slicing to create a new list without the k'th element
+    return lst[:k-1] + lst[k:]
+
+# Test the function
+def main():
+    lst = [1,1,2,3,4,4,5,1]
+    k = 3
+    print(remove_kth_element(lst, k))  # Expected output: [1, 1, 3, 4, 4, 5, 1]
+
+if __name__ == "__main__":
+    main()
+```

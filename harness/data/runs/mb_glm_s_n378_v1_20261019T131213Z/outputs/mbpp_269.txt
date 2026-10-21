@@ -1,0 +1,24 @@
+```python
+def ascii_value(char):
+  """
+  Write a function to find the ascii value of a character.
+
+  Args:
+    char: A single character string.
+
+  Returns:
+    The ASCII value of the character as an integer.
+  """
+  # The built-in ord() function in Python returns the ASCII value
+  # of a given character.
+  return ord(char)
+
+# Example usage and assertion to verify the function
+assert ascii_value('A') == 65
+
+# You can test it with other characters as well
+print(f"The ASCII value of 'A' is: {ascii_value('A')}")
+print(f"The ASCII value of 'a' is: {ascii_value('a')}")
+print(f"The ASCII value of '0' is: {ascii_value('0')}")
+print(f"The ASCII value of '$' is: {ascii_value('$')}")
+```

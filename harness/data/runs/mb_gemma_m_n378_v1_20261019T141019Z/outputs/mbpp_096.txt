@@ -1,0 +1,36 @@
+```python
+def divisor(n: int) -> int:
+    """
+    Finds the number of divisors of a given integer n.
+    
+    Args:
+        n: The integer to find divisors for.
+        
+    Returns:
+        The total count of divisors.
+    """
+    if n <= 0:
+        return 0
+    
+    count = 0
+    # We only need to iterate up to the square root of n
+    # to find all divisors efficiently.
+    for i in range(1, int(n**0.5) + 1):
+        if n % i == 0:
+            # If divisors are equal (e.g., 4*4 = 16), count only once
+            if i * i == n:
+                count += 1
+            else:
+                # Otherwise, count both i and (n / i)
+                count += 2
+    return count
+
+if __name__ == "__main__":
+    # Test cases
+    assert divisor(15) == 4  # Divisors: 1, 3, 5, 15
+    assert divisor(1) == 1   # Divisors: 1
+    assert divisor(16) == 5   # Divisors: 1, 2, 4, 8, 16
+    assert divisor(7) == 2    # Divisors: 1, 7 (Prime number)
+    
+    print("All tests passed!")
+```

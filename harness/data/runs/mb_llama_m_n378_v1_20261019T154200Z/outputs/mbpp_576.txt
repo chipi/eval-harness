@@ -1,0 +1,24 @@
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Checks if a list is a sublist of another list.
+
+    Args:
+        main_list (list): The main list to check against.
+        sub_list (list): The sublist to check for.
+
+    Returns:
+        bool: True if the sublist is found in the main list, False otherwise.
+    """
+    # Convert the lists to strings to easily check for substrings
+    main_str = ','.join(map(str, main_list))
+    sub_str = ','.join(map(str, sub_list))
+
+    # Check if the sublist string is a substring of the main list string
+    return sub_str in main_str
+
+# Test the function
+assert is_Sub_Array([1,4,3,5],[1,2]) == False
+assert is_Sub_Array([1,2,3,4,5],[2,3,4]) == True
+assert is_Sub_Array([1,2,3,4,5],[6,7,8]) == False
+```

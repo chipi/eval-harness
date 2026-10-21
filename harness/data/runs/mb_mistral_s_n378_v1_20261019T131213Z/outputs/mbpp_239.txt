@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem using dynamic programming:
+
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    Returns the number of possible sequences of length n where each element is a positive integer
+    greater than or equal to twice the previous element and less than or equal to m.
+
+    Args:
+        m: The maximum allowed value in the sequence (inclusive)
+        n: The length of the sequence
+
+    Returns:
+        The count of valid sequences
+    """
+    if n == 0:
+        return 0
+    if n == 1:
+        return m
+
+    # dp[i][j] will store the number of sequences of length i ending with j
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+
+    # Base case: sequences of length 1
+    for j in range(1, m + 1):
+        dp[1][j] = 1
+
+    for i in range(2, n + 1):
+        for j in range(1, m + 1):
+            # The previous element must be in [1, j//2] to satisfy x[i-1] <= x[i]/2
+            for prev in range(1, (j // 2) + 1):
+                dp[i][j] += dp[i-1][prev]
+
+    # Sum all possible sequences of length n
+    return sum(dp[n][1:])
+
+# Test case
+assert get_total_number_of_sequences(10, 4) == 4
+print("Test passed!")
+```
+
+### Explanation:
+1. **Dynamic Programming Approach**: We use a 2D array `dp` where `dp[i][j]` represents the number of valid sequences of length `i` that end with the number `j`.
+2. **Base Case**: For sequences of length 1, there are exactly `m` possible sequences (1 through `m`).
+3. **Recurrence Relation**: For each position `i` and value `j` in the sequence, the previous element must be at least 1 and at most `j//2` (since `x[i] >= 2 * x[i-1]`). We sum the counts of all valid previous sequences that could lead to `j`.
+4. **Result**: The total number of valid sequences of length `n` is the sum of all `dp[n][j]` for `j` from 1 to `m`.
+
+The test case `get_total_number_of_sequences(10, 4)` returns 4, which matches the expected result. The script also includes a print statement to confirm the test passed.

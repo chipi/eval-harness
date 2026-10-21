@@ -1,0 +1,11 @@
+```python
+def swap_numbers(a: int, b: int) -> tuple:
+    """
+    Returns a tuple with the second number first and the first number second.
+    """
+    return (b, a)
+
+# Example usage and test
+assert swap_numbers(10, 20) == (20, 10)
+print("Test passed:", swap_numbers(10, 20))
+```

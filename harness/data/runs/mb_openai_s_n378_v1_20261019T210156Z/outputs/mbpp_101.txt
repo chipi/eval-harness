@@ -1,0 +1,20 @@
+```python
+def kth_element(arr, k):
+    """
+    Return the k-th smallest element in the array using 1-based indexing.
+
+    Example:
+        kth_element([12, 3, 5, 7, 19], 2) -> 3
+    """
+    if not isinstance(k, int):
+        raise TypeError("k must be an integer")
+    if k < 1 or k > len(arr):
+        raise IndexError("k is out of range")
+
+    return sorted(arr)[k - 1]
+
+
+if __name__ == "__main__":
+    assert kth_element([12, 3, 5, 7, 19], 2) == 3
+    print("All tests passed.")
+```

@@ -1,0 +1,9 @@
+```python
+def reverse_string_list(lst):
+    return [s[::-1] for s in lst]
+
+# Test cases
+assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black'])==['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+assert reverse_string_list(['Python', 'Java', 'C++', 'JavaScript'])==['nohtyP', 'avaJ', '++C', 'tpircSavaJ']
+assert reverse_string_list(['123', '456', '789'])==['321', '654', '987']
+```

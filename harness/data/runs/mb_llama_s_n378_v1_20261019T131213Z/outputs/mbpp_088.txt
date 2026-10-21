@@ -1,0 +1,50 @@
+```python
+def freq_count(lst):
+    """
+    This function calculates the frequency of all elements in a given list.
+    
+    Args:
+        lst (list): A list of elements.
+    
+    Returns:
+        dict: A dictionary where keys are the unique elements from the list and values are their frequencies.
+    """
+    freq_dict = {}  # Initialize an empty dictionary to store the frequency of elements
+    
+    # Iterate over each element in the list
+    for elem in lst:
+        # If the element is already in the dictionary, increment its count
+        if elem in freq_dict:
+            freq_dict[elem] += 1
+        # If the element is not in the dictionary, add it with a count of 1
+        else:
+            freq_dict[elem] = 1
+    
+    return freq_dict
+
+# Alternatively, you can use the built-in dict.get() method or collections.Counter for a more concise solution
+from collections import Counter
+
+def freq_count_concise(lst):
+    """
+    This function calculates the frequency of all elements in a given list.
+    
+    Args:
+        lst (list): A list of elements.
+    
+    Returns:
+        dict: A dictionary where keys are the unique elements from the list and values are their frequencies.
+    """
+    return dict(Counter(lst))
+
+# Test the functions
+print(freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30]))
+print(freq_count_concise([10,10,10,10,20,20,20,20,40,40,50,50,30]))
+```
+
+The provided Python script defines two functions, `freq_count` and `freq_count_concise`, to calculate the frequency of elements in a given list. 
+
+- The `freq_count` function iterates over the list, updating a dictionary with the frequency of each element.
+- The `freq_count_concise` function uses the `Counter` class from the `collections` module to achieve the same result in a more concise manner.
+
+Both functions return a dictionary where keys are the unique elements from the list and values are their frequencies. The test cases demonstrate the usage of these functions with a sample list.

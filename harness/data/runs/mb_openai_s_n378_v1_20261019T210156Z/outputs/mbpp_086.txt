@@ -1,0 +1,23 @@
+```python
+def centered_hexagonal_number(n: int) -> int:
+    """
+    Return the nth centered hexagonal number.
+
+    Formula:
+        C_n = 3n(n - 1) + 1
+
+    Examples:
+        n = 1 -> 1
+        n = 2 -> 7
+        n = 3 -> 19
+        ...
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 3 * n * (n - 1) + 1
+
+
+if __name__ == "__main__":
+    assert centered_hexagonal_number(10) == 271
+    print("All tests passed.")
+```

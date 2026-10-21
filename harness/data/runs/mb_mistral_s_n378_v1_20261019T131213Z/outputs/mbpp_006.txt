@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of checking whether two numbers differ at exactly one bit position:
+
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Check if two numbers differ at exactly one bit position.
+
+    Args:
+        a (int): First number
+        b (int): Second number
+
+    Returns:
+        bool: True if the numbers differ at exactly one bit position, False otherwise
+    """
+    # XOR the two numbers to find differing bits
+    xor_result = a ^ b
+
+    # Count the number of set bits in the XOR result
+    # If exactly one bit is set, the numbers differ at one position
+    return (xor_result & (xor_result - 1)) == 0 and xor_result != 0
+
+# Test cases
+assert differ_At_One_Bit_Pos(13, 9) == True
+assert differ_At_One_Bit_Pos(10, 11) == True
+assert differ_At_One_Bit_Pos(5, 3) == False
+assert differ_At_One_Bit_Pos(0, 1) == True
+assert differ_At_One_Bit_Pos(0, 0) == False
+assert differ_At_One_Bit_Pos(1, 0) == True
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function uses XOR operation (`^`) to find the differing bits between the two numbers. XOR will be 0 where bits are the same and 1 where they differ.
+2. The expression `(xor_result & (xor_result - 1)) == 0` is a clever trick to check if there's exactly one set bit in the XOR result. If there's only one set bit, subtracting 1 will flip all bits after that position, and the AND with the original will be 0.
+3. We also check `xor_result != 0` to handle the case where the numbers are equal (which would have no differing bits).
+
+The test cases verify the function works for various scenarios including edge cases.

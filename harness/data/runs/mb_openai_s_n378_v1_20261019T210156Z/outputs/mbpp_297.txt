@@ -1,0 +1,19 @@
+```python
+def flatten_list(nested_list):
+    """Flatten a nested list structure into a single list."""
+    result = []
+    for item in nested_list:
+        if isinstance(item, list):
+            result.extend(flatten_list(item))
+        else:
+            result.append(item)
+    return result
+
+
+if __name__ == "__main__":
+    # Example test
+    assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [
+        0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120
+    ]
+    print("All tests passed.")
+```

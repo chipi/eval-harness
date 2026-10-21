@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def square_nums(numbers):
+    """Return a list of squares of individual elements in the input list."""
+    return [num ** 2 for num in numbers]
+
+# Test the function
+assert square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `square_nums` that takes a list of numbers as input
+2. Uses a list comprehension to create a new list with each element squared
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The solution is concise and uses Python's list comprehension feature for efficient and readable code.

@@ -1,0 +1,26 @@
+```python
+def text_lowercase_underscore(s: str) -> bool:
+    """
+    Returns True if the input string contains sequences of lowercase letters joined with an underscore,
+    and False otherwise.
+    """
+    if not s:
+        return False
+
+    # Split the string by underscores
+    parts = s.split('_')
+
+    # Check if there's at least one underscore (i.e., more than one part)
+    if len(parts) < 2:
+        return False
+
+    # Check each part is non-empty and consists only of lowercase letters
+    for part in parts:
+        if not part or not part.islower() or not part.isalpha():
+            return False
+
+    return True
+
+# Test case
+assert text_lowercase_underscore("aab_cbbbc") == True
+```

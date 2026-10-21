@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of moving all zeroes to the end of a list:
+
+```python
+def move_zero(lst):
+    """
+    Moves all zeroes to the end of the list while maintaining the order of non-zero elements.
+
+    Args:
+        lst: List of integers to process
+
+    Returns:
+        List with all zeroes moved to the end
+    """
+    # Separate non-zero and zero elements
+    non_zeros = [x for x in lst if x != 0]
+    zeros = [x for x in lst if x == 0]
+
+    # Combine them with zeros at the end
+    return non_zeros + zeros
+
+# Test case
+assert move_zero([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+```
+
+This solution:
+1. Uses list comprehensions to separate non-zero and zero elements
+2. Combines them with zeros at the end
+3. Maintains the original order of non-zero elements
+4. Passes the provided test case
+
+The function has a time complexity of O(n) and space complexity of O(n) as it creates two new lists. For an in-place solution with O(1) space complexity, we could modify the list directly, but this version is more readable and meets the requirements.

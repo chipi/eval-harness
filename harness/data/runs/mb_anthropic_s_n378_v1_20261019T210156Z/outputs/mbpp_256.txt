@@ -1,0 +1,43 @@
+```python
+def count_Primes_nums(n):
+    """
+    Returns the count of prime numbers less than the given non-negative number.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The count of prime numbers less than n
+        
+    Examples:
+        count_Primes_nums(5) == 2  # primes less than 5: [2, 3]
+        count_Primes_nums(10) == 4  # primes less than 10: [2, 3, 5, 7]
+    """
+    if n <= 2:
+        return 0
+    
+    # Use Sieve of Eratosthenes for efficient prime counting
+    is_prime = [True] * n
+    is_prime[0] = is_prime[1] = False
+    
+    for i in range(2, int(n**0.5) + 1):
+        if is_prime[i]:
+            # Mark all multiples of i as not prime
+            for j in range(i*i, n, i):
+                is_prime[j] = False
+    
+    # Count the primes
+    return sum(is_prime)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert count_Primes_nums(5) == 2, "Test case 1 failed"
+    assert count_Primes_nums(10) == 4, "Test case 2 failed"
+    assert count_Primes_nums(2) == 0, "Test case 3 failed"
+    assert count_Primes_nums(0) == 0, "Test case 4 failed"
+    assert count_Primes_nums(1) == 0, "Test case 5 failed"
+    assert count_Primes_nums(100) == 25, "Test case 6 failed"
+    
+    print("All test cases passed!")
+```

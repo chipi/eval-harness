@@ -1,0 +1,11 @@
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """Return True if non-negative integers a and b differ at exactly one bit."""
+    if a < 0 or b < 0:
+        raise ValueError("Inputs must be non-negative integers")
+    difference = a ^ b
+    return difference != 0 and (difference & (difference - 1)) == 0
+
+
+assert differ_At_One_Bit_Pos(13, 9) is True
+```

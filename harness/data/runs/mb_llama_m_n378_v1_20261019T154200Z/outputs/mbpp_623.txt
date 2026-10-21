@@ -1,0 +1,17 @@
+```python
+def nth_nums(nums, n):
+    """
+    Compute the n-th power of each number in a list.
+
+    Args:
+        nums (list): A list of numbers.
+        n (int): The power to which each number should be raised.
+
+    Returns:
+        list: A list of numbers, each of which is the n-th power of the corresponding number in the input list.
+    """
+    return [num ** n for num in nums]
+
+# Example usage:
+print(nth_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2))
+```

@@ -1,0 +1,20 @@
+```python
+def add_tuple(lst, tup):
+    """
+    Add the elements of the given tuple to the given list and return the result.
+
+    Args:
+        lst (list): The original list.
+        tup (tuple): The tuple whose elements should be added to the list.
+
+    Returns:
+        list: A new list containing the original list elements followed by the tuple elements.
+    """
+    return lst + list(tup)
+
+
+# Test
+assert add_tuple([5, 6, 7], (9, 10)) == [5, 6, 7, 9, 10]
+
+print("All tests passed.")
+```

@@ -1,0 +1,39 @@
+```python
+def cal_sum(n):
+    """
+    Calculate the sum of the first n Perrin numbers.
+    
+    The Perrin sequence is defined by the recurrence relation:
+    P(0) = 3
+    P(1) = 0
+    P(2) = 2
+    P(n) = P(n-2) + P(n-3) for n > 2
+    
+    Args:
+        n (int): The number of initial Perrin numbers to sum.
+        
+    Returns:
+        int: The sum of the first n Perrin numbers.
+    """
+    if n <= 0:
+        return 0
+        
+    # Base cases for the Perrin sequence
+    perrin = [3, 0, 2]
+    
+    # If n is small, we can just sum the relevant slice of the base cases
+    if n <= 3:
+        return sum(perrin[:n])
+        
+    # For n > 3, calculate the rest of the sequence up to n
+    for _ in range(3, n):
+        next_val = perrin[-2] + perrin[-3]
+        perrin.append(next_val)
+        
+    return sum(perrin)
+
+# Test the function against the provided assertion
+if __name__ == "__main__":
+    assert cal_sum(9) == 49
+    print("Assertion passed: cal_sum(9) == 49")
+```

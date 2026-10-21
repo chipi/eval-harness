@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of finding the sum of products of all possible subarrays of a given list:
+
+```python
+def sum_Of_Subarray_Prod(arr):
+    total = 0
+    n = len(arr)
+
+    for i in range(n):
+        current_product = 1
+        for j in range(i, n):
+            current_product *= arr[j]
+            total += current_product
+
+    return total
+
+# Test case
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+print("Test passed!")
+```
+
+### Explanation:
+1. The function `sum_Of_Subarray_Prod` takes a list `arr` as input.
+2. It initializes `total` to 0, which will store the sum of all subarray products.
+3. The outer loop runs from the first element to the last element of the list, setting the starting index of the subarray.
+4. The inner loop runs from the current starting index to the end of the list, calculating the product of the subarray starting at `i` and ending at `j`.
+5. The product of each subarray is added to `total`.
+6. The function returns the total sum of all subarray products.
+
+### Example:
+For the input `[1, 2, 3]`, the subarrays and their products are:
+- [1] → 1
+- [1, 2] → 1*2 = 2
+- [1, 2, 3] → 1*2*3 = 6
+- [2] → 2
+- [2, 3] → 2*3 = 6
+- [3] → 3
+
+Sum: 1 + 2 + 6 + 2 + 6 + 3 = 20, which matches the assertion.

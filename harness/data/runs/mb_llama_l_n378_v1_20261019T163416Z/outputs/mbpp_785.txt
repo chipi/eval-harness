@@ -1,0 +1,8 @@
+```python
+def tuple_str_int(tuple_str):
+    tuple_str = tuple_str.strip("(").strip(")")
+    return tuple(int(num) for num in tuple_str.split(", "))
+
+# Test the function
+print(tuple_str_int("(7, 8, 9)"))  # Expected output: (7, 8, 9)
+```

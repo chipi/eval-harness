@@ -1,0 +1,18 @@
+```python
+from collections import Counter
+
+def first_non_repeating_character(s: str):
+    """
+    Return the first character in `s` that appears exactly once.
+    If no such character exists, return None.
+    """
+    counts = Counter(s)
+    for ch in s:
+        if counts[ch] == 1:
+            return ch
+    return None
+
+
+# Example test
+assert first_non_repeating_character("abcabc") is None
+```

@@ -1,0 +1,46 @@
+```python
+def tuple_to_dict(t):
+    """
+    Convert a tuple to a key-value dictionary using adjacent elements.
+    
+    Takes every pair of adjacent elements from the tuple where the first element
+    of each pair becomes a key and the second element becomes the value.
+    
+    Args:
+        t: A tuple with an even number of elements
+        
+    Returns:
+        A dictionary with alternating elements as key-value pairs
+        
+    Example:
+        >>> tuple_to_dict((1, 5, 7, 10, 13, 5))
+        {1: 5, 7: 10, 13: 5}
+    """
+    return {t[i]: t[i + 1] for i in range(0, len(t), 2)}
+
+
+# Test cases
+if __name__ == "__main__":
+    assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+    print("✓ Test passed: tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}")
+    
+    # Additional test cases
+    assert tuple_to_dict((2, 4, 6, 8)) == {2: 4, 6: 8}
+    print("✓ Test passed: tuple_to_dict((2, 4, 6, 8)) == {2: 4, 6: 8}")
+    
+    assert tuple_to_dict(('a', 1, 'b', 2)) == {'a': 1, 'b': 2}
+    print("✓ Test passed: tuple_to_dict(('a', 1, 'b', 2)) == {'a': 1, 'b': 2}")
+    
+    assert tuple_to_dict(()) == {}
+    print("✓ Test passed: tuple_to_dict(()) == {}")
+    
+    print("\nAll tests passed!")
+```
+
+The solution uses a dictionary comprehension that:
+1. Iterates through the tuple with a step of 2 (indices 0, 2, 4, ...)
+2. Uses each element at index `i` as a key
+3. Uses the next element at index `i + 1` as the corresponding value
+4. Returns the resulting dictionary
+
+This efficiently converts adjacent pairs of elements into key-value pairs.

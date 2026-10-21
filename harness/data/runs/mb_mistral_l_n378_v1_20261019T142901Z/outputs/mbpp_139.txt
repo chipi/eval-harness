@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem, including the necessary import and the function definition:
+
+```python
+import math
+
+def circle_circumference(radius):
+    """
+    Calculate the circumference of a circle given its radius.
+
+    Parameters:
+    radius (float): The radius of the circle.
+
+    Returns:
+    float: The circumference of the circle.
+    """
+    return 2 * math.pi * radius
+
+# Test the function
+assert math.isclose(circle_circumference(10), 62.830000000000005, rel_tol=0.001)
+```

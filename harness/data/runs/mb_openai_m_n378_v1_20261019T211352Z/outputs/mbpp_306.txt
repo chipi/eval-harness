@@ -1,0 +1,69 @@
+```python
+#!/usr/bin/env python3
+"""
+Maximum sum of an increasing subsequence from arr[0..i] that can be extended
+by including arr[k], where k > i.
+
+The subsequence must:
+- use elements only from the prefix arr[0..i]
+- be strictly increasing
+- include arr[k] after the chosen prefix subsequence
+
+Therefore, the last chosen element from arr[0..i] must be < arr[k].
+
+Example:
+arr = [1, 101, 2, 3, 100, 4, 5]
+i = 4, k = 6
+
+arr[k] = 5
+Valid increasing subsequence from prefix ending before 5 with max sum is:
+1 + 2 + 3 = 6
+Including arr[k]:
+6 + 5 = 11
+"""
+
+
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Return the maximum sum of an increasing subsequence from arr[0..i]
+    including arr[k], where k > i.
+
+    Parameters:
+        arr (list[int]): Input array
+        n (int): Length of array
+        i (int): Last index of prefix
+        k (int): Index of required element after i
+
+    Returns:
+        int: Maximum sum of a valid increasing subsequence including arr[k]
+    """
+    if n != len(arr):
+        raise ValueError("n must be equal to len(arr)")
+    if not (0 <= i < k < n):
+        raise ValueError("Require indices satisfying 0 <= i < k < n")
+
+    # dp[j] = maximum sum of an increasing subsequence ending at index j,
+    # using only elements from arr[0..i].
+    dp = arr[: i + 1]
+
+    for j in range(i + 1):
+        for prev in range(j):
+            if arr[prev] < arr[j]:
+                dp[j] = max(dp[j], dp[prev] + arr[j])
+
+    # We can append arr[k] only after a subsequence ending with value < arr[k].
+    best_prefix_sum = 0
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            best_prefix_sum = max(best_prefix_sum, dp[j])
+
+    return best_prefix_sum + arr[k]
+
+
+if __name__ == "__main__":
+    assert max_sum_increasing_subseq(
+        [1, 101, 2, 3, 100, 4, 5], 7, 4, 6
+    ) == 11
+
+    print("All tests passed.")
+```

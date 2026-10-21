@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem by finding all possible combinations of sums from pairs of tuples in the given list:
+
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    Find all combinations of sums with tuples in the given tuple list.
+
+    Args:
+        tuple_list: List of tuples to combine
+
+    Returns:
+        List of tuples representing all possible sum combinations
+    """
+    result = []
+    # Generate all possible pairs of tuples (combinations of 2)
+    for t1, t2 in combinations(tuple_list, 2):
+        # Calculate the sum of each element in the tuples
+        sum_tuple = (t1[0] + t2[0], t1[1] + t2[1])
+        result.append(sum_tuple)
+    return result
+
+# Test the function
+assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+```
+
+This solution:
+1. Uses `itertools.combinations` to generate all possible pairs of tuples from the input list
+2. For each pair, creates a new tuple by summing the corresponding elements
+3. Collects all these sum tuples in a result list
+4. Returns the result list
+
+The test assertion verifies that the function produces the expected output for the given example.

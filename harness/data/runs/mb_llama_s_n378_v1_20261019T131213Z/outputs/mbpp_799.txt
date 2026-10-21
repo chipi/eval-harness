@@ -1,0 +1,58 @@
+```python
+def left_rotate(num, d):
+    """
+    Rotate left bits by d bits a given number.
+    
+    We assume that the number is 32 bit.
+    
+    Parameters:
+    num (int): The number to be rotated.
+    d (int): The number of bits to rotate.
+    
+    Returns:
+    int: The rotated number.
+    """
+    # Define the number of bits in a 32-bit integer
+    num_bits = 32
+    
+    # Calculate the actual number of bits to rotate, 
+    # in case d is greater than the number of bits
+    d = d % num_bits
+    
+    # Convert the number to binary, remove the '0b' prefix, 
+    # pad with zeros to 32 bits, and convert back to a string
+    bin_num = bin(num)[2:].zfill(num_bits)
+    
+    # Rotate the bits to the left
+    rotated_bin_num = bin_num[d:] + bin_num[:d]
+    
+    # Convert the binary string back to an integer
+    rotated_num = int(rotated_bin_num, 2)
+    
+    return rotated_num
+
+assert left_rotate(16,2) == 64
+```
+
+Alternatively, you can use bitwise operations to achieve the same result more efficiently:
+
+```python
+def left_rotate(num, d):
+    """
+    Rotate left bits by d bits a given number.
+    
+    We assume that the number is 32 bit.
+    
+    Parameters:
+    num (int): The number to be rotated.
+    d (int): The number of bits to rotate.
+    
+    Returns:
+    int: The rotated number.
+    """
+    num_bits = 32
+    d = d % num_bits
+    return (num << d | num >> (num_bits - d)) & ((1 << num_bits) - 1)
+
+assert left_rotate(16,2) == 64
+```

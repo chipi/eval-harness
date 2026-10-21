@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem of merging three dictionaries into a single dictionary, with the last dictionary's values taking precedence in case of key conflicts:
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    In case of key conflicts, the last dictionary's value is kept.
+
+    Args:
+        dict1 (dict): First dictionary
+        dict2 (dict): Second dictionary
+        dict3 (dict): Third dictionary
+
+    Returns:
+        dict: Merged dictionary
+    """
+    merged = {}
+    # Update with dict1
+    merged.update(dict1)
+    # Update with dict2
+    merged.update(dict2)
+    # Update with dict3 (takes precedence)
+    merged.update(dict3)
+    return merged
+
+# Test case
+assert merge_dictionaries_three(
+    { "R": "Red", "B": "Black", "P": "Pink" },
+    { "G": "Green", "W": "White" },
+    { "O": "Orange", "W": "White", "B": "Black" }
+) == {'R': 'Red', 'B': 'Black', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+```
+
+Alternative implementation using dictionary unpacking (Python 3.5+):
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries using dictionary unpacking.
+    """
+    return {**dict1, **dict2, **dict3}
+
+# Test case
+assert merge_dictionaries_three(
+    { "R": "Red", "B": "Black", "P": "Pink" },
+    { "G": "Green", "W": "White" },
+    { "O": "Orange", "W": "White", "B": "Black" }
+) == {'R': 'Red', 'B': 'Black', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+```
+
+Both implementations will pass the given test case. The second implementation is more concise and takes advantage of Python's dictionary unpacking feature.

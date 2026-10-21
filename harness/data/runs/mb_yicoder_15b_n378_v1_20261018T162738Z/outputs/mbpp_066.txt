@@ -1,0 +1,10 @@
+```python
+def pos_count(lst):
+    return sum(1 for num in lst if num > 0)
+
+# Test cases
+assert pos_count([1,-2,3,-4]) == 2
+assert pos_count([0,-2,3,-4]) == 1
+assert pos_count([-1,-2,-3,-4]) == 0
+assert pos_count([1,2,3,4]) == 4
+```

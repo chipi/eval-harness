@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def unique_product(numbers):
+    """
+    Calculate the product of the unique numbers in a given list.
+
+    Args:
+        numbers: List of integers
+
+    Returns:
+        The product of unique numbers in the list
+    """
+    unique_numbers = list(set(numbers))
+    product = 1
+    for num in unique_numbers:
+        product *= num
+    return product
+
+# Test case
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `unique_product` that takes a list of numbers
+2. Converts the list to a set to remove duplicates, then back to a list
+3. Calculates the product of all unique numbers
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will return 720000000 (which is 10 × 20 × 30 × 40 × 50 × 60) for the given input.

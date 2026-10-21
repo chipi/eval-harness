@@ -1,0 +1,19 @@
+```python
+def extract_singly(list_of_tuples):
+    """
+    Flatten a list of tuples into a single set of numbers.
+
+    Args:
+        list_of_tuples: A list of tuples, where each tuple contains numbers.
+
+    Returns:
+        A set containing all the numbers from the input list of tuples.
+    """
+    result = set()
+    for t in list_of_tuples:
+        result.update(t)
+    return result
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+```

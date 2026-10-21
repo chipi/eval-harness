@@ -1,0 +1,17 @@
+```python
+def rear_extract(tuples_list):
+    """
+    This function takes in a list of tuples and returns a list containing the rear element of each tuple.
+
+    Args:
+        tuples_list (list): A list of tuples.
+
+    Returns:
+        list: A list containing the rear element of each tuple.
+    """
+    return [t[-1] for t in tuples_list]
+
+# Test the function
+assert rear_extract([(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)]) == [21, 20, 19]
+print(rear_extract([(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)]))
+```

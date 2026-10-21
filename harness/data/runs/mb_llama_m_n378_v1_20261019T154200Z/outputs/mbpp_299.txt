@@ -1,0 +1,33 @@
+```python
+def max_aggregate(students):
+    """
+    Calculate the maximum aggregate from the list of tuples.
+
+    Args:
+        students (list): A list of tuples, where each tuple contains a student's name and their score.
+
+    Returns:
+        tuple: A tuple containing the name of the student with the maximum aggregate and their aggregate score.
+    """
+    # Create a dictionary to store the aggregate score for each student
+    aggregates = {}
+    
+    # Iterate over the list of students
+    for student, score in students:
+        # If the student is already in the dictionary, add the score to their aggregate
+        if student in aggregates:
+            aggregates[student] += score
+        # If the student is not in the dictionary, add them with their score as their aggregate
+        else:
+            aggregates[student] = score
+    
+    # Find the student with the maximum aggregate
+    max_student = max(aggregates, key=aggregates.get)
+    
+    # Return the student with the maximum aggregate and their aggregate score
+    return max_student, aggregates[max_student]
+
+# Test the function
+students = [('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]
+print(max_aggregate(students))  # Output: ('Juan Whelan', 212)
+```

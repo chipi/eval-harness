@@ -1,0 +1,29 @@
+```python
+def find_char_long(s):
+    """
+    Finds all words in a string that are at least 4 characters long.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        A list of words that are at least 4 characters long.
+    """
+    # Split the string into a list of words
+    words = s.split()
+    
+    # Use a list comprehension to filter words with length >= 4
+    long_words = [word for word in words if len(word) >= 4]
+    
+    return long_words
+
+# Example usage and assertion from the problem description
+assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+
+# Additional test cases
+assert set(find_char_long('This is a test string')) == set(['This', 'test', 'string'])
+assert set(find_char_long('Short')) == set([])
+assert set(find_char_long('A very long sentence with many words')) == set(['very', 'long', 'sentence', 'with', 'many', 'words'])
+
+print("All tests passed!")
+```

@@ -1,0 +1,22 @@
+```python
+def tuple_to_dict(tup):
+    """
+    Convert a tuple to a dictionary by pairing adjacent elements.
+    
+    Args:
+        tup: A tuple with an even number of elements
+        
+    Returns:
+        A dictionary where each pair of adjacent elements becomes a key-value pair
+    """
+    # Using dictionary comprehension with step of 2
+    return {tup[i]: tup[i + 1] for i in range(0, len(tup), 2)}
+
+# Test the function with the given example
+if __name__ == "__main__":
+    result = tuple_to_dict((1, 5, 7, 10, 13, 5))
+    print(f"Input: (1, 5, 7, 10, 13, 5)")
+    print(f"Output: {result}")
+    assert result == {1: 5, 7: 10, 13: 5}, f"Expected {{1: 5, 7: 10, 13: 5}}, got {result}"
+    print("Test passed!")
+```

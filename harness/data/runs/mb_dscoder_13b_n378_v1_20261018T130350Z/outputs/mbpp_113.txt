@@ -1,0 +1,15 @@
+```python
+def check_integer(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+# Test cases
+assert check_integer("123") == True
+assert check_integer("python") == False
+assert check_integer("3.14") == False
+assert check_integer("0") == True
+assert check_integer("0.0") == True
+```

@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem of removing uneven elements from a nested mixed tuple:
+
+```python
+def extract_even(nested_tuple):
+    """
+    Recursively processes a nested tuple and removes all elements that are not even numbers.
+    Returns a new tuple with only the even numbers and their nested structures preserved.
+
+    Args:
+        nested_tuple: A tuple that may contain numbers and other nested tuples.
+
+    Returns:
+        A new tuple with only even numbers and their nested structures.
+    """
+    result = []
+    for element in nested_tuple:
+        if isinstance(element, tuple):
+            # Recursively process nested tuples
+            processed = extract_even(element)
+            if processed:  # Only add if the processed tuple is not empty
+                result.append(processed)
+        elif isinstance(element, int) and element % 2 == 0:
+            # Add even numbers
+            result.append(element)
+    return tuple(result)
+
+# Test the function
+assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+print("Test passed!")
+```
+
+This script:
+1. Defines a recursive function `extract_even` that processes nested tuples
+2. For each element in the tuple:
+   - If it's a tuple, recursively processes it
+   - If it's an even integer, keeps it
+   - Otherwise, skips it
+3. Returns a new tuple with only the even numbers and their nested structures
+4. Includes the test case from the problem statement
+
+The function preserves the structure of the original tuple while removing all odd numbers and non-integer elements.

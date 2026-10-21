@@ -1,0 +1,54 @@
+To solve this problem, we can use **Kadane's Algorithm**, which is an efficient $O(n)$ approach to find the maximum sum of a contiguous subarray.
+
+Here is the self-contained Python script:
+
+```python
+def max_sub_array_sum(nums, n):
+    """
+    Finds the sum of the largest contiguous sublist using Kadane's Algorithm.
+    
+    Args:
+        nums (list): The list of integers.
+        n (int): The length of the list (provided in the prompt signature).
+        
+    Returns:
+        int: The maximum sum found.
+    """
+    if not nums:
+        return 0
+
+    # Initialize current_max and global_max with the first element
+    current_max = global_max = nums[0]
+
+    # Iterate through the list starting from the second element
+    for i in range(1, n):
+        # Either start a new sublist at the current element 
+        # or extend the existing sublist
+        current_max = max(nums[i], current_max + nums[i])
+        
+        # Update the global maximum if the current sublist is larger
+        if current_max > global_max:
+            global_max = current_max
+
+    return global_max
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Note: The prompt includes '8' as the second argument, representing the length.
+    test_list = [-2, -3, 4, -1, -2, 1, 5, -3]
+    result = max_sub_array_sum(test_list, 8)
+    
+    print(f"Input List: {test_list}")
+    print(f"Result: {result}")
+    
+    # Assertion check
+    assert result == 7, f"Expected 7, but got {result}"
+    print("Assertion passed!")
+```
+
+### Explanation:
+1.  **Kadane's Algorithm**: The core logic relies on the idea that for every index $i$, the maximum sum ending at $i$ is either the element itself or the element plus the maximum sum ending at $i-1$.
+2.  **Complexity**: 
+    *   **Time Complexity**: $O(n)$, as we iterate through the list exactly once.
+    *   **Space Complexity**: $O(1)$, as we only store two integer variables (`current_max` and `global_max`).
+3.  **Edge Cases**: The script handles lists containing all negative numbers correctly by initializing the trackers with the first element of the array rather than zero.

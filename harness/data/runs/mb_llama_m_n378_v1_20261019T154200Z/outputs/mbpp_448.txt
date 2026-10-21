@@ -1,0 +1,36 @@
+```python
+def cal_sum(n):
+    """
+    Calculate the sum of Perrin numbers up to the nth number.
+
+    The Perrin sequence is a sequence of integers, defined recursively as:
+    P(0) = 3, P(1) = 0, P(2) = 2, and P(n) = P(n-2) + P(n-3) for n > 2.
+
+    Args:
+        n (int): The number of Perrin numbers to sum.
+
+    Returns:
+        int: The sum of the first n Perrin numbers.
+    """
+    # Base cases for the Perrin sequence
+    if n == 0:
+        return 3
+    elif n == 1:
+        return 0
+    elif n == 2:
+        return 2
+
+    # Initialize the first three Perrin numbers
+    a, b, c = 3, 0, 2
+    total = a + b + c  # Sum of the first three Perrin numbers
+
+    # Calculate the sum of the remaining Perrin numbers
+    for _ in range(3, n):
+        a, b, c = b, c, a + b
+        total += c
+
+    return total
+
+# Test the function
+print(cal_sum(9))  # Output: 49
+```

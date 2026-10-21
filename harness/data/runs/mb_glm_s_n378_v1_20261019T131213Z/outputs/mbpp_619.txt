@@ -1,0 +1,47 @@
+```python
+def move_num(s: str) -> str:
+    """
+    Moves all the numbers in a string to the end of the string.
+
+    This function iterates through the input string and separates the
+    characters into two lists: one for letters and one for digits.
+    It then joins these two lists back into a single string, with all
+    the letters first followed by all the digits.
+
+    Args:
+        s: The input string containing letters and numbers.
+
+    Returns:
+        A new string with all numbers moved to the end.
+
+    Example:
+        >>> move_num('I1love143you55three3000thousand')
+        'Iloveyouthreethousand1143553000'
+    """
+    letters = []
+    numbers = []
+    
+    # Iterate through each character in the string
+    for char in s:
+        if char.isdigit():
+            numbers.append(char)
+        else:
+            letters.append(char)
+            
+    # Join the lists of letters and numbers into a single string
+    return "".join(letters + numbers)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_string = 'I1love143you55three3000thousand'
+    expected_output = 'Iloveyouthreethousand1143553000'
+    
+    result = move_num(input_string)
+    
+    print(f"Input string:    '{input_string}'")
+    print(f"Expected output: '{expected_output}'")
+    print(f"Actual output:   '{result}'")
+    
+    assert result == expected_output
+    print("\nAssertion passed!")
+```

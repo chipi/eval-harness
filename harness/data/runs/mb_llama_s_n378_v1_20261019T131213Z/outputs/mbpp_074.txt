@@ -1,0 +1,49 @@
+### Sequence Pattern Checker
+#### Problem Description
+Write a function to check whether a given sequence follows the same pattern as a provided patterns array.
+
+#### Solution
+
+```python
+def is_samepatterns(patterns, sequence):
+    """
+    Checks if a given sequence follows the same pattern as a provided patterns array.
+
+    Args:
+        patterns (list): A list of patterns.
+        sequence (list): A list of values.
+
+    Returns:
+        bool: True if the sequence follows the same pattern, False otherwise.
+    """
+    if len(patterns) != len(sequence):
+        return False
+
+    pattern_map = {}
+
+    for p, s in zip(patterns, sequence):
+        if p not in pattern_map:
+            if s in pattern_map.values():
+                return False
+            pattern_map[p] = s
+        elif pattern_map[p] != s:
+            return False
+
+    return True
+
+
+# Example usage:
+print(is_samepatterns(["red","green","green"], ["a", "b", "b"]))  # Expected output: True
+print(is_samepatterns(["red","green","green"], ["a", "b", "c"]))  # Expected output: False
+print(is_samepatterns(["red","green","green"], ["a", "b", "b", "c"]))  # Expected output: False
+```
+
+In this code:
+
+*   We define a function `is_samepatterns` that takes two lists, `patterns` and `sequence`, as input.
+*   We first check if the lengths of the two lists are equal. If not, we immediately return `False`, as the sequence cannot follow the pattern.
+*   We then create an empty dictionary `pattern_map` to store the mapping between patterns and their corresponding sequence values.
+*   We iterate over the `patterns` and `sequence` lists simultaneously using the `zip` function.
+*   For each pair of pattern and sequence value, we check if the pattern is already in the `pattern_map`. If not, we add it to the map if the sequence value is not already a value in the map. If the sequence value is already a value in the map, we return `False`, as this indicates a conflicting pattern.
+*   If the pattern is already in the `pattern_map`, we check if its mapped value matches the current sequence value. If not, we return `False`, as this indicates a mismatch in the pattern.
+*   If we complete the iteration without finding any conflicts, we return `True`, indicating that the sequence follows the same pattern.

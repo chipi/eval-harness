@@ -1,0 +1,52 @@
+Here's a self-contained Python script that counts inversions in an array using a modified merge sort algorithm (O(n log n) time complexity):
+
+```python
+def get_Inv_Count(arr):
+    """
+    Count inversions in an array using merge sort.
+    An inversion is a pair (i, j) such that i < j and arr[i] > arr[j].
+    """
+    def merge_sort(arr):
+        if len(arr) <= 1:
+            return arr, 0
+        
+        mid = len(arr) // 2
+        left, inv_left = merge_sort(arr[:mid])
+        right, inv_right = merge_sort(arr[mid:])
+        
+        merged = []
+        i = j = 0
+        inv_count = inv_left + inv_right
+        
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                j += 1
+                inv_count += len(left) - i
+        
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        
+        return merged, inv_count
+    
+    _, count = merge_sort(arr)
+    return count
+
+
+# Test
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+print("Test passed!")
+print("Inversions in [1, 20, 6, 4, 5]:", get_Inv_Count([1, 20, 6, 4, 5]))
+```
+
+**How it works:**
+
+- The array is recursively split in half (divide and conquer).
+- During the merge step, when an element from the right half is smaller than an element from the left half, it forms an inversion with **all remaining elements** in the left half (`len(left) - i` inversions).
+- These counts are accumulated up the recursion tree.
+
+For `[1, 20, 6, 4, 5]`, the inversions are:
+- (20, 6), (20, 4), (20, 5), (6, 4), (6, 5) → **5 inversions** ✓

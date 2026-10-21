@@ -1,0 +1,8 @@
+```python
+def median_trapezium(base1, base2, height):
+    return (base1 + base2) / 2
+
+# Test
+assert median_trapezium(15, 25, 35) == 20
+print(median_trapezium(15, 25, 35))
+```

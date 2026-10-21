@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def word_len(word):
+    """
+    Check whether the length of the word is odd or not.
+    
+    Args:
+        word (str): The input word to check
+        
+    Returns:
+        bool: True if the length is odd, False if even
+    """
+    return len(word) % 2 != 0
+
+# Test the function
+if __name__ == "__main__":
+    assert word_len("Hadoop") == False
+    print("Test passed!")
+```
+
+The function `word_len` takes a word as input, calculates its length using `len()`, and checks if the length is odd by using the modulo operator (`%`). If the length divided by 2 has a remainder (i.e., not equal to 0), it returns `True` (odd length); otherwise, it returns `False` (even length).
+
+The assertion `word_len("Hadoop") == False` passes because "Hadoop" has 6 characters, which is an even number.

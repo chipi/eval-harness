@@ -1,0 +1,26 @@
+```python
+def issort_list(lst):
+    """
+    Checks whether a specified list is sorted in non-decreasing order.
+    
+    Args:
+        lst (list): The list to check.
+        
+    Returns:
+        bool: True if the list is sorted, False otherwise.
+    """
+    # An empty list or a list with one element is considered sorted
+    return all(lst[i] <= lst[i + 1] for i in range(len(lst) - 1))
+
+if __name__ == "__main__":
+    # Test cases
+    assert issort_list([1, 2, 4, 6, 8, 10, 12, 14, 16, 17]) == True
+    assert issort_list([1, 2, 3, 4, 5]) == True
+    assert issort_list([5, 4, 3, 2, 1]) == False
+    assert issort_list([1, 3, 2, 4]) == False
+    assert issort_list([]) == True
+    assert issort_list([1]) == True
+    assert issort_list([1, 1, 1, 1]) == True
+    
+    print("All tests passed!")
+```

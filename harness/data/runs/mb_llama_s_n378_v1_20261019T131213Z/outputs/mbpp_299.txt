@@ -1,0 +1,69 @@
+```python
+def max_aggregate(students):
+    """
+    This function calculates the maximum aggregate from the list of tuples.
+
+    Args:
+        students (list): A list of tuples, where each tuple contains a student's name and their score.
+
+    Returns:
+        tuple: A tuple containing the student's name with the maximum aggregate score and their aggregate score.
+    """
+    # Create a dictionary to store the aggregate scores for each student
+    aggregates = {}
+
+    # Iterate over each student in the list
+    for student, score in students:
+        # If the student is already in the dictionary, add the score to their aggregate
+        if student in aggregates:
+            aggregates[student] += score
+        # If the student is not in the dictionary, add them with their score as their aggregate
+        else:
+            aggregates[student] = score
+
+    # Find the student with the maximum aggregate score
+    max_student = max(aggregates, key=aggregates.get)
+
+    # Return the student with the maximum aggregate score and their aggregate score
+    return (max_student, aggregates[max_student])
+
+
+# Test the function
+students = [('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]
+print(max_aggregate(students))  # Expected output: ('Juan Whelan', 212)
+```
+
+Alternatively, you can use the `defaultdict` from the `collections` module to make the code more concise:
+
+```python
+from collections import defaultdict
+
+def max_aggregate(students):
+    """
+    This function calculates the maximum aggregate from the list of tuples.
+
+    Args:
+        students (list): A list of tuples, where each tuple contains a student's name and their score.
+
+    Returns:
+        tuple: A tuple containing the student's name with the maximum aggregate score and their aggregate score.
+    """
+    # Create a dictionary to store the aggregate scores for each student
+    aggregates = defaultdict(int)
+
+    # Iterate over each student in the list
+    for student, score in students:
+        # Add the score to the student's aggregate
+        aggregates[student] += score
+
+    # Find the student with the maximum aggregate score
+    max_student = max(aggregates, key=aggregates.get)
+
+    # Return the student with the maximum aggregate score and their aggregate score
+    return (max_student, aggregates[max_student])
+
+
+# Test the function
+students = [('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]
+print(max_aggregate(students))  # Expected output: ('Juan Whelan', 212)
+```

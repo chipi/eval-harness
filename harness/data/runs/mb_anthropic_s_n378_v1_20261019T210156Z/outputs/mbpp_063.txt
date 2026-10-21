@@ -1,0 +1,47 @@
+```python
+def max_difference(tuple_list):
+    """
+    Find the maximum difference between available pairs in the given tuple list.
+    
+    Args:
+        tuple_list: A list of tuples containing pairs of numbers
+        
+    Returns:
+        The maximum difference found among all pairs
+    """
+    max_diff = 0
+    
+    for pair in tuple_list:
+        # Calculate the absolute difference between the two elements in each pair
+        diff = abs(pair[0] - pair[1])
+        # Update max_diff if current difference is larger
+        max_diff = max(max_diff, diff)
+    
+    return max_diff
+
+
+# Test cases
+assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+print("Test passed!")
+
+# Additional test cases
+assert max_difference([(1, 1), (2, 2)]) == 0
+assert max_difference([(0, 10)]) == 10
+assert max_difference([(5, 2), (8, 1), (3, 9)]) == 7
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `max_difference()` iterates through each tuple in the list and:
+1. Calculates the absolute difference between the two elements in each pair using `abs(pair[0] - pair[1])`
+2. Keeps track of the maximum difference found using `max()`
+3. Returns the maximum difference
+
+For the given example `[(3, 5), (1, 7), (10, 3), (1, 2)]`:
+- (3, 5): |3 - 5| = 2
+- (1, 7): |1 - 7| = 6
+- (10, 3): |10 - 3| = 7 ← **Maximum**
+- (1, 2): |1 - 2| = 1
+
+The result is **7**.

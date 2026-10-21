@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_Even(n):
+    """
+    Check whether the given number is even or not.
+    
+    Args:
+        n: An integer number
+        
+    Returns:
+        bool: True if the number is even, False otherwise
+    """
+    return n % 2 == 0
+
+# Test the function with the provided assertion
+assert is_Even(1) == False
+assert is_Even(2) == True
+assert is_Even(0) == True
+assert is_Even(-4) == True
+assert is_Even(-3) == False
+
+print("All assertions passed!")
+```
+
+The function `is_Even` uses the modulo operator (`%`) to check if a number is divisible by 2. If the remainder is 0, the number is even and returns `True`; otherwise, it returns `False`. The script includes the required assertion as well as additional test cases to verify the function works correctly for various inputs including positive, negative, and zero values.

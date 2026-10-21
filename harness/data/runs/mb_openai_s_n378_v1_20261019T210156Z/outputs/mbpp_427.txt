@@ -1,0 +1,16 @@
+```python
+def change_date_format(date_str: str) -> str:
+    """
+    Convert a date from yyyy-mm-dd format to dd-mm-yyyy format.
+
+    Example:
+        "2026-01-02" -> "02-01-2026"
+    """
+    year, month, day = date_str.split("-")
+    return f"{day}-{month}-{year}"
+
+
+if __name__ == "__main__":
+    assert change_date_format("2026-01-02") == "02-01-2026"
+    print("All tests passed.")
+```

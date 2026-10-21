@@ -1,0 +1,48 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Count the number of inversions in an array.
+    An inversion is a pair (i, j) such that i < j and arr[i] > arr[j].
+    
+    Args:
+        arr: List of numbers
+        
+    Returns:
+        Number of inversions in the array
+    """
+    if len(arr) <= 1:
+        return 0
+    
+    # Use merge sort based approach to count inversions efficiently
+    def merge_sort_count(arr):
+        n = len(arr)
+        if n <= 1:
+            return arr, 0
+        
+        mid = n // 2
+        left, left_inv = merge_sort_count(arr[:mid])
+        right, right_inv = merge_sort_count(arr[mid:])
+        
+        merged = []
+        inversions = left_inv + right_inv
+        i = j = 0
+        
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                j += 1
+                # All remaining elements in left are greater than right[j]
+                inversions += len(left) - i
+        
+        # Append remaining elements
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        
+        return merged, inversions
+    
+    _, count = merge_sort_count(arr)
+    return count
+```

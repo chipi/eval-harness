@@ -1,0 +1,24 @@
+```python
+def move_num(s: str) -> str:
+    """
+    Moves all numeric characters in the string to the end, preserving 
+    the relative order of both letters and digits.
+    """
+    letters = []
+    digits = []
+    
+    for ch in s:
+        if ch.isdigit():
+            digits.append(ch)
+        else:
+            letters.append(ch)
+    
+    return ''.join(letters) + ''.join(digits)
+
+# Test the assertion
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+print("Assertion passed.")
+
+# Additional simple test
+print(move_num("a1b2c3"))  # Expected: "abc123"
+```

@@ -1,0 +1,17 @@
+```python
+def start_withp(words_list):
+    """
+    Write a function to return two words from a list of words starting with letter 'p'.
+    assert start_withp(["Python PHP", "Java JavaScript", "c c++"])==('Python', 'PHP')
+    """
+    for item in words_list:
+        # Split the string into individual words
+        words = item.split()
+        # Check if there are at least two words and both start with 'p' or 'P'
+        if len(words) >= 2:
+            first_word = words[0]
+            second_word = words[1]
+            if first_word.lower().startswith('p') and second_word.lower().startswith('p'):
+                return (first_word, second_word)
+    return None
+```

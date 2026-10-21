@@ -1,0 +1,11 @@
+```python
+def insert_element(lst, element):
+    result = []
+    for item in lst:
+        result.append(element)
+        result.append(item)
+    return result
+
+# Test the function
+assert insert_element(['Red', 'Green', 'Black'], 'c') == ['c', 'Red', 'c', 'Green', 'c', 'Black']
+```

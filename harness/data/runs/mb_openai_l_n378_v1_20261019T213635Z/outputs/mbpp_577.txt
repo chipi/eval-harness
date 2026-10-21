@@ -1,0 +1,16 @@
+```python
+def last_Digit_Factorial(n):
+    """Return the last digit of n! for a nonnegative integer n."""
+    if n < 0:
+        raise ValueError("n must be nonnegative")
+    if n >= 5:
+        return 0
+
+    factorial = 1
+    for number in range(2, n + 1):
+        factorial *= number
+    return factorial % 10
+
+
+assert last_Digit_Factorial(4) == 4
+```

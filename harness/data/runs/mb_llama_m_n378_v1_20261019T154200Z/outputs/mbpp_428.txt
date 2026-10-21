@@ -1,0 +1,46 @@
+```python
+def shell_sort(arr):
+    """
+    Sorts the given array using shell sort.
+
+    Args:
+        arr (list): The input array to be sorted.
+
+    Returns:
+        list: The sorted array.
+    """
+    # Initialize the gap size
+    gap = len(arr) // 2
+
+    # Loop until the gap size is greater than zero
+    while gap > 0:
+        # Loop through the array with the current gap size
+        for i in range(gap, len(arr)):
+            # Store the current element
+            temp = arr[i]
+
+            # Initialize the index for comparison
+            j = i
+
+            # Shift the previous elements to the right if they are greater than the current element
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+
+            # Insert the current element at its correct position
+            arr[j] = temp
+
+        # Reduce the gap size by half for the next iteration
+        gap //= 2
+
+    # Return the sorted array
+    return arr
+
+
+# Example usage
+if __name__ == "__main__":
+    arr = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    print("Original array:", arr)
+    print("Sorted array:", shell_sort(arr))
+    assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+```

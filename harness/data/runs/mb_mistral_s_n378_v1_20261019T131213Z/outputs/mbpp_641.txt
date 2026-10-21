@@ -1,0 +1,28 @@
+Here's a self-contained Python script that includes a function to find the nth nonagonal number and verifies the given assertion:
+
+```python
+def is_nonagonal(n):
+    """
+    Calculate the nth nonagonal number.
+
+    The nth nonagonal number is given by the formula:
+    N(n) = n*(7*n - 5)//2
+
+    Args:
+        n (int): The position in the sequence of nonagonal numbers.
+
+    Returns:
+        int: The nth nonagonal number.
+    """
+    return n * (7 * n - 5) // 2
+
+# Test the function with the provided assertion
+assert is_nonagonal(10) == 325, "Test failed: 10th nonagonal number should be 325"
+print("Test passed: 10th nonagonal number is 325")
+```
+
+### Explanation:
+1. The function `is_nonagonal(n)` calculates the nth nonagonal number using the formula \( N(n) = \frac{n \times (7n - 5)}{2} \).
+2. The formula is derived from the general formula for polygonal numbers, where for a 9-sided polygon (nonagon), the coefficient is 7.
+3. The assertion checks that the 10th nonagonal number is 325, which is correct (since \( 10 \times (7 \times 10 - 5) / 2 = 10 \times 65 / 2 = 325 \)).
+4. If the assertion passes, it prints a success message. If not, it raises an error with a descriptive message.

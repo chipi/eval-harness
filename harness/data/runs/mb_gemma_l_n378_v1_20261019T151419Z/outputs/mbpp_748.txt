@@ -1,0 +1,24 @@
+```python
+import re
+
+def capital_words_spaces(text):
+    """
+    Inserts spaces before capital letters that are not at the start of the string,
+    effectively separating words that start with capital letters.
+    """
+    # Use regular expression to find a position where a lowercase letter (or digit) 
+    # is followed by an uppercase letter, and insert a space there.
+    # The lookbehind (?<=[a-z0-9]) ensures we don't put a space at the very beginning.
+    # The lookahead (?=[A-Z]) checks for the capital letter.
+    return re.sub(r'(?<=[a-z0-9])(?=[A-Z])', ' ', text)
+
+if __name__ == "__main__":
+    # Test cases
+    assert capital_words_spaces("Python") == 'Python'
+    assert capital_words_spaces("HelloWorld") == 'Hello World'
+    assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+    assert capital_words_spaces("already spaced") == 'already spaced'
+    assert capital_words_spaces("simple") == 'simple'
+    
+    print("All tests passed!")
+```

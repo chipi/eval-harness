@@ -1,0 +1,23 @@
+```python
+def dict_depth(dictionary):
+    """
+    This function calculates the depth of a dictionary.
+    
+    The depth of a dictionary is defined as the maximum number of nested dictionaries.
+    
+    Args:
+        dictionary (dict): The dictionary to calculate the depth of.
+    
+    Returns:
+        int: The depth of the dictionary.
+    """
+    if not isinstance(dictionary, dict):
+        return 0
+    elif not dictionary:
+        return 1
+    else:
+        return 1 + max((dict_depth(v) for v in dictionary.values() if isinstance(v, dict)), default=0)
+
+# Test the function
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+```

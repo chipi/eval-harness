@@ -1,0 +1,12 @@
+```python
+def odd_Equivalent(binary_string, rotations):
+    """Count odd values among the first `rotations` cyclic rotations."""
+    if not binary_string:
+        return 0
+
+    n = len(binary_string)
+    return sum(binary_string[i % n] == "1" for i in range(rotations))
+
+
+assert odd_Equivalent("011001", 6) == 3
+```

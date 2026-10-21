@@ -1,0 +1,72 @@
+Here's a self-contained Python script that tests whether a given matrix is a magic square:
+
+```python
+def magic_square_test(matrix):
+    """
+    Determine whether a given matrix is a magic square.
+    
+    A magic square is a square matrix where the sums of the numbers
+    in each row, each column, and both main diagonals are equal.
+    """
+    n = len(matrix)
+    
+    # Ensure the matrix is square and non-empty
+    if n == 0 or any(len(row) != n for row in matrix):
+        return False
+    
+    # Target sum taken from the first row
+    target_sum = sum(matrix[0])
+    
+    # Check all rows
+    for row in matrix:
+        if sum(row) != target_sum:
+            return False
+    
+    # Check all columns
+    for col in range(n):
+        col_sum = sum(matrix[row][col] for row in range(n))
+        if col_sum != target_sum:
+            return False
+    
+    # Check main diagonal (top-left to bottom-right)
+    main_diag = sum(matrix[i][i] for i in range(n))
+    if main_diag != target_sum:
+        return False
+    
+    # Check anti-diagonal (top-right to bottom-left)
+    anti_diag = sum(matrix[i][n - 1 - i] for i in range(n))
+    if anti_diag != target_sum:
+        return False
+    
+    return True
+
+
+# Test cases
+assert magic_square_test([[7, 12, 1, 14],
+                          [2, 13, 8, 11],
+                          [16, 3, 10, 5],
+                          [9, 6, 15, 4]]) == True
+
+# Additional tests
+assert magic_square_test([[2, 7, 6],
+                          [9, 5, 1],
+                          [4, 3, 8]]) == True
+
+assert magic_square_test([[1, 2],
+                          [3, 4]]) == False
+
+assert magic_square_test([[1, 2, 3],
+                          [4, 5, 6],
+                          [7, 8, 9]]) == False
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Validation** — Ensures the input is a non-empty square matrix.
+2. **Target sum** — Uses the first row's sum as the reference value.
+3. **Row check** — Every row's sum must equal the target.
+4. **Column check** — Every column's sum must equal the target.
+5. **Diagonal checks** — Both main and anti-diagonals must equal the target.
+6. Returns `True` only if all checks pass; otherwise `False`.

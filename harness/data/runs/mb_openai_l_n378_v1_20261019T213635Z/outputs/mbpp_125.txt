@@ -1,0 +1,21 @@
+```python
+def find_length(binary_string: str) -> int:
+    """Return the maximum (# of 0s - # of 1s) over all nonempty substrings."""
+    if not binary_string:
+        return 0
+
+    best = float("-inf")
+    current = 0
+
+    for char in binary_string:
+        if char not in "01":
+            raise ValueError("Input must be a binary string")
+        value = 1 if char == "0" else -1
+        current = max(value, current + value)
+        best = max(best, current)
+
+    return int(best)
+
+
+assert find_length("11000010001") == 6
+```

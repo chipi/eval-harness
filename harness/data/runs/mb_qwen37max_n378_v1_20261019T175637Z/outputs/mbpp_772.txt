@@ -1,0 +1,11 @@
+```python
+def remove_length(s, k):
+    words = s.split()
+    filtered = [word for word in words if len(word) != k]
+    return ' '.join(filtered)
+
+
+# Test
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+print("Test passed!")
+```

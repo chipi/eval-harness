@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def min_val(lst):
+    """
+    Find the minimum value in a heterogeneous list.
+    Only considers numeric values (int and float), ignoring non-numeric types.
+    """
+    numeric_values = [x for x in lst if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    if not numeric_values:
+        return None
+    return min(numeric_values)
+
+
+# Test the function
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+print("Test passed!")
+print(min_val(['Python', 3, 2, 4, 5, 'version']))  # Output: 2
+```
+
+**Explanation:**
+
+1. **`min_val(lst)`** takes a heterogeneous list as input.
+2. It filters the list using a list comprehension, keeping only elements that are `int` or `float` (excluding `bool`, since `bool` is a subclass of `int` in Python and could cause unexpected behavior).
+3. If no numeric values are found, it returns `None`.
+4. Otherwise, it returns the minimum of the numeric values using the built-in `min()` function.
+5. The `assert` statement verifies the expected output for the given test case.

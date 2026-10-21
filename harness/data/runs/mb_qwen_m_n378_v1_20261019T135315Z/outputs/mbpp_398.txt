@@ -1,0 +1,40 @@
+```python
+def sum_of_digits(numbers: list) -> int:
+    """
+    Compute the sum of digits of each number in a given list.
+    
+    For example, for [10, 2, 56]:
+    - 10 -> 1 + 0 = 1
+    - 2 -> 2
+    - 56 -> 5 + 6 = 11
+    Total: 1 + 2 + 11 = 14
+    
+    Args:
+        numbers: A list of non-negative integers.
+        
+    Returns:
+        The sum of all digits across all numbers in the list.
+    """
+    total = 0
+    for num in numbers:
+        # Handle each number by extracting its digits
+        if num == 0:
+            total += 0
+        else:
+            for digit_char in str(abs(num)):
+                total += int(digit_char)
+    return total
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert sum_of_digits([10, 2, 56]) == 14, f"Expected 14, got {sum_of_digits([10, 2, 56])}"
+    
+    # Additional test cases
+    assert sum_of_digits([0]) == 0
+    assert sum_of_digits([123]) == 6  # 1+2+3=6
+    assert sum_of_digits([]) == 0
+    assert sum_of_digits([999]) == 27  # 9+9+9=27
+    
+    print("All tests passed!")
+```

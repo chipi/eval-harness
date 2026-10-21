@@ -1,0 +1,17 @@
+```python
+def newman_prime(n):
+    """
+    Find the nth Newman-Shanks-Williams prime number.
+    NSW numbers are defined by:
+    a(0) = 1, a(1) = 1, a(n) = 2*a(n-1) + a(n-2)
+    """
+    a = [1, 1]
+    for i in range(2, n + 1):
+        a.append(2 * a[i - 1] + a[i - 2])
+    return a[n]
+
+
+if __name__ == "__main__":
+    assert newman_prime(3) == 7
+    print(newman_prime(3))
+```

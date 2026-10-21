@@ -1,0 +1,10 @@
+```python
+def next_power_of_2(n: int) -> int:
+    """Return the smallest power of 2 greater than or equal to n."""
+    if n <= 1:
+        return 1
+    return 1 << (n - 1).bit_length()
+
+
+assert next_power_of_2(0) == 1
+```

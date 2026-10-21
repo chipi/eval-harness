@@ -1,0 +1,41 @@
+```python
+"""
+Write a function to check if the given tuples contain the k or not.
+assert check_K((10, 4, 5, 6, 8), 6) == True
+"""
+
+
+def check_K(test_tup, K):
+    """
+    Check whether the given tuple contains the element K.
+
+    Parameters
+    ----------
+    test_tup : tuple
+        The tuple in which to search for K.
+    K : any
+        The value to look for.
+
+    Returns
+    -------
+    bool
+        True if K is present in test_tup, otherwise False.
+    """
+    for element in test_tup:
+        if element == K:
+            return True
+    return False
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check_K((10, 4, 5, 6, 8), 6) == True
+
+    # Additional test cases
+    assert check_K((1, 2, 3, 4, 5, 6), 7) == False
+    assert check_K((7, 8, 9, 44, 11, 12), 11) == True
+    assert check_K((), 1) == False
+    assert check_K(('a', 'b', 'c'), 'c') == True
+
+    print("All tests passed!")
+```

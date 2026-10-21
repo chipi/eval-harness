@@ -1,0 +1,32 @@
+```python
+def long_words(n, words):
+    """
+    Finds words longer than n characters from a given string of words.
+
+    Args:
+        n (int): The minimum character length a word must have to be included.
+        words (str): A string containing a list of words separated by spaces.
+
+    Returns:
+        list: A list of words from the input string that have a length
+              greater than n.
+    """
+    # Split the input string into a list of individual words
+    word_list = words.split()
+    
+    # Use a list comprehension to filter words longer than n characters
+    result = [word for word in word_list if len(word) > n]
+    
+    return result
+
+# Example usage and assertion to verify the function
+assert long_words(3, "python is a programming language") == ['python', 'programming', 'language']
+
+# Additional test cases
+assert long_words(5, "hello world") == ['hello', 'world']
+assert long_words(6, "hello world") == []
+assert long_words(0, "a bc def") == ['a', 'bc', 'def']
+assert long_words(10, "short") == []
+
+print("All assertions passed!")
+```

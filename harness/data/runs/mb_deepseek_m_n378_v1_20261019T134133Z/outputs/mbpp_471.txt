@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_remainder(arr, n):
+    """
+    Find the product of the array multiplication modulo n.
+    
+    Args:
+        arr: List of integers
+        n: Modulo value
+    
+    Returns:
+        Product of all elements in arr modulo n
+    """
+    result = 1
+    for num in arr:
+        result = (result * num) % n
+    return result
+
+# Test the function
+assert find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+print("Test passed!")
+
+# Additional test cases
+print(f"find_remainder([100, 10, 5, 25, 35, 14], 11) = {find_remainder([100, 10, 5, 25, 35, 14], 11)}")
+print(f"find_remainder([2, 3, 4], 5) = {find_remainder([2, 3, 4], 5)}")
+print(f"find_remainder([1, 2, 3, 4, 5], 7) = {find_remainder([1, 2, 3, 4, 5], 7)}")
+```
+
+This script defines a function `find_remainder` that:
+1. Takes an array of integers and a modulo value `n`
+2. Iteratively multiplies each element while keeping the result modulo `n` to prevent overflow
+3. Returns the final product modulo `n`
+
+The key insight is that we can apply the modulo operation at each step of multiplication rather than waiting until the end, which helps prevent integer overflow for large arrays.

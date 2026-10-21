@@ -1,0 +1,16 @@
+```python
+def extract_rear(strings):
+    """
+    This function takes a tuple of strings as input and returns a list of the last character of each string.
+
+    Args:
+        strings (tuple): A tuple of strings.
+
+    Returns:
+        list: A list of the last character of each string in the input tuple.
+    """
+    return [string[-1] for string in strings]
+
+# Example usage:
+print(extract_rear(('Mers', 'for', 'Vers')))  # Output: ['s', 'r', 's']
+```

@@ -1,0 +1,34 @@
+```python
+import math
+
+def find_Index(n):
+    """
+    Find the index of smallest triangular number with n digits.
+
+    Args:
+    n (int): The number of digits.
+
+    Returns:
+    int: The index of the smallest triangular number with n digits.
+    """
+    # Calculate the lower bound for the index
+    low = math.floor((math.sqrt(8 * 10**(n-1) + 1) - 1) / 2)
+
+    # Calculate the upper bound for the index
+    high = math.ceil((math.sqrt(8 * 10**n + 1) - 1) / 2)
+
+    # Return the smallest index that has a triangular number with n digits
+    return low
+
+# Test the function
+assert find_Index(2) == 4
+print("All tests passed.")
+```
+
+This Python function `find_Index(n)` calculates the index of the smallest triangular number with `n` digits. The function uses mathematical properties of triangular numbers to derive a closed-form solution, eliminating the need for iteration or recursion.
+
+The mathematical property used here is that the `k`-th triangular number is given by `k*(k+1)/2`. We want to find the smallest `k` such that `k*(k+1)/2` has `n` digits. This can be rewritten as `k*(k+1) >= 2*10^(n-1)`.
+
+By solving the quadratic inequality `k^2 + k - 2*10^(n-1) >= 0`, we obtain the lower and upper bounds for `k`, which are used in the function.
+
+The function takes an integer `n` as input and returns the index of the smallest triangular number with `n` digits. The unit test `assert find_Index(2) == 4` ensures that the function works correctly.

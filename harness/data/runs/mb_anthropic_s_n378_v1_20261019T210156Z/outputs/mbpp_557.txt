@@ -1,0 +1,25 @@
+```python
+def toggle_string(s):
+    """
+    Toggle the case of all characters in a string.
+    
+    Args:
+        s: A string
+        
+    Returns:
+        A string with all cases toggled (uppercase becomes lowercase, vice versa)
+    """
+    return s.swapcase()
+
+
+# Test cases
+assert toggle_string("Python") == "pYTHON"
+assert toggle_string("HELLO") == "hello"
+assert toggle_string("world") == "WORLD"
+assert toggle_string("HeLLo WoRLd") == "hEllO wOrld"
+assert toggle_string("123!@#") == "123!@#"
+
+print("All tests passed!")
+```
+
+The solution uses Python's built-in `swapcase()` method, which converts all uppercase characters to lowercase and all lowercase characters to uppercase. This is the most efficient and Pythonic way to toggle string case.

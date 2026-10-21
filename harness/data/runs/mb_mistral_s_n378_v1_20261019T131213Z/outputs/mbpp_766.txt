@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pair_wise(lst):
+    """Return a list of all pairs of consecutive items in the given list."""
+    return [(lst[i], lst[i+1]) for i in range(len(lst)-1)]
+
+# Test the function
+assert pair_wise([1,1,2,3,3,4,4,5]) == [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `pair_wise` that takes a list as input
+2. Uses a list comprehension to create tuples of consecutive elements
+3. The comprehension iterates through indices from 0 to len(lst)-2 (inclusive)
+4. For each index i, it creates a tuple (lst[i], lst[i+1])
+5. Includes an assertion to verify the function works as expected
+6. Prints a success message if the test passes
+
+The function will work with any list of elements, not just numbers.

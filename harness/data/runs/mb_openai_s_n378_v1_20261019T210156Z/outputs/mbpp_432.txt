@@ -1,0 +1,20 @@
+```python
+def median_trapezium(a, b, c):
+    """
+    Return the median length of a trapezium.
+
+    In a trapezium, the median (mid-segment) length is the average of the
+    two parallel sides. Here, the given example implies the function should
+    compute the average of the first and third arguments:
+        median = (a + c) / 2
+
+    Example:
+        median_trapezium(15, 25, 35) -> 20
+    """
+    return (a + c) / 2
+
+
+if __name__ == "__main__":
+    assert median_trapezium(15, 25, 35) == 20
+    print("All tests passed.")
+```

@@ -1,0 +1,43 @@
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Checks if a list is a sublist (contiguous subarray) of another list.
+
+    Args:
+        main_list: The list to check within.
+        sub_list: The list to check for.
+
+    Returns:
+        True if sub_list is a contiguous subarray of main_list, False otherwise.
+    """
+    # An empty list is always a sublist of any list.
+    if not sub_list:
+        return True
+
+    # If the sublist is longer than the main list, it can't be a subarray.
+    if len(sub_list) > len(main_list):
+        return False
+
+    # Iterate through the main_list up to the point where the sub_list could still fit.
+    # The loop runs from index 0 to len(main_list) - len(sub_list), inclusive.
+    for i in range(len(main_list) - len(sub_list) + 1):
+        # Check if the slice of main_list starting at index `i`
+        # with the same length as sub_list matches sub_list.
+        if main_list[i:i + len(sub_list)] == sub_list:
+            return True
+            
+    # If the loop completes without finding a match, it's not a subarray.
+    return False
+
+# Example usage and assertions from the problem description:
+assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+assert is_Sub_Array([1, 2, 3, 4, 5], [2, 3, 4]) == True
+assert is_Sub_Array([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]) == True
+assert is_Sub_Array([1, 2, 3, 4, 5], [5]) == True
+assert is_Sub_Array([1, 2, 3, 4, 5], [6]) == False
+assert is_Sub_Array([], [1, 2]) == False
+assert is_Sub_Array([1, 2, 3], []) == True
+assert is_Sub_Array([], []) == True
+
+print("All assertions passed.")
+```

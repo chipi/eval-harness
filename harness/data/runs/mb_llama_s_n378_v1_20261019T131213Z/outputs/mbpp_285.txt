@@ -1,0 +1,25 @@
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character followed by two or three 'b' characters.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r'ab{2,3}'  # 'a' followed by 2 or 3 'b's
+    return bool(re.search(pattern, text))
+
+# Example usage:
+print(text_match_two_three("abbc"))  # True
+print(text_match_two_three("abb"))   # True
+print(text_match_two_three("ac"))     # False
+print(text_match_two_three("ab"))     # False
+print(text_match_two_three("abbb"))   # True
+```
+
+In this script, we use the `re` module which provides support for regular expressions in Python. The regular expression `r'ab{2,3}'` matches the character 'a' followed by 2 to 3 'b' characters. The `re.search` function scans through the string looking for a match to the pattern, and returns a match object if it finds one, `None` otherwise. We convert this to a boolean value (`True` if a match is found, `False` otherwise) using the `bool` function.

@@ -1,0 +1,64 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_decimal(s):
+    """
+    Check whether a given string is a decimal number with a precision of 2.
+    
+    Args:
+        s (str): The string to check
+        
+    Returns:
+        bool: True if the string is a decimal number with exactly 2 decimal places, False otherwise
+    """
+    try:
+        # Check if the string can be converted to a float
+        float(s)
+        
+        # Check if there's a decimal point
+        if '.' not in s:
+            return False
+        
+        # Split the string at the decimal point
+        parts = s.split('.')
+        
+        # Check that there are exactly 2 parts (before and after decimal)
+        if len(parts) != 2:
+            return False
+        
+        # Check that the decimal part has exactly 2 digits
+        if len(parts[1]) != 2:
+            return False
+        
+        # Check that both parts contain only digits (and optional minus sign for first part)
+        integer_part = parts[0]
+        if integer_part.startswith('-'):
+            integer_part = integer_part[1:]
+        
+        if not integer_part.isdigit() or not parts[1].isdigit():
+            return False
+        
+        return True
+        
+    except (ValueError, AttributeError):
+        return False
+
+
+# Test the function
+assert is_decimal('123.11') == True
+assert is_decimal('123.1') == False
+assert is_decimal('123') == False
+assert is_decimal('123.111') == False
+assert is_decimal('-123.11') == True
+assert is_decimal('abc.11') == False
+assert is_decimal('123.ab') == False
+assert is_decimal('') == False
+
+print("All tests passed!")
+```
+
+This function checks if a string represents a decimal number with exactly 2 decimal places by:
+1. Verifying the string can be converted to a float
+2. Ensuring there's a decimal point
+3. Confirming exactly 2 digits after the decimal point
+4. Validating that all parts contain only digits (with optional negative sign)

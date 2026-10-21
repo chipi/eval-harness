@@ -1,0 +1,22 @@
+```python
+import math
+
+def radian_degree(degrees):
+    """
+    Convert degrees to radians.
+
+    Args:
+        degrees (float): The angle in degrees.
+
+    Returns:
+        float: The angle in radians.
+
+    Example:
+        >>> radian_degree(90)
+        1.5707963267948966
+    """
+    return math.radians(degrees)
+
+# Example usage and assertion
+assert radian_degree(90) == 1.5707963267948966
+```

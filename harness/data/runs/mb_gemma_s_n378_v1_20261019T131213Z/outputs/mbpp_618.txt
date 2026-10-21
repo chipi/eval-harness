@@ -1,0 +1,29 @@
+```python
+def div_list(list1, list2):
+  """
+  Divides two lists element-wise.
+
+  Args:
+    list1: The numerator list.
+    list2: The denominator list.
+
+  Returns:
+    A new list containing the result of dividing each element of list1 by the corresponding element of list2.
+    Returns an empty list if the input lists are empty or have different lengths.
+  """
+  if not list1 or not list2 or len(list1) != len(list2):
+    return []
+
+  result = []
+  for i in range(len(list1)):
+    result.append(float(list1[i]) / list2[i])
+  return result
+
+# Example usage and assertion
+if __name__ == '__main__':
+  assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+  assert div_list([1, 2, 3], [4, 5, 6]) == [0.25, 0.4, 0.5]
+  assert div_list([], []) == []
+  assert div_list([1,2], [1]) == []
+  print("All test cases passed!")
+```

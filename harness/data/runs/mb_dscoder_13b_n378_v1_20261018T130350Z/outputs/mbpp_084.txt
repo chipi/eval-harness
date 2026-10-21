@@ -1,0 +1,19 @@
+```python
+def newman_conway(n):
+    if n <= 0:
+        raise ValueError("Input must be a positive integer.")
+    elif n == 1:
+        return 0
+    elif n == 2:
+        return 1
+    else:
+        sequence = [0, 1]
+        for i in range(2, n):
+            sequence.append(sequence[sequence[i-1]] + sequence[sequence[i-2]])
+        return sequence[-1]
+
+# Test cases
+assert newman_conway(10) == 6
+assert newman_conway(1) == 0
+assert newman_conway(2) == 1
+```

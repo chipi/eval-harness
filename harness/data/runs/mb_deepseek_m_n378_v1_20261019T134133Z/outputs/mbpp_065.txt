@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def recursive_list_sum(data):
+    """
+    Flatten a nested list and return the sum of all its elements.
+    
+    Args:
+        data: A list that may contain nested lists and numbers.
+    
+    Returns:
+        The sum of all numeric elements in the flattened list.
+    """
+    total = 0
+    for item in data:
+        if isinstance(item, list):
+            total += recursive_list_sum(item)
+        else:
+            total += item
+    return total
+
+
+# Test the function
+assert recursive_list_sum([1, 2, [3, 4], [5, 6]]) == 21
+print("Test passed!")
+```
+
+**How it works:**
+
+1. The function `recursive_list_sum` iterates through each element of the input list.
+2. If an element is itself a list, it recursively calls `recursive_list_sum` on that sublist and adds the result to the running total.
+3. If the element is a number (or any non-list value), it's added directly to the total.
+4. The final sum is returned.
+
+For the test case `[1, 2, [3, 4], [5, 6]]`:
+- `1` → total = 1
+- `2` → total = 3
+- `[3, 4]` → recursive call returns 7 → total = 10
+- `[5, 6]` → recursive call returns 11 → total = 21
+
+The assertion passes, confirming the function works correctly.

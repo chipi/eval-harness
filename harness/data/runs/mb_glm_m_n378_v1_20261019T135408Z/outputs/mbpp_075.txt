@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_tuples(tuples_list, k):
+    """
+    Find tuples which have all elements divisible by k from the given list of tuples.
+    
+    Args:
+        tuples_list (list of tuples): List of tuples to check.
+        k (int): The divisor to check against.
+        
+    Returns:
+        list of tuples: List of tuples where all elements are divisible by k.
+    """
+    result = []
+    for tup in tuples_list:
+        all_divisible = True
+        for num in tup:
+            if num % k != 0:
+                all_divisible = False
+                break
+        if all_divisible:
+            result.append(tup)
+    return result
+
+# Test cases
+assert find_tuples([(6, 24, 12), (7, 9, 6), (12, 18, 21)], 6) == [(6, 24, 12)]
+assert find_tuples([(1, 2, 3), (4, 5, 6), (7, 8, 9)], 1) == [(1, 2, 3), (4, 5, 6), (7, 8, 9)]
+assert find_tuples([(2, 4, 6), (3, 6, 9), (4, 8, 12)], 2) == [(2, 4, 6), (4, 8, 12)]
+assert find_tuples([], 5) == []
+assert find_tuples([(5, 10, 15)], 5) == [(5, 10, 15)]
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `find_tuples` takes a list of tuples and an integer `k` as input.
+2. **Initialization**: An empty list `result` is initialized to store the tuples that meet the condition.
+3. **Iteration**: For each tuple in the input list, the function checks if all elements in the tuple are divisible by `k`.
+4. **Divisibility Check**: For each element in the tuple, it checks if the element modulo `k` is zero. If any element fails this check, the tuple is skipped.
+5. **Result Compilation**: If all elements in a tuple are divisible by `k`, the tuple is added to the result list.
+6. **Return Result**: The function returns the list of tuples that meet the condition.
+7. **Test Cases**: The script includes several test cases to verify the correctness of the function, including the one provided in the problem statement. The assertions will raise an error if any test case fails, otherwise, it will print a success message.

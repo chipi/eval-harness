@@ -1,0 +1,7 @@
+```python
+import math
+
+def circle_circumference(radius):
+    """Find the circumference of a circle given its radius."""
+    return 2 * math.pi * radius
+```

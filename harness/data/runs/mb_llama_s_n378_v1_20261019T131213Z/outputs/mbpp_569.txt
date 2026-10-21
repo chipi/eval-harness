@@ -1,0 +1,27 @@
+```python
+def sort_sublists(lists):
+    """
+    This function takes a list of lists of strings as input, 
+    and returns a new list of lists where each sublist is sorted.
+
+    Args:
+        lists (list): A list of lists of strings.
+
+    Returns:
+        list: A new list of lists where each sublist is sorted.
+    """
+    # Use list comprehension to create a new list with sorted sublists
+    return [sorted(sublist) for sublist in lists]
+
+# Test the function
+assert sort_sublists([['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']])==[['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+print("All tests passed.")
+```
+
+You can save this script to a file (e.g., `sort_sublists.py`) and run it using Python (e.g., `python sort_sublists.py`). The `assert` statement will check if the function works correctly, and if it does, it will print "All tests passed." 
+
+This script works by using a technique called list comprehension to create a new list where each sublist is sorted. The `sorted` function is used to sort each sublist. 
+
+Note that this script assumes that the input list of lists only contains lists of strings. If the input list can contain lists of other types of elements, you may need to modify the script accordingly. 
+
+Also, note that this script sorts the sublists in a case-sensitive manner. If you want to sort the sublists in a case-insensitive manner, you can modify the script to use `sorted(sublist, key=str.lower)`.

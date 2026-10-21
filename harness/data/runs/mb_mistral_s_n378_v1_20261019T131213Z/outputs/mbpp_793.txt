@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem of finding the last position of an element in a sorted array:
+
+```python
+def last_position(nums, target):
+    """
+    Find the last position of a target element in a sorted array.
+
+    Args:
+        nums: List[int] - a sorted list of integers
+        target: int - the target value to search for
+
+    Returns:
+        int - the last index of the target in the array, or -1 if not found
+    """
+    left, right = 0, len(nums) - 1
+    result = -1
+
+    while left <= right:
+        mid = left + (right - left) // 2
+        if nums[mid] == target:
+            result = mid
+            left = mid + 1  # continue searching to the right
+        elif nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return result
+
+# Test case
+assert last_position([1, 2, 3], 1) == 0
+print("Test passed!")
+```
+
+This solution uses a modified binary search algorithm to efficiently find the last occurrence of the target element in O(log n) time. The key difference from a standard binary search is that when we find a match, we continue searching to the right to find the last occurrence.
+
+The test case provided in the problem statement is included, and the script will print "Test passed!" if the assertion is successful.

@@ -1,0 +1,55 @@
+```python
+from collections import Counter
+
+def unique_sublists(lst):
+    """
+    Counts the occurrences of each sublist within a list.
+
+    This function iterates through a list of sublists, converts each sublist
+    into an immutable tuple, and then counts the frequency of each unique tuple.
+    The result is returned as a dictionary where keys are the tuple representations
+    of the sublists and values are their respective counts.
+
+    Args:
+        lst: A list that may contain other lists (sublists) and other types of elements.
+
+    Returns:
+        A dictionary where keys are tuples (representing the sublists from the input)
+        and values are integers representing the count of each sublist.
+        Elements in the input list that are not lists are ignored.
+    """
+    # Use a list comprehension to filter for only list elements and convert them to tuples.
+    # This ensures that only sublists are counted and that they are hashable.
+    tuple_sublists = [tuple(sublist) for sublist in lst if isinstance(sublist, list)]
+    
+    # The Counter object is a highly efficient way to count hashable objects.
+    # It takes an iterable and returns a dictionary-like object with elements as keys
+    # and their counts as values.
+    counts = Counter(tuple_sublists)
+    
+    # The Counter object is already a dictionary subclass, so it can be returned directly.
+    return dict(counts)
+
+# Example usage with the provided assertion:
+input_list = [[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]]
+expected_output = {(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+
+# Call the function and store the result
+result = unique_sublists(input_list)
+
+# Print the result for verification
+print(f"Input list: {input_list}")
+print(f"Result from function: {result}")
+print(f"Expected output:     {expected_output}")
+
+# Assert that the result matches the expected output
+assert result == expected_output
+
+# Example with non-list elements to show they are ignored
+mixed_list = [[1, 2], "hello", [1, 2], 123, [1, 2], [3, 4]]
+print(f"\nTesting with mixed list: {mixed_list}")
+print(f"Result: {unique_sublists(mixed_list)}")
+assert unique_sublists(mixed_list) == {(1, 2): 3, (3, 4): 1}
+
+print("\nAll assertions passed successfully!")
+```

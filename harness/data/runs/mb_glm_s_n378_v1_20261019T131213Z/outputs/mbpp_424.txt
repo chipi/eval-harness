@@ -1,0 +1,26 @@
+```python
+def extract_rear(strings_tuple):
+    """
+    Extracts the last character from each string in a tuple.
+
+    Args:
+        strings_tuple: A tuple of strings.
+
+    Returns:
+        A list containing the last character of each string from the input tuple.
+    """
+    # Use a list comprehension to iterate through each string in the tuple
+    # and take the element at the last index (-1).
+    return [s[-1] for s in strings_tuple]
+
+# Example usage with the provided assertion:
+assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+
+# Additional test cases
+assert extract_rear(('hello', 'world')) == ['o', 'd']
+assert extract_rear(('a', 'b', 'c')) == ['a', 'b', 'c']
+assert extract_rear(('')) == ['']
+assert extract_rear(()) == []
+
+print("All assertions passed!")
+```

@@ -1,0 +1,29 @@
+```python
+def extract_quotation(s):
+    """
+    Extracts values between quotation marks from a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        list: A list of strings found between quotation marks.
+    """
+    result = []
+    in_quotation = False
+    current_quotation = ""
+
+    for char in s:
+        if char == '"':
+            in_quotation = not in_quotation
+            if not in_quotation and current_quotation:
+                result.append(current_quotation)
+                current_quotation = ""
+        elif in_quotation:
+            current_quotation += char
+
+    return result
+
+# Example usage:
+print(extract_quotation('Cortex "A53" Based "multi" tasking "Processor"'))  # Output: ['A53', 'multi', 'Processor']
+```

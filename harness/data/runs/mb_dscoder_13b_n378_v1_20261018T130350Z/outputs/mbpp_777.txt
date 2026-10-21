@@ -1,0 +1,24 @@
+```python
+def find_sum(lst):
+    """
+    Write a python function to find the sum of non-repeated elements in a given list.
+    """
+    # Create a dictionary to store the frequency of each element
+    freq = {}
+    for i in lst:
+        if i in freq:
+            freq[i] += 1
+        else:
+            freq[i] = 1
+
+    # Calculate the sum of non-repeated elements
+    sum = 0
+    for i in freq:
+        if freq[i] == 1:
+            sum += i
+
+    return sum
+
+# Test the function
+assert find_sum([1,2,3,1,1,4,5,6]) == 21
+```

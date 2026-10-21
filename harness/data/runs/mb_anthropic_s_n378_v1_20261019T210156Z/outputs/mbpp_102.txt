@@ -1,0 +1,24 @@
+```python
+def snake_to_camel(snake_str):
+    """
+    Convert a snake case string to camel case string.
+    
+    Args:
+        snake_str: A string in snake_case format
+        
+    Returns:
+        A string in CamelCase format (PascalCase)
+    """
+    words = snake_str.split('_')
+    return ''.join(word.capitalize() for word in words)
+
+
+# Test cases
+assert snake_to_camel('python_program') == 'PythonProgram'
+assert snake_to_camel('hello_world') == 'HelloWorld'
+assert snake_to_camel('convert_snake_case_to_camel_case') == 'ConvertSnakeCaseToCamelCase'
+assert snake_to_camel('a') == 'A'
+assert snake_to_camel('a_b_c') == 'ABC'
+
+print("All tests passed!")
+```

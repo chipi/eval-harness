@@ -1,0 +1,38 @@
+```python
+"""
+Write a function to convert the given tuple to a key-value dictionary using adjacent elements.
+https://www.geeksforgeeks.org/python-convert-tuple-to-adjacent-pair-dictionary/
+
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+"""
+
+
+def tuple_to_dict(test_tup):
+    """
+    Convert a tuple into a dictionary by pairing adjacent elements.
+
+    Element at index 0 becomes a key with element at index 1 as its value,
+    element at index 2 becomes a key with element at index 3 as its value, etc.
+
+    Args:
+        test_tup (tuple): The input tuple (expected to have an even number of items).
+
+    Returns:
+        dict: Dictionary built from adjacent element pairs.
+    """
+    return {test_tup[i]: test_tup[i + 1] for i in range(0, len(test_tup) - 1, 2)}
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+
+    # Additional test cases
+    assert tuple_to_dict((1, 2, 3, 4, 5, 6)) == {1: 2, 3: 4, 5: 6}
+    assert tuple_to_dict((6, 7, 8, 9, 10, 11)) == {6: 7, 8: 9, 10: 11}
+    assert tuple_to_dict(()) == {}
+    assert tuple_to_dict((1, 2)) == {1: 2}
+
+    print(tuple_to_dict((1, 5, 7, 10, 13, 5)))
+    print("All tests passed!")
+```

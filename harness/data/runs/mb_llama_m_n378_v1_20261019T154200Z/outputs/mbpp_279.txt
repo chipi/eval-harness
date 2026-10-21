@@ -1,0 +1,20 @@
+```python
+def is_num_decagonal(n):
+    """
+    This function calculates the nth decagonal number.
+    
+    A decagonal number or 10-gonal number is a figurate number that represents a decagon. 
+    The formula for the nth decagonal number is: Dn = 4n^2 - 3n.
+    
+    Parameters:
+    n (int): The position of the decagonal number to be calculated.
+    
+    Returns:
+    int: The nth decagonal number.
+    """
+    return 4 * n ** 2 - 3 * n
+
+# Test the function
+assert is_num_decagonal(3) == 27
+print("Test passed.")
+```

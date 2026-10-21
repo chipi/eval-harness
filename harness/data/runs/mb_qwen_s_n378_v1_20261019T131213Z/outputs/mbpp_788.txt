@@ -1,0 +1,14 @@
+```python
+def new_tuple(lst, string):
+    """
+    Create a new tuple from the given list and string.
+    
+    Args:
+        lst: A list of elements to include in the tuple.
+        string: A string to append to the tuple.
+        
+    Returns:
+        A tuple containing all elements from the list followed by the string.
+    """
+    return tuple(lst) + (string,)
+```

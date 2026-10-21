@@ -1,0 +1,45 @@
+```python
+def amicable_numbers_sum(limit):
+    """
+    Calculates the sum of all amicable numbers up to a specified limit.
+
+    Args:
+        limit: The upper limit for finding amicable numbers.
+
+    Returns:
+        The sum of all amicable numbers within the limit.
+    """
+
+    def sum_of_divisors(n):
+        """Calculates the sum of proper divisors of a number."""
+        total = 1
+        for i in range(2, int(n**0.5) + 1):
+            if n % i == 0:
+                total += i
+                if i * i != n:
+                    total += n // i
+        return total
+
+    amicable_sum = 0
+    seen = set()  # To avoid double-counting
+
+    for num in range(2, limit + 1):
+        if num in seen:
+            continue
+
+        divisor_sum = sum_of_divisors(num)
+
+        if divisor_sum != num and sum_of_divisors(divisor_sum) == num:
+            amicable_sum += num + divisor_sum
+            seen.add(num)
+            seen.add(divisor_sum)
+
+    return amicable_sum // 2 # Divide by 2 because each pair is added twice
+
+if __name__ == '__main__':
+    assert amicable_numbers_sum(999) == 31626
+    assert amicable_numbers_sum(10000) == 31626
+    assert amicable_numbers_sum(100) == 0
+    assert amicable_numbers_sum(220) == 284
+    print(amicable_numbers_sum(999))
+```

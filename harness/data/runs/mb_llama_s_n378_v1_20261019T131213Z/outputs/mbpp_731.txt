@@ -1,0 +1,33 @@
+```python
+import math
+
+def lateralsurface_cone(r, h):
+    """
+    Calculate the lateral surface area of a cone.
+
+    Parameters:
+    r (float): The radius of the cone's base.
+    h (float): The height of the cone.
+
+    Returns:
+    float: The lateral surface area of the cone.
+    """
+    # Calculate the slant height using Pythagorean theorem
+    slant_height = math.sqrt(r**2 + h**2)
+    
+    # Calculate the lateral surface area
+    lateral_surface_area = math.pi * r * slant_height
+    
+    return lateral_surface_area
+
+# Test the function
+assert round(lateralsurface_cone(5, 12), 10) == round(204.20352248333654, 10)
+```
+
+In this code:
+
+*   We define a function `lateralsurface_cone` that takes the radius `r` and height `h` of the cone as input.
+*   We calculate the slant height of the cone using the Pythagorean theorem.
+*   We then calculate the lateral surface area using the formula: π \* r \* slant_height.
+*   The function returns the lateral surface area.
+*   Finally, we test the function with an assertion to ensure it produces the expected result.

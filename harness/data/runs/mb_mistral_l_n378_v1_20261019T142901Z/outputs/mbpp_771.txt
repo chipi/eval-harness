@@ -1,0 +1,39 @@
+Here's a self-contained Python script that checks if a given expression has balanced parentheses, brackets, and braces:
+
+```python
+def check_expression(expression):
+    """
+    Check if the given expression has balanced parentheses, brackets, and braces.
+
+    Args:
+        expression (str): The input string to check for balanced symbols.
+
+    Returns:
+        bool: True if the expression is balanced, False otherwise.
+    """
+    stack = []
+    mapping = {')': '(', '}': '{', ']': '['}
+
+    for char in expression:
+        if char in mapping.values():
+            stack.append(char)
+        elif char in mapping.keys():
+            if not stack or mapping[char] != stack.pop():
+                return False
+        # Ignore other characters
+
+    return not stack
+
+# Test case
+assert check_expression("{()}[{}]") == True
+```
+
+This solution:
+1. Uses a stack to keep track of opening symbols
+2. Has a mapping of closing symbols to their corresponding opening symbols
+3. Iterates through each character in the expression:
+   - If it's an opening symbol, pushes it onto the stack
+   - If it's a closing symbol, checks if it matches the top of the stack
+4. Returns True only if the stack is empty at the end (all symbols were matched)
+
+The test case `assert check_expression("{()}[{}]") == True` verifies that the function works correctly for a balanced expression.

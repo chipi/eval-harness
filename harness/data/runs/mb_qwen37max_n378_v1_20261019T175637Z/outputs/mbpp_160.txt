@@ -1,0 +1,50 @@
+```python
+def find_solution(a, b, n):
+    """
+    Find integers x and y such that ax + by = n.
+    Returns (x, y) as a tuple, or None if no solution exists.
+    Uses the extended Euclidean algorithm.
+    """
+    def extended_gcd(a, b):
+        if b == 0:
+            return a, 1, 0
+        g, x1, y1 = extended_gcd(b, a % b)
+        x = y1
+        y = x1 - (a // b) * y1
+        return g, x, y
+    
+    # Handle edge cases
+    if a == 0 and b == 0:
+        if n == 0:
+            return (0, 0)
+        return None
+    
+    if a == 0:
+        if n % b == 0:
+            return (0, n // b)
+        return None
+    
+    if b == 0:
+        if n % a == 0:
+            return (n // a, 0)
+        return None
+    
+    g, x0, y0 = extended_gcd(abs(a), abs(b))
+    
+    if n % g != 0:
+        return None
+    
+    # Scale the solution
+    factor = n // g
+    
+    # Adjust signs based on original a and b
+    x = x0 * factor
+    y = y0 * factor
+    
+    if a < 0:
+        x = -x
+    if b < 0:
+        y = -y
+    
+    return (x, y)
+```

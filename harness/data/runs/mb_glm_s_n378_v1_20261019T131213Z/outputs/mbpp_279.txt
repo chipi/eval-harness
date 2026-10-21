@@ -1,0 +1,34 @@
+```python
+def is_num_decagonal(n):
+    """
+    Calculates the nth decagonal number.
+
+    A decagonal number is a figurate number that extends the concept of
+    triangular and square numbers to the decagon (10-sided polygon).
+    The formula for the nth decagonal number is: 4 * n * (n - 1) + n
+
+    Args:
+        n (int): The position of the decagonal number to find (1-based index).
+
+    Returns:
+        int: The nth decagonal number.
+    """
+    if not isinstance(n, int) or n < 1:
+        raise ValueError("Input must be a positive integer.")
+    
+    # The formula for the nth decagonal number is 4 * n * (n - 1) + n
+    return 4 * n * (n - 1) + n
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Test the function with the provided example
+    assert is_num_decagonal(3) == 27
+    
+    # Additional test cases
+    assert is_num_decagonal(1) == 1
+    assert is_num_decagonal(2) == 10
+    assert is_num_decagonal(4) == 46
+    assert is_num_decagonal(5) == 75
+    
+    print("All tests passed successfully!")
+```

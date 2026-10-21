@@ -1,0 +1,30 @@
+```python
+def two_unique_nums(*lists):
+    """
+    Removes duplicate numbers from a given list (or multiple lists).
+    Returns a list of elements that appear exactly once across the input.
+    """
+    # Combine all input lists into one flat list
+    combined = []
+    for lst in lists:
+        combined.extend(lst)
+    
+    # Count occurrences of each number
+    counts = {}
+    for num in combined:
+        counts[num] = counts.get(num, 0) + 1
+    
+    # Keep only numbers that appeared exactly once
+    # We maintain the original order of appearance
+    result = [num for num in combined if counts[num] == 1]
+    
+    return result
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    # The problem description asks for a function that removes duplicates.
+    # Based on the assertion [1,2,3,2,3,4,5] -> [1, 4, 5], 
+    # it specifically wants elements that appear ONLY once.
+    assert two_unique_nums([1, 2, 3, 2, 3, 4, 5]) == [1, 4, 5]
+    print("Assertion passed!")
+```

@@ -1,0 +1,36 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+from typing import List
+
+def largest_subset(nums: List[int]) -> int:
+    """
+    Returns the size of the largest subset where for every pair (a, b),
+    either a % b == 0 or b % a == 0.
+    """
+    if not nums:
+        return 0
+
+    nums.sort()
+    n = len(nums)
+    dp = [1] * n  # dp[i] = size of largest divisible subset ending at nums[i]
+
+    for i in range(n):
+        for j in range(i):
+            if nums[i] % nums[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+
+    return max(dp)
+
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+    print("Test passed!")
+```
+
+**Explanation:**
+- Sort the numbers so that for any pair `(a, b)` with `a < b`, we only need to check `b % a == 0`.
+- Use dynamic programming: `dp[i]` stores the size of the largest divisible subset ending with `nums[i]`.
+- For each `i`, check all previous `j`; if `nums[i] % nums[j] == 0`, we can extend the subset ending at `j`.
+- The answer is the maximum value in `dp`.

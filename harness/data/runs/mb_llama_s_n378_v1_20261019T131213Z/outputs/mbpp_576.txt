@@ -1,0 +1,81 @@
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Checks if a list is a sublist of another.
+
+    Args:
+        main_list (list): The main list to check against.
+        sub_list (list): The sublist to check.
+
+    Returns:
+        bool: True if sub_list is a sublist of main_list, False otherwise.
+    """
+    if len(sub_list) > len(main_list):
+        return False
+
+    for i in range(len(main_list) - len(sub_list) + 1):
+        if main_list[i:i+len(sub_list)] == sub_list:
+            return True
+
+    return False
+
+# Test cases
+assert is_sublist([1,2,3,4,5], [2,3]) == True
+assert not is_sublist([1,2,3,4,5], [2,6]) == True
+assert not is_sublist([1,4,3,5],[1,2]) == True
+assert is_sublist([1,2,3,4,5], [1,2,3,4,5]) == True
+assert not is_sublist([1,2,3,4,5], [6]) == True
+assert is_sublist([], []) == True
+assert not is_sublist([], [1]) == True
+```
+
+However, Python provides an inbuilt method to achieve this in a more Pythonic way:
+
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Checks if a list is a sublist of another.
+
+    Args:
+        main_list (list): The main list to check against.
+        sub_list (list): The sublist to check.
+
+    Returns:
+        bool: True if sub_list is a sublist of main_list, False otherwise.
+    """
+    return ''.join(map(str, sub_list)) in ''.join(map(str, main_list))
+
+# Test cases
+assert is_sublist([1,2,3,4,5], [2,3]) 
+assert not is_sublist([1,2,3,4,5], [2,6]) 
+assert not is_sublist([1,4,3,5],[1,2]) 
+assert is_sublist([1,2,3,4,5], [1,2,3,4,5]) 
+assert not is_sublist([1,2,3,4,5], [6]) 
+assert is_sublist([], []) 
+assert not is_sublist([], [1])
+```
+Or 
+
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Checks if a list is a sublist of another.
+
+    Args:
+        main_list (list): The main list to check against.
+        sub_list (list): The sublist to check.
+
+    Returns:
+        bool: True if sub_list is a sublist of main_list, False otherwise.
+    """
+    return tuple(sub_list) in [tuple(main_list[i: j]) for i in range(len(main_list)) for j in range(i + 1, len(main_list) + 1)]
+
+# Test cases
+assert is_sublist([1,2,3,4,5], [2,3]) 
+assert not is_sublist([1,2,3,4,5], [2,6]) 
+assert not is_sublist([1,4,3,5],[1,2]) 
+assert is_sublist([1,2,3,4,5], [1,2,3,4,5]) 
+assert not is_sublist([1,2,3,4,5], [6]) 
+assert is_sublist([], []) 
+assert not is_sublist([], [1])
+```

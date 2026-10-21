@@ -1,0 +1,23 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def last_Digit(n):
+    """
+    Finds the last digit of a given integer.
+    
+    Args:
+    n (int): The input number.
+    
+    Returns:
+    int: The last digit of the number.
+    """
+    return abs(n) % 10
+
+# Assertions to verify the correctness of the function
+if __name__ == "__main__":
+    assert last_Digit(123) == 3
+    assert last_Digit(0) == 0
+    assert last_Digit(-456) == 6
+    assert last_Digit(100) == 0
+    print("All assertions passed!")
+```

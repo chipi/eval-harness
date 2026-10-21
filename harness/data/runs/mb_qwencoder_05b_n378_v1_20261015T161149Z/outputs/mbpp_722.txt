@@ -1,0 +1,10 @@
+```python
+def filter_data(data, min_height, min_weight):
+    # Filter students whose height and weight are above the specified minimum values
+    filtered_students = {name: (height, weight) for name, (height, weight) in data.items() if height > min_height and weight > min_weight}
+    return filtered_students
+
+# Test the function with the provided test case
+assert filter_data({'Cierra Vega': (6.2, 70), 'Alden Cantrell': (5.9, 65), 'Kierra Gentry': (6.0, 68), 'Pierre Cox': (5.8, 66)}, 6.0, 70) == {'Cierra Vega': (6.2, 70)}
+```
+

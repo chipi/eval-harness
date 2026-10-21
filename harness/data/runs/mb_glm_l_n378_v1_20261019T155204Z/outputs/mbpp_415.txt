@@ -1,0 +1,41 @@
+```python
+def max_Product(arr):
+    """
+    Finds a pair with the highest product from a given array of integers.
+    
+    Args:
+        arr (list): A list of integers.
+        
+    Returns:
+        tuple: A tuple containing the pair with the highest product.
+    """
+    if len(arr) < 2:
+        raise ValueError("Array must contain at least two elements")
+    
+    # Sort the array in ascending order
+    arr.sort()
+    
+    # Compare the product of the two largest numbers (at the end)
+    # with the product of the two smallest numbers (at the beginning).
+    # The two smallest numbers might have a high product if both are negative.
+    # Example: [-10, -10, 1, 2] -> product of negatives is 100.
+    # Example: [1, 2, 3, 4] -> product of positives is 12.
+    
+    # Product of the two largest numbers
+    prod1 = arr[-1] * arr[-2]
+    
+    # Product of the two smallest numbers
+    prod2 = arr[0] * arr[1]
+    
+    if prod1 > prod2:
+        return (arr[-2], arr[-1])
+    else:
+        return (arr[0], arr[1])
+
+# Test cases
+if __name__ == "__main__":
+    assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+    assert max_Product([-10, -3, 5, 6, -2]) == (-10, -3)
+    assert max_Product([-1, -4, 2, 5]) == (-4, 5)
+    print("All test cases passed.")
+```

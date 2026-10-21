@@ -1,0 +1,9 @@
+```python
+def sort_sublists(lst):
+    return [sorted(sublist) for sublist in lst]
+
+# Test cases
+assert sort_sublists([['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']])==[['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+assert sort_sublists([['apple', 'banana'], ['cherry', 'date'], ['elderberry', 'fig', 'grapefruit']])==[['apple', 'banana'], ['cherry', 'date'], ['elderberry', 'fig', 'grapefruit']]
+assert sort_sublists([['red', 'blue'], ['green', 'yellow'], ['black', 'white', 'gray']])==[['blue', 'red'], ['green', 'yellow'], ['black', 'gray', 'white']]
+```

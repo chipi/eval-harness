@@ -1,0 +1,11 @@
+```python
+import math
+
+
+def angle_complex(real, imaginary):
+    """Return the angle, in radians, of real + imaginary."""
+    return math.atan2(imaginary.imag, real.real)
+
+
+assert math.isclose(angle_complex(0, 1j), math.pi / 2, rel_tol=0.001)
+```

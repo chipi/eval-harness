@@ -1,0 +1,20 @@
+```python
+def tuple_str_int(tuple_str):
+    """
+    Convert a string representation of a tuple to an actual tuple of integers.
+
+    Args:
+        tuple_str (str): String representation of a tuple, e.g., "(7, 8, 9)"
+
+    Returns:
+        tuple: Tuple of integers, e.g., (7, 8, 9)
+    """
+    # Remove parentheses and split by commas
+    stripped = tuple_str.strip('()')
+    # Split into individual elements, strip whitespace, and convert to integers
+    elements = [int(x.strip()) for x in stripped.split(',')]
+    return tuple(elements)
+
+# Test the function
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+```

@@ -1,0 +1,63 @@
+Here's a self-contained Python script that computes Eulerian numbers using dynamic programming:
+
+```python
+def eulerian_num(n, m):
+    """
+    Compute the Eulerian number A(n, m), which counts the number of
+    permutations of {1, 2, ..., n} having exactly m ascents.
+    
+    Recurrence relation:
+        A(n, m) = (n - m) * A(n - 1, m - 1) + (m + 1) * A(n - 1, m)
+    
+    Base cases:
+        A(0, 0) = 1
+        A(n, m) = 0 if m < 0 or m >= n (for n >= 1)
+    """
+    if n == 0:
+        return 1 if m == 0 else 0
+    if m < 0 or m >= n:
+        return 0
+
+    # Build DP table row by row
+    # dp[j] will hold A(i, j) for the current row i
+    dp = [0] * n
+    dp[0] = 1  # A(1, 0) = 1
+
+    for i in range(2, n + 1):
+        new_dp = [0] * n
+        for j in range(i):
+            # A(i, j) = (i - j) * A(i-1, j-1) + (j + 1) * A(i-1, j)
+            left = (i - j) * (dp[j - 1] if j - 1 >= 0 else 0)
+            right = (j + 1) * (dp[j] if j < len(dp) else 0)
+            new_dp[j] = left + right
+        dp = new_dp
+
+    return dp[m]
+
+
+# Test cases
+assert eulerian_num(3, 1) == 4
+assert eulerian_num(1, 0) == 1
+assert eulerian_num(2, 0) == 1
+assert eulerian_num(2, 1) == 1
+assert eulerian_num(4, 1) == 11
+assert eulerian_num(4, 2) == 11
+assert eulerian_num(5, 2) == 66
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+- The Eulerian number `A(n, m)` counts permutations of `{1, ..., n}` with exactly `m` ascents.
+- The recurrence `A(n, m) = (n - m) · A(n-1, m-1) + (m + 1) · A(n-1, m)` builds the triangle row by row.
+- Base case: `A(1, 0) = 1` (a single element has zero ascents).
+- The DP array `dp[j]` stores `A(i, j)` for the current row `i`, and is updated iteratively up to row `n`.
+- The function returns `dp[m]`, which is `A(n, m)`.
+
+For `eulerian_num(3, 1)`, the triangle is:
+- Row 1: `[1]`
+- Row 2: `[1, 1]`
+- Row 3: `[1, 4, 1]`
+
+So `A(3, 1) = 4`, matching the assertion.

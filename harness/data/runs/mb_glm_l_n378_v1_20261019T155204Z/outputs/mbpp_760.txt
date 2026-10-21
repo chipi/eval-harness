@@ -1,0 +1,19 @@
+```python
+def unique_Element(arr):
+    """
+    Check whether a list of numbers contains only one distinct element or not.
+    
+    Args:
+    arr (list): A list of numbers.
+    
+    Returns:
+    bool: True if the list contains only one distinct element, False otherwise.
+    """
+    return len(set(arr)) == 1
+
+# Test the function
+assert unique_Element([1,1,1]) == True
+assert unique_Element([1,2,1]) == False
+assert unique_Element([]) == False  # Edge case: empty list
+assert unique_Element([5]) == True  # Edge case: single element
+```

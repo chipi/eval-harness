@@ -1,0 +1,14 @@
+```python
+def last_Digit(n):
+    """
+    Write a python function to find the last digit of a given number.
+    """
+    return abs(n) % 10
+
+# Test cases
+assert last_Digit(123) == 3
+assert last_Digit(-123) == 3
+assert last_Digit(100) == 0
+assert last_Digit(0) == 0
+assert last_Digit(9) == 9
+```

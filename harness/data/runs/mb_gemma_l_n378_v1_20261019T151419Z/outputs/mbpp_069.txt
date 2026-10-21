@@ -1,0 +1,38 @@
+```python
+def is_sublist(main_list, sublist):
+    """
+    Checks whether a list contains the given sublist.
+    A sublist is defined as a sequence of elements that appear 
+    consecutively and in the same order within the main list.
+    """
+    # An empty list is technically a sublist of any list
+    if not sublist:
+        return True
+    
+    # If the sublist is longer than the main list, it cannot be a sublist
+    if len(sublist) > len(main_list):
+        return False
+
+    # Iterate through the main list to find the starting point of the sublist
+    for i in range(len(main_list) - len(sublist) + 1):
+        # Check if the slice of main_list starting at i matches the sublist
+        if main_list[i : i + len(sublist)] == sublist:
+            return True
+            
+    return False
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # [3, 7] is not a sublist of [2, 4, 3, 5, 7] because 3 and 7 are not consecutive
+    assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+    
+    # Additional test cases
+    assert is_sublist([1, 2, 3, 4], [2, 3]) == True
+    assert is_sublist([1, 2, 3, 4], [1, 2]) == True
+    assert is_sublist([1, 2, 3, 4], [3, 4]) == True
+    assert is_sublist([1, 2, 3, 4], [2, 4]) == False
+    assert is_sublist([1, 2, 3], []) == True
+    assert is_sublist([], [1]) == False
+    
+    print("All tests passed!")
+```

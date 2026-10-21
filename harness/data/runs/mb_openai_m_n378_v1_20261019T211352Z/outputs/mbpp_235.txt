@@ -1,0 +1,35 @@
+```python
+"""
+Set all even-position bits of a given number.
+
+Bit positions are counted from 0 starting at the least significant bit.
+So the even bit positions are: 0, 2, 4, 6, ...
+
+Example:
+10 in binary is 1010
+Setting even positions up to its bit length gives 1010, which is still 10.
+"""
+
+def even_bit_set_number(n: int) -> int:
+    if n < 0:
+        raise ValueError("This function only supports non-negative integers")
+
+    bit_length = max(1, n.bit_length())
+
+    # Create a mask with 1s at even bit positions up to the number's bit length.
+    mask = 0
+    for i in range(0, bit_length, 2):
+        mask |= 1 << i
+
+    return n | mask
+
+
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    assert even_bit_set_number(0) == 1
+    assert even_bit_set_number(8) == 13  # 1000 | 0101 = 1101
+    assert even_bit_set_number(1) == 1
+    assert even_bit_set_number(2) == 3
+
+    print("All tests passed.")
+```

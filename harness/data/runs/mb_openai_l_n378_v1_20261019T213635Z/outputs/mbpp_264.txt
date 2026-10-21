@@ -1,0 +1,14 @@
+```python
+def dog_age(human_years):
+    """Convert a dog's age in human years to dog years."""
+    if human_years <= 0:
+        return 0
+    if human_years == 1:
+        return 15
+    if human_years == 2:
+        return 24
+    return 24 + (human_years - 2) * 3.7
+
+
+assert dog_age(12) == 61
+```

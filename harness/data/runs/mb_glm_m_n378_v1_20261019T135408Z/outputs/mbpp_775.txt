@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem. The function `odd_position` checks whether every odd index in the given list contains an odd number:
+
+```python
+def odd_position(lst):
+    """
+    Check whether every odd index in the list contains an odd number.
+    
+    Args:
+        lst (list): A list of integers.
+    
+    Returns:
+        bool: True if every odd index contains an odd number, False otherwise.
+    """
+    for i in range(1, len(lst), 2):  # Iterate over odd indices
+        if lst[i] % 2 == 0:  # Check if the number at the odd index is even
+            return False
+    return True
+
+# Test cases
+assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) == True
+assert odd_position([2, 2, 4, 3, 6, 7, 6, 3]) == False  # 2 at index 1 is even
+assert odd_position([1, 3, 5, 7, 9]) == True
+assert odd_position([1, 2, 3, 4, 5]) == False  # 2 at index 1 is even
+assert odd_position([]) == True  # Empty list has no odd indices
+assert odd_position([1]) == True  # No odd indices in a single-element list
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `odd_position` takes a list `lst` as input.
+2. It iterates over the odd indices of the list using `range(1, len(lst), 2)`. The `range` starts at 1 (the first odd index), steps by 2 (to skip even indices), and stops at the length of the list.
+3. For each odd index `i`, it checks if the element `lst[i]` is even (`lst[i] % 2 == 0`). If any such element is found, the function immediately returns `False`.
+4. If the loop completes without finding any even numbers at odd indices, the function returns `True`.
+5. The test cases verify the function's correctness for various scenarios, including the provided example and edge cases like empty lists or single-element lists.

@@ -1,0 +1,31 @@
+```python
+def remove_odd(numbers: list) -> list:
+    """
+    Remove odd numbers from a given list.
+    
+    Args:
+        numbers: A list of integers
+        
+    Returns:
+        A list containing only the even numbers from the input list
+        
+    Examples:
+        >>> remove_odd([1, 2, 3])
+        [2]
+        >>> remove_odd([1, 2, 3, 4, 5, 6])
+        [2, 4, 6]
+        >>> remove_odd([])
+        []
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert remove_odd([1, 2, 3]) == [2]
+    assert remove_odd([1, 2, 3, 4, 5, 6]) == [2, 4, 6]
+    assert remove_odd([]) == []
+    assert remove_odd([1, 3, 5]) == []
+    assert remove_odd([2, 4, 6]) == [2, 4, 6]
+    print("All tests passed!")
+```

@@ -1,0 +1,35 @@
+```python
+def dict_filter(input_dict, n):
+  """
+  Filters a dictionary to only include entries with values greater than or equal to n.
+
+  Args:
+    input_dict: The dictionary to filter.
+    n: The integer threshold value.
+
+  Returns:
+    A new dictionary containing only the key-value pairs from input_dict
+    where the value is greater than or equal to n.
+  """
+  # Use a dictionary comprehension to create the new dictionary.
+  # It iterates through the input_dict's items and includes only those
+  # where the value (item[1]) is >= n.
+  return {key: value for key, value in input_dict.items() if value >= n}
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+  sample_dict = {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}
+  threshold = 170
+  
+  # Call the function and store the result
+  filtered_dict = dict_filter(sample_dict, threshold)
+  
+  # Print the result for clarity
+  print(f"Original dictionary: {sample_dict}")
+  print(f"Filtered dictionary (values >= {threshold}): {filtered_dict}")
+  
+  # Assert that the result matches the expected output
+  assert filtered_dict == {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Pierre Cox': 190}
+  
+  print("\nAssertion passed! The function works correctly.")
+```

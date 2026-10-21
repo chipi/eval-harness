@@ -1,0 +1,57 @@
+```python
+def amicable_numbers_sum(n):
+    """
+    Sum all amicable numbers from 1 to n.
+    
+    Amicable numbers are pairs of numbers where each number is equal to 
+    the sum of the proper divisors of the other number.
+    For example, 220 and 284 are amicable because:
+    - proper divisors of 220: 1, 2, 4, 5, 10, 11, 20, 22, 44, 55, 110 (sum = 284)
+    - proper divisors of 284: 1, 2, 4, 71, 142 (sum = 220)
+    """
+    
+    def sum_of_proper_divisors(num):
+        """Calculate the sum of proper divisors of a number."""
+        if num <= 1:
+            return 0
+        divisor_sum = 1  # 1 is always a proper divisor for num > 1
+        # Check divisors up to sqrt(num)
+        for i in range(2, int(num**0.5) + 1):
+            if num % i == 0:
+                divisor_sum += i
+                # Add the complementary divisor if it's different
+                if i != num // i:
+                    divisor_sum += num // i
+        return divisor_sum
+    
+    amicable_set = set()
+    
+    # Check each number from 1 to n
+    for i in range(1, n + 1):
+        sum_of_divisors = sum_of_proper_divisors(i)
+        # Check if it forms an amicable pair
+        # (sum_of_divisors != i ensures we exclude perfect numbers)
+        if sum_of_divisors != i and sum_of_proper_divisors(sum_of_divisors) == i:
+            amicable_set.add(i)
+    
+    return sum(amicable_set)
+
+
+# Test
+assert amicable_numbers_sum(999) == 504
+print("Test passed! amicable_numbers_sum(999) =", amicable_numbers_sum(999))
+```
+
+The script works as follows:
+
+1. **`sum_of_proper_divisors(num)`**: Calculates the sum of all proper divisors (divisors excluding the number itself) of a given number. It iterates only up to the square root for efficiency.
+
+2. **Main logic**: For each number from 1 to n, we:
+   - Calculate the sum of its proper divisors
+   - Check if that sum, when we calculate its proper divisors' sum, equals the original number
+   - Ensure the number isn't a perfect number (where sum of proper divisors equals itself)
+   - Add amicable numbers to a set to avoid duplicates
+
+3. **Result**: Return the sum of all amicable numbers found.
+
+For n=999, the amicable pairs are (220, 284), so the sum is 220 + 284 = 504.

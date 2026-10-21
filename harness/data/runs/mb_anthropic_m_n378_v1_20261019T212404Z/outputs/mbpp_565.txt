@@ -1,0 +1,14 @@
+```python
+def split(word):
+    """
+    Split a string into a list of characters.
+    """
+    return list(word)
+
+
+# Test cases
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+
+if __name__ == "__main__":
+    print(split('python'))
+```

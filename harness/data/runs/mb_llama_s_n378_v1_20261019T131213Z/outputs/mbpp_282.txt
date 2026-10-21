@@ -1,0 +1,29 @@
+```python
+def sub_list(list1, list2):
+    """
+    This function subtracts two lists element-wise.
+
+    Args:
+        list1 (list): The first list of numbers.
+        list2 (list): The second list of numbers.
+
+    Returns:
+        list: A new list containing the element-wise differences of list1 and list2.
+
+    Raises:
+        ValueError: If the lists are not of the same length.
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Lists must be of the same length")
+
+    return [a - b for a, b in zip(list1, list2)]
+
+
+# Example usage:
+if __name__ == "__main__":
+    list1 = [1, 2, 3]
+    list2 = [4, 5, 6]
+    print(sub_list(list1, list2))  # Output: [-3, -3, -3]
+```
+
+This Python script defines a function `sub_list` that takes two lists as input and returns a new list containing the element-wise differences of the input lists. The function uses a list comprehension and the built-in `zip` function to iterate over the two lists in parallel. It also includes a check to ensure that the input lists are of the same length, raising a `ValueError` if they are not. The example usage demonstrates how to use the function with two sample lists.

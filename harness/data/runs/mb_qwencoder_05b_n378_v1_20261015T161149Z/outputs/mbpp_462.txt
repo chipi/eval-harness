@@ -1,0 +1,24 @@
+```python
+def combinations_list(lst):
+    """
+    Write a function to find all possible combinations of the elements of a given list.
+    
+    :param lst: List of elements to combine
+    :return: A list of all possible combinations
+    """
+    # Initialize an empty list to store the combinations
+    combinations = []
+    
+    # Iterate over each element in the input list
+    for i in range(len(lst)):
+        # Iterate over each element in the remaining part of the list
+        for j in range(i + 1, len(lst)):
+            # Append the current combination to the list of combinations
+            combinations.append([lst[i], lst[j]])
+    
+    return combinations
+
+# Test the function with the provided test case
+assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'], ['green', 'orange'], ['green', 'red'], ['green', 'red', 'orange'], ['blue'], ['blue', 'orange'], ['blue', 'red'], ['blue', 'red', 'orange'], ['blue', 'green'], ['blue', 'green', 'orange'], ['blue', 'green', 'red'], ['blue', 'green', 'red', 'orange']]
+```
+

@@ -1,0 +1,39 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+from typing import List, Dict, Any
+
+def expensive_items(items: List[Dict[str, Any]], n: int) -> List[Dict[str, Any]]:
+    """
+    Returns the n most expensive items from a list of dictionaries containing 'name' and 'price'.
+    
+    Args:
+        items (List[Dict[str, Any]]): List of items with 'name' and 'price' keys.
+        n (int): Number of most expensive items to return.
+    
+    Returns:
+        List[Dict[str, Any]]: The n most expensive items, sorted by price descending.
+    """
+    # Sort items by price in descending order
+    sorted_items = sorted(items, key=lambda x: x['price'], reverse=True)
+    # Return the first n items
+    return sorted_items[:n]
+
+# Example test case
+if __name__ == "__main__":
+    test_data = [
+        {'name': 'Item-1', 'price': 101.1},
+        {'name': 'Item-2', 'price': 555.22}
+    ]
+    result = expensive_items(test_data, 1)
+    print(result)  # Expected: [{'name': 'Item-2', 'price': 555.22}]
+    
+    # Additional test
+    more_items = [
+        {'name': 'A', 'price': 10},
+        {'name': 'B', 'price': 30},
+        {'name': 'C', 'price': 20},
+        {'name': 'D', 'price': 50}
+    ]
+    print(expensive_items(more_items, 2))  # Expected: [{'name': 'D', 'price': 50}, {'name': 'B', 'price': 30}]
+```

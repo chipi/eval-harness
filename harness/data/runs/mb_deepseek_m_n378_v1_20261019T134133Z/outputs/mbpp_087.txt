@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    If keys overlap, the value from the later dictionary takes precedence.
+    """
+    merged = {}
+    merged.update(dict1)
+    merged.update(dict2)
+    merged.update(dict3)
+    return merged
+
+
+# Test the function
+if __name__ == "__main__":
+    result = merge_dictionaries_three(
+        {"R": "Red", "B": "Black", "P": "Pink"},
+        {"G": "Green", "W": "White"},
+        {"O": "Orange", "W": "White", "B": "Black"}
+    )
+    expected = {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+    assert result == expected, f"Expected {expected}, got {result}"
+    print("Test passed:", result)
+```
+
+**How it works:**
+
+1. **`merged = {}`** — Start with an empty dictionary.
+2. **`merged.update(dict1)`** — Add all key-value pairs from the first dictionary.
+3. **`merged.update(dict2)`** — Add pairs from the second dictionary. Any overlapping keys get overwritten.
+4. **`merged.update(dict3)`** — Add pairs from the third dictionary, again overwriting overlaps.
+5. **Return** the merged dictionary.
+
+**Note on ordering:** In Python 3.7+, dictionaries preserve insertion order. Since `"B"` first appears in `dict1` and is later overwritten by `dict3` (with the same value `"Black"`), its position stays at the front. Similarly, `"W"` first appears in `dict2` and is overwritten by `dict3` with the same value, keeping its position. This matches the expected output in the assertion.
+
+**Alternative one-liner** using unpacking (Python 3.5+):
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    return {**dict1, **dict2, **dict3}
+```
+
+Both versions produce the same result. The `{**a, **b, **c}` syntax is more concise and idiomatic in modern Python.

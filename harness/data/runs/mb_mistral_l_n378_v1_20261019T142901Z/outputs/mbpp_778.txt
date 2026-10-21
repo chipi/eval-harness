@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem of packing consecutive duplicates into sublists:
+
+```python
+def pack_consecutive_duplicates(lst):
+    if not lst:
+        return []
+
+    result = []
+    current_sublist = [lst[0]]
+
+    for item in lst[1:]:
+        if item == current_sublist[-1]:
+            current_sublist.append(item)
+        else:
+            result.append(current_sublist)
+            current_sublist = [item]
+
+    result.append(current_sublist)
+    return result
+
+# Test the function
+assert pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [
+    [0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]
+]
+
+# Example usage
+if __name__ == "__main__":
+    test_list = [0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]
+    print(pack_consecutive_duplicates(test_list))
+```
+
+This script:
+1. Defines the `pack_consecutive_duplicates` function that takes a list as input
+2. Handles the empty list case
+3. Iterates through the list, grouping consecutive duplicates into sublists
+4. Includes the assertion test from the problem statement
+5. Provides an example usage when run as a script
+
+The function works by maintaining a current sublist and comparing each new element with the last element in the current sublist. If they match, it adds to the current sublist; if not, it adds the current sublist to the result and starts a new sublist.

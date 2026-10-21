@@ -1,0 +1,14 @@
+```python
+def jacobsthal_num(n):
+    """Return the nth Jacobsthal number (J(0) = 0, J(1) = 1)."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, b + 2 * a
+    return a
+
+
+assert jacobsthal_num(5) == 11
+```

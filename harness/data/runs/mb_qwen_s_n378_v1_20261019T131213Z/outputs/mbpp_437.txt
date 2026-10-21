@@ -1,0 +1,16 @@
+```python
+def remove_odd(s: str) -> str:
+    """
+    Remove characters at odd indices (1, 3, 5, ...) from the string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with characters at odd indices removed
+        
+    >>> remove_odd("python")
+    'yhn'
+    """
+    return ''.join(s[i] for i in range(len(s)) if i % 2 == 0)
+```

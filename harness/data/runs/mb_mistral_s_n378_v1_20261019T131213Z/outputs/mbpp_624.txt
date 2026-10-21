@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to convert a given string to uppercase.
+assert is_upper("person") =="PERSON"
+"""
+
+def is_upper(input_string):
+    """Convert a given string to uppercase."""
+    return input_string.upper()
+
+# Test the function
+assert is_upper("person") == "PERSON"
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `is_upper` that takes a string and returns its uppercase version
+2. Includes the required assertion test case
+3. Prints a confirmation message if the test passes
+
+The function uses Python's built-in `str.upper()` method which is the most straightforward way to convert a string to uppercase.

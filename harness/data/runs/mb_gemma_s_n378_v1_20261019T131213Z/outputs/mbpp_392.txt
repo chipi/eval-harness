@@ -1,0 +1,27 @@
+```python
+def get_max_sum(n):
+    """
+    Finds the maximum sum possible by using the given equation f(n) = max( (f(n/2) + f(n/3) + f(n/4) + f(n/5)), n).
+
+    Args:
+        n: The input integer.
+
+    Returns:
+        The maximum sum possible.
+    """
+    cache = {}
+
+    def solve(n):
+        if n <= 1:
+            return n
+        if n in cache:
+            return cache[n]
+
+        result = max(solve(n // 2) + solve(n // 3) + solve(n // 4) + solve(n // 5), n)
+        cache[n] = result
+        return result
+
+    return solve(n)
+
+assert get_max_sum(60) == 106
+```

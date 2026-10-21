@@ -1,0 +1,8 @@
+```python
+def combinations_list(lst):
+    import itertools
+    return list(itertools.product(*lst))
+
+# Test the function
+print(combinations_list(['orange', 'red', 'green', 'blue']))
+```

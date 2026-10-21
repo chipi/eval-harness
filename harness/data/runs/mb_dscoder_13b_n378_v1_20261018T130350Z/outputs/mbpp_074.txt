@@ -1,0 +1,8 @@
+```python
+def is_samepatterns(patterns, sequence):
+    return patterns == sequence
+
+# Test cases
+print(is_samepatterns(["red","green","green"], ["a", "b", "b"]))  # Expected output: True
+print(is_samepatterns(["red","green","blue"], ["a", "b", "b"]))  # Expected output: False
+```

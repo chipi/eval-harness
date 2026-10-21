@@ -1,0 +1,35 @@
+```python
+def odd_Equivalent(binary_string, rotations):
+    """
+    Return the number of rotations of a binary string that produce an odd number.
+
+    In base 2, a number is odd iff its last bit is '1'.
+    So for each rotation, we only need to check whether the rotated string ends with '1'.
+
+    A rotation here means moving the first character to the end, repeated `rotations` times.
+    Since there are only len(binary_string) distinct rotations, we only consider up to that many.
+
+    Example:
+        odd_Equivalent("011001", 6) -> 3
+    """
+    if not binary_string:
+        return 0
+
+    n = len(binary_string)
+    rotations = min(rotations, n)
+
+    count = 0
+    s = binary_string
+    for _ in range(rotations):
+        # one left rotation: first character moves to the end
+        s = s[1:] + s[0]
+        if s[-1] == '1':
+            count += 1
+
+    return count
+
+
+if __name__ == "__main__":
+    assert odd_Equivalent("011001", 6) == 3
+    print("Passed sample test.")
+```

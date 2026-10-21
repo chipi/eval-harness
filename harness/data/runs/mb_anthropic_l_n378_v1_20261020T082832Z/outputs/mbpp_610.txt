@@ -1,0 +1,59 @@
+Looking at the assertion: `remove_kth_element([1,1,2,3,4,4,5,1], 3)` returns `[1, 1, 3, 4, 4, 5, 1]`. The element removed is `2`, which is at index 2 (the 3rd element, 1-based). So `k` is 1-based.
+
+```python
+"""
+Write a python function which takes a list and returns a list with the same elements, but the k'th element removed.
+assert remove_kth_element([1,1,2,3,4,4,5,1],3)==[1, 1, 3, 4, 4, 5, 1]
+"""
+
+
+def remove_kth_element(list1, k):
+    """
+    Return a new list containing all elements of `list1` except the k'th one
+    (where k is 1-based).
+
+    If k is out of range, the original elements are returned unchanged.
+    """
+    return list1[:k - 1] + list1[k:]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert remove_kth_element([1, 1, 2, 3, 4, 4, 5, 1], 3) == [1, 1, 3, 4, 4, 5, 1]
+
+    # A few extra checks
+    assert remove_kth_element([0, 0, 1, 2, 3, 4, 5], 5) == [0, 0, 1, 2, 4, 5]
+    assert remove_kth_element([10, 10, 15, 19, 18, 18, 17, 26, 26, 17, 18, 10], 4) == \
+challenge        [10, 10, 15, 18, 18, 17, 26, 26, 17, 18, 10]
+    assert remove_kth_element([1, 2, 3], 1) == [2, 3]
+    assert remove_kth_element([1, 2, 3], 3) == [1, 2]
+
+    print("All tests passed!")
+    print(remove_kth_element([1, 1, 2, 3, 4, 4, 5, 1], 3))
+```
+
+Oops — there's a stray token in that code. Here is the corrected, clean version:
+
+```python
+"""
+Write a python function which takes a list and returns a list with the same elements, but the k'th element removed.
+assert remove_kth_element([1,1,2,3,4,4,5,1],3)==[1, 1, 3, 4, 4, 5, 1]
+"""
+
+
+def remove_kth_element(list1, k):
+    """
+    Return a new list containing all elements of `list1` except the k'th one
+    (where k is 1-based).
+    """
+    return list1[:k - 1] + list1[k:]
+
+
+if __name__ == "__main__":
+    assert remove_kth_element([1, 1, 2, 3, 4, 4, 5, 1], 3) == [1, 1, 3, 4, 4, 5, 1]
+    assert remove_kth_element([0, 0, 1, 2, 3, 4, 5], 5) == [0, 0, 1, 2, 4, 5]
+    assert remove_kth_element([1, 2, 3], 1) == [2, 3]
+    assert remove_kth_element([1, 2, 3], 3) == [1, 2]
+    print("All tests passed!")
+    print(remove_kth_element([1, 1, 2, 3, 4, 4, 5, 1], 3))
+```

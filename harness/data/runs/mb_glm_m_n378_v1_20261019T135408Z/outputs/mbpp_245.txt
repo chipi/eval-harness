@@ -1,0 +1,50 @@
+To solve the problem of finding the maximum sum of a bitonic subsequence, we can use dynamic programming. A bitonic subsequence is one that first strictly increases and then strictly decreases. 
+
+The approach involves calculating two DP arrays:
+1. `msis[i]` (Maximum Sum Increasing Subsequence): The maximum sum of an increasing subsequence ending at index `i`.
+2. `msds[i]` (Maximum Sum Decreasing Subsequence): The maximum sum of a decreasing subsequence starting at index `i`.
+
+The maximum sum of a bitonic subsequence with the peak at index `i` will be `msis[i] + msds[i] - arr[i]` (we subtract `arr[i]` because it is included in both the increasing and decreasing parts). The overall answer is the maximum of this value across all indices.
+
+```python
+def max_sum(arr):
+    """
+    Finds the maximum sum of a bitonic subsequence for the given array.
+    A sequence is bitonic if it is first strictly increasing and then strictly decreasing.
+    """
+    if not arr:
+        return 0
+        
+    n = len(arr)
+    
+    # msis[i] stores the Maximum Sum Increasing Subsequence ending with arr[i]
+    msis = arr[:]
+    
+    # msds[i] stores the Maximum Sum Decreasing Subsequence starting with arr[i]
+    msds = arr[:]
+    
+    # Compute MSIS values from left to right
+    for i in range(n):
+        for j in range(i):
+            if arr[i] > arr[j] and msis[i] < msis[j] + arr[i]:
+                msis[i] = msis[j] + arr[i]
+                
+    # Compute MSDS values from right to left
+    for i in range(n - 1, -1, -1):
+        for j in range(n - 1, i, -1):
+            if arr[i] > arr[j] and msds[i] < msds[j] + arr[i]:
+                msds[i] = msds[j] + arr[i]
+                
+    # Find the maximum sum of bitonic subsequence
+    max_val = 0
+    for i in range(n):
+        # msis[i] + msds[i] - arr[i] because arr[i] is counted twice
+        max_val = max(max_val, msis[i] + msds[i] - arr[i])
+        
+    return max_val
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+    print("Assertion passed successfully!")
+```

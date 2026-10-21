@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of rotating a list to the right by a specified number of items:
+
+```python
+def rotate_right(lst, n):
+    """
+    Rotate a list to the right by n items.
+
+    Args:
+        lst: The list to rotate
+        n: Number of positions to rotate right
+
+    Returns:
+        The rotated list
+    """
+    if not lst:  # Handle empty list
+        return lst
+    n = n % len(lst)  # Handle cases where n > len(lst)
+    return lst[-n:] + lst[:-n]
+
+# Test case
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+print("Test passed!")
+```
+
+This solution:
+1. Handles empty lists by returning them unchanged
+2. Uses modulo operation to handle cases where the rotation count is larger than the list length
+3. Uses list slicing to efficiently create the rotated list by combining the last n elements with the remaining elements
+4. Includes the required test case with an assertion
+
+The function works by taking the last `n` elements (using `lst[-n:]`) and concatenating them with all elements except the last `n` (using `lst[:-n]`).

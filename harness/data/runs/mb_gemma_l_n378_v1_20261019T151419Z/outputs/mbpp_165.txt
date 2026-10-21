@@ -1,0 +1,41 @@
+```python
+def count_char_position(text):
+    """
+    Counts the number of characters in a string that occur at the same 
+    position in the string as in the English alphabet (case insensitive).
+    
+    The alphabet is 0-indexed: 'a' is at position 0, 'b' at 1, etc.
+    """
+    count = 0
+    # Convert string to lowercase to ensure case insensitivity
+    text = text.lower()
+    
+    for index, char in enumerate(text):
+        # Check if the character is a lowercase letter
+        if 'a' <= char <= 'z':
+            # ord('a') is 97. Subtracting 97 gives the 0-indexed position.
+            # Example: 'a' -> 97-97 = 0, 'b' -> 98-97 = 1
+            alphabet_position = ord(char) - ord('a')
+            if alphabet_position == index:
+                count += 1
+                
+    return count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # 'x' (pos 0) != 'a' (pos 0)
+    # 'b' (pos 1) == 'b' (pos 1) -> Match!
+    # 'c' (pos 2) == 'c' (pos 2) -> Match!
+    # 'e' (pos 3) != 'd' (pos 3)
+    # 'f' (pos 4) != 'e' (pos 4)
+    # 'g' (pos 5) != 'f' (pos 5)
+    assert count_char_position("xbcefg") == 2
+    
+    # Additional test cases
+    assert count_char_position("abc") == 3      # All match
+    assert count_char_position("z") == 0       # 'z' is pos 25, string index is 0
+    assert count_char_position("AbC") == 3      # Case insensitivity check
+    assert count_char_position("123a") == 0    # Non-alphabet characters
+    
+    print("All tests passed!")
+```

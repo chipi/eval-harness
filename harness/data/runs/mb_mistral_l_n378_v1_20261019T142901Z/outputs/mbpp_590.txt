@@ -1,0 +1,63 @@
+Here's a self-contained Python script that converts polar coordinates to rectangular coordinates, including the requested assertion:
+
+```python
+"""
+Polar to Rectangular Coordinates Converter
+
+This script provides a function to convert polar coordinates (radius, angle in radians)
+to rectangular (Cartesian) coordinates, with an optional complex number output.
+"""
+
+import cmath
+import math
+
+def polar_rect(r, theta):
+    """
+    Convert polar coordinates to rectangular coordinates.
+
+    Args:
+        r (float): Radius (magnitude)
+        theta (float): Angle in radians
+
+    Returns:
+        tuple: A tuple containing:
+            - (x, y) as real coordinates (tuple of floats)
+            - complex number representation (complex)
+    """
+    # Calculate rectangular coordinates using trigonometry
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+
+    # Create complex number representation
+    z = cmath.rect(r, theta)
+
+    return ((x, y), z)
+
+# Test case from the problem statement
+assert polar_rect(3, 4) == ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+
+# Additional test cases
+if __name__ == "__main__":
+    # Test case 1: 45 degrees (π/4 radians)
+    result = polar_rect(math.sqrt(2), math.pi/4)
+    print(f"45° test: {result}")
+    assert math.isclose(result[0][0], 1.0) and math.isclose(result[0][1], 1.0)
+    assert math.isclose(result[1].real, 1.0) and math.isclose(result[1].imag, 1.0)
+
+    # Test case 2: 90 degrees (π/2 radians)
+    result = polar_rect(1, math.pi/2)
+    print(f"90° test: {result}")
+    assert math.isclose(result[0][0], 0.0) and math.isclose(result[0][1], 1.0)
+    assert math.isclose(result[1].real, 0.0) and math.isclose(result[1].imag, 1.0)
+
+    print("All tests passed!")
+```
+
+This script:
+1. Implements the `polar_rect` function that takes radius and angle (in radians) as input
+2. Returns both the rectangular coordinates as a tuple of floats and as a complex number
+3. Includes the exact assertion from the problem statement
+4. Adds additional test cases to verify the function works correctly
+5. Uses `math.isclose()` for floating-point comparisons to handle potential precision issues
+
+The function uses both the trigonometric approach (for the tuple output) and Python's built-in `cmath.rect()` function (for the complex number output) to ensure accuracy.

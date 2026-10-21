@@ -1,0 +1,17 @@
+```python
+def sum_digits(n: int) -> int:
+    """
+    Returns the sum of the digits of a non-negative integer.
+    
+    Example:
+    >>> sum_digits(345)
+    12
+    """
+    # Convert to string, iterate over characters, convert each back to int and sum
+    return sum(int(digit) for digit in str(n))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert sum_digits(345) == 12
+    print("Test passed.")
+```

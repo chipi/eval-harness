@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists where each sublist contains every nth element.
+
+    Args:
+        lst: The input list to be split.
+        n: The number of sublists to create.
+
+    Returns:
+        A list of sublists where each sublist contains every nth element.
+    """
+    return [[lst[i + j] for i in range(n) if i + j < len(lst)] for j in range(0, len(lst), n)]
+
+# Test the function
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [
+    ['a', 'd', 'g', 'j', 'm'],
+    ['b', 'e', 'h', 'k', 'n'],
+    ['c', 'f', 'i', 'l']
+]
+
+print("Test passed!")
+```
+
+This script defines a function `list_split` that takes a list and an integer `n`, then splits the list into `n` sublists where each sublist contains every `nth` element. The function uses list comprehension to achieve this efficiently. The test case provided in the problem statement is included to verify the correctness of the function.

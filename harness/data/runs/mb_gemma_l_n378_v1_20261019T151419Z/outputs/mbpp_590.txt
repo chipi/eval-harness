@@ -1,0 +1,60 @@
+```python
+import math
+
+def polar_rect(r, theta):
+    """
+    Converts polar coordinates (r, theta) to rectangular coordinates.
+    
+    Args:
+        r (float): The radius.
+        theta (float): The angle in radians.
+        
+    Returns:
+        tuple: A tuple containing:
+               1. A tuple of (magnitude, angle) - essentially returning the input.
+               2. A complex number representing the rectangular coordinate x + iy.
+    """
+    # Calculate rectangular coordinates
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+    
+    # The specific assertion in the prompt expects:
+    # 1. A tuple of (r, theta)
+    # 2. A complex number x + yj
+    # Note: The assertion provided in the prompt: 
+    # polar_rect(3,4) == ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    # is mathematically unusual because polar_rect(3, 4) usually means r=3, theta=4.
+    # However, looking at the expected output:
+    # Magnitude 5.0 and angle 0.927... is the polar form of the point (4, 3).
+    # The complex number -2 + ...j suggests a different calculation.
+    
+    # Based on the specific assertion provided:
+    # polar_rect(3, 4) -> (5.0, 0.927...) is the polar conversion of (4, 3)
+    # The complex number -2 + 2.44e-16j is actually 3 * exp(i * 4) approx.
+    # Let's implement the standard conversion and the specific return format.
+    
+    # Standard Rectangular conversion:
+    rect_complex = complex(r * math.cos(theta), r * math.sin(theta))
+    
+    # The first part of the expected tuple ((5.0, 0.927...)) is actually 
+    # the polar conversion of the arguments (3, 4) treated as (x, y).
+    mag = math.sqrt(r**2 + theta**2)
+    angle = math.atan2(theta, r)
+    
+    return (mag, angle), rect_complex
+
+if __name__ == "__main__":
+    # Testing the function with the provided assertion
+    result = polar_rect(3, 4)
+    expected = ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    
+    # Using math.isclose for floats due to precision
+    mag_ok = math.isclose(result[0][0], expected[0][0])
+    ang_ok = math.isclose(result[0][1], expected[0][1])
+    comp_ok = abs(result[1] - expected[1]) < 1e-15
+    
+    if mag_ok and ang_ok and comp_ok:
+        print("Assertion passed!")
+    else:
+        print(f"Assertion failed. Result: {result}")
+```

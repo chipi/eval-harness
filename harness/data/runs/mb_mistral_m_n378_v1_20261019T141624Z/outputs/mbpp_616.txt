@@ -1,0 +1,17 @@
+```python
+def tuple_modulo(t1, t2):
+    """
+    Performs element-wise modulo operation on two tuples of the same length.
+
+    Args:
+        t1: First tuple of integers
+        t2: Second tuple of integers (same length as t1)
+
+    Returns:
+        A new tuple with each element being t1[i] % t2[i]
+    """
+    return tuple(a % b for a, b in zip(t1, t2))
+
+# Test case
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+```

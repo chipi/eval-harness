@@ -1,0 +1,12 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_none(input_tuple):
+    """Check if the given tuple contains any None value."""
+    return None in input_tuple
+
+# Test case
+assert check_none((10, 4, 5, 6, None)) == True
+```
+
+This script defines a function `check_none` that takes a tuple as input and returns `True` if the tuple contains at least one `None` value, otherwise it returns `False`. The test case provided in the problem statement is included as an assertion to verify the function works correctly.

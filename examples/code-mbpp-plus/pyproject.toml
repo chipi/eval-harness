@@ -1,0 +1,35 @@
+# This example's OWN dependency chain and its OWN interpreter (see the summarisation
+# example's pyproject.toml for why each example is a uv project with a lock).
+[project]
+name = "eval-example-code-mbpp-plus"
+version = "0.1.0"
+description = "MBPP+: can a model write Python that passes the tests? Scored by execution, in a sandbox"
+requires-python = ">=3.11"
+dependencies = [
+    # The harness core's own needs, because the harness scripts run in THIS environment.
+    "pyyaml>=6.0",
+    "openai>=1.0",
+    # Not for us: for the code under test. EvalPlus's plus tests compare floats with
+    # numpy.allclose, so the interpreter that executes model code must have numpy. The
+    # sandbox runs THIS environment's python, so numpy is a dependency here.
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+# The LOCAL arms only (Qwen2.5-Coder). A hosted-only sweep never installs torch.
+local = [
+    # Same platform caps as the other examples: torch stopped shipping Intel-Mac wheels
+    # after 2.2.2, transformers 5 does not recognise it, and torch 2.2 needs NumPy 1.x.
+    "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "transformers>=4.40,<4.56",
+    "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # Yi-Coder's tokenizer ships only as a sentencepiece model; transformers converts it
+    # to a fast tokenizer at load, which needs both of these. Without them the yicoder_15b
+    # arm fails at warm-up (ImportError, then ValueError), having run nothing.
+    "protobuf>=3.20",
+    "sentencepiece>=0.2",
+]
+
+[tool.uv]
+package = false

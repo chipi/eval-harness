@@ -1,0 +1,15 @@
+```python
+def is_num_decagonal(n):
+    """
+    Find the nth decagonal number.
+    
+    The formula for the nth decagonal number is: n * (4n - 3)
+    
+    Args:
+        n: A positive integer representing the position in the decagonal sequence.
+        
+    Returns:
+        The nth decagonal number.
+    """
+    return n * (4 * n - 3)
+```

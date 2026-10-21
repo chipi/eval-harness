@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of finding the left insertion point for a specified value in a sorted list:
+
+```python
+def left_insertion(sorted_list, value):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+    
+    Args:
+        sorted_list: A list of elements sorted in ascending order.
+        value: The value to find the insertion point for.
+        
+    Returns:
+        The index where the value should be inserted to maintain sorted order.
+        If the value already exists in the list, returns the index of the first occurrence.
+    """
+    left, right = 0, len(sorted_list)
+    while left < right:
+        mid = (left + right) // 2
+        if sorted_list[mid] < value:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+# Test cases
+assert left_insertion([1, 2, 4, 5], 6) == 4
+assert left_insertion([1, 2, 4, 5], 3) == 2
+assert left_insertion([1, 2, 4, 5], 0) == 0
+assert left_insertion([1, 2, 4, 5], 5) == 3
+assert left_insertion([1, 2, 2, 2, 5], 2) == 1
+assert left_insertion([], 1) == 0
+
+print("All test cases passed!")
+```
+
+This script implements the `left_insertion` function using a binary search algorithm to efficiently find the insertion point. The function works as follows:
+
+1. It initializes two pointers, `left` and `right`, to the start and end of the list respectively.
+2. It enters a loop that continues until `left` and `right` meet.
+3. In each iteration, it calculates the middle index and compares the middle element with the target value.
+4. If the middle element is less than the value, it moves the `left` pointer to `mid + 1`.
+5. Otherwise, it moves the `right` pointer to `mid`.
+6. When the loop ends, `left` will be pointing to the correct insertion position.
+
+The script includes several test cases to verify the function's correctness, including the one provided in the problem statement. The function handles edge cases like inserting at the beginning or end of the list, inserting into an empty list, and inserting a value that already exists in the list (returning the position of the first occurrence).

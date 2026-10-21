@@ -1,0 +1,14 @@
+```python
+def rectangle_area(length, width):
+    """
+    Calculate the area of a rectangle given its length and width.
+    """
+    return length * width
+
+
+# Test case
+assert rectangle_area(10, 20) == 200
+
+if __name__ == "__main__":
+    print(rectangle_area(10, 20))
+```

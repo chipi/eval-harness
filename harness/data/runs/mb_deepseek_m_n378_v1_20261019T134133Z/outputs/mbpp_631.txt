@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_spaces(s):
+    """
+    Replace whitespaces with underscores and vice versa in a given string.
+    """
+    result = []
+    for char in s:
+        if char == ' ':
+            result.append('_')
+        elif char == '_':
+            result.append(' ')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
+# Test cases
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+assert replace_spaces('Jumanji_The_Jungle') == 'Jumanji The Jungle'
+assert replace_spaces('Hello World_Test') == 'Hello_World Test'
+assert replace_spaces('') == ''
+assert replace_spaces('NoSpacesOrUnderscores') == 'NoSpacesOrUnderscores'
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function iterates through each character in the input string.
+2. If the character is a space (`' '`), it appends an underscore (`'_'`) to the result.
+3. If the character is an underscore (`'_'`), it appends a space (`' '`) to the result.
+4. Otherwise, it appends the character unchanged.
+5. Finally, it joins the list of characters back into a single string.
+
+This approach handles both directions of replacement in a single pass, making it efficient (O(n) time complexity) and easy to understand.

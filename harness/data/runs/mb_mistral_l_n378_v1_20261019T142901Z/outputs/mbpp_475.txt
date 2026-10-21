@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem of sorting a dictionary by its values in descending order:
+
+```python
+def sort_counter(counter):
+    """
+    Sorts a dictionary by its values in descending order and returns a list of tuples.
+
+    Args:
+        counter (dict): The dictionary to be sorted by values.
+
+    Returns:
+        list: A list of tuples sorted by values in descending order.
+    """
+    return sorted(counter.items(), key=lambda item: item[1], reverse=True)
+
+# Test the function
+assert sort_counter({'Math':81, 'Physics':83, 'Chemistry':87}) == [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+```
+
+This script:
+1. Defines the `sort_counter` function that takes a dictionary as input
+2. Uses the `sorted()` function with:
+   - `counter.items()` to get key-value pairs
+   - `key=lambda item: item[1]` to sort by the values (second element of each tuple)
+   - `reverse=True` to sort in descending order
+3. Includes the assertion test to verify the function works as expected
+
+The function will return a list of tuples sorted by the dictionary values in descending order.

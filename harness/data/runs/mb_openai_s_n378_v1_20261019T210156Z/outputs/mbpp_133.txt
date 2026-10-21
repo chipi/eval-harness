@@ -1,0 +1,12 @@
+```python
+def sum_negativenum(numbers):
+    """
+    Return the sum of all negative numbers in the input list.
+    """
+    return sum(x for x in numbers if x < 0)
+
+
+if __name__ == "__main__":
+    assert sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]) == -32
+    print("All tests passed.")
+```

@@ -1,0 +1,13 @@
+```python
+def sum_of_digits(numbers):
+    total = 0
+    for num in numbers:
+        n = abs(num)  # Handle negative numbers by taking absolute value
+        while n > 0:
+            total += n % 10
+            n = n // 10
+    return total
+
+# Test the function
+assert sum_of_digits([10, 2, 56]) == 14
+```

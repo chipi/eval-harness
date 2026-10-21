@@ -1,0 +1,36 @@
+```python
+def filter_data(students, min_height, min_weight):
+    """
+    Return a dictionary containing only students whose height and weight
+    are both greater than or equal to the given minimum values.
+
+    Args:
+        students (dict): Dictionary with student names as keys and
+                         (height, weight) tuples as values.
+        min_height (float): Minimum required height.
+        min_weight (float): Minimum required weight.
+
+    Returns:
+        dict: Filtered dictionary of students meeting the criteria.
+    """
+    return {
+        name: (height, weight)
+        for name, (height, weight) in students.items()
+        if height >= min_height and weight >= min_weight
+    }
+
+
+if __name__ == "__main__":
+    assert filter_data(
+        {
+            'Cierra Vega': (6.2, 70),
+            'Alden Cantrell': (5.9, 65),
+            'Kierra Gentry': (6.0, 68),
+            'Pierre Cox': (5.8, 66)
+        },
+        6.0,
+        70
+    ) == {'Cierra Vega': (6.2, 70)}
+
+    print("All tests passed.")
+```

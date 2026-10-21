@@ -1,0 +1,14 @@
+```python
+def min_val(items):
+    """Return the smallest numeric value in a heterogeneous list."""
+    numbers = [
+        item for item in items
+        if isinstance(item, (int, float)) and not isinstance(item, bool)
+    ]
+    if not numbers:
+        raise ValueError("The list contains no numeric values")
+    return min(numbers)
+
+
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+```

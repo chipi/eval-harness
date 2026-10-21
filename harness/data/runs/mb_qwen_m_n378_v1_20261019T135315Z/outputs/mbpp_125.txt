@@ -1,0 +1,39 @@
+```python
+def find_length(s: str) -> int:
+    """
+    Find the maximum difference between the number of 0s and number of 1s in any sub-string of the given binary string.
+    
+    The difference is defined as (count of 0s) - (count of 1s) in a substring.
+    We want to maximize this difference.
+    
+    Approach: Transform the string such that each '0' contributes +1 and each '1' contributes -1.
+    Then the problem becomes finding the maximum subarray sum (Kadane's algorithm).
+    
+    For example, "11000010001":
+    Transformed: [-1, -1, +1, +1, +1, +1, -1, +1, +1, +1, -1]
+    Maximum subarray sum would give us the max difference.
+    """
+    if not s:
+        return 0
+    
+    # Transform: '0' -> +1, '1' -> -1
+    # Then find maximum subarray sum using Kadane's algorithm
+    max_ending_here = 0
+    max_so_far = float('-inf')
+    
+    for char in s:
+        if char == '0':
+            val = 1
+        else:
+            val = -1
+        
+        max_ending_here = max(val, max_ending_here + val)
+        max_so_far = max(max_so_far, max_ending_here)
+    
+    return max_so_far
+
+
+if __name__ == "__main__":
+    assert find_length("11000010001") == 6
+    print("All tests passed.")
+```

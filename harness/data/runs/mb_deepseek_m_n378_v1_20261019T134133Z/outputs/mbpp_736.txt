@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def left_insertion(sorted_list, value):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+
+    The left insertion point is the index at which the value should be inserted
+    to keep the list sorted, placing it before any existing equal elements.
+
+    Args:
+        sorted_list: A list sorted in ascending order.
+        value: The value to find the insertion point for.
+
+    Returns:
+        The index of the left insertion point.
+    """
+    left = 0
+    right = len(sorted_list)
+    while left < right:
+        mid = (left + right) // 2
+        if sorted_list[mid] < value:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+
+if __name__ == "__main__":
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 4, 5], 0) == 0
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 4) == 2  # left of existing equal element
+    assert left_insertion([], 10) == 0
+    assert left_insertion([1, 1, 1, 1], 1) == 0
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- It uses **binary search** (the bisect-left algorithm) for O(log n) performance.
+- `left` and `right` track the search boundaries.
+- When `sorted_list[mid] < value`, we know the insertion point is strictly to the right, so we move `left` up.
+- Otherwise, the value could go at or before `mid`, so we move `right` down.
+- The loop converges on the leftmost position where `value` can be inserted without breaking sorted order — i.e., before any equal elements.

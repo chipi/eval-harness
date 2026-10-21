@@ -1,0 +1,22 @@
+```python
+def max_subarray_product(nums):
+    # Initialize variables to store the maximum and minimum products up to the current position
+    max_product = min_product = nums[0]
+    
+    # Iterate through the array starting from the second element
+    for num in nums[1:]:
+        # If the current number is negative, swap max_product and min_product
+        if num < 0:
+            max_product, min_product = min_product, max_product
+        
+        # Update max_product and min_product
+        max_product = max(num, max_product * num)
+        min_product = min(num, min_product * num)
+    
+    # Return the maximum product found
+    return max_product
+
+# Test the function with the provided test case
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+```
+

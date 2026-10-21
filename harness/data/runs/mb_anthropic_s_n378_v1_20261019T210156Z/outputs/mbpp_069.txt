@@ -1,0 +1,42 @@
+```python
+def is_sublist(main_list, sublist):
+    """
+    Check whether a list contains the given sublist as consecutive elements.
+    
+    Args:
+        main_list: The list to search in
+        sublist: The sublist to search for
+    
+    Returns:
+        True if sublist appears as consecutive elements in main_list, False otherwise
+    """
+    if not sublist:
+        return True
+    
+    if len(sublist) > len(main_list):
+        return False
+    
+    for i in range(len(main_list) - len(sublist) + 1):
+        if main_list[i:i + len(sublist)] == sublist:
+            return True
+    
+    return False
+
+
+# Test cases
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+assert is_sublist([2, 4, 3, 5, 7], [4, 3]) == True
+assert is_sublist([2, 4, 3, 5, 7], [2, 4, 3]) == True
+assert is_sublist([2, 4, 3, 5, 7], [5, 7]) == True
+assert is_sublist([2, 4, 3, 5, 7], [1, 2]) == False
+assert is_sublist([1, 2, 3], []) == True
+assert is_sublist([], [1]) == False
+
+print("All tests passed!")
+```
+
+The function `is_sublist` checks if a sublist appears as **consecutive elements** in the main list:
+
+- It returns `True` if the sublist is found as consecutive elements
+- It returns `False` if the sublist is not found consecutively
+- For the given test case `[2,4,3,5,7]` and `[3,7]`, it returns `False` because 3 and 7 are not consecutive in the main list (there's a 5 between them)

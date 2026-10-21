@@ -1,0 +1,40 @@
+```python
+def centered_hexagonal_number(n):
+    """
+    Find the nth centered hexagonal number.
+    
+    A centered hexagonal number is a centered figurate number that represents
+    a hexagon with a dot in the center and all other dots surrounding the
+    center dot in successive hexagonal layers.
+    
+    Formula: 3*n*(n-1) + 1
+    
+    Args:
+        n: The position in the sequence (1-indexed)
+    
+    Returns:
+        The nth centered hexagonal number
+    """
+    return 3 * n * (n - 1) + 1
+
+
+# Test cases
+assert centered_hexagonal_number(10) == 271
+assert centered_hexagonal_number(1) == 1
+assert centered_hexagonal_number(2) == 7
+assert centered_hexagonal_number(3) == 19
+assert centered_hexagonal_number(4) == 37
+assert centered_hexagonal_number(5) == 61
+
+print("All tests passed!")
+print(f"centered_hexagonal_number(10) = {centered_hexagonal_number(10)}")
+```
+
+The centered hexagonal number formula is: **3n(n-1) + 1**
+
+This can be derived by observing that:
+- The 1st centered hexagonal number is 1 (just the center dot)
+- Each subsequent layer adds 6 more dots than the previous layer
+- The sequence follows: 1, 7, 19, 37, 61, 91, 127, 169, 217, 271, ...
+
+For n=10: 3 × 10 × 9 + 1 = 270 + 1 = **271** ✓

@@ -1,0 +1,56 @@
+```python
+def sum_Of_product(n: int) -> int:
+    """
+    Calculate the sum of the product of consecutive binomial coefficients.
+    
+    For a given n, the function computes:
+    sum_{k=0}^{n-1} C(n, k) * C(n, k+1)
+    where C(n, k) is the binomial coefficient "n choose k".
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The sum of products of consecutive binomial coefficients
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    
+    # Use the combinatorial identity:
+    # sum_{k=0}^{n-1} C(n, k) * C(n, k+1) = C(2n, n-1)
+    # This is derived from Vandermonde's identity
+    
+    from math import comb
+    
+    # For n=0, the sum is empty, so return 0
+    if n == 0:
+        return 0
+    
+    # Using the identity: sum = C(2n, n-1)
+    return comb(2 * n, n - 1)
+
+
+# Alternative direct computation for verification
+def sum_Of_product_direct(n: int) -> int:
+    """Direct computation using loops (for verification)."""
+    from math import comb
+    total = 0
+    for k in range(n):
+        total += comb(n, k) * comb(n, k + 1)
+    return total
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test the given assertion
+    assert sum_Of_product(3) == 15, f"Expected 15, got {sum_Of_product(3)}"
+    
+    # Additional tests
+    for n in range(0, 10):
+        direct_result = sum_Of_product_direct(n)
+        formula_result = sum_Of_product(n)
+        assert direct_result == formula_result, f"Mismatch for n={n}: direct={direct_result}, formula={formula_result}"
+    
+    print("All tests passed!")
+    print(f"sum_Of_product(3) = {sum_Of_product(3)}")
+```

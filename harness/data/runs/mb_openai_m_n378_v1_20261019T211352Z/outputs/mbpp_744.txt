@@ -1,0 +1,14 @@
+```python
+def check_none(values):
+    """
+    Return True if the given tuple contains any None value, otherwise False.
+    """
+    return any(item is None for item in values)
+
+
+# Example test
+assert check_none((10, 4, 5, 6, None)) == True
+assert check_none((10, 4, 5, 6)) == False
+
+print("All tests passed.")
+```

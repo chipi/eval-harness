@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the nth centered hexagonal number:
+
+```python
+"""
+A centered hexagonal number is a centered figurate number that represents a hexagon
+with a central dot and layers of dots surrounding the center in a hexagonal lattice.
+
+The formula for the nth centered hexagonal number is:
+Cₙ = 3n(n - 1) + 1
+"""
+
+def centered_hexagonal_number(n: int) -> int:
+    """
+    Calculate the nth centered hexagonal number.
+
+    Args:
+        n: The position in the sequence (1-based index)
+
+    Returns:
+        The nth centered hexagonal number
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 3 * n * (n - 1) + 1
+
+# Test the function
+assert centered_hexagonal_number(1) == 1
+assert centered_hexagonal_number(2) == 7
+assert centered_hexagonal_number(3) == 19
+assert centered_hexagonal_number(4) == 37
+assert centered_hexagonal_number(10) == 271
+print("All tests passed!")
+```
+
+The script includes:
+1. A docstring explaining what centered hexagonal numbers are
+2. The mathematical formula for calculating them
+3. The function implementation with type hints
+4. Input validation
+5. Test cases including the one from the problem statement
+6. A success message when all tests pass
+
+The formula `3n(n - 1) + 1` efficiently calculates the nth centered hexagonal number without needing any loops or recursion.

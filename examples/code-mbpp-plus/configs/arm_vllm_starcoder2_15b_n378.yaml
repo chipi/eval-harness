@@ -1,0 +1,18 @@
+# The starcoder2_15b arm served by vLLM on the DGX (GB10) instead of transformers. Same model,
+# revision, precision, prompt and token budget as arm_starcoder2_15b_n378.yaml; the prompt is
+# rendered locally with the model's tokenizer and sent to /v1/completions, greedy.
+# Its own config_id: vLLM's greedy decoding is not bit-identical to transformers'.
+config_id: mb_vllm_starcoder2_15b_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: vllm
+  model: bigcode/starcoder2-15b-instruct-v0.1
+  revision: ffb8dd9776ba9a66d655ecd962e882f3013e9f7c
+  precision: bf16
+  max_new_tokens: 768
+  base_url: http://dgx-llm-1:9100/v1
+  api_key_env: EVAL_VLLM_API_KEY
+  family: starcoder2
+  price_tier: free
+  prompt_file: prompt.txt

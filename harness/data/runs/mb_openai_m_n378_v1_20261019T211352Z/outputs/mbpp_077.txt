@@ -1,0 +1,28 @@
+```python
+"""
+Write a Python function to find whether a number is divisible by 11.
+
+Example:
+assert is_Diff(12345) == False
+"""
+
+def is_Diff(n):
+    """
+    Return True if n is divisible by 11, otherwise False.
+    """
+    return n % 11 == 0
+
+
+# Example test
+assert is_Diff(12345) == False
+
+# Additional tests
+assert is_Diff(121) == True
+assert is_Diff(0) == True
+assert is_Diff(22) == True
+assert is_Diff(123) == False
+
+if __name__ == "__main__":
+    num = int(input("Enter a number: "))
+    print(is_Diff(num))
+```

@@ -1,0 +1,23 @@
+```python
+def cube_nums(nums: list) -> list:
+    """
+    Returns a list containing the cubes of each element in the input list.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        A list of cubed values
+        
+    Example:
+        >>> cube_nums([1, 2, 3])
+        [1, 8, 27]
+    """
+    return [x ** 3 for x in nums]
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+    print("All tests passed!")
+```

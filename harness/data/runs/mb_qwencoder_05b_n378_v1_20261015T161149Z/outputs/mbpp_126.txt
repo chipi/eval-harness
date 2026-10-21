@@ -1,0 +1,18 @@
+```python
+def sum_of_common_divisors(num1, num2):
+    # Initialize the sum of common divisors to 0
+    sum_common = 0
+    
+    # Iterate through possible divisors from 1 to the minimum of num1 and num2
+    for i in range(1, min(num1, num2) + 1):
+        # Check if i is a divisor of both num1 and num2
+        if num1 % i == 0 and num2 % i == 0:
+            # Add i to the sum of common divisors
+            sum_common += i
+    
+    return sum_common
+
+# Test the function with the provided test case
+assert sum_of_common_divisors(10, 15) == 6
+```
+

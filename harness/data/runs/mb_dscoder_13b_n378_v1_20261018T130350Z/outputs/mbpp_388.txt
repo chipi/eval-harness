@@ -1,0 +1,21 @@
+```python
+def highest_Power_of_2(n):
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    if n == 0:
+        return 0
+    else:
+        return (n.bit_length() - 1)
+
+# Test cases
+assert highest_Power_of_2(10) == 3
+assert highest_Power_of_2(255) == 7
+assert highest_Power_of_2(1) == 0
+assert highest_Power_of_2(0) == 0
+
+# Exception test case
+try:
+    highest_Power_of_2(-1)
+except ValueError as e:
+    assert str(e) == "Input must be a non-negative integer."
+```

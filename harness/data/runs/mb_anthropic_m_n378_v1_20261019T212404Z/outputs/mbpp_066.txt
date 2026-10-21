@@ -1,0 +1,27 @@
+```python
+def pos_count(lst):
+    """
+    Count the number of positive numbers in a list.
+    
+    Args:
+        lst: A list of numbers
+    
+    Returns:
+        The count of positive numbers in the list
+    """
+    count = 0
+    for num in lst:
+        if num > 0:
+            count += 1
+    return count
+
+
+# Test cases
+assert pos_count([1, -2, 3, -4]) == 2
+assert pos_count([1, 2, 3, 4]) == 4
+assert pos_count([-1, -2, -3, -4]) == 0
+assert pos_count([]) == 0
+assert pos_count([0, 1, -1, 2, -2]) == 2
+
+print("All test cases passed!")
+```

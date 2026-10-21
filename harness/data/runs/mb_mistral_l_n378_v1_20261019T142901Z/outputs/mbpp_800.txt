@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem of removing all whitespaces from a string:
+
+```python
+def remove_all_spaces(input_string):
+    """
+    Removes all whitespace characters from the input string.
+
+    Args:
+        input_string (str): The string from which to remove whitespaces.
+
+    Returns:
+        str: The input string with all whitespaces removed.
+    """
+    return input_string.replace(" ", "")
+
+# Test the function
+assert remove_all_spaces('python  program') == 'pythonprogram'
+```
+
+This script:
+1. Defines a function `remove_all_spaces` that takes a string as input
+2. Uses the `str.replace()` method to remove all space characters
+3. Includes the assertion test from the problem statement
+4. Will work for the given test case (note that it only removes space characters, not all whitespace characters like tabs or newlines)
+
+If you need to remove ALL whitespace characters (including tabs, newlines, etc.), you could use this alternative version:
+
+```python
+def remove_all_spaces(input_string):
+    """
+    Removes all whitespace characters from the input string.
+
+    Args:
+        input_string (str): The string from which to remove whitespaces.
+
+    Returns:
+        str: The input string with all whitespaces removed.
+    """
+    return "".join(input_string.split())
+
+# Test the function
+assert remove_all_spaces('python  program') == 'pythonprogram'
+assert remove_all_spaces('python\tprogram\n') == 'pythonprogram'
+```

@@ -1,0 +1,14 @@
+```python
+def find_Average_Of_Cube(n):
+    # Calculate the sum of cubes of first n natural numbers using formula (n*(n+1)*(2*n+1))/6
+    sum_of_cubes = (n * (n + 1) * (2 * n + 1)) / 6
+    
+    # Calculate the average of these cubes
+    average = sum_of_cubes / n
+    
+    return average
+
+# Test the function with provided data points
+assert find_Average_Of_Cube(2) == 4.5
+```
+

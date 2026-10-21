@@ -1,0 +1,27 @@
+```python
+import re
+
+def check_str(string):
+    """
+    Checks if the given string starts with a vowel (a, e, i, o, u) 
+    case-insensitively using regular expressions.
+    """
+    # ^ matches the start of the string
+    # [aeiou] matches any one of the characters in the brackets
+    # re.IGNORECASE ensures it matches both uppercase and lowercase vowels
+    pattern = r'^[aeiou]'
+    if re.match(pattern, string, re.IGNORECASE):
+        return True
+    else:
+        return False
+
+if __name__ == "__main__":
+    # Test cases
+    assert check_str("annie") == True
+    assert check_str("Apple") == True
+    assert check_str("banana") == False
+    assert check_str("Egg") == True
+    assert check_str("sky") == False
+    
+    print("All tests passed!")
+```

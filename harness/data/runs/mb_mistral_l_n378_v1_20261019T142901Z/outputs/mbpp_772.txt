@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_length(s, k):
+    """
+    Remove all words with length k from the given string.
+
+    Args:
+        s (str): The input string.
+        k (int): The length of words to remove.
+
+    Returns:
+        str: The string with words of length k removed.
+    """
+    words = s.split()
+    filtered_words = [word for word in words if len(word) != k]
+    return ' '.join(filtered_words)
+
+# Test the function
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+```
+
+This script:
+1. Defines the `remove_length` function that takes a string `s` and an integer `k`
+2. Splits the string into words
+3. Uses a list comprehension to filter out words with length `k`
+4. Joins the remaining words back into a string
+5. Includes the assertion test from the problem statement
+
+The function will correctly remove all words of length 3 from the input string.

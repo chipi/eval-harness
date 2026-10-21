@@ -1,0 +1,19 @@
+```python
+def square_Sum(n):
+    """
+    Takes in an integer n and returns the sum of squares of first n even natural numbers.
+    
+    The first n even natural numbers are: 2, 4, 6, ..., 2n
+    Their squares are: 4, 16, 36, ..., (2n)^2
+    Sum = 4 + 16 + 36 + ... + 4n^2 = 4(1^2 + 2^2 + ... + n^2) = 4 * n*(n+1)*(2n+1)/6
+    
+    For n=2: 4 * 2*3*5/6 = 4 * 30/6 = 4 * 5 = 20
+    """
+    if n <= 0:
+        return 0
+    # Sum of squares of first n even natural numbers
+    # Even numbers: 2, 4, 6, ..., 2n
+    # Squares: 4, 16, 36, ..., 4n^2
+    # Sum = 4 * (1^2 + 2^2 + ... + n^2) = 4 * n*(n+1)*(2n+1)/6
+    return 4 * n * (n + 1) * (2 * n + 1) // 6
+```

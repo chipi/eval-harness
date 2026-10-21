@@ -1,0 +1,31 @@
+```python
+def max_subarray_product(arr):
+    """
+    Return the maximum product of any contiguous subarray.
+    
+    Example:
+        max_subarray_product([1, -2, -3, 0, 7, -8, -2]) -> 112
+    """
+    if not arr:
+        raise ValueError("Input array must not be empty.")
+
+    # Initialize with the first element
+    max_ending_here = min_ending_here = result = arr[0]
+
+    for x in arr[1:]:
+        # If x is negative, max and min swap roles
+        if x < 0:
+            max_ending_here, min_ending_here = min_ending_here, max_ending_here
+
+        max_ending_here = max(x, max_ending_here * x)
+        min_ending_here = min(x, min_ending_here * x)
+
+        result = max(result, max_ending_here)
+
+    return result
+
+
+if __name__ == "__main__":
+    assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+    print("All tests passed.")
+```

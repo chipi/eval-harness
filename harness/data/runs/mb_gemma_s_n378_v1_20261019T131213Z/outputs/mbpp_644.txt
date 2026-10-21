@@ -1,0 +1,27 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+  """
+  Reverses an array upto a given position.
+
+  Args:
+    arr: The input array.
+    k: The position upto which the array needs to be reversed.
+
+  Returns:
+    The reversed array.
+  """
+  if k <= 0 or k > len(arr):
+    return arr  # Handle invalid k values
+
+  arr[:k] = arr[:k][::-1]
+  return arr
+
+# Example usage and assertion
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6],4) == [4, 3, 2, 1, 5, 6]
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5], 3) == [3, 2, 1, 4, 5]
+assert reverse_Array_Upto_K([1, 2, 3], 0) == [1, 2, 3]
+assert reverse_Array_Upto_K([1, 2, 3], 4) == [1, 2, 3]
+assert reverse_Array_Upto_K([], 2) == []
+
+print("All test cases passed!")
+```

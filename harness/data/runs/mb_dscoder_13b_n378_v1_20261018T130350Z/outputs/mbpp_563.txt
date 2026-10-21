@@ -1,0 +1,7 @@
+```python
+def extract_values(s):
+    return s.strip('"').split('","')
+
+# Testing the function
+assert extract_values('"Python", "PHP", "Java"')==['Python', 'PHP', 'Java']
+```

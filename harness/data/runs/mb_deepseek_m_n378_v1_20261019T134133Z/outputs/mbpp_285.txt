@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character followed by
+    two or three 'b' characters.
+    
+    Args:
+        text (str): The input string to check.
+    
+    Returns:
+        bool: True if the pattern 'a' followed by 2 or 3 'b's is found,
+              False otherwise.
+    """
+    pattern = r"ab{2,3}"
+    return bool(re.search(pattern, text))
+
+
+# Test cases
+if __name__ == "__main__":
+    assert text_match_two_three("ac") == False
+    assert text_match_two_three("abb") == True
+    assert text_match_two_three("abbb") == True
+    assert text_match_two_three("abbbb") == True  # contains "abbb" as substring
+    assert text_match_two_three("ab") == False
+    assert text_match_two_three("xabbc") == True
+    assert text_match_two_three("") == False
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The regex pattern `ab{2,3}` matches the letter `a` followed by exactly 2 or 3 `b` characters.
+- `re.search()` scans the entire string for any occurrence of this pattern (not just at the start), so `"xabbc"` correctly returns `True`.
+- `bool()` converts the match object (or `None`) into a proper `True`/`False` value.
+- Note that `"abbbb"` returns `True` because it contains `"abbb"` as a substring — if you need to match the *entire* string, use `re.fullmatch` instead.

@@ -1,0 +1,24 @@
+```python
+def count_first_elements(t):
+    """
+    Find the number of elements that occur before the first tuple element in the given tuple.
+    
+    Args:
+        t: A tuple containing various elements, potentially including nested tuples.
+        
+    Returns:
+        The count of elements before the first encountered tuple element.
+    """
+    count = 0
+    for element in t:
+        if isinstance(element, tuple):
+            return count
+        count += 1
+    return count
+
+# Test cases
+assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+assert count_first_elements((1, 2, 3, 4, 5)) == 5
+assert count_first_elements(((1, 2), 3, 4)) == 0
+assert count_first_elements(()) == 0
+```

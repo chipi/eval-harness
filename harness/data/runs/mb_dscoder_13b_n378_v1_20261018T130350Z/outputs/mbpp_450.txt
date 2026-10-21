@@ -1,0 +1,7 @@
+```python
+def extract_string(lst, size):
+    return [word for word in lst if len(word) == size]
+
+# Testing the function
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+```

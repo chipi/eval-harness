@@ -1,0 +1,44 @@
+To solve the equation \( ax + by = n \) for integers \( x \) and \( y \), we can use the properties of linear Diophantine equations. A solution exists if and only if the greatest common divisor (gcd) of \( a \) and \( b \) divides \( n \). If a solution exists, we can find one using the Extended Euclidean Algorithm to find the initial coefficients, and then adjust them to satisfy the equation.
+
+Here is the self-contained Python script:
+
+```python
+import math
+
+def extended_gcd(a, b):
+    """
+    Returns a tuple (g, x, y) such that a*x + b*y = g = gcd(a, b)
+    """
+    if a == 0:
+        return b, 0, 1
+    
+    g, x1, y1 = extended_gcd(b % a, a)
+    x = y1 - (b // a) * x1
+    y = x1
+    
+    return g, x, y
+
+def find_solution(a, b, n):
+    """
+    Returns integers x and y that satisfy ax + by = n as a tuple, 
+    or return None if no solution exists.
+    """
+    # Find the GCD of a and b, along with the Bezout coefficients
+    g, x0, y0 = extended_gcd(a, b)
+    
+    # A solution exists if and only if n is divisible by the GCD of a and b
+    if n % g != 0:
+        return None
+    
+    # Scale the initial Bezout coefficients to satisfy the equation for n
+    factor = n // g
+    x = x0 * factor
+    y = y0 * factor
+    
+    return (x, y)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+    print("Assertion passed successfully.")
+```

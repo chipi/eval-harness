@@ -1,0 +1,16 @@
+```python
+def big_sum(arr):
+    """
+    This function calculates the sum of the largest and smallest values in a given array.
+
+    Args:
+        arr (list): A list of numbers.
+
+    Returns:
+        int: The sum of the largest and smallest values in the array.
+    """
+    return max(arr) + min(arr)
+
+# Example usage:
+print(big_sum([1, 2, 3]))  # Output: 4
+```

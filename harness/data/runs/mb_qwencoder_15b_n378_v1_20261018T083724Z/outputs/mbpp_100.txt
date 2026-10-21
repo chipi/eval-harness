@@ -1,0 +1,33 @@
+```python
+def next_smallest_palindrome(n):
+    # Convert the number to string to easily manipulate its digits
+    num_str = str(n)
+    
+    # Find the length of the number
+    length = len(num_str)
+    
+    # If the number is already a palindrome, increment the last digit
+    if num_str == num_str[::-1]:
+        return n + 1
+    
+    # Find the first non-palindromic digit from the right
+    for i in range(length - 2, -1, -1):
+        if num_str[i] != num_str[length - 1 - i]:
+            break
+    
+    # Increment the non-palindromic digit
+    num_str = list(num_str)
+    num_str[i] = str(int(num_str[i]) + 1)
+    
+    # Fill the rest of the digits with zeros
+    num_str[i+1:] = ['0'] * (length - i - 2)
+    
+    # Convert the modified string back to an integer
+    return int(''.join(num_str))
+
+# Test cases to verify the correctness of the solution
+assert next_smallest_palindrome(99) == 101
+assert next_smallest_palindrome(123) == 131
+assert next_smallest_palindrome(876) == 888
+```
+

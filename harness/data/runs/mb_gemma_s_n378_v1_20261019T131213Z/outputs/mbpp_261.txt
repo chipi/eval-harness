@@ -1,0 +1,25 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division between two tuples.
+
+    Args:
+        tuple1: The numerator tuple.
+        tuple2: The denominator tuple.
+
+    Returns:
+        A new tuple containing the result of the division.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must have the same length")
+
+    result = tuple(x // y for x, y in zip(tuple1, tuple2))
+    return result
+
+# Example usage and assertion
+assert division_elements((10, 4, 6, 9),(5, 2, 3, 3)) == (2, 2, 2, 3)
+assert division_elements((15, 5, 20),(5, 1, 4)) == (3, 5, 5)
+assert division_elements((10, 20, 30), (2, 5, 6)) == (5, 4, 5)
+
+print("All test cases passed!")
+```

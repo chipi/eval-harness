@@ -1,0 +1,19 @@
+```python
+def centered_hexagonal_number(n):
+    """
+    Find the nth centered hexagonal number.
+    
+    The formula for the nth centered hexagonal number is: 3*n*(n-1) + 1
+    
+    Args:
+        n: The position in the centered hexagonal number sequence (1-indexed)
+    
+    Returns:
+        The nth centered hexagonal number
+    """
+    return 3 * n * (n - 1) + 1
+
+
+# Test
+assert centered_hexagonal_number(10) == 271
+```

@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def square_nums(nums):
+    """
+    Find squares of individual elements in a list.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        A list containing the squares of each element
+    """
+    return [num ** 2 for num in nums]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expected = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+    assert result == expected, f"Test failed! Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Input: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]")
+    print(f"Output: {result}")
+```
+
+This script defines the `square_nums` function that uses a list comprehension to square each element in the input list. The function is then tested with the provided example to verify it works correctly.

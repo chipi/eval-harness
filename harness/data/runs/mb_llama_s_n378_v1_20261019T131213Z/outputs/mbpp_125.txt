@@ -1,0 +1,53 @@
+```python
+def find_length(binary_string: str) -> int:
+    """
+    This function finds the maximum difference between the number of 0s and number of 1s in any sub-string of the given binary string.
+
+    Args:
+        binary_string (str): A string consisting of 0s and 1s.
+
+    Returns:
+        int: The maximum difference between the number of 0s and number of 1s in any sub-string.
+    """
+    max_diff = 0
+    count_0 = 0
+    count_1 = 0
+
+    # Initialize a hashmap to store the difference between counts of 0s and 1s
+    diff_map = {0: -1}  # Base case: difference is 0 at index -1
+
+    for i, char in enumerate(binary_string):
+        if char == '0':
+            count_0 += 1
+        else:
+            count_1 += 1
+
+        # Calculate the difference between counts of 0s and 1s
+        diff = count_0 - count_1
+
+        # If the difference is already in the hashmap, update max_diff
+        if diff in diff_map:
+            max_diff = max(max_diff, i - diff_map[diff])
+        else:
+            # Otherwise, add the difference to the hashmap
+            diff_map[diff] = i
+
+    return max_diff
+
+# Test the function
+print(find_length("11000010001"))  # Output: 6
+```
+
+The provided Python script defines a function `find_length` that calculates the maximum difference between the number of 0s and 1s in any sub-string of a given binary string. The function uses a hashmap to keep track of the differences between counts of 0s and 1s at each index. It iterates over the binary string, updating the counts and the hashmap, and calculates the maximum difference. The function returns the maximum difference found.
+
+**Explanation**
+
+*   Initialize variables `max_diff`, `count_0`, and `count_1` to keep track of the maximum difference and the counts of 0s and 1s.
+*   Create a hashmap `diff_map` to store the differences between counts of 0s and 1s at each index.
+*   Iterate over the binary string, updating the counts and the hashmap.
+*   For each difference, check if it already exists in the hashmap. If it does, update `max_diff` with the maximum difference.
+*   Return `max_diff` as the result.
+
+**Time Complexity:** O(n), where n is the length of the binary string.
+
+**Space Complexity:** O(n), where n is the length of the binary string. The hashmap `diff_map` can store up to n entries in the worst case.

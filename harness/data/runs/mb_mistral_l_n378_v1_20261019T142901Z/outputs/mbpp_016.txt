@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem as described. The function checks if the input string consists of sequences of lowercase letters joined by underscores:
+
+```python
+import re
+
+def text_lowercase_underscore(s: str) -> bool:
+    """
+    Check if the input string contains sequences of lowercase letters joined with underscores.
+
+    Args:
+        s: Input string to check.
+
+    Returns:
+        bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r'^[a-z]+(_[a-z]+)*$'
+    return bool(re.fullmatch(pattern, s))
+
+# Test case
+assert text_lowercase_underscore("aab_cbbbc") == True
+```
+
+### Explanation:
+1. The regular expression `^[a-z]+(_[a-z]+)*$` is used to match the pattern:
+   - `^` asserts the position at the start of the string.
+   - `[a-z]+` matches one or more lowercase letters.
+   - `(_[a-z]+)*` matches zero or more occurrences of an underscore followed by one or more lowercase letters.
+   - `$` asserts the position at the end of the string.
+2. `re.fullmatch` ensures the entire string matches the pattern, not just a substring.
+3. The function returns `True` if the string matches the pattern, otherwise `False`.
+
+The test case `assert text_lowercase_underscore("aab_cbbbc") == True` verifies the function works as expected.

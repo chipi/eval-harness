@@ -1,0 +1,33 @@
+```python
+def sum_range_list(nums, start, end):
+    """
+    This function calculates the sum of numbers in a list within a specified range.
+
+    Args:
+        nums (list): A list of integers.
+        start (int): The starting index of the range (inclusive).
+        end (int): The ending index of the range (inclusive).
+
+    Returns:
+        int: The sum of numbers in the list within the specified range.
+
+    Raises:
+        ValueError: If start or end is out of range.
+        ValueError: If start is greater than end.
+    """
+    if start < 0 or end >= len(nums) or start > end:
+        raise ValueError("Invalid start or end index")
+
+    # Use list slicing to get the numbers within the range
+    # and the built-in sum function to calculate the sum
+    return sum(nums[start:end+1])
+
+# Example usage:
+assert sum_range_list([2,1,5,6,8,3,4,9,10,11,8,12], 8, 10) == 29
+```
+
+This Python function `sum_range_list` takes a list of integers `nums` and two indices `start` and `end` as input. It calculates the sum of numbers in the list within the specified range (inclusive) and returns the result.
+
+The function first checks if the start and end indices are valid. If not, it raises a `ValueError`. Then, it uses list slicing (`nums[start:end+1]`) to get the numbers within the range and the built-in `sum` function to calculate the sum.
+
+The example usage demonstrates how to use the function with a sample list and range. The assertion checks that the function returns the expected result.

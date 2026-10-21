@@ -1,0 +1,39 @@
+```python
+def convert_list_dictionary(keys, middle_values, inner_values):
+    """
+    Convert more than one list to a nested dictionary.
+    
+    This function takes three lists and combines them into a list of nested dictionaries.
+    Each dictionary in the resulting list maps an element from the first list (key) to 
+    another dictionary, which maps an element from the second list (middle key) to 
+    the corresponding element from the third list (value).
+    
+    Args:
+        keys (list): List of keys for the outer dictionary.
+        middle_values (list): List of keys for the inner dictionary.
+        inner_values (list): List of values for the inner dictionary.
+        
+    Returns:
+        list: A list of nested dictionaries.
+    """
+    result = []
+    for k, mv, iv in zip(keys, middle_values, inner_values):
+        result.append({k: {mv: iv}})
+    return result
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92]
+    )
+    expected = [
+        {'S001': {'Adina Park': 85}}, 
+        {'S002': {'Leyton Marsh': 98}}, 
+        {'S003': {'Duncan Boyle': 89}}, 
+        {'S004': {'Saim Richards': 92}}
+    ]
+    assert result == expected
+    print("Test passed successfully!")
+```

@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+"""
+Function to compute the sum of digits of each number in a given list.
+The function converts each number to a string to iterate through its digits,
+then converts each digit back to an integer and sums them up.
+"""
+
+def sum_of_digits(numbers):
+    total = 0
+    for num in numbers:
+        # Convert number to string to iterate through digits
+        for digit in str(abs(num)):  # abs() handles negative numbers
+            total += int(digit)
+    return total
+
+# Test case
+assert sum_of_digits([10, 2, 56]) == 14  # 1+0 + 2 + 5+6 = 1 + 2 + 11 = 14
+```
+
+This script:
+1. Defines the `sum_of_digits` function that takes a list of numbers
+2. Initializes a total sum counter
+3. For each number in the list:
+   - Converts the number to a string (using absolute value to handle negatives)
+   - Iterates through each digit character
+   - Converts each digit back to integer and adds to the total
+4. Returns the total sum of all digits
+5. Includes the assertion test case from the problem statement
+
+The function will work with both positive and negative numbers (treating -123 as 1+2+3).

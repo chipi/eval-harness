@@ -1,0 +1,25 @@
+```python
+def cube_Sum(n):
+    """
+    Calculates the sum of the cubes of the first n even natural numbers.
+    The first n even natural numbers are 2, 4, 6,..., 2n.
+    """
+    total_sum = 0
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        total_sum += even_number ** 3
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # First 2 even numbers: 2, 4
+    # Cubes: 2^3 = 8, 4^3 = 64
+    # Sum: 8 + 64 = 72
+    assert cube_Sum(2) == 72
+    
+    # Additional test cases
+    assert cube_Sum(1) == 8      # 2^3
+    assert cube_Sum(3) == 288    # 8 + 64 + 216
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,60 @@
+```python
+def sumofFactors(n):
+    """
+    Find the sum of even factors of a number.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The sum of all even factors of n
+        
+    Example:
+        >>> sumofFactors(18)
+        26
+    """
+    even_sum = 0
+    
+    # Find all factors by checking up to sqrt(n)
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            # i is a factor
+            if i % 2 == 0:
+                even_sum += i
+            
+            # n/i is also a factor (if different from i)
+            if i != n // i:
+                other_factor = n // i
+                if other_factor % 2 == 0:
+                    even_sum += other_factor
+        
+        i += 1
+    
+    return even_sum
+
+
+# Test cases
+if __name__ == "__main__":
+    assert sumofFactors(18) == 26, f"Expected 26, got {sumofFactors(18)}"
+    print(f"sumofFactors(18) = {sumofFactors(18)}")  # 2 + 6 + 18 = 26
+    
+    assert sumofFactors(30) == 42, f"Expected 42, got {sumofFactors(30)}"
+    print(f"sumofFactors(30) = {sumofFactors(30)}")  # 2 + 6 + 10 + 30 = 48
+    
+    assert sumofFactors(12) == 28, f"Expected 28, got {sumofFactors(12)}"
+    print(f"sumofFactors(12) = {sumofFactors(12)}")  # 2 + 4 + 6 + 12 = 24
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+The function finds all factors of `n` by iterating only up to `√n` (for efficiency). For each divisor `i` found:
+1. If `i` is even, add it to the sum
+2. If `n/i` is a different factor and even, add it to the sum
+
+For `n = 18`:
+- Factors: 1, 2, 3, 6, 9, 18
+- Even factors: 2, 6, 18
+- Sum: 2 + 6 + 18 = **26** ✓

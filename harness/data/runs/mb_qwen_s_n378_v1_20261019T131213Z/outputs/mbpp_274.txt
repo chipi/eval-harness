@@ -1,0 +1,30 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Find the sum of binomial coefficients at even indices for (1 + x)^n.
+    
+    The binomial coefficients are C(n, 0), C(n, 1), ..., C(n, n).
+    We want the sum of C(n, k) where k is even: C(n,0) + C(n,2) + C(n,4) + ...
+    
+    This can be computed using the identity:
+    Sum of even-indexed binomial coefficients = 2^(n-1) for n >= 1
+    
+    Proof: 
+    (1+1)^n = sum_{k=0}^{n} C(n,k) = 2^n
+    (1-1)^n = sum_{k=0}^{n} C(n,k)(-1)^k = 0 for n >= 1
+    
+    Adding these two equations:
+    2 * sum_{k even} C(n,k) = 2^n
+    So sum_{k even} C(n,k) = 2^(n-1)
+    
+    For n = 0, the only coefficient is C(0,0) = 1, which is at index 0 (even), so sum = 1.
+    But the problem states positive integer n, so n >= 1.
+    
+    Let's verify with the example:
+    n = 4: C(4,0) + C(4,2) + C(4,4) = 1 + 6 + 1 = 8
+    2^(4-1) = 2^3 = 8 ✓
+    """
+    if n <= 0:
+        return 0
+    return 2 ** (n - 1)
+```

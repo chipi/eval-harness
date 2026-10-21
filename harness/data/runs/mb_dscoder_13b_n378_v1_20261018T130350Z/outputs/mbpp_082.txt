@@ -1,0 +1,16 @@
+```python
+import math
+
+def volume_sphere(radius):
+    """
+    Function to calculate the volume of a sphere.
+    """
+    volume = 4/3 * math.pi * radius**3
+    return volume
+
+# Testing the function
+print(volume_sphere(10))
+
+# Assertion test
+assert math.isclose(volume_sphere(10), 4188.790204786391, rel_tol=0.001)
+```

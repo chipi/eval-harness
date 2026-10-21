@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem by implementing a function to find the nth number in the Newman-Conway sequence:
+
+```python
+"""
+Newman-Conway Sequence Generator
+
+The Newman-Conway sequence is defined as:
+- P(1) = 1
+- P(2) = 1
+- P(n) = P(P(n-1)) + P(n-P(n-1)) for n > 2
+
+This script provides a function to compute the nth number in the sequence.
+"""
+
+def sequence(n):
+    """
+    Compute the nth number in the Newman-Conway sequence.
+
+    Args:
+        n (int): The position in the sequence (1-based index)
+
+    Returns:
+        int: The nth number in the Newman-Conway sequence
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    if n == 1 or n == 2:
+        return 1
+
+    # Initialize the sequence with the first two values
+    seq = [0] * (n + 1)  # Using 1-based indexing
+    seq[1] = 1
+    seq[2] = 1
+
+    for i in range(3, n + 1):
+        seq[i] = seq[seq[i - 1]] + seq[i - seq[i - 1]]
+
+    return seq[n]
+
+# Test the function
+assert sequence(10) == 6, "Test case failed"
+print("Test passed! sequence(10) =", sequence(10))
+```
+
+This script:
+1. Implements the Newman-Conway sequence according to its mathematical definition
+2. Handles the base cases (n=1 and n=2) directly
+3. Uses dynamic programming to build the sequence up to the nth term
+4. Includes the required test case with an assertion
+5. Prints a confirmation message when the test passes
+
+The function will return 6 for sequence(10) as required by the test case.

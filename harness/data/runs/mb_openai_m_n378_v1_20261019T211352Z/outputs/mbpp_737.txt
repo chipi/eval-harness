@@ -1,0 +1,19 @@
+```python
+import re
+
+def check_str(s: str) -> bool:
+    """
+    Return True if the given string starts with a vowel, otherwise False.
+    Vowels are: a, e, i, o, u (case-insensitive).
+    """
+    return re.match(r"^[aeiou]", s, re.IGNORECASE) is not None
+
+
+# Example test
+assert check_str("annie")
+assert check_str("Orange")
+assert not check_str("banana")
+assert not check_str("")
+
+print("All tests passed.")
+```

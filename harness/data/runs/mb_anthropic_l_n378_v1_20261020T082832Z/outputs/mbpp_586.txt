@@ -1,0 +1,48 @@
+Looking at this problem, I need to split a list at the nth element and move the first part to the end.
+
+```python
+"""
+Write a python function to split a list at the nth eelment and add the first part to the end.
+assert split_Arr([12,10,5,6,52,36],2) == [5,6,52,36,12,10]
+"""
+
+
+def split_Arr(lst, n):
+    """
+    Split `lst` at index `n` and append the first part to the end.
+
+    Parameters
+    ----------
+    lst : list
+        The list to be rotated.
+    n : int
+        The index at which to split the list.
+
+    Returns
+    -------
+    list
+        A new list consisting of lst[n:] followed by lst[:n].
+    """
+    return lst[n:] + lst[:n]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+
+    # A few extra sanity checks
+    assert split_Arr([1, 2, 3, 4], 1) == [2, 3, 4, 1]
+    assert split_Arr([0, 1, 2, 3, 4, 5], 3) == [3, 4, 5, 0, 1, 2]
+    assert split_Arr([1, 2, 3], 0) == [1, 2, 3]
+    assert split_Arr([], 2) == []
+
+    print(split_Arr([12, 10, 5, 6, 52, 36], 2))
+    print("All tests passed!")
+```
+
+**How it works:**
+- `lst[n:]` grabs everything from index `n` to the end (the second part).
+- `lst[:n]` grabs the first `n` elements (the first part).
+- Concatenating them places the first part at the end.
+
+For the example: `[12,10,5,6,52,36]` with `n=2` → `[5,6,52,36]` + `[12,10]` = `[5,6,52,36,12,10]` ✅

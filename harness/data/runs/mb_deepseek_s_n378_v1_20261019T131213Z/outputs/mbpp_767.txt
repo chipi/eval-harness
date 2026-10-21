@@ -1,0 +1,42 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Count the number of pairs in the list whose sum equals target_sum.
+    
+    This function counts pairs by considering each element's complement
+    and handling duplicates appropriately using a frequency dictionary.
+    
+    Args:
+        numbers: List of integers
+        target_sum: Integer sum to match
+    
+    Returns:
+        Integer count of pairs (i, j) with i <= j such that numbers[i] + numbers[j] == target_sum
+    """
+    freq = {}
+    pair_count = 0
+    
+    for num in numbers:
+        complement = target_sum - num
+        
+        # If complement exists in freq, add its count to pairs
+        # This handles duplicate elements correctly
+        if complement in freq:
+            pair_count += freq[complement]
+        
+        # Increment frequency of current number
+        freq[num] = freq.get(num, 0) + 1
+    
+    return pair_count
+
+
+# Test with the given assertion
+assert get_pairs_count([1,1,1,1], 2) == 6, "Test case failed"
+
+# Additional test cases
+print("All tests passed!")
+print(f"get_pairs_count([1,1,1,1], 2) = {get_pairs_count([1,1,1,1], 2)}")
+print(f"get_pairs_count([1,2,3,4,5], 6) = {get_pairs_count([1,2,3,4,5], 6)}")
+print(f"get_pairs_count([1,1,1], 2) = {get_pairs_count([1,1,1], 2)}")
+print(f"get_pairs_count([], 5) = {get_pairs_count([], 5)}")
+```

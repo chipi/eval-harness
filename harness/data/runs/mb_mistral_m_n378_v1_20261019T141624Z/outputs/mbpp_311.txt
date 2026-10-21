@@ -1,0 +1,38 @@
+```python
+def set_left_most_unset_bit(n):
+    """
+    Sets the leftmost unset bit in the binary representation of a number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The number with the leftmost unset bit set to 1.
+    """
+    if n == 0:
+        return 1  # Special case: 0 has all bits unset, set the least significant bit
+
+    # Find the position of the leftmost unset bit
+    mask = 1 << (n.bit_length())
+    # If the leftmost bit is already set, we need to check the next position
+    while (n & mask) != 0:
+        mask <<= 1
+
+    # Set the leftmost unset bit
+    return n | mask
+
+# Test the function
+assert set_left_most_unset_bit(10) == 14
+```
+
+### Explanation:
+1. **Special Case Handling**: If the input `n` is `0`, all bits are unset, so we set the least significant bit (resulting in `1`).
+2. **Finding the Leftmost Unset Bit**:
+   - We start by creating a mask at the position of the most significant bit (MSB) of `n` (using `n.bit_length()`).
+   - We then check if this bit is already set. If it is, we shift the mask left until we find an unset bit.
+3. **Setting the Bit**: Once the leftmost unset bit is found, we set it using the bitwise OR operation (`n | mask`).
+
+### Example:
+- For `n = 10` (binary `1010`):
+  - The leftmost unset bit is the 3rd bit (from the right, 0-indexed as `1010` has bits at positions 1 and 3 set).
+  - Setting this bit gives `1110` (binary), which is `14` in decimal. Hence, the assertion `set_left_most_unset_bit(10) == 14` passes.

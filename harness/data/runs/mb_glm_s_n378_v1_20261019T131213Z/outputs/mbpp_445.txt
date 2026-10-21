@@ -1,0 +1,51 @@
+```python
+def index_multiplication(tuple1, tuple2):
+    """
+    Performs index-wise multiplication of tuple elements in the given two tuples.
+
+    Args:
+        tuple1: A tuple of tuples, where each inner tuple contains numbers.
+        tuple2: A tuple of tuples, with the same structure as tuple1.
+
+    Returns:
+        A new tuple of tuples containing the element-wise product of the input tuples.
+        Returns an empty tuple if the input tuples are of different lengths.
+    """
+    # Check if the tuples have the same number of elements to avoid index errors
+    if len(tuple1) != len(tuple2):
+        return ()
+
+    # Use a generator expression with zip to iterate through corresponding sub-tuples
+    # For each pair of sub-tuples, use another zip to multiply corresponding elements
+    # The outer tuple() constructor converts the generator to a tuple
+    return tuple(
+        tuple(a * b for a, b in zip(sub_tuple1, sub_tuple2))
+        for sub_tuple1, sub_tuple2 in zip(tuple1, tuple2)
+    )
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_tuple1 = ((1, 3), (4, 5), (2, 9), (1, 10))
+    input_tuple2 = ((6, 7), (3, 9), (1, 1), (7, 3))
+    expected_output = ((6, 21), (12, 45), (2, 9), (7, 30))
+
+    result = index_multiplication(input_tuple1, input_tuple2)
+
+    print(f"Input Tuple 1: {input_tuple1}")
+    print(f"Input Tuple 2: {input_tuple2}")
+    print(f"Result:        {result}")
+    print(f"Expected:      {expected_output}")
+    assert result == expected_output
+    print("\nAssertion passed!")
+
+    # Example with tuples of different lengths
+    input_tuple3 = ((1, 2), (3, 4))
+    input_tuple4 = ((5, 6), (7, 8), (9, 10))
+    result_diff_len = index_multiplication(input_tuple3, input_tuple4)
+    print(f"\n--- Testing with different lengths ---")
+    print(f"Input Tuple 3: {input_tuple3}")
+    print(f"Input Tuple 4: {input_tuple4}")
+    print(f"Result:        {result_diff_len}")
+    assert result_diff_len == ()
+    print("Assertion for different lengths passed!")
+```

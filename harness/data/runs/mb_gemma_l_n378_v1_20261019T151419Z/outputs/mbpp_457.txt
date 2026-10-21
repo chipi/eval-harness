@@ -1,0 +1,21 @@
+```python
+def Find_Min(list_of_lists):
+    """
+    Finds the sublist with the minimum length from a list of lists.
+    If multiple sublists have the same minimum length, the first one encountered is returned.
+    """
+    if not list_of_lists:
+        return None
+    
+    # Use the built-in min function with a key that looks at the length of each sublist
+    return min(list_of_lists, key=len)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [[1], [1, 2], [1, 2, 3]]
+    expected_output = [1]
+    result = Find_Min(test_input)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem of subtracting two lists element-wise:
+
+```python
+def sub_list(list1, list2):
+    """
+    Subtract two lists element-wise.
+    
+    Args:
+        list1 (list): First list of numbers.
+        list2 (list): Second list of numbers.
+    
+    Returns:
+        list: A new list where each element is the result of list1[i] - list2[i].
+    
+    Raises:
+        ValueError: If the input lists have different lengths.
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Input lists must have the same length")
+    
+    return [a - b for a, b in zip(list1, list2)]
+
+# Test cases
+def test_sub_list():
+    assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+    assert sub_list([10, 20], [5, 5]) == [5, 15]
+    assert sub_list([0, 0, 0], [1, 2, 3]) == [-1, -2, -3]
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_sub_list()
+```
+
+### Explanation:
+1. **Function `sub_list`**:
+   - Takes two lists `list1` and `list2` as input.
+   - Checks if the lists have the same length. If not, raises a `ValueError`.
+   - Uses a list comprehension with `zip` to subtract corresponding elements of the two lists.
+   - Returns the resulting list.
+
+2. **Test Cases**:
+   - The `test_sub_list` function includes multiple assertions to verify the correctness of `sub_list`.
+   - The test cases cover:
+     - The example provided in the problem statement.
+     - A case with positive numbers.
+     - A case with zeros and positive numbers.
+   - If all assertions pass, it prints a success message.
+
+3. **Execution**:
+   - The script runs the test cases when executed directly (using `if __name__ == "__main__":`).
+
+This script is self-contained and can be run directly to verify the solution.

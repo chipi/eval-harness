@@ -1,0 +1,13 @@
+```python
+def power_base_sum(base, power):
+    result = base ** power
+    return sum(int(digit) for digit in str(result))
+
+def main():
+    base = 2
+    power = 100
+    print(power_base_sum(base, power))  # Output: 115
+
+if __name__ == "__main__":
+    main()
+```

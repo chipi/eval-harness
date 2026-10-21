@@ -1,0 +1,55 @@
+Looking at this problem, I need to convert a string representation of a tuple into an actual tuple of integers.
+
+```python
+"""
+Write a function to convert tuple string to integer tuple.
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+"""
+
+
+def tuple_str_int(test_str):
+    """
+    Convert a string representation of a tuple into a tuple of integers.
+
+    Parameters
+    ----------
+    test_str : str
+        A string such as "(7, 8, 9)" representing a tuple of integers.
+
+    Returns
+    -------
+    tuple
+        A tuple whose elements are the integers parsed from the string.
+    """
+    # Strip the surrounding parentheses (and any whitespace), then split on commas
+    stripped = test_str.strip().strip('()')
+
+    # Handle the empty tuple case, e.g. "()"
+    if not stripped.strip():
+        return ()
+
+    return tuple(int(num.strip()) for num in stripped.split(',') if num.strip())
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+
+    # Additional test cases
+    assert tuple_str_int("(1, 2, 3)") == (1, 2, 3)
+    assert tuple_str_int("(4, 5, 6)") == (4, 5, 6)
+    assert tuple_str_int("(10,20,30)") == (10, 20, 30)
+    assert tuple_str_int("(-1, 0, 42)") == (-1, 0, 42)
+    assert tuple_str_int("(5,)") == (5,)
+    assert tuple_str_int("()") == ()
+
+    print("All tests passed!")
+    print(tuple_str_int("(7, 8, 9)"))
+```
+
+**How it works:**
+
+1. `strip()` removes any leading/trailing whitespace, and `strip('()')` removes the enclosing parentheses.
+2. `split(',')` breaks the remaining text into individual number strings.
+3. Each piece is stripped of whitespace and converted with `int()`.
+4. The generator is wrapped in `tuple()` to produce the final result. The `if num.strip()` guard handles trailing commas (e.g., `"(5,)"`) and the empty-tuple case is returned early.

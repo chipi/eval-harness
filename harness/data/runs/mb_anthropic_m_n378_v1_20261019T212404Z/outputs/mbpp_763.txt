@@ -1,0 +1,22 @@
+```python
+def find_min_diff(arr, n):
+    """
+    Function to find the minimum difference between any two elements
+    in a given array.
+    """
+    arr = sorted(arr)
+    min_diff = float('inf')
+    
+    for i in range(n - 1):
+        diff = arr[i + 1] - arr[i]
+        if diff < min_diff:
+            min_diff = diff
+    
+    return min_diff
+
+
+if __name__ == "__main__":
+    assert find_min_diff((1, 5, 3, 19, 18, 25), 6) == 1
+    print("All test cases passed!")
+    print(find_min_diff((1, 5, 3, 19, 18, 25), 6))
+```

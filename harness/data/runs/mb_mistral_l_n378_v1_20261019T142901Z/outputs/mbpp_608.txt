@@ -1,0 +1,75 @@
+Here's a self-contained Python script that calculates the nth Bell number using dynamic programming:
+
+```python
+def bell_Number(n):
+    """
+    Calculate the nth Bell number using dynamic programming.
+
+    Bell numbers count the number of ways to partition a set of n elements.
+    The Bell triangle is constructed where each number is the sum of the number
+    above it and the number to the left of the one above it.
+
+    Args:
+        n (int): The index of the Bell number to compute (0-based)
+
+    Returns:
+        int: The nth Bell number
+
+    Examples:
+        >>> bell_Number(0)
+        1
+        >>> bell_Number(1)
+        1
+        >>> bell_Number(2)
+        2
+        >>> bell_Number(3)
+        5
+        >>> bell_Number(4)
+        15
+    """
+    if n == 0:
+        return 1
+
+    # Initialize Bell triangle as a 2D array
+    bell = [[0] * (n + 1) for _ in range(n + 1)]
+
+    # Base case: B(0) = 1
+    bell[0][0] = 1
+
+    # Fill the Bell triangle
+    for i in range(1, n + 1):
+        # The first element in each row is the last element of previous row
+        bell[i][0] = bell[i - 1][i - 1]
+
+        # Calculate the rest of the elements in the row
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i][j - 1] + bell[i - 1][j - 1]
+
+    # The nth Bell number is the first element of the nth row
+    return bell[n][0]
+
+# Test the function with the provided assertion
+assert bell_Number(2) == 2
+
+# Additional test cases to verify correctness
+if __name__ == "__main__":
+    print("Testing Bell numbers:")
+    test_cases = [0, 1, 2, 3, 4, 5]
+    expected_results = [1, 1, 2, 5, 15, 52]
+
+    for n, expected in zip(test_cases, expected_results):
+        result = bell_Number(n)
+        print(f"bell_Number({n}) = {result} (Expected: {expected})")
+        assert result == expected, f"Test failed for n={n}"
+
+    print("All tests passed!")
+```
+
+This script includes:
+
+1. A well-documented `bell_Number()` function that calculates the nth Bell number using dynamic programming with a Bell triangle
+2. The required assertion `assert bell_Number(2) == 2`
+3. Additional test cases to verify the function works correctly
+4. A main block that runs the tests when the script is executed directly
+
+The Bell number B(n) represents the number of ways to partition a set of n elements. The function uses the Bell triangle method where each number is the sum of the number above it and the number to the left of the one above it.

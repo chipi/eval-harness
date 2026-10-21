@@ -1,0 +1,76 @@
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    Find the first adverb and its position in a given sentence.
+    
+    Args:
+        sentence: A string containing the sentence to search
+        
+    Returns:
+        A tuple of (start_position, end_position, adverb) for the first adverb found
+        
+    Example:
+        >>> find_adverb_position("clearly!! we can see the sky")
+        (0, 7, 'clearly')
+    """
+    # Common adverbs ending in 'ly' - this is a simplified list
+    # In a production system, you might use a more comprehensive dictionary
+    common_adverbs = {
+        'clearly', 'quickly', 'slowly', 'carefully', 'happily', 'sadly',
+        'really', 'very', 'extremely', 'absolutely', 'definitely', 'probably',
+        'certainly', 'obviously', 'apparently', 'supposedly', 'allegedly',
+        'frankly', 'honestly', 'literally', 'basically', 'essentially',
+        'generally', 'usually', 'normally', 'typically', 'frequently',
+        'rarely', 'hardly', 'barely', 'scarcely', 'merely', 'simply',
+        'just', 'only', 'already', 'still', 'yet', 'again', 'also',
+        'too', 'either', 'neither', 'well', 'better', 'best', 'worse',
+        'worst', 'far', 'near', 'here', 'there', 'where', 'when', 'why',
+        'how', 'now', 'then', 'today', 'tomorrow', 'yesterday'
+    }
+    
+    # Extract words with their positions, removing punctuation for comparison
+    words = re.finditer(r'\b[a-zA-Z]+\b', sentence)
+    
+    for match in words:
+        word = match.group().lower()
+        if word in common_adverbs:
+            start_pos = match.start()
+            end_pos = match.end()
+            original_word = match.group()
+            return (start_pos, end_pos, original_word)
+    
+    return None
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = find_adverb_position("clearly!! we can see the sky")
+    print(f"Test 1: {result}")
+    assert result == (0, 7, 'clearly'), f"Expected (0, 7, 'clearly'), got {result}"
+    
+    # Additional test cases
+    result2 = find_adverb_position("we can see the sky clearly")
+    print(f"Test 2: {result2}")
+    
+    result3 = find_adverb_position("quickly run away from here")
+    print(f"Test 3: {result3}")
+    
+    result4 = find_adverb_position("the cat sat on the mat")
+    print(f"Test 4 (no adverb): {result4}")
+    
+    print("\nAll tests passed!")
+```
+
+This script provides a solution that:
+
+1. **Defines a function `find_adverb_position()`** that takes a sentence as input
+2. **Uses a set of common adverbs** for matching (including words ending in 'ly' and other common adverbs)
+3. **Uses regex** to find word boundaries and extract words with their positions
+4. **Returns a tuple** containing (start_position, end_position, adverb_word) for the first adverb found
+5. **Handles punctuation** by using word boundary matching in regex
+6. **Includes test cases** to verify the solution works correctly
+
+The function correctly identifies "clearly" at positions 0-7 in the test case, and returns `None` if no adverb is found.

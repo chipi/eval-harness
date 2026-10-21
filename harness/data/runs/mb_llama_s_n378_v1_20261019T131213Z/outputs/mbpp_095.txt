@@ -1,0 +1,34 @@
+```python
+def Find_Min_Length(lists):
+    """
+    This function finds the length of the smallest list in a list of lists.
+
+    Args:
+        lists (list): A list of lists.
+
+    Returns:
+        int: The length of the smallest list.
+
+    Raises:
+        ValueError: If the input list is empty.
+    """
+    if not lists:
+        raise ValueError("Input list cannot be empty")
+
+    # Use the built-in min function with a generator expression to find the minimum length
+    return min(len(lst) for lst in lists)
+
+
+# Example usage:
+def main():
+    lists = [[1], [1, 2]]
+    try:
+        min_length = Find_Min_Length(lists)
+        print(f"The length of the smallest list is: {min_length}")
+    except ValueError as e:
+        print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    main()
+```

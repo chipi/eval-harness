@@ -1,0 +1,10 @@
+```python
+def maximum(a, b):
+    return a if a > b else b
+
+# Test cases
+assert maximum(5,10) == 10
+assert maximum(0,100) == 100
+assert maximum(-5,-10) == -5
+assert maximum(0,0) == 0
+```

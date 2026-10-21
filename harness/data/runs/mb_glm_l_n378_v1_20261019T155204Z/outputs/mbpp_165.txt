@@ -1,0 +1,33 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def count_char_position(string):
+    """
+    Counts the number of characters in a string that occur at the same position 
+    in the string as in the English alphabet (case insensitive).
+    
+    The English alphabet is 1-indexed (i.e., 'a' is at position 1, 'b' at 2, etc.).
+    """
+    count = 0
+    for i, char in enumerate(string):
+        # Check if the character is an English letter
+        if char.isalpha():
+            # Calculate 1-based index for the string position
+            string_pos = i + 1
+            # Calculate 1-based index for the alphabet position (case insensitive)
+            alphabet_pos = ord(char.lower()) - ord('a') + 1
+            
+            if string_pos == alphabet_pos:
+                count += 1
+                
+    return count
+
+# Test cases
+if __name__ == "__main__":
+    assert count_char_position("xbcefg") == 2
+    assert count_char_position("ABcdef") == 3
+    assert count_char_position("xyz") == 0
+    assert count_char_position("a") == 1
+    assert count_char_position("zebra") == 1
+    print("All tests passed!")
+```

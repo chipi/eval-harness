@@ -1,0 +1,33 @@
+To solve this problem, we need to account for the two possible scenarios in a right-angled triangle when two sides are given:
+1. The two given sides are the **legs** ($a$ and $b$), and we need to find the **hypotenuse** ($c$). In this case, $c = \sqrt{a^2 + b^2}$.
+2. One given side is a **leg** and the other is the **hypotenuse**. In this case, the missing side is the other leg, calculated as $\sqrt{hypotenuse^2 - leg^2}$.
+
+However, looking at the specific assertion provided: `otherside_rightangle(7, 8) == 10.63014581273465`.
+If we calculate $\sqrt{7^2 + 8^2} = \sqrt{49 + 64} = \sqrt{113} \approx 10.63014581273465$. 
+
+This confirms that the function is expected to treat the two inputs as the legs of the triangle to find the hypotenuse.
+
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Calculates the third side of a right-angled triangle given two sides.
+    Based on the provided assertion, the function treats the inputs as the legs
+    to find the hypotenuse.
+    """
+    # Using the Pythagorean theorem: c = sqrt(a^2 + b^2)
+    return math.sqrt(a**2 + b**2)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = otherside_rightangle(7, 8)
+    expected = 10.63014581273465
+    
+    print(f"Result: {result}")
+    print(f"Expected: {expected}")
+    
+    # Using math.isclose for floating point comparison
+    assert math.isclose(result, expected), f"Assertion failed: {result} != {expected}"
+    print("Assertion passed!")
+```

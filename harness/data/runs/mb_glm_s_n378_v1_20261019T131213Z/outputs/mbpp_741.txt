@@ -1,0 +1,39 @@
+```python
+def all_Characters_Same(s: str) -> bool:
+    """
+    Checks if all characters in a string are the same.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        True if all characters are the same, False otherwise.
+        Returns True for empty strings.
+
+    Examples:
+        >>> all_Characters_Same("python")
+        False
+        >>> all_Characters_Same("aaa")
+        True
+        >>> all_Characters_Same("")
+        True
+    """
+    # An empty string or a single-character string trivially has all same characters.
+    if not s:
+        return True
+    
+    # Compare every character in the string to the first character.
+    # The `all()` function returns True if all items in an iterable are true.
+    # This is a concise and efficient way to check the condition.
+    return all(char == s[0] for char in s)
+
+# Example usage and assertions to verify the function
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("aaa") == True
+assert all_Characters_Same("") == True
+assert all_Characters_Same("z") == True
+assert all_Characters_Same("   ") == True # All spaces are the same character
+assert all_Characters_Same("Aaa") == False # Case-sensitive
+
+print("All assertions passed!")
+```

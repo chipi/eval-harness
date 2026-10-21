@@ -1,0 +1,79 @@
+Looking at this problem, I need to understand what it's asking:
+
+- We have a binary string and we rotate it `n` times (each rotation moves the first character to the end, or equivalently we consider all `n` cyclic rotations starting from the original).
+- For each rotation, we interpret the resulting binary string as a number and check if it's odd.
+- A binary number is odd exactly when its **last bit is 1**.
+
+For the string `"011001"` with `n = 6`, the rotations are:
+1. `011001` → ends in `1` → odd ✓
+2. `110010` → ends in `0` → even
+3. `100101` → ends in `1` → odd ✓
+4. `001011` → ends in `1` → odd ✓
+5. `010110` → ends in `0` → even
+6. `101100` → ends in `0` → even
+
+That gives **3** odd values — matching the assertion.
+
+Notice the simplification: rotation `i` ends with the character at index `(i - 1) mod len(s)`, so the count is simply the number of `1`s among the first `n` characters (cyclically) of the string.
+
+```python
+"""
+Write a python function to find the number of numbers with an odd value when
+rotating a binary string the given number of times.
+"""
+
+
+def odd_Equivalent(s, n):
+    """
+    Count how many of the first `n` cyclic rotations of the binary string `s`
+    represent an odd number.
+
+    A binary number is odd if and only if its least significant (last) bit is 1.
+    After rotating left i times (i = 0, 1, ..., n-1), the last character of the
+    rotated string is s[(i - 1) % len(s)], which for i = 0 is the original last
+    character, and generally cycles through the string.
+
+    Equivalently, the answer is the number of '1' characters encountered while
+    walking cyclically through the string for n steps.
+    """
+    if not s or n <= 0:
+        return 0
+
+    length = len(s)
+    count = 0
+    for i in range(n):
+        # Last bit of the i-th left rotation
+        if s[(i - 1) % length] == '1':
+            count += 1
+    return count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert odd_Equivalent("011001", 6) == 3
+
+    # Additional sanity checks
+    assert odd_Equivalent("11011", 3) == 2
+    assert odd_Equivalent("1010", 4) == 2
+    assert odd_Equivalent("0", 5) == 0
+    assert odd_Equivalent("1", 5) == 5
+
+    # Brute-force cross-check
+    def brute(s, n):
+        cnt = 0
+        cur = s
+        for _ in range(n):
+            if int(cur, 2) % 2 == 1:
+                cnt += 1
+            cur = cur[1:] + cur[0]
+        return cnt
+
+    tests = [("011001", 6), ("11011", 3), ("1010", 4), ("0", 5),
+             ("1", 5), ("100110", 10), ("0001", 7)]
+    for s, n in tests:
+        assert odd_Equivalent(s, n) == brute(s, n), (s, n)
+
+    print("All tests passed!")
+```
+
+**How it works:** Instead of building each rotated string and converting it to an integer (O(n·len) work), we observe that only the final bit determines parity. So we just count the `1`s at the appropriate cyclic positions, giving an O(n) solution.

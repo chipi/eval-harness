@@ -1,0 +1,46 @@
+```python
+def neg_nos(lst):
+    """
+    This function takes a list of numbers as input and returns a list of negative numbers.
+
+    Args:
+        lst (list): A list of numbers.
+
+    Returns:
+        list: A list of negative numbers from the input list.
+    """
+    return [num for num in lst if num < 0]
+
+# Test the function
+assert neg_nos([-1,4,5,-6]) == [-1,-6]
+print(neg_nos([-1,4,5,-6]))  # Output: [-1, -6]
+```
+
+You can save this script to a file (e.g., `negative_numbers.py`) and run it using Python (e.g., `python negative_numbers.py`). The `assert` statement will check if the function is working correctly, and the `print` statement will print the result. 
+
+This function uses a technique called list comprehension to create a new list that includes only the negative numbers from the input list. The condition `num < 0` filters out non-negative numbers. 
+
+If you want to handle potential errors (e.g., input is not a list, or the list contains non-numeric values), you could modify the function like this:
+
+```python
+def neg_nos(lst):
+    """
+    This function takes a list of numbers as input and returns a list of negative numbers.
+
+    Args:
+        lst (list): A list of numbers.
+
+    Returns:
+        list: A list of negative numbers from the input list.
+
+    Raises:
+        TypeError: If the input is not a list or if the list contains non-numeric values.
+    """
+    if not isinstance(lst, list):
+        raise TypeError("Input must be a list")
+    return [num for num in lst if isinstance(num, (int, float)) and num < 0]
+
+# Test the function
+assert neg_nos([-1,4,5,-6]) == [-1,-6]
+print(neg_nos([-1,4,5,-6]))  # Output: [-1, -6]
+```

@@ -1,0 +1,30 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    This function calculates the sum of even index binomial coefficients for a given positive integer n.
+
+    Args:
+    n (int): A positive integer.
+
+    Returns:
+    int: The sum of even index binomial coefficients.
+
+    """
+    # Initialize sum as 0
+    total_sum = 0
+    
+    # Loop through all the binomial coefficients
+    for k in range(n + 1):
+        # Check if the index is even
+        if k % 2 == 0:
+            # Calculate the binomial coefficient using the math.comb function
+            import math
+            total_sum += math.comb(n, k)
+    
+    # Return the sum of even index binomial coefficients
+    return total_sum
+
+# Test the function
+assert even_binomial_Coeff_Sum(4) == 8
+print("All test cases pass")
+```

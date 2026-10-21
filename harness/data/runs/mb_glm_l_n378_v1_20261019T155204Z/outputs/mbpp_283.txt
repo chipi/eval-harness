@@ -1,0 +1,34 @@
+```python
+def validate(n: int) -> bool:
+    """
+    Checks whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+    n (int): The integer to be validated.
+    
+    Returns:
+    bool: True if the frequency of each digit is less than or equal to the digit itself, False otherwise.
+    """
+    # Convert the integer to a string to easily iterate over digits
+    s = str(n)
+    
+    # Count the frequency of each digit
+    freq = {}
+    for char in s:
+        freq[char] = freq.get(char, 0) + 1
+    
+    # Check if the frequency of each digit is less than or equal to the digit itself
+    for char, count in freq.items():
+        digit = int(char)
+        if count > digit:
+            return False
+    
+    return True
+
+# Test the function with the provided example
+assert validate(1234) == True
+assert validate(1112) == False  # Example where it should return False
+assert validate(0) == True      # Edge case with 0
+assert validate(10) == True      # Another edge case
+assert validate(111) == False    # Another example where it should return False
+```

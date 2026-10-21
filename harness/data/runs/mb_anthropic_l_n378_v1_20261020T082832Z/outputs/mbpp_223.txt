@@ -1,0 +1,47 @@
+```python
+"""
+Write a function that takes in a sorted array, its length (n), and an element and returns whether the element is the majority element in the given sorted array. (The majority element is the element that occurs more than n/2 times.)
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+"""
+
+
+def binary_search_first(arr, n, x):
+    """Return the index of the first occurrence of x in arr[0:n], or -1."""
+    low, high = 0, n - 1
+    result = -1
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == x:
+            result = mid
+            high = mid - 1
+        elif arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return result
+
+
+def is_majority(arr, n, x):
+    """Return True if x occurs more than n/2 times in the sorted array arr."""
+    if n <= 0:
+        return False
+
+    first = binary_search_first(arr, n, x)
+    if first == -1:
+        return False
+
+    # If x is the majority element, then the element at index first + n//2
+    # must also be x.
+    last_needed = first + n // 2
+    return last_needed < n and arr[last_needed] == x
+
+
+if __name__ == "__main__":
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    assert is_majority([1, 1, 2, 4, 4, 4, 6, 6], 8, 4) == False
+    assert is_majority([1, 1, 1, 2, 2], 5, 1) == True
+    assert is_majority([1, 2, 3], 3, 4) == False
+    assert is_majority([], 0, 1) == False
+    assert is_majority([2, 2], 2, 2) == True
+    print("All tests passed!")
+```

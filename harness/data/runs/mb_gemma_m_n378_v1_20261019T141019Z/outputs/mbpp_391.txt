@@ -1,0 +1,42 @@
+```python
+def convert_list_dictionary(keys, values, numbers):
+    """
+    Converts three lists into a list of nested dictionaries.
+    
+    Args:
+        keys (list): A list of strings representing the primary keys.
+        values (list): A list of strings representing the secondary keys.
+        numbers (list): A list of integers representing the values.
+        
+    Returns:
+        list: A list of dictionaries in the format [{key1: {key2: num1}}, ...]
+    """
+    result = []
+    # Use zip to iterate through all three lists simultaneously
+    for k, v, n in zip(keys, values, numbers):
+        # Create the nested structure for the current triplet
+        nested_dict = {k: {v: n}}
+        result.append(nested_dict)
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    keys_list = ["S001", "S002", "S003", "S004"]
+    values_list = ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"]
+    numbers_list = [85, 98, 89, 92]
+    
+    expected_output = [
+        {'S001': {'Adina Park': 85}}, 
+        {'S002': {'Leyton Marsh': 98}}, 
+        {'S003': {'Duncan Boyle': 89}}, 
+        {'S004': {'Saim Richards': 92}}
+    ]
+    
+    actual_output = convert_list_dictionary(keys_list, values_list, numbers_list)
+    
+    # Assertion to verify correctness
+    assert actual_output == expected_output
+    
+    print("Assertion passed successfully!")
+    print("Output:", actual_output)
+```

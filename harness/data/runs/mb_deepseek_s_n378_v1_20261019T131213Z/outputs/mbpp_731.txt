@@ -1,0 +1,29 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+import math
+
+def lateralsurface_cone(r: float, h: float) -> float:
+    """
+    Calculate the lateral surface area of a cone.
+    
+    Formula: π * r * l
+    where l = sqrt(r^2 + h^2) is the slant height.
+    
+    Parameters:
+    r (float): radius of the base
+    h (float): height of the cone
+    
+    Returns:
+    float: lateral surface area
+    """
+    slant_height = math.sqrt(r**2 + h**2)
+    return math.pi * r * slant_height
+
+# Test the function with the given example
+if __name__ == "__main__":
+    result = lateralsurface_cone(5, 12)
+    print(f"Lateral surface area: {result}")
+    assert abs(result - 204.20352248333654) < 1e-9, "Test failed"
+    print("Test passed.")
+```

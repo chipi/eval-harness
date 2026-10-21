@@ -1,0 +1,24 @@
+```python
+def sum_of_proper_divisors(n):
+    sum = 1
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            if n / i == i:
+                sum += i
+            else:
+                sum += i
+                sum += n // i
+    return sum
+
+def amicable_numbers_sum(n):
+    sum = 0
+    for i in range(1, n + 1):
+        a = sum_of_proper_divisors(i)
+        b = sum_of_proper_divisors(a)
+        if a != b and a <= n and b <= n:
+            sum += i
+    return sum
+
+# Test cases
+assert amicable_numbers_sum(999)==504
+```

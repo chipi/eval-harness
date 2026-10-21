@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem by implementing a `tuple_size` function that returns the size in bytes of a given tuple, matching the behavior of `sys.getsizeof()`:
+
+```python
+import sys
+
+def tuple_size(t):
+    """
+    Returns the size in bytes of the given tuple, matching sys.getsizeof() behavior.
+
+    Args:
+        t: The tuple to measure.
+
+    Returns:
+        The size of the tuple in bytes.
+    """
+    return sys.getsizeof(t)
+
+# Test the function
+assert tuple_size(("A", 1, "B", 2, "C", 3)) == sys.getsizeof(("A", 1, "B", 2, "C", 3))
+print("Test passed!")
+```
+
+This script:
+1. Imports the `sys` module which contains the `getsizeof()` function
+2. Defines a `tuple_size` function that simply delegates to `sys.getsizeof()`
+3. Includes the required assertion test case
+4. Prints a success message if the test passes
+
+The function will return the same result as `sys.getsizeof()` for any tuple input, as requested. The implementation is trivial in this case because the problem specifically asks for the same behavior as `sys.getsizeof()`.

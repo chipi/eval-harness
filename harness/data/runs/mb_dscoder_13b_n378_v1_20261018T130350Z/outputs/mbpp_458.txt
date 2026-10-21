@@ -1,0 +1,13 @@
+```python
+def rectangle_area(length, width):
+    """
+    Function to calculate the area of a rectangle.
+    """
+    return length * width
+
+# Test cases
+assert rectangle_area(10, 20) == 200
+assert rectangle_area(15, 30) == 450
+assert rectangle_area(2, 3) == 6
+assert rectangle_area(5, 5) == 25
+```

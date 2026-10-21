@@ -1,0 +1,41 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the number of positive divisors of a given integer.
+
+Example:
+    divisor(15) == 4  # divisors are 1, 3, 5, 15
+"""
+
+def divisor(n: int) -> int:
+    """
+    Return the number of positive divisors of n.
+
+    For negative numbers, divisors are counted for abs(n).
+    For n = 0, the number of divisors is infinite, so this raises ValueError.
+    """
+    if n == 0:
+        raise ValueError("0 has infinitely many divisors")
+
+    n = abs(n)
+    count = 0
+
+    # Count divisor pairs up to sqrt(n)
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            count += 1
+            if i != n // i:
+                count += 1
+        i += 1
+
+    return count
+
+
+if __name__ == "__main__":
+    assert divisor(15) == 4
+    assert divisor(1) == 1
+    assert divisor(16) == 5
+    assert divisor(36) == 9
+    print("All tests passed.")
+```

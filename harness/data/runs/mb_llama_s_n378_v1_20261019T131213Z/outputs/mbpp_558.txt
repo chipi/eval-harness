@@ -1,0 +1,61 @@
+```python
+def digit_distance_nums(num1: int, num2: int) -> int:
+    """
+    This function calculates the sum of the per-digit difference between two integers.
+
+    Args:
+        num1 (int): The first integer.
+        num2 (int): The second integer.
+
+    Returns:
+        int: The sum of the per-digit difference between num1 and num2.
+    """
+    # Convert integers to strings to easily access each digit
+    str_num1 = str(num1)
+    str_num2 = str(num2)
+
+    # Find the maximum length between the two numbers
+    max_len = max(len(str_num1), len(str_num2))
+
+    # Pad the shorter number with zeros from the left
+    str_num1 = str_num1.zfill(max_len)
+    str_num2 = str_num2.zfill(max_len)
+
+    # Initialize the sum of differences
+    sum_diff = 0
+
+    # Iterate over each digit in the numbers
+    for digit1, digit2 in zip(str_num1, str_num2):
+        # Calculate the absolute difference between the digits
+        diff = abs(int(digit1) - int(digit2))
+        # Add the difference to the total sum
+        sum_diff += diff
+
+    return sum_diff
+
+# Test the function
+assert digit_distance_nums(1, 2) == 1
+```
+
+You can also use a more concise version:
+
+```python
+def digit_distance_nums(num1: int, num2: int) -> int:
+    """
+    This function calculates the sum of the per-digit difference between two integers.
+
+    Args:
+        num1 (int): The first integer.
+        num2 (int): The second integer.
+
+    Returns:
+        int: The sum of the per-digit difference between num1 and num2.
+    """
+    str_num1, str_num2 = str(num1), str(num2)
+    max_len = max(len(str_num1), len(str_num2))
+    str_num1, str_num2 = str_num1.zfill(max_len), str_num2.zfill(max_len)
+    return sum(abs(int(a) - int(b)) for a, b in zip(str_num1, str_num2))
+
+# Test the function
+assert digit_distance_nums(1, 2) == 1
+```

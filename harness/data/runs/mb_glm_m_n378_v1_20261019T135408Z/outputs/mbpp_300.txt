@@ -1,0 +1,40 @@
+To find the count of all binary sequences of length $2n$ such that the sum of the first $n$ bits is the same as the sum of the last $n$ bits, we can use a combinatorial approach.
+
+Let the sum of the first $n$ bits be $k$ and the sum of the last $n$ bits also be $k$. The number of ways to choose $k$ bits to be 1 out of $n$ bits is given by the binomial coefficient $\binom{n}{k}$. 
+
+Since the choices for the first $n$ bits and the last $n$ bits are independent, the number of sequences where both halves have a sum of $k$ is $\binom{n}{k}^2$. 
+
+To find the total count of such sequences, we sum this over all possible values of $k$ from $0$ to $n$:
+$$ \text{count}(n) = \sum_{k=0}^{n} \binom{n}{k}^2 $$
+
+By Vandermonde's identity, the sum of the squares of binomial coefficients simplifies to:
+$$ \sum_{k=0}^{n} \binom{n}{k}^2 = \binom{2n}{n} $$
+
+This gives us a very efficient $O(n)$ time complexity formula to compute the count without having to iterate through all $2^{2n}$ possible binary sequences.
+
+Here is the self-contained Python script:
+
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Finds the count of all binary sequences of length 2n such that 
+    the sum of the first n bits is the same as the sum of the last n bits.
+    """
+    if n < 0:
+        return 0.0
+    # By Vandermonde's identity, the sum of C(n, k)^2 for k from 0 to n is C(2n, n)
+    return float(math.comb(2 * n, n))
+
+if __name__ == "__main__":
+    # Provided assertion
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    
+    # Additional test cases
+    assert math.isclose(count_binary_seq(0), 1.0, rel_tol=0.001)  # Empty sequence
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)  # 0000, 0101, 0110, 1001, 1010, 1111
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+    
+    print("All assertions passed successfully!")
+```

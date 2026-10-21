@@ -1,0 +1,45 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    Finds the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+    arr (list): A list of integers.
+    
+    Returns:
+    float: The ratio of zeroes to non-zeroes. Returns 0.0 if there are no non-zeroes.
+    """
+    zero_count = 0
+    non_zero_count = 0
+    
+    for num in arr:
+        if num == 0:
+            zero_count += 1
+        else:
+            non_zero_count += 1
+            
+    if non_zero_count == 0:
+        return 0.0
+    
+    return zero_count / non_zero_count
+
+# Test block
+if __name__ == "__main__":
+    # Test case from the problem description
+    result = zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8])
+    assert math.isclose(result, 0.181818, rel_tol=0.001), f"Expected ~0.181818, got {result}"
+    
+    # Additional test cases
+    # Test with no zeroes
+    assert zero_count([1, 2, 3]) == 0.0
+    
+    # Test with all zeroes (avoid division by zero)
+    assert zero_count([0, 0, 0]) == 0.0
+    
+    # Test with mixed values
+    assert zero_count([0, 1]) == 1.0
+    
+    print("All tests passed.")
+```

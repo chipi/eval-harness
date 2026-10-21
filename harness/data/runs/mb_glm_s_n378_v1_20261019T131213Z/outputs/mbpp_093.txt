@@ -1,0 +1,56 @@
+```python
+def power(a: float, b: int) -> float:
+    """
+    Calculates the value of 'a' to the power 'b'.
+
+    This function implements an efficient exponentiation algorithm by
+    squaring, which has a time complexity of O(log b) instead of the
+    O(b) complexity of a naive approach.
+
+    Args:
+        a: The base number (can be an integer or float).
+        b: The exponent (must be a non-negative integer).
+
+    Returns:
+        The value of a raised to the power of b.
+
+    Raises:
+        ValueError: If the exponent 'b' is negative.
+    """
+    if not isinstance(b, int) or b < 0:
+        raise ValueError("Exponent 'b' must be a non-negative integer.")
+
+    # Base case: a^0 is 1 for any a (including 0)
+    if b == 0:
+        return 1
+
+    # Recursive case: a^b = (a^(b//2))^2 if b is even
+    # a^b = a * (a^((b-1)//2))^2 if b is odd
+    half_power = power(a, b // 2)
+    if b % 2 == 0:
+        return half_power * half_power
+    else:
+        return a * half_power * half_power
+
+# Example usage and assertions
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert power(3, 4) == 81
+
+    # Additional test cases
+    assert power(2, 10) == 1024
+    assert power(5, 0) == 1
+    assert power(10, 1) == 10
+    assert power(2.5, 2) == 6.25
+    assert power(0, 5) == 0
+    assert power(1, 100) == 1
+
+    print("All assertions passed!")
+
+    # Example of raising an error for a negative exponent
+    try:
+        power(2, -1)
+    except ValueError as e:
+        print(f"Successfully caught expected error: {e}")
+
+```

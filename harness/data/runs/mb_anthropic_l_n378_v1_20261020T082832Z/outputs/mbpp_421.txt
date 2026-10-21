@@ -1,0 +1,51 @@
+Looking at this problem, I need to write a function that joins all elements of a tuple into a single string using `-` as the delimiter. Since tuples may contain non-string elements (like the integer `4`), each element must be converted to a string first.
+
+```python
+"""
+Write a function to concatenate each element of tuple by the delimiter.
+assert concatenate_tuple(("ID", "is", 4, "UTS") ) == 'ID-is-4-UTS'
+"""
+
+
+def concatenate_tuple(test_tup, delimiter="-"):
+    """
+    Concatenate each element of a tuple using the given delimiter.
+
+    Args:
+        test_tup: A tuple whose elements will be joined.
+        delimiter: The string placed between elements (default "-").
+
+    Returns:
+        A string with every element of the tuple converted to str and
+        joined by the delimiter.
+    """
+    return delimiter.join(str(element) for element in test_tup)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+
+    # Additional test cases
+    assert concatenate_tuple(("QWE", "is", 4, "RTY")) == 'QWE-is-4-RTY'
+    assert concatenate_tuple(("ZEN", "is", 4, "OP")) == 'ZEN-is-4-OP'
+    assert concatenate_tuple(()) == ''
+    assert concatenate_tuple(("solo",)) == 'solo'
+    assert concatenate_tuple((1, 2, 3)) == '1-2-3'
+
+    print("All tests passed!")
+    print(concatenate_tuple(("ID", "is", 4, "UTS")))
+```
+
+**How it works:**
+
+1. `str(element)` converts every item (strings, ints, floats, etc.) to its string representation.
+2. A generator expression applies this conversion lazily to each element.
+3. `delimiter.join(...)` stitches the resulting strings together with `-` between them.
+4. Edge cases work naturally: an empty tuple yields `''`, and a single-element tuple yields just that element with no delimiter.
+
+**Output:**
+```
+All tests passed!
+ID-is-4-UTS
+```

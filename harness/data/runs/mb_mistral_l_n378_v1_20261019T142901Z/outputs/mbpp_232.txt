@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem by returning the `n` largest items from a list:
+
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+
+    Args:
+        lst (list): The input list of numbers.
+        n (int): The number of largest items to return.
+
+    Returns:
+        list: A list of the n largest items from the input list.
+    """
+    if n <= 0:
+        return []
+    # Sort the list in descending order and take the first n elements
+    sorted_lst = sorted(lst, reverse=True)
+    return sorted_lst[:n]
+
+# Test case
+assert set(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)) == set([100, 90])
+```
+
+### Explanation:
+1. The function `larg_nnum` takes a list `lst` and an integer `n` as input.
+2. It first checks if `n` is less than or equal to 0, in which case it returns an empty list.
+3. The list is sorted in descending order using `sorted(lst, reverse=True)`.
+4. The first `n` elements of the sorted list are returned using slicing (`sorted_lst[:n]`).
+5. The test case verifies that the function works correctly by comparing the set of the output with the expected set `[100, 90]`.
+
+This solution is efficient for small to moderately sized lists. For very large lists, a more optimized approach (e.g., using a heap) might be preferable.

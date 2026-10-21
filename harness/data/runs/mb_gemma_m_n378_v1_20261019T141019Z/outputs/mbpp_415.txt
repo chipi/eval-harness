@@ -1,0 +1,48 @@
+```python
+def max_Product(nums):
+    """
+    Finds a pair of integers from the given array that yields the highest product.
+    
+    The highest product can come from:
+    1. The two largest positive numbers.
+    2. The two smallest negative numbers (since negative * negative = positive).
+    
+    Args:
+        nums (list of int): An array of integers.
+        
+    Returns:
+        tuple: A tuple containing the two integers that produce the maximum product.
+    """
+    if len(nums) < 2:
+        raise ValueError("Array must contain at least two integers.")
+
+    # Sort the array to easily access smallest and largest elements
+    # Time Complexity: O(n log n)
+    # Space Complexity: O(1) or O(n) depending on sort implementation
+    sorted_nums = sorted(nums)
+
+    # Option 1: Product of the two largest numbers
+    prod_large = sorted_nums[-1] * sorted_nums[-2]
+    
+    # Option 2: Product of the two smallest numbers (handles negative integers)
+    prod_small = sorted_nums[0] * sorted_nums[1]
+
+    if prod_large >= prod_small:
+        return (sorted_nums[-2], sorted_nums[-1])
+    else:
+        return (sorted_nums[0], sorted_nums[1])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+    
+    # Additional test cases
+    # Test with negative numbers
+    assert max_Product([-10, -10, 1, 2, 3]) == (-10, -10)
+    # Test with mixed numbers
+    assert max_Product([-10, 1, 2, 3, -5]) == (-10, -5)
+    # Test with small array
+    assert max_Product([1, 2]) == (1, 2)
+    
+    print("All tests passed!")
+```

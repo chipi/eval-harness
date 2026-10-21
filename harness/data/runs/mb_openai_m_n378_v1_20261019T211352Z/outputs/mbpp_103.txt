@@ -1,0 +1,69 @@
+```python
+#!/usr/bin/env python3
+"""
+Compute Eulerian numbers A(n, m).
+
+The Eulerian number A(n, m) counts the permutations of {1, ..., n}
+with exactly m ascents (equivalently, depending on convention, m descents).
+
+Recurrence:
+    A(n, m) = (n - m) * A(n - 1, m - 1) + (m + 1) * A(n - 1, m)
+
+Base:
+    A(0, 0) = 1
+
+Example:
+    A(3, 1) = 4
+"""
+
+
+def eulerian_num(n, m):
+    """
+    Return the Eulerian number A(n, m).
+
+    Args:
+        n: Non-negative integer.
+        m: Non-negative integer.
+
+    Returns:
+        The Eulerian number A(n, m).
+    """
+    if not isinstance(n, int) or not isinstance(m, int):
+        raise TypeError("n and m must be integers")
+
+    if n < 0 or m < 0:
+        return 0
+
+    if n == 0:
+        return 1 if m == 0 else 0
+
+    if m >= n:
+        return 0
+
+    # Dynamic programming table where dp[i][j] = A(i, j)
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    dp[0][0] = 1
+
+    for i in range(1, n + 1):
+        for j in range(0, min(i, m + 1)):
+            term1 = (i - j) * dp[i - 1][j - 1] if j > 0 else 0
+            term2 = (j + 1) * dp[i - 1][j]
+            dp[i][j] = term1 + term2
+
+    return dp[n][m]
+
+
+if __name__ == "__main__":
+    assert eulerian_num(3, 1) == 4
+
+    # A few additional checks
+    assert eulerian_num(0, 0) == 1
+    assert eulerian_num(1, 0) == 1
+    assert eulerian_num(4, 0) == 1
+    assert eulerian_num(4, 1) == 11
+    assert eulerian_num(4, 2) == 11
+    assert eulerian_num(4, 3) == 1
+    assert eulerian_num(4, 4) == 0
+
+    print("All tests passed.")
+```

@@ -1,0 +1,112 @@
+```python
+"""
+Write a python function to find the sum of common divisors of two given numbers.
+assert sum(10,15) == 6
+"""
+
+def sum_common_divisors(a: int, b: int) -> int:
+    """
+    Calculates the sum of all common divisors of two given numbers.
+
+    A common divisor of two numbers is a number that divides both of them
+    without leaving a remainder. This function first finds the Greatest
+    Common Divisor (GCD) of the two numbers. The common divisors of the
+    two numbers are exactly the divisors of their GCD. The function then
+    finds all divisors of the GCD and returns their sum.
+
+    Args:
+        a: The first positive integer.
+        b: The second positive integer.
+
+    Returns:
+        The sum of all common divisors of a and b.
+    """
+    # Helper function to find the Greatest Common Divisor (GCD)
+    # using the Euclidean algorithm.
+    def find_gcd(x, y):
+        while y:
+            x, y = y, x % y
+        return x
+
+    # Helper function to find the sum of divisors of a number.
+    def sum_divisors(n):
+        if n == 1:
+            return 1
+        # Start with 1 and n as divisors
+        total_sum = 1 + n
+        # Iterate from 2 up to the square root of n
+        for i in range(2, int(n**0.5) + 1):
+            if n % i == 0:
+                # If divisors are the same (e.g., for 4, 2*2=4), add only one
+                if i * i == n:
+                    total_sum += i
+                else:
+                    # Otherwise, add both the divisor and its complement
+                    total_sum += i + n // i
+        return total_sum
+
+    # Handle edge cases where one or both numbers are 0.
+    # The GCD of (0, n) is n. The common divisors of (0, n) are the divisors of n.
+    # The common divisors of (0, 0) are all integers, which is an infinite sum.
+    if a == 0 and b == 0:
+        return 0  # Or raise an error, as the sum is infinite.
+    if a == 0:
+        return sum_divisors(b)
+    if b == 0:
+        return sum_divisors(a)
+
+    # Find the GCD of the two numbers
+    gcd = find_gcd(a, b)
+
+    # The common divisors are the divisors of the GCD.
+    # Return the sum of the divisors of the GCD.
+    return sum_divisors(gcd)
+
+# Example Usage and Assertion
+if __name__ == "__main__":
+    # Test case from the problem description
+    num1, num2 = 10, 15
+    # Common divisors of 10 and 15 are 1 and 5.
+    # Sum = 1 + 5 = 6.
+    result = sum_common_divisors(num1, num2)
+    print(f"The sum of common divisors of {num1} and {num2} is: {result}")
+    assert result == 6, f"Assertion failed: Expected 6, but got {result}"
+
+    # Additional test cases
+    # Test case 2: Numbers with more common divisors (12 and 18)
+    # GCD is 6. Divisors of 6 are 1, 2, 3, 6. Sum = 12.
+    num1, num2 = 12, 18
+    result = sum_common_divisors(num1, num2)
+    print(f"The sum of common divisors of {num1} and {num2} is: {result}")
+    assert result == 12, f"Assertion failed: Expected 12, but got {result}"
+
+    # Test case 3: One number is a multiple of the other (8 and 24)
+    # GCD is 8. Divisors of 8 are 1, 2, 4, 8. Sum = 15.
+    num1, num2 = 8, 24
+    result = sum_common_divisors(num1, num2)
+    print(f"The sum of common divisors of {num1} and {num2} is: {result}")
+    assert result == 15, f"Assertion failed: Expected 15, but got {result}"
+
+    # Test case 4: Co-prime numbers (7 and 9)
+    # GCD is 1. The only common divisor is 1. Sum = 1.
+    num1, num2 = 7, 9
+    result = sum_common_divisors(num1, num2)
+    print(f"The sum of common divisors of {num1} and {num2} is: {result}")
+    assert result == 1, f"Assertion failed: Expected 1, but got {result}"
+
+    # Test case 5: One of the numbers is 1 (5 and 1)
+    # GCD is 1. The only common divisor is 1. Sum = 1.
+    num1, num2 = 5, 1
+    result = sum_common_divisors(num1, num2)
+    print(f"The sum of common divisors of {num1} and {num2} is: {result}")
+    assert result == 1, f"Assertion failed: Expected 1, but got {result}"
+
+    # Test case 6: One of the numbers is 0 (10 and 0)
+    # GCD is 10. Divisors of 10 are 1, 2, 5, 10. Sum = 18.
+    num1, num2 = 10, 0
+    result = sum_common_divisors(num1, num2)
+    print(f"The sum of common divisors of {num1} and {num2} is: {result}")
+    assert result == 18, f"Assertion failed: Expected 18, but got {result}"
+
+    print("\nAll assertions passed successfully!")
+```

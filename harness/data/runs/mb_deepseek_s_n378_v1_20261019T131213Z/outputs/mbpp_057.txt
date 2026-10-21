@@ -1,0 +1,55 @@
+```python
+def find_Max_Num(digits):
+    """
+    Returns the largest number that can be formed using the given list of digits.
+    
+    Args:
+        digits (list of int): List of digits (0-9).
+    
+    Returns:
+        int: The largest possible number formed by arranging the digits.
+    """
+    # Convert digits to strings for sorting
+    str_digits = list(map(str, digits))
+    
+    # Custom sort: compare concatenated strings to decide order
+    # For two strings a and b, we compare a+b vs b+a
+    str_digits.sort(key=lambda x: x * 10, reverse=True)  # works for single digits
+    
+    # Alternative robust custom sort using comparator
+    from functools import cmp_to_key
+    def compare(a, b):
+        if a + b > b + a:
+            return -1
+        elif a + b < b + a:
+            return 1
+        else:
+            return 0
+    
+    str_digits.sort(key=cmp_to_key(compare))
+    
+    # Join sorted digits and convert to integer
+    largest_num_str = ''.join(str_digits)
+    
+    # Handle edge case where result might start with '0' (e.g., [0,0])
+    if largest_num_str[0] == '0':
+        return 0
+    
+    return int(largest_num_str)
+
+
+# Example test
+if __name__ == "__main__":
+    assert find_Max_Num([1, 2, 3]) == 321
+    print("Test passed: [1,2,3] ->", find_Max_Num([1,2,3]))
+    
+    # Additional tests
+    assert find_Max_Num([3, 30, 34, 5, 9]) == 9534330
+    print("Test passed: [3,30,34,5,9] ->", find_Max_Num([3,30,34,5,9]))
+    
+    assert find_Max_Num([0, 0]) == 0
+    print("Test passed: [0,0] ->", find_Max_Num([0,0]))
+    
+    assert find_Max_Num([1]) == 1
+    print("Test passed: [1] ->", find_Max_Num([1]))
+```

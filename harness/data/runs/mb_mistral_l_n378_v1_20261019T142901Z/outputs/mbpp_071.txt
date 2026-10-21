@@ -1,0 +1,39 @@
+Here's a self-contained Python script that implements the comb sort algorithm to solve the given problem:
+
+```python
+"""
+Comb Sort implementation in Python.
+Comb Sort is an improvement over Bubble Sort that compares elements separated by a gap.
+The gap starts with a large value and shrinks by a factor of 1.3 in each iteration until it becomes 1.
+"""
+
+def comb_sort(arr):
+    n = len(arr)
+    gap = n
+    shrink = 1.3
+    swapped = True
+
+    while gap > 1 or swapped:
+        # Update the gap for the next comb
+        gap = max(1, int(gap / shrink))
+        swapped = False
+
+        # Compare all elements with the current gap
+        for i in range(n - gap):
+            if arr[i] > arr[i + gap]:
+                # Swap elements if they are in the wrong order
+                arr[i], arr[i + gap] = arr[i + gap], arr[i]
+                swapped = True
+    return arr
+
+# Test the function
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+```
+
+This script:
+1. Implements the comb sort algorithm which is more efficient than bubble sort
+2. Includes the required assertion test
+3. Is self-contained with a docstring explaining the algorithm
+4. Will sort the list in ascending order as required
+
+The comb sort works by comparing elements that are far apart first (with a large gap) and then progressively reducing the gap until it becomes 1, at which point it becomes similar to a bubble sort but with most elements already in their correct positions.

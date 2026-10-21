@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+def remove_odd(numbers):
+    """Remove odd numbers from a given list.
+
+    Args:
+        numbers: List of integers to filter.
+
+    Returns:
+        List containing only the even numbers from the input.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+# Test the function
+assert remove_odd([1, 2, 3]) == [2]
+```
+
+This script:
+1. Defines a function `remove_odd` that uses a list comprehension to filter out odd numbers
+2. Includes a docstring explaining the function's purpose
+3. Contains the assertion test case from the problem statement
+4. Will raise an AssertionError if the function doesn't work as expected

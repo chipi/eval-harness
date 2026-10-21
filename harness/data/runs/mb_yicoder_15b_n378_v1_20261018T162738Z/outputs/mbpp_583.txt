@@ -1,0 +1,19 @@
+```python
+def catalan_number(n):
+    if n <= 1:
+        return 1
+    
+    # Calculate value of 2*n factorial
+    numerator = 2 * (2*n - 1) * catalan_number(n - 1)
+    
+    # Calculate value of (4*n - 2) factorial
+    denominator = n + 1
+    for i in range(n - 1):
+        denominator *= (4*i + 2)
+    
+    # Return the catalan number
+    return numerator // denominator
+
+# Test the function
+assert catalan_number(10) == 16796
+```

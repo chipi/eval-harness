@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def remove_Occ(s: str, char: str) -> str:
+    """
+    Removes the first and last occurrence of a given character from the string.
+
+    Args:
+        s: The input string.
+        char: The character to remove (first and last occurrence).
+
+    Returns:
+        The string with first and last occurrence of char removed.
+    """
+    first = s.find(char)
+    last = s.rfind(char)
+
+    if first == -1:  # Character not found
+        return s
+    if first == last:  # Only one occurrence
+        return s[:first] + s[first+1:]
+
+    # Remove first and last occurrence
+    return s[:first] + s[first+1:last] + s[last+1:]
+
+# Test case
+assert remove_Occ("hello", "l") == "heo"
+```
+
+This solution:
+1. Finds the first occurrence of the character using `str.find()`
+2. Finds the last occurrence using `str.rfind()`
+3. Handles edge cases where the character isn't found or only appears once
+4. Constructs the result by concatenating the parts before the first occurrence, between the occurrences, and after the last occurrence
+5. Includes the required assertion test

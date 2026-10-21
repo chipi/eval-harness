@@ -1,0 +1,40 @@
+```python
+def decimal_to_binary(n: int) -> str:
+    """
+    Converts a decimal number to its binary equivalent as a string.
+    
+    Args:
+        n (int): The decimal integer to convert.
+        
+    Returns:
+        str: The binary representation of the number without leading zeros.
+    """
+    # Handle the edge case for zero
+    if n == 0:
+        return "0"
+    
+    # Handle negative numbers if necessary (optional, based on problem scope)
+    # This implementation assumes non-negative integers as per standard binary conversion tasks
+    is_negative = n < 0
+    n = abs(n)
+    
+    binary_digits = []
+    while n > 0:
+        binary_digits.append(str(n % 2))
+        n //= 2
+    
+    # The digits are collected in reverse order (LSB to MSB), so reverse them
+    binary_str = "".join(reversed(binary_digits))
+    
+    return "-" + binary_str if is_negative else binary_str
+
+if __name__ == "__main__":
+    # Test cases
+    assert decimal_to_binary(8) == '1000'
+    assert decimal_to_binary(0) == '0'
+    assert decimal_to_binary(1) == '1'
+    assert decimal_to_binary(10) == '1010'
+    assert decimal_to_binary(255) == '11111111'
+    
+    print("All assertions passed!")
+```

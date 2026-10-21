@@ -1,0 +1,8 @@
+```python
+def closest_num(n):
+    """Return the greatest integer smaller than n."""
+    return n - 1
+
+
+assert closest_num(11) == 10
+```

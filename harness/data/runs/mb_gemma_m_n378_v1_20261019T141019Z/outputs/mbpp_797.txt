@@ -1,0 +1,42 @@
+```python
+def sum_in_range(l, r):
+    """
+    Finds the sum of all odd natural numbers within the range [l, r] inclusive.
+    
+    Args:
+        l (int): The lower bound of the range.
+        r (int): The upper bound of the range.
+        
+    Returns:
+        int: The sum of odd numbers in the range.
+    """
+    # Ensure l is the first odd number in the range
+    if l % 2 == 0:
+        l += 1
+    
+    # Ensure r is the last odd number in the range
+    if r % 2 == 0:
+        r -= 1
+        
+    # If l > r, there are no odd numbers in the range
+    if l > r:
+        return 0
+    
+    # The odd numbers form an arithmetic progression: l, l+2, l+4, ..., r
+    # Number of terms n = ((last - first) / difference) + 1
+    n = ((r - l) // 2) + 1
+    
+    # Sum of arithmetic progression = (n / 2) * (first + last)
+    # We use integer division // to ensure the result is an integer
+    return (n * (l + r)) // 2
+
+if __name__ == "__main__":
+    # Test cases
+    assert sum_in_range(2, 5) == 8   # Odd numbers: 3, 5. Sum = 8
+    assert sum_in_range(1, 10) == 25 # Odd numbers: 1, 3, 5, 7, 9. Sum = 25
+    assert sum_in_range(5, 5) == 5   # Odd numbers: 5. Sum = 5
+    assert sum_in_range(6, 6) == 0   # No odd numbers. Sum = 0
+    assert sum_in_range(10, 2) == 0  # Invalid range. Sum = 0
+    
+    print("All tests passed!")
+```

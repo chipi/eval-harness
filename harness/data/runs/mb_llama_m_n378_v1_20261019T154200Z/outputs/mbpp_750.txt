@@ -1,0 +1,20 @@
+```python
+def add_tuple(lst, tup):
+    """
+    This function adds the given tuple to the given list.
+    
+    Args:
+        lst (list): The input list.
+        tup (tuple): The input tuple.
+    
+    Returns:
+        list: The updated list with the tuple elements appended.
+    """
+    # Convert the tuple to a list to allow extension
+    lst.extend(tup)
+    # Return the updated list
+    return lst
+
+# Test the function
+print(add_tuple([5, 6, 7], (9, 10)))  # Output: [5, 6, 7, 9, 10]
+```

@@ -1,0 +1,9 @@
+```python
+def maximum(a, b):
+    return a if a > b else b
+
+
+if __name__ == "__main__":
+    assert maximum(5, 10) == 10
+    print("All tests passed.")
+```

@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem of checking whether a given list contains consecutive numbers:
+
+```python
+def check_Consecutive(lst):
+    """
+    Check if the given list contains consecutive numbers.
+
+    Args:
+        lst (list): The list to be checked.
+
+    Returns:
+        bool: True if the list contains consecutive numbers, False otherwise.
+    """
+    if len(lst) <= 1:
+        return True  # A single element or empty list is trivially consecutive
+
+    # Sort the list to handle unsorted inputs
+    sorted_lst = sorted(lst)
+
+    # Check if the difference between consecutive elements is 1
+    for i in range(len(sorted_lst) - 1):
+        if sorted_lst[i+1] - sorted_lst[i] != 1:
+            return False
+    return True
+
+# Test cases
+assert check_Consecutive([1, 2, 3, 4, 5]) == True
+assert check_Consecutive([5, 4, 3, 2, 1]) == True
+assert check_Consecutive([1, 3, 2, 4]) == True  # Sorted becomes [1, 2, 3, 4]
+assert check_Consecutive([1, 2, 4, 5]) == False
+assert check_Consecutive([1]) == True
+assert check_Consecutive([]) == True
+assert check_Consecutive([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == True
+assert check_Consecutive([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == True
+assert check_Consecutive([1, 2, 3, 5, 6]) == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `check_Consecutive` takes a list as input.
+2. If the list has 0 or 1 elements, it returns `True` because a single element or an empty list is trivially consecutive.
+3. The list is sorted to handle cases where the numbers are not in order.
+4. The function then checks if the difference between each consecutive pair of elements in the sorted list is 1. If any pair does not satisfy this condition, it returns `False`.
+5. If all consecutive pairs have a difference of 1, it returns `True`.
+6. The test cases verify the function's correctness for various scenarios, including sorted, unsorted, and edge cases.

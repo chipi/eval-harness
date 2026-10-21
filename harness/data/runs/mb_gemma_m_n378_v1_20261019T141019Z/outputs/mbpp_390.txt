@@ -1,0 +1,25 @@
+```python
+def add_string(elements, format_string):
+    """
+    Applies a given format string to all elements in a list.
+    
+    Args:
+        elements (list): A list of elements to be formatted.
+        format_string (str): A string containing a placeholder (e.g., '{}').
+        
+    Returns:
+        list: A new list containing the formatted strings.
+    """
+    return [format_string.format(item) for item in elements]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+    
+    # Additional test cases
+    assert add_string(['a', 'b'], 'val_{}') == ['val_a', 'val_b']
+    assert add_string([10, 20], 'ID: {:03d}') == ['ID: 010', 'ID: 020']
+    assert add_string([], 'test{}') == []
+
+    print("All tests passed!")
+```

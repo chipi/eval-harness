@@ -1,0 +1,7 @@
+```python
+def odd_values_string(text):
+    return text[::2]
+
+
+assert odd_values_string('abcdef') == 'ace'
+```

@@ -1,0 +1,62 @@
+```python
+def count_Substrings(s):
+    """
+    Counts the number of substrings with the sum of digits equal to their length.
+    
+    A substring of length L has a digit sum S. We are looking for substrings
+    where L == S.
+    
+    Let the substring be defined by indices [i, j] (inclusive).
+    Length L = j - i + 1.
+    Sum S = prefix_sum[j+1] - prefix_sum[i].
+    
+    The condition L == S can be rewritten as:
+    j - i + 1 = prefix_sum[j+1] - prefix_sum[i]
+    Rearranging the terms:
+    j + 1 - prefix_sum[j+1] = i - prefix_sum[i]
+    
+    Let diff[k] = k - prefix_sum[k].
+    We need to find pairs (i, j) with 0 <= i <= j < n such that diff[j+1] == diff[i].
+    This is equivalent to counting pairs of equal values in the diff array.
+    """
+    
+    n = len(s)
+    
+    # prefix_sum[k] is the sum of the first k digits (s[0]...s[k-1])
+    # prefix_sum[0] = 0
+    prefix_sum = [0] * (n + 1)
+    for k in range(1, n + 1):
+        prefix_sum[k] = prefix_sum[k-1] + int(s[k-1])
+        
+    # Count occurrences of each value of (index - prefix_sum)
+    # This corresponds to diff[k] = k - prefix_sum[k]
+    counts = {}
+    for k in range(n + 1):
+        val = k - prefix_sum[k]
+        counts[val] = counts.get(val, 0) + 1
+        
+    # If a value appears C times, it contributes C*(C-1)/2 pairs
+    total_count = 0
+    for count in counts.values():
+        if count > 1:
+            total_count += count * (count - 1) // 2
+            
+    return total_count
+
+# Verification
+if __name__ == "__main__":
+    assert count_Substrings('112112') == 6
+    print("Test case '112112' passed.")
+    
+    # Additional test cases
+    # "1": sum=1, len=1 -> 1 match
+    assert count_Substrings('1') == 1
+    
+    # "11": "1"(0,0), "1"(1,1), "11"(sum=2, len=2) -> 3 matches
+    assert count_Substrings('11') == 3
+    
+    # "123": "1", "2", "3", "12"(sum=3, len=2), "23"(sum=5, len=2), "123"(sum=6, len=3) -> 3 matches
+    assert count_Substrings('123') == 3
+    
+    print("All test cases passed.")
+```

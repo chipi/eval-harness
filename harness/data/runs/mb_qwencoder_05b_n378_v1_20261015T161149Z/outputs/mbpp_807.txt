@@ -1,0 +1,21 @@
+```python
+def first_odd(numbers):
+    """
+    Find the first odd number in a given list of numbers.
+
+    :param numbers: List of integers
+    :return: The first odd number in the list
+    """
+    for num in numbers:
+        if num % 2 != 0:
+            return num
+    return None
+
+# Test cases to verify the correctness of the function
+assert first_odd([1, 3, 5]) == 1
+assert first_odd([2, 4, 6, 8]) == 6
+assert first_odd([10, 15, 20, 25]) == 25
+assert first_odd([1, 3, 5, 7, 9]) == 9
+assert first_odd([11, 13, 15, 17, 19]) == 19
+```
+

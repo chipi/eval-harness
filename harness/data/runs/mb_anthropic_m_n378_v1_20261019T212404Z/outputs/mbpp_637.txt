@@ -1,0 +1,17 @@
+```python
+def noprofit_noloss(actual_cost, sale_amount):
+    """
+    Check whether the given amount has no profit and no loss.
+    Returns True if actual_cost == sale_amount, otherwise False.
+    """
+    return actual_cost == sale_amount
+
+
+# Test cases
+assert noprofit_noloss(1500, 1200) == False
+assert noprofit_noloss(1500, 1500) == True
+assert noprofit_noloss(100, 100) == True
+assert noprofit_noloss(100, 200) == False
+
+print("All tests passed!")
+```

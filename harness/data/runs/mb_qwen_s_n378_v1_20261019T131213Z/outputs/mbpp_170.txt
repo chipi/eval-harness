@@ -1,0 +1,18 @@
+```python
+def sum_range_list(lst, start, end):
+    """
+    Find the sum of numbers in a list within a range specified by two indices.
+    
+    Parameters:
+    lst (list): The input list of numbers.
+    start (int): The starting index (inclusive).
+    end (int): The ending index (inclusive).
+    
+    Returns:
+    int/float: The sum of elements from index start to index end (inclusive).
+    """
+    return sum(lst[start:end+1])
+
+# Test case
+assert sum_range_list([2,1,5,6,8,3,4,9,10,11,8,12], 8, 10) == 29
+```

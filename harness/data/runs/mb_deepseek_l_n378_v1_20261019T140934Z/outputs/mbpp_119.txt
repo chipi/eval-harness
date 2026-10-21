@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def search(arr):
+    """
+    Find the element that appears only once in a sorted array.
+    
+    Args:
+        arr: A sorted list of integers where every element appears twice except one.
+    
+    Returns:
+        The element that appears only once.
+    """
+    # Use XOR operation - all duplicate elements cancel out
+    result = 0
+    for num in arr:
+        result ^= num
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    assert search([1, 1, 2, 2, 3]) == 3
+    assert search([1, 1, 2, 3, 3]) == 2
+    assert search([1, 2, 2, 3, 3]) == 1
+    assert search([4]) == 4
+    assert search([1, 1, 2, 2, 3, 3, 4]) == 4
+    print("All tests passed!")
+```
+
+**Explanation:**
+The solution uses the XOR (^) bitwise operation, which has the property that:
+- `a ^ a = 0` (any number XORed with itself equals 0)
+- `a ^ 0 = a` (any number XORed with 0 equals itself)
+- XOR is commutative and associative
+
+Since all elements except one appear twice, XORing all elements together will cancel out the pairs, leaving only the single element. This solution works in O(n) time and O(1) space, and doesn't require the array to be sorted (though the problem states it is).

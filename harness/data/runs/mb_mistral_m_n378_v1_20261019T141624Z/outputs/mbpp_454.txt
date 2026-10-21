@@ -1,0 +1,20 @@
+```python
+def text_match_wordz(text):
+    """
+    Check if the given text contains a word with the letter 'z'.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if a word containing 'z' is found, False otherwise.
+    """
+    words = text.split()
+    for word in words:
+        if 'z' in word:
+            return True
+    return False
+
+# Test case
+assert text_match_wordz("pythonz.") == True
+```

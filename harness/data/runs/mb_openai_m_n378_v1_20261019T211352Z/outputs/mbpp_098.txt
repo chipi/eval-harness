@@ -1,0 +1,26 @@
+```python
+import math
+from functools import reduce
+from operator import mul
+
+def multiply_num(numbers):
+    """
+    Multiply all numbers in the given iterable and divide by the length
+    of the iterable.
+
+    Example:
+        (8 * 2 * 3 * -1 * 7) / 5 = -67.2
+    """
+    numbers = list(numbers)
+    if len(numbers) == 0:
+        raise ValueError("Input list must not be empty")
+
+    product = reduce(mul, numbers, 1)
+    return product / len(numbers)
+
+
+# Test
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+
+print("All tests passed.")
+```

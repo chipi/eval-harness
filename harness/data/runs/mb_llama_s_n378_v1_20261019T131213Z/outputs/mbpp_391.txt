@@ -1,0 +1,35 @@
+```python
+def convert_list_dictionary(ids, names, scores):
+    """
+    This function takes in three lists: ids, names, and scores. 
+    It returns a list of nested dictionaries where each dictionary 
+    represents an id, name, and score.
+
+    Args:
+        ids (list): A list of ids.
+        names (list): A list of names.
+        scores (list): A list of scores.
+
+    Returns:
+        list: A list of nested dictionaries.
+    """
+    # Check if all input lists have the same length
+    if not (len(ids) == len(names) == len(scores)):
+        raise ValueError("All input lists must have the same length")
+
+    # Use zip to iterate over the three lists in parallel
+    # and create a list of nested dictionaries
+    return [{id: {name: score}} for id, name, score in zip(ids, names, scores)]
+
+# Test the function
+ids = ["S001", "S002", "S003", "S004"]
+names = ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"]
+scores = [85, 98, 89, 92]
+
+print(convert_list_dictionary(ids, names, scores))
+```
+
+When you run this script, it will output:
+```python
+[{'S001': {'Adina Park': 85}}, {'S002': {'Leyton Marsh': 98}}, {'S003': {'Duncan Boyle': 89}}, {'S004': {'Saim Richards': 92}}]
+```

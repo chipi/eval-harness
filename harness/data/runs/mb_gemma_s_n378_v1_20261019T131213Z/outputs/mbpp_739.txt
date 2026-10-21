@@ -1,0 +1,38 @@
+```python
+import math
+
+def find_Index(n):
+    """
+    Finds the index of the smallest triangular number with n digits.
+
+    Args:
+        n: The number of digits.
+
+    Returns:
+        The index of the smallest triangular number with n digits.
+    """
+    if n <= 0:
+        return -1  # Invalid input
+
+    # Calculate the smallest triangular number with n digits
+    # T_k = k * (k + 1) / 2 >= 10**(n-1)
+    # k^2 + k - 2 * 10**(n-1) >= 0
+    # Using the quadratic formula: k = (-1 + sqrt(1 + 8 * 10**(n-1))) / 2
+    k = int((-1 + math.sqrt(1 + 8 * (10**(n - 1)))) / 2)
+
+    # Check if the calculated k is sufficient
+    triangular_number = k * (k + 1) // 2
+    if len(str(triangular_number)) < n:
+        k += 1
+        triangular_number = k * (k + 1) // 2
+
+    return k
+
+if __name__ == '__main__':
+    assert find_Index(2) == 4
+    assert find_Index(3) == 14
+    assert find_Index(4) == 69
+    assert find_Index(5) == 228
+    assert find_Index(6) == 761
+    print("All test cases passed")
+```

@@ -1,0 +1,52 @@
+```python
+def highest_Power_of_2(n):
+    """
+    Find the highest power of 2 that is less than or equal to n.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The highest power of 2 that is <= n
+    """
+    if n < 1:
+        return 0
+    
+    # Method 1: Using bit manipulation
+    # Find the position of the most significant bit
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    
+    return power
+
+
+# Test cases
+assert highest_Power_of_2(10) == 8
+assert highest_Power_of_2(1) == 1
+assert highest_Power_of_2(2) == 2
+assert highest_Power_of_2(3) == 2
+assert highest_Power_of_2(16) == 16
+assert highest_Power_of_2(17) == 16
+assert highest_Power_of_2(100) == 64
+
+print("All test cases passed!")
+print(f"highest_Power_of_2(10) = {highest_Power_of_2(10)}")
+print(f"highest_Power_of_2(100) = {highest_Power_of_2(100)}")
+print(f"highest_Power_of_2(17) = {highest_Power_of_2(17)}")
+```
+
+This script provides a solution that:
+
+1. **Uses an iterative approach** to find the highest power of 2 ≤ n
+2. **Starts with power = 1** and keeps doubling it while `power * 2 <= n`
+3. **Returns the result** when no more doubling is possible
+
+**Alternative one-liner using bit operations:**
+```python
+def highest_Power_of_2(n):
+    """Find the highest power of 2 that is less than or equal to n."""
+    return 1 << (n.bit_length() - 1) if n > 0 else 0
+```
+
+Both solutions work correctly. The first is more readable, while the second is more concise using Python's `bit_length()` method.

@@ -1,0 +1,31 @@
+```python
+def eulerian_num(n, m):
+    """
+    Calculate the Eulerian number a(n, m).
+
+    The Eulerian number a(n, m) is the number of permutations of n elements
+    with m ascents (or equivalently, m descents).
+
+    :param n: The number of elements in the permutation.
+    :param m: The number of ascents (or descents) in the permutation.
+    :return: The Eulerian number a(n, m).
+    """
+    def comb(n, k):
+        """Calculate the binomial coefficient n choose k."""
+        if k > n - k:
+            k = n - k
+        result = 1
+        for i in range(k):
+            result = result * (n - i) // (i + 1)
+        return result
+
+    # Calculate the Eulerian number using the formula:
+    # a(n, m) = sum(k=0 to m) (-1)^k * (m+1 choose k) * (n+m-k choose m)
+    result = 0
+    for k in range(m + 1):
+        result += ((-1) ** k) * comb(m + 1, k) * comb(n + m - k, m)
+    return result
+
+# Test the function
+print(eulerian_num(3, 1))  # Output: 4
+```

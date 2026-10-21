@@ -1,0 +1,30 @@
+```python
+def last(arr, x):
+    """
+    Find the last position of an element in a sorted array.
+    
+    Args:
+        arr: A sorted list of elements.
+        x: The element to find the last occurrence of.
+        
+    Returns:
+        The index of the last occurrence of x in arr, or -1 if not found.
+    """
+    low = 0
+    high = len(arr) - 1
+    result = -1
+    
+    while low <= high:
+        mid = (low + high) // 2
+        
+        if arr[mid] == x:
+            result = mid
+            # Look for later occurrences
+            low = mid + 1
+        elif arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid - 1
+    
+    return result
+```

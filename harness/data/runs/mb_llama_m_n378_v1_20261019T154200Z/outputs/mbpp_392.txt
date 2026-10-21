@@ -1,0 +1,32 @@
+```python
+def get_max_sum(n, memo={}):
+    """
+    This function calculates the maximum sum possible by using the given equation f(n) = max( (f(n/2) + f(n/3) + f(n/4) + f(n/5)), n).
+    
+    Args:
+    n (int): The input number.
+    memo (dict): A dictionary to store the results of subproblems to avoid redundant calculations.
+    
+    Returns:
+    int: The maximum sum possible.
+    """
+    # Base case: If n is 0, return 0.
+    if n == 0:
+        return 0
+    
+    # If the result of the subproblem is already calculated, return it.
+    if n in memo:
+        return memo[n]
+    
+    # Calculate the maximum sum possible by using the given equation.
+    max_sum = max(n, 
+                  get_max_sum(n//2, memo) + get_max_sum(n//3, memo) + get_max_sum(n//4, memo) + get_max_sum(n//5, memo))
+    
+    # Store the result of the subproblem in the memo dictionary.
+    memo[n] = max_sum
+    
+    return max_sum
+
+# Test the function.
+print(get_max_sum(60))  # Output: 106
+```

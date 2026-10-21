@@ -1,0 +1,40 @@
+Looking at this problem, I need to write a function named `Split` that filters even numbers from a list.
+
+```python
+"""
+Write a python function to find even numbers from a list of numbers.
+assert Split([1,2,3,4,5]) == [2,4]
+"""
+
+
+def Split(numbers):
+    """
+    Return a list containing only the even numbers from the input list.
+
+    Args:
+        numbers: an iterable of integers
+
+    Returns:
+        A list of the even numbers, preserving their original order.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert Split([1, 2, 3, 4, 5]) == [2, 4]
+
+    # Additional test cases
+    assert Split([1, 3, 5]) == []
+    assert Split([2, 4, 6, 8]) == [2, 4, 6, 8]
+    assert Split([]) == []
+    assert Split([0, -2, -3, 7, 10]) == [0, -2, 10]
+
+    print("All tests passed!")
+    print("Split([1, 2, 3, 4, 5]) =", Split([1, 2, 3, 4, 5]))
+```
+
+**How it works:**
+- The list comprehension iterates over each `num` in `numbers`.
+- `num % 2 == 0` is `True` only when the number is divisible by 2 (i.e., even), which also works correctly for `0` and negative numbers in Python.
+- Matching elements are collected into a new list in their original order.

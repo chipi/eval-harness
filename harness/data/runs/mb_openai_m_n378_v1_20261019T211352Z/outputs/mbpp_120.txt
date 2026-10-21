@@ -1,0 +1,41 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the maximum absolute product between numbers in pairs of tuples within a list.
+
+For each tuple (a, b), compute abs(a * b), then return the maximum value.
+Example:
+    [(2, 7), (2, 6), (1, 8), (4, 9)]
+    products: 14, 12, 8, 36
+    result: 36
+"""
+
+def max_product_tuple(tuple_list):
+    """
+    Return the maximum absolute product of pairs in the given list of 2-tuples.
+
+    Args:
+        tuple_list: A list of tuples, where each tuple contains two numbers.
+
+    Returns:
+        The maximum value of abs(a * b) for all tuples (a, b) in tuple_list.
+
+    Raises:
+        ValueError: If tuple_list is empty.
+    """
+    if not tuple_list:
+        raise ValueError("Input list must not be empty")
+
+    return max(abs(a * b) for a, b in tuple_list)
+
+
+if __name__ == "__main__":
+    assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+
+    # Additional tests
+    assert max_product_tuple([(-2, 7), (3, -5), (-4, -6)]) == 24
+    assert max_product_tuple([(0, 10), (1, 2)]) == 2
+    assert max_product_tuple([(5, 5)]) == 25
+
+    print("All tests passed.")
+```

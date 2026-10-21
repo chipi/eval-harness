@@ -1,0 +1,8 @@
+```python
+def new_tuple(items, text):
+    """Return a tuple containing the list items followed by the string."""
+    return tuple(items) + (text,)
+
+
+assert new_tuple(["WEB", "is"], "best") == ("WEB", "is", "best")
+```

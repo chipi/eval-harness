@@ -1,0 +1,10 @@
+```python
+def replace_spaces(text):
+    return text.replace(' ', '_') if ' ' in text else text.replace('_', ' ')
+
+# Test cases
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+assert replace_spaces('Jumanji_The_Jungle') == 'Jumanji The Jungle'
+assert replace_spaces('Jumanji_The_Jungle_2022') == 'Jumanji_The_Jungle_2022'
+assert replace_spaces('2022_Jumanji_The_Jungle') == '2022_Jumanji_The_Jungle'
+```

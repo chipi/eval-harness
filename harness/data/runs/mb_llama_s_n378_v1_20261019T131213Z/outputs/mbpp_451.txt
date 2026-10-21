@@ -1,0 +1,41 @@
+```python
+def remove_whitespaces(s):
+    """
+    This function removes all whitespaces from the given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all whitespaces removed.
+    """
+    return s.replace(" ", "")
+
+# Example usage:
+if __name__ == "__main__":
+    assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+    print("All test cases pass")
+```
+
+However, the above code only removes space characters. If you want to remove all types of whitespace characters (like tabs, newlines, etc.), you can use the following code:
+
+```python
+import re
+
+def remove_whitespaces(s):
+    """
+    This function removes all whitespaces from the given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with all whitespaces removed.
+    """
+    return re.sub(r"\s+", "", s)
+
+# Example usage:
+if __name__ == "__main__":
+    assert remove_whitespaces(' Google    Flutter \n') == 'GoogleFlutter'
+    print("All test cases pass")
+```

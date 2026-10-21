@@ -1,0 +1,10 @@
+```python
+def max_difference(pairs):
+    return max(abs(y - x) for x, y in pairs)
+
+def main():
+    print(max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]))  # Expected output: 7
+
+if __name__ == "__main__":
+    main()
+```

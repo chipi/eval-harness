@@ -1,0 +1,18 @@
+```python
+def neg_nos(numbers):
+    """
+    Return all negative numbers from the given list.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        list: A list containing only the negative numbers.
+    """
+    return [num for num in numbers if num < 0]
+
+
+if __name__ == "__main__":
+    assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+    print("All tests passed.")
+```

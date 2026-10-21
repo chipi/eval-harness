@@ -1,0 +1,29 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    Find all numbers in the range [startnum, endnum] (inclusive) that are
+    divisible by every digit they contain.
+    
+    Args:
+        startnum (int): Start of range (inclusive)
+        endnum (int): End of range (inclusive)
+    
+    Returns:
+        list: List of numbers satisfying the condition
+    """
+    result = []
+    for num in range(startnum, endnum + 1):
+        # Convert number to string to iterate over digits
+        digits = str(num)
+        # Check if all digits divide the number
+        # Skip numbers containing 0 (division by zero is undefined)
+        if '0' in digits:
+            continue
+        if all(num % int(d) == 0 for d in digits):
+            result.append(num)
+    return result
+
+# Test the function
+assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+print("Test passed!")
+```

@@ -1,0 +1,52 @@
+```python
+def even_binomial_Coeff_Sum(n: int) -> int:
+    """
+    Calculates the sum of binomial coefficients C(n, k) for even indices k.
+
+    This function uses a mathematical identity derived from the binomial theorem.
+    The sum of binomial coefficients for even indices is equal to 2^(n-1).
+    This is derived from evaluating (1+1)^n + (1-1)^n = 2^n + 0 = 2 * (sum of even coefficients).
+
+    Args:
+        n: A positive integer.
+
+    Returns:
+        The sum of C(n, k) for all even k (0, 2, 4, ...).
+
+    Examples:
+        >>> even_binomial_Coeff_Sum(4)
+        8
+        >>> even_binomial_Coeff_Sum(5)
+        16
+        >>> even_binomial_Coeff_Sum(1)
+        1
+    """
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+
+    # The sum of binomial coefficients for even indices is 2^(n-1).
+    # This holds true for n > 0. For n=0, the sum is C(0,0) = 1, which is also 2^(-1) if we
+    # consider the formula, but Python's 0**-1 raises an error. We handle n=0 as a special case.
+    if n == 0:
+        return 1
+    
+    return 2 ** (n - 1)
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    # The problem statement's example
+    assert even_binomial_Coeff_Sum(4) == 8, f"Test failed for n=4. Expected 8, got {even_binomial_Coeff_Sum(4)}"
+
+    # Additional test cases to verify correctness
+    assert even_binomial_Coeff_Sum(0) == 1, f"Test failed for n=0. Expected 1, got {even_binomial_Coeff_Sum(0)}"
+    assert even_binomial_Coeff_Sum(1) == 1, f"Test failed for n=1. Expected 1, got {even_binomial_Coeff_Sum(1)}"
+    assert even_binomial_Coeff_Sum(2) == 2, f"Test failed for n=2. Expected 2, got {even_binomial_Coeff_Sum(2)}"
+    assert even_binomial_Coeff_Sum(3) == 4, f"Test failed for n=3. Expected 4, got {even_binomial_Coeff_Sum(3)}"
+    assert even_binomial_Coeff_Sum(5) == 16, f"Test failed for n=5. Expected 16, got {even_binomial_Coeff_Sum(5)}"
+    assert even_binomial_Coeff_Sum(6) == 32, f"Test failed for n=6. Expected 32, got {even_binomial_Coeff_Sum(6)}"
+    
+    # Test with a larger number
+    assert even_binomial_Coeff_Sum(10) == 512, f"Test failed for n=10. Expected 512, got {even_binomial_Coeff_Sum(10)}"
+
+    print("All tests passed successfully!")
+```

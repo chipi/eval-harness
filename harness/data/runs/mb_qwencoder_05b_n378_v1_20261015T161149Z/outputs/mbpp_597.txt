@@ -1,0 +1,28 @@
+```python
+def find_kth(arr1, arr2, k):
+    # Initialize pointers for both arrays
+    i, j = 0, 0
+    
+    # Initialize a counter for the current position in the result array
+    count = 0
+    
+    # Iterate until we have found the kth element
+    while count < k:
+        # If the current element in arr1 is less than or equal to the current element in arr2, add it to the result array
+        if arr1[i] <= arr2[j]:
+            result.append(arr1[i])
+            i += 1
+        else:
+            result.append(arr2[j])
+            j += 1
+        
+        # Increment the counter
+        count += 1
+    
+    # Return the kth element from the result array
+    return result[k-1]
+
+# Test the function with the provided test case
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```
+

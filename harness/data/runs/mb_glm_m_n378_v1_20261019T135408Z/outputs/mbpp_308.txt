@@ -1,0 +1,65 @@
+Here's a self-contained Python script that solves the problem of finding the specified number of largest products from two given lists, selecting one factor from each list:
+
+```python
+def large_product(list1, list2, k):
+    """
+    Find the specified number of largest products from two given lists, selecting one factor from each list.
+    
+    Args:
+        list1 (list): First list of numbers.
+        list2 (list): Second list of numbers.
+        k (int): Number of largest products to return.
+        
+    Returns:
+        list: List of the k largest products in descending order.
+    """
+    # Sort both lists in descending order to prioritize larger elements
+    list1_sorted = sorted(list1, reverse=True)
+    list2_sorted = sorted(list2, reverse=True)
+    
+    # Use a max-heap to keep track of the largest products
+    import heapq
+    max_heap = []
+    visited = set()
+    
+    # Push the initial product (0, 0) into the heap
+    heapq.heappush(max_heap, (-(list1_sorted[0] * list2_sorted[0]), 0, 0))
+    visited.add((0, 0))
+    
+    result = []
+    
+    while max_heap and len(result) < k:
+        # Get the largest product from the heap
+        current = heapq.heappop(max_heap)
+        product = -current[0]
+        i, j = current[1], current[2]
+        
+        # Add the product to the result
+        result.append(product)
+        
+        # Explore next possible products by moving in list1 or list2
+        if i + 1 < len(list1_sorted) and (i + 1, j) not in visited:
+            next_product = list1_sorted[i + 1] * list2_sorted[j]
+            heapq.heappush(max_heap, (-next_product, i + 1, j))
+            visited.add((i + 1, j))
+        
+        if j + 1 < len(list2_sorted) and (i, j + 1) not in visited:
+            next_product = list1_sorted[i] * list2_sorted[j + 1]
+            heapq.heappush(max_heap, (-next_product, i, j + 1))
+            visited.add((i, j + 1))
+    
+    return result
+
+# Test the function
+assert large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3) == [60, 54, 50]
+print("Test passed!")
+```
+
+### Explanation:
+1. **Sorting**: Both input lists are sorted in descending order to prioritize larger elements, which helps in efficiently finding the largest products.
+2. **Max-Heap**: A max-heap (simulated using a min-heap with negative values) is used to keep track of the largest products encountered so far. This allows efficient retrieval of the next largest product.
+3. **Visited Set**: A set is used to keep track of visited indices to avoid reprocessing the same pairs of elements.
+4. **Heap Operations**: The algorithm starts by pushing the product of the largest elements from both lists into the heap. Then, it repeatedly extracts the largest product from the heap and explores the next possible products by moving to the next element in either list.
+5. **Result Collection**: The process continues until `k` largest products are collected, which are then returned in descending order.
+
+This approach efficiently finds the `k` largest products without generating all possible products, making it optimal for large lists.

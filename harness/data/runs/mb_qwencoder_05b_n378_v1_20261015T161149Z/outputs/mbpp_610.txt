@@ -1,0 +1,21 @@
+```python
+def remove_kth_element(lst, k):
+    """
+    Takes a list and returns a list with the same elements, but the k'th element removed.
+    
+    :param lst: List of elements to be processed.
+    :param k: Index of the element to remove.
+    :return: A new list with the k'th element removed.
+    """
+    # Remove the k'th element from the list
+    lst.pop(k)
+    return lst
+
+# Test cases to verify the correctness of the function
+assert remove_kth_element([1,1,2,3,4,4,5,1],3)==[1, 1, 3, 4, 4, 5, 1]
+assert remove_kth_element([10,20,30,40,50],1)==[10,20,30,40,50]
+assert remove_kth_element([1,2,3,4,5],0)==[1,2,3,4,5]
+assert remove_kth_element([],1)==[]
+assert remove_kth_element([1],1)==[1]
+```
+

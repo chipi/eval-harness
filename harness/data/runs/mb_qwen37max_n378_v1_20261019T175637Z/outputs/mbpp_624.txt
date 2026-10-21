@@ -1,0 +1,8 @@
+```python
+def is_upper(s: str) -> str:
+    """Convert a given string to uppercase."""
+    return s.upper()
+
+
+assert is_upper("person") == "PERSON"
+```

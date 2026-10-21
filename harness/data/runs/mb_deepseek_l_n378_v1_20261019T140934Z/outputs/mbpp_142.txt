@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def count_samepair(list1, list2, list3):
+    """
+    Count the number of items that are identical in the same position
+    across three given lists.
+    """
+    # Use zip to iterate over elements at the same index
+    # and sum 1 for each position where all three are equal
+    return sum(1 for a, b, c in zip(list1, list2, list3) if a == b == c)
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = count_samepair(
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        [2, 2, 3, 1, 2, 6, 7, 9],
+        [2, 1, 3, 1, 2, 6, 7, 9]
+    )
+    assert result == 3, f"Expected 3, but got {result}"
+    print("Test passed! The function works correctly.")
+```

@@ -1,0 +1,39 @@
+Here’s a self-contained Python script that solves the linear Diophantine equation `ax + by = n`:
+
+```python
+def find_solution(a, b, n):
+    """
+    Returns a tuple (x, y) such that a*x + b*y = n,
+    or None if no integer solution exists.
+    """
+    # Extended Euclidean Algorithm
+    def extended_gcd(a, b):
+        if b == 0:
+            return a, 1, 0
+        g, x1, y1 = extended_gcd(b, a % b)
+        return g, y1, x1 - (a // b) * y1
+
+    g, x0, y0 = extended_gcd(abs(a), abs(b))
+
+    # Check if solution exists
+    if n % g != 0:
+        return None
+
+    # Scale the base solution
+    x = x0 * (n // g)
+    y = y0 * (n // g)
+
+    # Adjust signs based on original a, b
+    if a < 0:
+        x = -x
+    if b < 0:
+        y = -y
+
+    return (x, y)
+
+
+# Example test
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+    print("Test passed:", find_solution(2, 3, 7))
+```

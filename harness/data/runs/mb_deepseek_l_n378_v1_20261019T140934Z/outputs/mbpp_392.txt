@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that solves the problem using recursion with memoization:
+
+```python
+from functools import lru_cache
+
+def get_max_sum(n: int) -> int:
+    """
+    Returns the maximum sum possible using the equation:
+    f(n) = max((f(n/2) + f(n/3) + f(n/4) + f(n/5)), n)
+    """
+    @lru_cache(maxsize=None)
+    def f(x: int) -> int:
+        if x == 0:
+            return 0
+        return max((f(x // 2) + f(x // 3) + f(x // 4) + f(x // 5)), x)
+
+    return f(n)
+
+# Example usage and assertion
+if __name__ == "__main__":
+    assert get_max_sum(60) == 106
+    print("Test passed: get_max_sum(60) == 106")
+```

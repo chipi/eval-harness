@@ -1,0 +1,18 @@
+```python
+def sum_negativenum(numbers):
+    """
+    This function calculates the sum of the negative numbers in a given list of numbers.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        int: The sum of the negative numbers in the list.
+    """
+    return sum(num for num in numbers if num < 0)
+
+# Example usage:
+numbers = [2, 4, -6, -9, 11, -12, 14, -5, 17]
+result = sum_negativenum(numbers)
+print(result)  # Output: -32
+```

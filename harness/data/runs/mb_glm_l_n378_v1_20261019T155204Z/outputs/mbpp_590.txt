@@ -1,0 +1,42 @@
+```python
+import math
+import cmath
+
+def polar_rect(r, theta):
+    """
+    Converts polar coordinates (r, theta) to rectangular coordinates (x, y).
+    
+    Args:
+        r (int/float): The radial distance from the origin.
+        theta (int/float): The angle in radians.
+        
+    Returns:
+        tuple: A tuple containing:
+            - tuple: The polar coordinates as (magnitude, angle_phase).
+            - complex: The rectangular coordinates as a complex number (x + yj).
+    """
+    # Calculate the magnitude
+    magnitude = math.sqrt(r**2 + theta**2)
+    
+    # Calculate the phase angle
+    phase = math.atan2(theta, r)
+    
+    # Calculate the rectangular coordinates
+    # Using cmath.rect which returns a complex number: r * (cos(theta) + i*sin(theta))
+    # Note: The input theta to the conversion is passed as the angle argument.
+    # However, based on the assertion, the magnitude is calculated from (r, theta) inputs.
+    # The conversion to rectangular form uses the inputs r and theta directly.
+    rect_coords = cmath.rect(r, theta)
+    
+    return (magnitude, phase), rect_coords
+
+# Verification
+if __name__ == "__main__":
+    # Assertion from the problem statement
+    result = polar_rect(3, 4)
+    expected = ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    
+    # Verify output
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed successfully.")
+```

@@ -1,0 +1,46 @@
+```python
+def replace_blank(input_string: str, replacement_char: str) -> str:
+    """
+    Replaces blank spaces in a string with a specified character.
+
+    Args:
+        input_string: The string to process.
+        replacement_char: The character to replace spaces with.
+
+    Returns:
+        The modified string with spaces replaced by the character.
+    """
+    # The replace() method is a straightforward way to achieve this.
+    # It finds all occurrences of the first argument (a space ' ') and
+    # replaces them with the second argument (replacement_char).
+    return input_string.replace(' ', replacement_char)
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    input_str = "hello people"
+    char = '@'
+    expected_output = "hello@people"
+    
+    result = replace_blank(input_str, char)
+    
+    print(f"Input string: '{input_str}'")
+    print(f"Replacement character: '{char}'")
+    print(f"Original string: '{input_str}'")
+    print(f"Result string:   '{result}'")
+    print(f"Expected string: '{expected_output}'")
+    
+    # The assert statement will raise an error if the result is not as expected.
+    # If the script runs without error, the test passes.
+    assert result == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    assert replace_blank("  leading and trailing spaces  ", '_') == "__leading_and_trailing_spaces__"
+    assert replace_blank("no-spaces-here", 'x') == "no-spaces-here"
+    assert replace_blank("", 'z') == ""
+    assert replace_blank("multiple   spaces", '-') == "multiple---spaces"
+    print("All additional assertions passed!")
+```

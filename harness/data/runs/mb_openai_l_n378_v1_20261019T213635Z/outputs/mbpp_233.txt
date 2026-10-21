@@ -1,0 +1,11 @@
+```python
+import math
+
+
+def lateralsuface_cylinder(radius, height):
+    """Return the lateral surface area of a cylinder."""
+    return 2 * math.pi * radius * height
+
+
+assert math.isclose(lateralsuface_cylinder(10, 5), 314.15000000000003, rel_tol=0.001)
+```

@@ -1,0 +1,41 @@
+```python
+def max_Product(arr):
+    """
+    Return the pair of integers from arr whose product is maximum.
+
+    If multiple pairs have the same maximum product, this returns one of them.
+    Assumes the input contains at least two integers.
+    """
+    if len(arr) < 2:
+        raise ValueError("Array must contain at least two integers.")
+
+    # Track the two largest and two smallest values.
+    # This is needed because the product of two negative numbers can be largest.
+    max1 = max2 = float("-inf")
+    min1 = min2 = float("inf")
+
+    for x in arr:
+        # Update largest values
+        if x > max1:
+            max2, max1 = max1, x
+        elif x > max2:
+            max2 = x
+
+        # Update smallest values
+        if x < min1:
+            min2, min1 = min1, x
+        elif x < min2:
+            min2 = x
+
+    # Compare product of two largest vs product of two smallest
+    if max1 * max2 >= min1 * min2:
+        return (max2, max1)
+    else:
+        return (min1, min2)
+
+
+# Example usage / assertion
+assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+
+print("All tests passed.")
+```

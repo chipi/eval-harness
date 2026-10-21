@@ -1,0 +1,54 @@
+```python
+def largest_subset(numbers):
+    """
+    Find the size of the largest subset where every pair is divisible.
+    A pair (a, b) is divisible if a % b == 0 or b % a == 0.
+    """
+    if not numbers:
+        return 0
+    
+    n = len(numbers)
+    # Sort numbers to make it easier to find divisibility chains
+    sorted_nums = sorted(numbers)
+    
+    # dp[i] = size of largest subset ending at index i
+    dp = [1] * n
+    
+    for i in range(n):
+        for j in range(i):
+            # Check if sorted_nums[i] and sorted_nums[j] are divisible
+            if sorted_nums[i] % sorted_nums[j] == 0:
+                # If sorted_nums[i] is divisible by sorted_nums[j],
+                # we can extend the subset ending at j
+                dp[i] = max(dp[i], dp[j] + 1)
+    
+    return max(dp)
+
+
+# Test
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+print("Test passed!")
+print(f"largest_subset([1, 3, 6, 13, 17, 18]) = {largest_subset([1, 3, 6, 13, 17, 18])}")
+
+# Additional test cases
+print(f"largest_subset([1, 2, 4, 8]) = {largest_subset([1, 2, 4, 8])}")  # Should be 4
+print(f"largest_subset([2, 3, 5, 7]) = {largest_subset([2, 3, 5, 7])}")  # Should be 1
+print(f"largest_subset([1]) = {largest_subset([1])}")  # Should be 1
+print(f"largest_subset([]) = {largest_subset([])}")  # Should be 0
+```
+
+**Explanation:**
+
+The solution uses dynamic programming to find the largest subset where every pair is divisible:
+
+1. **Sort the numbers**: This allows us to build chains where if `a` divides `b` and `b` divides `c`, then `a` divides `c`.
+
+2. **DP approach**: `dp[i]` represents the size of the largest valid subset ending with `sorted_nums[i]`.
+
+3. **Recurrence relation**: For each number at index `i`, we check all previous numbers at index `j`. If `sorted_nums[i]` is divisible by `sorted_nums[j]`, we can extend the subset ending at `j` by adding `sorted_nums[i]`.
+
+4. **Result**: The maximum value in the `dp` array is our answer.
+
+For the example `[1, 3, 6, 13, 17, 18]`:
+- Sorted: `[1, 3, 6, 13, 17, 18]`
+- One valid subset: `[1, 3, 6, 18]` (1|3, 3|6, 6|18) with size 4

@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def split(s):
+    """
+    Split a string into a list of its characters.
+    
+    Args:
+        s (str): The input string to split.
+    
+    Returns:
+        list: A list containing each character of the string.
+    """
+    return list(s)
+
+
+# Test the function
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+print("Test passed!")
+print(split('python'))
+```
+
+**Explanation:**
+
+The function `split` takes a string `s` as input and uses Python's built-in `list()` constructor to convert the string into a list of individual characters. Since strings are iterable in Python, `list(s)` naturally produces a list where each element is a single character from the string.
+
+- `list('python')` → `['p', 'y', 't', 'h', 'o', 'n']`
+
+The `assert` statement verifies the function works correctly, and the `print` statements confirm the test passed and show the output.

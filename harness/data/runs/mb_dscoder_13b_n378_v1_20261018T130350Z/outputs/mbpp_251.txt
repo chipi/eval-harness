@@ -1,0 +1,7 @@
+```python
+def insert_element(lst, element):
+    return [element] + lst
+
+# Testing the function
+assert insert_element(['Red', 'Green', 'Black'], 'c') == ['c', 'Red', 'c', 'Green', 'c', 'Black']
+```

@@ -1,0 +1,24 @@
+```python
+def get_total_number_of_sequences(m, n):
+    # Initialize the count to 1 (for the empty sequence)
+    count = 1
+    # Initialize the previous element to 0
+    prev_element = 0
+    # Iterate from 1 to n
+    for i in range(1, n):
+        # Calculate the next element as 2 * prev_element + 1
+        next_element = 2 * prev_element + 1
+        # If the next element is greater than m, break the loop
+        if next_element > m:
+            break
+        # If the next element is less than or equal to m, update the count
+        if next_element <= m:
+            count += 1
+        # Update the previous element
+        prev_element = next_element
+    # Return the count
+    return count
+
+# Test the function
+assert get_total_number_of_sequences(10, 4) == 4
+```

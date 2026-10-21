@@ -1,0 +1,10 @@
+```python
+def is_nonagonal(n):
+    """Return the nth nonagonal number."""
+    if not isinstance(n, int) or n < 1:
+        raise ValueError("n must be a positive integer")
+    return n * (7 * n - 5) // 2
+
+
+assert is_nonagonal(10) == 325
+```

@@ -1,0 +1,20 @@
+```python
+def swap_numbers(a, b):
+    """
+    Swap the values of two numbers and return them as a tuple.
+
+    Args:
+    a (int): The first number.
+    b (int): The second number.
+
+    Returns:
+    tuple: A tuple containing the second number followed by the first number.
+    """
+    return (b, a)
+
+# Test cases to verify the correctness of the solution
+assert swap_numbers(10, 20) == (20, 10), "Test case 1 failed"
+assert swap_numbers(-5, 3) == (3, -5), "Test case 2 failed"
+assert swap_numbers(0, 0) == (0, 0), "Test case 3 failed"
+print("All test cases passed!")
+```

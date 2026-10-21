@@ -1,0 +1,17 @@
+```python
+def tuple_modulo(tup1, tup2):
+    """
+    Performs element-wise modulo operation on two tuples of the same length.
+    """
+    # Use a generator expression within the tuple constructor to iterate 
+    # through both tuples simultaneously using zip.
+    return tuple(a % b for a, b in zip(tup1, tup2))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5))
+    expected = (0, 4, 5, 1)
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+```

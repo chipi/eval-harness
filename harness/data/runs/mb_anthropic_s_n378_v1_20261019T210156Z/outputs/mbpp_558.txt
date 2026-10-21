@@ -1,0 +1,44 @@
+```python
+def digit_distance_nums(num1, num2):
+    """
+    Find the sum of the per-digit difference between two integers.
+    
+    Args:
+        num1: First integer
+        num2: Second integer
+    
+    Returns:
+        Sum of absolute differences between corresponding digits
+    
+    Examples:
+        >>> digit_distance_nums(1, 2)
+        1
+        >>> digit_distance_nums(123, 456)
+        9
+        >>> digit_distance_nums(100, 200)
+        1
+    """
+    # Convert to strings and remove negative signs if present
+    str1 = str(abs(num1))
+    str2 = str(abs(num2))
+    
+    # Pad the shorter string with leading zeros
+    max_len = max(len(str1), len(str2))
+    str1 = str1.zfill(max_len)
+    str2 = str2.zfill(max_len)
+    
+    # Calculate sum of per-digit differences
+    total_distance = sum(abs(int(d1) - int(d2)) for d1, d2 in zip(str1, str2))
+    
+    return total_distance
+
+
+# Test cases
+if __name__ == "__main__":
+    assert digit_distance_nums(1, 2) == 1
+    assert digit_distance_nums(123, 456) == 9  # |1-4| + |2-5| + |3-6| = 3+3+3 = 9
+    assert digit_distance_nums(100, 200) == 1  # |1-2| + |0-0| + |0-0| = 1
+    assert digit_distance_nums(0, 0) == 0
+    assert digit_distance_nums(999, 111) == 24  # |9-1| + |9-1| + |9-1| = 8+8+8 = 24
+    print("All tests passed!")
+```

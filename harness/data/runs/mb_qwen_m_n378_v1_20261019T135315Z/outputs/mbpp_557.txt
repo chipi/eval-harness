@@ -1,0 +1,31 @@
+```python
+def toggle_string(s: str) -> str:
+    """
+    Toggle the case of all characters in a string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with all character cases toggled
+        
+    Examples:
+        >>> toggle_string("Python")
+        'pYTHON'
+    """
+    return s.swapcase()
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert toggle_string("Python") == "pYTHON"
+    
+    # Additional test cases
+    assert toggle_string("HELLO") == "hello"
+    assert toggle_string("world") == "WORLD"
+    assert toggle_string("") == ""
+    assert toggle_string("123") == "123"
+    assert toggle_string("Hello World!") == "hELLO wORLD!"
+    
+    print("All tests passed!")
+```

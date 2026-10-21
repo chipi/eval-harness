@@ -1,0 +1,23 @@
+```python
+import math
+
+def perfect_squares(low, high):
+    """
+    Returns a list of perfect squares between low and high (inclusive).
+    """
+    result = []
+    # Start from the smallest integer whose square is >= low
+    start = math.ceil(math.sqrt(low))
+    # End at the largest integer whose square is <= high
+    end = math.floor(math.sqrt(high))
+    
+    for i in range(start, end + 1):
+        result.append(i * i)
+    
+    return result
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+    print("Test passed.")
+```

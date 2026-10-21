@@ -1,0 +1,32 @@
+```python
+def first_Digit(n):
+    """
+    Find the first digit of a given number.
+    
+    Args:
+        n: An integer number
+        
+    Returns:
+        The first digit of the number
+    """
+    # Convert to string and take the first character
+    # Use abs() to handle negative numbers
+    return int(str(abs(n))[0])
+
+
+# Test cases
+assert first_Digit(123) == 1
+assert first_Digit(9876) == 9
+assert first_Digit(5) == 5
+assert first_Digit(-456) == 4
+assert first_Digit(1000) == 1
+
+print("All assertions passed!")
+```
+
+The solution works by:
+1. Converting the absolute value of the number to a string
+2. Taking the first character of that string (index `[0]`)
+3. Converting it back to an integer
+
+This handles both positive and negative numbers correctly by using `abs()` to get the absolute value before converting to a string.

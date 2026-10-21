@@ -1,0 +1,20 @@
+```python
+def frequency_lists(list_of_lists):
+    """
+    Find the frequency of each element in a flattened list of lists.
+    
+    Args:
+        list_of_lists: A list containing sublists
+        
+    Returns:
+        A dictionary with elements as keys and their frequencies as values
+    """
+    freq = {}
+    for sublist in list_of_lists:
+        for item in sublist:
+            if item in freq:
+                freq[item] += 1
+            else:
+                freq[item] = 1
+    return freq
+```

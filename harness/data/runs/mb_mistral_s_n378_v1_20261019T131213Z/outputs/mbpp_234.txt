@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to find the volume of a cube given its side length.
+assert volume_cube(3) == 27
+"""
+
+def volume_cube(side_length):
+    """
+    Calculate the volume of a cube given its side length.
+
+    Parameters:
+    side_length (float or int): The length of one side of the cube
+
+    Returns:
+    float or int: The volume of the cube (side_length^3)
+    """
+    return side_length ** 3
+
+# Test the function
+assert volume_cube(3) == 27
+print("Test passed! The volume of a cube with side length 3 is 27.")
+```
+
+This script:
+1. Defines a function `volume_cube` that calculates the volume of a cube by cubing the side length
+2. Includes a docstring explaining the function's purpose and parameters
+3. Contains the required assertion test case
+4. Prints a success message if the test passes
+
+You can run this script directly, and it will verify that the function works correctly for the given test case.

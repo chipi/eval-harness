@@ -1,0 +1,56 @@
+```python
+def first_repeated_char(s: str) -> str | None:
+    """
+    Finds the first repeated character in a given string.
+
+    This function iterates through the string, keeping track of characters
+    it has already seen. The moment it encounters a character that is already
+    in the set of seen characters, it returns that character, as it's the
+    first one to be repeated.
+
+    Args:
+        s: The input string to search for a repeated character.
+
+    Returns:
+        The first character that is repeated in the string. If no character
+        is repeated, it returns None.
+
+    Examples:
+        >>> first_repeated_char("abcabc")
+        'a'
+        >>> first_repeated_char("abba")
+        'b'
+        >>> first_repeated_char("abc")
+        None
+        >>> first_repeated_char("")
+        None
+    """
+    # A set is used for O(1) average time complexity for 'in' checks.
+    seen_chars = set()
+    
+    # Iterate through each character in the string.
+    for char in s:
+        # If the character is already in our set, we've found our first repeat.
+        if char in seen_chars:
+            return char
+        
+        # Otherwise, add the character to the set to mark it as seen.
+        seen_chars.add(char)
+        
+    # If the loop completes, it means no character was repeated.
+    return None
+
+# Example usage and assertions from the problem description
+assert first_repeated_char("abcabc") == "a"
+
+# Additional assertions to verify edge cases and other scenarios
+assert first_repeated_char("abba") == "b"
+assert first_repeated_char("abc") is None
+assert first_repeated_char("") is None
+assert first_repeated_char("a") is None
+assert first_repeated_char("abcdefga") == "a"
+assert first_repeated_char("abcdefgab") == "a"
+assert first_repeated_char("abcdefgb") == "b"
+
+print("All assertions passed!")
+```

@@ -1,0 +1,37 @@
+Looking at this problem, I need to count pairs whose XOR is even.
+
+**Key insight:** `a XOR b` is even when `a` and `b` have the same parity (both even or both odd), because the least significant bit of the XOR is `0` only when both numbers' LSBs match.
+
+Let me verify with the example `[5, 4, 7, 2, 1]`:
+- Odd numbers: 5, 7, 1 → C(3,2) = 3 pairs
+- Even numbers: 4, 2 → C(2,2) = 1 pair
+- Total: 3 + 1 = 4 ✓
+
+```python
+"""
+Write a function that counts the number of pairs of integers in a list that xor to an even number.
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+"""
+
+
+def find_even_pair(nums):
+    """
+    Count the number of pairs (i, j) with i < j such that nums[i] ^ nums[j] is even.
+
+    A XOR of two integers is even exactly when both integers share the same parity,
+    so we just count pairs among the evens and pairs among the odds.
+    """
+    odd = sum(n & 1 for n in nums)
+    even = len(nums) - odd
+    return odd * (odd - 1) // 2 + even * (even - 1) // 2
+
+
+if __name__ == "__main__":
+    assert find_even_pair([5, 4, 7, 2, 1]) == 4
+    assert find_even_pair([7, 2, 8, 1, 0, 5, 11]) == 9
+    assert find_even_pair([1, 2, 3]) == 1
+    assert find_even_pair([]) == 0
+    assert find_even_pair([42]) == 0
+
+    print("All tests passed!")
+```

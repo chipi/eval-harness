@@ -1,0 +1,43 @@
+Here's a self-contained Python script that defines the `multiply_num` function and includes the assertion test:
+
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all the numbers in a list and divide by the length of the list.
+    
+    Args:
+        numbers (tuple/list): A sequence of numbers to be multiplied
+        
+    Returns:
+        float: The product of all numbers divided by the count of numbers
+    """
+    if not numbers:
+        return 0.0
+    
+    product = 1
+    for num in numbers:
+        product *= num
+    
+    return product / len(numbers)
+
+# Test case
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+
+# Additional test cases
+print(multiply_num((8, 2, 3, -1, 7)))  # Should print -67.2
+print(multiply_num((1, 2, 3, 4)))      # Should print 6.0
+print(multiply_num((5, 5, 5)))         # Should print 25.0
+print(multiply_num(()))               # Should print 0.0
+```
+
+This script:
+1. Defines the `multiply_num` function that takes a sequence of numbers
+2. Multiplies all numbers together
+3. Divides the product by the length of the sequence
+4. Handles empty sequences by returning 0.0
+5. Includes the required assertion test
+6. Has additional test cases to demonstrate the function's behavior
+
+The function will pass the assertion test since 8 * 2 * 3 * -1 * 7 = -336, and -336 / 5 = -67.2.

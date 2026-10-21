@@ -1,0 +1,31 @@
+```python
+import bisect
+
+
+def left_insertion(arr, value):
+    """
+    Locate the left insertion point for a specified value in a sorted array.
+    
+    This returns the index where the value should be inserted to maintain
+    sorted order, specifically the leftmost position if the value already exists.
+    
+    Args:
+        arr: A sorted list of elements
+        value: The value to find the insertion point for
+        
+    Returns:
+        The index where the value should be inserted
+    """
+    return bisect.bisect_left(arr, value)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 4) == 2
+    assert left_insertion([], 1) == 0
+    assert left_insertion([1, 2, 3], 0) == 0
+    assert left_insertion([1, 2, 3], 4) == 3
+    print("All tests passed!")
+```

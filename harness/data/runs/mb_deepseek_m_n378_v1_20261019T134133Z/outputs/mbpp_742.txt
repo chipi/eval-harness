@@ -1,0 +1,31 @@
+Here's a self-contained Python script that calculates the surface area of a regular tetrahedron:
+
+```python
+import math
+
+def area_tetrahedron(side):
+    """
+    Calculate the surface area of a regular tetrahedron.
+    
+    A regular tetrahedron has 4 equilateral triangular faces.
+    Area of one equilateral triangle = (sqrt(3)/4) * side^2
+    Total surface area = 4 * (sqrt(3)/4) * side^2 = sqrt(3) * side^2
+    """
+    return math.sqrt(3) * side ** 2
+
+assert area_tetrahedron(3) == 15.588457268119894
+print("Test passed!")
+```
+
+**Explanation:**
+
+A regular tetrahedron consists of 4 equilateral triangular faces. The area of a single equilateral triangle with side length `s` is:
+
+$$\text{Area}_{\text{triangle}} = \frac{\sqrt{3}}{4} s^2$$
+
+Since a tetrahedron has 4 such faces, the total surface area is:
+
+$$\text{Area}_{\text{tetrahedron}} = 4 \cdot \frac{\sqrt{3}}{4} s^2 = \sqrt{3} \cdot s^2$$
+
+For `side = 3`:
+$$\sqrt{3} \cdot 9 \approx 1.7320508 \cdot 9 \approx 15.588457268119894$$

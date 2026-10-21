@@ -1,0 +1,18 @@
+```python
+def test_duplicate(arr):
+    """
+    Find whether a given array of integers contains any duplicate element.
+    
+    Args:
+        arr: A list of integers
+        
+    Returns:
+        True if there are duplicates, False otherwise
+    """
+    seen = set()
+    for num in arr:
+        if num in seen:
+            return True
+        seen.add(num)
+    return False
+```

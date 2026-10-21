@@ -1,0 +1,20 @@
+```python
+def square_nums(nums):
+  """
+  Calculates the square of each element in a list.
+
+  Args:
+    nums: A list of numbers.
+
+  Returns:
+    A new list containing the squares of the numbers from the input list.
+  """
+  return [num ** 2 for num in nums]
+
+# Example usage and assertion to verify the function
+assert square_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+
+# You can test it with other lists as well
+print(f"Squares of [1, 2, 3]: {square_nums([1, 2, 3])}")
+print(f"Squares of [-2, 0, 5]: {square_nums([-2, 0, 5])}")
+```

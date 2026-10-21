@@ -1,0 +1,76 @@
+```python
+def max_sub_array_sum_repeated(arr: list, n: int, k: int) -> int:
+    """
+    Find the largest sum of a contiguous subarray in the array formed by repeating
+    the given array k times.
+    
+    Args:
+        arr: The original array
+        n: Length of the original array
+        k: Number of times to repeat the array
+    
+    Returns:
+        The maximum subarray sum in the repeated array
+    """
+    # Handle edge cases
+    if n == 0:
+        return 0
+    if k == 0:
+        return 0
+    
+    # Calculate total sum of the array
+    total_sum = sum(arr)
+    
+    # Find maximum subarray sum using Kadane's algorithm for a single copy
+    def kadane(arr):
+        if not arr:
+            return 0
+        max_ending_here = arr[0]
+        max_so_far = arr[0]
+        for i in range(1, len(arr)):
+            max_ending_here = max(arr[i], max_ending_here + arr[i])
+            max_so_far = max(max_so_far, max_ending_here)
+        return max_so_far
+    
+    # Find max prefix sum (maximum sum starting from index 0)
+    def max_prefix_sum(arr):
+        max_sum = float('-inf')
+        current_sum = 0
+        for val in arr:
+            current_sum += val
+            max_sum = max(max_sum, current_sum)
+        return max_sum
+    
+    # Find max suffix sum (maximum sum ending at the last index)
+    def max_suffix_sum(arr):
+        max_sum = float('-inf')
+        current_sum = 0
+        for val in reversed(arr):
+            current_sum += val
+            max_sum = max(max_sum, current_sum)
+        return max_sum
+    
+    if k == 1:
+        return kadane(arr)
+    
+    # For k >= 2, we need to consider:
+    # 1. Max subarray within a single copy (kadane)
+    # 2. Max subarray that spans across two copies: max_suffix + max_prefix
+    # 3. If total_sum > 0, we can include (k-2) full copies in between
+    
+    max_kadane = kadane(arr)
+    max_pref = max_prefix_sum(arr)
+    max_suff = max_suffix_sum(arr)
+    
+    # Case 1: Just use kadane on single array
+    result = max_kadane
+    
+    # Case 2: Span across two adjacent copies
+    result = max(result, max_suff + max_pref)
+    
+    # Case 3: If total sum is positive, include middle copies
+    if total_sum > 0:
+        result = max(result, max_suff + total_sum * (k - 2) + max_pref)
+    
+    return result
+```

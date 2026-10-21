@@ -1,0 +1,11 @@
+```python
+def word_len(word):
+    return len(word) % 2 != 0
+
+def main():
+    print(word_len("Hadoop"))  # False
+    print(word_len("Python"))  # True
+
+if __name__ == "__main__":
+    main()
+```

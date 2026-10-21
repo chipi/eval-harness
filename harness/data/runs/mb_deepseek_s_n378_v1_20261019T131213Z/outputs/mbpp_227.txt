@@ -1,0 +1,13 @@
+Here’s a self-contained Python script that defines the function and includes the test case:
+
+```python
+def min_of_three(a, b, c):
+    """
+    Returns the minimum of three numbers.
+    """
+    return min(a, b, c)
+
+# Test case
+assert min_of_three(10, 20, 0) == 0
+print("Test passed!")
+```

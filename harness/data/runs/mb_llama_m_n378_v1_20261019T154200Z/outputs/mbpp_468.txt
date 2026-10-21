@@ -1,0 +1,30 @@
+```python
+def max_product(nums):
+    """
+    This function finds the maximum product formed by multiplying numbers of an increasing subsequence of the input array.
+
+    Args:
+        nums (list): A list of integers.
+
+    Returns:
+        int: The maximum product formed by multiplying numbers of an increasing subsequence.
+    """
+    if not nums:
+        return 0
+
+    n = len(nums)
+    max_product = [1] * n
+    max_product[0] = nums[0]
+
+    for i in range(1, n):
+        max_product[i] = nums[i]
+        for j in range(i):
+            if nums[i] > nums[j]:
+                max_product[i] = max(max_product[i], max_product[j] * nums[i])
+
+    return max(max_product)
+
+
+# Test the function
+print(max_product([3, 100, 4, 5, 150, 6]))  # Output: 3000
+```

@@ -1,0 +1,13 @@
+```python
+def odd_num_sum(n):
+    sum = 0
+    for i in range(1, 2*n, 2):
+        sum += i**4
+    return sum
+
+# Test cases
+assert odd_num_sum(2) == 82
+assert odd_num_sum(3) == 240
+assert odd_num_sum(4) == 1680
+assert odd_num_sum(5) == 4000
+```

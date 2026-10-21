@@ -1,0 +1,16 @@
+```python
+def count_occurance(s: str) -> int:
+    """
+    Count the number of occurrences of the substring 'std' in the given string.
+
+    Args:
+        s (str): The input string to search within.
+
+    Returns:
+        int: The number of times 'std' appears in the string.
+    """
+    return s.count('std')
+
+# Test the function
+assert count_occurance("letstdlenstdporstd") == 3
+```

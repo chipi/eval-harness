@@ -1,0 +1,63 @@
+```python
+def search(nums: list[int]) -> int:
+    """
+    Finds the element that appears only once in a sorted array.
+
+    The array is sorted, and every other element appears exactly twice.
+    This solution uses binary search for an efficient O(log n) time complexity.
+
+    Args:
+        nums: A sorted list of integers where every element appears twice
+              except for one element which appears once.
+
+    Returns:
+        The single element that appears only once.
+
+    Raises:
+        ValueError: If the input list is empty or does not meet the problem's constraints.
+    """
+    if not nums:
+        raise ValueError("Input list cannot be empty.")
+
+    # Binary search setup
+    low = 0
+    high = len(nums) - 1
+
+    while low < high:
+        # Find the middle index
+        mid = (low + high) // 2
+
+        # Ensure mid is even. If it's odd, move it one step back.
+        # This is because pairs are at (even, odd) indices.
+        if mid % 2 == 1:
+            mid -= 1
+
+        # Compare the element at mid with the next element.
+        # If they are the same, the single element is on the right side.
+        # This is because the pairs are intact up to mid+1.
+        if nums[mid] == nums[mid + 1]:
+            # The single element is in the right half.
+            # We can discard the left half including the current pair.
+            low = mid + 2
+        else:
+            # The single element is in the left half.
+            # It could be at mid, so we keep mid in the search space.
+            high = mid
+
+    # When the loop ends, low == high, pointing to the single element.
+    return nums[low]
+
+# Example Usage and Assertions:
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert search([1, 1, 2, 2, 3]) == 3
+
+    # Additional test cases
+    assert search([1, 1, 2, 3, 3, 4, 4]) == 2
+    assert search([1, 2, 2, 3, 3]) == 1
+    assert search([1]) == 1
+    assert search([1, 1, 2]) == 2
+    assert search([1, 2, 2]) == 1
+
+    print("All assertions passed successfully!")
+```

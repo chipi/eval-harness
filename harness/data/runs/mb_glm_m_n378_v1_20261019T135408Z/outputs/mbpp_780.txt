@@ -1,0 +1,30 @@
+```python
+from itertools import combinations
+
+def find_combinations(test_list):
+    """
+    Finds the combinations of sums with tuples in the given tuple list.
+    
+    For every combination of 2 tuples in the list, it calculates the 
+    element-wise sum to form a new tuple.
+    
+    Args:
+        test_list (list of tuples): A list containing tuples of integers.
+        
+    Returns:
+        list of tuples: A list of tuples representing the element-wise sums 
+                        of all 2-combinations of the input tuples.
+    """
+    res = []
+    # Generate all 2-combinations of the tuples in the list
+    for comb in combinations(test_list, 2):
+        # Calculate the element-wise sum of the two tuples in the combination
+        summed_tuple = (comb[0][0] + comb[1][0], comb[0][1] + comb[1][1])
+        res.append(summed_tuple)
+    return res
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    print("Assertion passed successfully!")
+```

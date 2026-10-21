@@ -1,0 +1,10 @@
+```python
+def div_list(a, b):
+    """Divide corresponding elements of two lists."""
+    if len(a) != len(b):
+        raise ValueError("Lists must have the same length")
+    return [x / y for x, y in zip(a, b)]
+
+
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+```

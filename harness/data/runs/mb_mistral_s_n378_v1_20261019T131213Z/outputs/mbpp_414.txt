@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to check whether any value in a sequence exists in a sequence or not.
+assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+"""
+
+def overlapping(seq1, seq2):
+    """
+    Check if any value in seq1 exists in seq2.
+
+    Args:
+        seq1: First sequence (list, tuple, etc.)
+        seq2: Second sequence (list, tuple, etc.)
+
+    Returns:
+        bool: True if any element of seq1 is in seq2, False otherwise
+    """
+    return any(item in seq2 for item in seq1)
+
+# Test cases
+assert overlapping([1,2,3,4,5], [6,7,8,9]) == False
+assert overlapping([1,2,3,4,5], [5,6,7,8,9]) == True
+assert overlapping([], [1,2,3]) == False
+assert overlapping([1,2,3], []) == False
+assert overlapping([1,2,3], [1,2,3]) == True
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `overlapping()` that checks for any common elements between two sequences
+2. Uses a generator expression with `any()` for efficient checking
+3. Includes the required test case from the problem statement
+4. Adds additional test cases to verify edge cases
+5. Prints a success message if all tests pass
+
+The function works with any sequence types (lists, tuples, etc.) and handles empty sequences correctly.

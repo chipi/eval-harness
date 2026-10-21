@@ -1,0 +1,32 @@
+```python
+def test_three_equal(a, b, c):
+    """
+    Counts the number of equal numbers among three given integers.
+    If all three are the same, it returns 3.
+    If only two are the same, it returns 2.
+    If all are different, it returns 0 (or 1 depending on interpretation, 
+    but based on the assert test_three_equal(1,1,1) == 3, we are counting 
+    the size of the group of identical numbers).
+    
+    Logic:
+    - If a == b == c, all 3 are equal.
+    - If any two are equal, 2 are equal.
+    - Otherwise, no two numbers are equal.
+    """
+    if a == b == c:
+        return 3
+    elif a == b or a == c or b == c:
+        return 2
+    else:
+        return 0
+
+if __name__ == "__main__":
+    # Test cases
+    assert test_three_equal(1, 1, 1) == 3, "Test Case 1 Failed"
+    assert test_three_equal(1, 1, 2) == 2, "Test Case 2 Failed"
+    assert test_three_equal(1, 2, 1) == 2, "Test Case 3 Failed"
+    assert test_three_equal(2, 1, 1) == 2, "Test Case 4 Failed"
+    assert test_three_equal(1, 2, 3) == 0, "Test Case 5 Failed"
+    
+    print("All tests passed!")
+```

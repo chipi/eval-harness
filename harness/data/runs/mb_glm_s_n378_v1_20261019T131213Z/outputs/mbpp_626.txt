@@ -1,0 +1,49 @@
+```python
+import math
+
+def triangle_area(radius: float) -> float | None:
+    """
+    Calculates the area of the largest triangle that can be inscribed in a semicircle.
+
+    The largest triangle inscribed in a semicircle is a right-angled triangle
+    with its hypotenuse as the diameter of the semicircle. The formula for its
+    area is (2 * r^2) / 2, which simplifies to r^2.
+
+    Args:
+        radius: The radius of the semicircle. Must be a non-negative number.
+
+    Returns:
+        The area of the largest triangle, or None if the radius is invalid.
+    """
+    # A radius cannot be negative, so we return None for invalid input.
+    if radius < 0:
+        return None
+
+    # The area of the largest inscribed triangle is radius squared.
+    # This is derived from the formula for the area of a right-angled triangle
+    # (0.5 * base * height), where the base is the diameter (2r) and the
+    # maximum height is the radius (r).
+    # Area = 0.5 * (2r) * r = r^2
+    return radius ** 2
+
+# --- Verification with assertions ---
+# Test case 1: Invalid negative radius
+assert triangle_area(-1) is None, "Failed for negative radius"
+
+# Test case 2: Radius of 0
+assert triangle_area(0) == 0, "Failed for radius 0"
+
+# Test case 3: Radius of 1
+assert triangle_area(1) == 1, "Failed for radius 1"
+
+# Test case 4: Radius of 5
+assert triangle_area(5) == 25, "Failed for radius 5"
+
+# Test case 5: Radius of 10
+assert triangle_area(10) == 100, "Failed for radius 10"
+
+# Test case 6: Floating point radius
+assert triangle_area(2.5) == 6.25, "Failed for floating point radius"
+
+print("All assertions passed successfully!")
+```

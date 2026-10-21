@@ -1,0 +1,30 @@
+```python
+def remove_kth_element(lst, k):
+    """
+    Takes a list and returns a new list with the k'th element removed.
+    
+    Args:
+        lst: The input list
+        k: The position of the element to remove (1-indexed)
+    
+    Returns:
+        A new list with the k'th element removed
+    """
+    return lst[:k-1] + lst[k:]
+
+
+# Test case
+assert remove_kth_element([1,1,2,3,4,4,5,1], 3) == [1, 1, 3, 4, 4, 5, 1]
+print("Test passed!")
+print(remove_kth_element([1,1,2,3,4,4,5,1], 3))
+```
+
+The function works by:
+1. Taking a list `lst` and an index `k` (1-indexed, meaning the first element is at position 1)
+2. Slicing the list into two parts: `lst[:k-1]` (all elements before the k'th element) and `lst[k:]` (all elements after the k'th element)
+3. Concatenating these two parts to create a new list without the k'th element
+
+For the example `remove_kth_element([1,1,2,3,4,4,5,1], 3)`:
+- Elements before position 3: `[1, 1]`
+- Elements after position 3: `[3, 4, 4, 5, 1]`
+- Result: `[1, 1, 3, 4, 4, 5, 1]`

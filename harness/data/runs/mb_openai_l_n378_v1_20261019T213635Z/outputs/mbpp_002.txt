@@ -1,0 +1,8 @@
+```python
+def similar_elements(first, second):
+    """Return the elements that appear in both lists or tuples."""
+    return list(set(first) & set(second))
+
+
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == {4, 5}
+```

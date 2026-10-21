@@ -1,0 +1,28 @@
+```python
+def mul_even_odd(lst):
+    """
+    Returns the product of the first even number and the first odd number in the list.
+    If either is missing, returns None.
+    """
+    first_even = None
+    first_odd = None
+    
+    for num in lst:
+        if num % 2 == 0 and first_even is None:
+            first_even = num
+        elif num % 2 != 0 and first_odd is None:
+            first_odd = num
+        
+        # If we found both, we can stop early
+        if first_even is not None and first_odd is not None:
+            break
+    
+    if first_even is not None and first_odd is not None:
+        return first_even * first_odd
+    else:
+        return None
+
+# Test the assertion
+assert mul_even_odd([1,3,5,7,4,1,6,8]) == 4
+print("Test passed: mul_even_odd([1,3,5,7,4,1,6,8]) =", mul_even_odd([1,3,5,7,4,1,6,8]))
+```

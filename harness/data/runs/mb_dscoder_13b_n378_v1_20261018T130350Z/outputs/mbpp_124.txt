@@ -1,0 +1,18 @@
+```python
+import math
+
+def angle_complex(x, y):
+    """
+    Function to get the angle of a complex number.
+    """
+    # Calculate the angle in radians
+    angle = math.atan2(y, x)
+    
+    # Convert the angle to degrees
+    angle_degrees = math.degrees(angle)
+    
+    return angle_degrees
+
+# Test the function
+assert math.isclose(angle_complex(0,1j), 1.5707963267948966, rel_tol=0.001)
+```

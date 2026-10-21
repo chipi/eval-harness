@@ -1,0 +1,16 @@
+```python
+def neg_nos(numbers):
+    """
+    Returns a list of negative numbers from the input list.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        list: A list of negative integers.
+    """
+    return [num for num in numbers if num < 0]
+
+# Example usage:
+print(neg_nos([-1, 4, 5, -6]))  # Output: [-1, -6]
+```

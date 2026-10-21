@@ -1,0 +1,31 @@
+Here is the self-contained Python script to solve the problem. 
+
+Star numbers are a figurate number sequence that represent a centered hexagram (six-pointed star). The formula for the $n$-th star number is $6n(n-1) + 1$.
+
+```python
+def find_star_num(n: int) -> int:
+    """
+    Finds the n'th star number.
+    
+    A star number is a centered figurate number that represents a centered hexagram.
+    The formula for the n-th star number is 6 * n * (n - 1) + 1.
+    
+    :param n: The position in the star number sequence (1-indexed).
+    :return: The n'th star number.
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 6 * n * (n - 1) + 1
+
+if __name__ == "__main__":
+    # Provided assertion
+    assert find_star_num(3) == 37
+    
+    # Additional test cases to verify correctness
+    assert find_star_num(1) == 1
+    assert find_star_num(2) == 13
+    assert find_star_num(4) == 73
+    assert find_star_num(5) == 121
+    
+    print("All assertions passed successfully.")
+```

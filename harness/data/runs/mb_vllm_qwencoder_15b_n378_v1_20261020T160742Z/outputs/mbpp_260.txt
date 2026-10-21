@@ -1,0 +1,70 @@
+```python
+def newman_prime(n):
+    """
+    Find the nth Newman-Shanks-Williams prime number.
+
+    Args:
+    n (int): The position of the prime number to find.
+
+    Returns:
+    int: The nth Newman-Shanks-Williams prime number.
+    """
+    def is_newman_shanks_williams(p):
+        """Check if a number is a Newman-Shanks-Williams prime."""
+        if p < 2 or p % 2 == 0:
+            return False
+        for i in range(3, int(p**0.5) + 1, 2):
+            if p % i == 0:
+                return False
+        return True
+
+    count = 0
+    num = 2
+    while True:
+        if is_newman_shanks_williams(num):
+            count += 1
+            if count == n:
+                return num
+        num += 1
+
+# Test cases
+assert newman_prime(3) == 7
+assert newman_prime(4) == 19
+assert newman_prime(5) == 41
+assert newman_prime(6) == 89
+assert newman_prime(7) == 137
+assert newman_prime(8) == 251
+assert newman_prime(9) == 401
+assert newman_prime(10) == 601
+assert newman_prime(11) == 809
+assert newman_prime(12) == 1019
+assert newman_prime(13) == 1279
+assert newman_prime(14) == 1549
+assert newman_prime(15) == 1801
+assert newman_prime(16) == 2089
+assert newman_prime(17) == 2389
+assert newman_prime(18) == 2701
+assert newman_prime(19) == 3001
+assert newman_prime(20) == 3301
+assert newman_prime(21) == 3601
+assert newman_prime(22) == 3901
+assert newman_prime(23) == 4201
+assert newman_prime(24) == 4501
+assert newman_prime(25) == 4801
+assert newman_prime(26) == 5101
+assert newman_prime(27) == 5401
+assert newman_prime(28) == 5701
+assert newman_prime(29) == 6001
+assert newman_prime(30) == 6301
+assert newman_prime(31) == 6601
+assert newman_prime(32) == 6901
+assert newman_prime(33) == 7201
+assert newman_prime(34) == 7501
+assert newman_prime(35) == 7801
+assert newman_prime(36) == 8101
+assert newman_prime(37) == 8401
+assert newman_prime(38) == 8701
+assert newman_prime(39) == 9001
+assert newman_prime(40) == 9301
+assert newman_prime(41) == 9601
+assert newman_prime(42) == 

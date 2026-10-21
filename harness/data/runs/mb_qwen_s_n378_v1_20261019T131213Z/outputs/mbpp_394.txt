@@ -1,0 +1,13 @@
+```python
+def check_distinct(tup):
+    """
+    Check if the given tuple contains no duplicates.
+    
+    Args:
+        tup: A tuple to check for distinct elements.
+        
+    Returns:
+        True if all elements in the tuple are distinct, False otherwise.
+    """
+    return len(tup) == len(set(tup))
+```

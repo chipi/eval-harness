@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+def highest_power_of_2(n):
+    """
+    Find the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number (must be positive)
+
+    Returns:
+        int: The highest power of 2 ≤ n
+    """
+    if n < 1:
+        raise ValueError("Input must be a positive integer")
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    return power
+
+# Test case
+assert highest_power_of_2(10) == 8
+```
+
+This solution:
+1. Starts with the smallest power of 2 (1)
+2. Keeps doubling it until the next doubling would exceed n
+3. Returns the last valid power of 2
+4. Includes input validation for positive integers
+5. Passes the provided test case (10 → 8)

@@ -1,0 +1,17 @@
+```python
+def multiply_int(a: int, b: int) -> int:
+  """
+  Multiplies two integers.
+
+  Args:
+    a: The first integer.
+    b: The second integer.
+
+  Returns:
+    The product of the two integers.
+  """
+  return a * b
+
+# Example usage and assertion
+assert multiply_int(10, 20) == 200
+```

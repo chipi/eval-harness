@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem of finding the index of the smallest triangular number with `n` digits:
+
+```python
+def find_Index(n):
+    """
+    Find the index of the smallest triangular number with n digits.
+    
+    A triangular number T_k is given by the formula T_k = k*(k+1)/2.
+    We need to find the smallest k such that T_k has exactly n digits.
+    
+    The approach involves solving the inequality:
+    10^(n-1) <= k*(k+1)/2 < 10^n
+    
+    Solving for k gives us the approximate bounds, and we can then find the exact k.
+    """
+    if n == 1:
+        return 1  # The first triangular number is 1, which has 1 digit
+    
+    # Calculate the lower bound for k using the quadratic formula
+    # k^2 + k - 2*10^(n-1) >= 0
+    lower_bound = (8 * 10**(n-1) + 1)**0.5 - 1
+    lower_bound = lower_bound / 2
+    
+    # The smallest integer k satisfying the condition is the ceiling of lower_bound
+    k = int(lower_bound) + 1
+    
+    # Verify if this k indeed gives a triangular number with n digits
+    # If not, increment k until it does
+    while True:
+        triangular_num = k * (k + 1) // 2
+        if len(str(triangular_num)) == n:
+            return k
+        k += 1
+
+# Test cases
+assert find_Index(2) == 4
+assert find_Index(1) == 1
+assert find_Index(3) == 13
+assert find_Index(4) == 45
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Triangular Number Formula**: The k-th triangular number is given by \( T_k = \frac{k(k+1)}{2} \).
+2. **Digit Constraint**: We need \( T_k \) to have exactly `n` digits, which means \( 10^{n-1} \leq T_k < 10^n \).
+3. **Solving for k**: The inequality \( k^2 + k - 2 \times 10^{n-1} \geq 0 \) is solved using the quadratic formula to find the lower bound for `k`.
+4. **Finding Exact k**: The smallest integer `k` greater than the lower bound is checked to ensure it produces a triangular number with `n` digits. If not, `k` is incremented until the condition is met.
+5. **Edge Case**: For `n = 1`, the answer is `1` since the first triangular number is `1`.
+
+The script includes test cases to verify the correctness of the solution. The `assert` statements will raise an error if any test fails, otherwise, it will print "All test cases passed!".

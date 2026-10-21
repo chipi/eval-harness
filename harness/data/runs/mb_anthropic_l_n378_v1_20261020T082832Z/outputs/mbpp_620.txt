@@ -1,0 +1,63 @@
+Looking at this problem, I need to find the largest subset where **every pair** of elements is divisible (i.e., for any two elements `a` and `b` in the subset, either `a % b == 0` or `b % a == 0`).
+
+The key insight is that if we sort the numbers, this becomes a "longest divisible subsequence" problem solvable with dynamic programming: for each element, find the longest chain ending at it by checking all smaller elements that divide it.
+
+```python
+"""
+Write a function to find the size of the largest subset of a list of numbers so that every pair is divisible.
+assert largest_subset([ 1, 3, 6, 13, 17, 18 ]) == 4
+"""
+
+
+def largest_subset(numbers):
+    """
+    Return the size of the largest subset of `numbers` in which every pair of
+    elements (a, b) satisfies a % b == 0 or b % a == 0.
+
+    Approach:
+        Sort the numbers ascending. Then a subset is "pairwise divisible"
+        exactly when, listed in increasing order, each element is divisible by
+        the previous one (divisibility is transitive, so chain -> all pairs).
+        So we compute the longest divisible chain with O(n^2) dynamic programming.
+
+        dp[i] = size of the largest valid subset whose maximum element is
+                numbers[i].
+    """
+    if not numbers:
+        return 0
+
+    nums = sorted(numbers)
+    n = len(nums)
+
+    dp = [1] * n
+    for i in range(1, n):
+        for j in range(i):
+            if nums[i] % nums[j] == 0 and dp[j] + 1 > dp[i]:
+                dp[i] = dp[j] + 1
+
+    return max(dp)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert largest_subset([1, 3, 6, 13, 17, 18]) == 4   # {1, 3, 6, 18}
+
+    # Extra checks
+    assert largest_subset([10, 5, 3, 15, 20]) == 3      # {5, 10, 20}
+    assert largest_subset([18, 1, 3, 6, 13, 17]) == 4
+    assert largest_subset([1]) == 1
+    assert largest_subset([]) == 0
+    assert largest_subset([2, 3, 5, 7, 11]) == 1
+    assert largest_subset([1, 2, 4, 8, 16, 32]) == 6
+
+    print("All tests passed!")
+    print(largest_subset([1, 3, 6, 13, 17, 18]))
+```
+
+**How it works on the example `[1, 3, 6, 13, 17, 18]`:**
+
+| element | 1 | 3 | 6 | 13 | 17 | 18 |
+|---------|---|---|---|----|----|----|
+| dp      | 1 | 2 | 3 | 2  | 2  | 4  |
+
+The maximum is `4`, corresponding to the subset `{1, 3, 6, 18}` — every pair there divides evenly.

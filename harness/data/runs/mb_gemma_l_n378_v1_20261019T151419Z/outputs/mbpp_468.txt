@@ -1,0 +1,38 @@
+```python
+def max_product_increasing_subsequence(nums):
+    """
+    Finds the maximum product formed by multiplying numbers of an 
+    increasing subsequence of the given array.
+    """
+    if not nums:
+        return 0
+    
+    # n is the length of the input array
+    n = len(nums)
+    
+    # dp[i] will store the maximum product of an increasing subsequence 
+    # ending at index i.
+    # Initialize dp with the values of the array itself (subsequences of length 1).
+    dp = [x for x in nums]
+    
+    for i in range(1, n):
+        for j in range(i):
+            # If the current element is greater than the previous element,
+            # it can extend the increasing subsequence ending at j.
+            if nums[i] > nums[j]:
+                # Update dp[i] if multiplying the current element by the 
+                # max product ending at j gives a larger result.
+                dp[i] = max(dp[i], dp[j] * nums[i])
+                
+    # The answer is the maximum value found in the dp array.
+    return max(dp)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [3, 100, 4, 5, 150, 6]
+    result = max_product_increasing_subsequence(test_input)
+    print(f"Input: {test_input} -> Max Product: {result}")
+    
+    assert result == 3000, f"Expected 3000, but got {result}"
+    print("Assertion passed!")
+```

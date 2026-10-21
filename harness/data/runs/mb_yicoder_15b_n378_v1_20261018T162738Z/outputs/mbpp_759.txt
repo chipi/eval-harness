@@ -1,0 +1,19 @@
+```python
+def is_decimal(s):
+    try:
+        float_s = float(s)
+        int_s = int(s)
+        if float_s == int_s:
+            return False
+        else:
+            return True
+    except ValueError:
+        return False
+
+# Test cases
+assert is_decimal('123.11')==True
+assert is_decimal('123')==False
+assert is_decimal('123.1')==False
+assert is_decimal('abc')==False
+assert is_decimal('123.111')==False
+```

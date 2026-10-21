@@ -1,0 +1,25 @@
+```python
+import itertools
+
+def combinations_colors(colors, n):
+    """
+    Generate all combinations (with repetition) of the elements of the list.
+
+    Args:
+        colors (list): A list of colors.
+        n (int): The length of each combination.
+
+    Returns:
+        list: A list with a tuple for each combination.
+    """
+    return list(itertools.product(colors, repeat=n))
+
+# Example usage:
+print(combinations_colors(["Red","Green","Blue"], 1))
+# Output: [('Red',), ('Green',), ('Blue',)]
+
+print(combinations_colors(["Red","Green","Blue"], 2))
+# Output: [('Red', 'Red'), ('Red', 'Green'), ('Red', 'Blue'), 
+#          ('Green', 'Red'), ('Green', 'Green'), ('Green', 'Blue'), 
+#          ('Blue', 'Red'), ('Blue', 'Green'), ('Blue', 'Blue')]
+```

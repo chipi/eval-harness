@@ -1,0 +1,20 @@
+```python
+def find_substring(string_list, substring):
+    """
+    Checks if the given substring is present in any of the strings 
+    within the provided list.
+    """
+    for item in string_list:
+        if substring in item:
+            return True
+    return False
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ["red", "black", "white", "green", "orange"]
+    test_substring = "ack"
+    
+    # Assertion check
+    assert find_substring(test_list, test_substring) == True
+    print("Test passed!")
+```

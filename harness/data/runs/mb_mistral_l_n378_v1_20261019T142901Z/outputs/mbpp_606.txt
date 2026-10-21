@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem, including the function to convert degrees to radians and the assertion test:
+
+```python
+"""
+Function to convert degrees to radians.
+The conversion formula is: radians = degrees * (π / 180)
+"""
+
+import math
+
+def radian_degree(degrees):
+    """Convert degrees to radians."""
+    return degrees * (math.pi / 180)
+
+# Test the function with the provided assertion
+assert radian_degree(90) == 1.5707963267948966
+
+# Optional: Print the result to verify
+print(radian_degree(90))  # Output: 1.5707963267948966
+```

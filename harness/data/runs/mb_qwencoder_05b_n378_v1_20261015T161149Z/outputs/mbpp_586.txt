@@ -1,0 +1,9 @@
+```python
+def split_Arr(arr, n):
+    # Split the array into two parts at the nth element
+    return arr[:n] + arr[n:]
+
+# Test the function with the provided test case
+assert split_Arr([12,10,5,6,52,36], 2) == [5, 6, 52, 36, 12, 10]
+```
+

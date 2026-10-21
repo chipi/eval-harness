@@ -1,0 +1,14 @@
+```python
+def test_three_equal(a, b, c):
+    """
+    Write a python function to count the number of equal numbers from three given integers.
+    assert test_three_equal(1,1,1) == 3
+    """
+    # Count the number of equal numbers
+    equal_count = sum(1 for num in [a, b, c] if num == a or num == b or num == c)
+    return equal_count
+
+# Test the function with the provided test case
+assert test_three_equal(1,1,1) == 3
+```
+

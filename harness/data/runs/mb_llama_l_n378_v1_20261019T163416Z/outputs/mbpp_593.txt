@@ -1,0 +1,16 @@
+```python
+def removezero_ip(ip):
+    return ".".join(str(int(i)) for i in ip.split("."))
+
+# Test the function
+assert removezero_ip("216.08.094.196") == '216.8.94.196'
+print("Test passed.")
+
+def main():
+    ip = "216.08.094.196"
+    print(f"Original IP: {ip}")
+    print(f"IP after removing leading zeroes: {removezero_ip(ip)}")
+
+if __name__ == "__main__":
+    main()
+```

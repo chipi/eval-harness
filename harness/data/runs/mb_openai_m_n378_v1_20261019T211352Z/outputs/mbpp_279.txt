@@ -1,0 +1,38 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the nth decagonal number.
+
+A k-gonal number is given by:
+    P(k, n) = ((k - 2) * n^2 - (k - 4) * n) / 2
+
+For decagonal numbers, k = 10:
+    D(n) = (8n^2 - 6n) / 2
+         = 4n^2 - 3n
+         = n * (4n - 3)
+
+Example:
+    is_num_decagonal(3) == 27
+"""
+
+def is_num_decagonal(n):
+    """
+    Return the nth decagonal number.
+
+    Args:
+        n (int): The position in the decagonal number sequence.
+
+    Returns:
+        int: The nth decagonal number.
+    """
+    return n * (4 * n - 3)
+
+
+if __name__ == "__main__":
+    assert is_num_decagonal(3) == 27
+    assert is_num_decagonal(1) == 1
+    assert is_num_decagonal(2) == 10
+    assert is_num_decagonal(4) == 52
+
+    print("All tests passed.")
+```

@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def square_perimeter(side_length):
+    """
+    Calculate the perimeter of a square given its side length.
+    
+    Args:
+        side_length (float or int): The length of one side of the square.
+        
+    Returns:
+        float or int: The perimeter of the square (4 times the side length).
+    """
+    return 4 * side_length
+
+# Test cases
+assert square_perimeter(10) == 40
+assert square_perimeter(5) == 20
+assert square_perimeter(0) == 0
+assert square_perimeter(2.5) == 10.0
+
+print("All test cases passed!")
+```
+
+This script defines a function `square_perimeter` that takes a side length as input and returns the perimeter of the square (which is 4 times the side length). The function includes a docstring explaining its purpose, arguments, and return value. The script also includes several test cases to verify the function works correctly, including the one provided in the problem statement. When run, it will print "All test cases passed!" if all assertions are true.

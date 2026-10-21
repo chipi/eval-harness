@@ -1,0 +1,25 @@
+```python
+def drop_empty(d):
+    """
+    Drop empty items from a given dictionary.
+    
+    Args:
+        d: A dictionary that may contain None or empty values
+        
+    Returns:
+        A new dictionary with empty/None items removed
+    """
+    return {k: v for k, v in d.items() if v is not None and v != ''}
+
+
+# Test cases
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+assert drop_empty({'a': 'value', 'b': '', 'c': None}) == {'a': 'value'}
+assert drop_empty({'x': 0, 'y': False, 'z': None}) == {'x': 0, 'y': False}
+assert drop_empty({}) == {}
+assert drop_empty({'all': 'values', 'are': 'present'}) == {'all': 'values', 'are': 'present'}
+
+print("All tests passed!")
+```
+
+The solution uses a dictionary comprehension to filter out items where the value is `None` or an empty string. The function iterates through all key-value pairs and only includes those where the value is not `None` and not an empty string.

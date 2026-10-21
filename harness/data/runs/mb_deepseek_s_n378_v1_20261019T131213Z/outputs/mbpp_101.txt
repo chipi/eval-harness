@@ -1,0 +1,20 @@
+```python
+def kth_element(arr, k):
+    """
+    Returns the kth element (1-based indexing) from the given array.
+    
+    Parameters:
+    arr (list): Input list of elements.
+    k (int): 1-based index of the element to retrieve.
+    
+    Returns:
+    The element at position k (1-based).
+    """
+    # Since k is 1-based, we convert to 0-based index
+    return arr[k - 1]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert kth_element([12, 3, 5, 7, 19], 2) == 3
+    print("Test passed.")
+```

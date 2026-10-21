@@ -1,0 +1,23 @@
+```python
+def median_trapezium(a, b, c):
+    """
+    This function calculates the median length of a trapezium.
+    
+    The median of a trapezium is the average of its bases.
+    
+    Parameters:
+    a (int): The length of the first base.
+    b (int): The length of the second base.
+    c (int): This parameter is not used in the calculation of the median.
+    
+    Returns:
+    int: The median length of the trapezium.
+    """
+    # Calculate the median length
+    median_length = (a + b) / 2
+    
+    return median_length
+
+# Test the function
+print(median_trapezium(15, 25, 35))  # Output: 20.0
+```

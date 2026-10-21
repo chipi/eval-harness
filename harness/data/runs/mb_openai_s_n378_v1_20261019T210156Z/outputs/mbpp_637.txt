@@ -1,0 +1,16 @@
+```python
+def noprofit_noloss(selling_price, cost_price):
+    """
+    Return True if there is no profit and no loss, otherwise False.
+
+    No profit and no loss means:
+        selling_price == cost_price
+    """
+    return selling_price == cost_price
+
+
+if __name__ == "__main__":
+    # Example test
+    assert noprofit_noloss(1500, 1200) == False
+    print("All tests passed.")
+```

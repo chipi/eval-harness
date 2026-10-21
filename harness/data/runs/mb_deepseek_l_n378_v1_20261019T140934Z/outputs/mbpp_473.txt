@@ -1,0 +1,30 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def tuple_intersection(list1, list2):
+    """
+    Find the tuple intersection of elements in the given tuple lists
+    irrespective of their order.
+    """
+    # Convert each tuple to a frozenset so order doesn't matter
+    set1 = {frozenset(t) for t in list1}
+    set2 = {frozenset(t) for t in list2}
+    
+    # Find intersection
+    intersection = set1 & set2
+    
+    # Convert back to tuples (sorted for consistent output)
+    result = {tuple(sorted(fs)) for fs in intersection}
+    
+    return result
+
+# Test the function
+if __name__ == "__main__":
+    result = tuple_intersection(
+        [(3, 4), (5, 6), (9, 10), (4, 5)],
+        [(5, 4), (3, 4), (6, 5), (9, 11)]
+    )
+    print(result)
+    assert result == {(4, 5), (3, 4), (5, 6)}
+    print("Test passed!")
+```

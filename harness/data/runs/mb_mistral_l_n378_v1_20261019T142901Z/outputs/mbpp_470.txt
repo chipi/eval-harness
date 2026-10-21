@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Function to find the pairwise addition of neighboring elements in a tuple.
+
+Example:
+>>> add_pairwise((1, 5, 7, 8, 10))
+(6, 12, 15, 18)
+"""
+
+def add_pairwise(input_tuple):
+    """
+    Returns a new tuple with the sum of each pair of neighboring elements.
+
+    Args:
+        input_tuple: A tuple of numbers with at least 2 elements.
+
+    Returns:
+        A tuple containing the sum of each neighboring pair.
+    """
+    return tuple(input_tuple[i] + input_tuple[i+1] for i in range(len(input_tuple)-1))
+
+# Test case
+assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+
+# Example usage
+if __name__ == "__main__":
+    print(add_pairwise((1, 5, 7, 8, 10)))  # Output: (6, 12, 15, 18)
+```
+
+This script:
+1. Defines the `add_pairwise` function that takes a tuple as input
+2. Uses a generator expression to create pairs of neighboring elements and sum them
+3. Converts the result to a tuple
+4. Includes the required assertion test
+5. Has an example usage block that demonstrates the function when run directly

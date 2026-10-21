@@ -1,0 +1,19 @@
+```python
+def even_bit_set_number(n):
+  """
+  Write a python function to set all even bits of a given number.
+  assert even_bit_set_number(10) == 10
+  """
+  return n | 0xAAAAAAAA & n
+
+assert even_bit_set_number(10) == 10
+assert even_bit_set_number(0) == 0
+assert even_bit_set_number(1) == 0
+assert even_bit_set_number(2) == 2
+assert even_bit_set_number(3) == 2
+assert even_bit_set_number(4) == 4
+assert even_bit_set_number(5) == 4
+assert even_bit_set_number(7) == 6
+assert even_bit_set_number(8) == 8
+assert even_bit_set_number(9) == 8
+```

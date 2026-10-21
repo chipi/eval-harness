@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+"""
+Function to check if all elements in a list are equal to a given element.
+"""
+
+def check_element(lst, element):
+    """
+    Check if all items in the list are equal to the given element.
+
+    Args:
+        lst: List of elements to check
+        element: Element to compare against
+
+    Returns:
+        bool: True if all elements in the list equal the given element, False otherwise
+    """
+    return all(item == element for item in lst)
+
+# Test the function with the provided assertion
+assert check_element(["green", "orange", "black", "white"], 'blue') == False
+
+# Additional test cases for verification
+assert check_element([1, 1, 1], 1) == True
+assert check_element([1, 2, 1], 1) == False
+assert check_element([], 'anything') == True  # Edge case: empty list
+assert check_element(['blue', 'blue', 'blue'], 'blue') == True
+assert check_element(['blue', 'blue', 'green'], 'blue') == False
+
+print("All tests passed!")
+```

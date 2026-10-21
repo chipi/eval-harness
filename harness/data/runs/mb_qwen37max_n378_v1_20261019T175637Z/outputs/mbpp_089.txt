@@ -1,0 +1,8 @@
+```python
+def closest_num(n):
+    """Find the closest smaller number than n."""
+    return n - 1
+
+# Test
+assert closest_num(11) == 10
+```

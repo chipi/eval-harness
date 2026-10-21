@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_dirty_chars(string, chars_to_remove):
+    """
+    Removes characters from the first string that are present in the second string.
+
+    Args:
+        string: The original string to process
+        chars_to_remove: String containing characters to remove from the original
+
+    Returns:
+        A new string with the specified characters removed
+    """
+    return ''.join([char for char in string if char not in chars_to_remove])
+
+# Test case
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `remove_dirty_chars` that takes two strings as input
+2. Uses a list comprehension to filter out characters from the first string that appear in the second string
+3. Joins the remaining characters back into a string
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works by iterating through each character in the first string and only keeping those characters that aren't found in the second string.

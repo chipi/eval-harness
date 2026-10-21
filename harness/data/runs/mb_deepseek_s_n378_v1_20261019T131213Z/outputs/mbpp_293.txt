@@ -1,0 +1,37 @@
+```python
+import math
+
+def otherside_rightangle(side1: float, side2: float) -> float:
+    """
+    Given two sides of a right-angled triangle, returns the length of the third side.
+    The function assumes the triangle is right-angled and the two given sides are
+    the legs (not the hypotenuse). If one of the sides is larger than the other,
+    it could be the hypotenuse; the function handles this by checking which side
+    is larger and computing accordingly.
+
+    Args:
+        side1: Length of one side of the triangle.
+        side2: Length of the other side of the triangle.
+
+    Returns:
+        The length of the third side (hypotenuse if both legs given, or leg if one is hypotenuse).
+    """
+    # The hypotenuse is the longest side in a right triangle.
+    # If one given side is longer, it might be the hypotenuse.
+    # We compute the third side using the Pythagorean theorem.
+    if side1 >= side2:
+        # side1 could be the hypotenuse
+        third_side = math.sqrt(side1**2 - side2**2) if side1 > side2 else math.sqrt(2) * side1
+    else:
+        third_side = math.sqrt(side2**2 - side1**2)
+    return third_side
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = otherside_rightangle(7, 8)
+    print(f"Result: {result}")
+    # The expected value from the docstring
+    expected = 10.63014581273465
+    assert abs(result - expected) < 1e-12, f"Test failed: {result} != {expected}"
+    print("Test passed.")
+```

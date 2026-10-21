@@ -1,0 +1,18 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def count_first_elements(t):
+    """
+    Returns the number of elements that occur before the first tuple element
+    in the given tuple.
+    """
+    for i, elem in enumerate(t):
+        if isinstance(elem, tuple):
+            return i
+    return len(t)  # If no tuple element is found, return the length of the tuple
+
+# Test the function
+if __name__ == "__main__":
+    assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+    print("Test passed!")
+```

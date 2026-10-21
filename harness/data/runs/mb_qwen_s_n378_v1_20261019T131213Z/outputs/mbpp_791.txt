@@ -1,0 +1,17 @@
+```python
+def remove_nested(t):
+    """
+    Remove all nested tuples from the given tuple.
+    
+    Args:
+        t: A tuple that may contain nested tuples
+        
+    Returns:
+        A new tuple with all nested tuples removed, keeping only non-tuple elements
+    """
+    result = []
+    for item in t:
+        if not isinstance(item, tuple):
+            result.append(item)
+    return tuple(result)
+```

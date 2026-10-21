@@ -1,0 +1,66 @@
+```python
+def get_median(list1, list2, n):
+    """
+    Find the median of two sorted lists of the same size.
+    
+    Args:
+        list1: First sorted list
+        list2: Second sorted list
+        n: Size of each list
+    
+    Returns:
+        The median of the combined sorted lists
+    """
+    merged = []
+    i = 0
+    j = 0
+    
+    # Merge two sorted lists
+    while i < n and j < n:
+        if list1[i] <= list2[j]:
+            merged.append(list1[i])
+            i += 1
+        else:
+            merged.append(list2[j])
+            j += 1
+    
+    # Add remaining elements from list1
+    while i < n:
+        merged.append(list1[i])
+        i += 1
+    
+    # Add remaining elements from list2
+    while j < n:
+        merged.append(list2[j])
+        j += 1
+    
+    # Calculate median
+    total_length = len(merged)
+    if total_length % 2 == 1:
+        return float(merged[total_length // 2])
+    else:
+        mid1 = merged[total_length // 2 - 1]
+        mid2 = merged[total_length // 2]
+        return (mid1 + mid2) / 2.0
+
+
+# Test
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+print("Test passed! Median is:", get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5))
+```
+
+The solution works as follows:
+
+1. **Merge two sorted lists**: Using two pointers (`i` and `j`), we compare elements from both lists and add the smaller one to the merged list, advancing the corresponding pointer.
+
+2. **Add remaining elements**: After one list is exhausted, we add all remaining elements from the other list.
+
+3. **Calculate median**: 
+   - If the total length is odd, the median is the middle element
+   - If the total length is even, the median is the average of the two middle elements
+
+For the example `[1, 12, 15, 26, 38]` and `[2, 13, 17, 30, 45]`:
+- Merged list: `[1, 2, 12, 13, 15, 17, 26, 30, 38, 45]`
+- Length: 10 (even)
+- Middle elements at indices 4 and 5: 15 and 17
+- Median: (15 + 17) / 2 = 16.0

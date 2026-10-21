@@ -1,0 +1,45 @@
+```python
+def median_trapezium(a, b, c):
+    """
+    Find the median length of a trapezium.
+    
+    The median (or midsegment) of a trapezium is the line segment connecting
+    the midpoints of the two non-parallel sides. Its length is the average
+    of the lengths of the two parallel sides.
+    
+    Formula: median = (a + b) / 2
+    
+    Args:
+        a: Length of the first parallel side
+        b: Length of the second parallel side
+        c: Length of the third side (not used in calculation)
+    
+    Returns:
+        The median length of the trapezium
+    """
+    median = (a + b) / 2
+    return median
+
+
+# Test cases
+assert median_trapezium(15, 25, 35) == 20
+print("Test passed: median_trapezium(15, 25, 35) =", median_trapezium(15, 25, 35))
+
+# Additional test cases
+assert median_trapezium(10, 20, 30) == 15
+print("Test passed: median_trapezium(10, 20, 30) =", median_trapezium(10, 20, 30))
+
+assert median_trapezium(5, 15, 25) == 10
+print("Test passed: median_trapezium(5, 15, 25) =", median_trapezium(5, 15, 25))
+
+print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The median (or midsegment) of a trapezium is the line segment that connects the midpoints of the two non-parallel sides. The length of this median is calculated as the average of the two parallel sides:
+
+**Formula:** `median = (a + b) / 2`
+
+For the given example:
+- `median_trapezium(15, 25, 35) = (15 + 25) / 2 = 40 / 2 = 20` ✓

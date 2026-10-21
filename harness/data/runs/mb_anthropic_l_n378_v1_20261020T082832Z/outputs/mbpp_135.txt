@@ -1,0 +1,54 @@
+Looking at this problem, I need to find the nth hexagonal number.
+
+**Understanding hexagonal numbers:**
+
+The formula for the nth hexagonal number is: `n * (2n - 1)`
+
+Let me verify with the assertion:
+- `hexagonal_num(10) = 10 * (2*10 - 1) = 10 * 19 = 190` ✓
+
+```python
+"""
+Write a function to find the nth hexagonal number.
+assert hexagonal_num(10) == 190
+"""
+
+
+def hexagonal_num(n):
+    """
+    Return the nth hexagonal number.
+
+    A hexagonal number counts the dots in a hexagonal arrangement and is
+    given by the formula:  H(n) = n * (2n - 1)
+
+    Sequence: 1, 6, 15, 28, 45, 66, 91, 120, 153, 190, ...
+
+    Args:
+        n (int): The position in the hexagonal number sequence (1-based).
+
+    Returns:
+        int: The nth hexagonal number.
+    """
+    return n * (2 * n - 1)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert hexagonal_num(10) == 190
+
+    # Additional test cases
+    assert hexagonal_num(1) == 1
+    assert hexagonal_num(2) == 6
+    assert hexagonal_num(3) == 15
+    assert hexagonal_num(5) == 45
+    assert hexagonal_num(100) == 19900
+
+    print("All tests passed!")
+    print("First 10 hexagonal numbers:", [hexagonal_num(i) for i in range(1, 11)])
+```
+
+**Output:**
+```
+All tests passed!
+First 10 hexagonal numbers: [1, 6, 15, 28, 45, 66, 91, 120, 153, 190]
+```

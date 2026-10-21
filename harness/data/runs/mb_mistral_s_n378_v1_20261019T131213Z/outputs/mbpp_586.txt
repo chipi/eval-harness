@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def split_Arr(arr, n):
+    """Split a list at the nth element and add the first part to the end.
+
+    Args:
+        arr: The input list to be split.
+        n: The index at which to split the list.
+
+    Returns:
+        A new list with the first n elements moved to the end.
+    """
+    if n <= 0 or n >= len(arr):
+        return arr.copy()  # Return a copy to avoid modifying the original
+
+    return arr[n:] + arr[:n]
+
+# Test the function
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+print("Test passed!")
+```
+
+This script:
+1. Defines the `split_Arr` function that takes a list and an index `n`
+2. Handles edge cases where `n` is out of bounds by returning a copy of the original list
+3. Splits the list at index `n` and concatenates the two parts in reverse order
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works by:
+- Taking elements from index `n` to the end (`arr[n:]`)
+- Taking elements from the start to index `n` (`arr[:n]`)
+- Concatenating these two parts in that order

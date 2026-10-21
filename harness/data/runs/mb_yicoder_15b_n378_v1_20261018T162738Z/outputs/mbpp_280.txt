@@ -1,0 +1,16 @@
+```python
+def sequential_search(arr, elem):
+    found = False
+    index = -1
+    for i in range(len(arr)):
+        if arr[i] == elem:
+            found = True
+            index = i
+            break
+    return found, index
+
+# Test cases
+assert sequential_search([11,23,58,31,56,77,43,12,65,19],31) == (True, 3)
+assert sequential_search([11,23,58,31,56,77,43,12,65,19],12) == (True, 7)
+assert sequential_search([11,23,58,31,56,77,43,12,65,19],66) == (False, -1)
+```

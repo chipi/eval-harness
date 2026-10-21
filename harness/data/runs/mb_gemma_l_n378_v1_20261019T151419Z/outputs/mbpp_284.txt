@@ -1,0 +1,27 @@
+```python
+def check_element(items, element):
+    """
+    Checks whether all items in the list are equal to the given element.
+    
+    Args:
+        items (list): The list of items to check.
+        element: The element to compare against.
+        
+    Returns:
+        bool: True if all items are equal to the element, False otherwise.
+    """
+    # The all() function returns True if all elements of the iterable are true.
+    # We use a generator expression to check if each item equals the target element.
+    return all(item == element for item in items)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert check_element(["green", "orange", "black", "white"], 'blue') == False
+    
+    # Additional test cases for verification
+    assert check_element(["blue", "blue", "blue"], 'blue') == True
+    assert check_element([], 'blue') == True  # Vacuously true: all elements in an empty list meet the criteria
+    assert check_element(["blue", "red", "blue"], 'blue') == False
+    
+    print("All tests passed!")
+```

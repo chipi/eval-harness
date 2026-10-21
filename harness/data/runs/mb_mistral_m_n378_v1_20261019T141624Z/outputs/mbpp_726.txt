@@ -1,0 +1,17 @@
+```python
+def multiply_elements(input_tuple):
+    """
+    Takes a tuple of numbers and returns a new tuple where each element is the product
+    of consecutive elements in the input tuple.
+
+    Args:
+        input_tuple: A tuple of numbers (t_1, t_2, ..., t_{N+1})
+
+    Returns:
+        A tuple of length N where the i-th element is t_i * t_{i+1}
+    """
+    return tuple(input_tuple[i] * input_tuple[i+1] for i in range(len(input_tuple)-1))
+
+# Test case
+assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+```

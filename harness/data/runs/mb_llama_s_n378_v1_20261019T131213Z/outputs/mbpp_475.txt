@@ -1,0 +1,18 @@
+```python
+def sort_counter(counter):
+    """
+    Write a function to sort a dictionary by value.
+    assert sort_counter({'Math':81, 'Physics':83, 'Chemistry':87})==[('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+    """
+    return sorted(counter.items(), key=lambda x: x[1], reverse=True)
+
+# Test the function
+print(sort_counter({'Math':81, 'Physics':83, 'Chemistry':87}))
+```
+
+In this code:
+
+*   The `sort_counter` function takes a dictionary `counter` as input.
+*   The `sorted` function is used with a `lambda` function as the `key` argument to specify that the dictionary items should be sorted based on their values (`x[1]`).
+*   The `reverse=True` argument is used to sort the items in descending order of their values. If you want to sort in ascending order, you can remove this argument or set it to `False`.
+*   The function returns a list of tuples, where each tuple contains a key-value pair from the input dictionary, sorted by value.

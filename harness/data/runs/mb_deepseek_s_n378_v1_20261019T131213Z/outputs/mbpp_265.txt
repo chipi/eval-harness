@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that implements the function as described:  
+
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists, each containing every nth element.
+    
+    Args:
+        lst (list): The input list.
+        n (int): The step size for splitting.
+    
+    Returns:
+        list: A list of sublists, each containing every nth element.
+    """
+    return [lst[i::n] for i in range(n)]
+
+# Test the function with the provided example
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+
+# Optional: print result for verification
+print(list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3))
+```

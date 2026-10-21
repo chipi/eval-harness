@@ -1,0 +1,14 @@
+```python
+def pair_xor_Sum(lst, xor_val):
+    sum = 0
+    for i in range(len(lst)):
+        for j in range(i+1, len(lst)):
+            sum += lst[i] ^ lst[j]
+    return sum
+
+# Test cases
+assert pair_xor_Sum([5,9,7,6], 4) == 47
+assert pair_xor_Sum([1,2,3,4], 5) == 1
+assert pair_xor_Sum([10,20,30,40], 15) == 60
+assert pair_xor_Sum([1,2,3,4,5,6,7,8,9,10], 16) == 16
+```

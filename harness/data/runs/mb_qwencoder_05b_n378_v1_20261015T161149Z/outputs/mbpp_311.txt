@@ -1,0 +1,13 @@
+```python
+def set_left_most_unset_bit(n):
+    # Set the leftmost unset bit
+    n |= (n - 1)
+    return n
+
+# Test cases to verify the correctness of the function
+assert set_left_most_unset_bit(10) == 14
+assert set_left_most_unset_bit(25) == 31
+assert set_left_most_unset_bit(16) == 15
+assert set_left_most_unset_bit(0) == 0
+```
+

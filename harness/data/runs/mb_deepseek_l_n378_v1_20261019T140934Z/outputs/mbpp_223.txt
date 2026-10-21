@@ -1,0 +1,49 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def is_majority(arr, n, x):
+    """
+    Returns True if x is the majority element in the sorted array arr of length n,
+    i.e., appears more than n/2 times. Otherwise returns False.
+    """
+    # Find first occurrence of x using binary search
+    low, high = 0, n - 1
+    first = -1
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == x:
+            first = mid
+            high = mid - 1
+        elif arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    if first == -1:
+        return False  # x not present
+
+    # Find last occurrence of x using binary search
+    low, high = 0, n - 1
+    last = -1
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == x:
+            last = mid
+            low = mid + 1
+        elif arr[mid] < x:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    # Check if count > n/2
+    count = last - first + 1
+    return count > n // 2
+
+
+# Test
+if __name__ == "__main__":
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    assert is_majority([1, 1, 2, 2, 2, 2, 2], 7, 2) == True
+    assert is_majority([1, 2, 3, 4, 5], 5, 3) == False
+    print("All tests passed.")
+```

@@ -1,0 +1,28 @@
+```python
+def dict_depth(d):
+    """
+    Finds the depth of a nested dictionary.
+    The depth of an empty dictionary or a dictionary with no nested dictionaries is 1.
+    """
+    if not isinstance(d, dict) or not d:
+        return 1 if isinstance(d, dict) else 0
+    
+    max_depth = 0
+    for value in d.values():
+        if isinstance(value, dict):
+            max_depth = max(max_depth, dict_depth(value))
+            
+    return max_depth + 1
+
+if __name__ == "__main__":
+    # Provided test case
+    assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+    
+    # Additional test cases
+    assert dict_depth({}) == 1
+    assert dict_depth({'a': 1, 'b': 2}) == 1
+    assert dict_depth({'a': {'b': 1}}) == 2
+    assert dict_depth({'a': {'b': {'c': 1}}, 'd': 2}) == 3
+    
+    print("All test cases passed!")
+```

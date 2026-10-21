@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def last_Digit(n):
+    """
+    Returns the last digit of a given number.
+    
+    Parameters:
+    n (int): The input number.
+    
+    Returns:
+    int: The last digit of the number.
+    """
+    return abs(n) % 10
+
+
+# Test cases
+assert last_Digit(123) == 3
+assert last_Digit(456) == 6
+assert last_Digit(789) == 9
+assert last_Digit(0) == 0
+assert last_Digit(-123) == 3
+assert last_Digit(10) == 0
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `last_Digit(n)` takes an integer `n` as input.
+- It uses the modulo operator `%` to get the remainder when dividing by 10, which gives the last digit.
+- `abs(n)` is used to handle negative numbers correctly (e.g., `-123 % 10` in Python returns `7`, but we want `3`).
+- The `assert` statements verify the function works as expected for various inputs.

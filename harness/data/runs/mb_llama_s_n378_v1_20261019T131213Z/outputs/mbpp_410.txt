@@ -1,0 +1,36 @@
+```python
+def min_val(lst):
+    """
+    This function finds the minimum value in a given heterogeneous list.
+    
+    It filters out non-numeric values from the list and returns the smallest one.
+    
+    Args:
+        lst (list): A heterogeneous list containing different types of elements.
+    
+    Returns:
+        The smallest numeric value in the list. If no numeric values are found, it returns None.
+    """
+    # Filter out non-numeric values from the list
+    numeric_values = [i for i in lst if isinstance(i, (int, float))]
+    
+    # Check if there are any numeric values in the list
+    if numeric_values:
+        # Return the smallest numeric value
+        return min(numeric_values)
+    else:
+        # Return None if no numeric values are found
+        return None
+
+# Test the function
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+print(min_val(['Python', 3, 2, 4, 5, 'version']))  # Output: 2
+```
+
+In this code:
+
+*   We define a function `min_val` that takes a list `lst` as input.
+*   Inside the function, we use a list comprehension to create a new list `numeric_values` that contains only the numeric values from the input list.
+*   We check if `numeric_values` is not empty. If it's not empty, we return the smallest numeric value using the built-in `min` function.
+*   If `numeric_values` is empty (i.e., no numeric values were found in the list), we return `None`.
+*   Finally, we test the function with the provided assertion and print the result.

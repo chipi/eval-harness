@@ -1,0 +1,45 @@
+```python
+def remove_nested(tup):
+    """
+    This function removes nested tuples from a given tuple.
+
+    Args:
+        tup (tuple): The input tuple that may contain nested tuples.
+
+    Returns:
+        tuple: A new tuple with all nested tuples removed.
+    """
+    result = []
+    for item in tup:
+        if isinstance(item, tuple):
+            result.extend(remove_nested(item))
+        else:
+            result.append(item)
+    return tuple(result)
+
+# Example usage:
+print(remove_nested((1, 5, 7, (4, 6), 10)))  # Output: (1, 5, 7, 10)
+```
+
+However, based on your unit test, it seems like you want to remove the nested tuple itself, not its contents. Here's an updated version of the function:
+
+```python
+def remove_nested(tup):
+    """
+    This function removes nested tuples from a given tuple.
+
+    Args:
+        tup (tuple): The input tuple that may contain nested tuples.
+
+    Returns:
+        tuple: A new tuple with all nested tuples removed.
+    """
+    result = []
+    for item in tup:
+        if not isinstance(item, tuple):
+            result.append(item)
+    return tuple(result)
+
+# Example usage:
+print(remove_nested((1, 5, 7, (4, 6), 10)))  # Output: (1, 5, 7, 10)
+```

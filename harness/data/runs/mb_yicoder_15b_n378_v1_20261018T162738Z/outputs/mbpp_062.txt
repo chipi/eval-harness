@@ -1,0 +1,10 @@
+```python
+def smallest_num(lst):
+    return min(lst)
+
+# Test cases
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+assert smallest_num([-1, -2, -3, -4, -5]) == -5
+assert smallest_num([1000, 2000, 100, 450, 999]) == 100
+assert smallest_num([0, 0, 0, 0, 0]) == 0
+```

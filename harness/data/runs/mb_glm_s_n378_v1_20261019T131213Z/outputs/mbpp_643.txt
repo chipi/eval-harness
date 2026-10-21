@@ -1,0 +1,53 @@
+```python
+import re
+
+def text_match_wordz_middle(text: str) -> bool:
+    """
+    Checks if a string contains the letter 'z' that is not at the start or end of a word.
+
+    This function uses a regular expression to find a 'z' that is:
+    1. Preceded by a word character (e.g., a letter, digit, or underscore).
+    2. Followed by a word character.
+
+    Args:
+        text: The input string to search.
+
+    Returns:
+        True if such a 'z' is found, False otherwise.
+
+    Examples:
+        >>> text_match_wordz_middle("pythonzabc.")
+        True
+        >>> text_match_wordz_middle("zoo")
+        False
+        >>> text_match_wordz_middle("zebra")
+        False
+        >>> text_match_wordz_middle("pizza")
+        True
+        >>> text_match_wordz_middle("fizz buzz")
+        True
+        >>> text_match_wordz_middle("no z here")
+        False
+        >>> text_match_wordz_middle("no z here.")
+        False
+    """
+    # The regex pattern looks for a 'z' that is surrounded by word characters.
+    # \w matches any word character (a-z, A-Z, 0-9, _).
+    # The re.search() method finds the first location in the string that matches the pattern.
+    # If a match is found, it returns a match object (which is truthy).
+    # If no match is found, it returns None (which is falsy).
+    return bool(re.search(r'\wz\w', text))
+
+# Example usage and assertions as provided in the problem description
+assert text_match_wordz_middle("pythonzabc.") == True
+
+# Additional test cases to demonstrate the function's behavior
+assert text_matchz_middle("zoo") == False
+assert text_matchz_middle("zebra") == False
+assert text_matchz_middle("pizza") == True
+assert text_matchz_middle("fizz buzz") == True
+assert text_matchz_middle("no z here") == False
+assert text_matchz_middle("no z here.") == False
+
+print("All assertions passed!")
+```

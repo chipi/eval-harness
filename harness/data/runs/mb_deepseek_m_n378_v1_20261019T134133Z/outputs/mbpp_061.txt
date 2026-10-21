@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_Substrings(s: str) -> int:
+    """
+    Counts the number of substrings where the sum of digits equals the substring length.
+    
+    Args:
+        s: A string of digits.
+    
+    Returns:
+        The number of substrings satisfying the condition.
+    """
+    n = len(s)
+    count = 0
+    
+    # Iterate over all possible starting positions
+    for i in range(n):
+        digit_sum = 0
+        # Extend the substring from i to j
+        for j in range(i, n):
+            digit_sum += int(s[j])
+            length = j - i + 1
+            if digit_sum == length:
+                count += 1
+            # Optimization: if digit_sum exceeds max possible length, break
+            if digit_sum > n:
+                break
+    
+    return count
+
+
+# Test the function
+assert count_Substrings('112112') == 6
+print("Test passed!")
+print(f"count_Substrings('112112') = {count_Substrings('112112')}")
+```
+
+**Explanation:**
+
+The function works by:
+1. Iterating over every possible starting index `i` of a substring.
+2. For each starting index, extending the substring to every possible ending index `j`, while maintaining a running sum of digits.
+3. Checking if the sum of digits equals the length of the substring (`j - i + 1`).
+4. If they match, incrementing the counter.
+
+For `'112112'`, the 6 valid substrings are:
+- `'1'` (index 0) — sum=1, length=1
+- `'1'` (index 1) — sum=1, length=1
+- `'2'` (index 2) — sum=2, length=1? No wait, let me verify...
+
+Actually, the valid substrings are:
+- `'1'` at index 0 (sum=1, len=1)
+- `'1'` at index 1 (sum=1, len=1)
+- `'11'` at indices 0-1 (sum=2, len=2)
+- `'2'` at index 2 (sum=2, len=1)? No — sum=2, len=1, doesn't match.
+
+Let me re-verify: the 6 substrings are `'1'`(0), `'1'`(1), `'11'`(0-1), `'1'`(3), `'1'`(4), `'11'`(3-4). That's 6. ✓

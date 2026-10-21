@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem of dropping empty items from a dictionary:
+
+```python
+def drop_empty(dictionary):
+    """Remove key-value pairs where the value is None or an empty string.
+
+    Args:
+        dictionary: The input dictionary to process.
+
+    Returns:
+        A new dictionary with empty items removed.
+    """
+    return {k: v for k, v in dictionary.items() if v is not None and v != ""}
+
+# Test the function
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+assert drop_empty({'a': '', 'b': 'value', 'c': None}) == {'b': 'value'}
+assert drop_empty({}) == {}
+assert drop_empty({'empty': ''}) == {}
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a `drop_empty` function that uses a dictionary comprehension to filter out items where the value is either `None` or an empty string
+2. Includes the required test case from the problem statement
+3. Adds additional test cases to verify edge cases
+4. Prints a confirmation message if all tests pass
+
+The function preserves all other key-value pairs in the dictionary, including those with other falsy values (like 0, False, etc.) since the problem specifically mentions dropping only `None` and empty strings.

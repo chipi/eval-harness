@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem of packing consecutive duplicates into sublists:
+
+```python
+def pack_consecutive_duplicates(lst):
+    if not lst:
+        return []
+
+    result = []
+    current_sublist = [lst[0]]
+
+    for item in lst[1:]:
+        if item == current_sublist[-1]:
+            current_sublist.append(item)
+        else:
+            result.append(current_sublist)
+            current_sublist = [item]
+
+    result.append(current_sublist)
+    return result
+
+# Test the function
+assert pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+```
+
+The function works by:
+1. Handling the empty list case first
+2. Initializing the first sublist with the first element
+3. Iterating through the remaining elements, comparing each with the last element of the current sublist
+4. If they match, adding to the current sublist; if not, finalizing the current sublist and starting a new one
+5. Finally adding the last sublist to the result
+
+The test assertion verifies that the function produces the expected output for the given example.

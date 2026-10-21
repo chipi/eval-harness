@@ -1,0 +1,24 @@
+```python
+def find_Parity(n: int) -> bool:
+    """
+    Finds whether the parity of a given number is odd.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if the number is odd, False if it is even.
+    """
+    # A number is odd if the remainder when divided by 2 is not 0
+    return n % 2 != 0
+
+if __name__ == "__main__":
+    # Test cases
+    assert find_Parity(12) == False
+    assert find_Parity(13) == True
+    assert find_Parity(0) == False
+    assert find_Parity(-1) == True
+    assert find_Parity(-2) == False
+    
+    print("All tests passed!")
+```

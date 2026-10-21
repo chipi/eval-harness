@@ -1,0 +1,38 @@
+```python
+def count_reverse_pairs(string_list):
+    """
+    Counts the number of pairs of strings in the list where one string 
+    is the reverse of another.
+    """
+    count = 0
+    # We use a list to keep track of strings we have already "paired"
+    # to avoid counting the same pair twice or counting a string with itself.
+    used_indices = set()
+
+    for i in range(len(string_list)):
+        if i in used_indices:
+            continue
+            
+        for j in range(i + 1, len(string_list)):
+            if j in used_indices:
+                continue
+            
+            # Check if string at index i is the reverse of string at index j
+            if string_list[i] == string_list[j][::-1]:
+                count += 1
+                used_indices.add(j)
+                # Break the inner loop because index i has found its pair
+                break
+                
+    return count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ["julia", "best", "tseb", "for", "ailuj"]
+    result = count_reverse_pairs(test_list)
+    print(f"Count of reverse pairs: {result}")
+    
+    # Assertion to verify correctness
+    assert result == 2, f"Expected 2, but got {result}"
+    print("Assertion passed!")
+```

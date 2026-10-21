@@ -1,0 +1,31 @@
+```python
+def all_Characters_Same(s: str) -> bool:
+    """
+    Check whether all the characters in the string are the same or not.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        True if all characters are the same, False otherwise
+        
+    Examples:
+        >>> all_Characters_Same("python")
+        False
+        >>> all_Characters_Same("aaaa")
+        True
+        >>> all_Characters_Same("")
+        True
+    """
+    if len(s) <= 1:
+        return True
+    return all(c == s[0] for c in s)
+
+
+if __name__ == "__main__":
+    assert all_Characters_Same("python") == False
+    assert all_Characters_Same("aaaa") == True
+    assert all_Characters_Same("") == True
+    assert all_Characters_Same("a") == True
+    print("All tests passed!")
+```

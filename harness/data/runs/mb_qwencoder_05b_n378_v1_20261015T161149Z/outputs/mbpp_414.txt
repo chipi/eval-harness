@@ -1,0 +1,25 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Check whether any value in seq1 exists in seq2 or not.
+
+    :param seq1: First sequence
+    :param seq2: Second sequence
+    :return: True if any value in seq1 exists in seq2, False otherwise
+    """
+    for item in seq1:
+        if item in seq2:
+            return True
+    return False
+
+# Test cases
+assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+assert overlapping([10, 20, 30], [40, 50, 60]) == True
+assert overlapping([1, 2, 3, 4, 5], [5, 6, 7, 8, 9]) == True
+assert overlapping([1, 2, 3, 4, 5], [10, 20, 30, 40, 50]) == False
+assert overlapping([1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6]) == True
+assert overlapping([1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7]) == True
+assert overlapping([1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7, 8]) == True
+assert overlapping([1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == False
+```
+

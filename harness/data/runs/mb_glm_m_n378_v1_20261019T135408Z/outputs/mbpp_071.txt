@@ -1,0 +1,67 @@
+Here's a self-contained Python script that implements the Comb Sort algorithm to sort a list of elements, along with the provided test case:
+
+```python
+def comb_sort(arr):
+    """
+    Sorts a list of elements using the Comb Sort algorithm.
+    
+    Args:
+        arr: A list of comparable elements.
+    
+    Returns:
+        A new list containing the sorted elements.
+    """
+    if not arr:
+        return []
+    
+    # Make a copy of the input list to avoid modifying the original
+    sorted_arr = arr.copy()
+    gap = len(sorted_arr)
+    shrink = 1.3
+    sorted_flag = False
+    
+    while not sorted_flag:
+        # Update the gap for the next comb
+        gap = int(gap / shrink)
+        if gap <= 1:
+            gap = 1
+            sorted_flag = True
+        
+        # Compare all elements with current gap
+        for i in range(len(sorted_arr) - gap):
+            if sorted_arr[i] > sorted_arr[i + gap]:
+                # Swap if they are in the wrong order
+                sorted_arr[i], sorted_arr[i + gap] = sorted_arr[i + gap], sorted_arr[i]
+                sorted_flag = False
+    
+    return sorted_arr
+
+# Test the function with the provided test case
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+
+# Additional test cases to verify the implementation
+assert comb_sort([]) == []
+assert comb_sort([1]) == [1]
+assert comb_sort([3, 2, 1]) == [1, 2, 3]
+assert comb_sort([5, 5, 5]) == [5, 5, 5]
+assert comb_sort([10, -1, 2, 8, 0]) == [-1, 0, 2, 8, 10]
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Comb Sort Algorithm**: 
+   - Comb Sort is an improvement over Bubble Sort. It works by comparing elements that are a certain "gap" apart, rather than adjacent elements.
+   - The gap starts large and shrinks by a factor (typically 1.3) until it becomes 1, at which point the algorithm behaves like Bubble Sort.
+   - This helps eliminate turtles (small values near the end of the list) more efficiently than Bubble Sort.
+
+2. **Implementation Details**:
+   - The function first checks if the input list is empty and returns an empty list immediately.
+   - It creates a copy of the input list to avoid modifying the original list.
+   - The gap is initialized to the length of the list and shrinks by a factor of 1.3 in each iteration.
+   - The loop continues until the gap is 1 and no swaps are made in a full pass (indicating the list is sorted).
+
+3. **Test Cases**:
+   - The provided test case is included, along with additional edge cases (empty list, single element, already sorted list, duplicates, and negative numbers) to ensure the implementation is robust.
+
+This script is self-contained and can be run directly to verify the correctness of the Comb Sort implementation.

@@ -1,0 +1,29 @@
+```python
+def count_first_elements(tup):
+    """
+    This function finds the number of elements that occur before the tuple element in the given tuple.
+
+    Args:
+        tup (tuple): The input tuple.
+
+    Returns:
+        int: The number of elements that occur before the tuple element.
+
+    Raises:
+        ValueError: If the input tuple does not contain a tuple element.
+    """
+    # Check if the tuple element exists in the tuple
+    if not any(isinstance(i, tuple) for i in tup):
+        raise ValueError("The input tuple does not contain a tuple element.")
+
+    # Find the index of the first tuple element
+    idx = next(i for i, x in enumerate(tup) if isinstance(x, tuple))
+
+    # Return the number of elements before the tuple element
+    return idx
+
+# Test the function
+print(count_first_elements((1, 5, 7, (4, 6), 10)))  # Output: 3
+```
+
+This script defines a function `count_first_elements` that takes a tuple as input and returns the number of elements that occur before the first tuple element in the tuple. If the input tuple does not contain a tuple element, it raises a `ValueError`. The function uses a generator expression to find the index of the first tuple element and returns this index, which represents the number of elements that occur before the tuple element.

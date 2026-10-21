@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Check whether a list contains the given sublist (as a contiguous sequence).
+    
+    Args:
+        main_list: The list to search in.
+        sub_list: The sublist to search for.
+    
+    Returns:
+        True if sub_list appears as a contiguous sequence in main_list, False otherwise.
+    """
+    n = len(main_list)
+    m = len(sub_list)
+    
+    # An empty sublist is trivially contained in any list
+    if m == 0:
+        return True
+    
+    # If sublist is longer than main list, it can't be contained
+    if m > n:
+        return False
+    
+    # Slide a window of size m over main_list
+    for i in range(n - m + 1):
+        if main_list[i:i + m] == sub_list:
+            return True
+    
+    return False
+
+
+# Test cases
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+assert is_sublist([2, 4, 3, 5, 7], [4, 3]) == True
+assert is_sublist([2, 4, 3, 5, 7], [2, 4, 3, 5, 7]) == True
+assert is_sublist([2, 4, 3, 5, 7], []) == True
+assert is_sublist([2, 4, 3, 5, 7], [1, 2]) == False
+assert is_sublist([1, 2, 3], [1, 2, 3, 4]) == False
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Edge cases first**: An empty sublist is always considered a sublist (returns `True`). If the sublist is longer than the main list, it can't be contained (returns `False`).
+
+2. **Sliding window**: The function iterates through `main_list` using a window of size `len(sub_list)`. For each starting position `i`, it slices `main_list[i:i+m]` and compares it to `sub_list`.
+
+3. **Return result**: If any slice matches, return `True`; otherwise, return `False` after the loop.
+
+For the given assertion `is_sublist([2,4,3,5,7], [3,7])`, the function checks windows `[2,4]`, `[4,3]`, `[3,5]`, and `[5,7]` — none match `[3,7]`, so it correctly returns `False`.

@@ -1,0 +1,49 @@
+```python
+def combinations_list(lst):
+    """
+    Find all possible combinations of the elements of a given list.
+    
+    The order of combinations follows a specific pattern:
+    - Start with empty set
+    - For each new element, add it to all existing combinations in reverse order
+    
+    Args:
+        lst: A list of elements
+        
+    Returns:
+        A list of all possible combinations (subsets) of the input list
+    """
+    result = [[]]
+    for item in lst:
+        # Add the current item to all existing combinations
+        # We need to iterate over a copy of result since we're modifying it
+        new_combinations = []
+        for combo in result:
+            new_combo = [item] + combo
+            new_combinations.append(new_combo)
+        result.extend(new_combinations)
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    assert combinations_list(['orange', 'red', 'green', 'blue']) == [
+        [], 
+        ['orange'], 
+        ['red'], 
+        ['red', 'orange'], 
+        ['green'], 
+        ['green', 'orange'], 
+        ['green', 'red'], 
+        ['green', 'red', 'orange'], 
+        ['blue'], 
+        ['blue', 'orange'], 
+        ['blue', 'red'], 
+        ['blue', 'red', 'orange'], 
+        ['blue', 'green'], 
+        ['blue', 'green', 'orange'], 
+        ['blue', 'green', 'red'], 
+        ['blue', 'green', 'red', 'orange']
+    ]
+    print("All tests passed!")
+```

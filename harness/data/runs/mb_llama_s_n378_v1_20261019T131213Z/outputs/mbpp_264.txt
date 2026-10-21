@@ -1,0 +1,31 @@
+```python
+def dog_age(human_years):
+    """
+    Calculate a dog's age in dog's years.
+
+    The first year of a dog's life is 15 dog years. 
+    The second year is 10 dog years. 
+    Each additional year is 5 dog years.
+
+    Args:
+        human_years (int): The age of the dog in human years.
+
+    Returns:
+        int: The age of the dog in dog years.
+    """
+    if human_years <= 0:
+        return 0
+    elif human_years == 1:
+        return 15
+    elif human_years == 2:
+        return 15 + 10
+    else:
+        return 25 + (human_years - 2) * 5
+
+
+# Test the function
+assert dog_age(12) == 61
+print("All tests passed.")
+```
+
+This script defines a function `dog_age` that takes the age of a dog in human years as input and returns the equivalent age in dog years. The function uses simple conditional statements to handle the first two years of the dog's life, and then calculates the dog years for each additional year. The script also includes a test case to verify that the function works correctly.

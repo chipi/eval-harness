@@ -1,0 +1,14 @@
+```python
+def count_divisors(n):
+    count = 0
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count % 2 == 0
+
+# Test cases
+assert count_divisors(10) == True
+assert count_divisors(15) == False
+assert count_divisors(20) == True
+assert count_divisors(21) == False
+```

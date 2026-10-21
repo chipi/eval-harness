@@ -1,0 +1,28 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def len_log(words):
+    """
+    Finds the length of the longest word in a given list of strings.
+    
+    Args:
+    words (list of str): A list containing words (strings).
+    
+    Returns:
+    int: The length of the longest word.
+    """
+    if not words:
+        return 0
+    
+    return max(len(word) for word in words)
+
+# Asserting the function with the provided test case
+assert len_log(["python","PHP","bigdata"]) == 7
+
+# Additional test cases to ensure robustness
+assert len_log(["a", "ab", "abc"]) == 3
+assert len_log(["hello", "world", "!"]) == 5
+assert len_log([]) == 0
+
+print("All assertions passed!")
+```

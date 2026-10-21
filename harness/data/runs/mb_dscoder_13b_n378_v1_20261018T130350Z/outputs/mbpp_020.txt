@@ -1,0 +1,29 @@
+```python
+def is_woodall(n):
+    # Convert the number to a string
+    str_n = str(n)
+    
+    # Check if the number is a palindrome
+    if str_n != str_n[::-1]:
+        return False
+    
+    # Check if the number is a perfect square
+    if int(str_n) ** 0.5 != int(str_n) ** 0.5:
+        return False
+    
+    # Check if the number is a prime number
+    if n <= 1:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    
+    # If all checks pass, the number is a woodall number
+    return True
+
+# Test cases
+print(is_woodall(383))  # Expected output: True
+print(is_woodall(384))  # Expected output: False
+print(is_woodall(123))  # Expected output: False
+print(is_woodall(141))  # Expected output: True
+```

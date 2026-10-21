@@ -1,0 +1,26 @@
+```python
+from typing import List
+
+def odd_length_sum(arr: List[int]) -> int:
+    """
+    Returns the sum of all odd-length subarrays of the given array.
+    """
+    n = len(arr)
+    total_sum = 0
+
+    # Iterate over each possible starting index
+    for i in range(n):
+        # Iterate over each possible ending index with odd length
+        for j in range(i, n, 2):  # step by 2 ensures odd length (j-i+1 is odd)
+            # Sum the subarray from i to j
+            total_sum += sum(arr[i:j+1])
+    
+    return total_sum
+
+# Example usage
+if __name__ == "__main__":
+    test_arr = [1, 2, 4]
+    result = odd_length_sum(test_arr)
+    print(f"Sum of all odd-length subarrays of {test_arr} is: {result}")
+    assert result == 14, f"Expected 14 but got {result}"
+```

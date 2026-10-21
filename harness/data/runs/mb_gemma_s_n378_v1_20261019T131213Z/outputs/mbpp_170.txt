@@ -1,0 +1,30 @@
+```python
+def sum_range_list(numbers, start, end):
+  """
+  Calculates the sum of numbers in a list within a specified range (inclusive).
+
+  Args:
+    numbers: A list of numbers.
+    start: The starting index (inclusive).
+    end: The ending index (inclusive).
+
+  Returns:
+    The sum of the numbers within the specified range.
+  """
+  if not isinstance(numbers, list):
+    raise TypeError("Input 'numbers' must be a list.")
+  if not all(isinstance(num, (int, float)) for num in numbers):
+    raise TypeError("All elements in 'numbers' must be numbers (int or float).")
+  if not isinstance(start, int) or not isinstance(end, int):
+    raise TypeError("Start and end indices must be integers.")
+  if start < 0 or end >= len(numbers) or start > end:
+    raise ValueError("Invalid start or end index.")
+
+  total = 0
+  for i in range(start, end + 1):
+    total += numbers[i]
+  return total
+
+# Example usage and assertion
+assert sum_range_list([2,1,5,6,8,3,4,9,10,11,8,12], 8, 10) == 29
+```

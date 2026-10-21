@@ -1,0 +1,61 @@
+```python
+def is_undulating(n):
+    """
+    Check whether the given number is undulating or not.
+    An undulating number is a number where digits alternate between two values,
+    i.e., no three consecutive digits are the same and adjacent digits are different.
+    More specifically, for an undulating number, every pair of adjacent digits must be different,
+    and the pattern should strictly alternate (e.g., 121212, 343434).
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        True if the number is undulating, False otherwise
+    """
+    s = str(n)
+    
+    # Numbers with less than 2 digits cannot be undulating in the traditional sense
+    # But typically undulating numbers have at least 2 digits
+    if len(s) < 2:
+        return False
+    
+    # Check that all adjacent digits are different
+    for i in range(len(s) - 1):
+        if s[i] == s[i + 1]:
+            return False
+    
+    # For a true undulating number, it should alternate between exactly two distinct digits
+    # Check if there are only two unique digits
+    unique_digits = set(s)
+    if len(unique_digits) != 2:
+        return False
+    
+    # Verify the alternating pattern
+    # The first digit determines the expected pattern
+    first_digit = s[0]
+    second_digit = s[1]
+    
+    for i in range(len(s)):
+        if i % 2 == 0:
+            if s[i] != first_digit:
+                return False
+        else:
+            if s[i] != second_digit:
+                return False
+    
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_undulating(1212121) == True
+    assert is_undulating(1212) == True
+    assert is_undulating(343434) == True
+    assert is_undulating(123123) == False  # Not alternating between two digits
+    assert is_undulating(1122) == False   # Adjacent digits are same
+    assert is_undulating(1211) == False   # Pattern breaks
+    assert is_undulating(1) == False      # Single digit
+    assert is_undulating(12) == True      # Two different digits
+    print("All tests passed!")
+```

@@ -1,0 +1,55 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the sum of all odd-length subarrays.
+
+Example:
+    [1, 2, 4]
+
+Odd-length subarrays:
+    [1], [2], [4], [1, 2, 4]
+
+Sum:
+    1 + 2 + 4 + (1 + 2 + 4) = 14
+"""
+
+
+def odd_length_sum(arr):
+    """
+    Return the sum of all odd-length subarrays of arr.
+
+    For each element arr[i], count how many odd-length subarrays include it.
+    If an element appears in k odd-length subarrays, it contributes arr[i] * k.
+
+    Time Complexity: O(n)
+    Space Complexity: O(1)
+    """
+    n = len(arr)
+    total = 0
+
+    for i, value in enumerate(arr):
+        # Number of choices for the left boundary
+        left_count = i + 1
+
+        # Number of choices for the right boundary
+        right_count = n - i
+
+        # Total subarrays containing arr[i]
+        total_subarrays = left_count * right_count
+
+        # Number of odd-length subarrays containing arr[i]
+        odd_subarrays = (total_subarrays + 1) // 2
+
+        total += value * odd_subarrays
+
+    return total
+
+
+if __name__ == "__main__":
+    assert odd_length_sum([1, 2, 4]) == 14
+    assert odd_length_sum([1, 4, 2, 5, 3]) == 58
+    assert odd_length_sum([10]) == 10
+    assert odd_length_sum([]) == 0
+
+    print("All tests passed.")
+```

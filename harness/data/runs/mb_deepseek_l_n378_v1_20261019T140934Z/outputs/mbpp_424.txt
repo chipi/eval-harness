@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_rear(tup):
+    """
+    Extract the last character from each string in the given tuple.
+    
+    Args:
+        tup: A tuple of strings
+        
+    Returns:
+        A list containing the last character of each string
+    """
+    return [s[-1] for s in tup]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = extract_rear(('Mers', 'for', 'Vers'))
+    print(f"Result: {result}")
+    assert result == ['s', 'r', 's'], f"Expected ['s', 'r', 's'] but got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    assert extract_rear(('hello', 'world')) == ['o', 'd']
+    assert extract_rear(('a', 'b', 'c')) == ['a', 'b', 'c']
+    assert extract_rear(('', 'test', '')) == ['', 't', '']
+    print("All tests passed!")
+```
+
+The function `extract_rear` uses a list comprehension to iterate through each string in the input tuple and extract its last character using index `-1`. The function returns a list of these last characters, which matches the expected output format.

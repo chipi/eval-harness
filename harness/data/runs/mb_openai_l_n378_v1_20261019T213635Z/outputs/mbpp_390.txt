@@ -1,0 +1,9 @@
+```python
+def add_string(items, format_string):
+    return [format_string.format(item) for item in items]
+
+
+assert add_string([1, 2, 3, 4], "temp{0}") == [
+    "temp1", "temp2", "temp3", "temp4"
+]
+```

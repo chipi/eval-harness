@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem by calculating the size of a tuple in bytes using `sys.getsizeof()`:
+
+```python
+import sys
+
+def tuple_size(t):
+    """
+    Returns the size in bytes of the given tuple.
+    
+    Args:
+        t: The tuple whose size is to be calculated.
+        
+    Returns:
+        int: The size of the tuple in bytes.
+    """
+    return sys.getsizeof(t)
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem statement
+    test_tuple = ("A", 1, "B", 2, "C", 3)
+    assert tuple_size(test_tuple) == sys.getsizeof(test_tuple)
+    print("Test case passed!")
+    
+    # Additional test cases
+    empty_tuple = ()
+    assert tuple_size(empty_tuple) == sys.getsizeof(empty_tuple)
+    print("Empty tuple test passed!")
+    
+    single_element_tuple = (42,)
+    assert tuple_size(single_element_tuple) == sys.getsizeof(single_element_tuple)
+    print("Single element tuple test passed!")
+    
+    nested_tuple = (1, (2, 3), (4, (5, 6)))
+    assert tuple_size(nested_tuple) == sys.getsizeof(nested_tuple)
+    print("Nested tuple test passed!")
+    
+    print("All tests passed successfully!")
+```
+
+### Explanation:
+1. **Import `sys` module**: The `sys.getsizeof()` function is used to get the size of the tuple in bytes.
+2. **Define `tuple_size` function**: This function takes a tuple `t` as input and returns its size in bytes using `sys.getsizeof(t)`.
+3. **Test cases**: 
+   - The first test case is the one provided in the problem statement.
+   - Additional test cases are included to verify the function works for empty tuples, single-element tuples, and nested tuples.
+   - Each test case uses `assert` to ensure the function's output matches the expected result from `sys.getsizeof()`.
+4. **Output**: If all assertions pass, the script prints success messages for each test case and a final confirmation that all tests passed.
+
+This script is self-contained and can be run directly to verify the correctness of the `tuple_size` function.

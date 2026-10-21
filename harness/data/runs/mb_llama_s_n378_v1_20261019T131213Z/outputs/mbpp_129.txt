@@ -1,0 +1,53 @@
+```python
+def magic_square_test(matrix):
+    """
+    This function checks whether a given matrix is a magic square.
+
+    A magic square is a square grid filled with distinct positive integers in the range 1 to n^2 
+    such that each cell contains a different integer and the sum of the integers in each row, 
+    column and diagonal is equal.
+
+    Args:
+        matrix (list): A 2D list representing the matrix.
+
+    Returns:
+        bool: True if the matrix is a magic square, False otherwise.
+    """
+
+    # Check if the matrix is square
+    size = len(matrix)
+    if any(len(row) != size for row in matrix):
+        return False
+
+    # Calculate the expected sum
+    expected_sum = sum(matrix[0])
+
+    # Check rows
+    for row in matrix:
+        if sum(row) != expected_sum:
+            return False
+
+    # Check columns
+    for col in range(size):
+        if sum(matrix[row][col] for row in range(size)) != expected_sum:
+            return False
+
+    # Check diagonals
+    if sum(matrix[i][i] for i in range(size)) != expected_sum:
+        return False
+    if sum(matrix[i][size - i - 1] for i in range(size)) != expected_sum:
+        return False
+
+    # Check if all numbers are distinct and in the range 1 to n^2
+    all_numbers = [num for row in matrix for num in row]
+    if sorted(all_numbers) != list(range(1, size * size + 1)):
+        return False
+
+    return True
+
+
+# Test the function
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]))  # Expected output: True
+```
+
+This script defines a function `magic_square_test` that checks whether a given matrix is a magic square. It first checks if the matrix is square, then checks the sum of each row, column, and diagonal. Finally, it checks if all numbers are distinct and in the range 1 to n^2. If all conditions are met, the function returns `True`; otherwise, it returns `False`. The script also includes a test case to demonstrate the function's usage.

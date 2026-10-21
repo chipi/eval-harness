@@ -1,0 +1,14 @@
+```python
+def find_char_long(text):
+    """
+    Find all words in a string that are at least 4 characters long.
+    
+    Args:
+        text (str): The input string to search for words.
+        
+    Returns:
+        list: A list of words that are at least 4 characters long.
+    """
+    words = text.split()
+    return [word for word in words if len(word) >= 4]
+```

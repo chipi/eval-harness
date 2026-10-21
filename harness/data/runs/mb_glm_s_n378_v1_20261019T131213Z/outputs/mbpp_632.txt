@@ -1,0 +1,31 @@
+```python
+def move_zero(nums):
+    """
+    Moves all zeroes in the list to the end while maintaining the relative order of the non-zero elements.
+
+    Args:
+        nums: A list of numbers.
+
+    Returns:
+        A new list with all zeroes moved to the end.
+    """
+    # Create a new list to store the non-zero elements in their original order.
+    non_zeros = [num for num in nums if num != 0]
+    
+    # Create a new list of zeroes with a length equal to the number of zeroes in the original list.
+    zeros = [0] * (len(nums) - len(non_zeros))
+    
+    # Concatenate the two lists to form the final result.
+    return non_zeros + zeros
+
+# Example usage and assertion from the problem description
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+
+# Additional test cases
+assert move_zero([0, 0, 0, 1, 2]) == [1, 2, 0, 0, 0]
+assert move_zero([1, 2, 3, 4]) == [1, 2, 3, 4]
+assert move_zero([0, 0, 0, 0]) == [0, 0, 0, 0]
+assert move_zero([]) == []
+
+print("All assertions passed!")
+```

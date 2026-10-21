@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def long_words(n, sentence):
+    """
+    Returns a list of words longer than n characters from a given sentence.
+
+    Args:
+        n (int): The minimum length threshold for words to be included.
+        sentence (str): The input sentence to process.
+
+    Returns:
+        list: A list of words longer than n characters.
+    """
+    words = sentence.split()
+    return [word for word in words if len(word) > n]
+
+# Test the function
+assert long_words(3, "python is a programming language") == ['python', 'programming', 'language']
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `long_words` that takes an integer `n` and a string `sentence` as input
+2. Splits the sentence into words using the `split()` method
+3. Uses a list comprehension to filter words longer than `n` characters
+4. Includes the provided test case as an assertion
+5. Prints a success message if the test passes
+
+The function will work with any input sentence and any positive integer value for `n`.

@@ -1,0 +1,22 @@
+```python
+def sum_even_and_even_index(nums):
+    """
+    Return the sum of values that are even and are located at even indices
+    (0-based indexing).
+
+    Example:
+        [5, 6, 12, 1, 18, 8]
+        indices:  0  1   2  3   4  5
+        values:   5  6  12  1  18  8
+
+        Even indices: 0, 2, 4
+        Even values at those indices: 12, 18
+        Sum = 30
+    """
+    return sum(x for i, x in enumerate(nums) if i % 2 == 0 and x % 2 == 0)
+
+
+if __name__ == "__main__":
+    assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+    print("All tests passed.")
+```

@@ -1,0 +1,16 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+from itertools import combinations
+
+def combinations_list(lst):
+    result = []
+    n = len(lst)
+    for r in range(n + 1):
+        for combo in combinations(lst, r):
+            result.append(list(combo))
+    return result
+
+# Example usage
+print(combinations_list(['orange', 'red', 'green', 'blue']))
+```

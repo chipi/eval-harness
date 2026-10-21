@@ -1,0 +1,9 @@
+```python
+def tuple_to_int(tup):
+  """
+  Write a function to convert a given tuple of positive integers into a single integer.
+  assert tuple_to_int((1,2,3))==123
+  """
+  s = "".join(map(str, tup))
+  return int(s)
+```

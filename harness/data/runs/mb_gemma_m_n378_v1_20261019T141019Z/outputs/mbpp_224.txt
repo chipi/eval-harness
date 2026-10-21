@@ -1,0 +1,23 @@
+```python
+def count_Set_Bits(n: int) -> int:
+    """
+    Counts the number of set bits (1s) in the binary representation of a given integer.
+    Uses Brian Kernighan's Algorithm for efficiency.
+    """
+    count = 0
+    while n > 0:
+        # This operation clears the least significant set bit
+        n &= (n - 1)
+        count += 1
+    return count
+
+if __name__ == "__main__":
+    # Test cases
+    assert count_Set_Bits(2) == 1      # Binary: 10
+    assert count_Set_Bits(7) == 3      # Binary: 111
+    assert count_Set_Bits(0) == 0      # Binary: 0
+    assert count_Set_Bits(10) == 2     # Binary: 1010
+    assert count_Set_Bits(255) == 8    # Binary: 11111111
+    
+    print("All assertions passed!")
+```

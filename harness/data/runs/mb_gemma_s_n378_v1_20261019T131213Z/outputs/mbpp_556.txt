@@ -1,0 +1,15 @@
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Write a python function to count the number of pairs whose xor value is odd.
+    assert find_Odd_Pair([5,4,7,2,1],5) == 6
+    """
+    odd = 0
+    even = 0
+    for i in range(n):
+        if arr[i]%2 == 0:
+            even += 1
+        else:
+            odd += 1
+    return odd*even
+```

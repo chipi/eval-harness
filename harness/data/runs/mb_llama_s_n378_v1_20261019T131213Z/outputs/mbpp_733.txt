@@ -1,0 +1,42 @@
+```python
+def find_first_occurrence(nums, target):
+    """
+    Find the index of the first occurrence of a given number in a sorted array.
+
+    Args:
+    - nums (list): A sorted list of numbers.
+    - target (int): The target number to find.
+
+    Returns:
+    - int: The index of the first occurrence of the target number. Returns -1 if not found.
+
+    Example:
+    >>> find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5)
+    1
+    """
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    # Check if target is found and it's the first occurrence
+    if left < len(nums) and nums[left] == target:
+        return left
+    return -1
+
+# Test the function
+if __name__ == "__main__":
+    nums = [2, 5, 5, 5, 6, 6, 8, 9, 9, 9]
+    target = 5
+    index = find_first_occurrence(nums, target)
+    print(f"The index of the first occurrence of {target} is: {index}")
+```
+
+In this code:
+
+*   We define a function `find_first_occurrence` that takes a sorted list `nums` and a target number `target` as input.
+*   We use a binary search approach to find the first occurrence of the target number.
+*   The function returns the index of the first occurrence of the target number. If the target number is not found, it returns -1.
+*   In the `if __name__ == "__main__":` block, we test the function with an example.

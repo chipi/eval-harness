@@ -1,0 +1,51 @@
+```python
+def Find_Max_Length(lists):
+    """
+    This function finds the length of the longest sublist in a given list of lists.
+
+    Args:
+        lists (list): A list of lists.
+
+    Returns:
+        int: The length of the longest sublist.
+
+    """
+    # Check if the input list is empty
+    if not lists:
+        return 0
+    
+    # Use the built-in max function with a generator expression to find the maximum length
+    return max(len(sublist) for sublist in lists)
+
+# Test the function
+assert Find_Max_Length([[1],[1,4],[5,6,7,8]]) == 4
+```
+
+You can also use a for loop to achieve this:
+
+```python
+def Find_Max_Length(lists):
+    """
+    This function finds the length of the longest sublist in a given list of lists.
+
+    Args:
+        lists (list): A list of lists.
+
+    Returns:
+        int: The length of the longest sublist.
+
+    """
+    # Initialize max_length to 0
+    max_length = 0
+    
+    # Iterate over each sublist in the list
+    for sublist in lists:
+        # Update max_length if the current sublist is longer
+        max_length = max(max_length, len(sublist))
+    
+    # Return the maximum length found
+    return max_length
+
+# Test the function
+assert Find_Max_Length([[1],[1,4],[5,6,7,8]]) == 4
+```

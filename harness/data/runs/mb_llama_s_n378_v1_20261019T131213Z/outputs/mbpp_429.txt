@@ -1,0 +1,46 @@
+```python
+def and_tuples(t1, t2):
+    """
+    This function takes two tuples as input and returns a new tuple.
+    The new tuple contains the elementwise AND of the corresponding elements in the input tuples.
+
+    Args:
+        t1 (tuple): The first tuple.
+        t2 (tuple): The second tuple.
+
+    Returns:
+        tuple: A new tuple containing the elementwise AND of the input tuples.
+
+    Example:
+        >>> and_tuples((10, 4, 6, 9), (5, 2, 3, 3))
+        (0, 0, 2, 1)
+    """
+
+    # Check if both inputs are tuples
+    if not isinstance(t1, tuple) or not isinstance(t2, tuple):
+        raise TypeError("Both inputs must be tuples")
+
+    # Check if tuples have the same length
+    if len(t1) != len(t2):
+        raise ValueError("Tuples must have the same length")
+
+    # Use a list comprehension to calculate the elementwise AND
+    result = tuple(a & b for a, b in zip(t1, t2))
+
+    return result
+
+# Test the function
+print(and_tuples((10, 4, 6, 9), (5, 2, 3, 3)))  # Output: (0, 0, 2, 1)
+```
+
+In this code:
+
+*   We define a function `and_tuples` that takes two tuples `t1` and `t2` as input.
+*   We check if both inputs are tuples and raise a `TypeError` if not.
+*   We check if the tuples have the same length and raise a `ValueError` if not.
+*   We use the `zip` function to iterate over the corresponding elements of the input tuples.
+*   We use a generator expression to calculate the elementwise AND of the corresponding elements using the `&` operator.
+*   We convert the result to a tuple using the `tuple` function.
+*   Finally, we return the resulting tuple.
+
+The example usage demonstrates how to call the `and_tuples` function with two tuples and print the result.

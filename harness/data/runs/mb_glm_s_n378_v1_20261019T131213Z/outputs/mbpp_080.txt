@@ -1,0 +1,67 @@
+```python
+"""
+Write a function to find the nth tetrahedral number.
+assert tetrahedral_number(5) == 35
+"""
+
+def tetrahedral_number(n: int) -> int:
+    """
+    Calculates the nth tetrahedral number.
+
+    A tetrahedral number is a figurate number that represents a pyramid
+    with a triangular base and three sides, called a tetrahedron.
+    The nth tetrahedral number is the sum of the first n triangular numbers.
+
+    The formula for the nth tetrahedral number is:
+    T_n = n * (n + 1) * (n + 2) / 6
+
+    Args:
+        n: A non-negative integer representing the position in the
+           tetrahedral number sequence.
+
+    Returns:
+        The nth tetrahedral number.
+
+    Raises:
+        ValueError: If n is a negative integer.
+    """
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+
+    # Using the direct formula for efficiency.
+    # The formula is derived from the sum of the first n triangular numbers.
+    # T_n = sum_{k=1 to n} (k * (k + 1) / 2)
+    # T_n = 1/2 * sum_{k=1 to n} (k^2 + k)
+    # T_n = 1/2 * (n(n+1)(2n+1)/6 + n(n+1)/2)
+    # T_n = n(n+1)(n+2)/6
+    return n * (n + 1) * (n + 2) // 6
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert tetrahedral_number(5) == 35
+
+    # Additional test cases
+    assert tetrahedral_number(0) == 0
+    assert tetrahedral_number(1) == 1
+    assert tetrahedral_number(2) == 4
+    assert tetrahedral_number(3) == 10
+    assert tetrahedral_number(4) == 20
+    assert tetrahedral_number(6) == 56
+    assert tetrahedral_number(10) == 220
+
+    # Test for invalid input
+    try:
+        tetrahedral_number(-1)
+        assert False, "Expected ValueError for negative input"
+    except ValueError:
+        pass
+
+    try:
+        tetrahedral_number(3.5)
+        assert False, "Expected ValueError for non-integer input"
+    except ValueError:
+        pass
+
+    print("All tests passed successfully!")
+```

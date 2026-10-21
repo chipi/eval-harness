@@ -1,0 +1,27 @@
+```python
+def armstrong_number(n: int) -> bool:
+    """
+    Checks whether a given number is an Armstrong number.
+    An Armstrong number (for an n-digit number) is a number that is 
+    the sum of its own digits each raised to the power of the number of digits.
+    """
+    # Convert number to string to easily iterate through digits and find the length
+    str_n = str(n)
+    num_digits = len(str_n)
+    
+    # Calculate the sum of each digit raised to the power of num_digits
+    total_sum = sum(int(digit) ** num_digits for digit in str_n)
+    
+    # Return True if the sum equals the original number
+    return total_sum == n
+
+if __name__ == "__main__":
+    # Test cases
+    assert armstrong_number(153) == True   # 1^3 + 5^3 + 3^3 = 1 + 125 + 27 = 153
+    assert armstrong_number(370) == True   # 3^3 + 7^3 + 0^3 = 27 + 343 + 0 = 370
+    assert armstrong_number(9474) == True  # 9^4 + 4^4 + 7^4 + 4^4 = 6561 + 256 + 2401 + 256 = 9474
+    assert armstrong_number(123) == False
+    assert armstrong_number(1) == True     # 1^1 = 1
+    
+    print("All tests passed!")
+```

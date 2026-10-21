@@ -1,0 +1,10 @@
+```python
+def check_none(t):
+    return None in t
+
+# Test cases
+assert check_none((10, 4, 5, 6, None)) == True
+assert check_none((10, 4, 5, 6)) == False
+assert check_none((None,)) == True
+assert check_none(()) == False
+```

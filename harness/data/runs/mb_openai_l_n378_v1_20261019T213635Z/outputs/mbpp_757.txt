@@ -1,0 +1,25 @@
+```python
+from collections import Counter
+
+
+def count_reverse_pairs(strings):
+    """Count pairs of entries whose strings are reverses of each other."""
+    counts = Counter(strings)
+    pairs = 0
+
+    for word in list(counts):
+        reverse = word[::-1]
+        if reverse not in counts:
+            continue
+
+        if word == reverse:
+            n = counts[word]
+            pairs += n * (n - 1) // 2
+        elif word < reverse:
+            pairs += counts[word] * counts[reverse]
+
+    return pairs
+
+
+assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+```

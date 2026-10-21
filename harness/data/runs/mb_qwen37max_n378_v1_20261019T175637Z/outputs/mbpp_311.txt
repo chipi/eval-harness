@@ -1,0 +1,27 @@
+```python
+def set_left_most_unset_bit(n):
+    """
+    Set the leftmost unset bit of a non-negative integer.
+    
+    For example, 10 in binary is '1010'. The leftmost unset bit is at position 3
+    (0-indexed from right), so setting it gives '1110' = 14.
+    """
+    if n == 0:
+        return 1  # Leftmost unset bit of 0 is bit 0
+    
+    # Find the number of bits needed to represent n
+    num_bits = n.bit_length()
+    
+    # Check each bit from the most significant to least significant
+    for i in range(num_bits - 1, -1, -1):
+        if not (n & (1 << i)):
+            return n | (1 << i)
+    
+    # All bits up to num_bits-1 are set, so the leftmost unset bit
+    # is at position num_bits
+    return n | (1 << num_bits)
+
+
+# Test
+assert set_left_most_unset_bit(10) == 14
+```

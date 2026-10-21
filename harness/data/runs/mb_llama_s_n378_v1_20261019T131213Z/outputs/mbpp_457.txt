@@ -1,0 +1,32 @@
+```python
+def Find_Min(lst):
+    """
+    This function finds the sublist having minimum length in a given list of lists.
+
+    Args:
+        lst (list): A list of lists.
+
+    Returns:
+        list: The sublist with the minimum length.
+
+    Raises:
+        ValueError: If the input list is empty.
+    """
+    if not lst:
+        raise ValueError("Input list is empty")
+
+    # Use the built-in min function with a custom key to find the sublist with the minimum length
+    return min(lst, key=len)
+
+
+# Example usage:
+print(Find_Min([[1],[1,2],[1,2,3]]))  # Output: [1]
+```
+
+In this code:
+
+*   We define a function `Find_Min` that takes a list of lists `lst` as input.
+*   We check if the input list is empty and raise a `ValueError` if it is.
+*   We use the built-in `min` function with a custom key (`len`) to find the sublist with the minimum length.
+*   The function returns the sublist with the minimum length.
+*   We provide an example usage of the function.

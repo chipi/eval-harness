@@ -1,0 +1,10 @@
+```python
+def pair_wise(lst):
+    return list(zip(lst, lst[1:]))
+
+def main():
+    print(pair_wise([1,1,2,3,3,4,4,5]))  # [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+
+if __name__ == "__main__":
+    main()
+```

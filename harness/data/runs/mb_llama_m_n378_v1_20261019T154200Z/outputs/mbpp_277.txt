@@ -1,0 +1,17 @@
+```python
+def dict_filter(dictionary, n):
+    """
+    Filters a dictionary to only include entries with values greater than or equal to n.
+
+    Args:
+        dictionary (dict): The dictionary to be filtered.
+        n (int): The minimum value for an entry to be included in the filtered dictionary.
+
+    Returns:
+        dict: A new dictionary containing only the entries from the original dictionary with values greater than or equal to n.
+    """
+    return {key: value for key, value in dictionary.items() if value >= n}
+
+# Example usage:
+print(dict_filter({'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}, 170))
+```

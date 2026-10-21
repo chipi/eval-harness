@@ -1,0 +1,22 @@
+```python
+def dif_Square(n):
+    """
+    Return True if n can be expressed as the difference of two squares:
+        n = a^2 - b^2 = (a-b)(a+b)
+
+    For a non-negative integer n, this is possible unless n is of the form:
+        n = 2 * (odd number)
+    i.e., n % 4 == 2.
+
+    Examples:
+        5 = 3^2 - 2^2 = 9 - 4
+        6 cannot be written as a difference of two squares
+    """
+    if n < 0:
+        return False
+    return n % 4 != 2
+
+
+# Example check
+assert dif_Square(5) == True
+```

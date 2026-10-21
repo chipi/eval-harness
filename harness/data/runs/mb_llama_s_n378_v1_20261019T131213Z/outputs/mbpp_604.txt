@@ -1,0 +1,27 @@
+### Reversing Words in a String
+
+The following Python function takes a string of words separated by spaces as input and returns a new string with the words in reverse order.
+
+```python
+def reverse_words(s):
+    """
+    Reverses the order of words in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The input string with the words in reverse order.
+    """
+    return ' '.join(s.split()[::-1])
+
+# Example usage:
+assert reverse_words("python program") == "program python"
+print(reverse_words("hello world"))  # Output: "world hello"
+```
+
+In this code:
+
+*   The `split()` method splits the input string into a list of words.
+*   The `[::-1]` slice notation reverses the order of the list.
+*   The `' '.join()` method joins the words back into a string with spaces in between.

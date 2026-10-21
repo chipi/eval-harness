@@ -1,0 +1,37 @@
+```python
+def replace_specialchar(text: str) -> str:
+    """
+    Replace all occurrences of spaces, commas, or dots with a colon.
+    
+    Args:
+        text: The input string to process
+        
+    Returns:
+        A string with spaces, commas, and dots replaced by colons
+        
+    Examples:
+        >>> replace_specialchar('Python language, Programming language.')
+        'Python:language::Programming:language:'
+    """
+    result = []
+    for char in text:
+        if char in (' ', ',', '.'):
+            result.append(':')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
+if __name__ == '__main__':
+    # Test the function with the provided assertion
+    assert replace_specialchar('Python language, Programming language.') == 'Python:language::Programming:language:'
+    
+    # Additional test cases
+    assert replace_specialchar('Hello World') == 'Hello:World'
+    assert replace_specialchar('a,b.c d') == 'a:b:c:d'
+    assert replace_specialchar('') == ''
+    assert replace_specialchar('NoSpecialChars') == 'NoSpecialChars'
+    assert replace_specialchar('...,,,   ') == ':::::::'
+    
+    print("All tests passed!")
+```

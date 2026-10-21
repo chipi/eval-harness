@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_nth_element(data, n):
+    """
+    Extract the nth element from each tuple in a list of tuples.
+    
+    Args:
+        data: A list of tuples
+        n: The index of the element to extract from each tuple
+    
+    Returns:
+        A list containing the nth element from each tuple
+    """
+    return [item[n] for item in data]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = extract_nth_element(
+        [('Greyson Fulton', 98, 99), 
+         ('Brady Kent', 97, 96), 
+         ('Wyatt Knott', 91, 94), 
+         ('Beau Turnbull', 94, 98)], 
+        0
+    )
+    
+    expected = ['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']
+    
+    print("Result:  ", result)
+    print("Expected:", expected)
+    assert result == expected, "Test failed!"
+    print("Test passed!")
+    
+    # Additional tests
+    assert extract_nth_element([('a', 1), ('b', 2), ('c', 3)], 1) == [1, 2, 3]
+    assert extract_nth_element([(1, 2, 3), (4, 5, 6)], 2) == [3, 6]
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function `extract_nth_element` takes two parameters:
+   - `data`: a list of tuples
+   - `n`: the index position to extract from each tuple
+
+2. It uses a **list comprehension** to iterate through each tuple in the list and extract the element at index `n`.
+
+3. The result is a new list containing only the nth element from each tuple.
+
+**Example:**
+- Input: `[('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ...]` with `n=0`
+- Output: `['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']`
+
+The script includes the assertion test from the problem statement, plus a couple of extra tests to verify the function works correctly with different data types and indices.

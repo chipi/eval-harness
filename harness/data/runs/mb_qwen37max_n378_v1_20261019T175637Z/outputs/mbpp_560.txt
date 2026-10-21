@@ -1,0 +1,10 @@
+```python
+def union_elements(tuple1, tuple2):
+    """Find the union of elements from two tuples and return them in sorted order."""
+    return tuple(sorted(set(tuple1) | set(tuple2)))
+
+
+# Test
+assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+print("All tests passed!")
+```

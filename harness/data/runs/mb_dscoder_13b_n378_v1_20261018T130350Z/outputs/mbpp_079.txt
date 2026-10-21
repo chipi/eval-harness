@@ -1,0 +1,17 @@
+```python
+def word_len(word):
+    """
+    This function checks whether the length of the word is odd or not.
+    """
+    if len(word) % 2 == 0:
+        return False
+    else:
+        return True
+
+# Test cases
+assert word_len("Hadoop") == False
+assert word_len("Hadooph") == True
+assert word_len("") == True
+assert word_len("a") == True
+assert word_len("aaaa") == False
+```

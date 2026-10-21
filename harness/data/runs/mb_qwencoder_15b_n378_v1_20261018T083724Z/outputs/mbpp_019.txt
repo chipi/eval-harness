@@ -1,0 +1,31 @@
+```python
+def test_duplicate(arr):
+    # Convert the list to a set to remove duplicates
+    unique_arr = set(arr)
+    
+    # If the length of the original list is different from the length of the set,
+    # it means there were duplicates in the original list
+    if len(arr) != len(unique_arr):
+        return True
+    else:
+        return False
+
+# Test cases
+assert test_duplicate(([1,2,3,4,5])) == False
+assert test_duplicate(([1,2,3,4,5,6])) == True
+assert test_duplicate(([1,2,3,4,5,6,7])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])) == True
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21])) == False
+assert test_duplicate(([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,

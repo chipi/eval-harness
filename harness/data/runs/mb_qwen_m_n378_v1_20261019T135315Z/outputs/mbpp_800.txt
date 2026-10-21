@@ -1,0 +1,35 @@
+```python
+def remove_all_spaces(s: str) -> str:
+    """
+    Remove all whitespace characters from a string.
+    
+    Args:
+        s: Input string that may contain spaces
+        
+    Returns:
+        String with all whitespace characters removed
+        
+    Examples:
+        >>> remove_all_spaces('python  program')
+        'pythonprogram'
+        >>> remove_all_spaces('hello world')
+        'helloworld'
+        >>> remove_all_spaces('no_spaces_here')
+        'no_spaces_here'
+    """
+    return s.replace(' ', '')
+
+
+if __name__ == '__main__':
+    # Test the function with the provided assertion
+    assert remove_all_spaces('python  program') == 'pythonprogram'
+    
+    # Additional test cases
+    assert remove_all_spaces('hello world') == 'helloworld'
+    assert remove_all_spaces('no_spaces_here') == 'no_spaces_here'
+    assert remove_all_spaces('  leading and trailing  ') == 'leadingandtrailing'
+    assert remove_all_spaces('') == ''
+    assert remove_all_spaces('   ') == ''
+    
+    print("All tests passed!")
+```

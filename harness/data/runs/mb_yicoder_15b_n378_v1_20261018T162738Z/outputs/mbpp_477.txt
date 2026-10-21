@@ -1,0 +1,10 @@
+```python
+def is_lower(s):
+    return s.lower()
+
+assert is_lower("InValid") == "invalid"
+assert is_lower("Hello World") == "hello world"
+assert is_lower("123") == "123"
+assert is_lower("") == ""
+assert is_lower(" ") == " "
+```

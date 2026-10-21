@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def neg_nos(lst):
+    """
+    Return the negative numbers in a list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        A list containing only the negative numbers from the input list
+    """
+    return [num for num in lst if num < 0]
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+    
+    # Additional test cases
+    assert neg_nos([1, 2, 3]) == []
+    assert neg_nos([-1, -2, -3]) == [-1, -2, -3]
+    assert neg_nos([]) == []
+    assert neg_nos([0, -0, 0.0]) == []
+    assert neg_nos([-1.5, 2.7, -3.14]) == [-1.5, -3.14]
+    
+    print("All tests passed!")
+```
+
+The function uses a list comprehension to filter out only the negative numbers (those less than 0) from the input list. The script includes the required assertion test case as well as additional test cases to verify the function works correctly in various scenarios.

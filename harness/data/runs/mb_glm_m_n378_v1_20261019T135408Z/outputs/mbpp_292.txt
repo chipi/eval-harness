@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find(dividend, divisor):
+    """
+    Find the quotient of two numbers (rounded down to the nearest integer).
+    
+    Args:
+        dividend (int or float): The number to be divided.
+        divisor (int or float): The number to divide by.
+        
+    Returns:
+        int: The quotient rounded down to the nearest integer.
+        
+    Raises:
+        ZeroDivisionError: If the divisor is zero.
+    """
+    if divisor == 0:
+        raise ZeroDivisionError("Division by zero is not allowed")
+    return dividend // divisor
+
+# Test cases
+assert find(10, 3) == 3
+assert find(10, 2) == 5
+assert find(9, 3) == 3
+assert find(7, 2) == 3
+assert find(-10, 3) == -4  # Note: floor division rounds down for negative numbers
+assert find(10, -3) == -4
+assert find(-10, -3) == 3
+
+print("All test cases passed!")
+```
+
+This script defines a function `find()` that takes two numbers (dividend and divisor) and returns their quotient rounded down to the nearest integer using Python's floor division operator (`//`). The function includes error handling for division by zero and comes with several test cases to verify its correctness. The test cases cover positive numbers, negative numbers, and edge cases.

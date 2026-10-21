@@ -1,0 +1,27 @@
+To solve this problem, we need to find the area of the largest triangle that can be inscribed in a semicircle with a given radius. The key observation here is that the largest such triangle is a right-angled triangle with the hypotenuse as the diameter of the semicircle and the right angle at the point on the semicircle's circumference. 
+
+### Approach
+1. **Understanding the Geometry**: The largest triangle inscribed in a semicircle is a right-angled triangle. This is because, according to Thales' theorem, any triangle inscribed in a semicircle with the diameter as one side is a right-angled triangle. The right angle will be opposite the diameter. The area of such a triangle is maximized when the other two sides are equal, making it an isosceles right-angled triangle.
+2. **Calculating the Area**: For a semicircle with radius \( r \), the diameter is \( 2r \). The legs of the right-angled triangle will each be \( r\sqrt{2} \) (since the hypotenuse is \( 2r \), and in an isosceles right triangle, the legs are \( \frac{2r}{\sqrt{2}} = r\sqrt{2} \)). The area of this triangle is \( \frac{1}{2} \times \text{leg}_1 \times \text{leg}_2 = \frac{1}{2} \times r\sqrt{2} \times r\sqrt{2} = r^2 \).
+3. **Handling Edge Cases**: If the given radius is negative, the function should return `None` since a semicircle cannot have a negative radius.
+
+### Solution Code
+```python
+def triangle_area(radius):
+    if radius < 0:
+        return None
+    return radius ** 2
+
+# Test cases
+assert triangle_area(-1) == None
+assert triangle_area(0) == 0
+assert triangle_area(1) == 1
+assert triangle_area(2) == 4
+```
+
+### Explanation
+- **Geometry Insight**: The largest triangle inscribed in a semicircle is a right-angled triangle with the hypotenuse as the diameter. The legs of this triangle are equal, forming an isosceles right triangle, which maximizes the area.
+- **Area Calculation**: The area of the triangle is derived from the product of the legs divided by 2. For a radius \( r \), the legs are \( r\sqrt{2} \), leading to an area of \( r^2 \).
+- **Edge Handling**: The function checks if the radius is negative and returns `None` immediately, as a negative radius is invalid. For non-negative radii, it computes the area as \( r^2 \).
+
+This approach efficiently combines geometric principles with straightforward arithmetic to solve the problem, ensuring correctness and handling edge cases appropriately.

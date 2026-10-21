@@ -1,0 +1,22 @@
+```python
+def sum_series(n):
+    """
+    Calculate the sum (n - 2*i) from i=0 to n // 2.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The sum of the series.
+    """
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+    return total
+
+# Example usage:
+print(sum_series(6))  # Output: 12
+```

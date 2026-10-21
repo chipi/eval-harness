@@ -1,0 +1,15 @@
+```python
+def ascii_value(char):
+    """
+    Write a function to find the ascii value of a character.
+    """
+    return ord(char)
+
+# Test cases
+assert ascii_value('A')==65
+assert ascii_value('B')==66
+assert ascii_value('Z')==90
+assert ascii_value('a')==97
+assert ascii_value('b')==98
+assert ascii_value('z')==122
+```

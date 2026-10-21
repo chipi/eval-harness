@@ -1,0 +1,33 @@
+```python
+def pos_count(lst: list) -> int:
+    """
+    Count the number of positive numbers in a list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The count of positive numbers (numbers > 0)
+        
+    Examples:
+        >>> pos_count([1, -2, 3, -4])
+        2
+        >>> pos_count([-1, -2, -3])
+        0
+        >>> pos_count([1, 2, 3])
+        3
+        >>> pos_count([])
+        0
+    """
+    return sum(1 for num in lst if num > 0)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert pos_count([1, -2, 3, -4]) == 2
+    assert pos_count([-1, -2, -3]) == 0
+    assert pos_count([1, 2, 3]) == 3
+    assert pos_count([]) == 0
+    assert pos_count([0, -1, 5]) == 1
+    print("All tests passed!")
+```

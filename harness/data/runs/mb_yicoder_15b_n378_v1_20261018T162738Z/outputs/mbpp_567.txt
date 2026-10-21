@@ -1,0 +1,12 @@
+```python
+def issort_list(lst):
+    return lst == sorted(lst)
+
+# Test cases
+assert issort_list([1,2,4,6,8,10,12,14,16,17])==True
+assert issort_list([1,2,4,6,8,10,12,14,16,17,19])==False
+assert issort_list([])==True
+assert issort_list([1])==True
+assert issort_list([1,2])==True
+assert issort_list([2,1])==False
+```

@@ -1,0 +1,87 @@
+Here's a self-contained Python script that solves the problem of setting the leftmost unset bit:
+
+```python
+def set_left_most_unset_bit(n):
+    """
+    Set the leftmost unset bit of a given number.
+    
+    Args:
+        n (int): The input number
+        
+    Returns:
+        int: The number with the leftmost unset bit set to 1
+    """
+    # Find the position of the leftmost unset bit
+    # Start from the most significant bit and work down
+    position = 0
+    temp = n
+    
+    # Find the highest bit position
+    while temp > 0:
+        temp >>= 1
+        position += 1
+    
+    # Now check from the highest position down to find the leftmost unset bit
+    for i in range(position, -1, -1):
+        if not (n & (1 << i)):
+            # Found the leftmost unset bit, set it
+            return n | (1 << i)
+    
+    # If all bits are set (shouldn't happen for normal cases), return n
+    return n
+
+
+def set_left_most_unset_bit_alternative(n):
+    """
+    Alternative implementation using bit manipulation.
+    """
+    # Find the position of the most significant bit
+    if n == 0:
+        return 1
+    
+    # Get the position of the highest set bit
+    msb_pos = n.bit_length() - 1
+    
+    # Check from the highest position down to find the leftmost unset bit
+    for i in range(msb_pos, -1, -1):
+        if not (n & (1 << i)):
+            return n | (1 << i)
+    
+    # If all bits from 0 to msb_pos are set, set the next bit
+    return n | (1 << (msb_pos + 1))
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test cases
+    assert set_left_most_unset_bit(10) == 14
+    assert set_left_most_unset_bit_alternative(10) == 14
+    
+    # Additional test cases
+    print(f"set_left_most_unset_bit(10) = {set_left_most_unset_bit(10)}")  # 14
+    print(f"set_left_most_unset_bit(7) = {set_left_most_unset_bit(7)}")    # 15
+    print(f"set_left_most_unset_bit(0) = {set_left_most_unset_bit(0)}")    # 1
+    print(f"set_left_most_unset_bit(1) = {set_left_most_unset_bit(1)}")    # 3
+    print(f"set_left_most_unset_bit(5) = {set_left_most_unset_bit(5)}")    # 7
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `set_left_most_unset_bit(n)` works as follows:
+
+1. **Find the highest bit position**: We determine the position of the most significant bit by repeatedly right-shifting the number until it becomes 0.
+
+2. **Scan from left to right**: Starting from the highest bit position and moving down to position 0, we check each bit using the bitwise AND operation `n & (1 << i)`.
+
+3. **Set the first unset bit**: When we find a bit that is 0 (unset), we set it using the bitwise OR operation `n | (1 << i)` and return the result.
+
+**Example with n = 10:**
+- Binary representation of 10: `1010`
+- Highest bit position: 3 (since 2³ = 8 ≤ 10 < 16 = 2⁴)
+- Check bit 3: `1010 & 1000 = 1000` (set, continue)
+- Check bit 2: `1010 & 0100 = 0000` (unset, set it!)
+- Result: `1010 | 0100 = 1110` = 14 ✓
+
+The alternative implementation uses Python's built-in `bit_length()` method for efficiency, but both produce the same results.

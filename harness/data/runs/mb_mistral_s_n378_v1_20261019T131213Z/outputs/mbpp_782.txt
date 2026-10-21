@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of finding the sum of all odd-length subarrays:
+
+```python
+def odd_length_sum(arr):
+    total = 0
+    n = len(arr)
+    for i in range(n):
+        for j in range(i, n, 2):  # j steps by 2 to get odd lengths
+            subarray = arr[i:j+1]
+            total += sum(subarray)
+    return total
+
+# Test case
+assert odd_length_sum([1, 2, 4]) == 14
+print("Test passed!")
+```
+
+### Explanation:
+1. The function `odd_length_sum` takes an array as input.
+2. It initializes a `total` variable to accumulate the sum of all odd-length subarrays.
+3. It uses nested loops to generate all possible subarrays:
+   - The outer loop (`i`) selects the starting index of the subarray.
+   - The inner loop (`j`) selects the ending index, stepping by 2 to ensure the subarray length is odd (since `j - i + 1` must be odd).
+4. For each subarray, it calculates the sum and adds it to `total`.
+5. The function returns the total sum of all odd-length subarrays.
+6. The test case `assert odd_length_sum([1, 2, 4]) == 14` verifies the correctness of the function.
+
+### Output:
+When you run the script, it will print "Test passed!" if the function works correctly. The sum of all odd-length subarrays of `[1, 2, 4]` is indeed 14 (as verified by the assertion).

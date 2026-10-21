@@ -1,0 +1,76 @@
+```python
+def toggle_middle_bits(n: int) -> int:
+    """
+    Toggle all bits of the number except the first and the last bit.
+    
+    Args:
+        n: Input integer
+    
+    Returns:
+        Integer with middle bits toggled
+    """
+    # If number is 0 or 1, there are no middle bits to toggle
+    if n <= 1:
+        return n
+    
+    # Find the position of the highest set bit (MSB)
+    # We use bit_length to get the number of bits needed to represent n
+    num_bits = n.bit_length()
+    
+    # Create a mask with 1s in the middle positions
+    # We want to toggle bits from position 1 to num_bits-2 (0-indexed from LSB)
+    # First, create a mask with all 1s for the middle bits
+    # Example: for n=9 (1001), num_bits=4, we want to toggle bits at positions 1 and 2
+    # Mask would be: 0110 (binary) = 6
+    
+    # Create mask with 1s from position 1 to num_bits-2
+    if num_bits <= 2:
+        # If number has 2 or fewer bits, there are no middle bits
+        return n
+    
+    # Create mask: (2^(num_bits-1) - 1) gives all 1s for num_bits-1 bits
+    # Then remove the first and last bit positions
+    # Mask = (1 << (num_bits - 1)) - 1  gives all 1s for bits 0 to num_bits-2
+    # Then clear bit 0 (LSB) and bit num_bits-1 (MSB)
+    mask = (1 << (num_bits - 1)) - 1  # All 1s for bits 0 to num_bits-2
+    mask &= ~1  # Clear the LSB (bit 0)
+    mask &= ~(1 << (num_bits - 1))  # Clear the MSB (bit num_bits-1)
+    
+    # XOR with mask to toggle middle bits
+    result = n ^ mask
+    
+    return result
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    # Test case from the problem
+    assert toggle_middle_bits(9) == 15, f"Expected 15, got {toggle_middle_bits(9)}"
+    
+    # Additional test cases
+    # 9 in binary: 1001 -> toggle middle bits -> 1111 = 15
+    print(f"toggle_middle_bits(9) = {toggle_middle_bits(9)}")  # Should be 15
+    
+    # 15 in binary: 1111 -> toggle middle bits -> 1001 = 9
+    print(f"toggle_middle_bits(15) = {toggle_middle_bits(15)}")  # Should be 9
+    
+    # 0 in binary: 0 -> no middle bits -> 0
+    print(f"toggle_middle_bits(0) = {toggle_middle_bits(0)}")  # Should be 0
+    
+    # 1 in binary: 1 -> no middle bits -> 1
+    print(f"toggle_middle_bits(1) = {toggle_middle_bits(1)}")  # Should be 1
+    
+    # 2 in binary: 10 -> no middle bits -> 2
+    print(f"toggle_middle_bits(2) = {toggle_middle_bits(2)}")  # Should be 2
+    
+    # 3 in binary: 11 -> no middle bits -> 3
+    print(f"toggle_middle_bits(3) = {toggle_middle_bits(3)}")  # Should be 3
+    
+    # 5 in binary: 101 -> toggle middle bit -> 111 = 7
+    print(f"toggle_middle_bits(5) = {toggle_middle_bits(5)}")  # Should be 7
+    
+    # 7 in binary: 111 -> toggle middle bit -> 101 = 5
+    print(f"toggle_middle_bits(7) = {toggle_middle_bits(7)}")  # Should be 5
+    
+    print("All tests passed!")
+```

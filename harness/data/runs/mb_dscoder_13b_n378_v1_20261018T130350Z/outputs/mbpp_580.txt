@@ -1,0 +1,14 @@
+```python
+def extract_even(t):
+    if isinstance(t, tuple):
+        return tuple(extract_even(i) for i in t if isinstance(i, int) and i % 2 == 0)
+    else:
+        return t
+
+# Test cases
+assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+assert extract_even((4, 5, (7, 6, (2, 3)), 6, 8)) == (4, (6, (2)), 6, 8)
+assert extract_even((4, 5, (7, 6, (2, 4)), 7, 8)) == (4, (6, (2, 4)), 8)
+assert extract_even((4, 5, (7, 6, (2, 4)), 6.5, 8)) == (4, (6, (2, 4)), 6, 8)
+assert extract_even((4, 5, (7, 6, (2, 4)), '6', 8)) == (4, (6, (2, 4)), 6, 8)
+```

@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    Find all combinations of sums with tuples in the given tuple list.
+    For each pair of tuples, sum their corresponding elements.
+    
+    Args:
+        tuple_list: List of tuples containing numeric values
+    
+    Returns:
+        List of tuples containing the sums of all possible pairs
+    """
+    result = []
+    n = len(tuple_list)
+    
+    # Generate all possible pairs of tuples
+    for i in range(n):
+        for j in range(i + 1, n):
+            # Sum corresponding elements of the two tuples
+            sum_tuple = (tuple_list[i][0] + tuple_list[j][0], 
+                        tuple_list[i][1] + tuple_list[j][1])
+            result.append(sum_tuple)
+    
+    return result
+
+# Test the function
+if __name__ == "__main__":
+    test_input = [(2, 4), (6, 7), (5, 1), (6, 10)]
+    expected_output = [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    
+    result = find_combinations(test_input)
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Match: {result == expected_output}")
+    
+    # Assertion
+    assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    print("Assertion passed!")
+```
+
+This solution:
+1. Takes a list of tuples as input
+2. Iterates through all possible pairs of tuples (without repetition)
+3. For each pair, creates a new tuple by summing corresponding elements
+4. Returns the list of summed tuples
+5. Includes the required assertion test case
+
+The function finds all combinations of two tuples from the input list and sums their corresponding elements to create new tuples.

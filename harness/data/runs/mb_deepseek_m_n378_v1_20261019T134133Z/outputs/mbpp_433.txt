@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_greater(arr, num):
+    """
+    Check whether the entered number is greater than all elements of the given array.
+    
+    Args:
+        arr (list): The array of numbers to compare against.
+        num (int/float): The number to check.
+    
+    Returns:
+        bool: True if num is greater than all elements in arr, False otherwise.
+    """
+    for element in arr:
+        if num <= element:
+            return False
+    return True
+
+
+# Test cases
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+assert check_greater([1, 2, 3, 4, 5], 6) == True
+assert check_greater([], 10) == True
+assert check_greater([5], 5) == False
+assert check_greater([5], 6) == True
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `check_greater` iterates through each element in the array.
+- If the given number is less than or equal to any element, it immediately returns `False`.
+- If the loop completes without finding such an element, it returns `True`, meaning the number is greater than all elements.
+- An empty array returns `True` since there are no elements to violate the condition (vacuous truth).

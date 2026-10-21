@@ -1,0 +1,19 @@
+```python
+import re
+
+def extract_quotation(string):
+    return re.findall(r'"([^"]*)"', string)
+
+# Test
+assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+print("All tests passed!")
+```
+
+This script defines a function `extract_quotation` that uses a regular expression to find all substrings enclosed in double quotation marks and returns them as a list.
+
+**How it works:**
+- `r'"([^"]*)"'` is the regex pattern:
+  - `"` matches a literal double quote.
+  - `([^"]*)` captures any sequence of characters that are **not** a double quote.
+  - `"` matches the closing double quote.
+- `re.findall` returns all non-overlapping matches of the captured group as a list of strings.

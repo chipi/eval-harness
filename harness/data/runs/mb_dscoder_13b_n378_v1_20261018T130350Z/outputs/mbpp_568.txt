@@ -1,0 +1,7 @@
+```python
+def empty_list(N):
+    return [{} for _ in range(N)]
+
+# Testing the function
+assert empty_list(5)==[{},{},{},{},{}]
+```

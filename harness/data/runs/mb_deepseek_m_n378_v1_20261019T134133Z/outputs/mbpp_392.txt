@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem using memoization to avoid redundant calculations:
+
+```python
+def get_max_sum(n):
+    """
+    Find the maximum sum possible using the equation:
+    f(n) = max(f(n/2) + f(n/3) + f(n/4) + f(n/5), n)
+    
+    Uses memoization to store previously computed values.
+    """
+    memo = {}
+    
+    def helper(num):
+        if num == 0:
+            return 0
+        if num in memo:
+            return memo[num]
+        
+        # Calculate the sum of breaking down the number
+        breakdown_sum = (
+            helper(num // 2) +
+            helper(num // 3) +
+            helper(num // 4) +
+            helper(num // 5)
+        )
+        
+        # Take the maximum of breaking down or keeping the number as is
+        result = max(breakdown_sum, num)
+        memo[num] = result
+        return result
+    
+    return helper(n)
+
+
+# Test the function
+assert get_max_sum(60) == 106
+print("Test passed!")
+print(f"get_max_sum(60) = {get_max_sum(60)}")
+```
+
+**How it works:**
+
+1. **Recurrence relation**: For any number `n`, we can either keep it as is (value = `n`) or break it down into `n/2 + n/3 + n/4 + n/5` (using integer division) and recursively maximize each part.
+
+2. **Memoization**: Since the same subproblems (like `n=10`, `n=15`, etc.) are computed multiple times, we cache results in a dictionary `memo` to achieve O(n) time complexity instead of exponential.
+
+3. **Base case**: `f(0) = 0`.
+
+4. **Verification**: For `n=60`, the optimal breakdown is `f(30) + f(20) + f(15) + f(12) = 30 + 20 + 15 + 12 = 77`... but wait, let's trace: actually `f(30)=30`, `f(20)=20`, `f(15)=15`, `f(12)=12`, giving `77 < 60`? No — the recursion goes deeper. For example, `f(12) = max(12, f(6)+f(4)+f(3)+f(2)) = max(12, 6+4+3+2) = max(12, 15) = 15`. Following this pattern, the total comes out to `106`, matching the assertion.

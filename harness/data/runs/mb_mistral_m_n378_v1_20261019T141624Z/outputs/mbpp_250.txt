@@ -1,0 +1,17 @@
+```python
+def count_X(tuple_data, element):
+    """
+    Counts the occurrences of an element in a tuple.
+
+    Args:
+        tuple_data: The tuple to search in.
+        element: The element to count occurrences of.
+
+    Returns:
+        The number of times the element appears in the tuple.
+    """
+    return tuple_data.count(element)
+
+# Test case
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+```

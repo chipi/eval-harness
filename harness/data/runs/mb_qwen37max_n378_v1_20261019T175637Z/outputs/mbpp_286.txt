@@ -1,0 +1,62 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Find the largest sum of a contiguous subarray in the array formed by repeating arr k times.
+    
+    Args:
+        arr: The original array
+        n: Length of the array
+        k: Number of times to repeat the array
+    
+    Returns:
+        Maximum subarray sum in the repeated array
+    """
+    def kadane(a):
+        max_ending_here = 0
+        max_so_far = 0
+        for x in a:
+            max_ending_here = max(0, max_ending_here + x)
+            max_so_far = max(max_so_far, max_ending_here)
+        return max_so_far
+    
+    # If k == 1, just run Kadane's on the original array
+    if k == 1:
+        return kadane(arr)
+    
+    total_sum = sum(arr)
+    
+    # For k >= 2, the answer is either:
+    # 1. Max subarray within two concatenated copies (handles wrap-around)
+    # 2. If total_sum > 0: max_suffix + (k-2)*total_sum + max_prefix
+    #    where max_suffix is max suffix sum of arr and max_prefix is max prefix sum of arr
+    
+    double_arr = arr + arr
+    max_double = kadane(double_arr)
+    
+    if total_sum <= 0:
+        return max_double
+    
+    # Compute max prefix sum
+    max_prefix = 0
+    current = 0
+    for x in arr:
+        current += x
+        max_prefix = max(max_prefix, current)
+    
+    # Compute max suffix sum
+    max_suffix = 0
+    current = 0
+    for x in reversed(arr):
+        current += x
+        max_suffix = max(max_suffix, current)
+    
+    # The best answer when total_sum > 0 and k >= 2
+    result_with_middle = max_suffix + (k - 2) * total_sum + max_prefix
+    
+    return max(max_double, result_with_middle)
+
+
+# Test
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+print("All tests passed!")
+```

@@ -1,0 +1,39 @@
+```python
+def Split(numbers):
+    """
+    Write a python function to find even numbers from a list of numbers.
+
+    Args:
+        numbers: A list of integers.
+
+    Returns:
+        A new list containing only the even numbers from the input list.
+        The order of the numbers is preserved.
+
+    Example:
+        >>> Split([1, 2, 3, 4, 5])
+        [2, 4]
+    """
+    # Use a list comprehension to iterate through the list
+    # and include only the numbers that are even (i.e., divisible by 2 with no remainder).
+    return [num for num in numbers if num % 2 == 0]
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # This block will only run when the script is executed directly.
+    input_list = [1, 2, 3, 4, 5]
+    expected_output = [2, 4]
+    
+    # Call the function with the test list
+    result = Split(input_list)
+    
+    # Print the results for clarity
+    print(f"Input list: {input_list}")
+    print(f"Function output: {result}")
+    print(f"Expected output: {expected_output}")
+    
+    # Assert that the function's output matches the expected output
+    assert result == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+```

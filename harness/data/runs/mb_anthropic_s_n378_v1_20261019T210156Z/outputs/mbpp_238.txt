@@ -1,0 +1,44 @@
+```python
+def number_of_substrings(s):
+    """
+    Count the number of non-empty substrings of a given string.
+    
+    For a string of length n, the number of non-empty substrings is:
+    n + (n-1) + (n-2) + ... + 1 = n(n+1)/2
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Number of non-empty substrings
+    """
+    n = len(s)
+    return n * (n + 1) // 2
+
+
+# Test cases
+assert number_of_substrings("abc") == 6
+assert number_of_substrings("a") == 1
+assert number_of_substrings("ab") == 3
+assert number_of_substrings("abcd") == 10
+
+print("All tests passed!")
+print(f"number_of_substrings('abc') = {number_of_substrings('abc')}")
+print(f"number_of_substrings('abcd') = {number_of_substrings('abcd')}")
+```
+
+**Explanation:**
+
+For a string of length `n`, the number of non-empty substrings can be calculated using the formula: `n(n+1)/2`
+
+This is because:
+- There are `n` substrings of length 1
+- There are `n-1` substrings of length 2
+- There are `n-2` substrings of length 3
+- ... and so on until 1 substring of length n
+
+For example, with "abc" (length 3):
+- Length 1: "a", "b", "c" (3 substrings)
+- Length 2: "ab", "bc" (2 substrings)
+- Length 3: "abc" (1 substring)
+- Total: 3 + 2 + 1 = 6 = 3×4/2 ✓

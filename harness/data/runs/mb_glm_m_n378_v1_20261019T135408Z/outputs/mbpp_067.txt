@@ -1,0 +1,65 @@
+```python
+"""
+Write a function to find the number of ways to partition a set of Bell numbers.
+assert bell_number(2)==2
+"""
+
+def bell_number(n):
+    """
+    Calculate the Bell number B(n), which is the number of ways to partition a set of size n.
+    
+    Args:
+        n (int): The size of the set.
+        
+    Returns:
+        int: The Bell number B(n).
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    if n == 0:
+        return 1
+    
+    # Initialize a list to hold Bell numbers up to B(n)
+    bell = [0] * (n + 1)
+    bell[0] = 1
+    
+    for i in range(1, n + 1):
+        # Compute Bell numbers using the recurrence relation:
+        # B(n+1) = sum_{k=0}^n C(n, k) * B(k)
+        bell[i] = 0
+        for k in range(i):
+            bell[i] += _combination(i - 1, k) * bell[k]
+    
+    return bell[n]
+
+def _combination(n, k):
+    """
+    Compute the binomial coefficient C(n, k) using an efficient method.
+    
+    Args:
+        n (int): The total number of items.
+        k (int): The number of items to choose.
+        
+    Returns:
+        int: The binomial coefficient C(n, k).
+    """
+    if k < 0 or k > n:
+        return 0
+    if k == 0 or k == n:
+        return 1
+    k = min(k, n - k)  # Take advantage of symmetry
+    result = 1
+    for i in range(1, k + 1):
+        result = result * (n - k + i) // i
+    return result
+
+# Test cases
+assert bell_number(0) == 1
+assert bell_number(1) == 1
+assert bell_number(2) == 2
+assert bell_number(3) == 5
+assert bell_number(4) == 15
+assert bell_number(5) == 52
+
+print("All test cases passed!")
+```

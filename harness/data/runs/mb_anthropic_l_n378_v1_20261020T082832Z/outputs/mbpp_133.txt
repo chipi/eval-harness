@@ -1,0 +1,53 @@
+Looking at this problem, I need to write a function that filters out negative numbers from a list and returns their sum.
+
+**Verifying with the test case:**
+- List: `[2, 4, -6, -9, 11, -12, 14, -5, 17]`
+- Negative numbers: `-6, -9, -12, -5`
+- Sum: `-6 + (-9) + (-12) + (-5) = -32` ✓
+
+```python
+"""
+Write a function to calculate the sum of the negative numbers of a given list of numbers.
+assert sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17])==-32
+"""
+
+
+def sum_negativenum(nums):
+    """
+    Calculate the sum of all negative numbers in the given list.
+
+    Args:
+        nums: A list (or any iterable) of numbers.
+
+    Returns:
+        The sum of the negative numbers; 0 if there are none.
+    """
+    return sum(filter(lambda n: n < 0, nums))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]) == -32
+
+    # Additional test cases
+    assert sum_negativenum([10, 15, -14, 13, -18, 12, -20]) == -52
+    assert sum_negativenum([19, -65, 57, 39, 152, -639, 121, 44, 90, -190]) == -894
+    assert sum_negativenum([]) == 0
+    assert sum_negativenum([1, 2, 3]) == 0
+    assert sum_negativenum([-1, -2, -3]) == -6
+    assert sum_negativenum([0, -0.5, 2.5]) == -0.5
+
+    print("All tests passed!")
+    print(sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]))  # -32
+```
+
+**How it works:**
+1. `filter(lambda n: n < 0, nums)` keeps only the elements that are strictly less than zero.
+2. `sum(...)` adds them up, returning `0` for an empty selection (so a list with no negatives correctly yields `0`).
+
+An equivalent approach using a generator expression:
+
+```python
+def sum_negativenum(nums):
+    return sum(n for n in nums if n < 0)
+```

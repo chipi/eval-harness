@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Search a string for a regex pattern.
+    
+    Args:
+        text (str): The string to search in.
+        pattern (str): The regex pattern to search for.
+    
+    Returns:
+        tuple: (matching_substring, start_index, end_index) or None if no match found.
+    """
+    match = re.search(pattern, text)
+    if match:
+        return (match.group(), match.start(), match.end())
+    return None
+
+
+# Test the function
+assert find_literals('The quick brown fox jumps over the lazy dog.', 'fox') == ('fox', 16, 19)
+print("Test passed!")
+print(find_literals('The quick brown fox jumps over the lazy dog.', 'fox'))
+```
+
+**Explanation:**
+
+1. **`import re`** — Imports Python's built-in regular expression module.
+
+2. **`re.search(pattern, text)`** — Scans the string `text` looking for the first location where the regex `pattern` produces a match. Returns a `Match` object or `None`.
+
+3. **`match.group()`** — Returns the actual matched substring.
+
+4. **`match.start()`** — Returns the starting index of the match (inclusive).
+
+5. **`match.end()`** — Returns the ending index of the match (exclusive).
+
+6. **Return value** — A tuple `(substring, start, end)` if a match is found, otherwise `None`.
+
+**Output:**
+```
+Test passed!
+('fox', 16, 19)
+```
+
+Since `re.search` accepts any valid regex pattern, this function works for both literal strings (like `'fox'`) and more complex patterns (like `r'\d+'` or `r'[A-Z]\w+'`).

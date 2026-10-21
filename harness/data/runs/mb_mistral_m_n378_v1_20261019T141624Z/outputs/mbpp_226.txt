@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def odd_values_string(s):
+    """
+    Removes characters with odd index values from a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The string with characters at odd indices removed.
+    """
+    return s[::2]
+
+# Test the function
+assert odd_values_string('abcdef') == 'ace'
+print("Test passed!")
+```
+
+This solution uses Python's string slicing with a step of 2 (`[::2]`), which effectively selects every other character starting from index 0 (the first character), thus skipping all characters at odd indices. The test assertion verifies that the function works as expected.

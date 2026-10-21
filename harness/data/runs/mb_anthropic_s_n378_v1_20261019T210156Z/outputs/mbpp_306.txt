@@ -1,0 +1,78 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of increasing subsequence from prefix until ith index
+    and also including a given kth element which is after i (k > i).
+    
+    Args:
+        arr: List of integers
+        n: Length of array
+        i: Index up to which we consider the prefix
+        k: Index of the element that must be included (k > i)
+    
+    Returns:
+        Maximum sum of increasing subsequence ending at index k with elements from [0, i] and arr[k]
+    """
+    if k <= i or i < 0 or k >= n:
+        return 0
+    
+    # dp_prefix[j] = maximum sum of increasing subsequence ending at index j (for j <= i)
+    dp_prefix = [0] * (i + 1)
+    
+    # Build dp for prefix [0, i]
+    for j in range(i + 1):
+        dp_prefix[j] = arr[j]  # At minimum, the element itself
+        for p in range(j):
+            if arr[p] < arr[j]:
+                dp_prefix[j] = max(dp_prefix[j], dp_prefix[p] + arr[j])
+    
+    # Find maximum sum of increasing subsequence from prefix that can connect to arr[k]
+    max_sum = arr[k]  # At minimum, just the kth element
+    
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            max_sum = max(max_sum, dp_prefix[j] + arr[k])
+    
+    return max_sum
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6)
+    print(f"max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) = {result}")
+    assert result == 11, f"Expected 11, got {result}"
+    
+    # Additional test cases
+    result2 = max_sum_increasing_subseq([1, 2, 3, 4, 5], 5, 2, 4)
+    print(f"max_sum_increasing_subseq([1, 2, 3, 4, 5], 5, 2, 4) = {result2}")
+    # From [1,2,3] we can pick 1,2,3 (sum=6), then add 5 -> 11
+    assert result2 == 11, f"Expected 11, got {result2}"
+    
+    result3 = max_sum_increasing_subseq([10, 5, 8, 20], 4, 1, 3)
+    print(f"max_sum_increasing_subseq([10, 5, 8, 20], 4, 1, 3) = {result3}")
+    # From [10, 5] we can pick 5, then add 20 -> 25
+    assert result3 == 25, f"Expected 25, got {result3}"
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function solves the problem by:
+
+1. **Building a DP array for the prefix [0, i]**: `dp_prefix[j]` stores the maximum sum of an increasing subsequence ending at index `j` within the prefix.
+
+2. **Finding elements that can precede arr[k]**: We look for all elements in the prefix where `arr[j] < arr[k]` (strictly increasing condition).
+
+3. **Computing the maximum sum**: We take the maximum of:
+   - Just `arr[k]` itself (if no valid predecessor exists)
+   - `dp_prefix[j] + arr[k]` for all valid predecessors `j`
+
+For the test case `[1, 101, 2, 3, 100, 4, 5]` with `i=4, k=6`:
+- Prefix is `[1, 101, 2, 3, 100]`
+- We need to find max increasing subsequence from prefix + element at index 6 (which is `5`)
+- Elements less than 5: `1, 2, 3, 4`
+- Best subsequence from prefix ending with 4: `1, 2, 3, 4` (sum=10)
+- Adding 5: `10 + 5 = 15`... but the expected answer is 11
+- Actually: `1, 2, 3` (sum=6) + `5` = 11 ✓

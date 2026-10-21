@@ -1,0 +1,61 @@
+```python
+"""
+Write a python function to reverse only the vowels of a given string (where y is not a vowel).
+assert reverse_vowels("Python") == "Python"
+"""
+
+def reverse_vowels(s: str) -> str:
+    """
+    Reverses only the vowels in a given string.
+
+    Vowels are defined as 'a', 'e', 'i', 'o', 'u' and their uppercase
+    counterparts. The letter 'y' is not considered a vowel.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        A new string with the vowels reversed.
+    """
+    # Define the set of vowels for quick lookup.
+    vowels = "aeiouAEIOU"
+    
+    # Convert the string to a list of characters because strings are immutable
+    # and we need to modify characters in place.
+    s_list = list(s)
+    
+    # Use a two-pointer technique to find the vowels from the start and end.
+    left, right = 0, len(s_list) - 1
+    
+    while left < right:
+        # Move the left pointer until it points to a vowel.
+        while left < right and s_list[left] not in vowels:
+            left += 1
+            
+        # Move the right pointer until it points to a vowel.
+        while left < right and s_list[right] not in vowels:
+            right -= 1
+            
+        # If the pointers haven't crossed, swap the vowels.
+        if left < right:
+            s_list[left], s_list[right] = s_list[right], s_list[left]
+            
+            # Move the pointers inward to continue the search.
+            left += 1
+            right -= 1
+            
+    # Join the list of characters back into a string and return it.
+    return "".join(s_list)
+
+# Example usage and assertions:
+assert reverse_vowels("Python") == "Python"
+assert reverse_vowels("hello") == "holle"
+assert reverse_vowels("leetcode") == "leotcede"
+assert reverse_vowels("aA") == "Aa"
+assert reverse_vowels("xyz") == "xyz"
+assert reverse_vowels("") == ""
+assert reverse_vowels("aeiou") == "uoiea"
+assert reverse_vowels("race a car") == "raca e car"
+
+print("All assertions passed!")
+```

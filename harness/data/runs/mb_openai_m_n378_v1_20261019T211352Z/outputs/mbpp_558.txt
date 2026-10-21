@@ -1,0 +1,33 @@
+```python
+"""
+Write a python function to find the sum of the per-digit difference between two integers.
+
+The per-digit difference is the sum of absolute differences between corresponding
+digits of the two numbers. If the numbers have different digit lengths, the shorter
+one is left-padded with zeros.
+
+Examples:
+    digit_distance_nums(1, 2) == 1
+    digit_distance_nums(123, 256) == |1-2| + |2-5| + |3-6| = 7
+    digit_distance_nums(12, 345) == |0-3| + |1-4| + |2-5| = 9
+"""
+
+def digit_distance_nums(num1, num2):
+    s1 = str(abs(num1))
+    s2 = str(abs(num2))
+
+    max_len = max(len(s1), len(s2))
+    s1 = s1.zfill(max_len)
+    s2 = s2.zfill(max_len)
+
+    return sum(abs(int(a) - int(b)) for a, b in zip(s1, s2))
+
+
+if __name__ == "__main__":
+    assert digit_distance_nums(1, 2) == 1
+    assert digit_distance_nums(123, 256) == 7
+    assert digit_distance_nums(12, 345) == 9
+    assert digit_distance_nums(0, 0) == 0
+
+    print("All tests passed.")
+```

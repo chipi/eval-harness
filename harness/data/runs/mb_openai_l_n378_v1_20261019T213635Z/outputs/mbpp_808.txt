@@ -1,0 +1,8 @@
+```python
+def check_K(values, k):
+    """Return True if k is present in the tuple, otherwise False."""
+    return k in values
+
+
+assert check_K((10, 4, 5, 6, 8), 6) is True
+```

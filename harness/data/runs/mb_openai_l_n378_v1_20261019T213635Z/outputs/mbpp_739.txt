@@ -1,0 +1,21 @@
+```python
+from math import isqrt
+
+
+def find_Index(n):
+    """Return the index of the smallest triangular number with n digits."""
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+
+    # Find the smallest k for which k * (k + 1) // 2 >= 10**(n - 1).
+    threshold = 10 ** (n - 1)
+    return (isqrt(1 + 8 * threshold) - 1) // 2 + (
+        (isqrt(1 + 8 * threshold) - 1) % 2 != 0
+        or ((isqrt(1 + 8 * threshold) - 1) // 2)
+        * ((isqrt(1 + 8 * threshold) - 1) // 2 + 1)
+        // 2 < threshold
+    )
+
+
+assert find_Index(2) == 4
+```

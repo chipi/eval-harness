@@ -1,0 +1,31 @@
+```python
+import bisect
+
+def left_insertion(sorted_list, value):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+    
+    Args:
+        sorted_list: A sorted list of values
+        value: The value to find the insertion point for
+    
+    Returns:
+        The index where the value should be inserted to maintain sorted order
+    """
+    return bisect.bisect_left(sorted_list, value)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 4, 5], 1) == 0
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 2) == 1
+    assert left_insertion([1, 2, 4, 5], 0) == 0
+    print("All tests passed!")
+```
+
+The solution uses Python's built-in `bisect.bisect_left()` function, which:
+- Takes a sorted list and a value
+- Returns the leftmost insertion point where the value should be inserted to keep the list sorted
+- For the example `left_insertion([1,2,4,5], 6)`, it returns `4` because 6 should be inserted at index 4 (at the end)

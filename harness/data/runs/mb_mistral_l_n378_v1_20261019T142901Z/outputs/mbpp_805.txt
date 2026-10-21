@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_sum_list(lists):
+    """
+    Returns the list in a list of lists whose sum of elements is the highest.
+
+    Args:
+        lists: A list of lists containing numeric elements.
+
+    Returns:
+        The list with the highest sum of elements.
+    """
+    if not lists:
+        return None
+
+    max_list = max(lists, key=sum)
+    return max_list
+
+# Test the function
+assert max_sum_list([[1,2,3], [4,5,6], [10,11,12], [7,8,9]]) == [10, 11, 12]
+```
+
+This script:
+1. Defines the `max_sum_list` function that takes a list of lists as input
+2. Uses Python's built-in `max()` function with the `sum` function as the key to find the list with the highest sum
+3. Includes the provided test case as an assertion
+4. Handles the edge case of an empty input list by returning None
+
+The function works by comparing the sums of all sublists and returning the one with the maximum sum.

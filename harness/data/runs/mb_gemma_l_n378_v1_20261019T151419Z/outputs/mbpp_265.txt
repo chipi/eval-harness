@@ -1,0 +1,27 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list for every nth element.
+    Essentially, it distributes the elements of the list into n buckets
+    in a round-robin fashion.
+    """
+    # Create n empty lists to hold the split elements
+    result = [[] for _ in range(n)]
+    
+    # Iterate through the list and place each element in the corresponding bucket
+    for index, element in enumerate(lst):
+        result[index % n].append(element)
+        
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']
+    n_value = 3
+    expected_output = [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+    
+    actual_output = list_split(input_list, n_value)
+    
+    assert actual_output == expected_output, f"Expected {expected_output}, but got {actual_output}"
+    print("Assertion passed successfully!")
+```

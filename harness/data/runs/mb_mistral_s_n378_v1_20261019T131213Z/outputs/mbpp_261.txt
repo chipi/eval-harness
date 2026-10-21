@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division of two tuples.
+
+    Args:
+        tuple1: First tuple of numbers
+        tuple2: Second tuple of numbers (must be same length as tuple1)
+
+    Returns:
+        A new tuple with the result of element-wise division
+
+    Raises:
+        ValueError: If tuples are of different lengths
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must be of the same length")
+
+    return tuple(a / b for a, b in zip(tuple1, tuple2))
+
+# Test case
+assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `division_elements` that takes two tuples
+2. Checks that the tuples are of equal length
+3. Uses a generator expression with `zip` to perform element-wise division
+4. Returns the result as a new tuple
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function will raise a `ValueError` if the input tuples have different lengths, which is a good practice for error handling.

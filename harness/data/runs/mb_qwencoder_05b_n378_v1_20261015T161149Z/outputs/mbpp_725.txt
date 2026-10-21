@@ -1,0 +1,16 @@
+```python
+def extract_quotation(input_string):
+    """
+    Extracts values between quotation marks " " of the given string.
+
+    :param input_string: The string from which to extract values.
+    :return: A list of extracted values.
+    """
+    # Split the input string by double quotes
+    values = input_string.split('"')
+    return values
+
+# Test the function with the provided test case
+assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+```
+

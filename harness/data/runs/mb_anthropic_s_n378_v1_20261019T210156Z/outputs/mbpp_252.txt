@@ -1,0 +1,41 @@
+```python
+import math
+
+def convert(z):
+    """
+    Convert a complex number to polar coordinates (r, theta).
+    
+    Args:
+        z: A complex number (can be int, float, or complex)
+    
+    Returns:
+        A tuple (r, theta) where:
+        - r is the magnitude (distance from origin)
+        - theta is the angle in radians
+    """
+    # Convert input to complex number if it isn't already
+    if not isinstance(z, complex):
+        z = complex(z)
+    
+    # Calculate magnitude (r)
+    r = abs(z)
+    
+    # Calculate angle (theta) in radians
+    theta = math.atan2(z.imag, z.real)
+    
+    return (r, theta)
+
+
+# Test cases
+assert convert(1) == (1.0, 0.0)
+assert convert(1j) == (1.0, math.pi / 2)
+assert convert(-1) == (1.0, math.pi)
+assert convert(1 + 1j)[0] == math.sqrt(2)
+assert abs(convert(1 + 1j)[1] - math.pi / 4) < 1e-10
+
+print("All tests passed!")
+print(f"convert(1) = {convert(1)}")
+print(f"convert(1j) = {convert(1j)}")
+print(f"convert(-1) = {convert(-1)}")
+print(f"convert(1+1j) = {convert(1+1j)}")
+```

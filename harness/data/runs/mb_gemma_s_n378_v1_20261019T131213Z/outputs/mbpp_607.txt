@@ -1,0 +1,28 @@
+```python
+import re
+
+def find_literals(text, pattern):
+  """
+  Searches a string for a regex pattern.
+
+  Args:
+    text: The string to search.
+    pattern: The regex pattern to search for.
+
+  Returns:
+    A tuple containing the matching substring, start index, and end index.
+    Returns (None, -1, -1) if no match is found.
+  """
+  match = re.search(pattern, text)
+  if match:
+    return (match.group(0), match.start(), match.end())
+  else:
+    return (None, -1, -1)
+
+if __name__ == '__main__':
+  assert find_literals('The quick brown fox jumps over the lazy dog.', 'fox') == ('fox', 16, 19)
+  assert find_literals('The quick brown fox jumps over the lazy dog.', 'cat') == (None, -1, -1)
+  assert find_literals('The quick brown fox jumps over the lazy dog.', 'The') == ('The', 0, 3)
+  assert find_literals('The quick brown fox jumps over the lazy dog.', 'dog.') == ('dog.', 40, 44)
+  print("All tests passed!")
+```

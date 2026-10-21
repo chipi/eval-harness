@@ -1,0 +1,28 @@
+```python
+"""
+Write a Python function to find the length of the longest sublists.
+
+Example:
+assert Find_Max_Length([[1], [1, 4], [5, 6, 7, 8]]) == 4
+"""
+
+def Find_Max_Length(lst):
+    """
+    Return the length of the longest sublist in the given list.
+
+    If the input list is empty, return 0.
+    """
+    if not lst:
+        return 0
+
+    return max(len(sublist) for sublist in lst)
+
+
+# Test cases
+assert Find_Max_Length([[1], [1, 4], [5, 6, 7, 8]]) == 4
+assert Find_Max_Length([]) == 0
+assert Find_Max_Length([[], [1, 2], [3]]) == 2
+assert Find_Max_Length([[1, 2, 3]]) == 3
+
+print("All tests passed.")
+```

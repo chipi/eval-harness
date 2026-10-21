@@ -1,0 +1,100 @@
+```python
+def find_remainder(arr, n):
+    """
+    Calculates the product of all elements in an array modulo n.
+
+    Args:
+        arr: A list of integers.
+        n: The modulus value (an integer).
+
+    Returns:
+        The remainder when the product of the array elements is divided by n.
+    """
+    # Initialize the product to 1, as the multiplicative identity.
+    product = 1
+    
+    # Iterate through each number in the input array.
+    for num in arr:
+        # Multiply the current product by the number.
+        product *= num
+        
+    # Calculate the remainder using the modulo operator.
+    remainder = product % n
+    
+    return remainder
+
+# Example usage and assertion from the problem description:
+# assert find_remainder([ 100, 10, 5, 25, 35, 14 ],11) ==9
+
+# To run the test, you can uncomment the line below.
+# assert find_remainder([ 100, 10, 5, 25, 35, 14 ], 11) == 9
+
+# A more robust version that handles potential overflow for very large numbers
+# by applying the modulo operation at each step of the multiplication.
+def find_remainder_robust(arr, n):
+    """
+    Calculates the product of all elements in an array modulo n in a robust way.
+    This method applies the modulo operation at each multiplication step to prevent
+    potential integer overflow with very large numbers.
+
+    Args:
+        arr: A list of integers.
+        n: The modulus value (an integer).
+
+    Returns:
+        The remainder when the product of the array elements is divided by n.
+    """
+    # Initialize the product to 1.
+    product = 1
+    
+    # Iterate through each number in the input array.
+    for num in arr:
+        # Multiply the current product by the number, and then take the modulo n.
+        # This keeps the intermediate result small and prevents overflow.
+        product = (product * num) % n
+        
+    return product
+
+# Example usage and assertion for the robust version:
+# assert find_remainder_robust([ 100, 10, 5, 25, 35, 14 ], 11) == 9
+
+# --- Main execution block to demonstrate the function ---
+if __name__ == "__main__":
+    # Test case from the problem description
+    test_array = [100, 10, 5, 25, 35, 14]
+    test_modulus = 11
+    expected_result = 9
+    
+    # Using the simple function
+    result_simple = find_remainder(test_array, test_modulus)
+    print(f"Using the simple function:")
+    print(f"  Array: {test_array}")
+    print(f"  Modulus: {test_modulus}")
+    print(f"  Result: {result_simple}")
+    print(f"  Expected: {expected_result}")
+    assert result_simple == expected_result
+    print("  Assertion passed.\n")
+
+    # Using the robust function
+    result_robust = find_remainder_robust(test_array, test_modulus)
+    print(f"Using the robust function:")
+    print(f"  Array: {test_array}")
+    print(f"  Modulus: {test_modulus}")
+    print(f"  Result: {result_robust}")
+    print(f"  Expected: {expected_result}")
+    assert result_robust == expected_result
+    print("  Assertion passed.\n")
+
+    # Another test case
+    test_array_2 = [2, 3, 4]
+    test_modulus_2 = 5
+    expected_result_2 = (2 * 3 * 4) % 5 # 24 % 5 = 4
+    result_2 = find_remainder_robust(test_array_2, test_modulus_2)
+    print(f"Another test case:")
+    print(f"  Array: {test_array_2}")
+    print(f"  Modulus: {test_modulus_2}")
+    print(f"  Result: {result_2}")
+    print(f"  Expected: {expected_result_2}")
+    assert result_2 == expected_result_2
+    print("  Assertion passed.")
+```

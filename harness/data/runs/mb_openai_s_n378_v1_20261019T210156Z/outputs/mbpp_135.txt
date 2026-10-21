@@ -1,0 +1,22 @@
+```python
+def hexagonal_num(n: int) -> int:
+    """
+    Return the nth hexagonal number.
+
+    The formula for the nth hexagonal number is:
+        H_n = n * (2n - 1)
+
+    Examples:
+        H_1 = 1
+        H_2 = 6
+        H_3 = 15
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return n * (2 * n - 1)
+
+
+if __name__ == "__main__":
+    assert hexagonal_num(10) == 190
+    print("All tests passed.")
+```

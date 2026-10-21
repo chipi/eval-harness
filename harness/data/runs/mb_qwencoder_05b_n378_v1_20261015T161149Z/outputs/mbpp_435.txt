@@ -1,0 +1,13 @@
+```python
+def last_Digit(number):
+    # Return the last digit of the number using the modulus operator
+    return number % 10
+
+# Test cases to verify the correctness of the function
+assert last_Digit(123) == 3
+assert last_Digit(456) == 6
+assert last_Digit(789) == 9
+assert last_Digit(0) == 0
+assert last_Digit(-123) == 3
+```
+

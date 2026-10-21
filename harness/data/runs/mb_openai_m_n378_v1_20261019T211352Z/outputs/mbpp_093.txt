@@ -1,0 +1,10 @@
+```python
+def power(a, b):
+    """Return a raised to the power of b."""
+    return a ** b
+
+
+if __name__ == "__main__":
+    assert power(3, 4) == 81
+    print("All tests passed.")
+```

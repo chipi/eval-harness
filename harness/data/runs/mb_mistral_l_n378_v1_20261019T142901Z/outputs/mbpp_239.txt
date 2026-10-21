@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem using dynamic programming. The solution counts the number of valid sequences by building up the solution from smaller subproblems:
+
+```python
+def get_total_number_of_sequences(m: int, n: int) -> int:
+    """
+    Calculate the number of possible sequences of length n where each element is a positive integer,
+    greater than or equal to twice the previous element, and less than or equal to m.
+
+    Args:
+        m: The maximum value any element in the sequence can take.
+        n: The length of the sequence.
+
+    Returns:
+        The number of valid sequences.
+    """
+    if n == 0:
+        return 0
+    if n == 1:
+        return m  # Any single number from 1 to m is valid
+
+    # dp[i][j] represents the number of sequences of length i ending with j
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+
+    # Base case: sequences of length 1
+    for j in range(1, m + 1):
+        dp[1][j] = 1
+
+    for i in range(2, n + 1):
+        for j in range(1, m + 1):
+            # The previous element must be <= j / 2
+            max_prev = j // 2
+            dp[i][j] = sum(dp[i - 1][1:max_prev + 1])
+
+    return sum(dp[n][1:m + 1])
+
+# Test case
+assert get_total_number_of_sequences(10, 4) == 4
+```
+
+### Explanation:
+1. **Dynamic Programming Table (`dp`)**:
+   - `dp[i][j]` keeps track of the number of sequences of length `i` that end with the number `j`.
+   - The table is initialized with `dp[1][j] = 1` for all `j` from `1` to `m` because a sequence of length 1 can be any number in that range.
+
+2. **Filling the DP Table**:
+   - For each sequence length `i` from `2` to `n`, and for each possible ending number `j` from `1` to `m`, the number of valid sequences ending with `j` is the sum of all sequences of length `i-1` that end with a number `<= j/2` (since the next number must be at least twice the previous one).
+
+3. **Result**:
+   - The total number of valid sequences of length `n` is the sum of `dp[n][j]` for all `j` from `1` to `m`.
+
+### Test Case:
+The assertion `assert get_total_number_of_sequences(10, 4) == 4` passes because the valid sequences are:
+- `[1, 2, 4, 8]`
+- `[1, 2, 4, 9]`
+- `[1, 2, 4, 10]`
+- `[1, 2, 5, 10]` (Note: `[1, 3, 6, 12]` is invalid because 12 > 10, so it's excluded). Thus, there are 4 valid sequences.

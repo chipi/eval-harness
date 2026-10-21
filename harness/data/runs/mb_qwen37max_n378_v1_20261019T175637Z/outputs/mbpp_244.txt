@@ -1,0 +1,12 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    """Find the next perfect square greater than a given number."""
+    root = math.isqrt(n)
+    # If n is itself a perfect square, we want the NEXT one
+    if root * root == n:
+        return (root + 1) ** 2
+    else:
+        return (root + 1) ** 2
+```

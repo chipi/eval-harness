@@ -1,0 +1,8 @@
+```python
+def is_product_even(numbers):
+    """Return True if the product of the numbers is even."""
+    return any(number % 2 == 0 for number in numbers)
+
+
+assert is_product_even([1, 2, 3])
+```

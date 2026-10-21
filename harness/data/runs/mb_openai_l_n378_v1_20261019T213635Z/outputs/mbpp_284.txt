@@ -1,0 +1,7 @@
+```python
+def check_element(items, element):
+    return all(item == element for item in items)
+
+
+assert check_element(["green", "orange", "black", "white"], "blue") is False
+```

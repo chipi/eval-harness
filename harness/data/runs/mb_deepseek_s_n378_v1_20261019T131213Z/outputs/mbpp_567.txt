@@ -1,0 +1,21 @@
+Here’s a self-contained Python script that solves the problem you described:  
+
+```python
+def issort_list(lst):
+    """
+    Returns True if the list is sorted in non-decreasing order, otherwise False.
+    """
+    return all(lst[i] <= lst[i + 1] for i in range(len(lst) - 1))
+
+
+# Test cases
+if __name__ == "__main__":
+    # Provided example
+    print(issort_list([1, 2, 4, 6, 8, 10, 12, 14, 16, 17]))  # Expected: True
+
+    # Additional checks
+    print(issort_list([3, 1, 2]))  # Expected: False
+    print(issort_list([5, 5, 5]))  # Expected: True
+    print(issort_list([]))         # Expected: True (empty list is sorted)
+    print(issort_list([7]))        # Expected: True (single element is sorted)
+```

@@ -1,0 +1,16 @@
+```python
+def drop_empty(dictionary):
+    """
+    This function drops empty items from a given dictionary.
+    
+    Args:
+        dictionary (dict): The input dictionary.
+    
+    Returns:
+        dict: A new dictionary with empty items removed.
+    """
+    return {key: value for key, value in dictionary.items() if value is not None}
+
+# Example usage:
+print(drop_empty({'c1': 'Red', 'c2': 'Green', 'c3':None}))  # Output: {'c1': 'Red', 'c2': 'Green'}
+```

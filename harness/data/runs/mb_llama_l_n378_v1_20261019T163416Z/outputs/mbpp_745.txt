@@ -1,0 +1,25 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    This function generates a list of numbers within a given range 
+    where every number is divisible by every digit it contains.
+
+    Args:
+        startnum (int): The start of the range (inclusive).
+        endnum (int): The end of the range (inclusive).
+
+    Returns:
+        list: A list of numbers that are divisible by their digits.
+    """
+    return [num for num in range(startnum, endnum+1) 
+            if all(digit != '0' and num % int(digit) == 0 
+                   for digit in str(num))]
+
+def main():
+    startnum = 1
+    endnum = 22
+    print(divisible_by_digits(startnum, endnum))
+
+if __name__ == "__main__":
+    main()
+```

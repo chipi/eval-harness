@@ -1,0 +1,9 @@
+```python
+def new_tuple(lst, string):
+    return tuple(lst + [string])
+
+# Test the function
+lst = ["WEB", "is"]
+string = "best"
+print(new_tuple(lst, string))  # Output: ('WEB', 'is', 'best')
+```

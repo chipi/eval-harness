@@ -1,0 +1,16 @@
+```python
+def differ_At_One_Bit_Pos(num1, num2):
+    # Convert the numbers to binary and count the number of 1's in the binary representation
+    count1 = bin(num1).count('1')
+    count2 = bin(num2).count('1')
+
+    # Check if the count of 1's is exactly 1
+    return count1 == count2
+
+# Test cases
+assert differ_At_One_Bit_Pos(13, 9) == True
+assert differ_At_One_Bit_Pos(1, 1) == False
+assert differ_At_One_Bit_Pos(7, 8) == False
+assert differ_At_One_Bit_Pos(15, 15) == False
+assert differ_At_One_Bit_Pos(16, 14) == True
+```

@@ -1,0 +1,81 @@
+```python
+from collections import defaultdict
+from typing import List
+
+def largest_subset(nums: List[int]) -> int:
+    """
+    This function finds the size of the largest subset of a list of numbers 
+    so that every pair is divisible.
+
+    Args:
+    nums (List[int]): A list of integers.
+
+    Returns:
+    int: The size of the largest subset.
+    """
+    if not nums:
+        return 0
+
+    count = defaultdict(int)
+    for num in nums:
+        count[num] += 1
+
+    max_size = 0
+    for num in count:
+        if count[num] > max_size:
+            max_size = count[num]
+
+    # If there are numbers that are not divisible by 2, 
+    # we can only have one number that is not divisible by 2 in the subset
+    even_count = sum(val for key, val in count.items() if key % 2 == 0)
+    odd_count = sum(val for key, val in count.items() if key % 2 != 0)
+
+    if odd_count > 0:
+        return max(max_size, even_count + 1)
+    else:
+        return max_size
+
+# Test the function
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+assert largest_subset([]) == 0
+assert largest_subset([1]) == 1
+assert largest_subset([2]) == 1
+assert largest_subset([2, 4]) == 2
+```
+
+However, a more optimal solution can be achieved by using a different approach.
+
+We can group the numbers by their remainder when divided by 2. 
+For even numbers, we can always have a subset of size equal to the count of even numbers. 
+For odd numbers, we can have at most one odd number in the subset.
+
+So, the size of the largest subset will be the maximum of the count of even numbers and the count of odd numbers plus 1 (if there are any odd numbers).
+
+Here is the optimized code:
+
+```python
+from typing import List
+
+def largest_subset(nums: List[int]) -> int:
+    """
+    This function finds the size of the largest subset of a list of numbers 
+    so that every pair is divisible.
+
+    Args:
+    nums (List[int]): A list of integers.
+
+    Returns:
+    int: The size of the largest subset.
+    """
+    even_count = sum(1 for num in nums if num % 2 == 0)
+    odd_count = len(nums) - even_count
+
+    return max(even_count, odd_count)
+
+# Test the function
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+assert largest_subset([]) == 0
+assert largest_subset([1]) == 1
+assert largest_subset([2]) == 1
+assert largest_subset([2, 4]) == 2
+```

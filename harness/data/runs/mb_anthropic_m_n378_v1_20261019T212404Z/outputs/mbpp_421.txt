@@ -1,0 +1,10 @@
+```python
+def concatenate_tuple(test_tup):
+    delim = "-"
+    return delim.join(str(ele) for ele in test_tup)
+
+
+if __name__ == "__main__":
+    assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+    print(concatenate_tuple(("ID", "is", 4, "UTS")))
+```

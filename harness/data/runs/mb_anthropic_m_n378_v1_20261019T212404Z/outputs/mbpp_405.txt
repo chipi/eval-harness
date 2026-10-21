@@ -1,0 +1,12 @@
+```python
+def check_tuplex(tuplex, element):
+    return element in tuplex
+
+
+# Test cases
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 'r') == True
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 'a') == False
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 3) == True
+
+print("All test cases passed!")
+```

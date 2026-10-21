@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem using binary search to find the left insertion point for a specified value in a sorted list:
+
+```python
+def left_insertion(sorted_list, value):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+    
+    Args:
+        sorted_list (list): A list of elements sorted in ascending order.
+        value: The value to find the insertion point for.
+        
+    Returns:
+        int: The index where the value should be inserted to maintain sorted order.
+    """
+    left, right = 0, len(sorted_list)
+    
+    while left < right:
+        mid = (left + right) // 2
+        if sorted_list[mid] < value:
+            left = mid + 1
+        else:
+            right = mid
+    
+    return left
+
+# Test the function with the provided assertion
+assert left_insertion([1, 2, 4, 5], 6) == 4
+print("Test passed!")
+```
+
+### Explanation:
+1. **Binary Search Approach**: The function uses binary search to efficiently find the insertion point in O(log n) time.
+2. **Left Insertion Point**: The algorithm ensures that if the value is already present in the list, the leftmost occurrence is considered (though the problem doesn't explicitly require this, it's a common interpretation).
+3. **Edge Cases**: 
+   - If the value is smaller than all elements, it returns 0.
+   - If the value is larger than all elements, it returns `len(sorted_list)`.
+4. **Assertion Test**: The provided test case `left_insertion([1, 2, 4, 5], 6) == 4` is verified, as 6 should be inserted at index 4 (after all existing elements).
+
+The script is self-contained and includes the test case to validate correctness.

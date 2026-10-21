@@ -1,0 +1,24 @@
+```python
+def check_element(lst, element):
+    """
+    Check whether all items in the list are equal to the given element.
+    
+    Args:
+        lst: A list to check
+        element: The element to compare against
+    
+    Returns:
+        True if all items in the list equal the element, False otherwise
+    """
+    return all(item == element for item in lst)
+
+
+# Test cases
+assert check_element(["green", "orange", "black", "white"], 'blue') == False
+assert check_element(["blue", "blue", "blue"], 'blue') == True
+assert check_element([], 'blue') == True  # Empty list returns True (vacuous truth)
+assert check_element([1, 1, 1, 1], 1) == True
+assert check_element([1, 1, 2, 1], 1) == False
+
+print("All assertions passed!")
+```

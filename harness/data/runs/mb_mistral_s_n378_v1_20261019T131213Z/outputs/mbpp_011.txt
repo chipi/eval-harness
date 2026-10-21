@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_Occ(s, char):
+    """
+    Removes the first and last occurrence of a given character from the string.
+
+    Args:
+        s (str): The input string
+        char (str): The character to remove
+
+    Returns:
+        str: The string with first and last occurrences of char removed
+    """
+    # Find the first occurrence
+    first = s.find(char)
+    if first == -1:
+        return s  # character not found
+
+    # Find the last occurrence
+    last = s.rfind(char)
+    if last == -1:
+        return s  # character not found
+
+    # Remove both occurrences
+    return s[:first] + s[first+1:last] + s[last+1:]
+
+# Test case
+assert remove_Occ("hello", "l") == "heo"
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `remove_Occ` that takes a string and a character
+2. Uses `str.find()` to locate the first occurrence
+3. Uses `str.rfind()` to locate the last occurrence
+4. Constructs a new string by concatenating:
+   - The part before the first occurrence
+   - The part between the first and last occurrences
+   - The part after the last occurrence
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function handles cases where the character doesn't exist in the string by returning the original string.

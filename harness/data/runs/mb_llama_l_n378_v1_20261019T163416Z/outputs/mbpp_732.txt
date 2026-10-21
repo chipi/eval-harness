@@ -1,0 +1,6 @@
+```python
+def replace_specialchar(s):
+    return s.replace(' ', ':').replace(',', ':').replace('.', ':')
+
+assert replace_specialchar('Python language, Programming language.') == ('Python:language::Programming:language:')
+```

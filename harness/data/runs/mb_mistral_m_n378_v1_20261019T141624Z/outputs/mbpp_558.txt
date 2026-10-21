@@ -1,0 +1,51 @@
+```python
+def digit_distance_nums(a, b):
+    """
+    Calculate the sum of the per-digit absolute differences between two integers.
+
+    Args:
+        a (int): First integer
+        b (int): Second integer
+
+    Returns:
+        int: Sum of absolute differences between corresponding digits
+
+    Example:
+        >>> digit_distance_nums(1, 2)
+        1
+        >>> digit_distance_nums(123, 456)
+        9  # |1-4| + |2-5| + |3-6| = 3 + 3 + 3 = 9
+        >>> digit_distance_nums(12, 345)
+        16 # |0-3| + |1-4| + |2-5| = 3 + 3 + 3 = 9 (with leading zeros)
+    """
+    # Convert both numbers to strings to handle digits
+    str_a = str(a)
+    str_b = str(b)
+
+    # Find the maximum length to handle numbers with different digit counts
+    max_len = max(len(str_a), len(str_b))
+
+    # Pad the shorter number with leading zeros
+    str_a = str_a.zfill(max_len)
+    str_b = str_b.zfill(max_len)
+
+    # Calculate the sum of absolute differences for each digit
+    total = 0
+    for i in range(max_len):
+        digit_a = int(str_a[i])
+        digit_b = int(str_b[i])
+        total += abs(digit_a - digit_b)
+
+    return total
+
+# Test the function with the provided assertion
+assert digit_distance_nums(1, 2) == 1
+
+# Additional test cases
+assert digit_distance_nums(123, 456) == 9
+assert digit_distance_nums(12, 345) == 9
+assert digit_distance_nums(0, 0) == 0
+assert digit_distance_nums(999, 1) == 26  # |9-0| + |9-0| + |9-1| = 9 + 9 + 8 = 26
+
+print("All tests passed!")
+```

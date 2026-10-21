@@ -1,0 +1,19 @@
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    """
+    Find the n largest integers from a given list of numbers, returned in descending order.
+    
+    Args:
+        numbers: A list of integers.
+        n: The number of largest elements to return.
+        
+    Returns:
+        A list of the n largest integers in descending order.
+    """
+    if n <= 0:
+        return []
+    # Use heapq.nlargest which returns the n largest elements in descending order
+    return heapq.nlargest(n, numbers)
+```

@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def square_Sum(n):
+    """
+    Returns the sum of squares of the first n even natural numbers.
+    
+    Args:
+        n (int): The number of even natural numbers to consider.
+    
+    Returns:
+        int: The sum of squares of the first n even natural numbers.
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        total += even_number ** 2
+    return total
+
+
+# Test the function
+assert square_Sum(2) == 20
+print("Test passed!")
+print("square_Sum(2) =", square_Sum(2))
+print("square_Sum(5) =", square_Sum(5))
+```
+
+**Explanation:**
+- The first `n` even natural numbers are `2, 4, 6, ..., 2n`.
+- For each `i` from `1` to `n`, the `i`-th even number is `2*i`.
+- We square each even number and add it to the running total.
+- For `n = 2`: `2² + 4² = 4 + 16 = 20` ✓
+
+**Alternative one-liner using a formula:**
+The sum of squares of the first `n` even numbers is `4 * (1² + 2² + ... + n²) = 4 * n(n+1)(2n+1)/6`. You could also implement it as:
+
+```python
+def square_Sum(n):
+    return 4 * n * (n + 1) * (2 * n + 1) // 6
+```

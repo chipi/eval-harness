@@ -1,0 +1,43 @@
+```python
+#!/usr/bin/env python3
+"""
+Find all possible combinations (subsets) of the elements of a given list.
+
+The order of combinations matches the provided assertion:
+- Start with the empty list
+- For each new element in the input list, prepend it to all combinations
+  generated so far, then append those new combinations to the result.
+"""
+
+def combinations_list(items):
+    result = [[]]
+
+    for item in items:
+        new_combinations = [[item] + combo for combo in result]
+        result.extend(new_combinations)
+
+    return result
+
+
+if __name__ == "__main__":
+    assert combinations_list(['orange', 'red', 'green', 'blue']) == [
+        [],
+        ['orange'],
+        ['red'],
+        ['red', 'orange'],
+        ['green'],
+        ['green', 'orange'],
+        ['green', 'red'],
+        ['green', 'red', 'orange'],
+        ['blue'],
+        ['blue', 'orange'],
+        ['blue', 'red'],
+        ['blue', 'red', 'orange'],
+        ['blue', 'green'],
+        ['blue', 'green', 'orange'],
+        ['blue', 'green', 'red'],
+        ['blue', 'green', 'red', 'orange']
+    ]
+
+    print("All tests passed.")
+```

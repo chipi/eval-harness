@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def split_Arr(arr, n):
+    """
+    Split a list at the nth element and add the first part to the end.
+    
+    Args:
+        arr: The input list
+        n: The index at which to split the list
+        
+    Returns:
+        A new list with elements from index n to end, followed by elements from start to index n
+    """
+    if n < 0 or n >= len(arr):
+        return arr
+    
+    return arr[n:] + arr[:n]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = split_Arr([12, 10, 5, 6, 52, 36], 2)
+    print(f"Result: {result}")
+    assert result == [5, 6, 52, 36, 12, 10], f"Test failed! Expected [5, 6, 52, 36, 12, 10], got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    assert split_Arr([1, 2, 3, 4, 5], 0) == [1, 2, 3, 4, 5]
+    assert split_Arr([1, 2, 3, 4, 5], 3) == [4, 5, 1, 2, 3]
+    assert split_Arr([1, 2, 3], 1) == [2, 3, 1]
+    print("All tests passed!")
+```
+
+The function `split_Arr` takes a list and an index `n`, then returns a new list where the elements from index `n` to the end come first, followed by the elements from the beginning to index `n`. The solution uses Python's list slicing to achieve this in a clean and efficient way.

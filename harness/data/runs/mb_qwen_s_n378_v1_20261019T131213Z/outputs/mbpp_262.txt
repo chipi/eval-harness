@@ -1,0 +1,14 @@
+```python
+def split_two_parts(lst, L):
+    """
+    Splits the given list into two parts where the length of the first part is L.
+    
+    Args:
+        lst: The input list to be split.
+        L: The integer specifying the length of the first part.
+        
+    Returns:
+        A tuple containing two lists: the first part (length L) and the second part (remaining elements).
+    """
+    return (lst[:L], lst[L:])
+```

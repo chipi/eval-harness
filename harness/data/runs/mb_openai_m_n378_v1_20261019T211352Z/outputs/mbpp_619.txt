@@ -1,0 +1,37 @@
+```python
+#!/usr/bin/env python3
+"""
+Move all digit characters in a string to the end, preserving the relative order
+of both non-digits and digits.
+
+Example:
+move_num('I1love143you55three3000thousand')
+-> 'Iloveyouthreethousand1143553000'
+"""
+
+def move_num(s: str) -> str:
+    letters_part = []
+    numbers_part = []
+
+    for char in s:
+        if char.isdigit():
+            numbers_part.append(char)
+        else:
+            letters_part.append(char)
+
+    return "".join(letters_part) + "".join(numbers_part)
+
+
+if __name__ == "__main__":
+    assert move_num("I1love143you55three3000thousand") == "Iloveyouthreethousand1143553000"
+
+    # Additional simple tests
+    assert move_num("abc123") == "abc123"
+    assert move_num("123abc") == "abc123"
+    assert move_num("a1b2c3") == "abc123"
+    assert move_num("abc") == "abc"
+    assert move_num("123") == "123"
+    assert move_num("") == ""
+
+    print("All tests passed.")
+```

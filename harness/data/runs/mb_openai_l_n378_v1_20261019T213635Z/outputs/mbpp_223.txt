@@ -1,0 +1,15 @@
+```python
+from bisect import bisect_left, bisect_right
+
+
+def is_majority(arr, n, element):
+    """Return whether element occurs more than n/2 times in sorted arr."""
+    if n < 0 or n > len(arr):
+        raise ValueError("n must be between 0 and the length of arr")
+
+    count = bisect_right(arr, element, 0, n) - bisect_left(arr, element, 0, n)
+    return count > n // 2
+
+
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) is True
+```

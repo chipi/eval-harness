@@ -1,0 +1,30 @@
+```python
+import math
+
+def volume_sphere(radius):
+    """
+    Calculate the volume of a sphere given its radius.
+
+    Args:
+        radius (float): The radius of the sphere.
+
+    Returns:
+        float: The volume of the sphere.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative")
+
+    # The formula for the volume of a sphere is (4/3)πr^3
+    volume = (4/3) * math.pi * (radius ** 3)
+    return volume
+
+# Test the function
+if __name__ == "__main__":
+    print(volume_sphere(10))
+```
+
+You can run this script and it will calculate the volume of a sphere with a radius of 10 units. The `math.isclose` function is used in the unit test to account for floating-point precision errors. 
+
+Please note that this function will raise a `ValueError` if the provided radius is negative, as a sphere cannot have a negative radius. 
+
+You can also use this function in your own code by importing it or copying it into your script. Just call `volume_sphere(radius)` with the desired radius to get the volume.

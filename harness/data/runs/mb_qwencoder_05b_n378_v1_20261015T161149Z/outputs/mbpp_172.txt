@@ -1,0 +1,14 @@
+```python
+def count_occurance(s):
+    """
+    Count the number of occurence of the string 'std' in a given string.
+
+    :param s: The input string to search within.
+    :return: The number of times 'std' appears in the string.
+    """
+    return s.count('std')
+
+# Test cases to verify the correctness of the function
+assert count_occurance("letstdlenstdporstd") == 3
+```
+

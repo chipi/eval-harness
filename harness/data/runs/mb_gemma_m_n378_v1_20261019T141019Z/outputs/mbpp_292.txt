@@ -1,0 +1,25 @@
+```python
+def find(a, b):
+    """
+    Finds the quotient of two numbers (rounded down to the nearest integer).
+    
+    Args:
+        a (int/float): The dividend.
+        b (int/float): The divisor.
+        
+    Returns:
+        int: The floor division result.
+    """
+    # Using the floor division operator // in Python 
+    # which automatically rounds down to the nearest integer.
+    return a // b
+
+if __name__ == "__main__":
+    # Test cases
+    assert find(10, 3) == 3
+    assert find(15, 4) == 3
+    assert find(7, 2) == 3
+    assert find(10, 5) == 2
+    
+    print("All tests passed!")
+```

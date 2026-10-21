@@ -1,0 +1,19 @@
+```python
+def median_numbers(a: float, b: float, c: float) -> float:
+    """
+    Returns the median of three numbers.
+    
+    The median is the middle value when the numbers are sorted.
+    For three numbers, it is the one that is neither the maximum nor the minimum.
+    """
+    # Sort the three numbers and return the middle one
+    sorted_numbers = sorted([a, b, c])
+    return float(sorted_numbers[1])
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = median_numbers(25, 55, 65)
+    print(f"median_numbers(25,55,65) = {result}")
+    assert result == 55.0, f"Expected 55.0 but got {result}"
+    print("Test passed!")
+```

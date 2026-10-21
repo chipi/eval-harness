@@ -1,0 +1,22 @@
+```python
+def min_product_tuple(tuples_list):
+    # Initialize variables to store the minimum product and the corresponding tuple
+    min_product = float('inf')
+    min_tuple = None
+    
+    # Iterate through each tuple in the list
+    for tup in tuples_list:
+        # Calculate the product of the current tuple
+        product = tup[0] * tup[1]
+        
+        # Check if this product is smaller than the current minimum product
+        if product < min_product:
+            min_product = product
+            min_tuple = tup
+    
+    return min_tuple
+
+# Test the function with the provided test case
+assert min_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 8
+```
+

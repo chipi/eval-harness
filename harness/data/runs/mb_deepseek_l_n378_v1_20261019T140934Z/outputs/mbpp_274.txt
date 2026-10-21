@@ -1,0 +1,17 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def even_binomial_Coeff_Sum(n: int) -> int:
+    """
+    Returns the sum of the binomial coefficients at even indices for a given positive integer n.
+    That is, sum_{k even} C(n, k).
+    """
+    # The sum of even-indexed binomial coefficients is 2^(n-1)
+    return 1 << (n - 1)  # Equivalent to 2**(n-1)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert even_binomial_Coeff_Sum(4) == 8
+    print("Test passed!")
+```

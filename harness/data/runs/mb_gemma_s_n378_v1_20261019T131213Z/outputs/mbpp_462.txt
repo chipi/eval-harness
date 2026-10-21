@@ -1,0 +1,23 @@
+```python
+def combinations_list(lst):
+    """
+    Finds all possible combinations of the elements of a given list.
+
+    Args:
+        lst: The input list.
+
+    Returns:
+        A list of lists, where each inner list represents a combination.
+    """
+    combinations = [[]]
+    for element in lst:
+        new_combinations = [comb + [element] for comb in combinations]
+        combinations.extend(new_combinations)
+    return combinations
+
+# Example usage and assertion
+result = combinations_list(['orange', 'red', 'green', 'blue'])
+assert result == [[], ['orange'], ['red'], ['red', 'orange'], ['green'], ['green', 'orange'], ['green', 'red'], ['green', 'red', 'orange'], ['blue'], ['blue', 'orange'], ['blue', 'red'], ['blue', 'red', 'orange'], ['blue', 'green'], ['blue', 'green', 'orange'], ['blue', 'green', 'red'], ['blue', 'green', 'red', 'orange']]
+
+print(result)
+```

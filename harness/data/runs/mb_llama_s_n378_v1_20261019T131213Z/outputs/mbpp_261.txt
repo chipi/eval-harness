@@ -1,0 +1,43 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    This function performs element-wise division operation across two tuples.
+
+    Args:
+        tuple1 (tuple): The dividend tuple.
+        tuple2 (tuple): The divisor tuple.
+
+    Returns:
+        tuple: A tuple containing the results of element-wise division.
+
+    Raises:
+        ZeroDivisionError: If any element in the divisor tuple is zero.
+    """
+    # Check if both tuples have the same length
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Both tuples must have the same length")
+
+    # Check for division by zero
+    if any(i == 0 for i in tuple2):
+        raise ZeroDivisionError("Cannot divide by zero")
+
+    # Perform element-wise division using a list comprehension
+    result = tuple(a / b for a, b in zip(tuple1, tuple2))
+
+    return result
+
+
+# Example usage:
+if __name__ == "__main__":
+    tuple1 = (10, 4, 6, 9)
+    tuple2 = (5, 2, 3, 3)
+    print(division_elements(tuple1, tuple2))  # Output: (2.0, 2.0, 2.0, 3.0)
+```
+
+In this code:
+
+*   We define a function `division_elements` that takes two tuples as input and returns a tuple containing the results of element-wise division.
+*   The function first checks if both tuples have the same length and raises a `ValueError` if they don't.
+*   It then checks for division by zero and raises a `ZeroDivisionError` if any element in the divisor tuple is zero.
+*   The function uses a generator expression within the built-in `tuple` function to perform element-wise division using the `zip` function, which pairs corresponding elements from the input tuples.
+*   Finally, the code includes example usage in the `if __name__ == "__main__":` block, demonstrating how to call the `division_elements` function with sample tuples.

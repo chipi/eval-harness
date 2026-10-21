@@ -1,0 +1,57 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_sum_list(list_of_lists):
+    """
+    Returns the sublist from a list of lists whose sum of elements is the highest.
+    
+    Args:
+        list_of_lists (list of lists): A list containing multiple sublists of numbers.
+    
+    Returns:
+        list: The sublist with the highest sum of elements.
+    
+    Example:
+        >>> max_sum_list([[1,2,3], [4,5,6], [10,11,12], [7,8,9]])
+        [10, 11, 12]
+    """
+    if not list_of_lists:
+        return []
+    
+    max_sum = float('-inf')
+    max_list = []
+    
+    for sublist in list_of_lists:
+        current_sum = sum(sublist)
+        if current_sum > max_sum:
+            max_sum = current_sum
+            max_list = sublist
+    
+    return max_list
+
+# Test cases
+def test_max_sum_list():
+    assert max_sum_list([[1,2,3], [4,5,6], [10,11,12], [7,8,9]]) == [10, 11, 12]
+    assert max_sum_list([[1,1], [2,2], [3,3]]) == [3, 3]
+    assert max_sum_list([[-1,-2], [-3,-4], [-5,-6]]) == [-1, -2]
+    assert max_sum_list([[0], [0,0], [0,0,0]]) == [0, 0, 0]
+    assert max_sum_list([]) == []
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_max_sum_list()
+```
+
+### Explanation:
+1. **Function `max_sum_list`**:
+   - Takes a list of lists as input.
+   - Initializes `max_sum` to negative infinity to handle any possible sum (including negative numbers).
+   - Iterates through each sublist, calculates its sum, and updates `max_sum` and `max_list` if the current sublist's sum is greater.
+   - Returns the sublist with the highest sum.
+
+2. **Test Cases**:
+   - The provided test case from the problem statement.
+   - Additional test cases to cover edge cases like negative numbers, zeros, and an empty input list.
+   - The test cases are run when the script is executed directly.
+
+The script is self-contained and includes the necessary test cases to verify correctness.

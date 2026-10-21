@@ -1,0 +1,22 @@
+```python
+from math import gcd, isqrt
+
+
+def sum(a: int, b: int) -> int:
+    """Return the sum of the positive common divisors of a and b."""
+    common = gcd(a, b)
+    if common == 0:
+        raise ValueError("Both numbers cannot be zero.")
+
+    total = 0
+    for divisor in range(1, isqrt(common) + 1):
+        if common % divisor == 0:
+            total += divisor
+            partner = common // divisor
+            if partner != divisor:
+                total += partner
+    return total
+
+
+assert sum(10, 15) == 6
+```

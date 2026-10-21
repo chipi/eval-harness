@@ -1,0 +1,27 @@
+```python
+import cmath
+import math
+
+def convert(c):
+    """
+    Convert a complex number to polar coordinates.
+
+    Args:
+    c (complex): The complex number to be converted.
+
+    Returns:
+    tuple: A tuple containing the magnitude and phase of the complex number.
+    """
+    # Use cmath.polar to convert the complex number to polar coordinates
+    magnitude, phase = cmath.polar(c)
+    
+    # Return the magnitude and phase as a tuple
+    return magnitude, phase
+
+# Test the function
+def main():
+    assert math.isclose(convert(1)[0], 1.0) and math.isclose(convert(1)[1], 0.0)
+
+if __name__ == "__main__":
+    main()
+```

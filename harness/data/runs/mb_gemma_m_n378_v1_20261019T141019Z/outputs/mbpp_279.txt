@@ -1,0 +1,40 @@
+To find the $n$-th decagonal number, we use the formula for polygonal numbers. The formula for the $n$-th $s$-gonal number is:
+$$P(s, n) = \frac{(s - 2)n^2 - (s - 4)n}{2}$$
+
+For a decagonal number, $s = 10$. Plugging this into the formula:
+$$P(10, n) = \frac{(10 - 2)n^2 - (10 - 4)n}{2} = \frac{8n^2 - 6n}{2} = 4n^2 - 3n$$
+
+Here is the self-contained Python script:
+
+```python
+def is_num_decagonal(n: int) -> int:
+    """
+    Calculates the nth decagonal number using the formula:
+    P(n) = 4n^2 - 3n
+    
+    Args:
+        n (int): The position in the decagonal sequence.
+        
+    Returns:
+        int: The nth decagonal number.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer.")
+    
+    return 4 * (n**2) - 3 * n
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # For n=3: 4(3^2) - 3(3) = 4(9) - 9 = 36 - 9 = 27
+    result = is_num_decagonal(3)
+    print(f"The 3rd decagonal number is: {result}")
+    
+    assert is_num_decagonal(3) == 27
+    
+    # Additional tests
+    assert is_num_decagonal(1) == 1   # 4(1)-3(1) = 1
+    assert is_num_decagonal(2) == 10  # 4(4)-3(2) = 16-6 = 10
+    assert is_num_decagonal(4) == 52  # 4(16)-3(4) = 64-12 = 52
+    
+    print("All assertions passed!")
+```

@@ -1,0 +1,38 @@
+```python
+def and_tuples(tuple1, tuple2):
+    """
+    Extracts the elementwise 'and' logic from two tuples.
+    Based on the provided assertion:
+    (10, 4, 6, 9) and (5, 2, 3, 3) -> (0, 0, 2, 1)
+    
+    The logic follows: 
+    For each index i, the result is the number of bits set in (tuple1[i] & tuple2[i]).
+    Wait, let's re-examine the assertion:
+    10 (1010) & 5 (0101) = 0 (0000) -> 0 bits set
+    4 (0100) & 2 (0010) = 0 (0000) -> 0 bits set
+    6 (0110) & 3 (0011) = 2 (0010) -> 1 bit set? No.
+    
+    Let's re-evaluate the assertion: (10, 4, 6, 9), (5, 2, 3, 3) == (0, 0, 2, 1)
+    10 & 5 = 0
+    4 & 2 = 0
+    6 & 3 = 2
+    9 & 3 = 1
+    
+    The pattern is: result[i] = tuple1[i] & tuple2[i]
+    Let's check:
+    10 & 5 = 0
+    4 & 2 = 0
+    6 & 3 = 2
+    9 & 3 = 1
+    Result: (0, 0, 2, 1). This matches the assertion perfectly.
+    """
+    return tuple(a & b for a, b in zip(tuple1, tuple2))
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = and_tuples((10, 4, 6, 9), (5, 2, 3, 3))
+    expected = (0, 0, 2, 1)
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print(f"Success! Result: {result}")
+```

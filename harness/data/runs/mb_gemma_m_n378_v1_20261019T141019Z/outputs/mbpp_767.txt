@@ -1,0 +1,45 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Counts the number of pairs in a list that sum up to a target value.
+    
+    The function uses a frequency dictionary to achieve O(n) time complexity.
+    For each number 'x', it checks how many times 'target_sum - x' has 
+    appeared previously in the list.
+    
+    Args:
+        numbers (list): A list of integers.
+        target_sum (int): The target sum to find pairs for.
+        
+    Returns:
+        int: The total count of pairs.
+    """
+    count = 0
+    freq_map = {}
+
+    for num in numbers:
+        complement = target_sum - num
+        
+        # If the complement exists in our map, it means we found 
+        # 'freq_map[complement]' pairs ending with the current number.
+        if complement in freq_map:
+            count += freq_map[complement]
+            
+        # Update the frequency of the current number in the map
+        freq_map[num] = freq_map.get(num, 0) + 1
+        
+    return count
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # For [1, 1, 1, 1] and sum 2:
+    # Pairs are indices: (0,1), (0,2), (0,3), (1,2), (1,3), (2,3) -> Total 6
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+    
+    # Additional test cases
+    assert get_pairs_count([1, 5, 7, -1, 5], 6) == 3  # (1,5), (1,5), (7,-1)
+    assert get_pairs_count([1, 2, 3, 4, 5], 10) == 0 # No pairs
+    assert get_pairs_count([0, 0, 0], 0) == 3        # (0,0), (0,0), (0,0)
+    
+    print("All tests passed!")
+```

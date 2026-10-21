@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem of counting the total number of characters in a string:
+
+```python
+def count_charac(s):
+    """
+    Count the total number of characters in a string.
+    
+    Args:
+        s (str): The input string.
+        
+    Returns:
+        int: The total number of characters in the string.
+    """
+    return len(s)
+
+# Test cases
+assert count_charac("python programming") == 18
+assert count_charac("") == 0
+assert count_charac("a") == 1
+assert count_charac("hello world") == 11
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `count_charac` takes a string `s` as input.
+2. It uses the built-in `len()` function to count the number of characters in the string.
+3. The function returns this count.
+4. The script includes test cases to verify the correctness of the function, including the provided example and additional edge cases (empty string, single character, and a string with a space).
+5. If all assertions pass, it prints a success message.

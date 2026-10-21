@@ -1,0 +1,18 @@
+```python
+def big_sum(arr):
+    """
+    Find the sum of the largest and smallest value in a given array.
+    
+    Args:
+        arr: A list of numbers
+        
+    Returns:
+        The sum of the maximum and minimum values in the array
+        
+    >>> big_sum([1, 2, 3])
+    4
+    """
+    if not arr:
+        return 0
+    return max(arr) + min(arr)
+```

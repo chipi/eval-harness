@@ -1,0 +1,57 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def text_lowercase_underscore(s):
+    """
+    Returns True if the input string contains sequences of lowercase letters joined with an underscore,
+    and False otherwise.
+    
+    Examples:
+    >>> text_lowercase_underscore("aab_cbbbc")
+    True
+    >>> text_lowercase_underscore("Aab_cbbbc")
+    False
+    >>> text_lowercase_underscore("aab_cbbbc1")
+    False
+    >>> text_lowercase_underscore("aab_cbbbc_")
+    False
+    >>> text_lowercase_underscore("aab__cbbbc")
+    False
+    """
+    # Check if the string is empty
+    if not s:
+        return False
+    
+    # Split the string by underscores
+    parts = s.split('_')
+    
+    # Check if there are exactly two parts (one underscore)
+    if len(parts) != 2:
+        return False
+    
+    # Check if both parts are non-empty and contain only lowercase letters
+    for part in parts:
+        if not part.isalpha() or not part.islower():
+            return False
+    
+    return True
+
+# Test cases
+assert text_lowercase_underscore("aab_cbbbc") == True
+assert text_lowercase_underscore("Aab_cbbbc") == False
+assert text_lowercase_underscore("aab_cbbbc1") == False
+assert text_lowercase_underscore("aab_cbbbc_") == False
+assert text_lowercase_underscore("aab__cbbbc") == False
+assert text_lowercase_underscore("aabbcc") == False
+assert text_lowercase_underscore("") == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `text_lowercase_underscore` takes a string `s` as input.
+2. **Empty String Check**: If the input string is empty, it immediately returns `False`.
+3. **Split by Underscore**: The string is split into parts using the underscore as a delimiter. If there are not exactly two parts (i.e., not exactly one underscore), it returns `False`.
+4. **Check Parts**: Each part is checked to ensure it is non-empty and contains only lowercase letters. If any part fails this check, the function returns `False`.
+5. **Return True**: If all checks pass, the function returns `True`.
+6. **Test Cases**: The script includes several test cases to verify the function's correctness, including edge cases like empty strings, multiple underscores, and non-lowercase characters. The `assert` statements will raise an error if any test fails, otherwise, it prints a success message.

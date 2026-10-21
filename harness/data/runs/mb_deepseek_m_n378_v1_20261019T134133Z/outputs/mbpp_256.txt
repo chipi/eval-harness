@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function that takes in a non-negative number and returns the number of prime numbers less than the given non-negative number.
+assert count_Primes_nums(5) == 2
+"""
+
+
+def count_Primes_nums(n):
+    """
+    Count the number of prime numbers strictly less than n.
+
+    Args:
+        n (int): A non-negative integer.
+
+    Returns:
+        int: The count of prime numbers less than n.
+    """
+    if n < 2:
+        return 0
+
+    # Sieve of Eratosthenes
+    is_prime = [True] * n
+    is_prime[0] = False
+    is_prime[1] = False
+
+    for i in range(2, int(n ** 0.5) + 1):
+        if is_prime[i]:
+            for j in range(i * i, n, i):
+                is_prime[j] = False
+
+    return sum(is_prime)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert count_Primes_nums(5) == 2
+    assert count_Primes_nums(10) == 4
+    assert count_Primes_nums(0) == 0
+    assert count_Primes_nums(1) == 0
+    assert count_Primes_nums(2) == 0
+    assert count_Primes_nums(3) == 1
+    assert count_Primes_nums(100) == 25
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Edge case handling**: If `n < 2`, there are no primes less than `n`, so we return `0`.
+
+2. **Sieve of Eratosthenes**: We create a boolean array `is_prime` of size `n`, where `is_prime[i]` indicates whether `i` is prime. We initialize all entries to `True`, then mark `0` and `1` as `False`.
+
+3. **Marking composites**: For each number `i` from `2` up to `√n`, if `i` is still marked prime, we mark all its multiples starting from `i*i` as non-prime.
+
+4. **Counting**: Finally, we sum the `True` values in the array to get the count of primes less than `n`.
+
+The time complexity is **O(n log log n)** and space complexity is **O(n)**, making it efficient for reasonably large inputs.

@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem by reversing an array up to a given position `k`:
+
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverses the elements of the array up to the given position k (0-based index).
+
+    Args:
+        arr (list): The input array to be partially reversed.
+        k (int): The position up to which the array should be reversed (inclusive).
+
+    Returns:
+        list: The array with elements reversed up to position k.
+    """
+    if k < 0 or k >= len(arr):
+        return arr  # Return original array if k is out of bounds
+
+    # Reverse the subarray from start to k (inclusive)
+    arr[:k+1] = arr[:k+1][::-1]
+    return arr
+
+# Test the function
+assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]
+```
+
+### Explanation:
+1. The function `reverse_Array_Upto_K` takes an array `arr` and an integer `k` as input.
+2. It checks if `k` is within valid bounds (0 ≤ `k` < length of `arr`). If not, it returns the original array.
+3. The subarray from the start of the array up to and including index `k` is reversed using slicing (`arr[:k+1][::-1]`).
+4. The modified array is returned.
+5. The `assert` statement verifies that the function works as expected.

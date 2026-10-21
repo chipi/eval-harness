@@ -1,0 +1,9 @@
+```python
+def remove_all_spaces(s):
+    return ''.join(s.split())
+
+assert remove_all_spaces('python  program') == ('pythonprogram')
+
+if __name__ == "__main__":
+    print(remove_all_spaces('python  program'))
+```

@@ -1,0 +1,26 @@
+```python
+def flatten_list(nested_list):
+    """
+    Flattens a nested list structure into a single list.
+    This implementation handles multiple levels of nesting using recursion.
+    """
+    flat_list = []
+    for item in nested_list:
+        if isinstance(item, list):
+            # Recursively flatten the sublist and extend the main list
+            flat_list.extend(flatten_list(item))
+        else:
+            # Append the non-list element
+            flat_list.append(item)
+    return flat_list
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    expected_output = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    
+    result = flatten_list(input_list)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Test passed successfully!")
+```

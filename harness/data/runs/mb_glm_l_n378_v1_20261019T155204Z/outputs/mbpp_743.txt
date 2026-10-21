@@ -1,0 +1,30 @@
+```python
+def rotate_right(lst, n):
+    """
+    Rotates a list to the right by n items.
+    
+    Args:
+        lst (list): The input list to rotate.
+        n (int): The number of items to rotate by.
+        
+    Returns:
+        list: The rotated list.
+    """
+    # Handle edge cases where the list is empty or rotation amount is 0
+    if not lst or n == 0:
+        return lst
+    
+    # Calculate effective rotations (handles cases where n > len(lst))
+    # Modulo operator gives the remainder, which is the effective shift amount.
+    k = n % len(lst)
+    
+    # Slice the list: 
+    # lst[-k:] gets the last k elements
+    # lst[:-k] gets the elements from start up to the last k elements
+    return lst[-k:] + lst[:-k]
+
+# Test assertion
+if __name__ == "__main__":
+    assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+    print("Test passed successfully.")
+```

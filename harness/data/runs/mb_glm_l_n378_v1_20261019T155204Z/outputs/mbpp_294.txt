@@ -1,0 +1,30 @@
+```python
+def max_val(heterogeneous_list):
+    """
+    Finds the maximum value among the numeric elements in a given heterogeneous list.
+    
+    The function iterates through the list, filters out non-numeric items (strings, etc.),
+    and returns the maximum value found among the numbers (integers and floats).
+    
+    Args:
+        heterogeneous_list (list): A list containing mixed data types (e.g., strings, ints, floats).
+        
+    Returns:
+        int or float: The maximum numeric value found in the list.
+        
+    Raises:
+        ValueError: If the list contains no numeric values.
+    """
+    # We use a list comprehension to filter the list.
+    # isinstance(x, (int, float)) checks if an item is a number.
+    # We explicitly exclude bool since True/False are technically int subclasses in Python.
+    numbers = [x for x in heterogeneous_list if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    
+    if not numbers:
+        raise ValueError("The list contains no numeric values.")
+        
+    return max(numbers)
+
+# Test the function with the provided assertion
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+```

@@ -1,0 +1,20 @@
+```python
+def find_combinations(tup_list):
+    # Initialize an empty list to store the combinations
+    result = []
+    
+    # Iterate over each tuple in the input list
+    for tup in tup_list:
+        # Iterate over all possible combinations of the remaining elements in the tuple
+        for i in range(len(tup)):
+            # If the current element is not already included in the combination, add it
+            if tup[i] not in result:
+                # Add the current combination to the result list
+                result.append((tup[i], tup[i+1]))
+    
+    return result
+
+# Test the function with the provided test case
+assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+```
+

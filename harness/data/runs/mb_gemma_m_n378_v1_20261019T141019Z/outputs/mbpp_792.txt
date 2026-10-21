@@ -1,0 +1,30 @@
+```python
+def count_list(list_of_lists):
+    """
+    Counts the number of lists within a given list of lists.
+    
+    Args:
+        list_of_lists (list): A list containing other lists.
+        
+    Returns:
+        int: The count of elements that are instances of list.
+    """
+    count = 0
+    for item in list_of_lists:
+        if isinstance(item, list):
+            count += 1
+    return count
+
+# Test case provided in the prompt
+if __name__ == "__main__":
+    # Test 1: Standard case
+    assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+    
+    # Test 2: Empty outer list
+    assert count_list([]) == 0
+    
+    # Test 3: Mixed types (counting only lists)
+    assert count_list([[1], 2, [3, 4], "string", [5]]) == 3
+    
+    print("All assertions passed!")
+```

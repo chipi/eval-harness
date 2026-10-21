@@ -1,0 +1,18 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Find the third side of a right angled triangle given two sides.
+    
+    In a right-angled triangle, if we are given the two legs (a and b),
+    the hypotenuse c is calculated using the Pythagorean theorem: c = sqrt(a^2 + b^2).
+    
+    The problem states that for inputs 7 and 8, the output is approximately 10.63014581273465,
+    which corresponds to sqrt(7^2 + 8^2) = sqrt(49 + 64) = sqrt(113) ≈ 10.63014581273465.
+    
+    Therefore, this function assumes the two given sides are the legs of the right triangle,
+    and returns the hypotenuse.
+    """
+    return math.sqrt(a**2 + b**2)
+```

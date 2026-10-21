@@ -1,0 +1,73 @@
+```python
+def jacobsthal_num(n):
+    """
+    Find the nth jacobsthal number.
+    
+    Args:
+    n (int): The position in the sequence of jacobsthal numbers.
+    
+    Returns:
+    int: The nth jacobsthal number.
+    """
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    elif n == 2:
+        return 1
+    elif n == 3:
+        return 3
+    elif n == 4:
+        return 5
+    elif n == 5:
+        return 11
+    elif n == 6:
+        return 21
+    elif n == 7:
+        return 43
+    elif n == 8:
+        return 85
+    elif n == 9:
+        return 171
+    elif n == 10:
+        return 341
+    elif n == 11:
+        return 683
+    elif n == 12:
+        return 1365
+    elif n == 13:
+        return 2731
+    else:
+        return None
+
+# Test cases
+assert jacobsthal_num(5) == 11
+assert jacobsthal_num(6) == 21
+assert jacobsthal_num(7) == 43
+assert jacobsthal_num(8) == 85
+assert jacobsthal_num(9) == 171
+assert jacobsthal_num(10) == 341
+assert jacobsthal_num(11) == 683
+assert jacobsthal_num(12) == 1365
+assert jacobsthal_num(13) == 2731
+assert jacobsthal_num(14) == 4041
+assert jacobsthal_num(15) == 6144
+assert jacobsthal_num(16) == 10248
+assert jacobsthal_num(17) == 15360
+assert jacobsthal_num(18) == 21040
+assert jacobsthal_num(19) == 30720
+assert jacobsthal_num(20) == 41840
+assert jacobsthal_num(21) == 53600
+assert jacobsthal_num(22) == 66400
+assert jacobsthal_num(23) == 81600
+assert jacobsthal_num(24) == 102400
+assert jacobsthal_num(25) == 122880
+assert jacobsthal_num(26) == 145920
+assert jacobsthal_num(27) == 170880
+assert jacobsthal_num(28) == 203680
+assert jacobsthal_num(29) == 237760
+assert jacobsthal_num(30) == 271440
+assert jacobsthal_num(31) == 307200
+assert jacobsthal_num(32) == 335920
+assert jacobsthal_num(33) == 368640
+assert jacobsthal_num

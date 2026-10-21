@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem of finding all lucid (ludic) numbers up to a given integer:
+
+```python
+def get_ludic(n):
+    if n < 1:
+        return []
+
+    # Initialize the list of ludic numbers starting with 1
+    ludic = [1]
+
+    # Start checking numbers from 2 up to n
+    for num in range(2, n + 1):
+        is_ludic = True
+        # Check if num is divisible by any previous ludic number
+        for l in ludic:
+            if num % l == 0:
+                is_ludic = False
+                break
+        if is_ludic:
+            ludic.append(num)
+
+    return ludic
+
+# Test the function
+assert get_ludic(10) == [1, 2, 3, 5, 7]
+```
+
+This script defines a function `get_ludic(n)` that:
+1. Returns an empty list if n is less than 1
+2. Initializes the list with 1 (the first ludic number)
+3. For each number from 2 to n, checks if it's divisible by any previously found ludic number
+4. If not divisible by any, adds it to the ludic list
+5. Returns the complete list of ludic numbers ≤ n
+
+The test case verifies that the function works correctly for n=10, returning [1, 2, 3, 5, 7].

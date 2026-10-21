@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the maximum product subarray:
+
+```python
+"""
+Solution to find the maximum product subarray in a given array.
+The approach keeps track of both the maximum and minimum product up to the current element,
+since a negative number can turn a minimum product into a maximum product when multiplied.
+"""
+
+def max_subarray_product(nums):
+    if not nums:
+        return 0
+
+    max_product = min_product = result = nums[0]
+
+    for num in nums[1:]:
+        # If the current number is negative, swap max and min
+        if num < 0:
+            max_product, min_product = min_product, max_product
+
+        # Update max and min products
+        max_product = max(num, max_product * num)
+        min_product = min(num, min_product * num)
+
+        # Update the result
+        result = max(result, max_product)
+
+    return result
+
+# Test case
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+```
+
+This solution works by:
+1. Initializing `max_product`, `min_product`, and `result` with the first element of the array
+2. Iterating through the array starting from the second element
+3. For each element:
+   - If the element is negative, swapping `max_product` and `min_product` (since multiplying by a negative flips the order)
+   - Updating `max_product` and `min_product` to be either the current number or the product of the current number with the previous max/min
+   - Updating the `result` with the maximum value found so far
+4. Returning the final result
+
+The test case verifies that the function returns 112 for the input `[1, -2, -3, 0, 7, -8, -2]`, which is the product of the subarray `[-2, -3, 0, 7, -8, -2]` (specifically, the product of `7 * -8 * -2 = 112`).

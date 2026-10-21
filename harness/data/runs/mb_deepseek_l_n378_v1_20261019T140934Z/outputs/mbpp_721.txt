@@ -1,0 +1,41 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def maxAverageOfPath(matrix):
+    """
+    Given a square matrix of size N*N, find the maximum average cost
+    over all paths from top-left to bottom-right moving only right or down.
+    """
+    n = len(matrix)
+    # dp[i][j] will store (max_sum, count) for the best path to (i, j)
+    dp = [[(0, 0)] * n for _ in range(n)]
+
+    for i in range(n):
+        for j in range(n):
+            if i == 0 and j == 0:
+                dp[i][j] = (matrix[i][j], 1)
+            elif i == 0:
+                prev_sum, prev_count = dp[i][j - 1]
+                dp[i][j] = (prev_sum + matrix[i][j], prev_count + 1)
+            elif j == 0:
+                prev_sum, prev_count = dp[i - 1][j]
+                dp[i][j] = (prev_sum + matrix[i][j], prev_count + 1)
+            else:
+                # Compare averages from top and left
+                sum_top, count_top = dp[i - 1][j]
+                sum_left, count_left = dp[i][j - 1]
+                avg_top = sum_top / count_top
+                avg_left = sum_left / count_left
+                if avg_top > avg_left:
+                    dp[i][j] = (sum_top + matrix[i][j], count_top + 1)
+                else:
+                    dp[i][j] = (sum_left + matrix[i][j], count_left + 1)
+
+    total_sum, total_count = dp[n - 1][n - 1]
+    return total_sum / total_count
+
+
+# Test
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+print("Test passed!")
+```

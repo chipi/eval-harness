@@ -1,0 +1,22 @@
+```python
+def return_sum(dictionary):
+    """
+    Find the sum of all items in the given dictionary.
+    
+    Args:
+        dictionary: A dictionary with numeric values
+        
+    Returns:
+        The sum of all values in the dictionary
+    """
+    return sum(dictionary.values())
+
+
+# Test cases
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+assert return_sum({'x': 10, 'y': 20}) == 30
+assert return_sum({}) == 0
+assert return_sum({'single': 42}) == 42
+
+print("All tests passed!")
+```

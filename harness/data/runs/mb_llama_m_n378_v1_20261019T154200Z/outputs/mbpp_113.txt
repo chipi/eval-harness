@@ -1,0 +1,21 @@
+```python
+def check_integer(s):
+    """
+    Checks if a string represents an integer or not.
+
+    Args:
+        s (str): The input string to be checked.
+
+    Returns:
+        bool: True if the string represents an integer, False otherwise.
+    """
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+# Test the function
+print(check_integer("python"))  # Should print: False
+print(check_integer("123"))     # Should print: True
+```

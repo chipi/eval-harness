@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_length(s: str) -> int:
+    """
+    Find the maximum difference between the number of 0s and number of 1s
+    in any substring of the given binary string.
+    
+    This is equivalent to finding the maximum subarray sum where:
+    - Each '0' contributes +1
+    - Each '1' contributes -1
+    """
+    max_diff = 0
+    current_sum = 0
+    
+    for char in s:
+        if char == '0':
+            current_sum += 1
+        else:  # char == '1'
+            current_sum -= 1
+        
+        # If current_sum becomes negative, reset it (Kadane's algorithm)
+        if current_sum < 0:
+            current_sum = 0
+        
+        # Update max_diff if current_sum is greater
+        if current_sum > max_diff:
+            max_diff = current_sum
+    
+    return max_diff
+
+
+# Test the function
+if __name__ == "__main__":
+    assert find_length("11000010001") == 6
+    print("Test passed!")
+    print(f"find_length('11000010001') = {find_length('11000010001')}")
+```
+
+**Explanation:**
+
+The problem asks for the maximum difference between the count of 0s and 1s in any substring. This can be transformed into a maximum subarray sum problem:
+
+1. **Transform the string**: Treat each `'0'` as `+1` and each `'1'` as `-1`. Then the difference `(count of 0s) - (count of 1s)` in any substring equals the sum of the transformed values in that substring.
+
+2. **Kadane's Algorithm**: We use Kadane's algorithm to find the maximum subarray sum:
+   - Keep a running sum `current_sum`.
+   - If `current_sum` becomes negative, reset it to 0 (starting a new substring is better).
+   - Track the maximum value seen so far in `max_diff`.
+
+3. **Verification**: For `"11000010001"`:
+   - Transformed: `[-1, -1, +1, +1, +1, +1, -1, +1, +1, +1, -1]`
+   - The substring `"000010001"` (positions 2-10) has 6 zeros and 3 ones, giving a difference of 6. ✓
+
+The time complexity is **O(n)** and space complexity is **O(1)**.

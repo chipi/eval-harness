@@ -1,0 +1,27 @@
+```python
+def snake_to_camel(snake_str: str) -> str:
+    """
+    Convert a snake_case string to CamelCase (PascalCase).
+    
+    Args:
+        snake_str: Input string in snake_case format
+        
+    Returns:
+        String converted to CamelCase (first letter of each word capitalized)
+    """
+    # Split the string by underscores
+    words = snake_str.split('_')
+    
+    # Capitalize the first letter of each word and join them
+    camel_case = ''.join(word.capitalize() for word in words)
+    
+    return camel_case
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = snake_to_camel('python_program')
+    print(f"snake_to_camel('python_program') = '{result}'")
+    assert result == 'PythonProgram', f"Expected 'PythonProgram', got '{result}'"
+    print("Assertion passed!")
+```

@@ -1,0 +1,13 @@
+```python
+def cube_nums(nums):
+    """
+    Find cubes of individual elements in a list.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        A list containing the cube of each element in the input list
+    """
+    return [x ** 3 for x in nums]
+```

@@ -1,0 +1,58 @@
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    Find all combinations of sums with tuples in the given tuple list.
+    
+    For each pair of tuples, compute element-wise sum and return all results.
+    
+    Args:
+        tuple_list: A list of tuples containing numeric values
+        
+    Returns:
+        A list of tuples where each tuple is the element-wise sum of two different tuples
+    """
+    result = []
+    
+    # Generate all combinations of 2 tuples from the list
+    for tuple1, tuple2 in combinations(tuple_list, 2):
+        # Compute element-wise sum of the two tuples
+        sum_tuple = tuple(a + b for a, b in zip(tuple1, tuple2))
+        result.append(sum_tuple)
+    
+    return result
+
+
+# Test with the provided assertion
+if __name__ == "__main__":
+    test_input = [(2, 4), (6, 7), (5, 1), (6, 10)]
+    expected_output = [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    
+    result = find_combinations(test_input)
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Test passed: {result == expected_output}")
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("✓ All assertions passed!")
+```
+
+**Explanation:**
+
+The function `find_combinations()` works as follows:
+
+1. **Uses `itertools.combinations()`**: This generates all unique pairs of tuples from the input list. For a list of 4 tuples, it produces C(4,2) = 6 combinations.
+
+2. **Element-wise sum**: For each pair of tuples, it computes the sum of corresponding elements using `zip()` and a generator expression.
+
+3. **Returns results**: All computed sum tuples are collected in a list and returned.
+
+For the example `[(2, 4), (6, 7), (5, 1), (6, 10)]`:
+- (2,4) + (6,7) = (8,11)
+- (2,4) + (5,1) = (7,5)
+- (2,4) + (6,10) = (8,14)
+- (6,7) + (5,1) = (11,8)
+- (6,7) + (6,10) = (12,17)
+- (5,1) + (6,10) = (11,11)

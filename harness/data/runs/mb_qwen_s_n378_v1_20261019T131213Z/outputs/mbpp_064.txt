@@ -1,0 +1,13 @@
+```python
+def subject_marks(tuples_list):
+    """
+    Sort a list of tuples using the second value of each tuple.
+    
+    Args:
+        tuples_list: A list of tuples where each tuple contains at least two elements.
+        
+    Returns:
+        A new list sorted by the second element of each tuple in ascending order.
+    """
+    return sorted(tuples_list, key=lambda x: x[1])
+```

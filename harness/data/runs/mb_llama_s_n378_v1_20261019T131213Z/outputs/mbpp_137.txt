@@ -1,0 +1,103 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    This function calculates the ratio of zeroes to non-zeroes in an array of integers.
+
+    Args:
+        arr (list): A list of integers.
+
+    Returns:
+        float: The ratio of zeroes to non-zeroes in the array.
+    """
+    # Initialize counters for zeroes and non-zeroes
+    zero_counter = 0
+    non_zero_counter = 0
+
+    # Iterate over the array
+    for num in arr:
+        # Check if the number is zero
+        if num == 0:
+            zero_counter += 1
+        # If the number is not zero, increment the non-zero counter
+        else:
+            non_zero_counter += 1
+
+    # Check for division by zero
+    if non_zero_counter == 0:
+        return 0
+
+    # Calculate and return the ratio of zeroes to non-zeroes
+    return zero_counter / non_zero_counter
+
+
+# Test the function
+assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+```
+
+Alternatively, you can use a more Pythonic approach:
+
+```python
+import math
+
+def zero_count(arr):
+    """
+    This function calculates the ratio of zeroes to non-zeroes in an array of integers.
+
+    Args:
+        arr (list): A list of integers.
+
+    Returns:
+        float: The ratio of zeroes to non-zeroes in the array.
+    """
+    # Count zeroes and non-zeroes using list comprehension
+    zero_counter = sum(1 for num in arr if num == 0)
+    non_zero_counter = len(arr) - zero_counter
+
+    # Check for division by zero
+    if non_zero_counter == 0:
+        return 0
+
+    # Calculate and return the ratio of zeroes to non-zeroes
+    return zero_counter / non_zero_counter
+
+
+# Test the function
+assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+```
+
+Or using the `numpy` library for a more efficient solution:
+
+```python
+import numpy as np
+import math
+
+def zero_count(arr):
+    """
+    This function calculates the ratio of zeroes to non-zeroes in an array of integers.
+
+    Args:
+        arr (list): A list of integers.
+
+    Returns:
+        float: The ratio of zeroes to non-zeroes in the array.
+    """
+    # Convert the list to a numpy array
+    arr = np.array(arr)
+
+    # Count zeroes and non-zeroes
+    zero_counter = np.count_nonzero(arr == 0)
+    non_zero_counter = arr.size - zero_counter
+
+    # Check for division by zero
+    if non_zero_counter == 0:
+        return 0
+
+    # Calculate and return the ratio of zeroes to non-zeroes
+    return zero_counter / non_zero_counter
+
+
+# Test the function
+assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+```

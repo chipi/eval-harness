@@ -1,0 +1,29 @@
+```python
+def move_num(s):
+    # Split the string into a list of characters
+    chars = list(s)
+    
+    # Initialize pointers for the start and end of the list
+    start = 0
+    end = len(chars) - 1
+    
+    # Move characters to the end of the list
+    while start < end:
+        if chars[start] >= '0' and chars[start] <= '9':
+            # Move the character to the end
+            chars[end], chars[start] = chars[start], chars[end]
+            # Move the start pointer to the right
+            start += 1
+        elif chars[end] >= '0' and chars[end] <= '9':
+            # Move the character to the end
+            chars[end], chars[start] = chars[start], chars[end]
+            # Move the end pointer to the left
+            end -= 1
+    
+    # Join the list back into a string
+    return ''.join(chars)
+
+# Test the function with the provided test case
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+```
+

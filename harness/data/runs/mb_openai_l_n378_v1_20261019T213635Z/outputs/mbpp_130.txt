@@ -1,0 +1,17 @@
+```python
+from collections import Counter
+
+
+def max_occurrences(items):
+    """Return the most frequent item, breaking ties by first appearance."""
+    if not items:
+        raise ValueError("max_occurrences() requires a non-empty list")
+
+    counts = Counter(items)
+    return max(items, key=counts.get)
+
+
+assert max_occurrences(
+    [2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]
+) == 2
+```

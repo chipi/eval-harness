@@ -1,0 +1,24 @@
+```python
+def check_smaller(tuple1, tuple2):
+    """
+    Checks if each element of the second tuple is smaller than 
+    its corresponding element in the first tuple.
+    """
+    # If the tuples are of different lengths, they cannot have 
+    # corresponding elements for every position.
+    if len(tuple1) != len(tuple2):
+        return False
+    
+    # Use zip to iterate through both tuples simultaneously
+    # and check if every element in tuple2 is less than the element in tuple1
+    return all(b < a for a, b in zip(tuple1, tuple2))
+
+if __name__ == "__main__":
+    # Test cases
+    assert check_smaller((1, 2, 3), (2, 3, 4)) == False  # 2 is not smaller than 1
+    assert check_smaller((5, 6, 7), (4, 5, 6)) == True   # All are smaller
+    assert check_smaller((10, 10), (10, 9)) == False    # 10 is not smaller than 10
+    assert check_smaller((1, 2), (0, 1)) == True         # All are smaller
+    
+    print("All tests passed!")
+```

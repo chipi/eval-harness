@@ -1,0 +1,11 @@
+```python
+def is_undulating(n):
+    s = str(n)
+    if len(s) < 3:
+        return False
+    return all(s[i] == s[i-2] for i in range(2, len(s))) and len(set(s)) == 2
+
+if __name__ == "__main__":
+    assert is_undulating(1212121) == True
+    print(is_undulating(1212121))
+```

@@ -1,0 +1,17 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list for every nth element, returning a list of the resulting lists.
+    
+    For example, with n=3:
+    - First sublist contains elements at indices 0, 3, 6, 9, ...
+    - Second sublist contains elements at indices 1, 4, 7, 10, ...
+    - Third sublist contains elements at indices 2, 5, 8, 11, ...
+    """
+    return [lst[i::n] for i in range(n)]
+
+
+# Test
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+print("All tests passed!")
+```

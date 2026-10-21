@@ -1,0 +1,10 @@
+```python
+def remove_odd(s):
+    return s[1::2]
+
+def main():
+    assert remove_odd("python") == "yhn"
+
+if __name__ == "__main__":
+    main()
+```

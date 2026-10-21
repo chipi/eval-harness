@@ -1,0 +1,25 @@
+```python
+import re
+
+def extract_quotation(s):
+    """
+    Extract values between quotation marks " " of the given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        list: A list of extracted values.
+    """
+    # Use regular expression to find all substrings enclosed in quotation marks
+    pattern = r'"([^"]*)"'
+    matches = re.findall(pattern, s)
+    
+    # Return the list of matches
+    return matches
+
+# Test the function
+assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+```
+
+You can run this script to test the `extract_quotation` function. The function uses a regular expression to find all substrings enclosed in quotation marks and returns them as a list. The `re.findall` function returns all non-overlapping matches of the pattern in the string as a list of strings. The `[^"]*` pattern matches any character that is not a quotation mark (`"`) zero or more times, effectively matching any substring that does not contain a quotation mark. The parentheses around `[^"]*` create a group, which allows `findall` to return only the matched substring, not the quotation marks themselves.

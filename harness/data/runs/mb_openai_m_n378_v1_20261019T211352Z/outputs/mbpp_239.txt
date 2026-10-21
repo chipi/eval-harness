@@ -1,0 +1,63 @@
+```python
+#!/usr/bin/env python3
+"""
+Count sequences of length n where:
+- each element is a positive integer
+- each element is <= m
+- for every adjacent pair, seq[i] >= 2 * seq[i - 1]
+
+Example:
+    get_total_number_of_sequences(10, 4) == 4
+
+The valid sequences are:
+    [1, 2, 4, 8]
+    [1, 2, 4, 9]
+    [1, 2, 4, 10]
+    [1, 2, 5, 10]
+"""
+
+from functools import lru_cache
+
+
+def get_total_number_of_sequences(m: int, n: int) -> int:
+    """
+    Return the number of valid sequences of length n.
+
+    Args:
+        m: Maximum allowed value for any element.
+        n: Required sequence length.
+
+    Returns:
+        Number of valid sequences.
+    """
+    if m <= 0 or n <= 0:
+        return 0
+
+    @lru_cache(None)
+    def count_sequences(previous: int, remaining: int) -> int:
+        """
+        Count ways to choose `remaining` more values after `previous`.
+        The next value must be at least 2 * previous and at most m.
+        """
+        if remaining == 0:
+            return 1
+
+        total = 0
+        for next_value in range(2 * previous, m + 1):
+            total += count_sequences(next_value, remaining - 1)
+        return total
+
+    total = 0
+
+    # Choose the first element.
+    # It cannot be larger than m, and later elements must grow by at least 2x.
+    for first_value in range(1, m + 1):
+        total += count_sequences(first_value, n - 1)
+
+    return total
+
+
+if __name__ == "__main__":
+    assert get_total_number_of_sequences(10, 4) == 4
+    print(get_total_number_of_sequences(10, 4))
+```

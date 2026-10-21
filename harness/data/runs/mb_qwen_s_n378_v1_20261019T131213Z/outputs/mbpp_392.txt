@@ -1,0 +1,25 @@
+```python
+def get_max_sum(n):
+    """
+    Find the maximum sum possible by using the given equation:
+    f(n) = max( (f(n/2) + f(n/3) + f(n/4) + f(n/5)), n)
+    
+    This is a classic dynamic programming / memoization problem.
+    We use integer division for n/2, n/3, n/4, n/5.
+    """
+    from functools import lru_cache
+    
+    @lru_cache(maxsize=None)
+    def f(x):
+        if x == 0:
+            return 0
+        # Compute the sum of recursive calls with integer division
+        sum_recursive = f(x // 2) + f(x // 3) + f(x // 4) + f(x // 5)
+        return max(sum_recursive, x)
+    
+    return f(n)
+
+
+if __name__ == "__main__":
+    assert get_max_sum(60) == 106
+```

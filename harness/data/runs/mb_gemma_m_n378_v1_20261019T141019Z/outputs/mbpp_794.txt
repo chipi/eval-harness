@@ -1,0 +1,32 @@
+```python
+import re
+
+def text_starta_endb(text: str) -> bool:
+    """
+    Matches a string that has an 'a' followed by anything, ending in 'b'.
+    
+    The regex pattern '^a.*b$' works as follows:
+    ^     : Start of the string
+    a     : The character 'a'
+    .*    : Any character (except newline) zero or more times
+    b     : The character 'b'
+    $     : End of the string
+    """
+    # We use re.DOTALL in case the "anything" includes newline characters
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, text, re.DOTALL))
+
+if __name__ == "__main__":
+    # Test cases
+    assert text_starta_endb("aabbbb") == True
+    assert text_starta_endb("ab") == True
+    assert text_starta_endb("a123b") == True
+    assert text_starta_endb("a\nb") == True  # Testing newline with DOTALL
+    
+    assert text_starta_endb("ba") == False    # Wrong order
+    assert text_starta_endb("abbc") == False  # Doesn't end in b
+    assert text_starta_endb("cabb") == False  # Doesn't start with a
+    assert text_starta_endb("a") == False    # Missing b
+    
+    print("All tests passed!")
+```

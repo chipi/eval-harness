@@ -1,0 +1,32 @@
+```python
+def check_Consecutive(nums):
+    """
+    Checks whether the given list contains consecutive numbers.
+    A list is considered consecutive if, when sorted, each element 
+    is exactly 1 greater than the previous element.
+    """
+    if not nums:
+        return True
+    
+    # Sort the list to ensure we can check the sequence
+    sorted_nums = sorted(nums)
+    
+    # Iterate through the list and check if the next number is current + 1
+    for i in range(len(sorted_nums) - 1):
+        if sorted_nums[i + 1] != sorted_nums[i] + 1:
+            return False
+            
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    assert check_Consecutive([1, 2, 3, 4, 5]) == True
+    assert check_Consecutive([5, 4, 3, 2, 1]) == True
+    assert check_Consecutive([1, 3, 2, 4, 5]) == True
+    assert check_Consecutive([1, 2, 4, 5]) == False
+    assert check_Consecutive([1, 1, 2, 3]) == False  # Duplicates break strict consecutiveness
+    assert check_Consecutive([10]) == True
+    assert check_Consecutive([]) == True
+
+    print("All tests passed!")
+```

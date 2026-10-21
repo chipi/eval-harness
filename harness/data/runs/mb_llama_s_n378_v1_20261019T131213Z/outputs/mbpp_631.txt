@@ -1,0 +1,37 @@
+```python
+def replace_spaces(s):
+    """
+    Replaces whitespaces with an underscore and vice versa in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The modified string with whitespaces replaced by underscores and vice versa.
+    """
+    # Use the replace() method to replace all occurrences of ' ' with '#'
+    # This is a temporary replacement to avoid replacing the '_' we are about to add
+    s = s.replace(' ', '#')
+    # Now replace all '_' with ' '
+    s = s.replace('_', ' ')
+    # Finally, replace '#' with '_'
+    s = s.replace('#', '_')
+    return s
+
+# Alternatively, you can use a more concise approach
+def replace_spaces_concise(s):
+    """
+    Replaces whitespaces with an underscore and vice versa in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The modified string with whitespaces replaced by underscores and vice versa.
+    """
+    return s.replace(' ', '_').replace('_', ' ').replace(' ', '_')
+
+# Test the functions
+print(replace_spaces('Jumanji The Jungle'))  # Outputs: Jumanji_The_Jungle
+print(replace_spaces_concise('Jumanji The Jungle'))  # Outputs: Jumanji_The_Jungle
+```

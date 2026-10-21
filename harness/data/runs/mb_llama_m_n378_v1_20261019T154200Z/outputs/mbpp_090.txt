@@ -1,0 +1,17 @@
+```python
+def len_log(words):
+    """
+    This function calculates the length of the longest word in a given list.
+
+    Args:
+        words (list): A list of words.
+
+    Returns:
+        int: The length of the longest word.
+    """
+    return max(len(word) for word in words)
+
+# Test the function
+assert len_log(["python","PHP","bigdata"]) == 7
+print("All tests passed.")
+```

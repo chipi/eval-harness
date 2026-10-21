@@ -1,0 +1,20 @@
+```python
+def sum_range_list(nums, start, end):
+    """
+    Return the sum of numbers in nums from index start to index end inclusive.
+
+    Parameters:
+        nums (list): List of numbers.
+        start (int): Starting index.
+        end (int): Ending index.
+
+    Returns:
+        int/float: Sum of the selected range.
+    """
+    return sum(nums[start:end + 1])
+
+
+if __name__ == "__main__":
+    assert sum_range_list([2, 1, 5, 6, 8, 3, 4, 9, 10, 11, 8, 12], 8, 10) == 29
+    print("All tests passed.")
+```

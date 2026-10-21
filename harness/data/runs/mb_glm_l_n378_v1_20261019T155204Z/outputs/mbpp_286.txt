@@ -1,0 +1,83 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Finds the largest sum of a contiguous array in the modified array
+    formed by repeating the given array k times.
+
+    Parameters:
+    arr (list): The input array.
+    n (int): The size of the array (though len(arr) is used).
+    k (int): The number of times the array is repeated.
+
+    Returns:
+    int: The maximum sum of the contiguous sub-array.
+    """
+    
+    # Helper function for Kadane's Algorithm
+    def kadane(a):
+        max_so_far = float('-inf')
+        max_ending_here = 0
+        for x in a:
+            max_ending_here = max_ending_here + x
+            if max_so_far < max_ending_here:
+                max_so_far = max_ending_here
+            if max_ending_here < 0:
+                max_ending_here = 0
+        return max_so_far
+
+    # Helper function to calculate the sum of the first m elements
+    def max_prefix_sum(a, m):
+        max_sum = float('-inf')
+        current_sum = 0
+        for i in range(m):
+            current_sum += a[i]
+            if current_sum > max_sum:
+                max_sum = current_sum
+        return max_sum
+
+    # Helper function to calculate the sum of the last m elements
+    def max_suffix_sum(a, m):
+        max_sum = float('-inf')
+        current_sum = 0
+        for i in range(m - 1, -1, -1):
+            current_sum += a[i]
+            if current_sum > max_sum:
+                max_sum = current_sum
+        return max_sum
+
+    # Case 1: The maximum sum sub-array is entirely within one instance of the array.
+    # We check this by applying Kadane's algorithm on the array repeated twice.
+    # We only need a concat of 2 arrays to cover any sub-array that starts in one 
+    # and ends in the next (which effectively acts like a wrap-around).
+    # However, checking the concatenation of 2 copies handles all contiguous sub-arrays
+    # that do not span more than 1 wrap.
+    max_kadane = kadane(arr + arr)
+
+    # If k is 1, the result is simply the maximum sub-array sum of the original array.
+    if k == 1:
+        return kadane(arr)
+
+    # Calculate total sum of the array
+    total_sum = sum(arr)
+
+    # Case 2: The maximum sum sub-array spans across multiple instances of the array.
+    # This structure looks like: [Suffix of arr] + [arr] * (k - 2) + [Prefix of arr].
+    # If the total sum of the array is positive, we want to include as many full arrays
+    # as possible. If total_sum is negative, adding extra arrays would decrease the sum,
+    # so (k-2) * total_sum part should be minimized (which happens if total_sum < 0 
+    # logic handles it, but technically if total_sum < 0, Case 2 is unlikely to be max 
+    # unless Case 1 is negative, but max() handles the logic correctly).
+    max_suffix = max_suffix_sum(arr, len(arr))
+    max_prefix = max_prefix_sum(arr, len(arr))
+
+    # Calculate the sum for Case 2
+    max_wrap = max_suffix + (k - 2) * total_sum + max_prefix
+
+    # The result is the maximum of the two cases
+    return max(max_kadane, max_wrap)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+    print("Test passed successfully.")
+```

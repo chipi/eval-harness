@@ -1,0 +1,54 @@
+```python
+def max_subarray_product(nums):
+    """
+    This function finds the maximum product subarray of the given array.
+
+    Args:
+    nums (list): A list of integers.
+
+    Returns:
+    int: The maximum product of a subarray.
+
+    """
+    if not nums:
+        return 0
+
+    # Initialize maximum and minimum product ending at the current position
+    max_product = min_product = result = nums[0]
+
+    # Iterate over the array starting from the second element
+    for i in range(1, len(nums)):
+        # If the current number is negative, swap max_product and min_product
+        # Because multiplying a negative number swaps the maximum and minimum product
+        if nums[i] < 0:
+            max_product, min_product = min_product, max_product
+
+        # Update max_product and min_product
+        max_product = max(nums[i], max_product * nums[i])
+        min_product = min(nums[i], min_product * nums[i])
+
+        # Update the result
+        result = max(result, max_product)
+
+    return result
+
+
+# Test the function
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+print("All test cases pass")
+```
+
+The provided Python function `max_subarray_product` calculates the maximum product of a subarray within a given list of integers. It maintains two variables, `max_product` and `min_product`, to track the maximum and minimum product ending at the current position. These values are updated iteratively, considering the current number and the product of the current number with the previous `max_product` and `min_product`. The function returns the maximum product found.
+
+**Explanation**
+
+*   Initialize `max_product`, `min_product`, and `result` with the first element of the array.
+*   Iterate through the array starting from the second element.
+*   If the current number is negative, swap `max_product` and `min_product`.
+*   Update `max_product` and `min_product` by choosing the maximum/minimum between the current number and the product of the current number with the previous `max_product`/`min_product`.
+*   Update `result` with the maximum of the current `result` and `max_product`.
+*   Return `result` as the maximum product of a subarray.
+
+**Time Complexity:** O(n), where n is the length of the input array.
+
+**Space Complexity:** O(1), as it uses a constant amount of space.

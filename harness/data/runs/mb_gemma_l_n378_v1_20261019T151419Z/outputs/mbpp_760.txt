@@ -1,0 +1,27 @@
+```python
+def unique_Element(numbers):
+    """
+    Checks whether a list of numbers contains only one distinct element.
+    
+    Args:
+        numbers (list): A list of numbers.
+        
+    Returns:
+        bool: True if the list contains only one distinct element, False otherwise.
+    """
+    # A set contains only unique elements. 
+    # If the length of the set is 1, all elements in the original list were the same.
+    # We also check if the list is not empty to avoid returning True for an empty list 
+    # (depending on the desired behavior for empty lists).
+    return len(set(numbers)) == 1
+
+if __name__ == "__main__":
+    # Test cases
+    assert unique_Element([1, 1, 1]) == True
+    assert unique_Element([1, 2, 1]) == False
+    assert unique_Element([5]) == True
+    assert unique_Element([10, 10, 10, 10]) == True
+    assert unique_Element([1, 2, 3]) == False
+    
+    print("All tests passed!")
+```

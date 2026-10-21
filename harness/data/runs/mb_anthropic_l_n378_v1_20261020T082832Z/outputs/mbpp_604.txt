@@ -1,0 +1,49 @@
+Looking at this problem, I need to reverse the order of words in a string that are separated by spaces.
+
+```python
+"""
+Write a function to reverse words seperated by spaces in a given string.
+assert reverse_words("python program")==("program python")
+"""
+
+
+def reverse_words(s):
+    """
+    Reverse the order of words in a string separated by spaces.
+
+    Args:
+        s (str): The input string containing words separated by spaces.
+
+    Returns:
+        str: A string with the word order reversed.
+    """
+    return ' '.join(reversed(s.split()))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert reverse_words("python program") == ("program python")
+
+    # Additional test cases
+    assert reverse_words("java language") == ("language java")
+    assert reverse_words("indian man") == ("man indian")
+    assert reverse_words("hello world foo bar") == ("bar foo world hello")
+    assert reverse_words("single") == ("single")
+    assert reverse_words("") == ("")
+
+    print("All tests passed!")
+    print(reverse_words("python program"))
+```
+
+**Explanation:**
+
+1. `s.split()` — splits the string on whitespace, producing a list of words, e.g. `["python", "program"]`. Using `split()` with no arguments also conveniently handles multiple consecutive spaces and leading/trailing spaces.
+2. `reversed(...)` — returns an iterator that yields the list items in reverse order.
+3. `' '.join(...)` — concatenates the reversed words back into a single string with single spaces between them.
+
+An equivalent one-liner using slicing would be:
+
+```python
+def reverse_words(s):
+    return ' '.join(s.split()[::-1])
+```

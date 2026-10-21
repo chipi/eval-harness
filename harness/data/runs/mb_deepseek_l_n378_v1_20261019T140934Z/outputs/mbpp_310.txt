@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def string_to_tuple(s):
+    """
+    Convert a given string to a tuple of characters.
+    
+    Args:
+        s (str): The input string to convert
+        
+    Returns:
+        tuple: A tuple containing each character from the input string
+    """
+    return tuple(s)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = string_to_tuple("python 3.0")
+    expected = ('p', 'y', 't', 'h', 'o', 'n', '3', '.', '0')
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Input: 'python 3.0'")
+    print(f"Output: {result}")
+```
+
+This script defines the `string_to_tuple` function that converts a string to a tuple of characters using Python's built-in `tuple()` constructor. The function is then tested with the provided example to verify it works correctly.

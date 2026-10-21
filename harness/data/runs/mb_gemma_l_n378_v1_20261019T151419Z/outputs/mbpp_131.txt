@@ -1,0 +1,43 @@
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverses only the vowels in a string. 
+    Vowels are defined as 'a', 'e', 'i', 'o', 'u' (case-insensitive).
+    """
+    vowels = "aeiouAEIOU"
+    # Convert string to list because strings are immutable in Python
+    chars = list(s)
+    
+    # Initialize two pointers
+    left, right = 0, len(chars) - 1
+    
+    while left < right:
+        # Move left pointer until a vowel is found
+        if chars[left] not in vowels:
+            left += 1
+            continue
+        
+        # Move right pointer until a vowel is found
+        if chars[right] not in vowels:
+            right -= 1
+            continue
+        
+        # Swap the vowels
+        chars[left], chars[right] = chars[right], chars[left]
+        
+        # Move both pointers inward
+        left += 1
+        right -= 1
+        
+    return "".join(chars)
+
+if __name__ == "__main__":
+    # Test cases
+    assert reverse_vowels("Python") == "Python"
+    assert reverse_vowels("hello") == "holle"
+    assert reverse_vowels("leetcode") == "leotcede"
+    assert reverse_vowels("Apple") == "epplA"
+    assert reverse_vowels("sky") == "sky"
+    
+    print("All tests passed!")
+```

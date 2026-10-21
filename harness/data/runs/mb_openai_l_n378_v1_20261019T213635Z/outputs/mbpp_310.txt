@@ -1,0 +1,11 @@
+```python
+def string_to_tuple(text):
+    """Return a tuple of the non-whitespace characters in text."""
+    return tuple(char for char in text if not char.isspace())
+
+
+if __name__ == "__main__":
+    assert string_to_tuple("python 3.0") == (
+        'p', 'y', 't', 'h', 'o', 'n', '3', '.', '0'
+    )
+```

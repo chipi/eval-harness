@@ -1,0 +1,20 @@
+```python
+def add_pairwise(test_tup):
+    """
+    Finds the pairwise addition of the neighboring elements of the given tuple.
+    
+    Args:
+        test_tup (tuple): A tuple of numbers.
+        
+    Returns:
+        tuple: A tuple containing the sums of neighboring elements.
+    """
+    # Using a list comprehension with zip to iterate over adjacent pairs.
+    # zip(test_tup, test_tup[1:]) pairs the current element with the next element.
+    res = tuple(x + y for x, y in zip(test_tup, test_tup[1:]))
+    return res
+
+# Assert statement to verify the solution
+assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+print("Assertion passed successfully.")
+```

@@ -1,0 +1,87 @@
+```python
+def eulerian_num(n: int, m: int) -> int:
+    """
+    Calculates the Eulerian number a(n, m), which counts the number of permutations
+    of n elements with exactly m ascents.
+
+    An ascent in a permutation p[0], p[1], ..., p[n-1] is an index i such that p[i] < p[i+1].
+
+    The function uses a dynamic programming approach based on the recurrence relation:
+    a(n, m) = (n - m) * a(n-1, m-1) + (m + 1) * a(n-1, m)
+
+    Base cases:
+    - a(0, 0) = 1
+    - a(n, 0) = 1 for any n (the permutation with all elements in descending order)
+    - a(n, m) = 0 if m >= n (a permutation of n elements can have at most n-1 ascents)
+
+    Args:
+        n: The number of elements in the permutation.
+        m: The number of ascents to count.
+
+    Returns:
+        The Eulerian number a(n, m).
+        
+    Examples:
+        >>> eulerian_num(3, 1)
+        4
+        >>> eulerian_num(5, 2)
+        66
+        >>> eulerian_num(1, 0)
+        1
+        >>> eulerian_num(1, 1)
+        0
+    """
+    # Handle invalid inputs where m is out of the possible range [0, n-1]
+    if m < 0 or m >= n:
+        return 0
+
+    # Base case: a permutation of 0 elements has 0 ascents.
+    if n == 0:
+        return 1 if m == 0 else 0
+
+    # Create a DP table to store intermediate results.
+    # dp[i][j] will store a(i, j).
+    # We only need the previous row (i-1) to compute the current row (i),
+    # so we can optimize space by using a 1D array.
+    dp = [0] * (n + 1)
+
+    # Base case for the first row (n=1).
+    # A permutation of 1 element has 0 ascents.
+    dp[0] = 1
+
+    # Iterate from 2 up to n, building the solution for each i.
+    for i in range(2, n + 1):
+        # Create a new row for the current i.
+        # We need to build this row from right to left to avoid overwriting
+        # values from the previous iteration (i-1) that are still needed.
+        new_dp = [0] * (n + 1)
+        
+        # The number of ascents j for a permutation of i elements can range from 0 to i-1.
+        for j in range(i):
+            # Apply the recurrence relation:
+            # a(i, j) = (i - j) * a(i-1, j-1) + (j + 1) * a(i-1, j)
+            term1 = (i - j) * dp[j - 1] if j - 1 >= 0 else 0
+            term2 = (j + 1) * dp[j]
+            new_dp[j] = term1 + term2
+            
+        # Update the dp array to be the current row for the next iteration.
+        dp = new_dp
+
+    # The final result is in dp[m], which now holds a(n, m).
+    return dp[m]
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    assert eulerian_num(3, 1) == 4
+    print("Assertion eulerian_num(3, 1) == 4 passed.")
+
+    # Additional test cases
+    assert eulerian_num(1, 0) == 1
+    assert eulerian_num(1, 1) == 0
+    assert eulerian_num(2, 0) == 1
+    assert eulerian_num(2, 1) == 1
+    assert eulerian_num(4, 2) == 11
+    assert eulerian_num(5, 2) == 66
+    assert eulerian_num(5, 3) == 30
+    print("All additional assertions passed.")
+```

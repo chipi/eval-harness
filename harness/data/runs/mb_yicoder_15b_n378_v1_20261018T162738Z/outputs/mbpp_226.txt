@@ -1,0 +1,10 @@
+```python
+def odd_values_string(input_string):
+    return ''.join([input_string[i] for i in range(len(input_string)) if i % 2 == 0])
+
+# Test cases
+assert odd_values_string('abcdef') == 'ace'
+assert odd_values_string('1234567890') == '24680'
+assert odd_values_string('hello world') == 'hlowrd'
+assert odd_values_string('python') == 'pto'
+```

@@ -1,0 +1,16 @@
+```python
+def sum_list(list1, list2):
+    """
+    Takes two lists of equal length and returns a new list 
+    containing the element-wise sum of the two lists.
+    """
+    return [a + b for a, b in zip(list1, list2)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = sum_list([10, 20, 30], [15, 25, 35])
+    expected = [25, 45, 65]
+    
+    assert result == expected
+    print(f"Success! sum_list([10,20,30], [15,25,35]) returned {result}")
+```

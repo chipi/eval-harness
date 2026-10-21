@@ -1,0 +1,30 @@
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merges three dictionaries into a single dictionary.
+
+    Args:
+        dict1 (dict): The first dictionary.
+        dict2 (dict): The second dictionary.
+        dict3 (dict): The third dictionary.
+
+    Returns:
+        dict: A new dictionary containing all key-value pairs from the input dictionaries.
+              If a key appears in multiple dictionaries, the value from the last dictionary
+              in the argument order (dict3) will be used.
+    """
+    merged_dict = dict1.copy()  # Start with a copy of the first dictionary
+    merged_dict.update(dict2)  # Update with the second dictionary
+    merged_dict.update(dict3)  # Update with the third dictionary
+    return merged_dict
+
+# Example usage and assertion
+if __name__ == '__main__':
+    dict1 = { "R": "Red", "B": "Black", "P": "Pink" }
+    dict2 = { "G": "Green", "W": "White" }
+    dict3 = { "O": "Orange", "W": "White", "B": "Black" }
+    
+    merged_dict = merge_dictionaries_three(dict1, dict2, dict3)
+    print(merged_dict)
+    assert merged_dict == {'R': 'Red', 'B': 'Black', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+```

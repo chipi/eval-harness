@@ -1,0 +1,11 @@
+```python
+def count_Occurrence(tup, lst):
+    count = 0
+    for i in tup:
+        if i in lst:
+            count += 1
+    return count
+
+# Testing the function
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b']) == 3
+```

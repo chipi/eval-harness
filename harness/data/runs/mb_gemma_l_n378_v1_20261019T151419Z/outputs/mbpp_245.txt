@@ -1,0 +1,44 @@
+```python
+def max_sum_bitonic_subsequence(arr):
+    """
+    Finds the maximum sum of a bitonic subsequence.
+    A bitonic sequence is a sequence that first increases and then decreases.
+    Note: A purely increasing or purely decreasing sequence is also considered bitonic.
+    """
+    if not arr:
+        return 0
+
+    n = len(arr)
+    
+    # msis[i] will store the maximum sum of an increasing subsequence ending at index i
+    msis = list(arr)
+    for i in range(1, n):
+        for j in range(i):
+            if arr[i] > arr[j] and msis[i] < msis[j] + arr[i]:
+                msis[i] = msis[j] + arr[i]
+
+    # msds[i] will store the maximum sum of a decreasing subsequence starting at index i
+    msds = list(arr)
+    for i in range(n - 2, -1, -1):
+        for j in range(n - 1, i, -1):
+            if arr[i] > arr[j] and msds[i] < msds[j] + arr[i]:
+                msds[i] = msds[j] + arr[i]
+
+    # The maximum sum bitonic subsequence is the max of (msis[i] + msds[i] - arr[i])
+    # We subtract arr[i] because it is counted in both msis and msds.
+    max_sum = 0
+    for i in range(n):
+        max_sum = max(max_sum, msis[i] + msds[i] - arr[i])
+
+    return max_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [1, 15, 51, 45, 33, 100, 12, 18, 9]
+    result = max_sum_bitonic_subsequence(test_arr)
+    print(f"Maximum sum of bitonic subsequence: {result}")
+    
+    # Assertion check
+    assert result == 194, f"Expected 194, but got {result}"
+    print("Assertion passed!")
+```

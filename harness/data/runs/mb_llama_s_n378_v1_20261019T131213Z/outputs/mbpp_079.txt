@@ -1,0 +1,24 @@
+```python
+def word_len(word: str) -> bool:
+    """
+    Checks whether the length of the word is odd or not.
+
+    Args:
+        word (str): The input word.
+
+    Returns:
+        bool: True if the length of the word is odd, False otherwise.
+    """
+    return len(word) % 2 != 0
+
+# Example usage:
+if __name__ == "__main__":
+    print(word_len("Hadoop"))  # False
+    print(word_len("Python"))  # True
+```
+
+In this code:
+
+*   We define a function `word_len` that takes a string `word` as input and returns a boolean value.
+*   The function uses the modulus operator (`%`) to find the remainder of the word length divided by 2. If the remainder is not 0, the length is odd, and the function returns `True`. Otherwise, it returns `False`.
+*   In the example usage section, we demonstrate how to use the `word_len` function with the words "Hadoop" and "Python".

@@ -1,0 +1,28 @@
+```python
+def median_numbers(a, b, c):
+    """
+    Write a function to find the median of three numbers.
+    """
+    if a > b:
+        if a < c:
+            return a
+        elif b > c:
+            return b
+        else:
+            return c
+    else:
+        if a > c:
+            return a
+        elif b < c:
+            return b
+        else:
+            return c
+
+# Test cases
+assert median_numbers(25,55,65)==55.0
+assert median_numbers(55,25,65)==55.0
+assert median_numbers(65,55,25)==55.0
+assert median_numbers(55,65,25)==55.0
+assert median_numbers(65,25,55)==55.0
+assert median_numbers(25,65,55)==55.0
+```

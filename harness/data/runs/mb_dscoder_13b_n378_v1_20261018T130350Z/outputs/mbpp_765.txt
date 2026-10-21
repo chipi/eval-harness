@@ -1,0 +1,33 @@
+```python
+def is_polite(n):
+    if n <= 0:
+        return "Input should be a positive integer"
+    elif n == 1:
+        return 2
+    else:
+        count = 0
+        num = 2
+        while count < n:
+            num += 1
+            if is_prime(num):
+                count += 1
+        return num
+
+def is_prime(num):
+    if num == 1:
+        return False
+    elif num == 2:
+        return True
+    else:
+        for i in range(2, num):
+            if num % i == 0:
+                return False
+        return True
+
+# Test cases
+assert is_polite(1) == 2
+assert is_polite(2) == 3
+assert is_polite(3) == 5
+assert is_polite(4) == 7
+assert is_polite(5) == 11
+```

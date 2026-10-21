@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def perfect_squares(start, end):
+    """
+    Find all perfect squares between two given numbers (inclusive).
+    
+    Args:
+        start: The lower bound of the range
+        end: The upper bound of the range
+    
+    Returns:
+        A list of perfect squares within the given range
+    """
+    # Find the smallest integer whose square is >= start
+    lower = math.ceil(math.sqrt(start))
+    # Find the largest integer whose square is <= end
+    upper = math.floor(math.sqrt(end))
+    
+    # Generate all perfect squares in the range
+    return [i * i for i in range(lower, upper + 1)]
+
+# Test the function
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+print("Test passed!")
+
+# Additional test cases
+print(perfect_squares(1, 30))  # [1, 4, 9, 16, 25]
+print(perfect_squares(10, 50))  # [16, 25, 36, 49]
+print(perfect_squares(0, 100))  # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+```
+
+The function works by:
+1. Finding the smallest integer whose square is greater than or equal to the start value using `math.ceil(math.sqrt(start))`
+2. Finding the largest integer whose square is less than or equal to the end value using `math.floor(math.sqrt(end))`
+3. Generating all squares of integers in that range using a list comprehension
+
+This approach is efficient as it only calculates the necessary squares rather than checking every number in the range.

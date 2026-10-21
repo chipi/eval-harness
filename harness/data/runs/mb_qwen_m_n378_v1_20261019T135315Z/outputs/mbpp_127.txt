@@ -1,0 +1,27 @@
+```python
+def multiply_int(a: int, b: int) -> int:
+    """
+    Multiply two integers and return the result.
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        The product of a and b
+    """
+    return a * b
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert multiply_int(10, 20) == 200
+    
+    # Additional test cases
+    assert multiply_int(0, 5) == 0
+    assert multiply_int(-3, 4) == -12
+    assert multiply_int(-2, -3) == 6
+    assert multiply_int(1, 1) == 1
+    
+    print("All tests passed!")
+```

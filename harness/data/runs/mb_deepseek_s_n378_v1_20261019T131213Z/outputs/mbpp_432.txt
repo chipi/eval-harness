@@ -1,0 +1,26 @@
+```python
+def median_trapezium(base1: float, base2: float, height: float) -> float:
+    """
+    Calculate the median (midsegment) length of a trapezium (trapezoid).
+    
+    The median of a trapezium is the segment connecting the midpoints of the legs,
+    and its length is the average of the two base lengths.
+    
+    Parameters:
+    base1 (float): Length of the first parallel side (base)
+    base2 (float): Length of the second parallel side (base)
+    height (float): Height of the trapezium (not used in median calculation, 
+                    but kept for interface compatibility)
+    
+    Returns:
+    float: The median length
+    """
+    return (base1 + base2) / 2
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = median_trapezium(15, 25, 35)
+    print(f"median_trapezium(15, 25, 35) = {result}")
+    assert result == 20, f"Expected 20 but got {result}"
+    print("Test passed!")
+```

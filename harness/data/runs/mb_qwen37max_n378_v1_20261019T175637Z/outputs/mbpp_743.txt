@@ -1,0 +1,15 @@
+```python
+def rotate_right(lst, n):
+    """Rotate a list to the right by n positions."""
+    if not lst:
+        return lst
+    n = n % len(lst)
+    if n == 0:
+        return lst[:]
+    return lst[-n:] + lst[:-n]
+
+
+# Test
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+print("All tests passed!")
+```

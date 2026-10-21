@@ -1,0 +1,20 @@
+```python
+def left_rotate(n: int, d: int) -> int:
+    """
+    Rotate the bits of a 32-bit integer n left by d positions.
+    
+    For a 32-bit number, bits that fall off the left end reappear at the right end.
+    """
+    # Ensure d is within 0..31 (rotating 32 gives back the same number)
+    d = d % 32
+    
+    # Left shift and mask to keep only 32 bits, then OR with the bits that wrapped around
+    return ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+
+# Example test
+if __name__ == "__main__":
+    result = left_rotate(16, 2)
+    print(result)              # prints 64
+    assert result == 64, f"Expected 64, got {result}"
+    print("Test passed.")
+```

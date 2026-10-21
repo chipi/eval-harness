@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sub_list(list1, list2):
+    """
+    Subtracts two lists element-wise.
+
+    Args:
+        list1: First list of numbers
+        list2: Second list of numbers (must be same length as list1)
+
+    Returns:
+        A new list where each element is the difference between corresponding
+        elements of list1 and list2
+    """
+    return [a - b for a, b in zip(list1, list2)]
+
+# Test case
+assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+```

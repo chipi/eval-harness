@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def subject_marks(tuples_list):
+    """
+    Sort a list of tuples using the second value of each tuple.
+    
+    Args:
+        tuples_list (list of tuples): List containing (subject, marks) tuples.
+    
+    Returns:
+        list: Sorted list by marks (the second element in each tuple).
+    """
+    return sorted(tuples_list, key=lambda x: x[1])
+
+# Test the function
+if __name__ == "__main__":
+    result = subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)])
+    expected = [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+    assert result == expected
+    print("Test passed!")
+```

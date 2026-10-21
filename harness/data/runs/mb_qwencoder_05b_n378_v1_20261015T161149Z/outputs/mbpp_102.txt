@@ -1,0 +1,13 @@
+```python
+def snake_to_camel(snake_str):
+    # Split the string by underscores and capitalize each part except the first one
+    camel_str = ''.join(word.capitalize() for word in snake_str.split('_'))
+    return camel_str
+
+# Test cases to verify the correctness of the function
+assert snake_to_camel('python_program') == 'PythonProgram'
+assert snake_to_camel('hello_world') == 'HelloWorld'
+assert snake_to_camel('this_is_a_test_string') == 'ThisIsATestString'
+assert snake_to_camel('123abcABC') == '123ABCabc'
+```
+

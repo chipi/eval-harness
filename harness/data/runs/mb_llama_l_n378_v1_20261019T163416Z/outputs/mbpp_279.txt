@@ -1,0 +1,4 @@
+```python
+def is_num_decagonal(n):
+    return 4*n**2 - 3*n
+```

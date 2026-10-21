@@ -1,0 +1,28 @@
+```python
+from collections import Counter
+
+def get_pairs_count(nums, target_sum):
+    """
+    Count the number of index pairs (i, j) with i < j such that nums[i] + nums[j] == target_sum.
+
+    Example:
+        get_pairs_count([1, 1, 1, 1], 2) -> 6
+    """
+    counts = Counter(nums)
+    total = 0
+
+    for x in list(counts.keys()):
+        y = target_sum - x
+
+        if x < y:
+            total += counts[x] * counts[y]
+        elif x == y:
+            total += counts[x] * (counts[x] - 1) // 2
+
+    return total
+
+
+if __name__ == "__main__":
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+    print("All tests passed.")
+```

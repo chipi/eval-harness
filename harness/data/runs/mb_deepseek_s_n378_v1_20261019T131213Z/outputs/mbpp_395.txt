@@ -1,0 +1,33 @@
+```python
+def first_non_repeating_character(s: str):
+    """
+    Returns the first non-repeated character in the given string.
+    If no such character exists, returns None.
+    """
+    # Count occurrences of each character
+    char_count = {}
+    for char in s:
+        char_count[char] = char_count.get(char, 0) + 1
+    
+    # Find the first character with count 1
+    for char in s:
+        if char_count[char] == 1:
+            return char
+    
+    return None
+
+# Test the assertion
+if __name__ == "__main__":
+    result = first_non_repeating_character("abcabc")
+    print(f"Result for 'abcabc': {result}")
+    assert result is None, f"Expected None, got {result}"
+    
+    # Additional test cases
+    assert first_non_repeating_character("aabbcc") is None
+    assert first_non_repeating_character("abcd") == 'a'
+    assert first_non_repeating_character("abacabad") == 'c'
+    assert first_non_repeating_character("") is None
+    assert first_non_repeating_character("a") == 'a'
+    
+    print("All tests passed!")
+```

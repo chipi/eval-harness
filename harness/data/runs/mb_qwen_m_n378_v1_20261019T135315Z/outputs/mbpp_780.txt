@@ -1,0 +1,36 @@
+```python
+from itertools import combinations
+
+
+def find_combinations(tuple_list: list) -> list:
+    """
+    Find all combinations of sums of pairs of tuples from the given list.
+    
+    For each pair of distinct tuples (t1, t2) in the list, compute the element-wise sum:
+    (t1[0] + t2[0], t1[1] + t2[1])
+    
+    Args:
+        tuple_list: A list of 2-element tuples.
+        
+    Returns:
+        A list of tuples representing the element-wise sums of all unique pairs.
+    """
+    result = []
+    for t1, t2 in combinations(tuple_list, 2):
+        summed_tuple = (t1[0] + t2[0], t1[1] + t2[1])
+        result.append(summed_tuple)
+    return result
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    test_input = [(2, 4), (6, 7), (5, 1), (6, 10)]
+    expected_output = [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    
+    result = find_combinations(test_input)
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    print(f"Expected: {expected_output}")
+    assert result == expected_output, f"Test failed! Got {result}, expected {expected_output}"
+    print("Test passed!")
+```

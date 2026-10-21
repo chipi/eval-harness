@@ -1,0 +1,16 @@
+```python
+def is_num_decagonal(n):
+  """
+  A decagonal number is a figurate number that represents a decagon.
+  The formula for the nth decagonal number is: n * (4*n - 3)
+
+  Args:
+    n: The index of the decagonal number to find.
+
+  Returns:
+    The nth decagonal number.
+  """
+  return n * (4 * n - 3)
+
+#assert is_num_decagonal(3) == 27
+```

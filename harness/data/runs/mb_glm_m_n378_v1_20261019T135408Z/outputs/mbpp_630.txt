@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def get_coordinates(coord):
+    """
+    Extract all adjacent coordinates of the given coordinate tuple.
+    Adjacent coordinates include the given coordinate itself and all 8 surrounding coordinates.
+    
+    Args:
+        coord: A tuple representing the (x, y) coordinate.
+        
+    Returns:
+        A list of lists representing all adjacent coordinates, sorted in ascending order.
+    """
+    x, y = coord
+    adjacent = []
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            adjacent.append([x + dx, y + dy])
+    return adjacent
+
+# Test the function
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+print("Test passed! The function works as expected.")
+```
+
+### Explanation:
+1. **Function Definition**: The function `get_coordinates` takes a tuple `coord` representing the (x, y) coordinates.
+2. **Extracting Coordinates**: The function unpacks the tuple into `x` and `y`.
+3. **Generating Adjacent Coordinates**: Using nested loops, it iterates over `dx` and `dy` values of -1, 0, and 1 to generate all 9 adjacent coordinates (including the original coordinate).
+4. **Storing Results**: Each adjacent coordinate is stored as a list `[x + dx, y + dy]` in the `adjacent` list.
+5. **Return Statement**: The function returns the list of adjacent coordinates.
+6. **Testing**: The function is tested with the provided example, and the result is verified using an `assert` statement. If the test passes, a success message is printed.
+
+This script is self-contained and includes the test case to verify the correctness of the function.

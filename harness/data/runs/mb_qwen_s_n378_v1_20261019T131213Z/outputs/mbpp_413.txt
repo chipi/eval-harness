@@ -1,0 +1,14 @@
+```python
+def extract_nth_element(list_of_tuples, n):
+    """
+    Extract the nth element from each tuple in a list of tuples.
+    
+    Args:
+        list_of_tuples: A list of tuples.
+        n: The index of the element to extract from each tuple.
+        
+    Returns:
+        A list containing the nth element from each tuple.
+    """
+    return [t[n] for t in list_of_tuples]
+```

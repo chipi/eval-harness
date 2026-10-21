@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def even_position(lst):
+    """
+    Check if every even index in the list contains an even number.
+
+    Args:
+        lst: List of integers to check
+
+    Returns:
+        bool: True if all even indices contain even numbers, False otherwise
+    """
+    for i in range(0, len(lst), 2):
+        if lst[i] % 2 != 0:
+            return False
+    return True
+
+# Test cases
+assert even_position([3, 2, 1]) == False
+assert even_position([2, 4, 6, 8]) == True
+assert even_position([1, 3, 5, 7]) == False
+assert even_position([2, 3, 4, 5, 6, 7, 8, 9]) == False
+assert even_position([2, 3, 4, 5, 6, 7, 8, 8]) == True
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines the `even_position` function that checks if all elements at even indices (0, 2, 4, etc.) are even numbers
+2. Includes the required test case from the problem statement
+3. Adds additional test cases to verify the function works correctly
+4. Prints a confirmation message if all tests pass
+
+The function works by iterating through the list with a step of 2 (to only check even indices) and returns False immediately if any even index contains an odd number. If all even indices contain even numbers, it returns True.

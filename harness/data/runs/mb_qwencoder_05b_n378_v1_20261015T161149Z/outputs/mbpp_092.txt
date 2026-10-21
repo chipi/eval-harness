@@ -1,0 +1,41 @@
+```python
+def is_undulating(n):
+    # Check if the number is a palindrome
+    if str(n) != str(n)[::-1]:
+        return False
+    
+    # Check if the number has an odd number of digits
+    if len(str(n)) % 2 != 0:
+        return False
+    
+    # Check if the number has an even number of digits
+    if len(str(n)) % 2 == 0:
+        # Check if the number is a palindrome
+        if str(n) != str(n)[::-1]:
+            return False
+    
+    # If all checks pass, the number is undulating
+    return True
+
+# Test cases to verify the correctness of the function
+assert is_undulating(1212121) == True
+assert is_undulating(123456789) == False
+assert is_undulating(12321) == True
+assert is_undulating(1234567890) == False
+assert is_undulating(12345678901) == True
+assert is_undulating(123456789012) == True
+assert is_undulating(1234567890123) == True
+assert is_undulating(12345678901234) == True
+assert is_undulating(123456789012345) == True
+assert is_undulating(1234567890123456) == True
+assert is_undulating(12345678901234567) == True
+assert is_undulating(123456789012345678) == True
+assert is_undulating(1234567890123456789) == True
+assert is_undulating(12345678901234567890) == True
+assert is_undulating(123456789012345678901) == True
+assert is_undulating(1234567890123456789012) == True
+assert is_undulating(12345678901234567890123) == True
+assert is_undulating(123456789012345678901234) == True
+assert is_undulating(1234567890123456789012345) == True
+assert is_undulating(12345678901234567890123456) == True
+assert is_undulating(12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012

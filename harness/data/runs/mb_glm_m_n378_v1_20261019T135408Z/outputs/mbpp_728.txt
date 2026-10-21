@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_list(list1, list2):
+    """
+    Takes two lists of the same length and returns a new list where each element
+    is the sum of the corresponding elements from the input lists.
+    
+    Args:
+        list1 (list): First list of numbers
+        list2 (list): Second list of numbers
+    
+    Returns:
+        list: A new list with element-wise sums
+    """
+    # Check if lists are of the same length
+    if len(list1) != len(list2):
+        raise ValueError("Both lists must have the same length")
+    
+    # Use list comprehension to create the result
+    return [x + y for x, y in zip(list1, list2)]
+
+# Test the function
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+
+# Additional test cases
+assert sum_list([1, 2, 3], [4, 5, 6]) == [5, 7, 9]
+assert sum_list([0, 0, 0], [0, 0, 0]) == [0, 0, 0]
+assert sum_list([-1, -2, -3], [1, 2, 3]) == [0, 0, 0]
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a `sum_list` function that takes two lists as input
+2. Checks that the lists are the same length (raises an error if not)
+3. Uses a list comprehension with `zip` to pair up corresponding elements and sum them
+4. Includes the provided test case as an assertion
+5. Adds a few more test cases to verify the function works correctly
+6. Prints a success message if all tests pass
+
+The solution is efficient (O(n) time complexity) and handles edge cases like empty lists or negative numbers.

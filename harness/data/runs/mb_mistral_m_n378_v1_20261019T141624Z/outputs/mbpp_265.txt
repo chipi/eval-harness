@@ -1,0 +1,25 @@
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists, where each sublist contains every nth element from the original list.
+    The first sublist contains elements at indices 0, n, 2n, etc.
+    The second sublist contains elements at indices 1, n+1, 2n+1, etc.
+    And so on.
+
+    Args:
+        lst: The input list to be split.
+        n: The integer determining the split pattern.
+
+    Returns:
+        A list of sublists, each containing every nth element from the original list.
+    """
+    if n <= 0:
+        return []
+    result = [[] for _ in range(n)]
+    for i, item in enumerate(lst):
+        result[i % n].append(item)
+    return result
+
+# Test case
+assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+```

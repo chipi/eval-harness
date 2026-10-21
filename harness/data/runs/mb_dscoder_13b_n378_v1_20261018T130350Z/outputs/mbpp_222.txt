@@ -1,0 +1,16 @@
+```python
+def check_type(tup):
+    first = True
+    first_type = type(tup[0])
+    for element in tup:
+        if type(element) != first_type:
+            first = False
+            break
+    return first
+
+# Test cases
+print(check_type((5, 6, 7, 3, 5, 6)))  # Expected output: True
+print(check_type((5, '6', 7, 3, 5, 6)))  # Expected output: False
+print(check_type((5, '6', 7, 3, 5, 6, 7.0)))  # Expected output: False
+print(check_type((5, '6', 7, 3, 5, 6, 7)))  # Expected output: True
+```

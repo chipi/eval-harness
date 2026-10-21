@@ -1,0 +1,24 @@
+```python
+import math
+
+def area_tetrahedron(edge_length):
+    """
+    Calculate the area of a regular tetrahedron.
+
+    Parameters:
+    edge_length (float): The length of an edge of the tetrahedron.
+
+    Returns:
+    float: The area of the tetrahedron.
+    """
+    # Calculate the area of one face of the tetrahedron
+    face_area = (math.sqrt(3) / 4) * edge_length ** 2
+    
+    # A tetrahedron has 4 faces, so multiply the area of one face by 4
+    total_area = 4 * face_area
+    
+    return total_area
+
+# Test the function
+print(area_tetrahedron(3))
+```

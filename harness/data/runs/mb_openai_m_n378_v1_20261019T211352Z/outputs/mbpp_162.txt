@@ -1,0 +1,35 @@
+```python
+#!/usr/bin/env python3
+"""
+Calculate the sum of the series:
+
+    sum(n - 2*i) for i = 0 to n // 2
+
+including only positive terms. For example:
+    n = 6 -> 6 + 4 + 2 = 12
+"""
+
+def sum_series(n):
+    """
+    Return the sum of n + (n - 2) + (n - 4) + ... until the term is <= 0.
+    """
+    total = 0
+
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+
+    return total
+
+
+if __name__ == "__main__":
+    assert sum_series(6) == 12
+    assert sum_series(5) == 9   # 5 + 3 + 1
+    assert sum_series(4) == 6   # 4 + 2
+    assert sum_series(1) == 1
+    assert sum_series(0) == 0
+
+    print("All tests passed.")
+```

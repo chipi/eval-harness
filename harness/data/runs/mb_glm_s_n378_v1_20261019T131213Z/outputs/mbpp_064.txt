@@ -1,0 +1,31 @@
+```python
+def sort_tuples_by_second_value(tuples_list):
+  """
+  Sorts a list of tuples based on the second element of each tuple.
+
+  Args:
+    tuples_list: A list of tuples, where each tuple contains at least two elements.
+
+  Returns:
+    A new list of tuples sorted in ascending order based on the second element.
+  """
+  # The `key` argument in the sorted() function specifies a function to be called
+  # on each list element prior to making comparisons. Here, we use a lambda
+  # function that takes a tuple `t` and returns its second element (t[1]).
+  return sorted(tuples_list, key=lambda t: t[1])
+
+# Example usage and assertion from the problem description
+subject_marks = [('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]
+expected_result = [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+
+# Call the function and assert that the output matches the expected result
+assert sort_tuples_by_second_value(subject_marks) == expected_result
+
+# You can also test with a different list to verify the function works generally
+another_list = [('a', 5), ('b', 2), ('c', 8), ('d', 1)]
+print(f"Original list: {another_list}")
+print(f"Sorted list:   {sort_tuples_by_second_value(another_list)}")
+# Expected output for another_list:
+# Original list: [('a', 5), ('b', 2), ('c', 8), ('d', 1)]
+# Sorted list:   [('d', 1), ('b', 2), ('a', 5), ('c', 8)]
+```

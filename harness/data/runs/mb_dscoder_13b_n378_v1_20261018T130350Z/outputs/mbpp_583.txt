@@ -1,0 +1,16 @@
+```python
+def catalan_number(n):
+    if n <= 1:
+        return 1
+    res = 1
+    for i in range(n):
+        res *= (4*n - i)
+        res //= (i + 1)
+    return res
+
+# Test cases
+assert catalan_number(10) == 16796
+assert catalan_number(5) == 42
+assert catalan_number(1) == 1
+assert catalan_number(0) == 1
+```

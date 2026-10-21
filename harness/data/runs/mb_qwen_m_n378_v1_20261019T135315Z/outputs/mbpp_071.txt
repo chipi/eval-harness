@@ -1,0 +1,52 @@
+```python
+def comb_sort(arr: list) -> list:
+    """
+    Sort a list using the comb sort algorithm.
+    
+    Comb sort is an improvement over bubble sort. It works by comparing elements
+    that are far apart (using a gap), and gradually reducing the gap until it
+    becomes 1, at which point it behaves like a bubble sort.
+    
+    Args:
+        arr: A list of comparable elements to be sorted.
+        
+    Returns:
+        The sorted list in ascending order.
+    """
+    if not arr or len(arr) <= 1:
+        return arr
+    
+    n = len(arr)
+    gap = n
+    shrink_factor = 1.3
+    sorted_flag = False
+    
+    while not sorted_flag:
+        # Update the gap
+        gap = int(gap / shrink_factor)
+        if gap <= 1:
+            gap = 1
+            sorted_flag = True  # If gap is 1, we do one more pass to confirm sorted
+        
+        # Compare elements with the current gap
+        for i in range(n - gap):
+            if arr[i] > arr[i + gap]:
+                arr[i], arr[i + gap] = arr[i + gap], arr[i]
+                sorted_flag = False  # A swap occurred, so we're not done yet
+    
+    return arr
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+    
+    # Additional test cases
+    assert comb_sort([]) == []
+    assert comb_sort([1]) == [1]
+    assert comb_sort([3, 1]) == [1, 3]
+    assert comb_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
+    assert comb_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+    
+    print("All tests passed!")
+```

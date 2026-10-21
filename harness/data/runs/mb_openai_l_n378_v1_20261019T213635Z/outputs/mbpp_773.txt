@@ -1,0 +1,14 @@
+```python
+def occurance_substring(text, substring):
+    """Return (substring, start, end) for its first occurrence, or None."""
+    start = text.find(substring)
+    if start == -1:
+        return None
+    return substring, start, start + len(substring)
+
+
+assert occurance_substring(
+    "python programming, python language", "python"
+) == ("python", 0, 6)
+assert occurance_substring("hello world", "python") is None
+```

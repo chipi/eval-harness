@@ -1,0 +1,26 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def highest_Power_of_2(n):
+    """
+    Returns the highest power of 2 that is less than or equal to n.
+    """
+    if n <= 0:
+        return 0
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    return power
+
+# Test the function
+if __name__ == "__main__":
+    # Test cases
+    assert highest_Power_of_2(10) == 8
+    assert highest_Power_of_2(1) == 1
+    assert highest_Power_of_2(2) == 2
+    assert highest_Power_of_2(3) == 2
+    assert highest_Power_of_2(16) == 16
+    assert highest_Power_of_2(17) == 16
+    assert highest_Power_of_2(0) == 0
+    print("All tests passed.")
+```

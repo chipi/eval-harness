@@ -1,0 +1,24 @@
+```python
+def sumofFactors(n):
+    """
+    Find the sum of even factors of a number.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        Sum of all even factors of n
+    """
+    if n <= 0:
+        return 0
+    
+    total = 0
+    for i in range(1, n + 1):
+        if n % i == 0 and i % 2 == 0:
+            total += i
+    return total
+
+
+# Test
+assert sumofFactors(18) == 26
+```

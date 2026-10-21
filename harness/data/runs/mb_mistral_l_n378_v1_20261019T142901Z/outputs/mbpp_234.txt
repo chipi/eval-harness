@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem, enclosed in a markdown code block:
+
+```python
+"""
+Function to calculate the volume of a cube given its side length.
+
+The volume of a cube is calculated using the formula: volume = side_length^3
+"""
+
+def volume_cube(side_length):
+    """
+    Calculate the volume of a cube.
+
+    Args:
+        side_length (int or float): The length of the cube's side.
+
+    Returns:
+        int or float: The volume of the cube.
+    """
+    return side_length ** 3
+
+# Test the function with the provided assertion
+assert volume_cube(3) == 27
+
+# Example usage
+if __name__ == "__main__":
+    side = 3
+    print(f"The volume of a cube with side length {side} is {volume_cube(side)}")
+```

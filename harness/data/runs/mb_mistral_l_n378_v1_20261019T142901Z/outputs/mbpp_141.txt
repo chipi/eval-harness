@@ -1,0 +1,48 @@
+Here's a self-contained Python script that implements the pancake sort algorithm to solve the given problem:
+
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list of elements using the pancake sort algorithm.
+
+    Args:
+        arr: List of comparable elements to be sorted.
+
+    Returns:
+        List of elements sorted in ascending order.
+    """
+    def flip(sublist, k):
+        """Flips the first k elements of the sublist."""
+        return sublist[:k][::-1] + sublist[k:]
+
+    n = len(arr)
+    for size in range(n, 1, -1):
+        # Find the index of the maximum element in the current unsorted portion
+        max_idx = arr.index(max(arr[:size]))
+
+        # If the maximum element is not already at the end of the unsorted portion
+        if max_idx != size - 1:
+            # Flip the maximum element to the front if it's not already there
+            if max_idx != 0:
+                arr = flip(arr, max_idx + 1)
+
+            # Flip the maximum element to its correct position
+            arr = flip(arr, size)
+
+    return arr
+
+# Test the function
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+```
+
+This script:
+1. Implements the pancake sort algorithm which works by repeatedly flipping portions of the list
+2. Includes a helper `flip` function that reverses the first k elements of a list
+3. The main `pancake_sort` function:
+   - Iterates through the list from largest to smallest portion
+   - Finds the maximum element in the current unsorted portion
+   - Flips it to the front if needed
+   - Then flips it to its correct position
+4. Includes the required assertion test case
+
+The algorithm has a time complexity of O(n²) in the worst case, which is typical for pancake sort.

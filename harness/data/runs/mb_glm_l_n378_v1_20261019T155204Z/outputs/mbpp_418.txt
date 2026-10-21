@@ -1,0 +1,18 @@
+```python
+def Find_Max(list_of_lists):
+    """
+    Finds the element of a list having maximum length.
+    
+    Args:
+        list_of_lists (list): A list containing elements (expected to be lists or sequences).
+        
+    Returns:
+        The element with the maximum length. If multiple elements have the same 
+        maximum length, the first one encountered is returned.
+    """
+    # Use the built-in max() function with key=len to find the longest element
+    return max(list_of_lists, key=len)
+
+# Assert statement to verify the function works as expected
+assert Find_Max([['A'],['A','B'],['A','B','C']]) == ['A','B','C']
+```

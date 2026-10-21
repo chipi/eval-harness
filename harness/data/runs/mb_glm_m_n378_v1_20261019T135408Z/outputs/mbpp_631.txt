@@ -1,0 +1,29 @@
+```python
+def replace_spaces(text: str) -> str:
+    """
+    Replaces whitespaces with underscores and vice versa in a given string.
+    
+    :param text: The input string containing spaces and/or underscores.
+    :return: A new string with spaces and underscores swapped.
+    """
+    result = []
+    for char in text:
+        if char == ' ':
+            result.append('_')
+        elif char == '_':
+            result.append(' ')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+    
+    # Additional tests to verify vice versa functionality
+    assert replace_spaces('Jumanji_The_Jungle') == 'Jumanji The Jungle'
+    assert replace_spaces('Hello_World Example') == 'Hello World_Example'
+    assert replace_spaces('NoSpacesOrUnderscores') == 'NoSpacesOrUnderscores'
+    
+    print("All tests passed!")
+```

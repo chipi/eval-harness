@@ -1,0 +1,36 @@
+Here is the self-contained Python script that solves the problem using the Sieve of Eratosthenes algorithm, which is an efficient way to find all prime numbers up to a given limit.
+
+```python
+def count_Primes_nums(n: int) -> int:
+    """
+    Takes in a non-negative number and returns the number of prime numbers 
+    strictly less than the given non-negative number.
+    
+    >>> count_Primes_nums(5)
+    2
+    """
+    if n <= 2:
+        return 0
+    
+    # Initialize a boolean list representing primality of numbers up to n
+    is_prime = [True] * n
+    is_prime[0] = is_prime[1] = False
+    
+    # Sieve of Eratosthenes
+    for p in range(2, int(n**0.5) + 1):
+        if is_prime[p]:
+            # Mark all multiples of p as not prime
+            for i in range(p * p, n, p):
+                is_prime[i] = False
+                
+    return sum(is_prime)
+
+# Assertions to verify the correctness of the function
+if __name__ == "__main__":
+    assert count_Primes_nums(5) == 2
+    assert count_Primes_nums(0) == 0
+    assert count_Primes_nums(1) == 0
+    assert count_Primes_nums(10) == 4
+    assert count_Primes_nums(100) == 25
+    print("All assertions passed.")
+```

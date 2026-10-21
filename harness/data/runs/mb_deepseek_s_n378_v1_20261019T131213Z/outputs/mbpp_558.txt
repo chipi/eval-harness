@@ -1,0 +1,43 @@
+```python
+def digit_distance_nums(num1: int, num2: int) -> int:
+    """
+    Returns the sum of absolute differences between corresponding digits of two integers.
+    
+    The integers are compared digit by digit from the least significant digit.
+    If one number has fewer digits, the missing digits are treated as 0.
+    
+    Args:
+        num1: First integer
+        num2: Second integer
+    
+    Returns:
+        Sum of absolute differences between corresponding digits
+    """
+    total_distance = 0
+    
+    # Continue while either number has remaining digits
+    while num1 > 0 or num2 > 0:
+        # Extract last digit of each number (0 if number is exhausted)
+        digit1 = num1 % 10 if num1 > 0 else 0
+        digit2 = num2 % 10 if num2 > 0 else 0
+        
+        # Add absolute difference to total
+        total_distance += abs(digit1 - digit2)
+        
+        # Remove last digit from each number
+        num1 //= 10
+        num2 //= 10
+    
+    return total_distance
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert digit_distance_nums(1, 2) == 1
+    print("Test passed: digit_distance_nums(1, 2) =", digit_distance_nums(1, 2))
+    
+    # Additional test cases
+    print("digit_distance_nums(12, 34) =", digit_distance_nums(12, 34))  # |1-3| + |2-4| = 2 + 2 = 4
+    print("digit_distance_nums(123, 456) =", digit_distance_nums(123, 456))  # |1-4| + |2-5| + |3-6| = 3+3+3 = 9
+    print("digit_distance_nums(5, 123) =", digit_distance_nums(5, 123))  # |0-1| + |0-2| + |5-3| = 1+2+2 = 5
+```

@@ -1,0 +1,57 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def removezero_ip(ip_address):
+    """
+    Remove leading zeroes from an IP address.
+    
+    Args:
+        ip_address (str): An IP address string with possible leading zeroes
+        
+    Returns:
+        str: IP address with leading zeroes removed from each octet
+    """
+    # Split the IP address into octets
+    octets = ip_address.split('.')
+    
+    # Remove leading zeroes from each octet
+    cleaned_octets = []
+    for octet in octets:
+        # Convert to int to remove leading zeroes, then back to string
+        cleaned_octet = str(int(octet))
+        cleaned_octets.append(cleaned_octet)
+    
+    # Join the octets back together
+    return '.'.join(cleaned_octets)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = removezero_ip("216.08.094.196")
+    expected = "216.8.94.196"
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print(f"Test passed: {result}")
+    
+    # Additional test cases
+    test_cases = [
+        ("001.002.003.004", "1.2.3.4"),
+        ("192.168.001.001", "192.168.1.1"),
+        ("010.010.010.010", "10.10.10.10"),
+        ("255.255.255.255", "255.255.255.255"),
+        ("000.000.000.000", "0.0.0.0"),
+    ]
+    
+    for test_input, expected_output in test_cases:
+        result = removezero_ip(test_input)
+        assert result == expected_output, f"Failed: {test_input} -> Expected {expected_output}, got {result}"
+        print(f"Test passed: {test_input} -> {result}")
+```
+
+This solution works by:
+1. Splitting the IP address into individual octets using the dot as a delimiter
+2. Converting each octet from string to integer (which automatically removes leading zeroes)
+3. Converting each integer back to a string
+4. Joining the cleaned octets back together with dots
+
+The function handles all valid IP address formats with leading zeroes and returns the cleaned version without them.

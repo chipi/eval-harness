@@ -1,0 +1,43 @@
+```python
+"""
+Check whether one list is a sublist of another list.
+
+A sublist here means a contiguous sequence of elements appearing in the same order.
+
+Example:
+[2, 3] is a sublist of [1, 2, 3, 4]
+[2, 4] is not a sublist of [1, 2, 3, 4]
+"""
+
+def is_Sub_Array(main_list, sub_list):
+    """
+    Return True if sub_list is a contiguous sublist of main_list, otherwise False.
+    """
+    n = len(main_list)
+    m = len(sub_list)
+
+    # An empty list is considered a sublist of any list
+    if m == 0:
+        return True
+
+    # A longer list cannot be a sublist of a shorter list
+    if m > n:
+        return False
+
+    for i in range(n - m + 1):
+        if main_list[i:i + m] == sub_list:
+            return True
+
+    return False
+
+
+# Tests
+assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+assert is_Sub_Array([1, 2, 3, 4], [2, 3]) == True
+assert is_Sub_Array([1, 2, 3, 4], [2, 4]) == False
+assert is_Sub_Array([1, 2, 3], []) == True
+assert is_Sub_Array([], []) == True
+assert is_Sub_Array([], [1]) == False
+
+print("All tests passed.")
+```

@@ -1,0 +1,31 @@
+The problem asks for the sum of the products of all possible subarrays (contiguous sublists) of a given list. For example, for the list `[1, 2, 3]`, the subarrays are `[1]`, `[2]`, `[3]`, `[1, 2]`, `[2, 3]`, and `[1, 2, 3]`. Their products are `1, 2, 3, 2, 6, 6`, which sum to `20`.
+
+We can solve this efficiently in $O(n)$ time using a dynamic programming approach. Let `dp[i]` be the sum of products of all subarrays ending at index `i`. We can calculate `dp[i]` based on `dp[i-1]`:
+`dp[i] = dp[i-1] * arr[i] + arr[i]`
+This works because `dp[i-1] * arr[i]` extends all previous subarrays ending at `i-1` to include `arr[i]`, and the `+ arr[i]` accounts for the new subarray of length 1 starting and ending at `i`. The total sum is just the sum of all `dp[i]` values.
+
+Here is the self-contained Python script:
+
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Finds the sum of products of all possible subarrays of a given list.
+    """
+    total_sum = 0
+    current_sum = 0
+    
+    for val in arr:
+        # current_sum stores the sum of products of all subarrays ending at the current element
+        current_sum = current_sum * val + val
+        total_sum += current_sum
+        
+    return total_sum
+
+# Assert the given test case
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+assert sum_Of_Subarray_Prod([1, 2, 3, 4]) == 84
+assert sum_Of_Subarray_Prod([5, 5, 5]) == 155
+
+if __name__ == "__main__":
+    print("All assertions passed!")
+```

@@ -1,0 +1,19 @@
+```python
+import math
+
+def lateral_surface_area_cylinder(radius, height):
+    """
+    Calculate the lateral surface area of a cylinder.
+
+    Args:
+        radius (float): The radius of the cylinder.
+        height (float): The height of the cylinder.
+
+    Returns:
+        float: The lateral surface area of the cylinder.
+    """
+    return 2 * math.pi * radius * height
+
+# Test the function
+print(lateral_surface_area_cylinder(10, 5))
+```

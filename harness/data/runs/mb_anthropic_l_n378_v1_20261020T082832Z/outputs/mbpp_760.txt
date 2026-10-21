@@ -1,0 +1,43 @@
+Looking at this problem, I need to write a function that checks if all elements in a list are the same (i.e., there's only one distinct value).
+
+```python
+"""
+Write a python function to check whether a list of numbers contains only one distinct element or not.
+assert unique_Element([1,1,1]) == True
+"""
+
+
+def unique_Element(nums):
+    """
+    Check whether a list of numbers contains only one distinct element.
+
+    Args:
+        nums: A list of numbers.
+
+    Returns:
+        True if the list contains exactly one distinct element, False otherwise.
+    """
+    return len(set(nums)) == 1
+
+
+# Test cases
+if __name__ == "__main__":
+    assert unique_Element([1, 1, 1]) == True
+    assert unique_Element([1, 2, 1, 2]) == False
+    assert unique_Element([1, 2, 3, 4, 5]) == False
+    assert unique_Element([5, 5, 5, 5, 5]) == True
+    assert unique_Element([7]) == True
+    assert unique_Element([0, 0]) == True
+    assert unique_Element([1, 1, 2]) == False
+    print("All test cases passed!")
+```
+
+**How it works:**
+
+1. `set(nums)` converts the list into a set, which automatically removes duplicate values.
+2. `len(set(nums))` gives the count of distinct elements in the list.
+3. Comparing that count to `1` tells us whether the list contains only one distinct element.
+
+For example:
+- `[1, 1, 1]` → `set` is `{1}` → length `1` → `True`
+- `[1, 2, 1, 2]` → `set` is `{1, 2}` → length `2` → `False`

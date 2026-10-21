@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def find_min_length(list_of_lists):
+    """
+    Finds the length of the smallest list in a list of lists.
+
+    Args:
+        list_of_lists: A list containing multiple lists.
+
+    Returns:
+        The length of the smallest list in the input.
+
+    Raises:
+        ValueError: If the input list is empty or contains no lists.
+    """
+    if not list_of_lists:
+        raise ValueError("Input list cannot be empty")
+
+    min_length = float('inf')
+    for lst in list_of_lists:
+        if not isinstance(lst, list):
+            raise ValueError("All elements in the list must be lists")
+        if len(lst) < min_length:
+            min_length = len(lst)
+
+    return min_length
+
+# Test case
+assert find_min_length([[1], [1, 2]]) == 1
+```
+
+This script:
+1. Defines a function `find_min_length` that takes a list of lists as input
+2. Handles edge cases (empty input or non-list elements)
+3. Finds the minimum length by iterating through all sublists
+4. Includes the required test case from the problem statement
+5. Has proper documentation and error handling
+
+The function will return the length of the smallest sublist, and the test case verifies that it works correctly for the given example.

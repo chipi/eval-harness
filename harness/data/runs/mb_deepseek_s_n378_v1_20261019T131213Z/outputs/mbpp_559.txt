@@ -1,0 +1,32 @@
+```python
+def max_sub_array_sum(arr, n):
+    """
+    Find the sum of the largest contiguous sublist in the given list.
+    
+    Args:
+        arr: List of integers
+        n: Length of the list (provided for compatibility with the assertion)
+    
+    Returns:
+        Maximum sum of any contiguous sublist
+    """
+    # Initialize variables
+    max_so_far = arr[0]  # Maximum sum found so far
+    max_ending_here = arr[0]  # Maximum sum ending at current position
+    
+    # Iterate through the array starting from the second element
+    for i in range(1, n):
+        # Update max_ending_here: either extend the current sublist or start a new one
+        max_ending_here = max(arr[i], max_ending_here + arr[i])
+        # Update max_so_far if we found a larger sum
+        max_so_far = max(max_so_far, max_ending_here)
+    
+    return max_so_far
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8)
+    print(f"Result: {result}")
+    assert result == 7, f"Expected 7 but got {result}"
+    print("Assertion passed!")
+```

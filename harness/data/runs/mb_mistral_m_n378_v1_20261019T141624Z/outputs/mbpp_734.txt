@@ -1,0 +1,14 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    total = 0
+    n = len(arr)
+    for i in range(n):
+        product = 1
+        for j in range(i, n):
+            product *= arr[j]
+            total += product
+    return total
+
+# Test the function
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+```

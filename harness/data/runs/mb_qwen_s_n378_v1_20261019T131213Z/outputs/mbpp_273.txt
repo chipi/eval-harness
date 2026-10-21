@@ -1,0 +1,17 @@
+```python
+def substract_elements(tuple1, tuple2):
+    """
+    Takes in two tuples and subtracts the elements of the first tuple by the elements of the second tuple with the same index.
+    
+    Args:
+        tuple1: First tuple containing numbers
+        tuple2: Second tuple containing numbers
+    
+    Returns:
+        A new tuple where each element is the result of subtracting the corresponding element in tuple2 from tuple1
+    """
+    return tuple(a - b for a, b in zip(tuple1, tuple2))
+
+# Test case
+assert substract_elements((10, 4, 5), (2, 5, 18)) == (8, -1, -13)
+```

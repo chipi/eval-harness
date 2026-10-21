@@ -1,0 +1,58 @@
+```python
+def is_majority(arr, n, x):
+    """
+    Checks if the element x is the majority element in a sorted array.
+    A majority element occurs more than n/2 times.
+    
+    Since the array is sorted, if x is the majority element, it must 
+    occupy the middle index of the array. We can use binary search to 
+    find the first occurrence of x and then check if the element 
+    at index (first_occurrence + n // 2) is also x.
+    """
+    if n == 0:
+        return False
+
+    # Binary search to find the first occurrence of x
+    def find_first_occurrence(arr, n, x):
+        low = 0
+        high = n - 1
+        first_idx = -1
+        while low <= high:
+            mid = (low + high) // 2
+            if arr[mid] == x:
+                first_idx = mid
+                high = mid - 1  # Look on the left side for an even earlier occurrence
+            elif arr[mid] < x:
+                low = mid + 1
+            else:
+                high = mid - 1
+        return first_idx
+
+    first_idx = find_first_occurrence(arr, n, x)
+
+    # If x is not in the array, it cannot be the majority element
+    if first_idx == -1:
+        return False
+
+    # The majority element must appear more than n/2 times.
+    # If the first occurrence is at 'first_idx', then the element at 
+    # 'first_idx + n // 2' must also be x for it to appear > n/2 times.
+    majority_idx = first_idx + n // 2
+    if majority_idx < n and arr[majority_idx] == x:
+        return True
+    
+    return False
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    
+    # Additional test cases
+    assert is_majority([1, 2, 3, 3, 3], 5, 3) == True      # 3 occurs 3 times, 3 > 5/2
+    assert is_majority([1, 2, 3, 4], 4, 3) == False       # 3 occurs 1 time, 1 <= 4/2
+    assert is_majority([3, 3, 3, 3], 4, 3) == True         # 3 occurs 4 times, 4 > 4/2
+    assert is_majority([1, 1, 2, 2], 4, 1) == False       # 1 occurs 2 times, 2 <= 4/2
+    assert is_majority([1, 2, 3], 3, 2) == False         # 2 occurs 1 time, 1 <= 3/2
+    
+    print("All tests passed!")
+```

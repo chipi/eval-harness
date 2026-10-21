@@ -1,0 +1,25 @@
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character
+    followed by two or three 'b' characters.
+    """
+    pattern = 'ab{2,3}'
+    return bool(re.search(pattern, text))
+
+
+# Test cases
+if __name__ == "__main__":
+    assert text_match_two_three("ac") == False
+    assert text_match_two_three("ab") == False
+    assert text_match_two_three("abb") == True
+    assert text_match_two_three("abbb") == True
+    assert text_match_two_three("abbbb") == True  # contains "abbb" as substring
+    assert text_match_two_three("xayzabbz") == True
+    assert text_match_two_three("a") == False
+    assert text_match_two_three("") == False
+
+    print("All test cases passed!")
+```

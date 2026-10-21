@@ -1,0 +1,17 @@
+```python
+def replace_list(list1, list2):
+    """
+    Replaces the last element of the first list with the elements of the second list.
+    """
+    # Slice the first list to get everything except the last element,
+    # then concatenate it with the second list.
+    return list1[:-1] + list2
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8])
+    expected = [1, 3, 5, 7, 9, 2, 4, 6, 8]
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+```

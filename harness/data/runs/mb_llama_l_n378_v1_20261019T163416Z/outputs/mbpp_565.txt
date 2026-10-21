@@ -1,0 +1,11 @@
+```python
+def split(s):
+    return list(s)
+
+def main():
+    assert split('python') == ['p','y','t','h','o','n']
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

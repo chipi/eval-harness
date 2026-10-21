@@ -1,0 +1,27 @@
+```python
+def power(a, b):
+    """
+    Calculate the value of 'a' to the power 'b'.
+    
+    This implementation uses an iterative approach to avoid recursion depth limits
+    and handles negative exponents by returning a float.
+    """
+    if b == 0:
+        return 1
+    
+    # Handle negative exponents
+    if b < 0:
+        a = 1 / a
+        b = -b
+        
+    result = 1
+    for _ in range(b):
+        result *= a
+        
+    return result
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert power(3, 4) == 81
+    print("Test passed: power(3, 4) == 81")
+```

@@ -1,0 +1,52 @@
+```python
+#!/usr/bin/env python3
+"""
+Find a pair with the highest product from a given array of integers.
+
+Example:
+    max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+
+Notes:
+- The maximum product may come from the two largest positive numbers,
+  or from the two smallest negative numbers.
+- The returned pair preserves the order in which those two values appear
+  in the input array.
+"""
+
+def max_Product(arr):
+    """
+    Return a pair of integers from arr whose product is maximum.
+
+    Args:
+        arr (list[int]): A list of integers.
+
+    Returns:
+        tuple[int, int]: The pair with the highest product.
+
+    Raises:
+        ValueError: If the array has fewer than two elements.
+    """
+    if len(arr) < 2:
+        raise ValueError("Array must contain at least two integers")
+
+    max_product = None
+    best_pair = None
+
+    for i in range(len(arr)):
+        for j in range(i + 1, len(arr)):
+            product = arr[i] * arr[j]
+            if max_product is None or product > max_product:
+                max_product = product
+                best_pair = (arr[i], arr[j])
+
+    return best_pair
+
+
+if __name__ == "__main__":
+    assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+    assert max_Product([-10, -3, 5, 6, -2]) == (-10, -3)
+    assert max_Product([1, 2]) == (1, 2)
+    assert max_Product([0, -1, -2]) == (-1, -2)
+
+    print("All tests passed.")
+```

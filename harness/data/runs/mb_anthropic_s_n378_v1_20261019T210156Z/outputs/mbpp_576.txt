@@ -1,0 +1,59 @@
+```python
+def is_Sub_Array(main_list, sub_list):
+    """
+    Check whether sub_list is a sublist of main_list.
+    A sublist means all elements of sub_list appear in main_list
+    in the same order (contiguous or not).
+    
+    Args:
+        main_list: The main list to search in
+        sub_list: The list to search for
+    
+    Returns:
+        True if sub_list is a sublist of main_list, False otherwise
+    """
+    if not sub_list:
+        return True
+    
+    if not main_list:
+        return False
+    
+    # Use two pointers approach
+    sub_idx = 0
+    
+    for main_idx in range(len(main_list)):
+        if main_list[main_idx] == sub_list[sub_idx]:
+            sub_idx += 1
+            if sub_idx == len(sub_list):
+                return True
+    
+    return False
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+    assert is_Sub_Array([1, 2, 3, 4, 5], [1, 2]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [2, 3]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [1, 3, 5]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [5, 1]) == False
+    assert is_Sub_Array([1, 2, 3, 4, 5], []) == True
+    assert is_Sub_Array([], [1]) == False
+    
+    print("All test cases passed!")
+```
+
+**Explanation:**
+
+The function `is_Sub_Array` checks if `sub_list` is a sublist of `main_list` by:
+
+1. **Edge cases**: If `sub_list` is empty, return `True`. If `main_list` is empty but `sub_list` is not, return `False`.
+
+2. **Two-pointer approach**: 
+   - Iterate through `main_list` with `main_idx`
+   - Keep track of the current position in `sub_list` with `sub_idx`
+   - When an element in `main_list` matches the current element in `sub_list`, increment `sub_idx`
+   - If `sub_idx` reaches the length of `sub_list`, all elements have been found in order, so return `True`
+   - If we finish iterating through `main_list` without finding all elements, return `False`
+
+This approach allows elements of the sublist to be non-contiguous in the main list, as long as they appear in the same order.

@@ -1,0 +1,62 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to find a pair with highest product from a given array of integers.
+assert max_Product([1,2,3,4,7,0,8,4]) == (7,8)
+"""
+
+def max_Product(arr):
+    """
+    Find a pair with the highest product from a given array of integers.
+    
+    Args:
+        arr: List of integers
+    
+    Returns:
+        A tuple containing the pair of integers with the highest product.
+    """
+    if len(arr) < 2:
+        raise ValueError("Array must contain at least two elements")
+    
+    # Sort the array
+    arr_sorted = sorted(arr)
+    
+    # The maximum product can come from either:
+    # 1. The two largest positive numbers
+    # 2. The two smallest (most negative) numbers (since negative * negative = positive)
+    product1 = arr_sorted[-1] * arr_sorted[-2]  # two largest
+    product2 = arr_sorted[0] * arr_sorted[1]    # two smallest
+    
+    if product1 >= product2:
+        return (arr_sorted[-2], arr_sorted[-1])
+    else:
+        return (arr_sorted[0], arr_sorted[1])
+
+
+# Test the function
+if __name__ == "__main__":
+    assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+    assert max_Product([-10, -3, 5, 6, 2]) == (-10, -3)
+    assert max_Product([-5, -4, -3, -2, -1]) == (-5, -4)
+    assert max_Product([1, 2]) == (1, 2)
+    assert max_Product([0, 0, 0]) == (0, 0)
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Sort the array** in ascending order.
+2. **Compute two candidate products:**
+   - Product of the two largest elements (indices `-1` and `-2`).
+   - Product of the two smallest elements (indices `0` and `1`) — this handles the case where two large negative numbers multiply to give a large positive result.
+3. **Return the pair** that yields the larger product.
+
+**Example walkthrough** for `[1, 2, 3, 4, 7, 0, 8, 4]`:
+- Sorted: `[0, 1, 2, 3, 4, 4, 7, 8]`
+- Two largest: `7 * 8 = 56`
+- Two smallest: `0 * 1 = 0`
+- Since `56 > 0`, return `(7, 8)` ✓
+
+**Time complexity:** O(n log n) due to sorting.  
+**Space complexity:** O(n) for the sorted copy.

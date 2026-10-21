@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sort_sublists(list_of_lists):
+    """
+    Sorts each sublist of strings in a given list of lists.
+    
+    Args:
+        list_of_lists: A list containing sublists of strings
+        
+    Returns:
+        A new list where each sublist is sorted alphabetically
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = sort_sublists([['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']])
+    expected = [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+    
+    print("Result:", result)
+    print("Expected:", expected)
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```
+
+**Explanation:**
+
+1. **Function definition**: `sort_sublists(list_of_lists)` takes a list of lists as input.
+
+2. **List comprehension**: `[sorted(sublist) for sublist in list_of_lists]` iterates through each sublist and applies Python's built-in `sorted()` function, which returns a new sorted list (in ascending/alphabetical order by default).
+
+3. **Return value**: A new list containing the sorted sublists, leaving the original input unchanged.
+
+4. **Test case**: The assertion verifies that:
+   - `['green', 'orange']` → `['green', 'orange']` (already sorted)
+   - `['black', 'white']` → `['black', 'white']` (already sorted)
+   - `['white', 'black', 'orange']` → `['black', 'orange', 'white']` (sorted alphabetically)
+
+The script is self-contained and can be run directly to verify the solution.

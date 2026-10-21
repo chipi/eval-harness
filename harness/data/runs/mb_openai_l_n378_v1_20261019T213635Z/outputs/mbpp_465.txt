@@ -1,0 +1,11 @@
+```python
+def drop_empty(dictionary):
+    """Return a new dictionary without entries whose values are None."""
+    return {key: value for key, value in dictionary.items() if value is not None}
+
+
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {
+    'c1': 'Red',
+    'c2': 'Green',
+}
+```

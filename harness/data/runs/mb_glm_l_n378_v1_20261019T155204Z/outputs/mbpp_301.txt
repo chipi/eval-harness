@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def dict_depth(d):
+    """
+    Calculate the depth of a dictionary.
+    
+    Args:
+        d (dict): The dictionary to calculate depth for.
+        
+    Returns:
+        int: The depth of the dictionary.
+    """
+    if not isinstance(d, dict) or not d:
+        return 0
+    
+    max_depth = 1
+    for value in d.values():
+        if isinstance(value, dict):
+            current_depth = dict_depth(value) + 1
+            if current_depth > max_depth:
+                max_depth = current_depth
+    return max_depth
+
+# Test the function
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+assert dict_depth({}) == 0
+assert dict_depth({'a': 1}) == 1
+assert dict_depth({'a': {'b': 2}}) == 2
+assert dict_depth({'a': {'b': {'c': 3}}}) == 3
+assert dict_depth({'a': {'b': {'c': {'d': 4}}}}) == 4
+assert dict_depth({'a': 1, 'b': {'c': 2, 'd': {'e': 3}}}) == 3
+print("All tests passed!")
+```
+
+This script defines a `dict_depth` function that recursively calculates the depth of a dictionary. The depth is defined as:
+- 0 for an empty dictionary or non-dictionary input
+- 1 for a dictionary with no nested dictionaries
+- 1 + maximum depth of any nested dictionaries for dictionaries containing nested dictionaries
+
+The function handles edge cases like empty dictionaries and non-dictionary inputs, and includes several test cases to verify its correctness.

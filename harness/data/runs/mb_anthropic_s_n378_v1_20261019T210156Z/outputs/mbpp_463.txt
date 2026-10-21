@@ -1,0 +1,66 @@
+```python
+def max_subarray_product(arr):
+    """
+    Find the maximum product subarray of the given array.
+    
+    Args:
+        arr: List of integers
+        
+    Returns:
+        The maximum product of any contiguous subarray
+    """
+    if not arr:
+        return 0
+    
+    # Track the maximum and minimum product ending at current position
+    max_product = arr[0]
+    min_product = arr[0]
+    result = arr[0]
+    
+    for i in range(1, len(arr)):
+        current = arr[i]
+        
+        # Calculate new max and min products
+        # We need to consider:
+        # 1. Current element alone
+        # 2. Current element * previous max_product
+        # 3. Current element * previous min_product (important for negative numbers)
+        new_max = max(current, max_product * current, min_product * current)
+        new_min = min(current, max_product * current, min_product * current)
+        
+        max_product = new_max
+        min_product = new_min
+        result = max(result, max_product)
+    
+    return result
+
+
+# Test cases
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+assert max_subarray_product([2, 3, -2, 4]) == 6
+assert max_subarray_product([-2]) == -2
+assert max_subarray_product([0, -1]) == 0
+assert max_subarray_product([-2, 3, -4]) == 24
+
+print("All test cases passed!")
+print(f"max_subarray_product([1, -2, -3, 0, 7, -8, -2]) = {max_subarray_product([1, -2, -3, 0, 7, -8, -2])}")
+```
+
+**Explanation:**
+
+The algorithm uses dynamic programming to track both the maximum and minimum product ending at each position:
+
+1. **Why track both max and min?** Because a negative number multiplied by a large negative product can become a large positive product.
+
+2. **Key insight:** At each position, the maximum product is the maximum of:
+   - The current element alone (restart the subarray)
+   - Current element × previous maximum product
+   - Current element × previous minimum product (handles negative multiplications)
+
+3. **Time Complexity:** O(n) - single pass through the array
+4. **Space Complexity:** O(1) - only using a few variables
+
+For the example `[1, -2, -3, 0, 7, -8, -2]`:
+- The subarray `[-8, -2]` has product `16`
+- The subarray `[7, -8, -2]` has product `112` (7 × 16)
+- This is the maximum product subarray

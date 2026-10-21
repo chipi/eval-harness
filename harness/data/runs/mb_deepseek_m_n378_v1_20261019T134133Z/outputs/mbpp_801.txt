@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def test_three_equal(a, b, c):
+    """
+    Counts the number of equal numbers from three given integers.
+    Returns the maximum count of equal numbers.
+    """
+    if a == b == c:
+        return 3
+    elif a == b or a == c or b == c:
+        return 2
+    else:
+        return 0
+
+# Test cases
+assert test_three_equal(1, 1, 1) == 3
+assert test_three_equal(1, 1, 2) == 2
+assert test_three_equal(1, 2, 3) == 0
+assert test_three_equal(2, 2, 2) == 3
+assert test_three_equal(5, 3, 5) == 2
+
+print("All tests passed!")
+```
+
+**Explanation:**
+- If all three numbers are equal (`a == b == c`), return `3`.
+- If any two numbers are equal (`a == b`, `a == c`, or `b == c`), return `2`.
+- Otherwise, all numbers are distinct, so return `0`.

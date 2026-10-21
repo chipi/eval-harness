@@ -1,0 +1,72 @@
+```python
+"""
+Write a function to sort the given array by using shell sort.
+assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+"""
+
+def shell_sort(arr):
+    """
+    Sorts an array in ascending order using the Shell Sort algorithm.
+
+    Shell sort is an optimization of insertion sort that allows the exchange of
+    items that are far apart. The idea is to arrange the list of elements so that,
+    starting anywhere, considering every h-th element gives a sorted list.
+    Such a list is said to be h-sorted. A list that is 1-sorted is fully sorted.
+
+    Args:
+        arr (list): A list of comparable elements (e.g., numbers).
+
+    Returns:
+        list: The sorted list in ascending order.
+    """
+    n = len(arr)
+
+    # Start with a large gap and reduce it in each iteration.
+    # The gap sequence used here is n//2, n//4, ..., 1.
+    gap = n // 2
+
+    # Loop until the gap is 1, which means the final pass is a standard insertion sort.
+    while gap > 0:
+        # Perform a gapped insertion sort for this gap size.
+        # The first `gap` elements are already in gapped order.
+        # We start from `gap` and go up to the end of the array.
+        for i in range(gap, n):
+            # Save the current element to be inserted.
+            temp = arr[i]
+            j = i
+
+            # Shift earlier gap-sorted elements up until the correct
+            # location for arr[i] is found.
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+
+            # Put the saved element (temp) in its correct location.
+            arr[j] = temp
+
+        # Reduce the gap for the next pass.
+        gap //= 2
+
+    return arr
+
+# Example usage and assertion
+if __name__ == "__main__":
+    # The input array from the problem description
+    input_array = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    
+    # The expected sorted output
+    expected_output = [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    
+    # Sort the array using our shell_sort function
+    sorted_array = shell_sort(input_array.copy()) # Use .copy() to keep the original for clarity
+    
+    # Print the results for verification
+    print(f"Original array: {input_array}")
+    print(f"Sorted array:   {sorted_array}")
+    print(f"Expected array: {expected_output}")
+    
+    # Assert that the sorted array matches the expected output
+    assert sorted_array == expected_output, f"Sorting failed. Expected {expected_output}, got {sorted_array}"
+    
+    print("\nAssertion passed! The array was sorted correctly.")
+```

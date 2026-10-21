@@ -1,0 +1,60 @@
+```python
+def second_smallest(numbers):
+    """
+    This function finds the second smallest number in a list.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        The second smallest number in the list.
+
+    Raises:
+        ValueError: If the list has less than two unique numbers.
+    """
+    # Remove duplicates by converting the list to a set
+    unique_numbers = set(numbers)
+    
+    # Check if the list has less than two unique numbers
+    if len(unique_numbers) < 2:
+        raise ValueError("The list must have at least two unique numbers")
+
+    # Remove the smallest number from the set
+    unique_numbers.remove(min(unique_numbers))
+    
+    # Return the smallest number from the remaining set
+    return min(unique_numbers)
+
+# Test the function
+print(second_smallest([1, 2, -8, -2, 0, -2]))  # Output: -2
+```
+
+However, a more Pythonic and efficient way to solve this problem would be:
+
+```python
+def second_smallest(numbers):
+    """
+    This function finds the second smallest number in a list.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        The second smallest number in the list.
+
+    Raises:
+        ValueError: If the list has less than two unique numbers.
+    """
+    # Remove duplicates and sort the list
+    unique_numbers = sorted(set(numbers))
+    
+    # Check if the list has less than two unique numbers
+    if len(unique_numbers) < 2:
+        raise ValueError("The list must have at least two unique numbers")
+
+    # Return the second smallest number
+    return unique_numbers[1]
+
+# Test the function
+print(second_smallest([1, 2, -8, -2, 0, -2]))  # Output: -2
+```

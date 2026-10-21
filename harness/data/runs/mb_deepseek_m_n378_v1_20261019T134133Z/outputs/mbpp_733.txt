@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_first_occurrence(arr, target):
+    """
+    Find the index of the first occurrence of a given number in a sorted array.
+    Returns -1 if the number is not found.
+    """
+    left, right = 0, len(arr) - 1
+    result = -1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        
+        if arr[mid] == target:
+            result = mid
+            right = mid - 1  # Continue searching in the left half
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return result
+
+
+# Test the function
+assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+print("Test passed!")
+
+# Additional tests
+print(find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5))  # 1
+print(find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 9))  # 7
+print(find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 2))  # 0
+print(find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 7))  # -1
+```
+
+**How it works:**
+
+1. **Binary Search Approach**: The function uses a modified binary search to find the first occurrence in O(log n) time.
+
+2. **Key Logic**: 
+   - When we find the target at `mid`, we record it as a potential result and continue searching in the **left half** (`right = mid - 1`) to see if there's an earlier occurrence.
+   - If `arr[mid] < target`, we search the right half.
+   - If `arr[mid] > target`, we search the left half.
+
+3. **Return Value**: Returns the index of the first occurrence, or `-1` if the target is not found in the array.

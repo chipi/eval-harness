@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_samepatterns(colors, patterns):
+    """
+    Check whether the colors list follows the same sequence pattern as the patterns list.
+    
+    Two lists follow the same pattern if there's a one-to-one mapping between
+    the elements of the first list and the elements of the second list.
+    
+    Args:
+        colors: List of color strings
+        patterns: List of pattern strings
+    
+    Returns:
+        True if the sequences follow the same pattern, False otherwise
+    """
+    if len(colors) != len(patterns):
+        return False
+    
+    color_to_pattern = {}
+    pattern_to_color = {}
+    
+    for color, pattern in zip(colors, patterns):
+        # Check if color is already mapped to a different pattern
+        if color in color_to_pattern:
+            if color_to_pattern[color] != pattern:
+                return False
+        else:
+            color_to_pattern[color] = pattern
+        
+        # Check if pattern is already mapped to a different color
+        if pattern in pattern_to_color:
+            if pattern_to_color[pattern] != color:
+                return False
+        else:
+            pattern_to_color[pattern] = color
+    
+    return True
+
+
+# Test cases
+assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+assert is_samepatterns(["red", "green", "green"], ["a", "b", "c"]) == False
+assert is_samepatterns(["red", "green", "red"], ["a", "b", "a"]) == True
+assert is_samepatterns(["red", "green", "red"], ["a", "b", "b"]) == False
+assert is_samepatterns([], []) == True
+assert is_samepatterns(["red"], ["a"]) == True
+assert is_samepatterns(["red", "green"], ["a"]) == False
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Length check**: If the two lists have different lengths, they can't follow the same pattern.
+
+2. **Bidirectional mapping**: We maintain two dictionaries:
+   - `color_to_pattern`: maps each color to its corresponding pattern
+   - `pattern_to_color`: maps each pattern to its corresponding color
+
+3. **Consistency check**: For each pair `(color, pattern)`:
+   - If the color was seen before, its previously mapped pattern must match the current pattern.
+   - If the pattern was seen before, its previously mapped color must match the current color.
+
+This ensures a strict one-to-one correspondence between the elements of both lists, which is exactly what "same pattern" means.

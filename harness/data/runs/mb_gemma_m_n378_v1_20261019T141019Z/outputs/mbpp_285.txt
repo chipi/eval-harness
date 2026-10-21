@@ -1,0 +1,37 @@
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character 
+    followed by exactly two or three 'b' characters.
+    
+    The pattern looks for 'a' followed by 'bb' or 'bbb'.
+    We use word boundaries or lookarounds if we want to ensure 
+    it's not 4 'b's, but based on the prompt "followed by two or three", 
+    a standard regex for 'abb' or 'abbb' is typically expected.
+    """
+    # Pattern explanation:
+    # a      : matches the character 'a'
+    # b{2,3} : matches the character 'b' between 2 and 3 times
+    # (?![b]) : negative lookahead to ensure a 4th 'b' does not follow 
+    #           (this ensures we don't match "abbbb" as a valid "abbb")
+    pattern = r'ab{2,3}(?!b)'
+    
+    if re.search(pattern, text):
+        return True
+    else:
+        return False
+
+if __name__ == "__main__":
+    # Test cases
+    assert text_match_two_three("abb") == True
+    assert text_match_two_three("abbb") == True
+    assert text_match_two_three("ac") == False
+    assert text_match_two_three("a") == False
+    assert text_match_two_three("ab") == False
+    assert text_match_two_three("abbbb") == False  # Should be false if we strictly want 2 or 3
+    assert text_match_two_three("xabbby") == True
+    
+    print("All tests passed!")
+```

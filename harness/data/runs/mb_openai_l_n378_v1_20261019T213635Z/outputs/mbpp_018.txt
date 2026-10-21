@@ -1,0 +1,9 @@
+```python
+def remove_dirty_chars(first: str, second: str) -> str:
+    """Remove from first every character that appears in second."""
+    chars_to_remove = set(second)
+    return "".join(char for char in first if char not in chars_to_remove)
+
+
+assert remove_dirty_chars("probasscurve", "pros") == "bacuve"
+```

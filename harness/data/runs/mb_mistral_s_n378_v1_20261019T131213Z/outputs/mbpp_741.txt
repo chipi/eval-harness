@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def all_Characters_Same(input_string):
+    """
+    Check if all characters in the input string are the same.
+
+    Args:
+        input_string (str): The string to check.
+
+    Returns:
+        bool: True if all characters are the same, False otherwise.
+    """
+    if not input_string:  # Handle empty string case
+        return True
+    first_char = input_string[0]
+    return all(char == first_char for char in input_string)
+
+# Test case
+assert all_Characters_Same("python") == False
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `all_Characters_Same` that checks if all characters in a string are identical
+2. Handles the edge case of an empty string (returns True)
+3. Uses a generator expression with `all()` to efficiently check each character
+4. Includes the required test case from the problem statement
+5. Prints a confirmation message if all test cases pass
+
+The function will return:
+- `True` for strings like "aaaa", "1111", or "" (empty string)
+- `False` for strings like "python", "aabbcc", or "1234"

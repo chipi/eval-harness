@@ -1,0 +1,28 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Checks if any value in seq1 exists in seq2.
+
+    Args:
+        seq1: The first sequence (list, tuple, set, etc.).
+        seq2: The second sequence (list, tuple, set, etc.).
+
+    Returns:
+        True if there is at least one common element, False otherwise.
+    """
+    # Convert both sequences to sets and use the intersection operator.
+    # The '&' operator finds common elements between two sets.
+    # If the intersection is not empty, it means there's an overlap.
+    return bool(set(seq1) & set(seq2))
+
+# Example usage and assertions as provided in the problem description
+assert overlapping([1,2,3,4,5], [6,7,8,9]) == False
+assert overlapping([1,2,3,4,5], [4,5,6,7]) == True
+assert overlapping(['a', 'b', 'c'], ['d', 'e', 'f']) == False
+assert overlapping(['a', 'b', 'c'], ['b', 'c', 'd']) == True
+assert overlapping([], [1, 2, 3]) == False
+assert overlapping([1, 2, 3], []) == False
+assert overlapping([], []) == False
+
+print("All assertions passed!")
+```

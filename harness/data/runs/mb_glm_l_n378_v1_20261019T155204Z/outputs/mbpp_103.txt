@@ -1,0 +1,75 @@
+```python
+def eulerian_num(n, m):
+    """
+    Computes the Eulerian number A(n, m).
+    
+    The Eulerian number A(n, m) counts the number of permutations of the numbers 
+    from 1 to n in which exactly m elements are greater than the previous element.
+    
+    Formula:
+    A(n, m) = (n - m) * A(n - 1, m - 1) + (m + 1) * A(n - 1, m)
+    
+    Base cases:
+    A(n, 0) = 1 for all n >= 1
+    A(0, m) = 0 for all m >= 0
+    
+    Args:
+        n (int): The number of elements to permute.
+        m (int): The number of ascents.
+        
+    Returns:
+        int: The Eulerian number A(n, m).
+    """
+    # Handle edge cases based on definition
+    if n == 0:
+        return 0
+    if m < 0 or m >= n:
+        return 0
+    if m == 0:
+        return 1
+        
+    # Create a table to store results of sub-problems
+    # dp[i][j] will store Eulerian number A(i, j)
+    # We use (n + 1) x (m + 1) dimensions, though the triangle is larger,
+    # we only need up to column m.
+    dp = [[0 for _ in range(m + 1)] for _ in range(n + 1)]
+    
+    # Base case: A(i, 0) = 1 for all i >= 1
+    for i in range(1, n + 1):
+        dp[i][0] = 1
+        
+    # Fill the table using the recurrence relation
+    # A(i, j) = (i - j) * A(i - 1, j - 1) + (j + 1) * A(i - 1, j)
+    for i in range(1, n + 1):
+        # j can range from 1 up to min(i-1, m)
+        for j in range(1, min(i, m + 1)):
+            term1 = (i - j) * dp[i - 1][j - 1]
+            
+            # The second term requires A(i-1, j). 
+            # If j > m, we don't have it in our table, but we wouldn't need it 
+            # to compute A(n, m) if j > m.
+            # However, if j <= m, we use the value from the table.
+            term2 = 0
+            if j <= m:
+                term2 = (j + 1) * dp[i - 1][j]
+            
+            dp[i][j] = term1 + term2
+            
+    return dp[n][m]
+
+# Test the function with the provided assertion
+assert eulerian_num(3, 1) == 4
+print("Assertion passed: eulerian_num(3, 1) == 4")
+
+# Additional test cases to verify correctness
+# A(4, 1) = 11
+assert eulerian_num(4, 1) == 11
+# A(5, 3) = 1
+assert eulerian_num(5, 3) == 1
+# A(4, 0) = 1
+assert eulerian_num(4, 0) == 1
+# A(3, 3) = 0 (m < n)
+assert eulerian_num(3, 3) == 0
+
+print("All assertions passed.")
+```

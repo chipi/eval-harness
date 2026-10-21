@@ -1,0 +1,12 @@
+```python
+def is_Even(n):
+    return n % 2 == 0
+
+def main():
+    # Test the function
+    print(is_Even(1))  # Should print: False
+    print(is_Even(2))  # Should print: True
+
+if __name__ == "__main__":
+    main()
+```

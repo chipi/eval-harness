@@ -1,0 +1,21 @@
+```python
+def remove_all_spaces(text):
+    """
+    Removes all whitespace characters from the input string.
+    """
+    # .split() without arguments splits by any whitespace (space, tab, newline)
+    # "".join() concatenates the resulting list back into a single string
+    return "".join(text.split())
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert remove_all_spaces('python  program') == 'pythonprogram'
+    
+    # Additional test cases
+    assert remove_all_spaces(' hello world ') == 'helloworld'
+    assert remove_all_spaces('a b c d') == 'abcd'
+    assert remove_all_spaces('no_spaces') == 'no_spaces'
+    assert remove_all_spaces(' \t\n  ') == ''
+    
+    print("All tests passed!")
+```

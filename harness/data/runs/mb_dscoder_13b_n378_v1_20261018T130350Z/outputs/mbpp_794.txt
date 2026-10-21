@@ -1,0 +1,13 @@
+```python
+def text_starta_endb(text):
+    if text.startswith("a") and text.endswith("b"):
+        return True
+    else:
+        return False
+
+# Test cases
+print(text_starta_endb("aabbbb"))  # Expected output: True
+print(text_starta_endb("abbbb"))  # Expected output: False
+print(text_starta_endb("aabbb"))  # Expected output: False
+print(text_starta_endb("aabab"))  # Expected output: True
+```

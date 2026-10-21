@@ -1,0 +1,35 @@
+```python
+def is_undulating(n):
+    """
+    Checks whether the given number is undulating or not.
+    An undulating number is a number that has only two different digits,
+    and these digits alternate in the number. 
+    It must have at least 3 digits to form an alternation.
+    """
+    s = str(n)
+    
+    # An undulating number must have at least 3 digits
+    if len(s) < 3:
+        return False
+        
+    # An undulating number must consist of exactly two distinct digits
+    if len(set(s)) != 2:
+        return False
+        
+    # The digits must alternate, meaning no two adjacent digits can be the same
+    for i in range(len(s) - 1):
+        if s[i] == s[i+1]:
+            return False
+            
+    return True
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert is_undulating(1212121) == True
+    assert is_undulating(12121) == True
+    assert is_undulating(121) == True
+    assert is_undulating(11) == False       # Less than 3 digits
+    assert is_undulating(1221) == False     # Adjacent identical digits
+    assert is_undulating(12321) == False    # More than 2 distinct digits
+    print("All tests passed!")
+```

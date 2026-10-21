@@ -1,0 +1,22 @@
+```python
+def swap_List(lst):
+    """
+    Interchanges the first and last elements in a list.
+    """
+    # Check if the list has at least two elements to perform a swap
+    if len(lst) >= 2:
+        # Use tuple unpacking to swap the first and last elements
+        lst[0], lst[-1] = lst[-1], lst[0]
+    
+    return lst
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [12, 35, 9, 56, 24]
+    result = swap_List(test_list)
+    print(f"Input: [12, 35, 9, 56, 24] -> Output: {result}")
+    
+    # Assertion to verify correctness
+    assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+    print("Assertion passed!")
+```

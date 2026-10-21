@@ -1,0 +1,20 @@
+```python
+def count_divisors(n):
+    """
+    Return True if the number of divisors of n is even, otherwise False.
+
+    A number has an odd number of divisors only when it is a perfect square.
+    So the divisor count is even exactly when n is not a perfect square.
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    
+    root = int(n ** 0.5)
+    return root * root != n
+
+
+# Example usage / simple test
+assert count_divisors(10)  # 10 has divisors 1, 2, 5, 10 -> 4 divisors (even)
+
+print(count_divisors(10))  # True
+```

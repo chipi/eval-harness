@@ -1,0 +1,10 @@
+```python
+import re
+
+def extract_values(text):
+    """Extract values between quotation marks from a string."""
+    return re.findall(r'"([^"]*)"', text)
+
+# Test
+assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+```

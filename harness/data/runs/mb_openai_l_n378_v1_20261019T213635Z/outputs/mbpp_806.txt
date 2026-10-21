@@ -1,0 +1,17 @@
+```python
+def max_run_uppercase(text):
+    """Return the length of the longest consecutive run of uppercase characters."""
+    longest = current = 0
+
+    for char in text:
+        if char.isupper():
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+
+    return longest
+
+
+assert max_run_uppercase("GeMKSForGERksISBESt") == 5
+```

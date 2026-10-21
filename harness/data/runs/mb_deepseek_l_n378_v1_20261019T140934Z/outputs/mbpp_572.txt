@@ -1,0 +1,45 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def two_unique_nums(lists):
+    """
+    Remove duplicate numbers from a given list and return only the numbers
+    that appear exactly once.
+    
+    Args:
+        lists: A list of numbers
+        
+    Returns:
+        A list containing only the numbers that appear exactly once
+    """
+    # Count occurrences of each number
+    count_dict = {}
+    for num in lists:
+        count_dict[num] = count_dict.get(num, 0) + 1
+    
+    # Return numbers that appear exactly once
+    return [num for num in lists if count_dict[num] == 1]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = two_unique_nums([1, 2, 3, 2, 3, 4, 5])
+    print(f"Input: [1, 2, 3, 2, 3, 4, 5]")
+    print(f"Output: {result}")
+    assert result == [1, 4, 5], f"Test failed! Expected [1, 4, 5] but got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    assert two_unique_nums([1, 1, 2, 2, 3]) == [3], "Test case 2 failed"
+    assert two_unique_nums([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5], "Test case 3 failed"
+    assert two_unique_nums([1, 1, 1, 1]) == [], "Test case 4 failed"
+    print("All additional tests passed!")
+```
+
+The function `two_unique_nums` works by:
+1. Counting the occurrences of each number in the input list using a dictionary
+2. Filtering the original list to keep only numbers that appear exactly once
+3. Returning the filtered list
+
+The script includes the required test case and additional test cases to verify the function works correctly.

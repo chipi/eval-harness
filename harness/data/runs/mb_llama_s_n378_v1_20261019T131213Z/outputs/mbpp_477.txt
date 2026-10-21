@@ -1,0 +1,32 @@
+### String to Lower Case Conversion Function
+#### Function Description
+
+The following Python function takes a string as input and returns its lower case equivalent.
+
+#### Code
+
+```python
+def is_lower(s):
+    """
+    Converts the given string to lower case.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The lower case equivalent of the input string.
+    """
+    return s.lower()
+
+# Example usage:
+if __name__ == "__main__":
+    assert is_lower("InValid") == "invalid"
+    print(is_lower("InValid"))  # Output: invalid
+```
+
+#### Explanation
+
+*   The function `is_lower` takes one argument `s`, which is the string to be converted.
+*   It utilizes Python's built-in string method `lower()`, which returns a copy of the string in lower case.
+*   The function includes a docstring that provides a description, explains the argument, and describes the return value.
+*   In the example usage section, an assertion is used to verify that the function behaves as expected. If the function's output does not match the expected output, an `AssertionError` will be raised.

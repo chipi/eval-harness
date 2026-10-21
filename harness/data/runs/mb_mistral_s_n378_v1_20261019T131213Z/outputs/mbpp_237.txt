@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_occurrences(tuples_list):
+    """
+    Counts the occurrences of each unique tuple in a list and returns a dictionary mapping
+    each tuple to its count.
+
+    Args:
+        tuples_list: A list of tuples to be counted.
+
+    Returns:
+        A dictionary where keys are the unique tuples and values are their counts.
+    """
+    occurrences = {}
+    for t in tuples_list:
+        if t in occurrences:
+            occurrences[t] += 1
+        else:
+            occurrences[t] = 1
+    return occurrences
+
+# Test the function
+if __name__ == "__main__":
+    test_list = [(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]
+    expected_result = {(1, 3): 2, (2, 5): 2, (3, 6): 1}
+    result = check_occurrences(test_list)
+    print("Test result:", result)
+    assert result == expected_result, "Test failed!"
+    print("Test passed!")
+```
+
+Note: There appears to be a discrepancy in the expected result provided in the problem statement. The test list `[(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]` would actually produce the following counts:
+- (3, 1): 1
+- (1, 3): 1
+- (2, 5): 1
+- (5, 2): 1
+- (6, 3): 1
+
+The expected result `{(1, 3): 2, (2, 5): 2, (3, 6): 1}` doesn't match the input list. If you meant to have some tuples appearing multiple times, you would need to modify the test list accordingly. The function itself is correct and will count occurrences as specified.

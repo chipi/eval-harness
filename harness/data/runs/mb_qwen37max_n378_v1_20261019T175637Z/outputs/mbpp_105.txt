@@ -1,0 +1,9 @@
+```python
+def count(lst):
+    """Count the number of True booleans in the given list."""
+    return sum(1 for item in lst if item is True)
+
+
+# Test
+assert count([True, False, True]) == 2
+```

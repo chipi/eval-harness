@@ -1,0 +1,57 @@
+Here's a self-contained Python script that solves the problem of finding the element that appears only once in a sorted array:
+
+```python
+def search(arr):
+    """
+    Find the element that appears only once in a sorted array.
+    All other elements appear exactly twice.
+    
+    Args:
+        arr: A sorted array where every element appears twice except one.
+    
+    Returns:
+        The element that appears only once.
+    """
+    left, right = 0, len(arr) - 1
+    
+    while left < right:
+        mid = (left + right) // 2
+        
+        # Ensure mid is even so we can compare pairs (mid, mid+1)
+        if mid % 2 == 1:
+            mid -= 1
+        
+        # If the pair (mid, mid+1) matches, the single element is to the right
+        if arr[mid] == arr[mid + 1]:
+            left = mid + 2
+        else:
+            # Otherwise, the single element is at mid or to the left
+            right = mid
+    
+    return arr[left]
+
+
+# Test the function
+assert search([1, 1, 2, 2, 3]) == 3
+assert search([1, 1, 2, 3, 3, 4, 4, 8, 8]) == 2
+assert search([3, 3, 7, 7, 10, 11, 11]) == 10
+assert search([1, 1, 2, 2, 3, 3, 4, 5, 5]) == 4
+assert search([5]) == 5
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Binary search approach**: Since the array is sorted and every element appears twice except one, we can use binary search for O(log n) time complexity.
+
+2. **Key insight**: In a sorted array where pairs are adjacent, before the single element, pairs start at even indices (0, 2, 4, ...). After the single element, this pattern shifts.
+
+3. **Algorithm**:
+   - Pick a middle index and make it even (so we can compare `arr[mid]` with `arr[mid+1]`).
+   - If `arr[mid] == arr[mid+1]`, the pair is intact, meaning the single element is to the **right** — move `left` to `mid + 2`.
+   - Otherwise, the pair is broken, meaning the single element is at `mid` or to the **left** — move `right` to `mid`.
+   - When `left == right`, we've found the single element.
+
+**Time complexity**: O(log n)  
+**Space complexity**: O(1)

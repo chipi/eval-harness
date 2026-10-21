@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def median_trapezium(a, b, h):
+    """
+    Calculate the median length of a trapezium (trapezoid).
+    
+    The median (midsegment) of a trapezoid is the line segment that connects
+    the midpoints of the non-parallel sides. Its length is the average of
+    the lengths of the two parallel sides.
+    
+    Parameters:
+    a (float): Length of one parallel side
+    b (float): Length of the other parallel side
+    h (float): Height of the trapezium (not used in median calculation)
+    
+    Returns:
+    float: The median length of the trapezium
+    """
+    # The median length is the average of the two parallel sides
+    median = (a + b) / 2
+    return median
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = median_trapezium(15, 25, 35)
+    print(f"Median length: {result}")
+    assert median_trapezium(15, 25, 35) == 20, "Test failed!"
+    print("Test passed!")
+    
+    # Additional test cases
+    assert median_trapezium(10, 20, 5) == 15, "Test 2 failed!"
+    assert median_trapezium(0, 10, 5) == 5, "Test 3 failed!"
+    assert median_trapezium(7.5, 12.5, 8) == 10, "Test 4 failed!"
+    print("All tests passed!")
+```
+
+The median (or midsegment) of a trapezoid is simply the average of the lengths of the two parallel sides. The height parameter is included in the function signature to match the test case, but it's not actually needed for the calculation. The function returns `(a + b) / 2`, which gives the correct result of 20 for the test case `median_trapezium(15, 25, 35)`.

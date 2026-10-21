@@ -1,0 +1,16 @@
+```python
+def add_pairwise(tup):
+    """
+    This function calculates the pairwise addition of neighboring elements in a given tuple.
+
+    Args:
+        tup (tuple): A tuple of integers.
+
+    Returns:
+        tuple: A tuple containing the pairwise sum of neighboring elements.
+    """
+    return tuple(tup[i] + tup[i+1] for i in range(len(tup)-1))
+
+# Example usage:
+print(add_pairwise((1, 5, 7, 8, 10)))  # Output: (6, 12, 15, 18)
+```

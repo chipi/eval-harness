@@ -1,0 +1,12 @@
+```python
+import heapq
+from itertools import product
+
+def large_product(nums1, nums2, n):
+    all_products = [a * b for a, b in product(nums1, nums2)]
+    return heapq.nlargest(n, all_products)
+
+# Test
+assert large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3) == [60, 54, 50]
+print("Test passed!")
+```

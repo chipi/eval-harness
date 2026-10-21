@@ -1,0 +1,17 @@
+```python
+def count_same_pair(list1, list2):
+    """
+    Count the number of indices where the two lists have the same values.
+    
+    Args:
+        list1: First list
+        list2: Second list (same length as list1)
+    
+    Returns:
+        Number of indices where list1[i] == list2[i]
+    """
+    return sum(1 for a, b in zip(list1, list2) if a == b)
+
+# Test case
+assert count_same_pair([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 3, 1, 2, 6, 7, 9]) == 4
+```

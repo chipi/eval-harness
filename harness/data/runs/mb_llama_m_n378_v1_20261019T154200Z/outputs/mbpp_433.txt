@@ -1,0 +1,20 @@
+```python
+def check_greater(array, num):
+    """
+    This function checks whether the entered number is greater than all elements of the given array.
+
+    Args:
+        array (list): A list of numbers.
+        num (int): The number to compare with the array elements.
+
+    Returns:
+        bool: True if the number is greater than all elements in the array, False otherwise.
+    """
+    for element in array:
+        if num <= element:
+            return False
+    return True
+
+# Test the function
+assert not check_greater([1, 2, 3, 4, 5], 4)
+```

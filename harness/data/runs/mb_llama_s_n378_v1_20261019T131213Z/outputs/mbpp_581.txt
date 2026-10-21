@@ -1,0 +1,40 @@
+### Surface Area of a Square Pyramid
+
+The surface area of a square pyramid can be calculated using the formula:
+
+`SA = b^2 + 4 * (0.5 * b * s)`
+
+where:
+- `b` is the length of the base edge
+- `s` is the slant height, calculated using the Pythagorean theorem: `s = sqrt((b/2)^2 + h^2)`
+
+Here is a Python function that calculates the surface area:
+
+```python
+import math
+
+def surface_Area(base_edge, height):
+    """
+    Calculate the surface area of a square pyramid.
+
+    Args:
+        base_edge (float): The length of the base edge.
+        height (float): The height of the pyramid.
+
+    Returns:
+        float: The surface area of the pyramid.
+    """
+    # Calculate the slant height
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    
+    # Calculate the surface area
+    surface_area = base_edge ** 2 + 4 * (0.5 * base_edge * slant_height)
+    
+    # Return the surface area
+    return round(surface_area)
+
+# Test the function
+assert surface_Area(3, 4) == 33
+```
+
+This script defines a function `surface_Area` that takes the base edge and height as arguments, calculates the slant height, and then uses it to calculate the surface area. The result is rounded to the nearest integer. The function is then tested with the provided assertion.

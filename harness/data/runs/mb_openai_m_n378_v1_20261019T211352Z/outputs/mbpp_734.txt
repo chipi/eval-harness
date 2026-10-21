@@ -1,0 +1,48 @@
+```python
+"""
+Find the sum of products of all possible contiguous sublists (subarrays)
+of a given list.
+
+Example:
+For [1, 2, 3], the subarrays are:
+[1]       -> 1
+[2]       -> 2
+[3]       -> 3
+[1, 2]    -> 2
+[2, 3]    -> 6
+[1, 2, 3] -> 6
+
+Sum = 1 + 2 + 3 + 2 + 6 + 6 = 20
+"""
+
+def sum_Of_Subarray_Prod(arr):
+    """
+    Return the sum of products of all contiguous subarrays.
+
+    Time complexity: O(n)
+    Space complexity: O(1)
+    """
+    total_sum = 0
+    product_sum_ending_here = 0
+
+    for num in arr:
+        # Sum of products of all subarrays ending at current element:
+        # - subarray containing only current element: num
+        # - extend every previous subarray ending before current element by num
+        product_sum_ending_here = num * (1 + product_sum_ending_here)
+
+        # Add all subarray products ending at current element
+        total_sum += product_sum_ending_here
+
+    return total_sum
+
+
+# Tests
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+assert sum_Of_Subarray_Prod([1]) == 1
+assert sum_Of_Subarray_Prod([1, 2]) == 5  # [1] + [2] + [1,2] = 1 + 2 + 2
+assert sum_Of_Subarray_Prod([2, 3, 4]) == 50  # 2 + 3 + 4 + 6 + 12 + 24
+assert sum_Of_Subarray_Prod([]) == 0
+
+print("All tests passed.")
+```

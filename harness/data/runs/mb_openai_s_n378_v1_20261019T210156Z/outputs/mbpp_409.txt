@@ -1,0 +1,34 @@
+```python
+def min_product_tuple(tuples_list):
+    """
+    Return the minimum product among all pairs of tuples in the list,
+    where the product of a pair is defined as:
+        (a1, b1) and (a2, b2) -> a1*a2 + b1*b2
+
+    Example:
+        [(2, 7), (2, 6), (1, 8), (4, 9)]
+        Minimum product = 2*1 + 6*8 = 50?  <-- not matching the prompt
+
+    The example assertion in the prompt suggests a different interpretation:
+    the minimum product is the minimum of the products of individual tuple
+    elements, i.e. min(a*b for each tuple).
+
+    To match the provided assertion:
+        (2, 7) -> 14
+        (2, 6) -> 12
+        (1, 8) -> 8
+        (4, 9) -> 36
+        minimum = 8
+    """
+    if not tuples_list:
+        raise ValueError("Input list must not be empty.")
+
+    return min(a * b for a, b in tuples_list)
+
+
+# Example usage / test
+assert min_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 8
+
+if __name__ == "__main__":
+    print(min_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]))
+```

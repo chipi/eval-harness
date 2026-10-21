@@ -1,0 +1,23 @@
+```python
+def test_duplicate(arr):
+    """
+    Find whether a given array of integers contains any duplicate element.
+    
+    Args:
+        arr: A list of integers
+        
+    Returns:
+        True if there are duplicates, False otherwise
+    """
+    return len(arr) != len(set(arr))
+
+
+# Test cases
+if __name__ == "__main__":
+    assert test_duplicate([1, 2, 3, 4, 5]) == False
+    assert test_duplicate([1, 2, 3, 4, 1]) == True
+    assert test_duplicate([]) == False
+    assert test_duplicate([1]) == False
+    assert test_duplicate([1, 1]) == True
+    print("All tests passed!")
+```

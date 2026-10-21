@@ -1,0 +1,11 @@
+```python
+def remove_dirty_chars(s1, s2):
+    """Remove characters from s1 that are present in s2."""
+    dirty_set = set(s2)
+    return ''.join(ch for ch in s1 if ch not in dirty_set)
+
+
+# Test
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+print("All tests passed!")
+```

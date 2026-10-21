@@ -1,0 +1,14 @@
+```python
+def dict_depth(d):
+    if isinstance(d, dict):
+        if not d:
+            return 1
+        return 1 + max(dict_depth(v) for v in d.values())
+    return 0
+
+# Test
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+
+if __name__ == "__main__":
+    print(dict_depth({'a':1, 'b': {'c': {'d': {}}}}))
+```

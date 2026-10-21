@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_perfect_square(n):
+    """
+    Check whether the given number is a perfect square or not.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        bool: True if n is a perfect square, False otherwise
+    """
+    if n < 0:
+        return False
+    
+    # Use integer square root method
+    sqrt = int(n ** 0.5)
+    return sqrt * sqrt == n
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert not is_perfect_square(10)
+    
+    # Additional test cases
+    assert is_perfect_square(0)
+    assert is_perfect_square(1)
+    assert is_perfect_square(4)
+    assert is_perfect_square(9)
+    assert is_perfect_square(16)
+    assert is_perfect_square(25)
+    assert not is_perfect_square(2)
+    assert not is_perfect_square(3)
+    assert not is_perfect_square(8)
+    assert not is_perfect_square(-4)
+    
+    print("All tests passed!")
+```
+
+The function works by:
+1. First checking if the number is negative (negative numbers can't be perfect squares)
+2. Computing the integer square root using `int(n ** 0.5)`
+3. Checking if squaring that integer gives back the original number
+
+This approach is efficient and handles edge cases like negative numbers and zero correctly.

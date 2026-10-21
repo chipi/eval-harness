@@ -1,0 +1,31 @@
+```python
+def is_samepatterns(words, patterns):
+    """
+    Check whether `words` follows the same pattern as `patterns`.
+
+    Two sequences follow the same pattern if there is a one-to-one mapping
+    between elements of the first list and elements of the second list.
+    """
+    if len(words) != len(patterns):
+        return False
+
+    w_to_p = {}
+    p_to_w = {}
+
+    for w, p in zip(words, patterns):
+        # Check consistency of mapping in both directions
+        if w in w_to_p and w_to_p[w] != p:
+            return False
+        if p in p_to_w and p_to_w[p] != w:
+            return False
+
+        w_to_p[w] = p
+        p_to_w[p] = w
+
+    return True
+
+
+if __name__ == "__main__":
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    print("All tests passed.")
+```

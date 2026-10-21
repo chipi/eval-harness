@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def freq_count(lst):
+    frequency = {}
+    for item in lst:
+        if item in frequency:
+            frequency[item] += 1
+        else:
+            frequency[item] = 1
+    return frequency
+
+# Test the function
+assert freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30]) == {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+print("Test passed!")
+```
+
+This script:
+1. Defines a `freq_count` function that takes a list as input
+2. Creates an empty dictionary to store frequencies
+3. Iterates through each item in the list, incrementing the count if the item exists in the dictionary or initializing it to 1 if it doesn't
+4. Returns the frequency dictionary
+5. Includes the test case from the problem statement to verify the function works correctly
+
+The function will work with any list of hashable elements (numbers, strings, tuples, etc.).

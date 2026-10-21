@@ -1,0 +1,46 @@
+```python
+def largest_subset(nums):
+    """
+    Find the size of the largest subset of a list of numbers so that every pair is divisible.
+    
+    A subset where every pair (a, b) satisfies either a % b == 0 or b % a == 0.
+    
+    Approach:
+    - Sort the numbers.
+    - Use dynamic programming similar to Longest Divisible Subset problem.
+    - dp[i] = length of the largest divisible subset ending with nums[i].
+    - For each i, check all j < i: if nums[i] % nums[j] == 0, then we can extend the subset ending at j.
+    - The answer is the maximum value in dp.
+    
+    Note: This works because if we have a sorted sequence and each element divides the next,
+    then by transitivity, every earlier element divides every later element in the chain.
+    However, the condition "every pair is divisible" means for any two elements a and b in the subset,
+    one must divide the other. In a sorted subset where each consecutive pair has divisibility,
+    it doesn't automatically guarantee all pairs are divisible unless we ensure the chain property.
+    
+    Actually, the standard approach for "largest divisible subset" uses the fact that if we sort
+    and build a chain where each new element is divisible by the previous, then due to transitivity
+    of divisibility in such chains (if a|b and b|c then a|c), all pairs in the chain will satisfy
+    the divisibility condition. So this DP approach correctly finds the largest subset where
+    every pair is divisible.
+    """
+    if not nums:
+        return 0
+    
+    nums_sorted = sorted(nums)
+    n = len(nums_sorted)
+    
+    # dp[i] represents the size of the largest divisible subset ending at index i
+    dp = [1] * n
+    
+    for i in range(1, n):
+        for j in range(i):
+            if nums_sorted[i] % nums_sorted[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+    
+    return max(dp)
+
+
+# Test case
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+```

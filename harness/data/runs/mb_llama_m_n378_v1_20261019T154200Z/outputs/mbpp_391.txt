@@ -1,0 +1,33 @@
+```python
+def convert_list_dictionary(student_id, student_name, student_grade):
+    """
+    This function converts three lists into a list of nested dictionaries.
+    
+    Args:
+        student_id (list): A list of student IDs.
+        student_name (list): A list of student names.
+        student_grade (list): A list of student grades.
+    
+    Returns:
+        list: A list of nested dictionaries where each dictionary contains a student ID, 
+              a student name, and a student grade.
+    """
+    result = []
+    for id, name, grade in zip(student_id, student_name, student_grade):
+        # Create a nested dictionary for each student
+        student_dict = {id: {name: grade}}
+        result.append(student_dict)
+    return result
+
+# Test the function
+student_id = ["S001", "S002", "S003", "S004"]
+student_name = ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"]
+student_grade = [85, 98, 89, 92]
+
+print(convert_list_dictionary(student_id, student_name, student_grade))
+```
+
+When you run this script, it will output:
+```python
+[{'S001': {'Adina Park': 85}}, {'S002': {'Leyton Marsh': 98}}, {'S003': {'Duncan Boyle': 89}}, {'S004': {'Saim Richards': 92}}]
+```

@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tetrahedral_number(n):
+    """
+    Find the nth tetrahedral number.
+    
+    A tetrahedral number is the sum of the first n triangular numbers,
+    and can be calculated using the formula: n * (n + 1) * (n + 2) / 6
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The nth tetrahedral number
+    """
+    return n * (n + 1) * (n + 2) // 6
+
+
+# Test the function
+if __name__ == "__main__":
+    assert tetrahedral_number(5) == 35
+    print("Test passed! tetrahedral_number(5) =", tetrahedral_number(5))
+```
+
+The tetrahedral number formula is derived from the sum of the first n triangular numbers. The formula `n * (n + 1) * (n + 2) / 6` gives the nth tetrahedral number. For n=5, this gives 5 * 6 * 7 / 6 = 210 / 6 = 35, which matches the expected result.

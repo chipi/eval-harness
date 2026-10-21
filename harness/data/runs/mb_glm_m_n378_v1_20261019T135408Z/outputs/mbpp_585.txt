@@ -1,0 +1,65 @@
+Here's a self-contained Python script that solves the problem of finding the n most expensive items in a given dataset:
+
+```python
+def expensive_items(items, n):
+    """
+    Find the n most expensive items in a given dataset.
+    
+    Args:
+        items (list): A list of dictionaries, each containing 'name' and 'price' keys.
+        n (int): The number of most expensive items to return.
+    
+    Returns:
+        list: A list of the n most expensive items, sorted in descending order of price.
+    """
+    # Sort the items by price in descending order
+    sorted_items = sorted(items, key=lambda x: x['price'], reverse=True)
+    
+    # Return the top n items
+    return sorted_items[:n]
+
+# Test cases
+def test_expensive_items():
+    # Test case 1
+    items1 = [{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}]
+    assert expensive_items(items1, 1) == [{'name': 'Item-2', 'price': 555.22}]
+    
+    # Test case 2: Multiple items
+    items2 = [
+        {'name': 'Item-1', 'price': 101.1},
+        {'name': 'Item-2', 'price': 555.22},
+        {'name': 'Item-3', 'price': 300.0},
+        {'name': 'Item-4', 'price': 200.0}
+    ]
+    assert expensive_items(items2, 2) == [
+        {'name': 'Item-2', 'price': 555.22},
+        {'name': 'Item-3', 'price': 300.0}
+    ]
+    
+    # Test case 3: n larger than list length
+    items3 = [{'name': 'Item-1', 'price': 101.1}]
+    assert expensive_items(items3, 5) == [{'name': 'Item-1', 'price': 101.1}]
+    
+    # Test case 4: Empty list
+    items4 = []
+    assert expensive_items(items4, 3) == []
+    
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_expensive_items()
+```
+
+### Explanation:
+1. **Function `expensive_items`**:
+   - Takes a list of dictionaries (`items`) and an integer `n` as input.
+   - Sorts the items by their 'price' in descending order using Python's built-in `sorted` function with a lambda key.
+   - Returns the top `n` items from the sorted list.
+
+2. **Test Cases**:
+   - **Test Case 1**: Checks the basic functionality with the provided example.
+   - **Test Case 2**: Tests with multiple items to ensure the top 2 are returned correctly.
+   - **Test Case 3**: Tests when `n` is larger than the number of items in the list.
+   - **Test Case 4**: Tests with an empty list to ensure it returns an empty list.
+
+The script is self-contained and includes test cases to verify the correctness of the solution. The test cases are run when the script is executed directly.

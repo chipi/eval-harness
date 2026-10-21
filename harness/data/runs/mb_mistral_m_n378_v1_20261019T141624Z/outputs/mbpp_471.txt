@@ -1,0 +1,20 @@
+```python
+def find_remainder(arr, n):
+    """
+    Calculate the product of all elements in the array modulo n.
+
+    Args:
+        arr: List of integers
+        n: Integer to take modulo with
+
+    Returns:
+        The product of all array elements modulo n
+    """
+    product = 1
+    for num in arr:
+        product = (product * num) % n
+    return product
+
+# Test the function
+assert find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+```

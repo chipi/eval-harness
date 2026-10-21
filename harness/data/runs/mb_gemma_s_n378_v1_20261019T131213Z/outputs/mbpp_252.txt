@@ -1,0 +1,24 @@
+```python
+import cmath
+
+def convert(z):
+  """
+  Converts a complex number to polar coordinates (r, phi).
+
+  Args:
+    z: A complex number.
+
+  Returns:
+    A tuple (r, phi) where r is the magnitude and phi is the phase angle in radians.
+  """
+  r = abs(z)
+  phi = cmath.phase(z)
+  return (r, phi)
+
+#assert convert(1) == (1.0, 0.0) #This assertion fails because the expected output is a float, not an int.
+assert convert(1) == (1.0, 0.0)
+assert convert(1+1j) == (1.4142135623730951, 0.7853981633974483)
+assert convert(0+1j) == (1.0, 1.5707963267948966)
+assert convert(-1) == (1.0, 3.141592653589793)
+assert convert(-1-1j) == (1.4142135623730951, -2.356194490192345)
+```

@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_list(list_a, list_b):
+    """
+    Takes two lists of equal length and returns a new list where each element
+    is the sum of the corresponding elements from the input lists.
+    
+    Args:
+        list_a: First list of numbers
+        list_b: Second list of numbers
+    
+    Returns:
+        A new list containing element-wise sums
+    """
+    return [a + b for a, b in zip(list_a, list_b)]
+
+
+# Test the function
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+print("Test passed!")
+print(sum_list([10, 20, 30], [15, 25, 35]))
+```
+
+**How it works:**
+
+- `zip(list_a, list_b)` pairs up elements from both lists: `(10, 15), (20, 25), (30, 35)`.
+- The list comprehension `[a + b for a, b in zip(...)]` adds each pair together.
+- The result is a new list `[25, 45, 65]`.
+
+**Note:** If the two lists have different lengths, `zip` will stop at the shorter one. If you want to enforce equal lengths, you could add a check:
+
+```python
+def sum_list(list_a, list_b):
+    if len(list_a) != len(list_b):
+        raise ValueError("Lists must have the same length")
+    return [a + b for a, b in zip(list_a, list_b)]
+```

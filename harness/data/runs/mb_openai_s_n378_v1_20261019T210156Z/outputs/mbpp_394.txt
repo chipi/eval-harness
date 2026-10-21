@@ -1,0 +1,14 @@
+```python
+def check_distinct(tpl):
+    """
+    Return True if the tuple contains no duplicates, otherwise False.
+    """
+    return len(tpl) == len(set(tpl))
+
+
+# Example usage / test
+if __name__ == "__main__":
+    assert check_distinct((1, 4, 5, 6, 1, 4)) == False
+    assert check_distinct((1, 2, 3, 4)) == True
+    print("All tests passed.")
+```

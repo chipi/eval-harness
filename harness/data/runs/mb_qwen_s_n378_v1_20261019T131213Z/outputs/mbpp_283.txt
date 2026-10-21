@@ -1,0 +1,26 @@
+```python
+def validate(n):
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n (int): The integer to check.
+        
+    Returns:
+        bool: True if for every digit d in n, the count of d in n is <= d, False otherwise.
+    """
+    # Convert to string to handle digits easily
+    s = str(abs(n))
+    
+    # Count frequency of each digit
+    from collections import Counter
+    freq = Counter(s)
+    
+    # Check condition for each digit present
+    for digit_char, count in freq.items():
+        digit = int(digit_char)
+        if count > digit:
+            return False
+    
+    return True
+```

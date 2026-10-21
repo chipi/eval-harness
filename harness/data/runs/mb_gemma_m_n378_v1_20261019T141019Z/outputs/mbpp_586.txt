@@ -1,0 +1,30 @@
+```python
+def split_Arr(arr, n):
+    """
+    Splits a list at the nth element and moves the first part to the end.
+    
+    Args:
+        arr (list): The input list to be split.
+        n (int): The index at which to split the list.
+        
+    Returns:
+        list: The rearranged list.
+    """
+    # The slice arr[:n] gets elements from index 0 to n-1
+    # The slice arr[n:] gets elements from index n to the end
+    # We concatenate the second part with the first part
+    return arr[n:] + arr[:n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [12, 10, 5, 6, 52, 36]
+    n = 2
+    result = split_Arr(test_list, n)
+    
+    print(f"Input: {test_list}, n: {n}")
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == [5, 6, 52, 36, 12, 10], f"Expected [5, 6, 52, 36, 12, 10], but got {result}"
+    print("Assertion passed!")
+```

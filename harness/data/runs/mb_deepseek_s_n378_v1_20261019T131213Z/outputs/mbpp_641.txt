@@ -1,0 +1,28 @@
+```python
+def is_nonagonal(n: int) -> int:
+    """
+    Returns the nth nonagonal number.
+    
+    The formula for the nth nonagonal number is:
+        N_n = n * (7n - 5) / 2
+    
+    Parameters:
+    n (int): The position in the sequence (1-indexed).
+    
+    Returns:
+    int: The nth nonagonal number.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    return n * (7 * n - 5) // 2
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert is_nonagonal(10) == 325, "Test failed for n=10"
+    print("Test passed: is_nonagonal(10) =", is_nonagonal(10))
+    
+    # Additional tests for verification
+    print("First 10 nonagonal numbers:")
+    for i in range(1, 11):
+        print(f"N_{i} = {is_nonagonal(i)}")
+```

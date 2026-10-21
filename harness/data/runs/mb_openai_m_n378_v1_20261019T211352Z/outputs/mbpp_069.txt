@@ -1,0 +1,28 @@
+```python
+def is_sublist(lst, sublst):
+    """
+    Return True if sublst appears in lst as a contiguous sublist, otherwise False.
+    """
+    if not sublst:
+        return True
+
+    n = len(lst)
+    m = len(sublst)
+
+    if m > n:
+        return False
+
+    for i in range(n - m + 1):
+        if lst[i:i + m] == sublst:
+            return True
+
+    return False
+
+
+# Example test
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+assert is_sublist([2, 4, 3, 5, 7], [3, 5]) == True
+assert is_sublist([1, 2, 3], []) == True
+
+print("All tests passed.")
+```

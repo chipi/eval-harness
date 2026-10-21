@@ -1,0 +1,27 @@
+```python
+def closest_num(n):
+    """
+    Finds the closest smaller number than n.
+    
+    Args:
+        n (int/float): The input number.
+        
+    Returns:
+        int/float: The largest number less than n.
+    """
+    # If n is an integer, the closest smaller integer is n - 1.
+    # If n is a float, the closest smaller number depends on the precision required,
+    # but mathematically, for any real number, there is no "closest" smaller number 
+    # because you can always subtract a smaller epsilon.
+    # However, in the context of discrete programming problems (like the assert provided),
+    # it implies finding the predecessor in the set of integers.
+    return n - 1
+
+if __name__ == "__main__":
+    # Test cases
+    assert closest_num(11) == 10
+    assert closest_num(0) == -1
+    assert closest_num(-5) == -6
+    
+    print("All tests passed!")
+```

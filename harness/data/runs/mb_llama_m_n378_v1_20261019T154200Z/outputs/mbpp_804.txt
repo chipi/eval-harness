@@ -1,0 +1,38 @@
+```python
+def is_product_even(numbers):
+    """
+    Checks whether the product of numbers in a list is even or not.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        bool: True if the product is even, False otherwise.
+    """
+    product = 1
+    for num in numbers:
+        product *= num
+    return product % 2 == 0
+
+# Test the function
+print(is_product_even([1,2,3]))  # Expected output: True
+```
+
+However, a more efficient solution can be achieved by checking for the presence of at least one even number in the list, as the product of any number of integers is even if at least one of the integers is even.
+
+```python
+def is_product_even(numbers):
+    """
+    Checks whether the product of numbers in a list is even or not.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        bool: True if the product is even, False otherwise.
+    """
+    return any(num % 2 == 0 for num in numbers)
+
+# Test the function
+print(is_product_even([1,2,3]))  # Expected output: True
+```

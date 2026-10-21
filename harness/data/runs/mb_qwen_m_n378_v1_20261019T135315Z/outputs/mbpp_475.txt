@@ -1,0 +1,21 @@
+```python
+def sort_counter(d: dict) -> list:
+    """
+    Sort a dictionary by its values in descending order.
+    
+    Args:
+        d: A dictionary with comparable values
+        
+    Returns:
+        A list of tuples sorted by value in descending order
+    """
+    return sorted(d.items(), key=lambda item: item[1], reverse=True)
+
+
+if __name__ == "__main__":
+    # Test the function with the provided example
+    result = sort_counter({'Math': 81, 'Physics': 83, 'Chemistry': 87})
+    expected = [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("All tests passed!")
+```

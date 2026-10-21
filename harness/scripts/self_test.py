@@ -824,6 +824,72 @@ def test_resume_scores_and_persists() -> None:
               and (fx_m.get("resume") or {}).get("replayed_without_recorded_extra") == 0,
               f"resume note: {fx_m.get('resume')}")
 
+    # --concurrency OVERLAPS CALLS AND CHANGES NOTHING ELSE. Refused for an adapter that does
+    # not list the arm's provider in CONCURRENT_PROVIDERS; where allowed, the calls really
+    # overlap, and predictions are the one-at-a-time run's, in the same order.
+    rc_ref = run("scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_conc_refused",
+                 "--concurrency", "4", env={**env, "FX_PASS": "1"})
+    check("concurrency: refused for an adapter without CONCURRENT_PROVIDERS",
+          rc_ref.returncode != 0 and "CONCURRENT_PROVIDERS" in (rc_ref.stderr or "") + (rc_ref.stdout or ""),
+          ((rc_ref.stderr or "") + (rc_ref.stdout or ""))[-200:])
+    (fx / "fx_conc_adapter.py").write_text(
+        "import threading, time\n"
+        "from dataclasses import dataclass, field\n"
+        "from typing import Any, Dict, Optional\n"
+        "PRIMARY_METRIC = 'words'\n"
+        "METRIC_KINDS = {'words': 'quality', 'inflight': 'descriptive'}\n"
+        "CONCURRENT_PROVIDERS = ('fixture',)\n"
+        "_LOCK = threading.Lock()\n"
+        "_N = [0]\n"
+        "@dataclass\n"
+        "class Result:\n"
+        "    output: str\n"
+        "    cost_usd: Optional[float] = 0.0\n"
+        "    latency_ms: Optional[float] = None\n"
+        "    tokens_in: Optional[int] = None\n"
+        "    tokens_out: Optional[int] = None\n"
+        "    extra: Dict[str, float] = field(default_factory=dict)\n"
+        "    meta: Dict[str, Any] = field(default_factory=dict)\n"
+        "def call_system(text, params):\n"
+        "    with _LOCK:\n"
+        "        _N[0] += 1\n"
+        "        now = _N[0]\n"
+        "    time.sleep(0.05)\n"
+        "    with _LOCK:\n"
+        "        _N[0] -= 1\n"
+        "    return Result(output=text[:60], extra={'inflight': float(now)})\n"
+        "def score(output, reference):\n"
+        "    return {'words': float(len(output.split()))}\n"
+    )
+    (fx / "arm_conc.yaml").write_text(
+        "config_id: fx_conc_v1\ndataset_id: smoke_v1\nadapter: fx_conc_adapter.py\n"
+        "params:\n  provider: fixture\n"
+    )
+    cfg_c = str((fx / "arm_conc.yaml").relative_to(HERE.parent))
+    rs = run("scripts/experiment_run.py", "--config", cfg_c, "--run-id", "fx_conc_seq", env=env)
+    rp = run("scripts/experiment_run.py", "--config", cfg_c, "--run-id", "fx_conc_par",
+             "--concurrency", "4", env=env)
+    if rs.returncode != 0 or rp.returncode != 0:
+        check("concurrency: both runs complete", False,
+              ((rp.stderr or "") + (rp.stdout or "") + (rs.stderr or ""))[-300:])
+    else:
+        def _rows(rid):
+            return [_json.loads(l) for l in (runs / rid / "predictions.jsonl").read_text().splitlines()
+                    if l.strip()]
+        seq, par = _rows("fx_conc_seq"), _rows("fx_conc_par")
+        strip = lambda r: {k: v for k, v in r.items() if k not in ("latency_ms", "inflight", "_extra")}
+        check("concurrency: predictions equal the one-at-a-time run's, in dataset order",
+              [strip(r) for r in seq] == [strip(r) for r in par] and len(par) > 1,
+              f"{len(seq)} vs {len(par)} rows")
+        check("concurrency: the calls really overlap (more than one in flight)",
+              max(r.get("inflight", 0) for r in par) > 1
+              and max(r.get("inflight", 0) for r in seq) == 1,
+              f"max in flight: par {max(r.get('inflight', 0) for r in par)}, "
+              f"seq {max(r.get('inflight', 0) for r in seq)}")
+        m_par = _json.loads((runs / "fx_conc_par" / "metrics.json").read_text())
+        check("concurrency: the run records it", m_par.get("concurrency") == 4,
+              f"metrics concurrency={m_par.get('concurrency')}")
+
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.

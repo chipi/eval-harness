@@ -1,0 +1,16 @@
+```python
+def drop_empty(d):
+    """
+    Return a new dictionary with entries removed where the value is None.
+    
+    Example:
+    >>> drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None})
+    {'c1': 'Red', 'c2': 'Green'}
+    """
+    return {k: v for k, v in d.items() if v is not None}
+
+
+if __name__ == "__main__":
+    assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+    print("All tests passed.")
+```

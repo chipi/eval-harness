@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to check whether a list of numbers contains only one distinct element or not.
+assert unique_Element([1,1,1]) == True
+"""
+
+def unique_Element(lst):
+    """
+    Check whether a list contains only one distinct element.
+    
+    Args:
+        lst: A list of numbers.
+    
+    Returns:
+        True if all elements in the list are the same, False otherwise.
+    """
+    if not lst:
+        return False
+    return all(x == lst[0] for x in lst)
+
+
+# Test cases
+assert unique_Element([1, 1, 1]) == True
+assert unique_Element([1, 2, 1]) == False
+assert unique_Element([5]) == True
+assert unique_Element([2, 2, 2, 2]) == True
+assert unique_Element([1, 1, 2]) == False
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function first checks if the list is empty — an empty list has no distinct elements, so it returns `False`.
+2. It then compares every element in the list to the first element (`lst[0]`) using `all()`. If all elements match the first one, the list contains only one distinct element and returns `True`; otherwise, it returns `False`.
+
+**Alternative approach** (using `set`):
+
+```python
+def unique_Element(lst):
+    return len(set(lst)) == 1
+```
+
+This is more concise but creates a set, which uses extra memory. The first approach is more memory-efficient since it short-circuits on the first mismatch.

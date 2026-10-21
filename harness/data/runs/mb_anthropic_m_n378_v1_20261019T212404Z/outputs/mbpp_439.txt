@@ -1,0 +1,6 @@
+```python
+def multiple_to_single(lst):
+    return int("".join(str(x) for x in lst))
+
+assert multiple_to_single([11, 33, 50]) == 113350
+```

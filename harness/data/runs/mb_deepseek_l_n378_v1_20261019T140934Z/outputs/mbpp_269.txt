@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def ascii_value(char):
+    """
+    Find the ASCII value of a character.
+    
+    Args:
+        char: A single character string
+    
+    Returns:
+        int: The ASCII value of the character
+    """
+    return ord(char)
+
+# Test the function
+if __name__ == "__main__":
+    assert ascii_value('A') == 65
+    print("Test passed! ASCII value of 'A' is", ascii_value('A'))
+```
+
+The function uses Python's built-in `ord()` function, which returns the Unicode code point (which is the same as ASCII for ASCII characters) of a given character. The assertion test confirms that the ASCII value of 'A' is indeed 65.

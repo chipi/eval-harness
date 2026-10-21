@@ -1,0 +1,31 @@
+```python
+def newman_prime(n):
+    """Return the nth prime in the Newman–Shanks–Williams sequence (1-indexed)."""
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+
+    def is_prime(value):
+        if value < 2:
+            return False
+        if value % 2 == 0:
+            return value == 2
+        divisor = 3
+        while divisor * divisor <= value:
+            if value % divisor == 0:
+                return False
+            divisor += 2
+        return True
+
+    # The sequence starts 1, 1, 3, 7, 17, ...
+    previous, current = 1, 1
+    count = 0
+    while True:
+        if is_prime(current):
+            count += 1
+            if count == n:
+                return current
+        previous, current = current, 2 * current + previous
+
+
+assert newman_prime(3) == 7
+```

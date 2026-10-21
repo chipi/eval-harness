@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def closest_num(n):
+    """
+    Find the closest smaller number than n.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The closest smaller number than n
+    """
+    return n - 1
+
+# Test the function
+if __name__ == "__main__":
+    assert closest_num(11) == 10
+    print("Test passed!")
+```
+
+The function simply returns `n - 1`, which is the closest smaller number than `n`. The assertion `closest_num(11) == 10` verifies that the function works correctly.

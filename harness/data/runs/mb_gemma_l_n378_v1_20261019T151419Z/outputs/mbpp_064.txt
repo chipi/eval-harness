@@ -1,0 +1,24 @@
+```python
+def subject_marks(marks):
+    """
+    Sorts a list of tuples based on the second element (the mark) 
+    in ascending order.
+    """
+    # The key parameter allows us to specify a function to be called on 
+    # each list element before making comparisons. 
+    # lambda x: x[1] tells Python to sort by the second item of the tuple.
+    return sorted(marks, key=lambda x: x[1])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = [('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]
+    expected_output = [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+    
+    result = subject_marks(input_data)
+    
+    # Assertion to verify the correctness
+    assert result == expected_output
+    print("Test passed!")
+    print(f"Input: {input_data}")
+    print(f"Sorted: {result}")
+```

@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def capital_words_spaces(s):
+    """
+    Put spaces between words starting with capital letters in a given string.
+    
+    Args:
+        s (str): Input string with words concatenated, each starting with a capital letter.
+    
+    Returns:
+        str: String with spaces inserted before each capital letter (except the first).
+    """
+    result = ""
+    for i, char in enumerate(s):
+        if i > 0 and char.isupper():
+            result += " " + char
+        else:
+            result += char
+    return result
+
+# Test the function
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("HelloWorld") == 'Hello World'
+assert capital_words_spaces("ThisIsATest") == 'This Is A Test'
+assert capital_words_spaces("") == ''
+assert capital_words_spaces("ABC") == 'A B C'
+
+print("All tests passed!")
+```
+
+The function works by iterating through each character in the string. When it encounters a capital letter that isn't the first character, it adds a space before it. This effectively separates words that start with capital letters.

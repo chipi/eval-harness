@@ -1,0 +1,22 @@
+```python
+def find_solution(a, b, n):
+    """
+    Write a function that returns integers x and y that satisfy ax + by = n as a tuple, or return None if no solution exists.
+    assert find_solution(2, 3, 7) == (2, 1)
+    """
+    def extended_gcd(a, b):
+        if a == 0:
+            return b, 0, 1
+        d, x1, y1 = extended_gcd(b % a, a)
+        x = y1 - (b // a) * x1
+        y = x1
+        return d, x, y
+
+    d, x0, y0 = extended_gcd(a, b)
+    if n % d != 0:
+        return None
+    else:
+        x = x0 * (n // d)
+        y = y0 * (n // d)
+        return (x, y)
+```

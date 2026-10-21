@@ -1,0 +1,29 @@
+```python
+def sequential_search(arr, target):
+    """
+    Searches for an element in an array sequentially.
+
+    Args:
+        arr: The array (list) to search through.
+        target: The element to search for.
+
+    Returns:
+        A tuple (bool, int) where the bool indicates if the element
+        was found, and the int is the index of the element (or -1
+        if not found).
+    """
+    for index, value in enumerate(arr):
+        if value == target:
+            return (True, index)
+    return (False, -1)
+
+
+if __name__ == "__main__":
+    assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+    assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 100) == (False, -1)
+    assert sequential_search([], 5) == (False, -1)
+    assert sequential_search([5], 5) == (True, 0)
+    assert sequential_search([1, 2, 3], 3) == (True, 2)
+
+    print("All test cases passed!")
+```

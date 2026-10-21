@@ -1,0 +1,22 @@
+```python
+def sum_in_range(l, r):
+    """
+    Return the sum of all odd natural numbers in the inclusive range [l, r].
+
+    Example:
+        sum_in_range(2, 5) -> 3 + 5 = 8
+    """
+    if l > r:
+        l, r = r, l
+
+    total = 0
+    for n in range(l, r + 1):
+        if n > 0 and n % 2 == 1:
+            total += n
+    return total
+
+
+if __name__ == "__main__":
+    assert sum_in_range(2, 5) == 8
+    print("All tests passed.")
+```

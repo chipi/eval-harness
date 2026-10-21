@@ -1,0 +1,39 @@
+```python
+"""
+Write a function to rotate a given list by specified number of items to the right direction.
+https://www.geeksforgeeks.org/python-program-right-rotate-list-n/
+
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+"""
+
+
+def rotate_right(lst, n):
+    """
+    Rotate `lst` to the right by `n` positions and return the new list.
+
+    The last `n` items move to the front, preserving their order.
+    """
+    if not lst:
+        return []
+
+    # Normalize n so it works for n greater than len(lst) and for negative n
+    n %= len(lst)
+
+    return lst[-n:] + lst[:-n] if n else lst[:]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+
+    # Extra sanity checks
+    assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2) == [9, 10, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5) == [6, 7, 8, 9, 10, 1, 2, 3, 4, 5]
+    assert rotate_right([1, 2, 3], 0) == [1, 2, 3]
+    assert rotate_right([1, 2, 3], 3) == [1, 2, 3]
+    assert rotate_right([1, 2, 3], 4) == [3, 1, 2]
+    assert rotate_right([], 3) == []
+
+    print("All tests passed!")
+    print(rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3))
+```

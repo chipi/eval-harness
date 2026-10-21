@@ -1,0 +1,40 @@
+```python
+from typing import List, Any
+
+def combinations_list(items: List[Any]) -> List[List[Any]]:
+    """
+    Return all possible combinations (the power set) of the given list.
+
+    The order matches the example:
+    - Start with []
+    - Then combinations including the first element
+    - Then the second, and so on
+    """
+    result = [[]]
+    for item in items:
+        # For each existing subset, create a new subset with the current item added.
+        result += [subset + [item] for subset in result]
+    return result
+
+
+if __name__ == "__main__":
+    assert combinations_list(['orange', 'red', 'green', 'blue']) == [
+        [],
+        ['orange'],
+        ['red'],
+        ['red', 'orange'],
+        ['green'],
+        ['green', 'orange'],
+        ['green', 'red'],
+        ['green', 'red', 'orange'],
+        ['blue'],
+        ['blue', 'orange'],
+        ['blue', 'red'],
+        ['blue', 'red', 'orange'],
+        ['blue', 'green'],
+        ['blue', 'green', 'orange'],
+        ['blue', 'green', 'red'],
+        ['blue', 'green', 'red', 'orange']
+    ]
+    print("All tests passed.")
+```

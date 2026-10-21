@@ -1,0 +1,18 @@
+Here's a self-contained Python script that solves the problem by dropping empty items (including `None` values) from a given dictionary:
+
+```python
+def drop_empty(dictionary):
+    """Drop empty items (None, empty strings, empty lists, etc.) from a dictionary."""
+    return {k: v for k, v in dictionary.items() if v is not None and v != '' and v != []}
+
+# Test case
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+```
+
+This solution:
+1. Uses a dictionary comprehension to filter out items
+2. Checks for `None` values, empty strings (`''`), and empty lists (`[]`)
+3. Returns a new dictionary with only the non-empty items
+4. Includes the provided test case as an assertion
+
+The function will work for the given example and also handle other empty-like values. If you specifically only want to drop `None` values (as implied by the example), you could simplify the condition to just `if v is not None`.

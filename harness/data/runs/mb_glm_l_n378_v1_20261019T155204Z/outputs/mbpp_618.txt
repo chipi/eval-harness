@@ -1,0 +1,21 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def div_list(list1, list2):
+    """
+    Divides two lists element-wise.
+    
+    Args:
+        list1 (list): The list of numerators.
+        list2 (list): The list of denominators.
+        
+    Returns:
+        list: A new list containing the element-wise division of list1 by list2.
+    """
+    return [a / b for a, b in zip(list1, list2)]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+    print("Test passed successfully!")
+```

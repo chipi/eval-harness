@@ -1,0 +1,78 @@
+```python
+"""
+Write a function that takes an array and finds the maximum sum of a bitonic subsequence for the given array, where a sequence is bitonic if it is first increasing and then decreasing.
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+"""
+
+def max_sum(arr: list[int]) -> int:
+    """
+    Calculates the maximum sum of a bitonic subsequence in a given array.
+
+    A bitonic subsequence is one that first increases and then decreases.
+    This function uses dynamic programming to solve the problem in O(n^2) time.
+
+    The approach involves:
+    1. Creating two auxiliary arrays, `inc` and `dec`.
+    2. `inc[i]` stores the maximum sum of an increasing subsequence ending at index `i`.
+    3. `dec[i]` stores the maximum sum of a decreasing subsequence starting at index `i`.
+    4. For each element `arr[i]`, the maximum bitonic sum with `arr[i]` as the
+       peak is `inc[i] + dec[i] - arr[i]` (since the peak is counted twice).
+    5. The final result is the maximum value of this sum across all elements.
+
+    Args:
+        arr: A list of integers.
+
+    Returns:
+        The maximum sum of a bitonic subsequence. Returns 0 if the input list is empty.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # inc[i] will store the maximum sum of an increasing subsequence ending at arr[i]
+    inc = [0] * n
+    for i in range(n):
+        inc[i] = arr[i]
+        for j in range(i):
+            if arr[j] < arr[i]:
+                if inc[j] + arr[i] > inc[i]:
+                    inc[i] = inc[j] + arr[i]
+
+    # dec[i] will store the maximum sum of a decreasing subsequence starting at arr[i]
+    dec = [0] * n
+    for i in range(n - 1, -1, -1):
+        dec[i] = arr[i]
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                if dec[j] + arr[i] > dec[i]:
+                    dec[i] = dec[j] + arr[i]
+
+    # Find the maximum sum of a bitonic subsequence
+    # A bitonic sequence has a peak. The sum is inc[peak] + dec[peak] - arr[peak]
+    # because the peak element is included in both inc and dec arrays.
+    max_bitonic_sum = 0
+    for i in range(n):
+        current_sum = inc[i] + dec[i] - arr[i]
+        if current_sum > max_bitonic_sum:
+            max_bitonic_sum = current_sum
+            
+    return max_bitonic_sum
+
+# Example usage and assertion
+if __name__ == "__main__":
+    # Test case from the problem description
+    test_array = [1, 15, 51, 45, 33, 100, 12, 18, 9]
+    # The bitonic subsequence is 1, 15, 51, 100, 18, 9
+    # Sum = 1 + 15 + 51 + 100 + 18 + 9 = 194
+    assert max_sum(test_array) == 194
+    
+    # Additional test cases
+    assert max_sum([1, 2, 3, 4, 5]) == 15 # Strictly increasing (decreasing part is empty)
+    assert max_sum([5, 4, 3, 2, 1]) == 15 # Strictly decreasing (increasing part is empty)
+    assert max_sum([10, 20, 30, 20, 10]) == 90 # Perfect bitonic
+    assert max_sum([10, 5, 2, 20, 30, 25, 40, 32, 31]) == 155 # 5, 20, 30, 40, 32, 31
+    assert max_sum([1]) == 1 # Single element
+    assert max_sum([]) == 0 # Empty list
+    
+    print("All assertions passed.")
+```

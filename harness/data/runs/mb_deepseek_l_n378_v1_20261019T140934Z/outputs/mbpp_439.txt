@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiple_to_single(nums):
+    """
+    Join a list of multiple integers into a single integer.
+    
+    Args:
+        nums: List of integers to be joined
+        
+    Returns:
+        A single integer formed by concatenating all numbers in the list
+    """
+    # Convert each integer to string, join them, then convert back to integer
+    return int(''.join(str(num) for num in nums))
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert multiple_to_single([11, 33, 50]) == 113350
+    print("Test passed!")
+    
+    # Additional test cases
+    assert multiple_to_single([1, 2, 3]) == 123
+    assert multiple_to_single([10, 20, 30]) == 102030
+    assert multiple_to_single([0, 0, 0]) == 0
+    assert multiple_to_single([100]) == 100
+    print("All tests passed!")
+```

@@ -1,0 +1,10 @@
+```python
+def is_upper(s):
+    return s.upper()
+
+assert is_upper("person") =="PERSON"
+assert is_upper("hello") =="HELLO"
+assert is_upper("world") =="WORLD"
+assert is_upper("123") =="123"
+assert is_upper("") ==""
+```

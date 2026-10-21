@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def jacobsthal_num(n: int) -> int:
+    """
+    Returns the nth Jacobsthal number.
+    Jacobsthal numbers follow the recurrence:
+        J(0) = 0, J(1) = 1
+        J(n) = J(n-1) + 2 * J(n-2)
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+
+    a, b = 0, 1  # J(0), J(1)
+    for _ in range(2, n + 1):
+        a, b = b, b + 2 * a
+    return b
+
+
+# Test the function
+if __name__ == "__main__":
+    assert jacobsthal_num(5) == 11
+    print("Test passed!")
+```

@@ -1,0 +1,16 @@
+```python
+import math
+
+def wind_chill(velocity, temperature):
+    """Return the wind chill index rounded up to the next integer."""
+    index = (
+        13.12
+        + 0.6215 * temperature
+        - 11.37 * velocity ** 0.16
+        + 0.3965 * temperature * velocity ** 0.16
+    )
+    return math.ceil(index)
+
+
+assert wind_chill(120, 35) == 40
+```

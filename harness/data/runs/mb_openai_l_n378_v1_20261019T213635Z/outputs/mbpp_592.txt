@@ -1,0 +1,13 @@
+```python
+from math import comb
+
+
+def sum_Of_product(n):
+    """Return the sum of products of consecutive coefficients in row n."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    return sum(comb(n, k) * comb(n, k + 1) for k in range(n))
+
+
+assert sum_Of_product(3) == 15
+```

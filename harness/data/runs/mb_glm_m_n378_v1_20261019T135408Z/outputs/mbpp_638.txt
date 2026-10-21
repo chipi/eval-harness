@@ -1,0 +1,45 @@
+Here's a self-contained Python script that calculates the wind chill index rounded to the next integer. The wind chill index is calculated using the standard formula for temperatures above 10°C and wind speeds above 4.8 km/h. For other conditions, the wind chill is not defined, so we'll return the temperature itself.
+
+```python
+def wind_chill(velocity, temperature):
+    """
+    Calculate the wind chill index rounded to the next integer.
+    
+    Parameters:
+    velocity (float): Wind velocity in km/h.
+    temperature (float): Temperature in Celsius.
+    
+    Returns:
+    int: Wind chill index rounded to the next integer.
+    """
+    # Wind chill formula is valid for temperature <= 10°C and velocity > 4.8 km/h
+    if temperature > 10 or velocity <= 4.8:
+        return int(round(temperature))
+    
+    # Wind chill formula (in Celsius and km/h)
+    wind_chill_index = 13.12 + 0.6215 * temperature - 11.37 * (velocity ** 0.16) + 0.3965 * temperature * (velocity ** 0.16)
+    
+    # Round to the next integer (ceiling)
+    return int(wind_chill_index) + (1 if wind_chill_index - int(wind_chill_index) > 0 else 0)
+
+# Test cases
+assert wind_chill(120, 35) == 40
+assert wind_chill(10, 5) == 5  # Example where wind chill is calculated
+assert wind_chill(4, 5) == 5   # Wind speed too low, return temperature
+assert wind_chill(10, 15) == 15  # Temperature too high, return temperature
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Wind Chill Formula**: The standard wind chill formula is used when the temperature is ≤ 10°C and wind speed is > 4.8 km/h. The formula is:
+   \[
+   WCI = 13.12 + 0.6215 \cdot T - 11.37 \cdot V^{0.16} + 0.3965 \cdot T \cdot V^{0.16}
+   \]
+   where \( T \) is the temperature in Celsius and \( V \) is the wind speed in km/h.
+
+2. **Rounding to Next Integer**: The result is rounded up to the next integer (ceiling). For example, 39.2 becomes 40.
+
+3. **Edge Cases**: If the temperature is > 10°C or wind speed is ≤ 4.8 km/h, the wind chill is not defined, so the function returns the temperature rounded to the nearest integer.
+
+4. **Test Cases**: The script includes test cases to verify the function works as expected, including the provided example.

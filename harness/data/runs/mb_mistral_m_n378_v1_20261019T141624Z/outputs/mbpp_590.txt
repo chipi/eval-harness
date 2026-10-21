@@ -1,0 +1,18 @@
+```python
+import math
+import cmath
+
+def polar_rect(r, theta):
+    # Convert polar to rectangular coordinates (x, y)
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+    rectangular = (x, y)
+
+    # Convert polar to complex number representation
+    complex_num = cmath.rect(r, theta)
+
+    return (rectangular, complex_num)
+
+# Test case
+assert polar_rect(3, 4) == ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+```

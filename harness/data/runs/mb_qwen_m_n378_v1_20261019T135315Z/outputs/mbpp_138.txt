@@ -1,0 +1,52 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Check whether the given number can be represented as a sum of non-zero powers of 2.
+    
+    Any positive integer can be represented as a sum of distinct powers of 2 (binary representation).
+    The "non-zero powers of 2" means powers like 2^1, 2^2, 2^3, ... (i.e., 2, 4, 8, 16, ...)
+    excluding 2^0 = 1.
+    
+    So we need to check if n can be written as a sum of 2^k where k >= 1.
+    This is equivalent to checking if n can be represented without using 2^0 = 1.
+    
+    In binary terms, this means the least significant bit (bit 0) must be 0, i.e., n must be even.
+    But wait - we can use multiple copies? No, typically "sum of powers of 2" implies distinct powers.
+    
+    Actually, let me reconsider. The standard binary representation uses distinct powers of 2.
+    If we exclude 2^0 = 1, then we can only form even numbers (since all powers 2^1, 2^2, ... are even).
+    
+    So for distinct non-zero powers of 2 (k >= 1), n must be even and positive.
+    
+    Let's verify with the example: is_Sum_Of_Powers_Of_Two(10) == True
+    10 = 8 + 2 = 2^3 + 2^1. Both are non-zero powers (k=3 and k=1, both >= 1). So True.
+    
+    What about n=1? 1 = 2^0, but 0 is not a "non-zero power", so False.
+    What about n=2? 2 = 2^1, k=1 >= 1, so True.
+    What about n=3? 3 = 2 + 1 = 2^1 + 2^0. But 2^0 is excluded. Can we write 3 as sum of 2^k for k>=1? 
+    3 is odd, and all 2^k for k>=1 are even, so sum of evens is even. 3 is odd, so False.
+    
+    So the condition is: n must be a positive even integer.
+    
+    Wait, but what about n=0? 0 cannot be represented as sum of non-zero powers (since all such powers are positive).
+    
+    So: n > 0 and n % 2 == 0.
+    
+    Let me double-check: is there any even positive number that cannot be represented?
+    Any even positive number n has binary representation ending in 0. We can write n in binary, and since the last bit is 0, 
+    all the powers used have exponent >= 1. So yes, any positive even integer works.
+    
+    Therefore: return n > 0 and n % 2 == 0
+    """
+    return n > 0 and n % 2 == 0
+
+
+if __name__ == "__main__":
+    assert is_Sum_Of_Powers_Of_Two(10) == True
+    assert is_Sum_Of_Powers_Of_Two(1) == False
+    assert is_Sum_Of_Powers_Of_Two(2) == True
+    assert is_Sum_Of_Powers_Of_Two(3) == False
+    assert is_Sum_Of_Powers_Of_Two(4) == True
+    assert is_Sum_Of_Powers_Of_Two(0) == False
+    print("All tests passed!")
+```

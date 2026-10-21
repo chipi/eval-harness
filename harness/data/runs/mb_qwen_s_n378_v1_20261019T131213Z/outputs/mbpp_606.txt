@@ -1,0 +1,15 @@
+```python
+import math
+
+def radian_degree(degrees):
+    """
+    Convert degrees to radians.
+    
+    Args:
+        degrees (float): Angle in degrees
+        
+    Returns:
+        float: Angle in radians
+    """
+    return math.radians(degrees)
+```

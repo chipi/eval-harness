@@ -1,0 +1,7 @@
+```python
+def removezero_ip(address):
+    return ".".join(str(int(part)) for part in address.split("."))
+
+
+assert removezero_ip("216.08.094.196") == "216.8.94.196"
+```

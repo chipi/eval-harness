@@ -1,0 +1,13 @@
+```python
+def multiply_elements(t):
+    """
+    Takes a tuple of numbers and returns a tuple where the i-th element is t_i * t_{i+1}.
+    
+    Args:
+        t: A tuple of numbers (t_1, ..., t_{N+1})
+        
+    Returns:
+        A tuple of length N where each element is the product of consecutive elements in t.
+    """
+    return tuple(t[i] * t[i + 1] for i in range(len(t) - 1))
+```

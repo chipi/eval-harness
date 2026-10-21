@@ -1,0 +1,11 @@
+```python
+import re
+
+
+def text_match_wordz(text):
+    """Return True if text contains a word with 'z' in it."""
+    return re.search(r"\b\w*z\w*\b", text) is not None
+
+
+assert text_match_wordz("pythonz.") is True
+```

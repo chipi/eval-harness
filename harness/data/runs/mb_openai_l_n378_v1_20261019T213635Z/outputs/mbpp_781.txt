@@ -1,0 +1,14 @@
+```python
+def count_divisors(n: int) -> bool:
+    """Return True if n has an even number of positive divisors."""
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    # Divisors come in pairs unless n is a perfect square.
+    root = int(n**0.5)
+    return root * root != n
+
+
+assert count_divisors(10)
+assert not count_divisors(9)
+```

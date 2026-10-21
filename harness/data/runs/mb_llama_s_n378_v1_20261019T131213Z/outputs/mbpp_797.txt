@@ -1,0 +1,41 @@
+```python
+def sum_in_range(l, r):
+    """
+    This function calculates the sum of all odd natural numbers within a given range [l, r].
+
+    Args:
+        l (int): The lower bound of the range (inclusive).
+        r (int): The upper bound of the range (inclusive).
+
+    Returns:
+        int: The sum of all odd natural numbers within the range [l, r].
+    """
+    # Ensure l and r are integers
+    l = int(l)
+    r = int(r)
+
+    # Swap l and r if l is greater than r
+    if l > r:
+        l, r = r, l
+
+    # Calculate the sum of all odd numbers in the range [l, r]
+    return sum(i for i in range(l, r + 1) if i % 2 != 0)
+
+
+# Test the function
+assert sum_in_range(2, 5) == 8
+```
+
+You can run this script to test the `sum_in_range` function. The function takes two arguments, `l` and `r`, representing the lower and upper bounds of the range, respectively. It returns the sum of all odd natural numbers within this range.
+
+**Explanation**
+
+*   The function first ensures that `l` and `r` are integers by converting them using `int()`.
+*   It then checks if `l` is greater than `r` and swaps them if necessary to ensure that `l` is the lower bound.
+*   The function uses a generator expression within the built-in `sum` function to calculate the sum of all odd numbers in the range `[l, r]`. A number `i` is considered odd if `i % 2 != 0`.
+*   Finally, the function returns the calculated sum.
+
+**Example Use Cases**
+
+*   `sum_in_range(2, 5)` returns `8` because the odd numbers in the range `[2, 5]` are `3` and `5`, and `3 + 5 = 8`.
+*   `sum_in_range(10, 20)` returns `75` because the odd numbers in the range `[10, 20]` are `11`, `13`, `15`, `17`, and `19`, and `11 + 13 + 15 + 17 + 19 = 75`.
