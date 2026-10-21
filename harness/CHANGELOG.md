@@ -62,6 +62,16 @@ keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
 - **Judged runs carry no `reference_tier`**: a judge reads no reference. The source run's tier
   is kept as `judged_with.source_reference_tier`, and `leaderboard` says the scores come from a
   judge, with its label, instead of "scored against SILVER references".
+- **A refused judge call stops the pass cleanly.** A non-transient failure (a provider's own
+  budget guardrail answering 403, for example) used to end `judge-score` with a traceback. It
+  now stops the way the cost cap does: every stored verdict is kept, the partial result is
+  projected and labelled, and the same command resumes.
+- **`judge-score` warns when the arm set mixes config versions** (`_v1` and `_v2` of one arm
+  are judged as two arms).
+- **A judge scorer's `task.scale` must be whole numbers**, and a prompt with both `{n}` and
+  SummEval's fixed count phrases is refused (the phrases would keep saying 16). `validate`'s
+  V13 renders each prompt at 2 outputs, so a prompt that cannot be rendered fails there, not
+  at run time.
 - **`leaderboard`'s precision note** no longer fires on values that are exact small-integer
   fractions (a mean of 1-5 ratings is in quarters or sixths); scores rounded on the way to disk
   still get it.
