@@ -703,7 +703,7 @@ def home(f: dict) -> str:
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_tied"], len(exps))}<div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - 2} of {len(exps)} on the <a href="experiments/judging.html">re-measured scores</a></div></div>
+    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_tied"], len(exps))}<div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - 2} of {len(exps)} if the <a href="experiments/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
@@ -750,7 +750,7 @@ def landing(f: dict) -> str:
         '<a class="card reveal" href="experiments/judging.html"><div class="task">Re-measured, not re-run</div>'
         '<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM '
         'judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge '
-        'beat the metric, and why a person still had the last word.</p>'
+        "beat the metric on SummEval, and why one reader's check kept coverage primary.</p>"
         f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["fig"]["billed_usd"])} of judging</span>'
         '<span>primaries <b>unchanged</b></span></div></a>')
     s = by["summarization"]
@@ -780,7 +780,7 @@ def landing(f: dict) -> str:
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - 2} of {len(exps)} on the <a href="experiments/judging.html">re-measured scores</a></div></div>
+    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - 2} of {len(exps)} if the <a href="experiments/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
 </div></section>
@@ -1058,14 +1058,14 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
     if x["slug"] == "summarization":
         a = {z["arm"]: z for z in r["summ"]["arms"]}
         hc = r["summ"]["fig"]["human_check"]
-        lead = max(r["summ"]["arms"], key=lambda z: z["v2"])
         head = "Re-measured by validated LLM judges, and checked by a person."
         text = (f"Scored again by two LLM judges validated on SummEval, every hosted LLM ranks above "
                 f"every BART model: bart_l falls from {ordinal(a['bart_l']['r1'])} to "
-                f"{ordinal(a['bart_l']['r2'])} of {r['summ']['n_arms']}, and {lead['arm']} rises from "
-                f"{ordinal(lead['r1'])} to first. One blind human check went the other way, "
+                f"{ordinal(a['bart_l']['r2'])} of {r['summ']['n_arms']} (the hosted scores bunch near the "
+                f"top of the scale, so their own order is not a finding). One reader's blind check of "
+                f"{hc['pairs']} pairs on truncated articles went the other way, "
                 f"{hc['human_prefers_bart_l']} to {hc['human_prefers_deepseek_m']} for bart_l over "
-                f"deepseek_m, so coverage stays the primary metric.")
+                f"deepseek_m, not significant either. Neither is confirmed, so coverage stays the primary metric.")
     elif x["slug"] in ("ag-news", "dbpedia"):
         d = r["ag" if x["slug"] == "ag-news" else "db"]
         if x["slug"] == "ag-news":
@@ -1073,11 +1073,12 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
             lead = max(d["arms"], key=lambda z: z["v2"])
             head = "Re-measured against labels a person corrected."
             text = (f"One reader adjudicated by topic the {d['n_items']} disputed items, shown the hosted "
-                    f"answer; the gold was wrong on {d['changed']}. On that gold every hosted LLM scores "
-                    f"above every fine-tune: the fine-tunes fall from "
+                    f"answer, and judged the gold wrong on {d['changed']}. On that gold every hosted LLM has "
+                    f"a higher accuracy than every fine-tune: the fine-tunes fall from "
                     f"{min(z['r1'] for z in fts)}–{max(z['r1'] for z in fts)} to "
                     f"{min(z['r2'] for z in fts)}–{max(z['r2'] for z in fts)} of {d['n_arms']}, and "
-                    f"{lead['arm']} rises to first. The dataset's own gold stays primary.")
+                    f"{lead['arm']} rises to first (separated from the fine-tunes, not from most hosted "
+                    "arms). The dataset's own gold stays primary.")
         else:
             fy = next(z for z in d["arms"] if z["arm"] == "bert_base_fy")
             head = "Re-measured against labels a person corrected."
@@ -1090,8 +1091,9 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
         head = "These judges, put to work."
         text = (f"Two of these judges, gemma_l (τ {se['gemma_l']:.2f}) and qwen_s ({se['qwen_s']:.2f}), "
                 "re-measured the summarisation experiment's summaries, where its own metric agrees with "
-                f"the experts at τ {se['coverage']:.2f}. They re-ranked the field, and a person disagreed "
-                "with them: a validation earned on 2019 summaries did not carry to modern ones.")
+                f"the experts at τ {se['coverage']:.2f}. They re-ranked the field; one reader's blind check "
+                "of 20 pairs went the other way, not significantly. Whether a validation on 2019 summaries "
+                "carries to modern ones is not yet tested.")
     if not head:
         return ""
     return (f'<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow">'

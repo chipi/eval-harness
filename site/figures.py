@@ -208,19 +208,26 @@ def adjudicated(slug: str, exps: list) -> dict:
             "n_arms": len(v1)}
 
 
-def judged_summarisation(exps: list) -> dict:
-    """The summarisation arms on coverage (the primary) and on the validated judges' score,
-    projected from the stored verdicts exactly as judge_figures does; plus judge_figures'
-    own figures (human check, Goyal, pointwise, agreement)."""
+def judged_summarisation(exps: list, scorer: str = "") -> dict:
+    """The summarisation arms on coverage (the primary) and on a judge scorer's score,
+    projected from its stored verdicts exactly as judge_figures does; for judge-summ-v1 also
+    judge_figures' own figures (human check, Goyal, pointwise, agreement)."""
     sys.path.insert(0, str(HARNESS / "scripts"))
     import judge_figures as jf  # noqa: PLC0415
     import judge_score as js  # noqa: PLC0415
-    jfig = jf.compute()
+    scorer = scorer or jf.SCORER
+    jfig = jf.compute() if scorer == jf.SCORER else None
     m = json.loads(next((DATA / "judging-sets").glob(jf.SET_GLOB)).read_text())
-    sc = js.load_scorer(DATA / "scorers" / f"{jf.SCORER}.yaml")
-    vdir = DATA / "judge-verdicts" / jf.SCORER / m["judging_set_id"]
+    sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+    vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
     ids = [i["item_id"] for i in m["items"]]
-    proj = js.project(sc, js.load_scores(m, sc, vdir), ids)
+    scores = js.load_scores(m, sc, vdir)
+    proj = js.project(sc, scores, ids)
+    summ = js.summarise(m, sc, m["arms"], scores, proj, {}, "recomputed", True, vdir)
+    files = [json.loads(p.read_text()) for p in vdir.glob("*/*.json")]
+    hc = json.loads((ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text())
+    pairs = [p for p in hc["pairs"] if p["item_id"] in proj]
+    ctrl = summ["controls"]
     x = next(e for e in exps if e["slug"] == "summarization")
     judged = {a["config_id"][len(x["prefix"]):-len(x["suffix"])]:
               sum(proj[i][a["config_id"]]["_mean"] for i in proj) / len(proj) for a in m["arms"]}
@@ -232,7 +239,19 @@ def judged_summarisation(exps: list) -> dict:
     rc, rj = _ranks(cov), _ranks(judged)
     return {"arms": [{"arm": a, "kind": kind[a], "weights": wts[a], "v1": cov[a], "v2": judged[a], "r1": rc[a],
                       "r2": rj[a]} for a in sorted(cov, key=lambda a: rc[a])],
-            "n_arms": len(cov), "items_scored": len(proj), "fig": jfig}
+            "n_arms": len(cov), "items_scored": len(proj), "items_total": len(ids), "fig": jfig,
+            "scorer": scorer, "judges": [j["id"] for j in sc["judges"]],
+            "calls": len(files), "billed_usd": round(sum(f.get("cost_usd") or 0.0 for f in files), 4),
+            "unparsed": sum(1 for f in files if f.get("scores") is None),
+            "spearman": next(iter(summ["judge_agreement"].values()))["arm_mean_spearman"],
+            "position": [ctrl[j]["position"]["mean_abs_diff"] for j in ctrl],
+            "noise": [ctrl[j]["noise"]["mean_abs_diff"] for j in ctrl],
+            "self_family_gap": {j: v["own_minus_others"] for j, v in summ["self_family_gap"].items()},
+            "human_pairs": len(pairs),
+            "prefers_deepseek_m": sum(proj[p["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+                                      > proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs),
+            "prefers_bart_l": sum(proj[p["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+                                  < proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs)}
 
 
 def instrument_check(exps: list) -> dict:

@@ -114,13 +114,14 @@ recorded decision to use it. The rest of this ADR is about the third.
    baseline promotion is. The old metric stays, as history, beside the new one.
 
 The first use is the summarisation experiment, re-measured with judges validated on SummEval.
-That first use showed why validation must be on data like the data being judged. Validated
+That first use showed why validation should be on data like the data being judged. Validated
 on 2019-era summaries, the judges ranked every LLM above every BART model. The one human check
-on these outputs disagreed (one reader, 14 to 6 for BART). On a different modern pair (GPT-3
-against BRIO) the judges matched the annotators' agreement with each other, but preferred the
-LLM summary more often than the annotators did. A validation does not transfer just because
-the judge is the same; calibrate on comparable human data before a judged score replaces a
-primary.
+on these outputs went the other way (one non-expert reader, 20 pairs on truncated articles,
+14 to 6 for BART, p = 0.115), which confirms neither. On a different 2022 pair (GPT-3
+against BRIO) the judges matched the annotators' agreement with each other, and preferred the
+LLM summary more often than the annotators did, within noise. Nothing here shows that the
+validation transfers, and nothing shows that it does not; calibrate on comparable human data
+before a judged score replaces a primary.
 The second is SciFact. Its relevance labels are incomplete: 227 judgments cover 200 queries,
 so a relevant but unlabelled abstract ranked first counts against an arm. A judge can label
 those abstracts, but no judge here has been validated on scientific relevance. That run goes

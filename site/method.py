@@ -168,8 +168,9 @@ def chapters(H, f: dict) -> list:
                    "<p>" + H.q("Two of those judges re-measured the summarisation experiment and "
                    "ranked every hosted LLM above every BART model. The one blind human check on "
                    "those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6.", SUMM)
-                   + " A judge validated on one kind of output does not carry its validation to "
-                   "another. So the harness refuses a judge until it is validated, and the "
+                   + " That check is weak too (p = 0.115, truncated articles), so neither is "
+                   "confirmed; whether a validation on 2019 summaries carries to modern ones is not "
+                   "tested. So the harness refuses a judge until it is validated, and the "
                    "summarisation experiment still ranks by coverage.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
                   "early, check silver — and any AI judge — against it, and read every item "

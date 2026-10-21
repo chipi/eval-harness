@@ -111,7 +111,13 @@ def figures_for(H, f: dict) -> dict:
     H.require(ag["arms"] and max(ag["arms"], key=lambda a: a["v2"])["kind"] == "hosted"
               and max(sm["arms"], key=lambda a: a["v2"])["kind"] == "hosted",
               "on the re-measured scores both leaders are hosted")
+    # The same re-measurement moves the other headline too: in both experiments the dearest
+    # hosted model is the re-measured leader.
+    for slug, rows in (("ag-news", ag["arms"]), ("summarization", sm["arms"])):
+        H.require(by[slug]["dearest"]["arm"] == max(rows, key=lambda a: a["v2"])["arm"],
+                  f"{slug}: the dearest model leads on the re-measured score")
     return {"ag": ag, "db": db, "sm": sm, "se": se, "fig": fig, "agr": agr, "smr": smr,
+            "dearest_first_remeasured": 2, "dearest": by["ag-news"]["dearest"]["arm"],
             "fts": fts, "headline_now": f["local_first_or_tied"],
             "headline_remeasured": f["local_first_or_tied"] - 2, "n_exp": len(f["experiments"]),
             "hosted_sm_range": (min(a["v2"] for a in hosted_sm), max(a["v2"] for a in hosted_sm)),
@@ -158,31 +164,39 @@ def judging_page(H, f: dict) -> str:
              ("Primary metric", "unchanged in all three, by decision (below)")]
     facts_html = "".join(f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>'
                          for k, v in facts)
+    sfg = sm["self_family_gap"]
     checklist = [
         ("Validate it against people, on outputs like yours.",
-         "The gate refuses a judge whose validation run is missing, and one that does not beat the best "
-         "free scorer on the same human ratings. What it cannot check is whether those ratings look like "
-         "your outputs. Here they did not, and that is where it went wrong."),
+         "The gate refuses a judge with no committed validation run, and one below the scorer's floor if "
+         "the scorer sets one (set it to the best free scorer's score on the same human ratings). What it "
+         "cannot check is whether those ratings look like your outputs. Here they were written by 2019 "
+         "systems and the arms are modern, one possible reason the judges and a reader disagree; it was "
+         "not tested."),
         ("Use two judges from different vendors, blind.",
-         "Each judge is reported, and how far they agree. Arm names are hidden and the order shuffled, so "
-         "a judge cannot favour a name or a slot, and a judge's own family is flagged."),
+         "Each judge is reported, and how far they agree. Arm names are hidden and the order is shuffled "
+         "per article, so a preference for a name is impossible and a preference for a slot is spread "
+         "across the arms instead of following one. Arms from a judge's own vendor family are flagged: "
+         + "; ".join(f"{j} rated them {v:+.2f} against the others" for j, v in sfg.items())
+         + ", a raw gap, not a bias estimate, since families differ in real quality."),
         ("Measure the judge's own noise and position bias.",
          f"A second shuffle and a repeat on a subset. Here the reshuffle moved per-article scores by "
-         f"{pos_lo:.2f}–{pos_hi:.2f} and a repeat by {noi_lo:.2f}–{noi_hi:.2f}: a gap between arms "
-         "smaller than that is not a difference."),
+         f"{pos_lo:.2f}–{pos_hi:.2f} and a repeat by {noi_lo:.2f}–{noi_hi:.2f}. Those are per-article "
+         "numbers; whether a gap between two arms' means is real is what the paired tests answer, run on "
+         "the judged scores like any other."),
         ("Keep every verdict.",
          "Each raw reply is stored, so the pass resumes, costs $0 to re-read, and anyone can check what the "
          "judge said."),
         ("Read some yourself before you trust the ranking.",
-         "Agreement between two judges is not agreement with people. One afternoon reading 20 pairs is what "
-         "caught the problem here; the primary metric changes only after a check like that agrees."),
+         "Agreement between two judges is not agreement with people. Reading 20 pairs is what produced the "
+         "disagreement here; the primary metric changes only after a check like that agrees, and a check "
+         "worth that weight needs more than one reader."),
     ]
     check_html = "".join(f'<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>' for h, p in checklist)
     body = f"""
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Judging</b> · re-measured, not re-run</div>
   <h1>Change the ruler, <em>not the run.</em></h1>
-  <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and validated LLM judges re-scored every summary. Both moved a headline result. The judges then disagreed with a person. Judging is the strongest instrument on this site, and the easiest to over-trust.</p>
+  <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges. On SummEval, judges agree with experts far better than the metric this leaderboard used; on outputs unlike the ones they were validated on, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
   <div class="facts">{facts_html}</div>
   <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="../docs/GUIDE/#10-optional-re-measure-with-an-llm-judge">Try it, offline</a></div>
 </div></section>
@@ -191,8 +205,8 @@ def judging_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">01</span>Why judge at all</div>
   <h2>The metric was the weak link.</h2>
   <div class="prose">
-    <p>The summarisation experiment ranks by <strong>coverage</strong>, an overlap score against reference summaries. SummEval measures how well a scorer agrees with expert annotators. Coverage agrees with them at τ {se["coverage"]:.2f}. The two LLM judges used below agree at {se["gemma_l"]:.2f} and {se["qwen_s"]:.2f}, about {ratio:.0f}× the agreement of the metric the leaderboard was sorted by.</p>
-    <p>{q("The best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out).", JUDGE)} That is the case for judging: when the cheap metric barely tracks what people think, a validated judge is the better instrument, and it can re-score outputs you already have.</p>
+    <p>The summarisation experiment ranks by <strong>coverage</strong>, an overlap score against reference summaries. SummEval measures how well a scorer agrees with expert annotators. Coverage agrees with them at τ {se["coverage"]:.2f}. The two LLM judges used below agree at τ {se["gemma_l"]:.2f} and {se["qwen_s"]:.2f}, against {se["coverage"]:.2f} for the metric the leaderboard was sorted by.</p>
+    <p>{q("The best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out).", JUDGE)} That is the case for judging: when the cheap metric barely tracks what people think, a validated judge is the better instrument on that data, and it can re-score outputs you already have. Two caveats from the same report: the judges rank all 16 summaries of an article in one call, which this measure rewards, and {q("a no-model lookup of which system wrote each summary reaches 63%", JUDGE)} of an expert, so part of a judge's score may be recognising which system wrote a summary; how much is not measured.</p>
   </div>
   <figure class="chart" style="margin-top:32px;max-width:900px">{H.both(tau_bars(H, bars), tau_bars(H, bars, compact=True))}<figcaption>Mean Kendall τ against SummEval's expert annotators, 100 articles × 16 summaries. 0 is no agreement. Coloured by kind, as elsewhere on this site.</figcaption></figure>
 </div></section>
@@ -201,8 +215,8 @@ def judging_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">02</span>A judge re-measures summarisation</div>
   <h2>First on coverage. {H.ordinal(bart["r2"]).capitalize()} on the judges.</h2>
   <div class="prose">
-    <p>The two judges read every article with all {sm["n_arms"]} arms' summaries, names hidden and order shuffled: {fig["calls"]} calls, {H.money(fig["billed_usd"])}, {sm["items_scored"]} of {fig["items_total"]} articles scored. On their score <strong>every hosted LLM ranks above every BART model</strong>. <code>bart_l</code>, first on coverage, scores {bart["v2"]:.2f} of 5 and ranks {H.ordinal(bart["r2"])} of {sm["n_arms"]}; the hosted LLMs score {lo:.2f}–{hi:.2f}, with <code>{ldr["arm"]}</code> first ({H.ordinal(ldr["r1"])} on coverage).</p>
-    <p>The judges agree closely with each other: Spearman {fig["agreement_arm_mean_spearman"]:.2f} over arm means. Re-ordering the summaries moved per-article scores by {pos_lo:.2f}–{pos_hi:.2f}, a repeat call by {noi_lo:.2f}–{noi_hi:.2f}. By every check the harness runs, a clean result.</p>
+    <p>The two judges read every article with all {sm["n_arms"]} arms' summaries, names hidden and order shuffled: {fig["calls"]} calls, {H.money(fig["billed_usd"])}, {sm["items_scored"]} of {fig["items_total"]} articles scored. On their score <strong>every hosted LLM ranks above every BART model</strong>. <code>bart_l</code>, first on coverage, scores {bart["v2"]:.2f} of 5 and ranks {H.ordinal(bart["r2"])} of {sm["n_arms"]}, {q("separated below all 24 hosted LLMs", SUMM)}. The hosted LLMs score {lo:.2f}–{hi:.2f}, bunched near the top of a 5-point scale, so the order among them, <code>{ldr["arm"]}</code> first ({H.ordinal(ldr["r1"])} on coverage), is not a finding.</p>
+    <p>The judges agree closely with each other: Spearman {fig["agreement_arm_mean_spearman"]:.2f} over arm means. Re-ordering the summaries moved per-article scores by {pos_lo:.2f}–{pos_hi:.2f}, a repeat call by {noi_lo:.2f}–{noi_hi:.2f}. {sm["unparsed"]} of {sm["calls"]} replies did not parse; an article counts only when every block of every judge parsed, and {sm["items_scored"]} of {sm["items_total"]} did.</p>
   </div>
   <figure class="chart" style="margin-top:32px">{legend_html(H)}{sm_chart}<figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure>
 </div></section>
@@ -211,19 +225,19 @@ def judging_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">03</span>Then a person read them</div>
   <h2>{hc["human_prefers_bart_l"]} to {hc["human_prefers_deepseek_m"]} the other way.</h2>
   <ol class="findings">
-    <li><div><h3>The one blind human check disagreed.</h3><p>One non-expert reader compared {hc["pairs"]} pairs of <code>bart_l</code> and <code>deepseek_m</code> summaries, blind, on truncated articles, and preferred <code>bart_l</code> {hc["human_prefers_bart_l"]} to {hc["human_prefers_deepseek_m"]} ({q("sign test p = 0.115", SUMM)}). The judges preferred <code>deepseek_m</code> on all {hc["judge_prefers_deepseek_m"]}. Scored one summary at a time instead of in lists, they still rated <code>deepseek_m</code> higher on {fig["pointwise"]["deepseek_m_above_bart_l"]} of {fig["pointwise"]["articles"]} articles and never lower.</p></div></li>
-    <li><div><h3>On published human ratings of modern summaries, the judges look like people — with a lean.</h3><p>{q("On a different pair, the GPT-3 and BART-based BRIO summaries of Goyal, Li & Durrett (2022, CC BY 4.0; 100 CNN articles, three annotators each), the judges agree with people about as well as people agree with each other: against one annotator they score 0.498 (gemma_l) and 0.526 (qwen_s), annotators against each other 0.454, chance 0.333. On the same articles they prefer the GPT-3 summary more often than the annotators do (72.7% and 77.0% against 63.6% and 63.2%; the 95% intervals overlap for both judges).", SUMM)}</p></div></li>
-    <li><div><h3>So the judged ranking is directional at most, and coverage stays primary.</h3><p>The judges were validated on SummEval's summaries, written by systems of 2019. The arms here are modern LLMs. A validation earned on one kind of output does not carry to another, and two judges agreeing with each other is not two judges agreeing with people.</p></div></li>
+    <li><div><h3>The one blind human check went the other way.</h3><p>One reader, the author and not an expert, compared {hc["pairs"]} pairs of <code>bart_l</code> and <code>deepseek_m</code> summaries blind and preferred <code>bart_l</code> {hc["human_prefers_bart_l"]} to {hc["human_prefers_deepseek_m"]} ({q("sign test p = 0.115", SUMM)}, not significant). The judges preferred <code>deepseek_m</code> on all {hc["judge_prefers_deepseek_m"]}. Scored one summary at a time instead of in lists (unvalidated), they still rated <code>deepseek_m</code> higher on {fig["pointwise"]["deepseek_m_above_bart_l"]} of {fig["pointwise"]["articles"]} articles and never lower. Two limits on the check itself: the reader saw only the {q("first 170-220 words", "examples/summarization-cnn-dailymail/human_check_judge.json")} of each article, which can favour a summary that stays close to the lead; and the judged leader, <code>{ldr["arm"]}</code>, was not in it.</p></div></li>
+    <li><div><h3>On a published 2022 pair, the judges agree with annotators about as well as annotators agree with each other.</h3><p>{q("On a different pair, the GPT-3 and BART-based BRIO summaries of Goyal, Li & Durrett (2022, CC BY 4.0; 100 CNN articles, three annotators each), the judges agree with people about as well as people agree with each other: against one annotator they score 0.498 (gemma_l) and 0.526 (qwen_s), annotators against each other 0.454, chance 0.333. On the same articles they prefer the GPT-3 summary more often than the annotators do (72.7% and 77.0% against 63.6% and 63.2%; the 95% intervals overlap for both judges).", SUMM)} So they lean towards the LLM summary, within noise, on one pair.</p></div></li>
+    <li><div><h3>So neither instrument is confirmed, and coverage stays primary.</h3><p>The judges' ranking is directional at most. The one check against it is one reader on truncated articles, also not conclusive. Possible reasons the two differ, none tested here: the judges were validated on 2019 summaries and the arms are modern; a list of 16 very different systems lets a judge recognise systems, which 29 similar ones do not; the truncated articles favour lead-copying. Two judges agreeing with each other is not two judges agreeing with people.</p></div></li>
   </ol>
 </div></section>
 
 <section class="block" id="labels"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>A person re-measures the labels</div>
-  <h2>The fine-tunes' lead was the dataset's convention.</h2>
+  <h2>How much of the fine-tunes' lead was 17 labels.</h2>
   <div class="prose">
-    <p>On AG News three small fine-tunes led every hosted LLM, concentrated in {ag["changed"]} items the hosted field mostly got wrong. One reader adjudicated by topic every item the hosted field missed and every item a fine-tune missed, {ag["n_items"]} in all, shown each item's text, its gold label and the hosted majority's answer. The gold was wrong on all {ag["changed"]}: AG News files company news from a technology desk as Sci/Tech and non-US news, sport included, as World.</p>
-    <p>Re-scored against those labels for $0, every hosted LLM scores above every fine-tune. The fine-tunes fall from {", ".join(str(a["r1"]) for a in fts)} to {"–".join(str(x) for x in (min(a["r2"] for a in fts), max(a["r2"] for a in fts)))} of {ag["n_arms"]}; <code>{g["ag_leader"]["arm"]}</code> rises from {H.ordinal(g["ag_leader"]["r1"])} to first at {g["ag_leader"]["v2"]:.4f}. {q("It is separated from all three (tied at 0.9050).", CLASS)} On DBpedia {db["changed"]} labels were wrong; the top stays a crowd, and <code>bert_base_fy</code> moves from {H.ordinal(db_fy["r1"])} to {H.ordinal(db_fy["r2"])} at an unchanged {db_fy["v1"]:.4f}.</p>
-    <p>Here the better instrument was a person, not a model, and the lesson is the same: a fine-tune trained on a dataset learns its conventions. If your labels follow a house convention, that is what you want. If they mean what the words say, it is not.</p>
+    <p>On AG News three small fine-tunes led every hosted LLM, concentrated in {ag["changed"]} items that at least 80% of the hosted field got wrong. One reader adjudicated by topic those items and every item a fine-tune missed, {ag["n_items"]} in all, shown each item's text, its gold label and the hosted majority's answer. The reader judged the gold wrong on all {ag["changed"]}, and right on every item the fine-tunes missed. The reader's reason: the labels follow the source feed's section, so company news from a technology desk is Sci/Tech and non-US news, sport included, is World.</p>
+    <p>Re-scored against those labels for $0, every hosted LLM has a higher accuracy than every fine-tune. The fine-tunes fall from {", ".join(str(a["r1"]) for a in fts)} to {"–".join(str(x) for x in (min(a["r2"] for a in fts), max(a["r2"] for a in fts)))} of {ag["n_arms"]}, and <code>{g["ag_leader"]["arm"]}</code> rises from {H.ordinal(g["ag_leader"]["r1"])} to first at {g["ag_leader"]["v2"]:.4f}, {q("separated from 9, including all three fine-tunes", CLASS)} (which tie at {fts[0]["v2"]:.4f}), and {q("not separated from 20 hosted arms", CLASS)}: most of the new order is not separated. On DBpedia {db["changed"]} labels were judged wrong; the top stays a crowd, and <code>bert_base_fy</code> moves from {H.ordinal(db_fy["r1"])} to {H.ordinal(db_fy["r2"])} at an unchanged {db_fy["v1"]:.4f}.</p>
+    <p>The instrument here was a person, with two limits. The reader saw the hosted answer, and every item the hosted field missed was resolved the hosted field's way, which is also what anchoring on that answer would produce. And only items some arm disagreed on were read, so an error the gold and every arm share would not be seen. What it shows for certain is how much the ranking depends on those labels: a fine-tune trained on a dataset learns its conventions. If your labels follow a house convention, that is what you want. If they mean what the words say, it is not.</p>
   </div>
   <figure class="chart" style="margin-top:32px">{legend_html(H)}{ag_chart}<figcaption>AG News, {ag["n_arms"]} arms: rank on the dataset's gold (left) and on the adjudicated gold (right).</figcaption></figure>
 </div></section>
@@ -234,7 +248,7 @@ def judging_page(H, f: dict) -> str:
   <div class="cols"><div class="prose">
     <p>A re-measurement is written beside the original, never over it, and an experiment's primary metric changes only by a recorded decision with the old one kept. Both decisions here kept the original:</p>
     <p><strong>AG News and DBpedia</strong> keep the dataset's gold: anyone can repeat it, and the adjudication is one reader's, made while seeing the hosted answer. <strong>Summarisation</strong> keeps coverage: the judges' ranking has not been confirmed by people on these summaries, and the one check that exists went the other way.</p>
-    <p>It matters. A free model is first, or not separable from first, in {g["headline_now"]} of the {g["n_exp"]} experiments on their primary metrics. On the re-measured scores AG News and summarisation would leave that count, and it would be {g["headline_remeasured"]} of {g["n_exp"]}. That is how much a measurement decision can move a headline, and why the decision is recorded rather than made by whichever number came last.</p>
+    <p>It matters, in both directions. On the primary metrics a free model is first, or not separable from first, in {g["headline_now"]} of the {g["n_exp"]} experiments, and the dearest model is first in none. Taken at face value, the two re-measurements would make that {g["headline_remeasured"]} of {g["n_exp"]}, and put the dearest model, <code>{g["dearest"]}</code>, first in {g["dearest_first_remeasured"]} of {g["n_exp"]}: in AG News and summarisation it leads both re-measured rankings. One of them rests on one reader who saw the hosted answer, the other on a ranking one reader's check went against. That is how much a measurement decision can move a headline, and why the decision is recorded rather than made by whichever number came last.</p>
   </div>
   <div class="note"><b>What would settle it.</b> Several readers comparing full articles, not one reader on truncated ones; or judges validated on published human ratings of LLM-written summaries rather than 2019 ones. Either is a re-measurement of the same frozen outputs.</div></div>
 </div></section>
@@ -262,7 +276,7 @@ def judging_page(H, f: dict) -> str:
 {H.author("judging")}"""
     return H.page("Change the ruler, not the run — judging · eval-harness",
                   "What re-measuring frozen experiments with validated LLM judges and corrected labels "
-                  "changed, why a judge beat the metric, and why a person still had the last word.",
+                  "changed, why a judge beat the metric on SummEval, and why one reader's check kept coverage primary.",
                   body, depth=1, here="judging")
 
 

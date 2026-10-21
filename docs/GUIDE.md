@@ -432,6 +432,9 @@ dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
   Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
 ```
 
+Your judging-set id, token counts and p-value will differ from these: `lead2_noisy` is
+unseeded, so its outputs, and the set built from them, differ on every run.
+
 Each judge's raw reply is stored under `data/judge-verdicts/`, so the same command again
 calls nothing, and `ARGS=--no-calls` rebuilds the scored runs from the stored verdicts for
 $0. The judged runs read like any others: `leaderboard`, `pair-test` and `family-test`
