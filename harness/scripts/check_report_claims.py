@@ -1155,7 +1155,21 @@ if _G["source"].startswith("recomputed"):
     check("summarisation: Goyal report.json equals the recomputation from the stored records",
           _same, "report.json is stale: re-run validate_judge_goyal.py --no-calls")
 else:
-    print("  --   Goyal: only report.json compared (data/external/goyal2022 absent); not recomputed")
+    # The claim count is embedded in the site, so it must not depend on whether this
+    # machine has the optional Goyal download: check what the committed report can show.
+    _rep = json.loads((HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn"
+                       / "report.json").read_text())
+    _cons = all(abs(c["k"] / c["n"] - c["rate"]) < 1e-3
+                for j in _rep["judges"].values()
+                for c in (j["best_pick_vs_loo_reference"],
+                          j["pairwise_gpt3_vs_brio_per_article"]["agreement"],
+                          j["pairwise_gpt3_vs_brio_per_article"]["judge_prefers_gpt3"],
+                          j["pairwise_gpt3_vs_brio_per_article"]["human_prefers_gpt3"])) \
+        and abs(_rep["human_baseline"]["leave_one_annotator_out"]["k"]
+                / _rep["human_baseline"]["leave_one_annotator_out"]["n"]
+                - _rep["human_baseline"]["leave_one_annotator_out"]["rate"]) < 1e-3
+    check("summarisation: Goyal report.json is internally consistent (data/external absent: "
+          "not recomputed from the annotations)", _cons, "report.json counts and rates disagree")
 
 _pw = _JF["pointwise"]
 check("summarisation: pointwise, deepseek_m above bart_l on 192 of 200 and never below",
