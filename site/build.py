@@ -1118,7 +1118,8 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
                 f"{hc['human_prefers_bart_l']} to {hc['human_prefers_deepseek_m']} for bart_l over "
                 f"deepseek_m, not significant either. Two frontier judges at "
                 f"{round(r['summ_v2']['billed_usd'] / r['summ']['billed_usd'])}× the price agreed with the first pair, 20 to 0 on the same "
-                "pairs. Neither is confirmed, so coverage stays the primary metric.")
+                "pairs. On published ratings of LLM-era summaries the judges track people better than one "
+                "rater does; on these outputs neither is confirmed, so coverage stays the primary metric.")
     elif x["slug"] in ("ag-news", "dbpedia"):
         d = r["ag" if x["slug"] == "ag-news" else "db"]
         if x["slug"] == "ag-news":

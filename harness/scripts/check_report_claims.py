@@ -1319,6 +1319,56 @@ check("summarisation, frontier judges: own-family raw gaps 0.53 and 0.59, agains
       and "0.53 above the others" in _V2 and "Anthropic's 0.59" in _V2 and "0.18 and 0.30" in _V2,
       f"derived v2 {_sg2}, v1 {_sg1}")
 
+#: Zhang et al. (2024): both scorers' judges against crowd ratings of LLM-era summaries.
+_Z = {s: _jfm.zhang(s) for s in ("judge-summ-v1", "judge-summ-v2")}
+_VZ = _SUMM[_SUMM.find("**Checked against people on LLM-written summaries"):_SUMM.find("## 4. Discussion")]
+_zj = {j: r for s in _Z.values() for j, r in s["judges"].items()}
+_zp = {j: r for s in _Z.values() for j, r in s["paired_non_reference_18"].items()}
+_zr = {j: s["system_means"]["ranking"] for s in _Z.values() for j in s["judges"]}
+_h18 = _Z["judge-summ-v1"]["human_baseline"]["non_reference_18"]
+_fm18 = _Z["judge-summ-v1"]["free_metrics_non_reference_18"]
+_tau18 = {j: r["non_reference_18"]["mean"] for j, r in _zj.items()}
+check(f"summarisation, Zhang et al.: judges' mean tau 0.496/0.479/0.457/0.483 against one rater 0.384, "
+      f"ROUGE-1 0.338, coverage 0.326 -- {_Z['judge-summ-v1']['recomputed']}",
+      [round(_tau18[j], 3) for j in ("gemma_l", "qwen_s", "openai_l", "anthropic_l")] == [0.496, 0.479, 0.457, 0.483]
+      and round(_h18["mean"], 3) == 0.384 and round(_fm18["rouge1"]["mean"], 3) == 0.338
+      and round(_fm18["coverage"]["mean"], 3) == 0.326
+      and _Z["judge-summ-v1"]["human_baseline"] == _Z["judge-summ-v2"]["human_baseline"]
+      and "0.496 (`gemma_l`), 0.479" in _VZ and "0.457 (`openai_l`) and 0.483" in _VZ
+      and "against 0.384 for one rater and 0.338" in _VZ and "and 0.326 for ROUGE-1" in _VZ,
+      f"derived judges {_tau18}, one rater {_h18['mean']}, rouge1 {_fm18['rouge1']['mean']}, "
+      f"coverage {_fm18['coverage']['mean']}")
+_ahead_r = [p["vs_one_rater"]["a_ahead"] for p in _zp.values()]
+_ahead_c = [p["vs_coverage"]["a_ahead"] for p in _zp.values()]
+check("summarisation, Zhang et al.: every judge ahead of one rater on 72-80 articles and of coverage on "
+      "88-94, p < 0.001 each",
+      (min(_ahead_r), max(_ahead_r)) == (72, 80) and (min(_ahead_c), max(_ahead_c)) == (88, 94)
+      and all(p[k]["p_two_sided"] < 0.001 for p in _zp.values() for k in ("vs_one_rater", "vs_coverage"))
+      and "one rater on 72–80 articles and of `coverage` on 88–94" in _VZ,
+      f"derived ahead of one rater {_ahead_r}, of coverage {_ahead_c}")
+_faith = [r["non_reference_18"]["faithfulness"] for r in _zj.values()]
+check("summarisation, Zhang et al.: judges trail one rater on faithfulness, 0.48-0.61 against 0.64, "
+      "and lead on coherence and relevance",
+      (round(min(_faith), 2), round(max(_faith), 2)) == (0.48, 0.61) and round(_h18["faithfulness"], 2) == 0.64
+      and all(r["non_reference_18"][d] > _h18[d] for r in _zj.values() for d in ("coherence", "relevance"))
+      and "faithfulness (0.48–0.61 against 0.64)" in _VZ,
+      f"derived faithfulness {_faith}, one rater {_h18['faithfulness']}")
+_rk = next(iter(_zr.values()))["raters"]
+_top4 = sorted(_rk, key=_rk.get)[:4]
+_sp = [_zr[j]["spearman_vs_raters"][j] for j in _zr]
+check("summarisation, Zhang et al.: raters rank BRIO 5th and Pegasus 6th after four instruction-tuned "
+      "OpenAI models; judges rank BRIO 1st or 2nd; Spearman 0.71-0.79",
+      _rk["brio"] == 5 and _rk["pegasus"] == 6 and all(m.startswith("openai_text-") for m in _top4)
+      and sorted(_zr[j]["judges"][j]["brio"] for j in _zr) == [1, 1, 1, 2]
+      and (round(min(_sp), 2), round(max(_sp), 2)) == (0.71, 0.79)
+      and "rank BRIO 5th of 19" in _VZ and "the judges rank BRIO 1st or 2nd" in _VZ and "Spearman 0.71–0.79" in _VZ,
+      f"derived raters brio {_rk['brio']} pegasus {_rk['pegasus']} top4 {_top4}, judges brio "
+      f"{[_zr[j]['judges'][j]['brio'] for j in _zr]}, spearman {_sp}")
+_zcost = {s: round(sum(r["billed_usd"] for r in z["judges"].values()), 2) for s, z in _Z.items()}
+check("summarisation, Zhang et al.: $0.11 for the cheap pair, $4.35 for the frontier pair",
+      _zcost == {"judge-summ-v1": 0.11, "judge-summ-v2": 4.35} and "for $0.11 against $4.35" in _VZ,
+      f"derived {_zcost}")
+
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):

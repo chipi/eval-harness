@@ -1040,6 +1040,32 @@ with tempfile.TemporaryDirectory() as td_:
     check("after a refusal the same pass resumes: only the missing verdicts are bought",
           not st_r2["aborted"] and st_r2["skipped"] == 5 and st_r2["calls"] == 2 * N_TASKS - 5)
 
+# ── validate_judge_zhang: the parts that keep the third-party text out of the records ──
+import validate_judge_zhang as vz  # noqa: E402
+art = "The council approved the new bridge on Tuesday after a long and heated debate about its cost"
+summ = ["The council approved a new bridge.", ""]
+src = vz.shingles([art, *summ])
+check("zhang: a reply quoting eight words of the article is detected (and so withheld)",
+      vz.quotes_source('{"coherence": [5]} the council approved the new bridge on tuesday after', src))
+check("zhang: an ordinary JSON reply is not",
+      not vz.quotes_source('{"coherence": [5, 4], "consistency": [5, 1], "fluency": [5, 1], "relevance": [4, 1]}', src))
+check("zhang: dimensions parsed per dimension, each in 1..5, n numbers",
+      vz.parse_dims('{"coherence": [5, 1], "consistency": [4, 1], "fluency": [5, 2], "relevance": [3, 1]}', 2)
+      == {"coherence": [5.0, 1.0], "consistency": [4.0, 1.0], "fluency": [5.0, 2.0], "relevance": [3.0, 1.0]}
+      and vz.parse_dims('{"coherence": [5, 1]}', 2) is None
+      and vz.parse_dims('{"coherence": [5, 9], "consistency": [4, 1], "fluency": [5, 2], "relevance": [3, 1]}', 2) is None)
+_ho = vz.held_out([{"coherence": 5, "relevance": 4, "faithfulness": 1},
+                   {"coherence": 3, "relevance": 2, "faithfulness": 0},
+                   {"coherence": 1, "relevance": 5, "faithfulness": 1}], "a", "m")
+check("zhang: each rating is held out once against the mean of the other two",
+      len(_ho) == 3 and sorted(h["coherence"] for h, _ in _ho) == [1, 3, 5]
+      and all(abs(rest["coherence"] - (9 - h["coherence"]) / 2) < 1e-9 for h, rest in _ho))
+_bl = vz.blocks("a1", [f"s{i:02d}" for i in range(19)], 16)
+check("zhang: 19 summaries in blocks of 10 and 9, each summary once, order seeded per article",
+      [len(b) for b in _bl] == [10, 9] and sorted(sum(_bl, [])) == [f"s{i:02d}" for i in range(19)]
+      and _bl == vz.blocks("a1", [f"s{i:02d}" for i in range(19)], 16)
+      and sum(_bl, []) != sum(vz.blocks("a2", [f"s{i:02d}" for i in range(19)], 16), []))
+
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
 if bad:

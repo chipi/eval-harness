@@ -444,7 +444,9 @@ on SummEval's 2019 summaries ranked modern LLM summaries above a fine-tuned BART
 human check (one non-expert reader, 20 pairs, truncated articles) preferred the BART 14 to 6,
 p = 0.115 (REPORT_SUMMARIZATION §3.8). Neither result is confirmed, and whether the validation
 carries to modern outputs is not tested. Stronger judges did not change it: the two best SummEval
-judges, at 42× the price, gave the same verdict (`judge-summ-v2`). The gate checks that a validation exists and is
+judges, at 42× the price, gave the same verdict (`judge-summ-v2`). On crowd ratings of LLM-era
+summaries (Zhang et al. 2024, `validate_judge_zhang.py`) all four judges track people better
+than one rater does. The gate checks that a validation exists and is
 current, not that it transfers. `differs_from_this_use` is where
 you say how far it has to travel, and the honest next step is a small human check on your
 own outputs.

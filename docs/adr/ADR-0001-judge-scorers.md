@@ -119,11 +119,15 @@ on 2019-era summaries, the judges ranked every LLM above every BART model. The o
 on these outputs went the other way (one non-expert reader, 20 pairs on truncated articles,
 14 to 6 for BART, p = 0.115), which confirms neither. On a different 2022 pair (GPT-3
 against BRIO) the judges matched the annotators' agreement with each other, and preferred the
-LLM summary more often than the annotators did, within noise. Nothing here shows that the
-validation transfers, and nothing shows that it does not; calibrate on comparable human data
+LLM summary more often than the annotators did, within noise. Neither shows whether the
+validation transfers to this experiment's outputs; calibrate on comparable human data
 before a judged score replaces a primary. Stronger judges did not settle it either: the two best
 SummEval judges from different vendors (`judge-summ-v2`, at 42× the cost) reached the same
-verdict and the same 20-to-0 preference on the human-check pairs.
+verdict and the same 20-to-0 preference on the human-check pairs. Checked against crowd ratings of
+LLM-era summaries (Zhang et al. 2024), all four judges track the raters better than one rater
+does and rank a BART-based fine-tune first or second of 19, so they show no blanket preference
+for LLM-written summaries; this experiment's own outputs are still unchecked by people beyond
+the one reader.
 The second is SciFact. Its relevance labels are incomplete: 227 judgments cover 200 queries,
 so a relevant but unlabelled abstract ranked first counts against an arm. A judge can label
 those abstracts, but no judge here has been validated on scientific relevance. That run goes

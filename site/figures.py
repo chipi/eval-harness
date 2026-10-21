@@ -254,6 +254,15 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
                                   < proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs)}
 
 
+def zhang_figures() -> dict:
+    """Both scorers' judges against Zhang et al.'s crowd ratings of LLM-era summaries, through
+    judge_figures.zhang: recomputed from the stored records when the ratings are downloaded,
+    the committed report.json (checked against the records) when not."""
+    sys.path.insert(0, str(HARNESS / "scripts"))
+    import judge_figures as jf  # noqa: PLC0415
+    return {s: jf.zhang(s) for s in ("judge-summ-v1", "judge-summ-v2")}
+
+
 def instrument_check(exps: list) -> dict:
     """How well each instrument agrees with SummEval's experts (mean Kendall tau): the
     summarisation experiment's own metric, ROUGE-1, the best free scorer, the best judge."""
@@ -298,7 +307,7 @@ def compute() -> dict:
         "hardware": hardware(),
         "remeasure": {"ag": adjudicated("ag-news", exps), "db": adjudicated("dbpedia", exps),
                       "summ": judged_summarisation(exps), "summeval": instrument_check(exps),
-                      "summ_v2": judged_summarisation(exps, "judge-summ-v2")},
+                      "summ_v2": judged_summarisation(exps, "judge-summ-v2"), "zhang": zhang_figures()},
     }
 
 

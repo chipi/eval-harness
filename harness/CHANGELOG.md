@@ -55,6 +55,12 @@ what it found here: the [judging page](https://evals.humancopilot.eu/experiments
   not in the package): a committed adjudication file overwrites only the disputed items of a
   local gold reference set to make a new reference version, and `rescore` re-scores every run
   against it for $0, the old reference kept beside it.
+- **Judge validation on published human ratings** (repository tooling, not in the package):
+  `validate_judge_goyal.py` (Goyal, Li & Durrett 2022) and `validate_judge_zhang.py` (Zhang et
+  al. 2024, crowd ratings of 19 LLM-era summarisers) check a scorer's judges against people.
+  The ratings are downloaded when the check runs, pinned by sha256, and never committed; the
+  committed records hold article ids, the judges' scores and hashes, and a judge reply that
+  quotes the source text is not stored.
 - **`validate` V11-V13.** V11: every judging set's stored hash is the hash of its content.
   V12: every stored verdict names a real set, item, pass and block, and its `n` is that
   block's size. V13: every judge scorer loads, is structurally valid (its `task` included),

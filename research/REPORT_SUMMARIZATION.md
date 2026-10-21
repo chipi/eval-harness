@@ -729,6 +729,28 @@ and the judged scores stay directional at most. The verdicts are in
 `harness/data/judge-verdicts/judge-summ-v2/`, the Goyal records in
 `harness/data/judge-validation/judge-summ-v2/`.
 
+**Checked against people on LLM-written summaries (Zhang et al. 2024).** SummEval's systems are
+from 2019. Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto (2024, TACL) released crowd ratings
+of 19 summarisers on 100 CNN/DailyMail articles: GPT-3-era LLMs, base and instruction-tuned,
+zero- and few-shot; the fine-tunes BRIO and Pegasus; and the reference highlights, three ratings
+each for coherence, relevance (1–5) and faithfulness (0/1). All four judges scored each article's
+19 summaries under the validated prompt, in blocks of 10 and 9. Each is measured against the mean
+of two ratings with the third held out, rotating, and so is one rating against the other two. On
+the 18 non-reference summaries, mean τ over the three dimensions is 0.496 (`gemma_l`), 0.479
+(`qwen_s`), 0.457 (`openai_l`) and 0.483 (`anthropic_l`), against 0.384 for one rater and 0.338
+and 0.326 for ROUGE-1 and `coverage` against the reference highlights. Every judge is ahead of
+one rater on 72–80 articles and of `coverage` on 88–94 (paired sign-flip over articles, p < 0.001
+for each). By dimension the judges lead on coherence and relevance and trail one rater on
+faithfulness (0.48–0.61 against 0.64). On the systems' mean scores the raters rank BRIO 5th of 19
+and Pegasus 6th, after four instruction-tuned OpenAI models; the judges rank BRIO 1st or 2nd,
+with Spearman 0.71–0.79 between the judges' and the raters' rankings of the 19. So on these
+summaries the judges show no blanket preference for LLM-written summaries over a BART-based
+fine-tune, and the cheap pair does as well as the frontier pair for $0.11 against $4.35. The
+systems are 2022's, not this experiment's arms, and a single crowd rating is noisier than
+SummEval's experts: this is evidence about the judges, not a check of the ranking above. The
+ratings are downloaded at run time, not committed; the records, which hold article ids, the
+judges' scores and hashes, are in `harness/data/judge-validation/<scorer>/zhang2023-cnndm/`.
+
 ## 4. Discussion
 
 **The experiment's resolution is set by the corpus, not the models.** With 67.8% of

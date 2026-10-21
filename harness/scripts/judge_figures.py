@@ -22,6 +22,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import judge_score as js  # noqa: E402
 import validate_judge_goyal as vg  # noqa: E402
+import validate_judge_zhang as vz  # noqa: E402
 
 REPO = HERE.parents[1]
 DATA = HERE.parent / "data"
@@ -51,6 +52,28 @@ def goyal(scorer: str = SCORER) -> Dict[str, Any]:
         out["judges"][jid] = st
     out["human_baseline"] = vg.human_baseline(human)
     return out
+
+
+def zhang(scorer: str = SCORER) -> Dict[str, Any]:
+    """The Zhang et al. (2024) validation of a scorer's judges. Recomputed from the stored
+    records when data/external/zhang2023 is present; otherwise the committed report.json,
+    whose call counts and bill are checked against the committed records."""
+    vroot = DATA / "judge-validation" / scorer / "zhang2023-cnndm"
+    if vz.FILE.is_file():
+        sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+        data = vz.load()
+        systems = sorted(next(iter(data.values()))["systems"])
+        rep = vz.build_report(sc, js.prompt_text(sc), int(sc["protocol"]["outputs_per_call"]),
+                              data, systems, vroot)
+        rep["recomputed"] = "from the stored records and the ratings"
+        return rep
+    rep = json.loads((vroot / "report.json").read_text())
+    for jid, r in rep["judges"].items():
+        recs = [json.loads(f.read_text()) for f in (vroot / jid).glob("*.json")]
+        if len(recs) != r["calls"] or round(sum(float(x.get("cost_usd") or 0) for x in recs), 4) != r["billed_usd"]:
+            raise SystemExit(f"{vroot}/report.json disagrees with the stored records of {jid}")
+    rep["recomputed"] = "report.json (data/external/zhang2023 absent: checked against the records only)"
+    return rep
 
 
 def pointwise() -> Dict[str, int]:
