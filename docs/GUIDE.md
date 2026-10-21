@@ -456,7 +456,7 @@ make validate
 ```text
   ok   V1 schemas — 183 document(s) validated
   ok   V2 every run's dataset_id resolves
-  ok   V4 materialized copies match their frozen hashes
+  ok   V4 materialized copies match their frozen hashes (1 of 1 datasets materialized here)
   ok   V5 no two configs report byte-identical scores
   ok   V6 every baseline's source run still exists
   ok   V8 no two runs share a config_id (outside a --repeat set)
@@ -464,8 +464,10 @@ make validate
 VALIDATION PASSED
 ```
 
-Run it in CI; it exits non-zero. Two independent arms never agree to full float
-precision — V5 catches a copied number or a mis-wired arm, V8 two measurements quietly
+Run it in CI; it exits non-zero. V4 can only check a dataset whose materialized copy is on
+the machine, and names each one it could not check; a CI job without the sources checks none
+of them, so materialize first where the copy matters. Two independent arms never agree to full
+float precision — V5 catches a copied number or a mis-wired arm, V8 two measurements quietly
 averaged into one row.
 
 ## Doing it for real

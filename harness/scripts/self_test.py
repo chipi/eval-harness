@@ -1326,6 +1326,50 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
         _replace(pj, before)
 
 
+def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> None:
+    """V4 printed `ok` for a materialized copy that had lost a file, and for a dataset with
+    no materialized copy at all (CI never has one): green for things it never checked."""
+    import contextlib  # noqa: PLC0415
+    import hashlib as _h  # noqa: PLC0415
+    import io  # noqa: PLC0415
+    import tempfile as _tmp  # noqa: PLC0415
+
+    import validate_tree as vt  # noqa: PLC0415
+
+    def run_v4(tmp: pathlib.Path) -> tuple:
+        saved = (vt.DATASETS, vt.MATERIALIZED, list(vt.problems))
+        vt.DATASETS, vt.MATERIALIZED = tmp / "datasets", tmp / "materialized"
+        vt.problems.clear()
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                vt.v4_materialized()
+            return list(vt.problems), buf.getvalue()
+        finally:
+            vt.DATASETS, vt.MATERIALIZED = saved[0], saved[1]
+            vt.problems[:] = saved[2]
+
+    with _tmp.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        (tmp / "datasets").mkdir()
+        body = b"an item"
+        item = {"item_id": "a", "source_path": "a.txt", "source_sha256": _h.sha256(body).hexdigest()}
+        for ds in ("here_v1", "absent_v1"):
+            (tmp / "datasets" / f"{ds}.json").write_text(json.dumps({"dataset_id": ds, "items": [item]}))
+        mat = tmp / "materialized" / "here_v1"
+        mat.mkdir(parents=True)
+        (mat / "a.txt").write_bytes(body)
+        probs, out = run_v4(tmp)
+        check("V4: a matching copy passes and says how many datasets it checked",
+              not probs and "1 of 2" in out, out.strip()[-160:])
+        check("V4: a dataset with no materialized copy is named as not checked, not passed silently",
+              "absent_v1" in out and "not checked" in out, out.strip()[-160:])
+        (mat / "a.txt").unlink()
+        probs, out = run_v4(tmp)
+        check("V4: a materialized copy that lost a file FAILS", bool(probs) and "a.txt" in out,
+              out.strip()[-160:])
+
+
 def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
     """Stripping the provenance field must FAIL, not skip.
 
@@ -2454,6 +2498,7 @@ def main() -> int:
         test_adapter_declaration_beats_a_stale_run,
         test_a_rescored_run_carries_the_current_parse,
         test_v8_and_v9_go_red_on_a_copied_or_gutted_run,
+        test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check,
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_config_id_are_refused,

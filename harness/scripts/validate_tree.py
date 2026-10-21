@@ -123,20 +123,35 @@ def v3_provenance() -> None:
 
 
 def v4_materialized() -> None:
-    drifted = []
-    for ds_file in DATASETS.glob("*.json"):
+    """Every item of every materialized copy is there and has its frozen hash. A dataset with
+    no copy here (materialized data is not committed, so CI has none) is not checked, and the
+    output says so by name: the check used to print `ok` for it, and for a copy that had lost
+    files, which is green for something never looked at."""
+    drifted, missing, unchecked, checked = [], [], [], 0
+    for ds_file in sorted(DATASETS.glob("*.json")):
         ds = read_json(ds_file)
         mat = MATERIALIZED / ds["dataset_id"]
         if not mat.is_dir():
+            unchecked.append(ds["dataset_id"])
             continue
+        checked += 1
         for item in ds["items"]:
             rel = item.get("source_path") or item["item_id"]
             f = mat / rel
-            if f.is_file() and sha256(f) != item["source_sha256"]:
+            if not f.is_file():
+                missing.append(f"{ds['dataset_id']}/{rel}")
+            elif sha256(f) != item["source_sha256"]:
                 drifted.append(f"{ds['dataset_id']}/{rel}")
     for d in drifted:
-        print(f"       {d}")
-    check(not drifted, "V4 materialized copies match their frozen hashes", f"{len(drifted)} drifted")
+        print(f"       drifted: {d}")
+    for d in missing:
+        print(f"       missing: {d}")
+    total = checked + len(unchecked)
+    check(not drifted and not missing,
+          f"V4 materialized copies match their frozen hashes ({checked} of {total} datasets materialized here)",
+          f"{len(drifted)} drifted, {len(missing)} missing")
+    if unchecked:
+        print(f"       not checked (no materialized copy here): {', '.join(unchecked)}")
 
 
 #: Excluded from the V5 duplicate key: wall-clock and spend are properties of the RUN, not

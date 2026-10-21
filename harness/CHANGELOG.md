@@ -9,6 +9,17 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.0 — unreleased
+
+In progress. What has landed on `main` since 0.3.0:
+
+### Changed
+- **`validate` V4 no longer passes what it did not check.** A materialized copy that has lost
+  an item file now fails; it used to be skipped. A dataset with no materialized copy on the
+  machine (materialized data is not committed, so a CI job has none) is named as not checked,
+  and the ok line says how many were checked, e.g. "3 of 14 datasets materialized here". A
+  project whose materialized copy is incomplete goes red where it was green.
+
 ## 0.3.0 — 2026-10-21
 
 Re-measure what you already have. Stored outputs can now be scored again by LLM judges, as an
